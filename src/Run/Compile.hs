@@ -182,14 +182,16 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         renamedTable     = Rename.renameTable coreTable
                         reduced          = EtaReduction.reduceTable renamedTable
                         closureConverted = ClosureConvert.convertTable reduced
-                        withTCE          = TCE.resolve <$> closureConverted
+                        withTCE          = TCE.resolveTable closureConverted
 
-                    -- putStrLn (ppShow closureConverted)
+                    -- putStrLn (ppShow renamedTable)
+                    -- putStrLn (ppShow reduced)
+                    putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
-                        withTCE       = TCE.resolve <$> strippedTable
+                        withTCE       = TCE.resolveTable strippedTable
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
                   when bundle $ do

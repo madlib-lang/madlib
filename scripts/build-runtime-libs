@@ -35,7 +35,7 @@ unzip "v${LIBGC_VERSION}.zip" -d libgc
 cd "libgc/bdwgc-${LIBGC_VERSION}" && git clone git://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
 cd ../..
 cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
-cp -R "libgc/${LIBGC_VERSION}/include" ../runtime/
+cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
 
 
 # install libcurl
@@ -43,10 +43,17 @@ if [ "$TARGET" = "WINDOWS" ]
 then
   # TODO:
   echo "not implemented"
-elif [ "$TARGET" = "LINUX" ]
+elif [ "$TARGET" = "LINUX_X86" ]
 then
-  # TODO:
-  echo "not implemented"
+  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
+  unzip curl-7.81.0.zip
+  cd curl-7.81.0
+
+  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --prefix $(pwd)/build --with-secure-transport
+  make -j10
+  make install
+  cd ..
+  cp -R curl-7.81.0/build/* ../runtime/
 elif [ "$TARGET" = "MACOS_X86" ]
 then
   wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip

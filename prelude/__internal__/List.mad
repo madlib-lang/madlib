@@ -13,6 +13,7 @@ import { Just, Nothing } from "Maybe"
 import { fst, snd } from "Tuple"
 import { loop } from "Control"
 
+#endif
 
 /**
  * List utility functions.
@@ -28,8 +29,31 @@ import { loop } from "Control"
  * map((x) => x * 2, [1, 2, 3]) // [2, 4, 6]
  */
 instance Functor List {
-  map = (f, xs) => #- xs.map((x) => f(x)) -#
+  map = (f, list) => where(list) {
+    [a, ...xs] =>
+      [f(a), ...map(f, xs)]
+
+    [] =>
+      []
+  }
 }
+
+
+repeat :: a -> Integer -> List a
+export repeat = (a, count) =>
+  count == 0
+    ? []
+    : [a, ...repeat(a, count - 1)]
+
+repeatWith :: (Integer -> a) -> Integer -> List a
+export repeatWith = (f, count) =>
+  count == 0
+    ? []
+    : [f(count), ...repeatWith(f, count - 1)]
+
+
+#iftarget js
+
 
 instance Applicative List {
   pure = (x) => [x]
@@ -528,10 +552,6 @@ instance Monoid (List a) {
   mempty = []
 }
 
-
-instance Functor List {
-  map = map_
-}
 
 nth :: Integer -> List a -> Maybe a
 export nth = (index, list) => where(list) {

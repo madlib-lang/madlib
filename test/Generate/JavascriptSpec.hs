@@ -60,9 +60,9 @@ tester optimized code =
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x ->
-          let coreAST = evalState (toCore optimized x) initialOptimizationState
+          let coreAST     = evalState (toCore optimized x) initialOptimizationState
               strippedAST = stripAST coreAST
-              withTCE = TCE.resolve strippedAST
+              withTCE     = TCE.resolveAST strippedAST
           in  compile
                 Generate.Javascript.initialEnv
                 (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
@@ -80,9 +80,9 @@ coverageTester code =
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x ->
-          let coreAST = evalState (toCore False x) initialOptimizationState
+          let coreAST     = evalState (toCore False x) initialOptimizationState
               strippedAST = stripAST coreAST
-              withTCE = TCE.resolve strippedAST
+              withTCE     = TCE.resolveAST strippedAST
           in  compile
                 Generate.Javascript.initialEnv
                 (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
@@ -105,9 +105,9 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
             $   compile Generate.Javascript.initialEnv
                         (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
             .   (\a ->
-                    let coreAST = evalState (toCore False a) initialOptimizationState
+                    let coreAST     = evalState (toCore False a) initialOptimizationState
                         strippedAST = stripAST coreAST
-                    in  TCE.resolve strippedAST
+                    in  TCE.resolveAST strippedAST
                 )
             <$> M.elems x
         Left e -> ppShow e

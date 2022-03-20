@@ -1,15 +1,15 @@
-#include <gc.h>
-#include <iostream>
-#include <cstdarg>
-
 #include "apply-pap.hpp"
+
+#include <gc.h>
+
+#include <cstdarg>
+#include <iostream>
 
 // Partial application
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 void *__applyPAP__(void *pap, int32_t argc, ...) {
   va_list argv;
@@ -22,665 +22,436 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   // printf("fn ptr: %d, arity: %d, argc: %d, args left: %d\n", unwrappedPAP->fn, ARITY, argc, ARITY - ENV_SIZE);
 
   if (argc >= unwrappedPAP->missingArgCount) {
+    void *result = (void *)11;
     switch (ARITY) {
       case 1: {
         void *(*fn)(void *) = (void *(*)(void *))unwrappedPAP->fn;
-        void *result = fn(va_arg(argv, void *));
-        if (argc > 1) {
-          va_list *remainingArgs = va_arg(argv, va_list *);
-          result = __applyPAP__(result, argc - 1, remainingArgs);
-        }
-        va_end(argv);
-        return result;
+        result = fn(va_arg(argv, void *));
+        break;
       }
       case 2: {
-        void *(*fn)(void *, void *) =
-            (void *(*)(void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *) = (void *(*)(void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 3: {
-        void *(*fn)(void *, void *, void *) =
-            (void *(*)(void *, void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *) = (void *(*)(void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 4: {
-        void *(*fn)(void *, void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *) = (void *(*)(void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 5: {
         void *(*fn)(void *, void *, void *, void *, void *) =
             (void *(*)(void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 5) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 5, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result =
+                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2,
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 4: {
             PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 6: {
         void *(*fn)(void *, void *, void *, void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *,
-                       void *))unwrappedPAP->fn;
+            (void *(*)(void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 6) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 6, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 5) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 5, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result =
+                fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 4: {
             PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 5: {
             PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              env->arg4, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 7: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *,
-                       void *))unwrappedPAP->fn;
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 7) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 7, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 6) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 6, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 5) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 5, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2,
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 4: {
             PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *));
+            break;
           }
           case 5: {
             PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result =
+                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 6: {
             PAPEnv_6_t *env = (PAPEnv_6_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              env->arg4, env->arg5, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 8: {
-        void *(*fn)(void *, void *, void *, void *, void *, void *, void *,
-                    void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *, void *,
-                       void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *) =
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 8) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 8, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 7) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 7, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 6) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 6, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 5) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 5, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 4: {
             PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 5: {
             PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              env->arg4, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 6: {
             PAPEnv_6_t *env = (PAPEnv_6_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   env->arg5, va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, va_arg(argv, void *),
+                        va_arg(argv, void *));
+            break;
           }
           case 7: {
             PAPEnv_7_t *env = (PAPEnv_7_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   env->arg5, env->arg6, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result =
+                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 9: {
-        void *(*fn)(void *, void *, void *, void *, void *, void *, void *,
-                    void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *, void *,
-                       void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *) =
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 9) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 9, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *));
+            break;
           }
           case 1: {
             PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 8) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 8, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result =
+                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                   va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 2: {
             PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 7) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 7, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 3: {
             PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2,
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 6) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 6, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 4: {
             PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 5) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 5, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 5: {
             PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   va_arg(argv, void *), va_arg(argv, void *),
-                   va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 4) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 4, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 6: {
             PAPEnv_6_t *env = (PAPEnv_6_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              env->arg4, env->arg5, va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 3) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 3, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 7: {
             PAPEnv_7_t *env = (PAPEnv_7_t *)unwrappedPAP->env;
-            void *result = fn(env->arg0, env->arg1, env->arg2, env->arg3,
-                              env->arg4, env->arg5, env->arg6,
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 2) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 2, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6,
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 8: {
             PAPEnv_8_t *env = (PAPEnv_8_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   env->arg5, env->arg6, env->arg7, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, env->arg7,
+                        va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 10: {
-        void *(*fn)(void *, void *, void *, void *, void *, void *, void *,
-                    void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *, void *,
-                       void *, void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) =
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 10) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 10, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 11: {
-        void *(*fn)(void *, void *, void *, void *, void *, void *, void *,
-                    void *, void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *, void *,
-                       void *, void *, void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) =
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *,
+                       void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *));
-            if (argc > 11) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 11, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
         }
+        break;
       }
       case 12: {
-        void *(*fn)(void *, void *, void *, void *, void *, void *, void *,
-                    void *, void *, void *, void *, void *) =
-            (void *(*)(void *, void *, void *, void *, void *, void *, void *,
-                       void *, void *, void *, void *, void *))unwrappedPAP->fn;
+        void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) =
+            (void *(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *,
+                       void *))unwrappedPAP->fn;
         switch (ENV_SIZE) {
           case 0: {
-            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *),
-                              va_arg(argv, void *), va_arg(argv, void *));
-            if (argc > 12) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 12, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                        va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            break;
           }
           case 11: {
             PAPEnv_11_t *env = (PAPEnv_11_t *)unwrappedPAP->env;
-            void *result =
-                fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4,
-                   env->arg5, env->arg6, env->arg7, env->arg8, env->arg9, env->arg10, va_arg(argv, void *));
-            if (argc > 1) {
-              va_list *remainingArgs = va_arg(argv, va_list *);
-              result = __applyPAP__(result, argc - 1, remainingArgs);
-            }
-            va_end(argv);
-            return result;
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, env->arg7,
+                        env->arg8, env->arg9, env->arg10, va_arg(argv, void *));
+            break;
           }
+        }
+        break;
+      }
+    }
+
+    if (argc > unwrappedPAP->missingArgCount) {
+      int argsLeft = argc - unwrappedPAP->missingArgCount;
+      switch (argsLeft) {
+        case 1: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *));
+          break;
+        }
+        case 2: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 3: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 4: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *));
+          break;
+        }
+        case 5: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 6: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 7: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 8: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *));
+          break;
+        }
+        case 9: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 10: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 11: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          break;
+        }
+        case 12: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *));
+          break;
+        }
+        case 13: {
+          result = __applyPAP__(result, argsLeft, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                                va_arg(argv, void *), va_arg(argv, void *));
+          break;
         }
       }
     }
+
+    va_end(argv);
+    return result;
   } else {
     // We push the args to a newly allocated PAP
     int32_t NEXT_ENV_SIZE = argc + ENV_SIZE;
@@ -689,9 +460,8 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
 
-    // printf("NEW PAP - NEXT_ENV_SIZE: %d, argc: %d, ENV_SIZE: %d, arity: %d,
-    //   missing: %d\n", NEXT_ENV_SIZE, argc, ENV_SIZE, unwrappedPAP->arity,
-    //   newPAP->missingArgCount);
+    // printf("NEW PAP - NEXT_ENV_SIZE: %d, argc: %d, ENV_SIZE: %d, arity: %d, missing: %d\n", NEXT_ENV_SIZE, argc,
+    // ENV_SIZE, unwrappedPAP->arity, newPAP->missingArgCount);
 
     switch (ENV_SIZE) {
       case 0: {
@@ -1384,8 +1154,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     }
   }
 
-  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n",
-         argc, ENV_SIZE, ARITY);
+  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc, ENV_SIZE, ARITY);
 
   return NULL;
 }
