@@ -8,11 +8,13 @@
 extern "C" {
 #endif
 
-int64_t madlib__math__round(double x);
-int64_t madlib__math__ceil(double x);
-int64_t madlib__math__floor(double x);
+double madlib__math__round(double x);
+double madlib__math__ceil(double x);
+double madlib__math__floor(double x);
 
 double madlib__math__sqrt(double x);
+
+double madlib__math__pow(double a, double b);
 
 #ifdef __cplusplus
 }

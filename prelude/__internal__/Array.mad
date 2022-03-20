@@ -1,6 +1,8 @@
-#iftarget llvm
-
 import {} from "Monad"
+
+// TODO: add filter, ap, chain
+
+#iftarget llvm
 
 fromList :: List a -> Array a
 export fromList = extern "madlib__array__fromList"
@@ -28,8 +30,38 @@ instance Functor Array {
 #elseif js
 
 fromList :: List a -> Array a
-export fromList = (array) => #- array -#
+export fromList = (list) => #- {
+  let array = []
+  while (list) {
+    array.push(list.v)
+    list = list.n
+  }
+  return array
+} -#
 
-// TODO: implement Array for JS
+toList :: Array a -> List a
+export toList = (array) => #- {
+  let list = {}
+  let start = list
+
+  array.forEach(item => {
+    list = list.n = { v: item, n: null }
+  })
+
+  return start.n
+} -#
+
+length :: Array a -> Integer
+export length = (array) => #- array.length -#
+
+reduce :: (a -> b -> a) -> a -> Array b -> a
+export reduce = (f, start, array) => #- array.reduce((a, b) => f(a)(b), start) -#
+
+concat :: Array a -> Array a -> Array a
+export concat = (array1, array2) => #- array1.concat(array2) -#
+
+instance Functor Array {
+  map = (f, array) => #- array.map(f) -#
+}
 
 #endif

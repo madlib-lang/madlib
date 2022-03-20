@@ -58,22 +58,6 @@ export toUpper = extern "madlib__string__toUpper"
 
 #endif
 
-
-#iftarget js
-
-replace :: String -> String -> String -> String
-export replace = (regex, replacing, input) => (#-
-  input.replace(new RegExp(regex), replacing)
--#)
-
-#elseif llvm
-
-replace :: String -> String -> String -> String
-export replace = extern "madlib__string__replace"
-
-#endif
-
-
 #iftarget js
 
 split :: String -> String -> List String
@@ -236,7 +220,6 @@ export takeLast = (n, s) => slice(-n, 0, s)
 
 #iftarget js
 
-// TODO: implement llvm version
 charAt :: Integer -> String -> Maybe Char
 export charAt = (n, s) => #-{
   const c = s[n]
@@ -299,17 +282,27 @@ export repeat = (c, n) => pipe(
   fromList
 )(n)
 
+
 #iftarget js
 
 match :: String -> String -> Boolean
-export match = (regex, input) => #- input.match(regex) -#
+export match = (regex, input) => #- input.match(regex) !== null -#
+
+replace :: String -> String -> String -> String
+export replace = (regex, replacing, input) => (#-
+  input.replace(new RegExp(regex, "g"), replacing)
+-#)
 
 #elseif llvm
 
 match :: String -> String -> Boolean
 export match = extern "madlib__string__match"
 
+replace :: String -> String -> String -> String
+export replace = extern "madlib__string__replace"
+
 #endif
+
 
 #iftarget js
 

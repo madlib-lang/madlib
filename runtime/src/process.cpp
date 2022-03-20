@@ -43,10 +43,10 @@ void __main__init__(int argc, char **argv) {
 void madlib__process__internal__registerArgs() {
   args = madlib__list__empty();
 
-  for (int i = 0; i < ARGC; i++) {
+  for (int i = ARGC - 1; i >= 0; i--) {
     char **boxed = (char **)GC_malloc(sizeof(char *));
     *boxed = ARGV[i];
-    args = madlib__list__append(boxed, args);
+    args = madlib__list__push(boxed, args);
   }
 }
 
@@ -80,7 +80,7 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
     item->first = boxedKey;
     item->second = boxedValue;
 
-    envItems = madlib__list__append(item, envItems);
+    envItems = madlib__list__push(item, envItems);
   }
 
   PAP_t stringEqPAP = {.fn = (void *)madlib__string__internal__eq,
