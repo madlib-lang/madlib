@@ -18,11 +18,11 @@ Right
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 15 1 16) (Loc 27 1 28))
-                        (LStr "'it is true'"))
+                        (LStr "\"it is true\""))
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 37 1 38) (Loc 50 1 51))
-                        (LStr "'it is false'")))))
+                        (LStr "\"it is false\"")))))
         , Typed
             ([] :=> TCon (TC "String" Star) "prelude")
             (Area (Loc 53 2 1) (Loc 69 2 17))
@@ -281,11 +281,11 @@ Right
                       (Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 100 4 30) (Loc 114 4 44))
-                         (LStr "'more than 10'"))
+                         (LStr "\"more than 10\""))
                       (Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 124 4 54) (Loc 138 4 68))
-                         (LStr "'less than 10'")))
+                         (LStr "\"less than 10\"")))
                ])
         ]
     , atypedecls = []

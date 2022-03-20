@@ -1,3 +1,6 @@
+global.__String = global.String;
+
+
 global.__eq__ = (l, r) => {
   if (l === r) {
     return true;
@@ -60,6 +63,9 @@ Inspect['Float']['inspect'] = () => x => x;
 
 Inspect['String'] = {};
 Inspect['String']['inspect'] = () => x => `"${x}"`;
+
+Inspect['Char'] = {};
+Inspect['Char']['inspect'] = () => x => `'${x}'`;
 
 Inspect['Unit'] = {};
 Inspect['Unit']['inspect'] = () => () => `{}`;
