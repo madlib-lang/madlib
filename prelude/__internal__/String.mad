@@ -42,12 +42,23 @@ export toLower = (s) => #- s.toLowerCase() -#
 toUpper :: String -> String
 export toUpper = (s) => #- s.toUpperCase() -#
 
+#endif
+
+
+#iftarget js
+
 replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex), replacing)
 -#)
 
+#elseif llvm
+
+replace :: String -> String -> String -> String
+export replace = extern "madlib__string__replace"
+
 #endif
+
 
 #iftarget js
 
@@ -126,6 +137,7 @@ export toList = (str) => #- {
   return result.n
 } -#
 
+
 fromList :: List Char -> String
 export fromList = (list) => #- {
   let chars = []
@@ -136,16 +148,17 @@ export fromList = (list) => #- {
   return chars.join('')
 } -#
 
-
 #elseif llvm
 
 toList :: String -> List Char
 export toList = extern "madlib__string__toList"
 
+
 fromList :: List Char -> String
 export fromList = extern "madlib__string__fromList"
 
 #endif
+
 
 #iftarget js
 
@@ -159,17 +172,26 @@ export mapChars = extern "madlib__string__mapChars"
 
 #endif
 
-#iftarget js
 
-reduceChars :: (a -> String -> a) -> a -> String -> a
-export reduceChars = (f, initial, s) => #- s.split("").reduce((a, b) => f(a)(b), initial) -#
+filterChars :: (Char -> Boolean) -> String -> String
+export filterChars = (predicate, s) => pipe(
+  toList,
+  List.filter(predicate),
+  fromList
+)(s)
 
-#endif
+
+reduceChars :: (a -> Char -> a) -> a -> String -> a
+export reduceChars = (f, initial, s) => pipe(
+  toList,
+  List.reduce(f, initial)
+)(s)
+
 
 #iftarget js
 
 slice :: Integer -> Integer -> String -> String
-export slice = (start, end, s) => #- s.slice(start, end) -#
+export slice = (start, end, s) => #- s.slice(start, end === 0 ? s.length : end) -#
 
 #elseif llvm
 
@@ -178,10 +200,28 @@ export slice = extern "madlib__string__slice"
 
 #endif
 
-#iftarget js
-
 isEmpty :: String -> Boolean
 export isEmpty = (s) => s == ""
+
+
+drop :: Integer -> String -> String
+export drop = (n, s) => slice(n, 0, s)
+
+
+dropLast :: Integer -> String -> String
+export dropLast = (n, s) => slice(0, -n, s)
+
+
+take :: Integer -> String -> String
+export take = (n, s) => slice(0, n, s)
+
+
+takeLast :: Integer -> String -> String
+export takeLast = (n, s) => slice(-n, 0, s)
+
+
+#iftarget js
+
 
 nthChar :: Integer -> String -> Maybe String
 export nthChar = (n, s) => #-{
@@ -194,12 +234,6 @@ export firstChar = nthChar(0)
 
 lastChar :: String -> Maybe String
 export lastChar = (s) => nthChar(length(s) - 1, s)
-
-drop :: Integer -> String -> String
-export drop = (n, s) => slice(n, length(s), s)
-
-dropLast :: Integer -> String -> String
-export dropLast = (n, s) => slice(0, -n, s)
 
 trim :: String -> String
 export trim = (s) => #- s.trim() -#
