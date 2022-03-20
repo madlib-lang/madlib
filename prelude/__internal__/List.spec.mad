@@ -1,5 +1,4 @@
 import { test, assertEquals } from "Test"
-#iftarget js
 
 import {
   append,
@@ -28,9 +27,6 @@ import {
 import {} from "Boolean" // We need the instance Show Boolean
 import { Just, Nothing } from "Maybe"
 
-#elseif llvm
-import { reduce, len, sort, sortDesc } from "./List"
-#endif
 
 
 test("map should apply a function to all items of a list", (_) =>
@@ -64,8 +60,6 @@ test("sort Number", (_) => assertEquals(sort([3, 1, 2]), [1, 2, 3]))
 
 test("sortDesc Number", (_) => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
 
-
-#iftarget js
 
 test("pure should wrap a value in a list", (_) =>
   assertEquals(pure(true), [true])
@@ -109,8 +103,8 @@ test("concat", (_) => assertEquals(concat([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5,
 
 test("append", (_) => assertEquals(append(2, [1]), [1, 2]))
 
-test("last with existing item", (_) => assertEquals(last([1, 2, 3]), Just(3)))
 test("last with empty list", (_) => assertEquals(last([]), Nothing))
+test("last with existing item", (_) => assertEquals(last([1, 2, 3]), Just(3)))
 
 test("first with existing item", (_) => assertEquals(first([1, 2, 3]), Just(1)))
 test("first with empty list", (_) => assertEquals(first([]), Nothing))
@@ -186,5 +180,3 @@ test("drop - empty", (_) => assertEquals(drop(2, []), []))
 test("dropLast", (_) => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
 test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
-
-#endif

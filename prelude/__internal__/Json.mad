@@ -65,16 +65,16 @@ export dict = (parser, input) => (#- {
 list :: Parser a -> Parser (List a)
 export list = (parser, input) => (#-{
   try {
-    let result = [];
+    let result = {};
     input.forEach((a) => {
       const parsed = parser(a);
       if (isLeft(parsed)) {
         throw parsed;
       } else {
-        result.push(fromRight("")(parsed));
+        result = result.n = { v: (fromRight("")(parsed)) };
       }
     })
-    return Right(result);
+    return Right(result.n);
   } catch(e) {
     return Left("An error occured while parsing a list!");
   }

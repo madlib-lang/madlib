@@ -82,15 +82,15 @@ instance Compilable Exp where
       case exp of
         _ | isPlainRecursionEnd metadata ->
           let compiledExp = compile env config (Typed qt area [] exp)
-          in  "($result = " <> compiledExp <> ")"
+          in  "($_result_ = " <> compiledExp <> ")"
 
         _ | isRightListRecursionEnd metadata ->
           let compiledExp = compile env config (Typed qt area [] exp)
-          in  "($end.push(..."<>compiledExp<>"), $result = $start)"
+          in  "($_end_.n = " <> compiledExp <> ", $_result_ = $_start_.n)"
 
         _ | isConstructorRecursionEnd metadata ->
           let compiledExp = compile env config (Typed qt area [] exp)
-          in  "($args[$index] = "<>compiledExp<>", $result = $start.__args[0])"
+          in  "($args[$index] = "<>compiledExp<>", $_result_ = $_start_.__args[0])"
 
         Call fn@(Typed _ _ _ (Var constructorName True)) args | isConstructorRecursiveCall metadata ->
           case getConstructorRecursionInfo metadata of
@@ -111,7 +111,7 @@ instance Compilable Exp where
 
                     _ ->
                       undefined
-              in  "("<>newValue<>", " <> intercalate ", " compiledArgs <> ", $args[$index] = $newValue, $args = $newValue.__args, $index = "<>show position<>", "<>intercalate ", " updateParams<>", $continue = true)"
+              in  "("<>newValue<>", " <> intercalate ", " compiledArgs <> ", $args[$index] = $newValue, $args = $newValue.__args, $index = "<>show position<>", "<>intercalate ", " updateParams<>", $_continue_ = true)"
 
             _ ->
               undefined
@@ -265,7 +265,7 @@ instance Compilable Exp where
 
               compiledArgs = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
-          in  "(" <> intercalate ", " updateParams <> ", $continue = true)"
+          in  "(" <> intercalate ", " updateParams <> ", $_continue_ = true)"
 
         Call fn args ->
           let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
@@ -298,17 +298,17 @@ instance Compilable Exp where
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
-                  <> "    let $result;\n"
-                  <> "    let $continue = true;\n"
+                  <> "    let $_result_;\n"
+                  <> "    let $_continue_ = true;\n"
                   <> unlines tcoParams
                   <> "\n"
-                  <> "    while($continue) {\n"
+                  <> "    while($_continue_) {\n"
                   <> unlines updateParams
                   <> "\n"
-                  <> "        $continue = false;\n"
+                  <> "        $_continue_ = false;\n"
                   <> "        "<> compile env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
-                  <> "    return $result;\n"
+                  <> "    return $_result_;\n"
                   <> "}"
 
             [exp] | isRightListRecursiveDefinition metadata ->
@@ -316,19 +316,19 @@ instance Compilable Exp where
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
-                  <> "    let $result;\n"
-                  <> "    let $continue = true;\n"
-                  <> "    let $start = [];\n"
-                  <> "    let $end = $start;\n"
+                  <> "    let $_result_;\n"
+                  <> "    let $_continue_ = true;\n"
+                  <> "    let $_start_ = {};\n"
+                  <> "    let $_end_ = $_start_;\n"
                   <> unlines tcoParams
                   <> "\n"
-                  <> "    while($continue) {\n"
+                  <> "    while($_continue_) {\n"
                   <> unlines updateParams
                   <> "\n"
-                  <> "        $continue = false;\n"
+                  <> "        $_continue_ = false;\n"
                   <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
-                  <> "    return $result;\n"
+                  <> "    return $_result_;\n"
                   <> "}"
 
             [exp] | isConstructorRecursiveDefinition metadata ->
@@ -336,21 +336,21 @@ instance Compilable Exp where
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
-                  <> "    let $result;\n"
-                  <> "    let $continue = true;\n"
-                  <> "    let $start = { __args: [] };\n"
-                  <> "    let $args = $start.__args;\n"
+                  <> "    let $_result_;\n"
+                  <> "    let $_continue_ = true;\n"
+                  <> "    let $_start_ = { __args: [] };\n"
+                  <> "    let $args = $_start_.__args;\n"
                   <> "    let $index = 0;\n"
                   <> "    let $newValue;\n"
                   <> unlines tcoParams
                   <> "\n"
-                  <> "    while($continue) {\n"
+                  <> "    while($_continue_) {\n"
                   <> unlines updateParams
                   <> "\n"
-                  <> "        $continue = false;\n"
+                  <> "        $_continue_ = false;\n"
                   <> "        "<> compile env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
-                  <> "    return $result;\n"
+                  <> "    return $_result_;\n"
                   <> "}"
 
             [exp] ->
@@ -509,14 +509,38 @@ instance Compilable Exp where
               Just params   = rdParams <$> recursionData env
               compiledArgs  = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
-          in  "($end.push("<> compiledLi <>"), " <> intercalate ", " updateParams <> ", $continue = true)"
+          in  "($_end_ = $_end_.n = { v: "<> compiledLi <>" }, " <> intercalate ", " updateParams <> ", $_continue_ = true)"
 
-        ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
-         where
-          compileListItem :: ListItem -> String
-          compileListItem (Typed _ _ _ li) = case li of
-            ListItem   exp -> compile env config exp
-            ListSpread exp -> " ..." <> compile env config exp
+        ListConstructor elems   -> "(" <> compileListElements elems <> ")"
+          where
+            compileListElements :: [ListItem] -> String
+            compileListElements items = case items of
+              [Typed _ _ _ (ListItem last)] ->
+                "{ v: " <> compile env config last <> ", n: null }"
+
+              [Typed _ _ _ (ListSpread last)] ->
+                compile env config last
+
+              [] ->
+                "null"
+
+              (Typed _ _ _ (ListItem item) : next) ->
+                "{ v: " <> compile env config item <> ", n: " <> compileListElements next <> " }"
+
+              _ ->
+                "null"
+        --  where
+        --   compileListItem :: ListItem -> String
+        --   compileListItem (Typed _ _ _ li) = case li of
+        --     ListItem   exp -> compile env config exp
+        --     ListSpread exp -> " ..." <> compile env config exp
+
+        -- ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
+        --  where
+        --   compileListItem :: ListItem -> String
+        --   compileListItem (Typed _ _ _ li) = case li of
+        --     ListItem   exp -> compile env config exp
+        --     ListSpread exp -> " ..." <> compile env config exp
 
         TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
@@ -538,9 +562,29 @@ instance Compilable Exp where
             <> compile env config exp
             <> ")"
          where
-          compileListOrTuplePattern :: String -> [Pattern] -> String
-          compileListOrTuplePattern scope [] = scope <> ".length === 0"
-          compileListOrTuplePattern scope items =
+          compileListPattern :: String -> [Pattern] -> String
+          compileListPattern scope pats = case pats of
+            [] ->
+              scope <> " === null"
+
+            items ->
+              buildListLengthCheck scope items
+
+          buildListLengthCheck :: String -> [Pattern] -> String
+          buildListLengthCheck scope pats = case pats of
+            [pat@(Typed _ _ _ (PSpread _))] ->
+                compilePattern scope pat
+
+            [] ->
+              scope <> " === null"
+
+            (pat : more) ->
+              scope <> " !== null && " <> compilePattern (scope <> ".v") pat <> " && " <> buildListLengthCheck (scope <> ".n") more
+
+
+          compileTuplePattern :: String -> [Pattern] -> String
+          compileTuplePattern scope [] = scope <> ".length === 0"
+          compileTuplePattern scope items =
             scope
               <> ".length "
               <> lengthComparator items
@@ -550,17 +594,18 @@ instance Compilable Exp where
               <> intercalate
                    " && "
                    ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
-           where
-            lengthComparator :: [Pattern] -> String
-            lengthComparator pats = if containsSpread pats then ">=" else "==="
-            containsSpread :: [Pattern] -> Bool
-            containsSpread pats =
-              let isSpread = \case
-                    Typed _ _ _ (PSpread _) -> True
-                    _                       -> False
-              in  case find isSpread pats of
-                    Just _  -> True
-                    Nothing -> False
+
+          lengthComparator :: [Pattern] -> String
+          lengthComparator pats = if containsSpread pats then ">=" else "==="
+
+          containsSpread :: [Pattern] -> Bool
+          containsSpread pats =
+            let isSpread = \case
+                  Typed _ _ _ (PSpread _) -> True
+                  _                       -> False
+            in  case find isSpread pats of
+                  Just _  -> True
+                  Nothing -> False
 
           compilePattern :: String -> Pattern -> String
           compilePattern scope (Typed _ _ _ pat) = case pat of
@@ -578,8 +623,8 @@ instance Compilable Exp where
             PRecord m     -> intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
 
             PSpread pat   -> compilePattern scope pat
-            PList   items -> compileListOrTuplePattern scope items
-            PTuple  items -> compileListOrTuplePattern scope items
+            PList   items -> compileListPattern scope items
+            PTuple  items -> compileTuplePattern scope items
 
 
           compileIs :: Is -> String
@@ -594,6 +639,7 @@ instance Compilable Exp where
               <> ";\n  }\n"
 
           buildVars :: String -> Pattern -> String
+          buildVars _ Untyped{} = undefined
           buildVars v (Typed _ _ _ pat) = case pat of
             PRecord fields ->
               "    let { "
@@ -604,8 +650,8 @@ instance Compilable Exp where
                 <> v
                 <> ";\n"
 
-            PList  items -> buildTupleOrListVars v items
-            PTuple items -> buildTupleOrListVars v items
+            PList  items -> buildListVars v items
+            PTuple items -> buildTupleVars v items
 
             PCon _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
             PVar n       -> "    let " <> generateSafeName n <> " = " <> v <> ";\n"
@@ -613,9 +659,17 @@ instance Compilable Exp where
             _            -> ""
 
           buildFieldVar :: String -> Pattern -> String
+          buildFieldVar _ Untyped{} = undefined
           buildFieldVar name (Typed _ _ _ pat) = case pat of
-            PSpread (Typed _ _ _ (PVar n)) -> "..." <> generateSafeName n
-            PVar n -> if null name then generateSafeName n else name <> ": " <> generateSafeName n
+            PSpread (Typed _ _ _ (PVar n)) ->
+              "..." <> generateSafeName n
+
+            PVar n ->
+              if null name then
+                generateSafeName n
+              else
+                name <> ": " <> generateSafeName n
+
             PRecord fields ->
               name
                 <> ": { "
@@ -623,6 +677,7 @@ instance Compilable Exp where
                      ", "
                      (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
                 <> " }"
+
             PCon _ args -> if null name
               then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
               else
@@ -631,22 +686,103 @@ instance Compilable Exp where
                 <> "{ __args: ["
                 <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
                 <> "] }"
-            PList  pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
-            PTuple pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
-            _           -> ""
 
-          buildTupleOrListVars :: String -> [Pattern] -> String
-          buildTupleOrListVars scope items =
-            let itemsStr = buildListVar <$> items
+            PList  pats ->
+              name <> ": " <> packListVars (buildListItemVar <$> pats)
+
+            PTuple pats ->
+              name <> ": [" <> intercalate ", " (buildTupleItemVar <$> pats) <> "]"
+
+            _           ->
+              ""
+
+
+          buildListVars :: String -> [Pattern] -> String
+          buildListVars scope items =
+            if null items then
+              ""
+            else
+              let lastItem = case last items of
+                    item@(Typed _ _ _ (PSpread _)) ->
+                      buildListItemVar item
+
+                    item ->
+                      let built = buildListItemVar item
+                      in  if null built then
+                        ""
+                      else
+                        "{ v: " <> buildListItemVar item <> " }"
+                  itemsStr = (buildListItemVar <$> init items) ++ [lastItem]
+                  packed = packListVars itemsStr
+              in  if null packed then
+                    ""
+                  else
+                    "    let " <> packListVars itemsStr <> " = " <> scope <> ";\n" 
+
+          buildListItemVar :: Pattern -> String
+          buildListItemVar Untyped{} = undefined
+          buildListItemVar (Typed _ _ _ pat) = case pat of
+            PSpread (Typed _ _ _ (PVar n)) ->
+              generateSafeName n
+
+            PVar n ->
+              generateSafeName n
+
+            PCon _ args ->
+              let built = intercalate ", " $ buildListItemVar <$> args
+              in "{ __args: [" <> built <> "]}"
+
+            PList pats ->
+              packListVars $ buildListItemVar <$> pats
+
+            PTuple pats ->
+              "[" <> intercalate ", " (buildListItemVar <$> pats) <> "]"
+
+            PRecord fields ->
+              "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
+
+            _              ->
+              ""
+
+
+          packListVars :: [String] -> String
+          packListVars items = case items of
+            [last] ->
+              last
+
+            (item : more) ->
+              let next = packListVars more
+                  item' =
+                    if null item then
+                      ""
+                    else
+                      "v: " <> item <> ", "
+                  next' =
+                    if null next then
+                      ""
+                    else
+                      "n: " <> next
+              in  if null item' && null next' then
+                    ""
+                  else
+                    "{ " <> item' <> next' <> " }"
+
+            [] ->
+              ""
+
+
+          buildTupleVars :: String -> [Pattern] -> String
+          buildTupleVars scope items =
+            let itemsStr = buildTupleItemVar <$> items
             in  "    let [" <> intercalate "," itemsStr <> "] = " <> scope <> ";\n"
 
-          buildListVar :: Pattern -> String
-          buildListVar (Typed _ _ _ pat) = case pat of
+          buildTupleItemVar :: Pattern -> String
+          buildTupleItemVar (Typed _ _ _ pat) = case pat of
             PSpread (Typed _ _ _ (PVar n)) -> "..." <> generateSafeName n
             PVar    n      -> generateSafeName n
-            PCon _ args   -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
-            PList   pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-            PTuple  pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PCon _ args   -> let built = intercalate ", " $ buildTupleItemVar <$> args in "{ __args: [" <> built <> "]}"
+            PList   pats   -> packListVars $ buildListItemVar <$> pats
+            PTuple  pats   -> "[" <> intercalate ", " (buildTupleItemVar <$> pats) <> "]"
             PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
             _              -> ""
 

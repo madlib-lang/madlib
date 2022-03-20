@@ -1,19 +1,15 @@
 import {} from "Monoid"
 
-#iftarget js
-
 import type { ComparisonResult } from "Compare"
 import type { Maybe } from "Maybe"
 import {} from "Show"
 import {} from "Monad"
 import {} from "String"
 import Fun from "Function"
-import {} from "Compare"
+import { MORE } from "Compare"
 import { Just, Nothing } from "Maybe"
 import { fst, snd } from "Tuple"
-import { loop } from "Control"
-
-#endif
+// import { loop } from "Control"
 
 /**
  * List utility functions.
@@ -52,8 +48,6 @@ export repeatWith = (f, count) =>
     : [f(count), ...repeatWith(f, count - 1)]
 
 
-#iftarget js
-
 
 instance Applicative List {
   pure = (x) => [x]
@@ -74,7 +68,13 @@ instance Monad List {
 }
 
 instance Semigroup (List a) {
-  assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)
+  assoc = (list1, list2) => where(list1) {
+    [item, ...more] =>
+      [item, ...assoc(more, list2)]
+  
+    [] =>
+      list2
+  }
 }
 
 instance Monoid (List a) {
@@ -126,10 +126,17 @@ export unlines = pipe(
  */
 intercalate :: a -> List a -> List a
 export intercalate = (a, xs) => where(xs) {
-  [,] => []
-  [one,] => [one]
-  [one, two] => [one, a, two]
-  [one, ...rest] => [one, a, ...intercalate(a, rest)]
+  [] =>
+    []
+
+  [one,] =>
+    [one]
+
+  [one, two] =>
+    [one, a, two]
+
+  [one, ...rest] =>
+    [one, a, ...intercalate(a, rest)]
 }
 
 
@@ -175,7 +182,17 @@ export join = (a, xs) => pipe(
  * mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
  */
 mapWithIndex :: (a -> Integer -> b) -> List a -> List b
-export mapWithIndex = (f, xs) => (#- xs.map((a, b) => f(a)(b)) -#)
+export mapWithIndex = (f, list) => {
+  helper = (list_, index) => where(list_) {
+    [] =>
+      []
+
+    [a, ...xs] =>
+      [f(a, index), ...helper(xs, index + 1)]
+  }
+
+  return helper(list, 0)
+}
 
 
 /**
@@ -186,7 +203,7 @@ export mapWithIndex = (f, xs) => (#- xs.map((a, b) => f(a)(b)) -#)
  * concat([1, 2, 3], [4, 5, 6]) // [1, 2, 3, 4, 5, 6]
  */
 concat :: List a -> List a -> List a
-export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
+export concat = assoc
 
 
 /**
@@ -197,7 +214,13 @@ export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
  * append(2, [1]) // [1, 2]
  */
 append :: a -> List a -> List a
-export append = (v, xs) => (#- [...xs, v] -#)
+export append = (item, list) => where(list) {
+  [] =>
+    [item]
+
+  [a, ...xs] =>
+    [a, ...append(item, xs)]
+}
 
 
 /**
@@ -209,10 +232,16 @@ export append = (v, xs) => (#- [...xs, v] -#)
  * last([])        // Nothing
  */
 last :: List a -> Maybe a
-export last = (xs) => #-{
-  const item = xs.slice(-1)[0];
-  return item ? Just(item) : Nothing;
-}-#
+export last = (list) => where(list) {
+  [item] =>
+    Just(item)
+
+  [] =>
+    Nothing
+
+  [_, a, ...xs] =>
+    last([a, ...xs])
+}
 
 /**
  * Safely access the first value in a List (wrapped in Just), or Nothing if the array is empty.
@@ -223,10 +252,13 @@ export last = (xs) => #-{
  * first([])        // Nothing
  */
 first :: List a -> Maybe a
-export first = (xs) => #-{
-  const item = xs[0];
-  return item ? Just(item) : Nothing;
-}-#
+export first = (list) => where(list) {
+  [] =>
+    Nothing
+
+  [a, ..._] =>
+    Just(a)
+}
 
 /**
  * Returns a List minus its last item.
@@ -237,10 +269,25 @@ export first = (xs) => #-{
  * init([])        // []
  */
 init :: List a -> List a
-export init = (xs) => (#- xs.slice(0, -1) -#)
+export init = (list) => where(list) {
+  [item] =>
+    []
+
+  [] =>
+    []
+
+  [a, ...xs] =>
+    [a, ...init(xs)]
+}
 
 tail :: List a -> List a
-export tail = (xs) => (#- xs.slice(1) -#)
+export tail = (list) => where(list) {
+  [] =>
+    []
+
+  [a, ...xs] =>
+    xs
+}
 
 
 /**
@@ -252,14 +299,18 @@ export tail = (xs) => (#- xs.slice(1) -#)
  * nth(3, [1, 2, 3]) // Nothing
  */
 nth :: Integer -> List a -> Maybe a
-export nth = (i, xs) => (#- {
-  const x = xs[i];
-  return x === undefined
-    ? Nothing
-    : Just(x);
-} -#)
+export nth = (i, list) => where(list) {
+  [] =>
+    Nothing
+
+  [a, ...xs] =>
+    i == 0
+      ? Just(a)
+      : nth(i - 1, xs)
+}
 
 
+// TODO: rename to reduceRight
 /**
  * Aggregate a single value by iterating over a list, from right-to-left.
  * Takes three parameters:
@@ -269,10 +320,11 @@ export nth = (i, xs) => (#- {
  *
  * @since 0.0.5
  */
-reduceR :: (a -> b -> a) -> a -> List b -> a
-export reduceR = (f, initial, xs) => (#- xs.reduceRight((a, b) => f(a)(b), initial) -#)
+reduceR :: (a -> b -> b) -> b -> List a -> b
+export reduceR = (f, acc, list) => reduceL((a, b) => f(b, a), acc, list)
 
 
+// TODO: rename to reduceLeft
 /**
  * Aggregate a single value by iterating over a list, from left-to-right.
  * Takes three parameters:
@@ -283,7 +335,13 @@ export reduceR = (f, initial, xs) => (#- xs.reduceRight((a, b) => f(a)(b), initi
  * @since 0.0.5
  */
 reduceL :: (a -> b -> a) -> a -> List b -> a
-export reduceL = (f, initial, xs) => (#- xs.reduce((a, b) => f(a)(b), initial) -#)
+export reduceL = (f, acc, list) => where(list) {
+  [] =>
+    acc
+
+  [a, ...xs] =>
+    reduceL(f, f(acc, a), xs)
+}
 
 
 /**
@@ -304,16 +362,26 @@ export reduce = reduceL
 
 
 reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
-export reduceM = (fn, initial, xs) => pipe(
-  loop(
-    $,
-    pipe(snd, Fun.complement(isEmpty)),
-    where {
-      #[initialM, [h, ...rest]] => #[chain(fn($, h), initialM), rest]
-    }
-  ),
-  fst
-)(#[of(initial), xs])
+export reduceM = (f, acc, list) => where(list) {
+  [] =>
+    of(acc)
+
+  [a, ...xs] =>
+    chain((v) => reduceM(f, v, xs), f(acc, a))
+}
+
+
+// reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
+// export reduceM = (fn, initial, xs) => pipe(
+//   loop(
+//     $,
+//     pipe(snd, Fun.complement(isEmpty)),
+//     where {
+//       #[initialM, [h, ...rest]] => #[chain(fn($, h), initialM), rest]
+//     }
+//   ),
+//   fst
+// )(#[of(initial), xs])
 
 
 
@@ -325,7 +393,15 @@ export reduceM = (fn, initial, xs) => pipe(
  * filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [2, 4, 6]
  */
 filter :: (a -> Boolean) -> List a -> List a
-export filter = (predicate, xs) => #- xs.filter(predicate) -#
+export filter = (predicate, list) => where(list) {
+  [] =>
+    []
+
+  [a, ...xs] =>
+    predicate(a)
+      ? [a, ...filter(predicate, xs)]
+      : filter(predicate, xs)
+}
 
 
 /**
@@ -337,7 +413,7 @@ export filter = (predicate, xs) => #- xs.filter(predicate) -#
  * reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [1, 3, 5]
  */
  reject :: (a -> Boolean) -> List a -> List a
- export reject = (predicate, xs) => #- xs.filter(Fun.complement(predicate)) -#
+ export reject = (predicate, list) => filter(Fun.complement(predicate), list)
 
 
 /**
@@ -350,15 +426,15 @@ export filter = (predicate, xs) => #- xs.filter(predicate) -#
  * find((a) => a == 0, [1, 2, 3, 4, 5, 6])     // Nothing
  */
 find :: (a -> Boolean) -> List a -> Maybe a
-export find = (predicate, xs) => #- {
-  const found = xs.find(predicate);
-  if (found === undefined) {
-    return Nothing
-  }
-  else {
-    return Just(found)
-  }
-} -#
+export find = (predicate, list) => where(list) {
+  [] =>
+    Nothing
+
+  [a, ...xs] =>
+    predicate(a)
+      ? Just(a)
+      : find(predicate, xs)
+}
 
 
 /**
@@ -369,7 +445,17 @@ export find = (predicate, xs) => #- {
  * len([1, 2, 3]) // 3
  */
 len :: List a -> Integer
-export len = (xs) => #- xs.length -#
+export len = (list) => {
+  helper = (list_, count) => where(list_) {
+    [] =>
+      count
+
+    [a, ...xs] =>
+      helper(xs, count + 1)
+  }
+
+  return helper(list, 0)
+}
 
 
 /**
@@ -377,7 +463,19 @@ export len = (xs) => #- xs.length -#
  * @since 0.0.5
  */
 slice :: Integer -> Integer -> List a -> List a
-export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
+export slice = (start, end, list) => where(list) {
+  [] =>
+    []
+
+  [a, ...xs] =>
+    if (start == 0 && end > 0) {
+      [a, ...slice(0, end - 1, xs)]
+    } else if (start > 0) {
+      slice(start - 1, end - 1, xs)
+    } else {
+      []
+    }
+}
 
 
 /**
@@ -412,14 +510,10 @@ export uniqueBy = (f) => reduce(
       result
 
     Nothing =>
-      [...result, elem]
+      append(elem, result)
   },
   []
 )
-
-#endif
-
-#iftarget llvm
 
 descending :: (a -> a -> ComparisonResult) -> a -> List a -> List a -> List (List a)
 descending = (compareFn, a, as, xs) => where(xs) {
@@ -498,12 +592,6 @@ export sortBy = (compareFn, list) => {
   )(list)
 }
 
-#elseif js
-
-sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#
-
-#endif
 
 sort :: Comparable a => List a -> List a
 export sort = sortBy(compare)
@@ -514,7 +602,6 @@ export sortAsc = sort
 sortDesc :: Comparable a => List a -> List a
 export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
-#iftarget js
 
 /**
  * Remove nested Lists from a given List, one level deep. 
@@ -535,9 +622,14 @@ export flatten = reduceL(concat, [])
  */
 zip :: List a -> List b -> List #[a, b]
 export zip = (as, bs) => where(#[as, bs]) {
-  #[[a, ...aa], [b, ...bb]] => mappend([#[a, b]], zip(aa, bb))
-  #[[a], [b]] => [#[a, b]]
-  #[[], []] => []
+  #[[a, ...aa], [b, ...bb]] =>
+    [#[a, b], ...zip(aa, bb)]
+
+  #[[a], [b]] =>
+    [#[a, b]]
+
+  #[[], []] =>
+    []
 }
 
 /**
@@ -545,8 +637,16 @@ export zip = (as, bs) => where(#[as, bs]) {
  *
  * @since 0.6.0
  */
-includes :: x -> List x -> Boolean
-export includes = (x, xs) => (#- xs.includes(x) -#)
+includes :: Eq a => a -> List a -> Boolean
+export includes = (x, list) => where(list) {
+  [] =>
+    false
+
+  [a, ...xs] =>
+    a == x
+      ? true
+      : includes(x, xs)
+}
 
 
 drop :: Integer -> List a -> List a
@@ -556,88 +656,12 @@ dropLast :: Integer -> List a -> List a
 export dropLast = (amount, xs) => slice(0, len(xs) - amount, xs)
 
 dropWhile :: (a -> Boolean) -> List a -> List a
-export dropWhile = (pred, xs) => #-{
-  const n = xs.length
-  let i = 0
-
-  for (; i < n; i++) {
-      if (!pred(xs[i])) {
-          break
-      }
-  }
-
-  return xs.slice(i)
-}-#
-
-
-
-#elseif llvm
-
-import {} from "Functor"
-import type { Maybe } from "Maybe"
-import { Nothing, Just } from "Maybe"
-import type { ComparisonResult } from "Compare"
-import { MORE, LESS } from "Compare"
-
-push :: a -> List a -> List a
-export push = extern "madlib__list__push"
-
-
-map_ :: (a -> b) -> List a -> List b
-map_ = extern "madlib__list__map"
-
-reduce :: (a -> b -> a) -> a -> List b -> a
-export reduce = extern "madlib__list__reduce"
-
-
-showWith :: (a -> String) -> List a -> String
-showWith = (with, list) => {
-  processItems = (processed, items) => {
-    return where(items) {
-      [first, second, ...rest] =>
-        processItems(processed ++ with(first) ++ ", ", push(second, rest))
-
-      [last] =>
-        processed ++ with(last)
-
-      [] =>
-        ""
-    }
-  }
-
-  return "[" ++ processItems("", list) ++ "]"
-}
-
-
-instance Show a => Show (List a) {
-  show = showWith(show)
-}
-
-
-instance Semigroup (List a) {
-  assoc = (l1, l2) => [...l1, ...l2]
-}
-
-
-instance Monoid (List a) {
-  mappend = (l1, l2) => [...l1, ...l2]
-
-  mempty = []
-}
-
-
-nth :: Integer -> List a -> Maybe a
-export nth = (index, list) => where(list) {
+export dropWhile = (predicate, list) => where(list) {
   [] =>
-    Nothing
+    []
 
-  [item, ...rest] =>
-    (index == 0)
-      ? Just(item)
-      : nth(index - 1, rest)
+  [a, ...xs] =>
+    predicate(a)
+      ? dropWhile(predicate, xs)
+      : [a, ...xs]
 }
-
-len :: List a -> Integer
-export len = extern "madlib__list__length"
-
-#endif

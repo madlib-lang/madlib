@@ -97,7 +97,7 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
         Typed qt area (RecursiveCall (ConstructorRecursion (Just (ConstructorRecursionInfo constructorName index))) : metadata) (Call fn args)
 
       Nothing ->
-        Typed qt area metadata (Call fn args)
+        Typed qt area (RecursionEnd recursionKind : metadata) (Call fn args)
 
   Typed qt area metadata (Call fn args) ->
     if Just fnName == getAppName exp then
