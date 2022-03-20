@@ -363,6 +363,10 @@ isDictionaryType t = case t of
   _ ->
     False
 
+isPlaceholderDict :: Qual Type -> Bool
+isPlaceholderDict qt =
+  qt == [] :=> TVar (TV "dict" Star)
+
 isArrayType :: Type -> Bool
 isArrayType t = case t of
   TApp (TCon (TC "Array" _) "prelude") _ ->

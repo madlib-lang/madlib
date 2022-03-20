@@ -31,6 +31,9 @@ import           Infer.Scope
 import Debug.Trace
 import Text.Show.Pretty
 import qualified Data.Set as Set
+import Infer.Pred
+import Infer.Scheme
+import Infer.Substitute
 
 {-|
 Module      : AST
@@ -48,11 +51,17 @@ populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                             = return env
 populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
   let nextEnv = case e of
-        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) _ sc ->
-          safeExtendVars env (name, sc)
+        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) _ sc -> do
+          (ps :=> t) <- instantiate sc
+          ps' <- dedupePreds <$> getAllParentPreds env (dedupePreds ps)
+          let sc' = quantify (ftv (ps :=> t)) (ps' :=> t)
+          safeExtendVars env (name, sc')
 
-        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) _ sc ->
-          safeExtendVars env (name, sc)
+        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) _ sc -> do
+          (ps :=> t) <- instantiate sc
+          ps' <- dedupePreds <$> getAllParentPreds env (dedupePreds ps)
+          let sc' = quantify (ftv (ps :=> t)) (ps' :=> t)
+          safeExtendVars env (name, sc')
 
         Can.Assignment name _ -> do
           tv <- newTVar Star
