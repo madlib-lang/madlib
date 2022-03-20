@@ -50,7 +50,7 @@ removeConsecutiveDoubles = (list) => where(list) {
  * fromList([#["one", 2], #["two", 2]])
  * fromList([#["a", 2], #["b", 2], #["c", 3]])
  */
-fromList :: Comparable k =>  List (#[k, v]) -> Dictionary k v
+fromList :: Comparable k => List (#[k, v]) -> Dictionary k v
 export fromList = pipe(
   List.sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
   removeConsecutiveDoubles,
@@ -116,7 +116,8 @@ export get = (k) => where {
  */
 merge :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
 export merge = (a, b) => where(#[a, b]) {
-  #[Dictionary(itemsA), Dictionary(itemsB)] => List.concat(itemsA, itemsB) |> fromList
+  #[Dictionary(itemsA), Dictionary(itemsB)] =>
+    fromList(List.concat(itemsA, itemsB))
 }
 
 
@@ -220,3 +221,7 @@ export values = (m) => where(m) {
   Dictionary(items) =>
    map(Tuple.snd, items)
 }
+
+// TODO: add includes
+// TODO: add filter
+// TODO: add reduce

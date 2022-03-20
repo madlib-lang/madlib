@@ -1,4 +1,27 @@
 import { assertEquals, test } from "Test"
-import { MORE, LESS, EQUAL } from "./Compare"
+import { eq, ge, gt, le, lt, notEq } from "./Compare"
+
+import {} from "Number"
 
 // TODO: Test eq, gt, lt, ge, le
+test("eq    - equal", (_) => assertEquals(eq(1, 1), true))
+test("eq    - not equal", (_) => assertEquals(eq(1, -1), false))
+
+test("notEq - equal", (_) => assertEquals(notEq(1, 1), false))
+test("notEq - not equal", (_) => assertEquals(notEq(1, -1), true))
+
+test("gt    - equal", (_) => assertEquals(gt(1, 1), false))
+test("gt    - greater", (_) => assertEquals(gt(1, -1), true))
+test("gt    - lesser", (_) => assertEquals(gt(-1, 1), false))
+
+test("ge    - equal", (_) => assertEquals(ge(1, 1), true))
+test("ge    - greater", (_) => assertEquals(ge(1, -1), true))
+test("ge    - lesser", (_) => assertEquals(ge(-1, 1), false))
+
+test("lt    - equal", (_) => assertEquals(lt(1, 1), false))
+test("lt    - greater", (_) => assertEquals(lt(1, -1), false))
+test("lt    - lesser", (_) => assertEquals(lt(-1, 1), true))
+
+test("le    - equal", (_) => assertEquals(le(1, 1), true))
+test("le    - greater", (_) => assertEquals(le(1, -1), false))
+test("le    - lesser", (_) => assertEquals(le(-1, 1), true))

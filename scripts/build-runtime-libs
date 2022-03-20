@@ -94,15 +94,14 @@ cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
 cd ..
 
-# install libidn2
-# wget https://github.com/libidn/libidn2/archive/refs/tags/v2.3.2.zip
-# unzip v2.3.2.zip
-# cd libidn2-2.3.2
-# ./configure
-# make
-# cp .libs/libpcre2-8.a ../../runtime/lib/
-# cp src/pcre2.h ../../runtime/include/
-# cd ..
+# install libz
+wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.zip
+unzip v1.2.11.zip
+cd zlib-1.2.11
+./configure
+make
+cp libz.a ../../runtime/lib/
+cd ..
 
 
 cd ..

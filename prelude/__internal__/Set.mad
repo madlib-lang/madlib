@@ -1,0 +1,95 @@
+import List from "List"
+import { eq, gt } from "Compare"
+
+type Set a = Set (List a)
+export type Set
+
+
+
+removeConsecutiveDoubles :: Eq a => List a -> List a
+removeConsecutiveDoubles = (list) => where(list) {
+  [a1, a2, ...xs] =>
+    a1 == a2
+      ? [a2, ...removeConsecutiveDoubles(xs)]
+      : [a1, ...removeConsecutiveDoubles([a2, ...xs])]
+
+  [last] =>
+    [last]
+
+  [] =>
+    []
+}
+
+
+fromList :: Comparable a => List a -> Set a
+export fromList = (list) => pipe(
+  List.sortBy(compare),
+  removeConsecutiveDoubles,
+  Set
+)(list)
+
+
+toList :: Set a -> List a
+export toList = (set) => where(set) {
+  Set(items) =>
+    items
+}
+
+
+insert :: Comparable a => a -> Set a -> Set a
+export insert = (item, set) => {
+  helper = (items) => where(items) {
+    [] =>
+      [item]
+
+    [a, ...xs] =>
+      if (eq(a, item)) {
+        [item, ...xs]
+      } else if (gt(a, item)) {
+        [item, a, ...xs]
+      } else {
+        [a, ...helper(xs)]
+      }
+  }
+
+  return where(set) {
+    Set(items) =>
+      Set(helper(items))
+  }
+}
+
+
+instance Functor Set {
+  map = (f, set) => where(set) {
+    Set(items) =>
+      Set(map(f, items))
+  }
+}
+
+
+filter :: (a -> Boolean) -> Set a -> Set a
+export filter = (predicate, set) => where(set) {
+  Set(items) =>
+    Set(List.filter(predicate, items))
+}
+
+
+reduce :: (a -> b -> a) -> a -> Set b -> a
+export reduce = (f, initial, set) => where(set) {
+  Set(items) =>
+    List.reduce(f, initial, items)
+}
+
+
+merge :: Comparable a => Set a -> Set a -> Set a
+export merge = (setA, setB) => where(#[setA, setB]) {
+  #[Set(itemsA), Set(itemsB)] =>
+    fromList(List.concat(itemsA, itemsB))
+}
+
+
+includes :: Eq a => a -> Set a -> Boolean
+export includes = (item, set) => where(set) {
+  Set(items) =>
+    List.includes(item, items)
+}
