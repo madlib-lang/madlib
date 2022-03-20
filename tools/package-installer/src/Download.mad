@@ -1,10 +1,9 @@
 import type { Wish } from "Wish"
-import type { SideEffect } from "SideEffect"
 
-import { mapRej } from "Wish"
-import { fromWish } from "SideEffect"
+import { bad, discardError, mapRej } from "Wish"
 import { always } from "Function"
 import { andDo } from "Monad"
+import { getHeader, Header } from "Http"
 
 import type { Dependency } from "./Dependency"
 import type { Config } from "./Config"
@@ -40,7 +39,7 @@ copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
 
 unzipPkg :: Config -> String -> Wish DownloadFailure String
 unzipPkg = (config, sanitizedUrl) => pipe(
-  (url) => `unzip -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
+  (url) => `unzip -o -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
   config.exec,
   map(.stdout),
   mapRej(always(DownloadFailure))
@@ -68,7 +67,23 @@ extractArchive = (config, sanitizedUrl) => pipe(
 getPackageData :: Config -> String -> Wish DownloadFailure ByteArray
 getPackageData = (config, url) => pipe(
   config.getBytes,
-  map(.body),
+  mapRej(always(DownloadFailure)),
+  chain((response) => where(response) {
+    { status: 302 } =>
+      pipe(
+        getHeader("Location"),
+        where {
+          [Header(_, redirectUrl) , ..._] =>
+            getPackageData(config, redirectUrl)
+
+          _ =>
+            bad(DownloadFailure)
+        }
+      )(response)
+
+    r =>
+      of(r.body)
+  }),
   mapRej(always(DownloadFailure))
 )(url)
 
@@ -80,22 +95,22 @@ saveArchive = (config, dependency, data) => pipe(
 )(data)
 
 
-downloadPackage :: Config -> Dependency -> SideEffect DownloadResult
+downloadPackage :: Config -> Dependency -> Wish {} DownloadResult
 downloadPackage = (config, dependency) => pipe(
   .url,
   getPackageData(config),
   chain(saveArchive(config, dependency)),
   andDo(extractArchive(config, dependency.sanitizedUrl)),
   andDo(of(Downloaded(dependency))),
-  fromWish(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
+  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
 )(dependency)
 
 
-downloadIfNotCached :: Config -> Dependency -> SideEffect DownloadResult
+downloadIfNotCached :: Config -> Dependency -> Wish {} DownloadResult
 export downloadIfNotCached = (config, dependency) => pipe(
   (dep) => config.exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
   map(always(true)),
-  fromWish(always(false)),
+  discardError(always(false)),
   chain(
     (alreadyDownloaded) => alreadyDownloaded
       ? of(Downloaded(dependency))

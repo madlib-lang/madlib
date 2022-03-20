@@ -69,9 +69,9 @@ exists :: String -> Wish {} Boolean
 export exists = (path) => Wish((bad, good) => #- {
   fs.access(path, fs.constants.F_OK, (err) => {
     if (err) {
-      bad(IOError.UnknownError);
+      bad(null);
     } else {
-      good(path);
+      good(true);
     }
   });
 } -#)
@@ -141,11 +141,14 @@ export writeBytes = (path, content) => Wish((bad, good) =>
 existsFFI :: String -> (Boolean -> {}) -> {}
 existsFFI = extern "madlib__file__exists"
 
+// TODO: should probably return Wish {} {}
 exists :: String -> Wish {} Boolean
 export exists = (path) => Wish((bad, good) =>
   existsFFI(
     path,
-    good
+    (g) => g
+      ? good(true)
+      : bad({})
   )
 )
 

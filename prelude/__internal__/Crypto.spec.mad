@@ -1,0 +1,6 @@
+import { assertEquals, test } from "Test"
+import Crypto from "./Crypto"
+
+test("md5 - rabbit", (_) => assertEquals(Crypto.md5("rabbit"), "a51e47f646375ab6bf5dd2c42d3e6181"))
+
+test("sha256 - rabbit", (_) => assertEquals(Crypto.sha256("rabbit"), "d37d96b42ad43384915e4513505c30c0b1c4e7c765b5577eda25b5dbd7f26d89"))

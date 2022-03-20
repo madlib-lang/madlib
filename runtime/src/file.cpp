@@ -21,11 +21,12 @@ typedef struct ReadData {
   char *fileContent;
   int64_t currentSize;
 
-  // if true returns an Array Byte instead of String
+  // if true returns an a ByteArray instead of String
   bool readBytes;
 } ReadData_t;
 
 void onReadError(uv_fs_t *req) {
+  uv_fs_req_cleanup(req);
   char **boxedResult = (char **)GC_malloc(sizeof(char *));
   *boxedResult = (char*)"\0";
 
@@ -35,19 +36,25 @@ void onReadError(uv_fs_t *req) {
   void *callback = ((ReadData_t *)req->data)->callback;
 
   // free resources
-  GC_free(((ReadData_t *)req->data)->dataBuffer);
-  GC_free(((ReadData_t *)req->data)->openRequest);
-  GC_free(req->data);
-  GC_free(req);
+  char *dataBuffer = ((ReadData_t *)req->data)->dataBuffer;
+  uv_fs_t *openRequest = ((ReadData_t *)req->data)->openRequest;
+  uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
+  void *data = (ReadData_t *)req->data;
+
+  GC_free(dataBuffer);
+  GC_free(data);
+  GC_free(openRequest);
+  GC_free(readRequest);
 
   __applyPAP__(callback, 2, boxedError, boxedResult);
 }
 
 void onRead(uv_fs_t *req) {
-  uv_fs_req_cleanup(req);
   if (req->result < 0) {
     onReadError(req);
   } else if (req->result == 0) {
+    uv_fs_req_cleanup(req);
+
     // close file
     uv_fs_t closeReq;
     uv_fs_close(getLoop(), &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
@@ -72,11 +79,18 @@ void onRead(uv_fs_t *req) {
     }
 
     // free resources
-    GC_free(((ReadData_t *)req->data)->dataBuffer);
-    GC_free(((ReadData_t *)req->data)->openRequest);
-    GC_free(req->data);
-    GC_free(req);
-  } else if (req->result > 0) {
+    char *dataBuffer = ((ReadData_t *)req->data)->dataBuffer;
+    uv_fs_t *openRequest = ((ReadData_t *)req->data)->openRequest;
+    uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
+    void *data = (ReadData_t *)req->data;
+
+    GC_free(dataBuffer);
+    GC_free(data);
+    GC_free(openRequest);
+    GC_free(readRequest);
+  } else {
+    uv_fs_req_cleanup(req);
+
     // get the byte count already read
     int64_t currentSize = ((ReadData_t *)req->data)->currentSize;
 
@@ -168,6 +182,7 @@ typedef struct WriteData {
 } WriteData_t;
 
 void onWriteError(uv_fs_t *req) {
+  uv_fs_req_cleanup(req);
   char **boxedResult = (char **)GC_malloc_uncollectable(sizeof(char *));
   char *result = (char *)GC_malloc_uncollectable(sizeof(char));
   *result = 0;

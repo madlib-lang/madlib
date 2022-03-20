@@ -3,7 +3,7 @@
 #include <gc.h>
 #include <sys/mman.h>
 #include <uv.h>
-
+#include <glob.h>
 #include <cstring>
 
 #include "apply-pap.hpp"
@@ -176,15 +176,28 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
   stdoutPipe->data = data;
   stderrPipe->data = data;
 
-  int64_t argc = madlib__list__length(argList);
-  char *args[argc + 2];
+  glob_t globBuffer;
+  globBuffer.gl_offs = 1;
+  char **args;
 
-  args[0] = command;
-  for (int i = 1; i < argc + 1; i++) {
-    args[i] = *((char**)argList->value);
-    argList = argList->next;
+  int64_t argc = madlib__list__length(argList);
+
+  if (argc > 0) {
+    for (int i = 0; i < argc; i++) {
+      if (i == 0) {
+        glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK, NULL, &globBuffer);
+      } else {
+        glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK | GLOB_APPEND, NULL, &globBuffer);
+      }
+
+      argList = argList->next;
+    }
+    globBuffer.gl_pathv[0] = command;
+    args = globBuffer.gl_pathv;
+  } else {
+    args = (char**)GC_malloc(sizeof(char*));
+    args[0] = command;
   }
-  args[argc + 1] = NULL;
 
   uv_pipe_init(getLoop(), stdoutPipe, 0);
   uv_pipe_init(getLoop(), stderrPipe, 0);
@@ -204,6 +217,10 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
   options->env = NULL;
 
   int spawnResult = uv_spawn(getLoop(), childReq, options);
+
+  if (argc > 0) {
+    globfree(&globBuffer);
+  }
 
   if (spawnResult) {
     int64_t *boxedStatus = (int64_t*)GC_malloc(sizeof(int64_t));
