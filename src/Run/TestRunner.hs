@@ -37,6 +37,7 @@ import qualified System.Exit as Exit
 import           Optimize.ToCore
 import qualified Optimize.TCE as TCE
 import qualified Optimize.EtaReduction as EtaReduction
+import Utils.Path
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -71,13 +72,14 @@ runNodeTests entrypoint coverage = do
 
 runLLVMTests :: String -> Bool -> IO ()
 runLLVMTests entrypoint coverage = do
-  canonicalEntrypoint <- canonicalizePath entrypoint
-  rootPath            <- canonicalizePath $ PathUtils.computeRootPath entrypoint
-  Just wishModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
-  Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
-  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
-  sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
-  astTable            <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
+  canonicalEntrypoint       <- canonicalizePath entrypoint
+  rootPath                  <- canonicalizePath $ PathUtils.computeRootPath entrypoint
+  Just wishModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
+  Just listModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
+  Just testModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
+  sourcesToCompile          <- getFilesToCompile True canonicalEntrypoint
+  astTable                  <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
+  Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
   let outputPath              = "./.tests/runTests"
       astTableWithTestExports = (addTestExports <$>) <$> astTable
       mainTestPath            =
@@ -95,7 +97,7 @@ runLLVMTests entrypoint coverage = do
       let (canTable, warnings) =
             case astTable of
               Right table ->
-                Can.canonicalizeMany TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
+                Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
 
               Left e ->
                 error $ ppShow e

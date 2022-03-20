@@ -1,5 +1,3 @@
-#iftarget js
-
 import { assertEquals, test } from "Test"
 import {
   empty,
@@ -13,6 +11,7 @@ import {
   values
 } from "./Dictionary"
 import { Just, Nothing } from "Maybe"
+import IO from "IO"
 
 test("fromList", (_) =>
   assertEquals(
@@ -27,10 +26,7 @@ test("fromList", (_) =>
 test("fromList - should dedupe keys", (_) =>
   assertEquals(
     fromList([#[1, 2], #[2, 2], #[2, 3]]),
-    pipe(
-      insert(1, 2),
-      insert(2, 2)
-    )(empty)
+    {{ 1: 2, 2: 3 }}
   )
 )
 
@@ -39,7 +35,7 @@ test("insert - no existing", (_) =>
 )
 
 test("insert - update", (_) =>
-  assertEquals(insert(1, 7, fromList([#[1, 2]])), fromList([#[1, 7]]))
+  assertEquals(insert(1, 7, {{ 1: 2 }}), fromList([#[1, 7]]))
 )
 
 test("get - Just", (_) =>
@@ -51,11 +47,11 @@ test("get - Nothing", (_) =>
 )
 
 test("keys", (_) =>
-  assertEquals(keys(fromList([#[true, "Go for it"], #[false, "NOGO"]])), [true, false])
+  assertEquals(keys({{ true: "Go for it", false: "NOGO" }}), [false, true])
 )
 
 test("values", (_) =>
-  assertEquals(values(fromList([#[true, "Go for it"], #[false, "NOGO"]])), ["Go for it", "NOGO"])
+  assertEquals(values({{ true: "Go for it", false: "NOGO" }}), ["NOGO", "Go for it"])
 )
 
 test("len", (_) =>
@@ -86,12 +82,10 @@ test("merge", (_) => {
   expected = fromList([
     #["Sidney", 3],
     #["New York", 18],
-    #["London", 2],
+    #["London", 17],
     #["Paris", 13],
     #["Berlin", 5]
   ])
 
-  return assertEquals(merge(dictLeft, dictRight), expected)
+  return assertEquals(IO.trace("actual", merge(dictLeft, dictRight)), expected)
 })
-
-#endif

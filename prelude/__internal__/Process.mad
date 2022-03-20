@@ -4,7 +4,13 @@ import type { Maybe } from "Maybe"
 
 import W from "Wish"
 import { Nothing, Just } from "Maybe"
+
+#endif
+
 import Dictionary from "Dictionary"
+
+#iftarget js
+
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
@@ -65,9 +71,16 @@ export getEnv = (name) => (#- {
 
 
 Env :: Dictionary String String
-export Env = #-
-  Dictionary.fromList(Object.keys(process.env).map((key) => ([key, process.env[key]])))
--#
+export Env = #- (() => {
+  let list = {}
+  let start = list
+  Object.keys(process.env).forEach((key) => {
+    list.n = { v: [key, process.env[key]] }
+    list = list.n
+  }, {})
+  list.n = null
+  return Dictionary.fromList(Comparable.String)(start.n)
+})() -#
 
 
 getCurrentPath :: W.Wish String String
@@ -87,11 +100,11 @@ Argv :: List String
 export Argv = getArgsFFI({})
 
 
-getEnvFFI :: {} -> Dictionary String String
+getEnvFFI :: {} -> List #[String, String]
 getEnvFFI = extern "madlib__process__internal__getEnv"
 
 
 Env :: Dictionary String String
-export Env = getEnvFFI({})
+export Env = Dictionary.fromList(getEnvFFI({}))
 
 #endif

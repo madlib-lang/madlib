@@ -20,6 +20,7 @@ data Env
     { envTypeDecls   :: TypeDecls
     , envInterfaces  :: Interfaces
     , envCurrentPath :: FilePath
+    , envFromDictionaryListName :: String
     }
     deriving(Eq, Show)
 
@@ -46,6 +47,7 @@ initialEnv :: Env
 initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary), ("Array", tArray), ("ByteArray", tByteArray)]
                  , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] []), ("Inspect", Interface [TV "a" Star] [])]
                  , envCurrentPath = ""
+                 , envFromDictionaryListName = ""
                  }
 
 initialWithPath :: FilePath -> Env

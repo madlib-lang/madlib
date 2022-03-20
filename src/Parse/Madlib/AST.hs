@@ -31,6 +31,7 @@ import           Run.Target
 import Debug.Trace
 import Text.Show.Pretty
 import Parse.Madlib.TargetMacro
+import Parse.Madlib.Dictionary
 
 
 
@@ -79,8 +80,16 @@ buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPa
           Right code ->
             return $ resolveMacros target <$> buildAST srcPath code
 
+        ast' <- case ast of
+          Right a -> do
+            a' <- addDictionaryImportIfNeeded pathUtils (dropFileName srcPath) a
+            return (Right a')
 
-        getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
+          Left e ->
+            return (Left e)
+
+
+        getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast' >>= \case
           Left  x               -> return $ Left x
           Right completeImports -> do
             let (jsonImports, madImports) = partition (\case

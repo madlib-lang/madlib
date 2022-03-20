@@ -1,5 +1,5 @@
 // file: ./ModuleA
-export let singleton = (a => ([a]));
+export let singleton = (a => ({ v: a, n: null }));
 export default { singleton };
 // file: ./ModuleB
 import {} from "./__internals__.mjs"

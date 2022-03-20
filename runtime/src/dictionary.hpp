@@ -20,16 +20,6 @@ char **madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__list__Node_t *items);
 
-madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t *boxedItems);
-madlib__list__Node_t *madlib__dictionary__toList(madlib__dictionary__Dictionary_t *boxedItems);
-
-madlib__dictionary__Dictionary_t *madlib__dictionary__insert(madlib__comparable__comparableDictionary_t* comparableDict, void *key, void *value, madlib__dictionary__Dictionary_t *dictionary);
-
-/**
- * Used for the syntax sugar constructor {{ key1: value1, key2: value2 }}
- */
-madlib__dictionary__Dictionary_t *__dict_ctor__(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **boxedItems);
-
 #ifdef __cplusplus
 }
 #endif

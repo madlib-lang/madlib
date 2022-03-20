@@ -55,7 +55,7 @@ tester :: Bool -> String -> String
 tester optimized code =
   let Right ast              = buildAST "path" code
       table                  = M.singleton "path" ast
-      (Right (table', _), _) = runCanonicalization mempty TNode Can.initialEnv table "path"
+      (Right (table', _), _) = runCanonicalization mempty "" TNode Can.initialEnv table "path"
       Right canAST           = Can.findAST table' "path"
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
@@ -75,7 +75,7 @@ coverageTester :: String -> String
 coverageTester code =
   let Right ast              = buildAST "path" code
       table                  = M.singleton "path" ast
-      (Right (table', _), _) = runCanonicalization mempty TNode Can.initialEnv table "path"
+      (Right (table', _), _) = runCanonicalization mempty "" TNode Can.initialEnv table "path"
       Right canAST           = Can.findAST table' "path"
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
@@ -94,7 +94,7 @@ coverageTester code =
 tableTester :: FilePath -> Src.Table -> Src.AST -> String
 tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 
-  let canTable = case runCanonicalization mempty TNode Can.initialEnv table path of
+  let canTable = case runCanonicalization mempty "" TNode Can.initialEnv table path of
         (Right (table, _), _) -> table
         (Left  err       , _) -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
@@ -167,7 +167,7 @@ mainCompileFixture = unlines
   , "!false && !true"
   , "!false || !true"
   , "arr = [1, 2, 3]"
-  , "all = [ ...arr, 4, 5, 6]"
+  , "all = [4, 5, 6, ...arr]"
   , "where([1, 2, 3, 5, 8]) {"
   , "  [1, 2, 3] => 1"
   , "  [1, 2, n] => n"

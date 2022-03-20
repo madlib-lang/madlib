@@ -48,10 +48,10 @@ findAllExportedTypeNames ast =
   in  typeExportNames ++ typeNames
 
 canonicalizeImportedAST
-  :: TableCache -> Target -> FilePath -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env, TableCache)
-canonicalizeImportedAST tableCache target originAstPath table imp = do
+  :: TableCache -> FilePath -> Target -> FilePath -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env, TableCache)
+canonicalizeImportedAST tableCache dictionaryModulePath target originAstPath table imp = do
   let path = Src.getImportAbsolutePath imp
-  (table', env, cache) <- canonicalizeAST tableCache target initialEnv table path
+  (table', env, cache) <- canonicalizeAST tableCache dictionaryModulePath target initialEnv table path
   ast                  <- findASTM table' path
 
   let allExportNames   = findAllExportedNames ast
@@ -134,11 +134,11 @@ getAllImportedTypes imports =
   (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> concat (Can.getImportTypeNames <$> imports)
 
 processImports
-  :: TableCache -> Target -> FilePath -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env, TableCache)
-processImports tableCache target astPath table imports = do
+  :: TableCache -> FilePath -> Target -> FilePath -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env, TableCache)
+processImports tableCache dictionaryModulePath target astPath table imports = do
   foldM
     (\(table', env', tableCache') imp -> do
-      (table'', env'', tableCache'') <- canonicalizeImportedAST tableCache' target astPath table imp
+      (table'', env'', tableCache'') <- canonicalizeImportedAST tableCache' dictionaryModulePath target astPath table imp
       return
         ( table' <> table''
         , env' { envTypeDecls  = envTypeDecls env' <> envTypeDecls env''
@@ -178,8 +178,29 @@ checkUnusedImports env imports = do
     (withJSCheck ++ unusedTypes)
 
 
-canonicalizeAST :: TableCache -> Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env, TableCache)
-canonicalizeAST tableCache target env table astPath = case M.lookup astPath tableCache of
+findDictionaryFromListName :: FilePath -> [Src.Import] -> String
+findDictionaryFromListName dictionaryModulePath imports = case imports of
+  ((Src.Source area target (Src.NamedImport names _ path)) : next) | path == dictionaryModulePath ->
+    if "fromList" `elem` (Src.getSourceContent <$> names) then
+      "fromList"
+    else
+      findDictionaryFromListName dictionaryModulePath next
+
+  (imp@(Src.Source _ _ (Src.ImportAll _ path)) : next) | path == dictionaryModulePath ->
+    "fromList"
+
+  ((Src.Source _ _ (Src.DefaultImport (Src.Source _ _ namespace) _ path)) : next) | path == dictionaryModulePath ->
+    namespace <> ".fromList"
+
+  (imp : next) ->
+    findDictionaryFromListName dictionaryModulePath next
+
+  _ ->
+    ""
+
+
+canonicalizeAST :: TableCache -> FilePath -> Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env, TableCache)
+canonicalizeAST tableCache dictionaryModulePath target env table astPath = case M.lookup astPath tableCache of
   Just (env', ast') -> return (snd <$> tableCache, env', tableCache)
 
   Nothing           -> do
@@ -187,8 +208,9 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
       Right ast -> return ast
       Left  e   -> throwError $ CompilationError (ImportNotFound astPath) NoContext
 
-    (table, env', nextCache) <- processImports tableCache target astPath table $ Src.aimports ast
-    let env'' = env' { envCurrentPath = astPath }
+    (table, env', nextCache) <- processImports tableCache dictionaryModulePath target astPath table $ Src.aimports ast
+
+    let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports ast) }
 
     foldM_ (verifyExport env'') [] (Src.aexps ast)
 
@@ -255,29 +277,30 @@ findAST table path = case M.lookup path table of
 
 runCanonicalization
   :: TableCache
+  -> FilePath
   -> Target
   -> Env
   -> Src.Table
   -> FilePath
   -> (Either CompilationError (Can.Table, TableCache), [CompilationWarning])
-runCanonicalization tableCache target env table entrypoint = do
-  let (canonicalized, s) = runState (runExceptT (canonicalizeAST tableCache target env table entrypoint))
+runCanonicalization tableCache dictionaryModulePath target env table entrypoint = do
+  let (canonicalized, s) = runState (runExceptT (canonicalizeAST tableCache dictionaryModulePath target env table entrypoint))
                                     (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = [], derivedTypes = S.empty, placeholderIndex = 0 })
   ((\(table, _, cache) -> (table, cache)) <$> canonicalized, warnings s)
 
 
 canonicalizeMany
-  :: Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
+  :: FilePath -> Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
 canonicalizeMany = canonicalizeMany' mempty
 
 canonicalizeMany'
-  :: TableCache -> Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
-canonicalizeMany' tableCache target env table fps = case fps of
+  :: TableCache -> FilePath -> Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
+canonicalizeMany' tableCache dictionaryModulePath target env table fps = case fps of
   []        -> (Right mempty, [])
 
-  fp : fps' -> case runCanonicalization tableCache target env table fp of
+  fp : fps' -> case runCanonicalization tableCache dictionaryModulePath target env table fp of
     (curr@(Right (_, cache)), warnings) ->
-      let (next, nextWarnings) = canonicalizeMany' cache target env table fps'
+      let (next, nextWarnings) = canonicalizeMany' cache dictionaryModulePath target env table fps'
       in  (liftM2 (\(table', _) table'' -> table' <> table'') curr next, warnings ++ nextWarnings)
 
     (Left e, ws) -> (Left e, ws)

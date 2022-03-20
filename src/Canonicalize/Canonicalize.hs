@@ -211,12 +211,21 @@ instance Canonicalizable Src.Exp Can.Exp where
           buildApplication app es
 
     Src.Dictionary items -> do
-      pushNameAccess "__dict_ctor__"
       items' <- mapM (canonicalize env target) items
+      let fromListName = Env.envFromDictionaryListName env
+      if '.' `elem` fromListName then do
+        let namespace = takeWhile (/= '.') fromListName
+            name = reverse $ takeWhile (/= '.') (reverse fromListName)
+        pushNameAccess namespace
+        return $ Can.Canonical area (Can.App
+          (Can.Canonical area (Access (Can.Canonical area (Can.Var namespace)) (Can.Canonical area (Can.Var ('.':name)))))
+          (Can.Canonical area (Can.ListConstructor items')) True)
+      else do
+        pushNameAccess fromListName
 
-      return $ Can.Canonical area (Can.App
-        (Can.Canonical area (Can.Var "__dict_ctor__"))
-        (Can.Canonical area (Can.ListConstructor items')) True)
+        return $ Can.Canonical area (Can.App
+          (Can.Canonical area (Can.Var fromListName))
+          (Can.Canonical area (Can.ListConstructor items')) True)
 
     Src.Extern typing name originalName -> do
       scheme  <- typingToScheme env typing

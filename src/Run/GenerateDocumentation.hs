@@ -3,7 +3,8 @@ module Run.GenerateDocumentation where
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory
+import           System.FilePath                ( dropFileName
+                                                , takeDirectory
                                                 , takeBaseName
                                                 , takeExtension
                                                 , takeFileName
@@ -35,15 +36,17 @@ import           Generate.Documentation
 import           Utils.Path
 import           Run.Target
 import           Run.Utils
+import qualified Utils.PathUtils as PathUtils
 
 
 solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, String, [DocString.DocString])])
 solveASTsForDoc _          []         = return $ Right []
 solveASTsForDoc rootFolder (fp : fps) = do
-  canonicalEntrypoint <- canonicalizePath fp
-  astTable            <- buildASTTable TNode mempty canonicalEntrypoint
+  canonicalEntrypoint       <- canonicalizePath fp
+  astTable                  <- buildASTTable TNode mempty canonicalEntrypoint
+  Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
   let (canTable, _) = case astTable of
-        Right table -> Can.runCanonicalization mempty TNode Can.initialEnv table canonicalEntrypoint
+        Right table -> Can.runCanonicalization mempty dictionaryModulePath TNode Can.initialEnv table canonicalEntrypoint
         Left  e     -> (Left e, [])
 
   rootPath <- canonicalizePath $ computeRootPath fp
