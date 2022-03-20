@@ -1,0 +1,5 @@
+import type { Maybe } from "Maybe"
+
+interface Scan a {
+  scan :: String -> Maybe a
+}
