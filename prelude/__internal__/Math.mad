@@ -40,7 +40,6 @@ mod :: Integer -> Integer -> Integer
 export mod = (a, b) => (a % b)
 
 
-// TODO: implement for llvm backend
 #iftarget js
 
 /**
@@ -51,28 +50,34 @@ export mod = (a, b) => (a % b)
 sqrt :: Float -> Float
 export sqrt = (n) => #- Math.sqrt(n) -#
 
-round :: Float -> Integer
+round :: Float -> Float
 export round = (n) => #- Math.round(n) -#
 
-ceil :: Float -> Integer
+ceil :: Float -> Float
 export ceil = (n) => #- Math.ceil(n) -#
 
-floor :: Float -> Integer
+floor :: Float -> Float
 export floor = (n) => #- Math.floor(n) -#
+
+pow :: Float -> Float -> Float
+export pow = (a, b) => #- Math.pow(a, b) -#
 
 #elseif llvm
 
 sqrt :: Float -> Float
 export sqrt = extern "madlib__math__sqrt"
 
-round :: Float -> Integer
+round :: Float -> Float
 export round = extern "madlib__math__round"
 
-ceil :: Float -> Integer
+ceil :: Float -> Float
 export ceil = extern "madlib__math__ceil"
 
-floor :: Float -> Integer
+floor :: Float -> Float
 export floor = extern "madlib__math__floor"
+
+pow :: Float -> Float -> Float
+export pow = extern "madlib__math__pow"
 
 #endif
 
@@ -83,7 +88,7 @@ export floor = extern "madlib__math__floor"
  * @since 0.0.5
  */
 square :: Number a => a -> a
-square = (n) => n * n
+export square = (n) => n * n
 
 
 /**

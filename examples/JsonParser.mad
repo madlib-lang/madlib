@@ -1,10 +1,10 @@
-import J from "Json"
+import J from "JsonParser"
 import IO from "IO"
 import { Right } from "Either"
 import type { Maybe } from "Maybe"
 import { Just } from "Maybe"
 
-type Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
+type Parsed = Parsed({ field1 :: Maybe Parsed, field2 :: Boolean })
 
 input :: String
 input = `
@@ -33,5 +33,10 @@ parser = J.map2(
 )
 
 
-where(J.parse(parser, input))
-  is Right (Parsed { field1: Just (Parsed choco) }): IO.inspect(choco)
+where(J.parse(parser, input)) {
+  Right(Parsed({ field1: Just(Parsed(choco)) })) =>
+    IO.log(choco)
+
+  or =>
+    IO.log(or)
+}

@@ -1,0 +1,8 @@
+import { assertEquals, test } from "Test"
+import Char from "./Char"
+
+test("toLower - ascii", (_) => assertEquals(Char.toLower('C'), 'c'))
+test("toLower - extended", (_) => assertEquals(Char.toLower('Ü'), 'ü'))
+
+test("toUpper - ascii", (_) => assertEquals(Char.toUpper('d'), 'D'))
+test("toUpper - extended", (_) => assertEquals(Char.toUpper('ä'), 'Ä'))

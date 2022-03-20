@@ -1,6 +1,7 @@
 #include "char.hpp"
 
 #include <gc.h>
+#include "string.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,6 +148,20 @@ int64_t madlib__char__compare(int32_t c1, int32_t c2) {
   } else {
     return 0;
   }
+}
+
+int32_t madlib__char__toLower(int32_t c) {
+  unsigned char *encoded = (unsigned char*)utf8Encode(c);
+  unsigned char *lowered = madlib__string__toLower(encoded);
+  int l;
+  return utf8DecodeChar((char*)lowered, &l);
+}
+
+int32_t madlib__char__toUpper(int32_t c) {
+  unsigned char *encoded = (unsigned char*)utf8Encode(c);
+  unsigned char *uppered = madlib__string__toUpper(encoded);
+  int l;
+  return utf8DecodeChar((char*)uppered, &l);
 }
 
 #ifdef __cplusplus

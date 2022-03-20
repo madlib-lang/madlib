@@ -75,16 +75,28 @@ instance Scan Float {
 integerToFloat :: Integer -> Float
 export integerToFloat = (a) => #- a -#
 
+integerToByte :: Integer -> Byte
+export integerToByte = (a) => #- Uint8Array.from([a])[0] -#
+
 byteToFloat :: Byte -> Float
 export byteToFloat = (a) => #- a -#
 
 byteToInteger :: Byte -> Integer
 export byteToInteger = (a) => #- a -#
 
+floatToInteger :: Float -> Integer
+export floatToInteger = #- Math.trunc -#
+
+floatToByte :: Float -> Byte
+export floatToByte = (a) => #- Uint8Array.from([Math.trunc(a)])[0] -#
+
 #elseif llvm
 
 integerToFloat :: Integer -> Float
 export integerToFloat = extern "madlib__number__intToFloat"
+
+integerToByte :: Integer -> Byte
+export integerToByte = extern "madlib__number__intToByte"
 
 byteToFloat :: Byte -> Float
 export byteToFloat = extern "madlib__number__byteToFloat"
@@ -92,10 +104,17 @@ export byteToFloat = extern "madlib__number__byteToFloat"
 byteToInteger :: Byte -> Integer
 export byteToInteger = extern "madlib__number__byteToInt"
 
+floatToInteger :: Float -> Integer
+export floatToInteger = extern "madlib__number__floatToInt"
+
+floatToByte :: Float -> Byte
+export floatToByte = extern "madlib__number__floatToByte"
+
 #endif
 
 #iftarget js
 
+// TODO: implement for llvm backend
 /**
  * Formats a a number given as the first parameter to a string containing the
  * amount of numbers after the . given by the second parameter.
@@ -109,7 +128,7 @@ export formatDecimal = (a, x) => #-{
   return isNaN(n) ? "0" : n
 }-#
 
-// TODO: Move to List and write with recursion
+// TODO: Move to List and write with recursion. Add llvm version.
 range :: Integer -> Integer -> List Integer
 export range = (a, b) => #-{
   const out = []

@@ -112,22 +112,6 @@ madlib__list__Node_t *madlib__list__singleton(void *item) {
   return head;
 }
 
-// TODO: we need to copy the list here
-madlib__list__Node_t *madlib__list__append(void *item, madlib__list__Node_t *list) {
-  if (list->value == NULL || list->next == NULL) {
-    return madlib__list__singleton(item);
-  }
-
-  madlib__list__Node_t *current = list;
-  while (current->next->value != NULL) {
-    current = current->next;
-  }
-
-  madlib__list__Node_t *nextNode = madlib__list__singleton(item);
-  current->next = nextNode;
-
-  return list;
-}
 
 madlib__list__Node_t *madlib__list__push(void *item, madlib__list__Node_t *list) {
   madlib__list__Node_t *newHead = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
