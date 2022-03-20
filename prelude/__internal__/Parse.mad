@@ -3,12 +3,11 @@ import type { Either } from "Either"
 import {} from "Monad"
 import {} from "Alternative"
 import {} from "Number"
-import {} from "Char"
+import Char from "Char"
 import { apL } from "Applicative"
 import { Right, Left } from "Either"
 import { Just, Nothing } from "Maybe"
-import { drop, firstChar, charAt } from "String"
-// import { firstChar, drop, isDigit, isLetter } from "String"
+import String from "String"
 import { append, includes, reduce, reverse } from "List"
 import { always, complement, equals, ifElse, notEquals } from "Function"
 import { maybeLoop } from "Control"
@@ -154,10 +153,10 @@ instance Alternative Parser {
  * @example
  * parse(anyChar, "?") // Right "?"
  */
-anyChar :: Parser String
-export anyChar = Parser((s, l) => where(charAt(0, s)) {
+anyChar :: Parser Char
+export anyChar = Parser((s, l) => where(String.charAt(0, s)) {
   Just(c) =>
-    #[[#[show(c), drop(1, s)]], incLoc("show(c)", l)]
+    #[[#[c, String.drop(1, s)]], incLoc(show(c), l)]
 
   Nothing =>
     #[[], l]
@@ -204,7 +203,7 @@ export location = Parser((s, l) => #[[#[l, s]], l])
  * runParser(oneOf(["1", "-", "?"]), "1") // Right "1"
  * runParser(oneOf(["1", "-", "?"]), "2") // Left (Loc 0 0 0)
  */
-oneOf :: List String -> Parser String
+oneOf :: List Char -> Parser Char
 export oneOf = (cs) => satisfy(includes($, cs))
 
 /**
@@ -216,7 +215,7 @@ export oneOf = (cs) => satisfy(includes($, cs))
  * runParser(notOneOf(["1", "-", "?"]), "1") // Left (Loc 0 0 0)
  * runParser(notOneOf(["1", "-", "?"]), "2") // Right "2"
  */
-notOneOf :: List String -> Parser String
+notOneOf :: List Char -> Parser Char
 export notOneOf = (cs) => satisfy(complement(includes($, cs)))
 
 /**
@@ -260,23 +259,7 @@ export many = (p) => Parser((s, l) => {
     #[rest, loc, parseResult] =>
       #[[#[reverse(parseResult), rest]], loc] }
 })
-// export many = (p) => Parser((s, l) => where(parse(p, s, l)) {
-// })
-// many :: Parser a -> Parser (List a)
-// export many = (p) => Parser((s, l) => #-{
-//   let ss = s
-//   let ll = l
-//   let acc = []
-//   while (true) {
-//     let [[res], loc] = parse(p)(ss)(ll)
-//     if (!res) break
-//     let [parsed, rest] = res
-//     acc.push(parsed)
-//     ss = rest
-//     ll = loc
-//   }
-//   return [[[acc, ss]], ll]
-// }-#)
+
 
 /**
  * A parser combinator that applies 1 or more times the given parser. If no parse
@@ -380,15 +363,15 @@ export lookAhead = (p) => Parser((s, l) => where(parse(p, s, l)) {
  * @example
  * runParser(takeWhile(notEquals("-")), "abcdef-")
  */
-takeWhile :: (String -> Boolean) -> Parser String
+takeWhile :: (Char -> Boolean) -> Parser (List Char)
 export takeWhile = (pred) => Parser((s, l) => {
-  result = maybeLoop(#[s, l, ""], (state) =>
+  result = maybeLoop(#[s, l, []], (state) =>
     where(state) {
       #[ss, ll, acc] =>
         where(parse(anyChar, ss, ll)) {
           #[[#[parsed, rest]], loc] =>
             pred(parsed)
-              ? Just(#[rest, loc, acc ++ parsed])
+              ? Just(#[rest, loc, [parsed, ...acc]])
               : Nothing
 
           _ =>
@@ -399,7 +382,7 @@ export takeWhile = (pred) => Parser((s, l) => {
 
   return where(result) {
     #[rest, loc, parseResult] =>
-      #[[#[parseResult, rest]], loc]
+      #[[#[reverse(parseResult), rest]], loc]
   }
 })
 
@@ -411,7 +394,7 @@ export takeWhile = (pred) => Parser((s, l) => {
  * runParser(satisfy(isDigit), "1")  // Right "1"
  * runParser(satisfy(isLetter), "1") // Left (Loc 0 0 0)
  */
-satisfy :: (String -> Boolean) -> Parser String
+satisfy :: (Char -> Boolean) -> Parser Char
 export satisfy = (pred) => chain(
   ifElse(pred, of, always(empty)),
   anyChar
@@ -425,7 +408,7 @@ export satisfy = (pred) => chain(
  * runParser(char("a"), "a") // Right "a"
  * runParser(char("a"), "b") // Left (Loc 0 0 0)
  */
-char :: String -> Parser String
+char :: Char -> Parser Char
 export char = pipe(equals, satisfy)
 
 /**
@@ -436,7 +419,7 @@ export char = pipe(equals, satisfy)
  * runParser(notChar("a"), "a") // Left (Loc 0 0 0)
  * runParser(notChar("a"), "b") // Right "a"
  */
-notChar :: String -> Parser String
+notChar :: Char -> Parser Char
 export notChar = pipe(notEquals, satisfy)
 
 /**
@@ -465,12 +448,12 @@ export eof = Parser((s, l) => where(parse(anyChar, s, l)) {
  * runParser(string("hello world"), "hello")       // Left (Loc 0 0 0)
  */
 string :: String -> Parser String
-export string = (s) => where(firstChar(s)){
+export string = (s) => where(String.firstChar(s)){
   Just(c) =>
     pipe(
-      map((a, b) => a ++ b),
-      ap($, string(drop(1, s)))
-    )(char(show(c)))
+      map((a, b) => String.pushChar(a, b)),
+      ap($, string(String.drop(1, s)))
+    )(char(c))
 
   Nothing =>
     pure("")
@@ -485,12 +468,11 @@ export string = (s) => where(firstChar(s)){
  * runParser(spaces, " \t\n")  // Right " \t\n"
  * runParser(spaces, " \t\na") // Left (Loc 0 0 0)
  */
-spaces :: Parser String
+spaces :: Parser (List Char)
 export spaces = pipe(
   oneOf,
-  some,
-  map(reduce(mconcat, ""))
-)([" ", "\n", "\r", "\t"])
+  some
+)([' ', '\n', '\r', '\t'])
 
 /**
  * A parser combinator that parses the given parser and discards all trailing
@@ -521,25 +503,21 @@ export symbol = pipe(string, token)
  *
  * @since 0.0.1
  */
-// digit :: Parser String
-// export digit = satisfy(isDigit)
+digit :: Parser Char
+export digit = satisfy(Char.isDigit)
 
 /**
  * A parser combinator that parses a letter.
  *
  * @since 0.0.1
  */
-// letter :: Parser String
-// export letter = satisfy(isLetter)
+letter :: Parser Char
+export letter = satisfy(Char.isLetter)
 
 /**
  * A parser combinator that parses many letters.
  *
  * @since 0.0.1
  */
-// letters :: Parser String
-// export letters = pipe(
-//   satisfy,
-//   many,
-//   map(reduce(mconcat, ""))
-// )(isLetter)
+letters :: Parser (List Char)
+export letters = many(letter)

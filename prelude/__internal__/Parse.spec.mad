@@ -24,89 +24,89 @@ import IO from "IO"
 
 test("it should parse any character", (_) => {
   input = "c"
-  expected = Right("c")
+  expected = Right('c')
   actual = runParser(anyChar, input)
 
   return assertEquals(actual, expected)
 })
 
-test("it should parse specific characters", (_) => {
-  input = "cba"
-  expected = Right("cba")
-  abcParser = oneOf(["a", "b", "c"])
-  parser = pipe(
-    map((a, b, c) => a ++ b ++ c),
-    ap($, abcParser),
-    ap($, abcParser)
-  )(abcParser)
-  actual = runParser(parser, input)
+// test("it should parse specific characters", (_) => {
+//   input = "cba"
+//   expected = Right("cba")
+//   abcParser = oneOf(["a", "b", "c"])
+//   parser = pipe(
+//     map((a, b, c) => a ++ b ++ c),
+//     ap($, abcParser),
+//     ap($, abcParser)
+//   )(abcParser)
+//   actual = runParser(parser, input)
 
-  return assertEquals(actual, expected)
-})
+//   return assertEquals(actual, expected)
+// })
 
 
-type Letter = L(Location, Location, String)
+// type Letter = L(Location, Location, String)
 
-test("location combinator should give access to current location info", (_) => {
-  input = "cba"
-  expected = Right([
-    L(Loc(0, 0, 0), Loc(1, 0, 1), "c"),
-    L(Loc(1, 0, 1), Loc(2, 0, 2), "b"),
-    L(Loc(2, 0, 2), Loc(3, 0, 3), "a")
-  ])
+// test("location combinator should give access to current location info", (_) => {
+//   input = "cba"
+//   expected = Right([
+//     L(Loc(0, 0, 0), Loc(1, 0, 1), "c"),
+//     L(Loc(1, 0, 1), Loc(2, 0, 2), "b"),
+//     L(Loc(2, 0, 2), Loc(3, 0, 3), "a")
+//   ])
 
-  abcParser = pipe(
-    map((start, c, end) => L(start, end, c)),
-    ap($, oneOf(["a", "b", "c"])),
-    ap($, location)
-  )(location)
+//   abcParser = pipe(
+//     map((start, c, end) => L(start, end, c)),
+//     ap($, oneOf(["a", "b", "c"])),
+//     ap($, location)
+//   )(location)
 
-  parser = pipe(
-    map((a, b, c) => [a, b, c]),
-    ap($, abcParser),
-    ap($, abcParser)
-  )(abcParser)
-  actual = runParser(parser, input)
+//   parser = pipe(
+//     map((a, b, c) => [a, b, c]),
+//     ap($, abcParser),
+//     ap($, abcParser)
+//   )(abcParser)
+//   actual = runParser(parser, input)
 
-  return assertEquals(actual, expected)
-})
+//   return assertEquals(actual, expected)
+// })
 
-test("notOneOf should parse any character that is not in the given list", (_) => {
-  expected = Right("a")
-  actual = runParser(notOneOf(["-", "_", "="]), "a")
-  return assertEquals(actual, expected)
-})
+// test("notOneOf should parse any character that is not in the given list", (_) => {
+//   expected = Right("a")
+//   actual = runParser(notOneOf(["-", "_", "="]), "a")
+//   return assertEquals(actual, expected)
+// })
 
-test("choice should try a list of parsers and run the first one that matches", (_) => {
-  expected = Right("b")
-  actual = runParser(choice([char("a"), char("b"), char("c")]), "b")
-  return assertEquals(actual, expected)
-})
+// test("choice should try a list of parsers and run the first one that matches", (_) => {
+//   expected = Right("b")
+//   actual = runParser(choice([char('a'), char('b'), char('c')]), "b")
+//   return assertEquals(actual, expected)
+// })
 
-test("many should produce 0 or more parses of a given parser", (_) => {
-  expected = Right(["a", "a", "a", "a", "a"])
-  actual = runParser(many(char("a")), "aaaaa")
-  return assertEquals(actual, expected)
-})
+// test("many should produce 0 or more parses of a given parser", (_) => {
+//   expected = Right(["a", "a", "a", "a", "a"])
+//   actual = runParser(many(char('a')), "aaaaa")
+//   return assertEquals(actual, expected)
+// })
 
-test("many should not exceed stack limit with big inputs", (_) => {
-  input = repeat('1', 100000)
-  expected = Right(split("", input))
-  actual = runParser(many(anyChar), input)
-  return assertEquals(actual, expected)
-})
+// test("many should not exceed stack limit with big inputs", (_) => {
+//   input = repeat('1', 100000)
+//   expected = Right(split("", input))
+//   actual = runParser(many(anyChar), input)
+//   return assertEquals(actual, expected)
+// })
 
-test("some should produces 1 or more parses of a given parser", (_) => {
-  expected = Right(["a", "a", "a", "a", "a"])
-  actual = runParser(some(char("a")), "aaaaa")
-  return assertEquals(actual, expected)
-})
+// test("some should produces 1 or more parses of a given parser", (_) => {
+//   expected = Right(["a", "a", "a", "a", "a"])
+//   actual = runParser(some(char('a')), "aaaaa")
+//   return assertEquals(actual, expected)
+// })
 
-test("some should fail if no parse was produced at all", (_) => {
-  expected = Left(Error(Loc(1, 0, 1)))
-  actual = runParser(some(char("a")), "bbbbb")
-  return assertEquals(actual, expected)
-})
+// test("some should fail if no parse was produced at all", (_) => {
+//   expected = Left(Error(Loc(1, 0, 1)))
+//   actual = runParser(some(char('a')), "bbbbb")
+//   return assertEquals(actual, expected)
+// })
 
 // test("takeWhile should produce a parse while the predicate returns true", (_) => {
 //   expected = Right("12345")

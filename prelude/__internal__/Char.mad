@@ -1,4 +1,5 @@
 import {} from "Show"
+import String from "String"
 
 #iftarget js
 
@@ -61,11 +62,8 @@ export isDigit = (s) =>
  * Returns true if the character is a letter, false otherwise. Note that if the
  * input contains more than one character, false is returned.
  */
-// isLetter :: String -> Boolean
-// export isLetter = (s) => #-{
-//   if (s.length !== 1) {
-//     return false
-//   }
-
-//   return RegExp(/^\p{L}/,'u').test(s)
-// }-#
+isLetter :: Char -> Boolean
+export isLetter = (c) => pipe(
+  show,
+  String.match("[a-zA-Z]+")
+)(c)
