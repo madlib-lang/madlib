@@ -1,7 +1,7 @@
 #iftarget js
 
 import String from "String"
-import { filter, first, last, join, drop, dropLast } from "List"
+import { filter, first, last, drop, dropLast } from "List"
 import { fromMaybe, Nothing, Just } from "Maybe"
 import { complement, equals, identity, ifElse } from "Function"
 
@@ -62,8 +62,8 @@ export joinPath = pipe(
   filter(complement(String.isEmpty)),
   ifElse(
     pipe(first, equals(Just("/"))),
-    pipe(drop(1), map(dropTrailingPathSeparator), join("/"), mappend("/")),
-    pipe(map(dropTrailingPathSeparator), join("/"))
+    pipe(drop(1), map(dropTrailingPathSeparator), String.join("/"), mappend("/")),
+    pipe(map(dropTrailingPathSeparator), String.join("/"))
   )
 )
 

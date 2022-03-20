@@ -125,12 +125,12 @@ export merge = (a, b) => where(#[a, b]) {
  *
  * @since 0.0.5
  * @example
- * len(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
+ * length(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
  */
-len :: Dictionary k v -> Integer
-export len = (dictionary) => where(dictionary) {
+length :: Dictionary k v -> Integer
+export length = (dictionary) => where(dictionary) {
   Dictionary(items) =>
-    List.len(items)
+    List.length(items)
 }
 
 

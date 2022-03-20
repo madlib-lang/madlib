@@ -2,6 +2,7 @@ import type { Maybe } from "Maybe"
 import {} from "Monoid"
 import { MORE, LESS, EQUAL } from "Compare"
 import { Just, Nothing } from "Maybe"
+import List from "List"
 
 
 instance Semigroup String {
@@ -79,7 +80,39 @@ export split = extern "madlib__string__split"
 lines :: String -> List String
 export lines = split("\n")
 
-#endif
+
+/**
+ * Joins a list with a separator and returns a String.
+ *
+ * IMPORTANT:
+ * When coming from JS, beware that there is a small difference with Array.prototype.join.
+ * In JS, join relies on its dynamic nature and accepts any type as being valid, and transforms it
+ * to a string for you. In Madlib you need to provide an instance of Show for your custom types, and
+ * for Madlib types (eg. tuples, List, Boolean, Maybe) it uses the Show instance defined for them.
+ *
+ * @since 0.0.5
+ * @example
+ * join(" and ", ["cats", "dogs"])   // "cats and dogs"
+ * join("", ["one", "two", "three"]) // "onetwothree"
+ */
+join :: String -> List String -> String
+export join = (a, xs) => pipe(
+  List.intercalate(a),
+  List.reduce(mappend, "")
+)(xs)
+
+
+/**
+ * Transform a List of Strings into a single String,
+ * by adding newlines between each item in the List.
+ *
+ * @since 0.0.5
+ * @example
+ * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
+ */
+unlines :: List String -> String
+export unlines = join("\n")
+
 
 #iftarget js
 
@@ -147,10 +180,10 @@ firstChar :: String -> Maybe String
 export firstChar = nthChar(0)
 
 lastChar :: String -> Maybe String
-export lastChar = (s) => nthChar(len(s) - 1, s)
+export lastChar = (s) => nthChar(length(s) - 1, s)
 
 drop :: Integer -> String -> String
-export drop = (n, s) => slice(n, len(s), s)
+export drop = (n, s) => slice(n, length(s), s)
 
 dropLast :: Integer -> String -> String
 export dropLast = (n, s) => slice(0, -n, s)
@@ -177,15 +210,15 @@ export isLetter = (s) => #-{
   return RegExp(/^\p{L}/,'u').test(s)
 }-#
 
-len :: String -> Integer
-export len = (s) => #- s.length -#
+length :: String -> Integer
+export length = (s) => #- s.length -#
 
 /**
  * Returns true if the character is a digit, false otherwise. Note that if the
  * input contains more than one character, false is returned.
  */
 isDigit :: String -> Boolean
-export isDigit = (s) => len(s) != 1
+export isDigit = (s) => length(s) != 1
   ? false
   : s == "0" ||
     s == "1" ||

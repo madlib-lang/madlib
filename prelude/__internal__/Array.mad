@@ -8,8 +8,8 @@ export fromList = extern "madlib__array__fromList"
 toList :: Array a -> List a
 export toList = extern "madlib__array__toList"
 
-len :: Array a -> Integer
-export len = extern "madlib__array__length"
+length :: Array a -> Integer
+export length = extern "madlib__array__length"
 
 mapFFI :: (a -> b) -> Array a -> Array b
 mapFFI = extern "madlib__array__map"

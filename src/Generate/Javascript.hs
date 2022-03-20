@@ -50,7 +50,18 @@ allowedJSNames :: [String]
 allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default"]
 
 generateSafeName :: String -> String
-generateSafeName n = if n `elem` allowedJSNames then "_$_" <> n <> "_$_" else n
+generateSafeName n =
+  if '.' `elem` n then
+    let namespace = takeWhile (/= '.') n
+        name      = tail $ dropWhile (/= '.') n
+    in  if name `elem` allowedJSNames then
+          namespace <> "." <> "_$_" <> name <> "_$_"
+        else
+          n
+  else if n `elem` allowedJSNames then
+    "_$_" <> n <> "_$_"
+  else
+    n
 
 hpWrapLine :: Bool -> FilePath -> Int -> String -> String
 hpWrapLine coverage astPath line compiled =

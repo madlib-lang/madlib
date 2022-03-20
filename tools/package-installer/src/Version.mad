@@ -33,7 +33,7 @@ instance Show Version {
 
 
 instance Read Version {
-  read = parse
+  rread = parse
 }
 
 
@@ -68,7 +68,7 @@ getPatch = where { Version(_, _, patch) => patch }
 parse :: String -> Maybe Version
 export parse = pipe(
   split("."),
-  map(read),
+  map(rread),
   where {
     [Just(major), Just(minor), Just(patch)] =>
       Just(Version(major, minor, patch))

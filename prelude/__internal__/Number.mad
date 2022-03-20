@@ -17,6 +17,19 @@ instance Comparable Float {
 }
 
 
+instance Show Integer {
+  show = inspect
+}
+
+instance Show Byte {
+  show = inspect
+}
+
+instance Show Float {
+  show = inspect
+}
+
+
 #iftarget js
 instance Read Float {
   rread = fromString

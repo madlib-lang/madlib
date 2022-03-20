@@ -12,9 +12,8 @@ export fromString = extern "madlib__bytearray__fromString"
 toString :: ByteArray -> String
 export toString = extern "madlib__bytearray__toString"
 
-
-len :: ByteArray -> Integer
-export len = extern "madlib__bytearray__length"
+length :: ByteArray -> Integer
+export length = extern "madlib__bytearray__length"
 
 concat :: ByteArray -> ByteArray -> ByteArray
 export concat = extern "madlib__bytearray__concat"
@@ -76,7 +75,7 @@ export reduce = (f, initialValue, byteArray) => #- byteArray.reduce((a, b) => f(
  *
  * @since 0.7.0
  */
-len :: ByteArray -> Integer
-export len = (byteArray) => #- byteArray.length -#
+length :: ByteArray -> Integer
+export length = (byteArray) => #- byteArray.length -#
 
 #endif
