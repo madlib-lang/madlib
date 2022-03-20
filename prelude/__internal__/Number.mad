@@ -31,23 +31,48 @@ instance Show Float {
 
 
 #iftarget js
-instance Scan Float {
-  scan = fromString
-}
 
-instance Scan Integer {
-  scan = fromString
-}
+scanInteger :: Number a => String -> Maybe a
+scanInteger = (str) => (#- {
+  const n = parseInt(str)
+  return isNaN(n) ? Nothing : Just(n)
+} -#)
 
-intToFloat :: Integer -> Float
-export intToFloat = (x) => #- x -#
 
-fromString :: Number a => String -> Maybe a
-export fromString = (str) => (#- {
+
+scanFloat :: Number a => String -> Maybe a
+scanFloat = (str) => (#- {
   const n = parseFloat(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
+#elseif llvm
+
+scanInteger :: String -> Maybe Integer
+scanInteger = extern "madlib__number__scanInteger"
+
+scanFloat :: String -> Maybe Float
+scanFloat = extern "madlib__number__scanFloat"
+
+scanByte :: String -> Maybe Byte
+scanByte = extern "madlib__number__scanByte"
+
+#endif
+
+instance Scan Integer {
+  scan = scanInteger
+}
+
+instance Scan Float {
+  scan = scanFloat
+}
+
+
+// integerToFloat :: Integer -> Float
+// export integerToFloat = (a) => a
+
+
+#iftarget js
 
 /**
  * Formats a a number given as the first parameter to a string containing the

@@ -42,6 +42,7 @@ data TypeError
   | NameAlreadyDefined String
   | TypesHaveDifferentOrigin String String String
   | RecursiveVarAccess String
+  | IllegalSkipAccess
   | NotInScope String Loc
   | SignatureTooGeneral Scheme Scheme
   | NameAlreadyExported String

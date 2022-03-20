@@ -1,0 +1,354 @@
+import type { Either } from "Either"
+import type { Maybe } from "Maybe"
+
+import Parser from "Parse"
+import { anyChar, char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
+import String from "String"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import { Left, Right, isLeft, fromRight, mapRight } from "Either"
+import {} from "Number"
+import Dictionary from "Dictionary"
+
+
+import IO from "IO"
+
+
+type JsonValue
+  = JsonString(String)
+  | JsonInteger(Integer)
+  | JsonFloat(Float)
+  | JsonBoolean(Boolean)
+  | JsonNull
+  | JsonObject(Dictionary String JsonValue)
+  | JsonArray(List JsonValue)
+
+
+jsonString :: Parser.Parser JsonValue
+jsonString = do {
+  _ <- char('"')
+  cs <- many(notChar('"'))
+  _ <- char('"')
+
+  return pipe(
+    String.fromList,
+    JsonString,
+    of
+  )(cs)
+}
+
+
+jsonInteger :: Parser.Parser JsonValue
+jsonInteger = pipe(
+  some,
+  chain(
+    pipe(
+      String.fromList,
+      scan,
+      where {
+        Just(integer) =>
+          of(JsonInteger(integer))
+
+        Nothing =>
+          Parser.fail
+      }
+      
+    )
+  )
+)(digit)
+
+
+jsonFloat :: Parser.Parser JsonValue
+jsonFloat = do {
+  beforeDot <- some(digit)
+  dot <- char('.')
+  afterDot <- some(digit)
+
+  return pipe(
+    List.concat($, afterDot),
+    String.fromList,
+    scan,
+    where {
+      Just(float) =>
+        of(JsonFloat(float))
+
+      Nothing =>
+        Parser.fail
+    }
+  )(List.append(dot, beforeDot))
+}
+
+
+jsonNull :: Parser.Parser JsonValue
+jsonNull = pipe(
+  symbol,
+  map((_) => JsonNull)
+)("null")
+
+
+jsonBoolean :: Parser.Parser JsonValue
+jsonBoolean = pipe(
+  choice,
+  map(
+    (b) => b == "true"
+      ? JsonBoolean(true)
+      : JsonBoolean(false)
+  )
+)([symbol("true"), symbol("false")])
+
+
+jsonArray :: Parser.Parser JsonValue
+jsonArray = do {
+  _ <- symbol("[")
+  items <- sepBy(jsonValue, symbol(","))
+  _ <- spaces
+  _ <- symbol("]")
+
+  return of(JsonArray(items))
+}
+
+
+objectField :: Parser.Parser #[String, JsonValue]
+objectField = do {
+  _ <- char('"')
+  fieldName <- many(notChar('"'))
+  _ <- char('"')
+  _ <- symbol(":")
+  fieldValue <- jsonValue
+
+  return of(#[String.fromList(fieldName), fieldValue])
+}
+
+
+jsonObject :: Parser.Parser JsonValue
+jsonObject = do {
+  _ <- symbol("{")
+  fields <- sepBy(objectField, symbol(","))
+  _ <- spaces
+  _ <- symbol("}")
+
+  return of(JsonObject(Dictionary.fromList(fields)))
+}
+
+
+jsonValue :: Parser.Parser JsonValue
+jsonValue = choice([
+  jsonFloat,
+  jsonInteger,
+  jsonNull,
+  jsonBoolean,
+  jsonString,
+  jsonArray,
+  jsonObject,
+])
+
+
+
+
+
+
+export type JsonParser r = Parser(JsonValue -> Either String r)
+
+parse :: JsonParser b -> String -> Either String b
+export parse = (parser, input) => pipe(
+  runParser(jsonValue),
+  where {
+    Left(_) =>
+      Left("Invalid json")
+
+    Right(parsed) =>
+      where(parser) {
+        Parser(parserFn) =>
+          parserFn(parsed)
+      }
+  }
+)(input)
+
+
+succeed :: a -> JsonParser a
+export succeed = (a) => Parser((_) => Right(a))
+
+
+fail :: String -> JsonParser a
+export fail = (err) => Parser((_) => Left(err))
+
+
+string :: JsonParser String
+export string = Parser((input) => where(input) {
+  JsonString(s) =>
+    Right(s)
+
+  _ =>
+    Left("Error parsing string")
+})
+
+
+// integer :: Parser Integer
+// export integer = (input) => where(input) {
+//   JsonInteger(i) =>
+//     Right(i)
+
+//   _ =>
+//     Left("Error parsing integer")
+// }
+
+
+list :: JsonParser a -> JsonParser (List a)
+list = (parser) => Parser((input) => where(input) {
+  JsonArray(arr) =>
+    where(parser) {
+      Parser(parserFn) =>
+        List.mapM(parserFn, arr)
+    }
+
+  _ =>
+    Left("Error parsing list")
+})
+
+instance Functor JsonParser {
+  map = (f, parser) => Parser((input) => where(parser) {
+    Parser(parserFn) =>
+      map(f, parserFn(input))
+  })
+}
+
+instance Applicative JsonParser {
+  pure = succeed
+
+  ap = (mf, parser) => Parser((input) => where(mf) {
+    Parser(f) =>
+      where(parser) {
+        Parser(parserFn) =>
+          ap(f(input), parserFn(input))
+      }
+  })
+}
+
+
+
+instance Monad JsonParser {
+  of = succeed//(a) => Parser((_) => Right(a))
+
+  chain = (fn, parser) => Parser((input) => where(parser) {
+    Parser(parserFn) =>
+      where(parserFn(input)) {
+        Right(a) =>
+          where(fn(a)) {
+            Parser(parserFn_) =>
+              parserFn_(input)
+          }
+
+        Left(e) =>
+          Left(e)
+      }
+  })
+}
+
+
+IO.log(parse(string, `"some json string!"`))
+IO.log(parse(list(string), `["some json string!", "2nd one"]`))
+IO.log(parse(ap(pure((a) => a ++ ": list-item"), string), `"some json string!"`))
+
+
+// pp :: JsonParser (List String)
+pp = do {
+  items <- list(string)
+
+  return of(map((a) => a ++ " -> :i", items))
+}
+
+IO.log(parse(pp, `["some json string!", "2nd one"]`))
+
+
+// number :: Parser Integer
+// export number = (input) => (#-
+//   typeof input === "number"
+//     ? Right(input)
+//     : Left(`${input} is not a number`)
+// -#)
+
+
+// boolean :: Parser Boolean
+// export boolean = (input) => (#-
+//   typeof input === "boolean"
+//     ? Right(input)
+//     : Left(`${input} is not a boolean`)
+// -#)
+
+
+// dict :: Parser b -> Parser (Dictionary String b)
+// export dict = (parser, input) => (#- {
+//   try {
+//     const keys = Object.keys(input);
+//     let result = D.empty;
+//     keys.forEach((k) => {
+//       const parsed = parser(input[k]);
+//       if (isLeft(parsed)) {
+//         throw parsed;
+//       } else {
+//         result = D.insert(k)(fromRight("")(parsed))(result)
+//       }
+//     })
+
+//     return Right(result);
+//   } catch(e) {
+//     return Left("An error occured while parsing a dictionary!");
+//   }
+// } -#)
+
+
+// list :: Parser a -> Parser (List a)
+// export list = (parser, input) => (#-{
+//   try {
+//     if (input.length === 0) {
+//       return Right(null)
+//     }
+//     let result = {};
+//     let current = result;
+//     input.forEach((a) => {
+//       const parsed = parser(a);
+//       if (isLeft(parsed)) {
+//         throw parsed;
+//       } else {
+//         current = current.n = { v: (fromRight("")(parsed)), n: null };
+//       }
+//     })
+//     return Right(result.n);
+//   } catch(e) {
+//     return Left("An error occured while parsing a list!");
+//   }
+// }-#)
+
+
+// chain1 :: (a -> Parser b) -> Parser a -> Parser b
+// export chain1 = (fn, parser, input) => where(parser(input)) {
+//   Right(a) => fn(a, input)
+
+//   Left(e) => Left(e)
+// }
+
+
+
+// maybe :: Parser a -> Parser (Maybe a)
+// export maybe = (parser, input) => (#-{
+//   if (input) {
+//     let parsed = parser(input);
+//     if (isLeft(parsed)) {
+//       return Right(Nothing);
+//     }
+//     return mapRight(Just)(parsed);
+//   } else {
+//     return Right(Nothing)
+//   }
+// }-#)
+
+
+// lazy :: ({} -> Parser a) -> Parser a
+// export lazy = (wrapped, input) => wrapped({}, input)
+
+
+// field :: String -> Parser b -> Parser b
+// export field = (fieldName, parser, input) => ( #- parser(input[fieldName]) -#)
+
+
+

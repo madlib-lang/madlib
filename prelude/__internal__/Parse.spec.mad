@@ -1,7 +1,8 @@
 import { assertEquals, test } from "Test"
 import { Left, Right } from "Either"
-// import { isDigit, repeat, split } from "String"
-import { repeat, split } from "String"
+import String from "String"
+import Char from "Char"
+import List from "List"
 import { apL } from "Applicative"
 
 import type { Location } from "./Parse"
@@ -30,107 +31,122 @@ test("it should parse any character", (_) => {
   return assertEquals(actual, expected)
 })
 
-// test("it should parse specific characters", (_) => {
-//   input = "cba"
-//   expected = Right("cba")
-//   abcParser = oneOf(["a", "b", "c"])
-//   parser = pipe(
-//     map((a, b, c) => a ++ b ++ c),
-//     ap($, abcParser),
-//     ap($, abcParser)
-//   )(abcParser)
-//   actual = runParser(parser, input)
+test("it should parse specific characters", (_) => {
+  input = "cba"
+  expected = Right("cba")
+  abcParser = oneOf(['a', 'b', 'c'])
+  parser = pipe(
+    map((a, b, c) => String.fromList([a, b, c])),
+    ap($, abcParser),
+    ap($, abcParser)
+  )(abcParser)
+  actual = runParser(parser, input)
 
-//   return assertEquals(actual, expected)
-// })
+  return assertEquals(actual, expected)
+})
+
+test("it should parse specific characters", (_) => {
+  input = "cba"
+  expected = Right("cba")
+  abcParser = oneOf(['a', 'b', 'c'])
+  parser = do {
+    a <- abcParser
+    b <- abcParser
+    c <- abcParser
+    return of(String.fromList([a, b, c]))
+  }
+
+  actual = runParser(parser, input)
+
+  return assertEquals(actual, expected)
+})
 
 
-// type Letter = L(Location, Location, String)
+type Letter = Letter(Location, Location, Char)
 
-// test("location combinator should give access to current location info", (_) => {
-//   input = "cba"
-//   expected = Right([
-//     L(Loc(0, 0, 0), Loc(1, 0, 1), "c"),
-//     L(Loc(1, 0, 1), Loc(2, 0, 2), "b"),
-//     L(Loc(2, 0, 2), Loc(3, 0, 3), "a")
-//   ])
+test("location combinator should give access to current location info", (_) => {
+  input = "cba"
+  expected = Right([
+    Letter(Loc(0, 0, 0), Loc(1, 0, 1), 'c'),
+    Letter(Loc(1, 0, 1), Loc(2, 0, 2), 'b'),
+    Letter(Loc(2, 0, 2), Loc(3, 0, 3), 'a')
+  ])
 
-//   abcParser = pipe(
-//     map((start, c, end) => L(start, end, c)),
-//     ap($, oneOf(["a", "b", "c"])),
-//     ap($, location)
-//   )(location)
+  abcParser = pipe(
+    map((start, c, end) => Letter(start, end, c)),
+    ap($, oneOf(['a', 'b', 'c'])),
+    ap($, location)
+  )(location)
 
-//   parser = pipe(
-//     map((a, b, c) => [a, b, c]),
-//     ap($, abcParser),
-//     ap($, abcParser)
-//   )(abcParser)
-//   actual = runParser(parser, input)
+  parser = pipe(
+    map((a, b, c) => [a, b, c]),
+    ap($, abcParser),
+    ap($, abcParser)
+  )(abcParser)
+  actual = runParser(parser, input)
 
-//   return assertEquals(actual, expected)
-// })
+  return assertEquals(actual, expected)
+})
 
-// test("notOneOf should parse any character that is not in the given list", (_) => {
-//   expected = Right("a")
-//   actual = runParser(notOneOf(["-", "_", "="]), "a")
-//   return assertEquals(actual, expected)
-// })
+test("notOneOf should parse any character that is not in the given list", (_) => {
+  expected = Right('a')
+  actual = runParser(notOneOf(['-', '_', '=']), "a")
+  return assertEquals(actual, expected)
+})
 
-// test("choice should try a list of parsers and run the first one that matches", (_) => {
-//   expected = Right("b")
-//   actual = runParser(choice([char('a'), char('b'), char('c')]), "b")
-//   return assertEquals(actual, expected)
-// })
+test("choice should try a list of parsers and run the first one that matches", (_) => {
+  expected = Right('b')
+  actual = runParser(choice([char('a'), char('b'), char('c')]), "b")
+  return assertEquals(actual, expected)
+})
 
-// test("many should produce 0 or more parses of a given parser", (_) => {
-//   expected = Right(["a", "a", "a", "a", "a"])
-//   actual = runParser(many(char('a')), "aaaaa")
-//   return assertEquals(actual, expected)
-// })
+test("many should produce 0 or more parses of a given parser", (_) => {
+  expected = Right(['a', 'a', 'a', 'a', 'a'])
+  actual = runParser(many(char('a')), "aaaaa")
+  return assertEquals(actual, expected)
+})
 
-// test("many should not exceed stack limit with big inputs", (_) => {
-//   input = repeat('1', 100000)
-//   expected = Right(split("", input))
-//   actual = runParser(many(anyChar), input)
-//   return assertEquals(actual, expected)
-// })
+test("many should not exceed stack limit with big inputs", (_) => {
+  input = String.repeat('1', 100000)
+  expected = Right(String.toList(input))
+  actual = runParser(many(anyChar), input)
+  return assertEquals(actual, expected)
+})
 
-// test("some should produces 1 or more parses of a given parser", (_) => {
-//   expected = Right(["a", "a", "a", "a", "a"])
-//   actual = runParser(some(char('a')), "aaaaa")
-//   return assertEquals(actual, expected)
-// })
+test("some should produces 1 or more parses of a given parser", (_) => {
+  expected = Right(['a', 'a', 'a', 'a', 'a'])
+  actual = runParser(some(char('a')), "aaaaa")
+  return assertEquals(actual, expected)
+})
 
-// test("some should fail if no parse was produced at all", (_) => {
-//   expected = Left(Error(Loc(1, 0, 1)))
-//   actual = runParser(some(char('a')), "bbbbb")
-//   return assertEquals(actual, expected)
-// })
+test("some should fail if no parse was produced at all", (_) => {
+  expected = Left(Error(Loc(1, 0, 1)))
+  actual = runParser(some(char('a')), "bbbbb")
+  return assertEquals(actual, expected)
+})
 
-// test("takeWhile should produce a parse while the predicate returns true", (_) => {
-//   expected = Right("12345")
-//   actual = runParser(takeWhile(isDigit), "12345")
-//   return assertEquals(actual, expected)
-// })
+test("takeWhile should produce a parse while the predicate returns true", (_) => {
+  expected = Right(['1', '2', '3', '4', '5'])
+  actual = runParser(takeWhile(Char.isDigit), "12345")
+  return assertEquals(actual, expected)
+})
 
-// test("takeWhile should not exceed stack limit with big inputs", (_) => {
-//   input = repeat(100000, "1")
-//   expected = Right(input)
-//   actual = runParser(takeWhile(isDigit), input)
-//   return assertEquals(actual, expected)
-// })
+test("takeWhile should not exceed stack limit with big inputs", (_) => {
+  input = String.repeat('1', 100000)
+  expected = Right(String.toList(input))
+  actual = runParser(takeWhile(Char.isDigit), input)
+  return assertEquals(actual, expected)
+})
 
-// test("manyTill should produce a parse until the end parser matches", (_) => {
-//   expected = Right(["1", "2", "3", "4", "5"])
-//   actual = runParser(apL(manyTill(anyChar, char("-")), char("-")), "12345-")
-//   return assertEquals(actual, expected)
-// })
+test("manyTill should produce a parse until the end parser matches", (_) => {
+  expected = Right(['1', '2', '3', '4', '5'])
+  actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), "12345-")
+  return assertEquals(actual, expected)
+})
 
-// test("manyTill should not exceed stack limit with big inputs", (_) => {
-//   ones = repeat('1', 100000)
-//   input = repeat('1', 100000) ++ "-"
-//   expected = Right(split("", ones))
-//   actual = runParser(apL(manyTill(anyChar, char("-")), char("-")), input)
-//   return assertEquals(actual, expected)
-// })
+test("manyTill should not exceed stack limit with big inputs", (_) => {
+  input = String.repeat('1', 100000) ++ "-"
+  expected = Right(List.repeat('1', 100000))
+  actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), input)
+  return assertEquals(actual, expected)
+})
