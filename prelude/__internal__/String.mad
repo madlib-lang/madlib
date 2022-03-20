@@ -1,7 +1,8 @@
-import {} from "Monoid"
-import {} from "Show"
 import type { Maybe } from "Maybe"
+import {} from "Monoid"
+import { MORE, LESS, EQUAL } from "Compare"
 import { Just, Nothing } from "Maybe"
+
 
 instance Semigroup String {
   assoc = (a, b) => a ++ b
@@ -12,10 +13,24 @@ instance Monoid String {
   mappend = (a, b) => a ++ b
 }
 
-instance Show String {
-  show = (a) => "\"" ++ a ++ "\""
-  // show = (a) => `"${a}"`
+#iftarget js
+
+instance Comparable String {
+  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
 }
+
+#elseif llvm
+import type { ComparisonResult } from "Compare"
+
+stringCompare :: String -> String -> ComparisonResult
+stringCompare = extern "madlib__string__compare"
+
+instance Comparable String {
+  compare = stringCompare
+}
+
+#endif
+
 
 #iftarget js
 
@@ -62,7 +77,7 @@ slice :: Integer -> Integer -> String -> String
 export slice = (start, end, s) => #- s.slice(start, end) -#
 
 isEmpty :: String -> Boolean
-export isEmpty = (s) => #- !s -#
+export isEmpty = (s) => s == ""
 
 nthChar :: Integer -> String -> Maybe String
 export nthChar = (n, s) => #-{

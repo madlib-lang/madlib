@@ -1,50 +1,29 @@
-import {} from "Show"
-import {} from "Read"
 import type { Maybe } from "Maybe"
+import { EQUAL, LESS, MORE } from "Compare"
+import {} from "Read"
 import { Just, Nothing } from "Maybe"
 
-#iftarget js
-instance Show Float {
-  show = (x) => #- x.toString() -#
-}
-#elseif llvm
-showFloat :: Float -> String
-showFloat = extern "madlib__number__internal__showFloat"
 
-instance Show Float {
-  show = showFloat
-}
-#endif
-
-#iftarget js
-instance Show Integer {
-  show = (x) => #- x.toString() -#
-}
-#elseif llvm
-showInteger :: Integer -> String
-showInteger = extern "madlib__number__internal__showInteger"
-
-instance Show Integer {
-  show = showInteger
+instance Comparable Integer {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
 }
 
-
-showByte :: Byte -> String
-showByte = extern "madlib__number__internal__showByte"
-
-
-instance Show Byte {
-  show = showByte
+instance Comparable Byte {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
 }
-#endif
+
+instance Comparable Float {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
+}
+
 
 #iftarget js
 instance Read Float {
-  read = fromString
+  rread = fromString
 }
 
 instance Read Integer {
-  read = fromString
+  rread = fromString
 }
 
 intToFloat :: Integer -> Float

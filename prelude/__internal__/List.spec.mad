@@ -96,7 +96,7 @@ test("join should transform a list into a string by intercalating a value betwee
 )
 
 test("mapWithIndex", (_) =>
-  assertEquals(mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]), ["a0", "b1", "c2"])
+  assertEquals(mapWithIndex((x, i) => x ++ inspect(i), ["a", "b", "c"]), ["a0", "b1", "c2"])
 )
 
 test("concat", (_) => assertEquals(concat([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5, 6]))

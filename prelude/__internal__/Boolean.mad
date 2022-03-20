@@ -1,16 +1,15 @@
-import {} from "Show"
+import { EQUAL, LESS, MORE } from "Compare"
 
-/**
- * Show instance for Boolean. The method show returns a string representation of
- * a boolean value.
- *
- * @since 0.7.0
- * @example
- * show(true)  // "true"
- * show(false) // "false"
- */
-instance Show Boolean {
-  show = (x) => x
-    ? "true"
-    : "false"
+
+instance Comparable Boolean {
+  compare = (a, b) => where(#[a, b]) {
+    #[true, false] =>
+      MORE
+
+    #[false, true] =>
+      LESS
+
+    _ =>
+      EQUAL
+  }
 }

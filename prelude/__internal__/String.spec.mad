@@ -1,7 +1,21 @@
+import { test, assertEquals } from "Test"
+import { EQUAL, LESS, MORE } from "Compare"
+
 #iftarget js
 
-import { test, assertEquals } from "Test"
 import { lines, mapChars, replace } from "./String"
+
+#elseif llvm
+
+import {} from "./String"
+
+#endif
+
+test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE))
+test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LESS))
+test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUAL))
+
+#iftarget js
 
 test(
   "lines should split a string by line returns",

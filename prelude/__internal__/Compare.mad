@@ -26,42 +26,13 @@ interface Eq a => Comparable a {
   compare :: a -> a -> ComparisonResult
 }
 
-instance Comparable Integer {
-  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
-}
-
-instance Comparable Float {
-  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
-}
-
-#iftarget js
-
-instance Comparable String {
-  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
-}
-
-#elseif llvm
-
-stringCompare :: String -> String -> ComparisonResult
-stringCompare = extern "madlib__string__compare"
-
-instance Comparable String {
-  compare = stringCompare
-}
-
-#endif
-
-instance Comparable Boolean {
-  compare = (a, b) => where(#[a, b]) {
-    #[true, false] => MORE
-    #[false, true] => LESS
-    _ => EQUAL
-  }
-}
-
 
 eq :: Comparable a => a -> a -> Boolean
 export eq = (a, b) => compare(a, b) == EQUAL
+
+
+notEq :: Comparable a => a -> a -> Boolean
+export notEq = (a, b) => compare(a, b) != EQUAL
 
 
 /**

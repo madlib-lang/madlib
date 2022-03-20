@@ -107,13 +107,13 @@ stringifyLine :: LcovLine -> String
 stringifyLine = where {
   TN(arg) => "TN:" ++ arg ++ "\n"
   SF(arg) => "SF:" ++ arg ++ "\n"
-  FN(l, name) => "FN:" ++ show(l) ++ "," ++ name ++ "\n"
-  FNDA(count, name) => "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
-  FNF(count) => "FNF:" ++ show(count) ++ "\n"
-  FNH(count) => "FNH:" ++ show(count) ++ "\n"
-  DA(l, count) => "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
-  LF(count) => "LF:" ++ show(count) ++ "\n"
-  LH(count) => "LH:" ++ show(count) ++ "\n"
+  FN(l, name) => "FN:" ++ inspect(l) ++ "," ++ name ++ "\n"
+  FNDA(count, name) => "FNDA:" ++ inspect(count) ++ "," ++ name ++ "\n"
+  FNF(count) => "FNF:" ++ inspect(count) ++ "\n"
+  FNH(count) => "FNH:" ++ inspect(count) ++ "\n"
+  DA(l, count) => "DA:" ++ inspect(l) ++ "," ++ inspect(count) ++ "\n"
+  LF(count) => "LF:" ++ inspect(count) ++ "\n"
+  LH(count) => "LH:" ++ inspect(count) ++ "\n"
 }
 
 stringifySection :: LcovSection -> String

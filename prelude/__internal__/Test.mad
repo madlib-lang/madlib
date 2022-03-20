@@ -426,7 +426,7 @@ export runAllTestSuites = (testSuites) => pipe(
     (_) => ({}),
     (report) => {
       IO.putLine(getMessage(report))
-      return IO.putLine(`Test suites: ${show(List.len(testSuites))}  tests: ${show(getTotal(report))}  passed: ${show(getSuccessCount(report))}  failed: ${show(getFailureCount(report))}`)
+      return IO.putLine(`Test suites: ${inspect(List.len(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
     }
   )
 )(testSuites)

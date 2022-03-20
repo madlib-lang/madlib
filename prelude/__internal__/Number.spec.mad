@@ -1,0 +1,7 @@
+import { assertEquals, test } from "Test"
+import { MORE, LESS, EQUAL } from "Compare"
+import {} from "./Number"
+
+test("compare Number - MORE", (_) => assertEquals(compare(3, 2), MORE))
+test("compare Number - LESS", (_) => assertEquals(compare(1, 2), LESS))
+test("compare Number - EQUAL", (_) => assertEquals(compare(2, 2), EQUAL))
