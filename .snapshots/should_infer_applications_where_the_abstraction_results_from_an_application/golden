@@ -412,7 +412,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 280 16 3) (Loc 287 16 10))
-                               (LStr "'alice'")))
+                               (LStr "\"alice\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 289 16 12) (Loc 294 16 17))
@@ -420,7 +420,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 289 16 12) (Loc 294 16 17))
-                               (LStr "'bob'")))
+                               (LStr "\"bob\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 296 16 19) (Loc 306 16 29))
@@ -428,7 +428,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 296 16 19) (Loc 306 16 29))
-                               (LStr "'caroline'")))
+                               (LStr "\"caroline\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 308 16 31) (Loc 315 16 38))
@@ -436,7 +436,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 308 16 31) (Loc 315 16 38))
-                               (LStr "'david'")))
+                               (LStr "\"david\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 317 16 40) (Loc 328 16 51))
@@ -444,7 +444,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 317 16 40) (Loc 328 16 51))
-                               (LStr "'elizabeth'")))
+                               (LStr "\"elizabeth\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 330 16 53) (Loc 339 16 62))
@@ -452,7 +452,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 330 16 53) (Loc 339 16 62))
-                               (LStr "'frances'")))
+                               (LStr "\"frances\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 341 16 64) (Loc 351 16 74))
@@ -460,7 +460,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 341 16 64) (Loc 351 16 74))
-                               (LStr "'georgina'")))
+                               (LStr "\"georgina\"")))
                      , Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 353 16 76) (Loc 361 16 84))
@@ -468,7 +468,7 @@ Right
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 353 16 76) (Loc 361 16 84))
-                               (LStr "'harold'")))
+                               (LStr "\"harold\"")))
                      ])))
         , Typed
             ([] :=>
@@ -667,12 +667,12 @@ Right
                            (Typed
                               ([] :=> TCon (TC "String" Star) "prelude")
                               (Area (Loc 481 21 6) (Loc 485 21 10))
-                              (LStr "'>>'"))
+                              (LStr "\">>\""))
                            False))
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 487 21 12) (Loc 493 21 18))
-                        (LStr "'shit'"))
+                        (LStr "\"shit\""))
                      True))
                True)
         , Typed
@@ -839,12 +839,12 @@ Right
                            (Typed
                               ([] :=> TCon (TC "String" Star) "prelude")
                               (Area (Loc 534 23 12) (Loc 538 23 16))
-                              (LStr "'>>'"))
+                              (LStr "\">>\""))
                            False))
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 540 23 18) (Loc 546 23 24))
-                        (LStr "'shit'"))
+                        (LStr "\"shit\""))
                      True))
                True)
         , Typed

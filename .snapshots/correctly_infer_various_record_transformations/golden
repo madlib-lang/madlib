@@ -694,7 +694,7 @@ Right
                TRecord
                  (fromList
                     [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                    , ( "p" , TCon (TC "String" Star) "prelude" )
+                    , ( "p" , TCon (TC "Char" Star) "prelude" )
                     ])
                  (Just (TVar (TV "h241" Star))))
             (Area (Loc 191 14 1) (Loc 222 14 32))
@@ -706,7 +706,7 @@ Right
                      TRecord
                        (fromList
                           [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                          , ( "p" , TCon (TC "String" Star) "prelude" )
+                          , ( "p" , TCon (TC "Char" Star) "prelude" )
                           ])
                        (Just (TVar (TV "h241" Star))))
                   (Area (Loc 196 14 6) (Loc 221 14 31))
@@ -717,11 +717,11 @@ Right
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "String" Star) "prelude"))
+                                (TCon (TC "Char" Star) "prelude"))
                              (TRecord
                                 (fromList
                                    [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                                   , ( "p" , TCon (TC "String" Star) "prelude" )
+                                   , ( "p" , TCon (TC "Char" Star) "prelude" )
                                    ])
                                 (Just (TVar (TV "h241" Star)))))
                         (Area (Loc 196 14 6) (Loc 222 14 32))
@@ -734,17 +734,17 @@ Right
                                       (TRecord
                                          (fromList
                                             [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                                            , ( "p" , TCon (TC "String" Star) "prelude" )
+                                            , ( "p" , TCon (TC "Char" Star) "prelude" )
                                             ])
                                          (Just (TVar (TV "h241" Star)))))
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                         (TCon (TC "String" Star) "prelude"))
+                                         (TCon (TC "Char" Star) "prelude"))
                                       (TRecord
                                          (fromList
                                             [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                                            , ( "p" , TCon (TC "String" Star) "prelude" )
+                                            , ( "p" , TCon (TC "Char" Star) "prelude" )
                                             ])
                                          (Just (TVar (TV "h241" Star))))))
                               (Area (Loc 196 14 6) (Loc 199 14 9))
@@ -755,20 +755,20 @@ Right
                                  TRecord
                                    (fromList
                                       [ ( "g" , TCon (TC "Integer" Star) "prelude" )
-                                      , ( "p" , TCon (TC "String" Star) "prelude" )
+                                      , ( "p" , TCon (TC "Char" Star) "prelude" )
                                       ])
                                    Nothing)
                               (Area (Loc 200 14 10) (Loc 216 14 26))
                               (Record
                                  [ Typed
-                                     ([] :=> TCon (TC "String" Star) "prelude")
+                                     ([] :=> TCon (TC "Char" Star) "prelude")
                                      (Area (Loc 202 14 12) (Loc 208 14 18))
                                      (Field
                                         ( "p"
                                         , Typed
-                                            ([] :=> TCon (TC "String" Star) "prelude")
+                                            ([] :=> TCon (TC "Char" Star) "prelude")
                                             (Area (Loc 205 14 15) (Loc 208 14 18))
-                                            (LStr "'4'")
+                                            (LChar '4')
                                         ))
                                  , Typed
                                      ([ IsIn "Number" [ TVar (TV "i242" Star) ] Nothing ] :=>
@@ -791,9 +791,9 @@ Right
                      (Typed
                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
-                           TCon (TC "String" Star) "prelude")
+                           TCon (TC "Char" Star) "prelude")
                         (Area (Loc 218 14 28) (Loc 221 14 31))
-                        (LStr "'5'"))
+                        (LChar '5'))
                      True)))
         , Typed
             ([ IsIn "Number" [ TVar (TV "s278" Star) ] Nothing ] :=>
@@ -808,13 +808,13 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TRecord
                           (fromList
-                             [ ( "b" , TCon (TC "String" Star) "prelude" )
+                             [ ( "b" , TCon (TC "Char" Star) "prelude" )
                              , ( "c" , TVar (TV "s278" Star) )
                              ])
                           (Just (TVar (TV "r277" Star)))))
                     (TRecord
                        (fromList
-                          [ ( "b" , TCon (TC "String" Star) "prelude" )
+                          [ ( "b" , TCon (TC "Char" Star) "prelude" )
                           , ( "c" , TVar (TV "s278" Star) )
                           ])
                        (Just (TVar (TV "r277" Star))))))
@@ -834,13 +834,13 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TRecord
                                 (fromList
-                                   [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                   [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                    , ( "c" , TVar (TV "s278" Star) )
                                    ])
                                 (Just (TVar (TV "r277" Star)))))
                           (TRecord
                              (fromList
-                                [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                 , ( "c" , TVar (TV "s278" Star) )
                                 ])
                              (Just (TVar (TV "r277" Star))))))
@@ -865,13 +865,13 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TRecord
                                       (fromList
-                                         [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                         [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                          , ( "c" , TVar (TV "s278" Star) )
                                          ])
                                       (Just (TVar (TV "r277" Star)))))
                                 (TRecord
                                    (fromList
-                                      [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                      [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                       , ( "c" , TVar (TV "s278" Star) )
                                       ])
                                    (Just (TVar (TV "r277" Star))))))
@@ -901,13 +901,13 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
                                           (fromList
-                                             [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                             [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                              , ( "c" , TVar (TV "s278" Star) )
                                              ])
                                           (Just (TVar (TV "r277" Star)))))
                                     (TRecord
                                        (fromList
-                                          [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                          [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                           , ( "c" , TVar (TV "s278" Star) )
                                           ])
                                        (Just (TVar (TV "r277" Star)))))
@@ -922,7 +922,7 @@ Right
                                       ] :=>
                                         TRecord
                                           (fromList
-                                             [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                             [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                              , ( "c" , TVar (TV "s278" Star) )
                                              ])
                                           (Just (TVar (TV "r277" Star))))
@@ -937,7 +937,7 @@ Right
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                              [ ( "b" , TCon (TC "Char" Star) "prelude" )
                                               , ( "c" , TVar (TV "s278" Star) )
                                               ])
                                            (Just (TVar (TV "r277" Star))))
@@ -952,7 +952,7 @@ Right
                                                       TRecord
                                                         (fromList
                                                            [ ( "b"
-                                                             , TCon (TC "String" Star) "prelude"
+                                                             , TCon (TC "Char" Star) "prelude"
                                                              )
                                                            , ( "c" , TVar (TV "s278" Star) )
                                                            ])
@@ -1157,14 +1157,14 @@ Right
                                                        True)
                                                 ))
                                          , Typed
-                                             ([] :=> TCon (TC "String" Star) "prelude")
+                                             ([] :=> TCon (TC "Char" Star) "prelude")
                                              (Area (Loc 267 19 3) (Loc 273 19 9))
                                              (Field
                                                 ( "b"
                                                 , Typed
-                                                    ([] :=> TCon (TC "String" Star) "prelude")
+                                                    ([] :=> TCon (TC "Char" Star) "prelude")
                                                     (Area (Loc 270 19 6) (Loc 273 19 9))
-                                                    (LStr "'3'")
+                                                    (LChar '3')
                                                 ))
                                          ])
                                   ])
