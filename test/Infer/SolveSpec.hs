@@ -1194,10 +1194,10 @@ spec = do
 
     it "should resolve template strings" $ do
       let code = unlines
-            [ "x = if(true) { 'it is true' } else { 'it is false' }"
+            [ "x = if(true) { \"it is true\" } else { \"it is false\" }"
             , "`probably ${x}!`"
             , ""
-            , "`3 + 7 is ${if(3 + 7 > 10) { 'more than 10' } else { 'less than 10' } }`" -- With some more complex interpolated things
+            , "`3 + 7 is ${if(3 + 7 > 10) { \"more than 10\" } else { \"less than 10\" } }`" -- With some more complex interpolated things
             ]
           actual = tester code
       snapshotTest "should resolve template strings" actual
