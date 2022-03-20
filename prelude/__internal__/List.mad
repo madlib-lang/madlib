@@ -683,3 +683,17 @@ export takeWhile = (predicate, list) => where(list) {
       ? [a, ...takeWhile(predicate, xs)]
       : []
 }
+
+reverse :: List a -> List a
+export reverse = (list) => {
+  helper :: List a -> List a -> List a
+  helper = (acc, l) => where(l) {
+    [h, ...xs] =>
+      helper([h, ...acc], xs)
+
+    [] =>
+      acc
+  }
+
+  return helper([], list)
+}

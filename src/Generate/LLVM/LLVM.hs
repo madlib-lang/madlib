@@ -1144,6 +1144,12 @@ generateExp env symbolTable exp = case exp of
     result                <- Instruction.and leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
+  Core.Typed (_ IT.:=> t) _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "||" _)) [leftOperand, rightOperand]) -> do
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    result                <- Instruction.or leftOperand' rightOperand'
+    return (symbolTable, result, Nothing)
+
   Core.Typed qt@(_ IT.:=> t) _ metadata (Core.Call fn args) -> case fn of
     -- Calling a known method
     Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> case methodName of
