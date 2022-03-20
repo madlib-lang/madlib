@@ -87,3 +87,6 @@ test("repeat", (_) => assertEquals(String.repeat('a', 10), "aaaaaaaaaa"))
 
 test("toUpper", (_) => assertEquals(String.toUpper("atwzö2êéè‡‹©Ïƒ¬"), "ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"))
 test("toLower", (_) => assertEquals(String.toLower("ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"), "atwzö2êéè‡‹©ïƒ¬"))
+
+test("pushChar", (_) => assertEquals(String.pushChar('a', "bc"), "abc"))
+test("appendChar", (_) => assertEquals(String.appendChar('c', "ab"), "abc"))

@@ -4632,7 +4632,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv"
+        <> " -lruntime -lgc -luv -lpcre2-8"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
         <>" -o " <> executablePath
 
@@ -4642,7 +4642,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
+        <> " -lruntime -lgc -luv -lpcre2-8  -lcurl -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
 
     _ ->
       callCommand $
@@ -4650,4 +4650,4 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lcurl -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -pthread -ldl -o " <> executablePath
