@@ -20,6 +20,10 @@ int64_t madlib__string__length(unsigned char *s);
 
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s);
 
+char *madlib__string__trim(char *s);
+char *madlib__string__trimStart(char *s);
+char *madlib__string__trimEnd(char *s);
+
 char **madlib__string__internal__inspect(char **s);
 
 char *madlib__string__internal__concat(char *s1, char *s2);
@@ -35,6 +39,10 @@ char *madlib__string__fromList(madlib__list__Node_t *list);
 madlib__list__Node_t *madlib__string__split(char *str, char *separator);
 
 char *madlib__string__replace(char *regex, char *replace, char *str);
+bool madlib__string__match(char *regex, char *str);
+
+unsigned char *madlib__string__toUpper(unsigned char *str);
+unsigned char *madlib__string__toLower(unsigned char *str);
 
 #ifdef __cplusplus
 }

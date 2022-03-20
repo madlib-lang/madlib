@@ -42,6 +42,14 @@ export toLower = (s) => #- s.toLowerCase() -#
 toUpper :: String -> String
 export toUpper = (s) => #- s.toUpperCase() -#
 
+#elseif llvm
+
+toLower :: String -> String
+export toLower = extern "madlib__string__toLower"
+
+toUpper :: String -> String
+export toUpper = extern "madlib__string__toUpper"
+
 #endif
 
 
@@ -222,7 +230,6 @@ export takeLast = (n, s) => slice(-n, 0, s)
 
 #iftarget js
 
-
 nthChar :: Integer -> String -> Maybe String
 export nthChar = (n, s) => #-{
   const c = s[n]
@@ -235,6 +242,10 @@ export firstChar = nthChar(0)
 lastChar :: String -> Maybe String
 export lastChar = (s) => nthChar(length(s) - 1, s)
 
+#endif
+
+#iftarget js
+
 trim :: String -> String
 export trim = (s) => #- s.trim() -#
 
@@ -244,21 +255,19 @@ export trimStart = (s) => #- s.trimStart() -#
 trimEnd :: String -> String
 export trimEnd = (s) => #- s.trimEnd() -#
 
-/**
- * Returns true if the character is a letter, false otherwise. Note that if the
- * input contains more than one character, false is returned.
- */
-isLetter :: String -> Boolean
-export isLetter = (s) => #-{
-  if (s.length !== 1) {
-    return false
-  }
+#elseif llvm
 
-  return RegExp(/^\p{L}/,'u').test(s)
-}-#
+trim :: String -> String
+export trim = extern "madlib__string__trim"
 
+trimStart :: String -> String
+export trimStart = extern "madlib__string__trimStart"
+
+trimEnd :: String -> String
+export trimEnd = extern "madlib__string__trimEnd"
 
 #endif
+
 
 #iftarget js
 
@@ -272,30 +281,25 @@ export length = extern "madlib__string__length"
 
 #endif
 
+repeat :: Char -> Integer -> String
+export repeat = (c, n) => pipe(
+  List.repeat(c),
+  fromList
+)(n)
+
 #iftarget js
-
-/**
- * Returns true if the character is a digit, false otherwise. Note that if the
- * input contains more than one character, false is returned.
- */
-isDigit :: String -> Boolean
-export isDigit = (s) => length(s) != 1
-  ? false
-  : s == "0" ||
-    s == "1" ||
-    s == "2" ||
-    s == "3" ||
-    s == "4" ||
-    s == "5" ||
-    s == "6" ||
-    s == "7" ||
-    s == "8" ||
-    s == "9"
-
-repeat :: Integer -> String -> String
-export repeat = (n, s) => #- s.repeat(n) -#
 
 match :: String -> String -> Boolean
 export match = (regex, input) => #- input.match(regex) -#
 
+#elseif llvm
+
+match :: String -> String -> Boolean
+export match = extern "madlib__string__match"
+
 #endif
+
+// TODO: add the following
+// dropWhile
+// takeWhile
+// reverse
