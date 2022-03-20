@@ -159,6 +159,8 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.LStr  x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LStr x)
 
+    Slv.LChar x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LChar x)
+
     Slv.LBool x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LBool x)
 
     Slv.LUnit             -> return $ Core.Typed qt area [] (Core.Literal Core.LUnit)
@@ -327,6 +329,8 @@ instance Processable Slv.Pattern Core.Pattern where
     Slv.PNum    num  -> return $ Core.Typed qt area [] $ Core.PNum num
 
     Slv.PStr    str  -> return $ Core.Typed qt area [] $ Core.PStr str
+
+    Slv.PChar   str  -> return $ Core.Typed qt area [] $ Core.PChar str
 
     Slv.PBool   boo  -> return $ Core.Typed qt area [] $ Core.PBool boo
 

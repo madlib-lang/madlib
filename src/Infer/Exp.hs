@@ -52,6 +52,7 @@ infer env lexp = do
 
     Can.LFloat _              -> return (M.empty, [], tFloat, applyLitSolve lexp ([] :=> tFloat))
     Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp ([] :=> tStr))
+    Can.LChar  _              -> return (M.empty, [], tChar, applyLitSolve lexp ([] :=> tChar))
     Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp ([] :=> tBool))
     Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp ([] :=> tUnit))
     Can.TemplateString _      -> inferTemplateString env' lexp
@@ -81,6 +82,7 @@ applyLitSolve (Can.Canonical area exp) qt = case exp of
   Can.LNum  v  -> Slv.Typed qt area $ Slv.LNum v
   Can.LFloat v -> Slv.Typed qt area $ Slv.LFloat v
   Can.LStr  v  -> Slv.Typed qt area $ Slv.LStr v
+  Can.LChar  v -> Slv.Typed qt area $ Slv.LChar v
   Can.LBool v  -> Slv.Typed qt area $ Slv.LBool v
   Can.LUnit    -> Slv.Typed qt area Slv.LUnit
 
@@ -112,6 +114,9 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 
   Can.PStr    n             ->
     Slv.Typed ([] :=> tStr) area $ Slv.PStr n
+
+  Can.PChar    n             ->
+    Slv.Typed ([] :=> tChar) area $ Slv.PChar n
 
   Can.PBool   n             ->
     Slv.Typed ([] :=> tBool) area $ Slv.PBool n

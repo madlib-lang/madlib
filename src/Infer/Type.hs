@@ -67,6 +67,9 @@ tBool = TCon (TC "Boolean" Star) "prelude"
 tStr :: Type
 tStr = TCon (TC "String" Star) "prelude"
 
+tChar :: Type
+tChar = TCon (TC "Char" Star) "prelude"
+
 tUnit :: Type
 tUnit = TCon (TC "{}" Star) "prelude"
 

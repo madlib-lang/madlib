@@ -37,6 +37,8 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.LStr  x           -> return $ Can.Canonical area (Can.LStr x)
 
+    Src.LChar  x           -> return $ Can.Canonical area (Can.LChar x)
+
     Src.LBool x           -> return $ Can.Canonical area (Can.LBool x)
 
     Src.LUnit             -> return $ Can.Canonical area Can.LUnit
@@ -415,6 +417,8 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PNum    num  -> return $ Can.Canonical area (Can.PNum num)
 
     Src.PStr    str  -> return $ Can.Canonical area (Can.PStr str)
+
+    Src.PChar    str  -> return $ Can.Canonical area (Can.PChar str)
 
     Src.PBool   boo  -> return $ Can.Canonical area (Can.PBool boo)
 

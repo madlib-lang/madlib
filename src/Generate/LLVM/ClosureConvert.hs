@@ -653,13 +653,16 @@ instance Convertable Pattern Pattern where
       pats' <- mapM (convert env) pats
       return $ Typed qt area metadata $ PCon name pats'
 
-    PNum num  ->
+    PNum num ->
       return $ Typed qt area metadata $ PNum num
 
-    PStr str  ->
+    PStr str ->
       return $ Typed qt area metadata $ PStr str
 
-    PBool bool  ->
+    PChar c ->
+      return $ Typed qt area metadata $ PChar c
+
+    PBool bool ->
       return $ Typed qt area metadata $ PBool bool
 
     PRecord pats -> do

@@ -40,6 +40,9 @@ inferPattern env (Can.Canonical area pat) = case pat of
   Can.PStr  s ->
     return (Slv.Typed ([] :=> tStr) area (Slv.PStr s), [], M.empty, tStr)
 
+  Can.PChar  s ->
+    return (Slv.Typed ([] :=> tChar) area (Slv.PChar s), [], M.empty, tChar)
+
   Can.PVar  i -> do
     v    <- newTVar Star
     env' <- safeExtendVars env (i, toScheme v)

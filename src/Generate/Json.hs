@@ -261,6 +261,14 @@ compileExpFields depth exp = case exp of
   Slv.LBool val ->
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
 
+  Slv.LChar val ->
+    indent depth
+      <> "\"nodeType\": \"LiteralString\",\n"
+      <> indent depth
+      <> "\"value\": "
+      <> "\"" <> show val <> "\""
+      <> "\n"
+
   Slv.LStr val ->
     indent depth
       <> "\"nodeType\": \"LiteralString\",\n"
