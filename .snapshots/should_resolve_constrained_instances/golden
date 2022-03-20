@@ -217,11 +217,11 @@ Right
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 88 6 21) (Loc 94 6 27))
-                                             (LStr "'True'"))
+                                             (LStr "\"True\""))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 97 6 30) (Loc 104 6 37))
-                                             (LStr "'False'")))
+                                             (LStr "\"False\"")))
                                    ])))
                       , Forall
                           []
@@ -589,7 +589,7 @@ Right
                                                                             (Area
                                                                                (Loc 257 14 29)
                                                                                (Loc 261 14 33))
-                                                                            (LStr "'#['"))
+                                                                            (LStr "\"#[\""))
                                                                          False))
                                                                    (Typed
                                                                       ([ IsIn
@@ -987,7 +987,7 @@ Right
                                                                                               14
                                                                                               52))
                                                                                         (LStr
-                                                                                           "', '"))
+                                                                                           "\", \""))
                                                                                      False))
                                                                                (Typed
                                                                                   ([ IsIn
@@ -1316,7 +1316,7 @@ Right
                                                                                               14
                                                                                               70))
                                                                                         (LStr
-                                                                                           "']'"))
+                                                                                           "\"]\""))
                                                                                      True))
                                                                                True))
                                                                          True))
