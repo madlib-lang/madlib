@@ -68,8 +68,21 @@ export split = (separator, str) => #- {
 lines :: String -> List String
 export lines = split("\n")
 
-mapChars :: (String -> String) -> String -> String
+#endif
+
+#iftarget js
+
+mapChars :: (Char -> Char) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
+
+#elseif llvm
+
+mapChars :: (Char -> Char) -> String -> String
+export mapChars = extern "madlib__string__mapChars"
+
+#endif
+
+#iftarget js
 
 reduceChars :: (a -> String -> a) -> a -> String -> a
 export reduceChars = (f, initial, s) => #- s.split("").reduce((a, b) => f(a)(b), initial) -#
