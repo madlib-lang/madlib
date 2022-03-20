@@ -16,19 +16,6 @@ import {
 } from "JsonValue"
 
 
-
-// type JsonValue
-//   = JsonString(String)
-//   | JsonInteger(Integer)
-//   | JsonFloat(Float)
-//   | JsonBoolean(Boolean)
-//   | JsonNull
-//   | JsonObject(Dictionary String JsonValue)
-//   | JsonArray(List JsonValue)
-
-
-import IO from "IO"
-
 // Pretty Printer
 // --------------
 
@@ -124,6 +111,9 @@ escapeString = (s) => pipe(
 )(s)
 
 
+// Printer Public API
+// ------------------
+
 string :: String -> JsonValue
 export string = (s) =>
   JsonString(s)
@@ -168,57 +158,3 @@ export printJson = (width, value) => pipe(
   jsonToDoc,
   PP.prettyPrint(width)
 )(value)
-
-
-IO.putLine(
-  printJson(
-    100,
-    list(string, ["hello", "str2", "str3"])
-  )
-)
-
-
-// IO.putLine(
-//   PP.prettyPrint(
-//     10, 
-//     jsonToDoc(
-//       JsonArray([
-//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
-//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
-//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
-//       ])
-//     )
-//   )
-// )
-
-// IO.putLine(
-//   PP.prettyPrint(
-//     10, 
-//     jsonToDoc(
-//       JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
-//     )
-//   )
-// )
-
-
-// IO.putLine(
-//   PP.prettyPrint(
-//     10, 
-//     jsonToDoc(
-//       JsonObject({{
-//         "fieldName": JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
-//         "fieldName2": JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
-//         "fieldName3": JsonArray([JsonString("str\"1"), JsonString("str2\n"), JsonString("str3\t"), JsonString("str4\r\n")])
-//       }})
-//     )
-//   )
-// )
-
-// IO.putLine(
-//   PP.prettyPrint(
-//     100, 
-//     jsonToDoc(
-//       JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
-//     )
-//   )
-// )

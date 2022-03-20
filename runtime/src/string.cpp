@@ -18,16 +18,35 @@ extern "C" {
 #endif
 
 char *madlib__string__replace(char *regex, char *replace, char *str) {
-  std::string result = std::regex_replace(std::string(str), std::regex(regex), std::string(replace),
-                                          std::regex_constants::format_first_only);
-  const char *cStr = result.c_str();
-  size_t length = result.length();
+  int errornumber;
+  size_t inputLength = strlen(str);
+  PCRE2_SIZE erroroffset;
+  pcre2_code *re = pcre2_compile(
+    (PCRE2_SPTR)regex,
+    PCRE2_ZERO_TERMINATED,
+    PCRE2_UTF,
+    &errornumber,
+    &erroroffset,
+    NULL
+  );
 
-  char *copy = (char *)GC_malloc(sizeof(char) * (length + 1));
-  memcpy(copy, cStr, length);
-  copy[length] = '\0';
+  if (re == NULL) {
+    return str;
+  }
 
-  return copy;
+  size_t bufferLengthToUse = inputLength * 1.25;
+  size_t bufferLength = bufferLengthToUse;
+  char *buffer = (char*)GC_malloc(sizeof(char)*bufferLength);
+
+  int result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
+
+  while (result == PCRE2_ERROR_NOMEMORY) {
+    bufferLengthToUse = bufferLength = bufferLengthToUse * 2;
+    buffer = (char*)GC_malloc(sizeof(char)*bufferLength);
+    result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
+  }
+
+  return buffer;
 }
 
 
@@ -38,7 +57,7 @@ bool madlib__string__match(char *regex, char *str) {
   pcre2_code *re = pcre2_compile(
     (PCRE2_SPTR)regex,
     PCRE2_ZERO_TERMINATED,
-    0,
+    PCRE2_UTF,
     &errornumber,
     &erroroffset,
     NULL
@@ -63,16 +82,6 @@ bool madlib__string__match(char *regex, char *str) {
   return rc >= 0;
 }
 
-// bool madlib__string__match(char *regex, char *str) {
-//   std::locale old;
-//   std::locale::global(std::locale("en_US.UTF-8"));
-//   // std::locale::global(old);
-
-//   std::regex r(regex, std::regex_constants::extended);
-//   r.imbue(std::locale("en_US.UTF-8"));
-
-//   return std::regex_match(std::string(str), r);
-// }
 
 bool *madlib__string__internal__eq(char **s1, char **s2) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
@@ -233,8 +242,6 @@ madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
 }
 
 
-// TODO: do no copy when the end has not changed, but just return an offsetted pointer
-// that will make drop and takeLast a lot more performant
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   int skipCount = 0;
   int initialEnd = end;

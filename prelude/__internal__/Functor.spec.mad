@@ -1,5 +1,3 @@
-#iftarget js
-
 import { assertEquals, test } from "Test"
 import { Just } from "Maybe"
 import { mapL } from "./Functor"
@@ -8,5 +6,3 @@ test("mapL should map the functor with and assign it whatever value is given", (
   mapL(3),
   assertEquals($, Just(3))
 )(Just(1)))
-
-#endif

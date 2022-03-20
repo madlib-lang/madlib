@@ -1,31 +1,12 @@
 import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
-#iftarget js
 
-/**
- * A function to perform loops. Might be useful as an alternative to recursion
- * when the stack size might be a concern.
- * It takes an initial value, a predicate function that stops the loop whenever
- * it returns false, and a transformation function that takes the value returned
- * by the previous iteration.
- *
- * @since 0.7.0
- * @example
- * loop(1, (x) => x < 10, (x) => x * 2) // 16
- */
 loop :: a -> (a -> Boolean) -> (a -> a) -> a
-export loop = (start, pred, evaluate) => {
-  s = start
-  #-
-  while(pred(s)) {
-    s = evaluate(s)
-  }
-  -#
-  return s
-}
-
-#endif
+export loop = (start, pred, evaluate) =>
+  pred(start)
+    ? loop(evaluate(start), pred, evaluate)
+    : start
 
 
 /**

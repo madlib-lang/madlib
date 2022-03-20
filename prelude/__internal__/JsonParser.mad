@@ -17,7 +17,6 @@ import {
 } from "Parse"
 import String from "String"
 import List from "List"
-import Tuple from "Tuple"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import {} from "Number"
@@ -144,15 +143,19 @@ jsonObject = do {
 
 
 jsonValue :: Parse.Parser JsonValue
-jsonValue = choice([
-  jsonFloat,
-  jsonInteger,
-  jsonNull,
-  jsonBoolean,
-  jsonString,
-  jsonArray,
-  jsonObject,
-])
+jsonValue = do {
+  _ <- spaces
+
+  return choice([
+    jsonFloat,
+    jsonInteger,
+    jsonNull,
+    jsonBoolean,
+    jsonString,
+    jsonArray,
+    jsonObject,
+  ])
+}
 
 
 
@@ -167,12 +170,15 @@ getParserFn = (parser) => where(parser) {
     fn
 }
 
+
 parse :: Parser b -> String -> Either String b
 export parse = (parser, input) => pipe(
   runParser(jsonValue),
   where {
-    Left(_) =>
-      Left("Invalid json")
+    Left(e) => do {
+      IO.log(e)
+      return Left("Invalid json")
+    }
 
     Right(parsed) =>
       where(parser) {

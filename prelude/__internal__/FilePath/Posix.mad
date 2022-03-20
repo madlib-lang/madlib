@@ -1,5 +1,3 @@
-#iftarget js
-
 import String from "String"
 import {} from "Char"
 import { filter, first, last, drop, dropLast } from "List"
@@ -82,7 +80,7 @@ export canonicalizePath = pipe(
   map(
     ifElse(
       pipe(String.lastChar, equals(Just('/'))),
-      String.replace("([^/]*)/*", "$1/"),
+      String.replace("([^/]+)/*", "$1/"),
       identity
     )
   ),
@@ -185,5 +183,3 @@ export takeExtension = pipe(
   map(ifElse(String.isEmpty, identity, mconcat("."))),
   fromMaybe("")
 )
-
-#endif

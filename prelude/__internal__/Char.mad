@@ -57,7 +57,6 @@ export isDigit = (s) =>
   s == '9'
 
 
-// TODO: reconsider this and how we want to implement it
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the
  * input contains more than one character, false is returned.
@@ -67,3 +66,22 @@ export isLetter = (c) => pipe(
   show,
   String.match("[a-zA-Z]+")
 )(c)
+
+
+#iftarget js
+
+toLower :: Char -> Char
+export toLower = (c) => #- c.toLowerCase() -#
+
+toUpper :: Char -> Char
+export toUpper = (c) => #- c.toUpperCase() -#
+
+#elseif llvm
+
+toLower :: Char -> Char
+export toLower = extern "madlib__char__toLower"
+
+toUpper :: Char -> Char
+export toUpper = extern "madlib__char__toUpper"
+
+#endif

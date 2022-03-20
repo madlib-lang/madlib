@@ -15,6 +15,9 @@ char **madlib__char__internal__inspect(int32_t *unicode);
 
 int64_t madlib__char__compare(int32_t c1, int32_t c2);
 
+int32_t madlib__char__toLower(int32_t c);
+int32_t madlib__char__toUpper(int32_t c);
+
 char *utf8Encode(int32_t unicode);
 
 int32_t *utf8Decode(char *str);

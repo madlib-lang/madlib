@@ -1,0 +1,82 @@
+import { assertEquals, test } from "Test"
+import PrettyPrint from "./PrettyPrint"
+
+test(
+  "empty",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(80, PrettyPrint.empty),
+    ""
+  )
+)
+
+test(
+  "char",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(80, PrettyPrint.char('\n')),
+    "\n"
+  )
+)
+
+test(
+  "enclose",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(
+      80,
+      PrettyPrint.enclose(
+        PrettyPrint.char('['),
+        PrettyPrint.char(']'),
+        PrettyPrint.text("enclosed")
+      )
+    ),
+    "[enclosed]"
+  )
+)
+
+test(
+  "group - break",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(
+      10,
+      PrettyPrint.group(PrettyPrint.hcat([
+        PrettyPrint.text("first line"),
+        PrettyPrint.line,
+        PrettyPrint.text("second line"),
+      ]))
+    ),
+    "first line\nsecond line"
+  )
+)
+
+test(
+  "group - don't break",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(
+      30,
+      PrettyPrint.group(PrettyPrint.hcat([
+        PrettyPrint.text("first line"),
+        PrettyPrint.line,
+        PrettyPrint.text("second line"),
+      ]))
+    ),
+    "first line second line"
+  )
+)
+
+test(
+  "nest",
+  (_) => assertEquals(
+    PrettyPrint.prettyPrint(
+      30,
+      PrettyPrint.nest(
+        2,
+        PrettyPrint.hcat([
+          PrettyPrint.line,
+          PrettyPrint.text("first line"),
+          PrettyPrint.line,
+          PrettyPrint.text("second line"),
+        ])
+      )
+    ),
+    "\n  first line\n  second line"
+  )
+)

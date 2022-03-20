@@ -15,6 +15,26 @@ test(
   (_) => assertEquals(String.replace("a", "b", "abc"), "bbc")
 )
 
+test(
+  "replace should replace utf8 characters",
+  (_) => assertEquals(String.replace(".", "b", "äbc"), "bbb")
+)
+
+test(
+  "replace should replace characters that make the string way bigger",
+  (_) => assertEquals(String.replace(".", "like a lot more than just abc", "äbc"), "like a lot more than just abclike a lot more than just abclike a lot more than just abc")
+)
+
+test(
+  "replace - capture groups",
+  (_) => assertEquals(String.replace("(a+)", "{$1}", "aaa lot of aaas"), "{aaa} lot of {aaa}s")
+)
+
+test(
+  "match should match utf8 characters",
+  (_) => assertEquals(String.match(".", "ä"), true)
+)
+
 test("mapChars should map the characters of a String", (_) => {
   mapper = (char) => char == 'o' ? 'a' : char
   return assertEquals(String.mapChars(mapper, "Hello World"), "Hella Warld")
