@@ -1,8 +1,8 @@
 // file: path
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe'] = {};
-Inspect['Maybe']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
+Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485'] = {};
+Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
     return `Just(` + Inspect_v21.inspect()(a0) + `)`;

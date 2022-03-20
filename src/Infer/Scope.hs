@@ -306,8 +306,8 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
               Just n  -> n : foundNames
               Nothing -> foundNames
         next <- collectFromBody nextFound ntf globalScope localScope' es
-        return S.empty
-        -- return $ access <> next
+        -- return S.empty
+        return $ access <> next
 
     (Typed tipe area (If cond truthy falsy)) -> do
       condAccesses <- collect env

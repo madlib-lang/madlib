@@ -3,8 +3,8 @@ import R from "./Utils/Random.mjs";
 
 export let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe'] = {};
-Inspect['Maybe']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
+Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37'] = {};
+Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
     return `Just(` + Inspect_v21.inspect()(a0) + `)`;

@@ -3,19 +3,19 @@ export let Int8Bit = (a => ({ __constructor: "Int8Bit", __args: [ a ] }));
 export let Int16Bit = (a => ({ __constructor: "Int16Bit", __args: [ a ] }));
 export let Int32Bit = (a => ({ __constructor: "Int32Bit", __args: [ a ] }));
 export let Bytes = (a => ({ __constructor: "Bytes", __args: [ a ] }));
-Inspect['ByteWord'] = {};
-Inspect['ByteWord']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['ByteWord_69f1c9d46626f6b4732f10b20d210612'] = {};
+Inspect['ByteWord_69f1c9d46626f6b4732f10b20d210612']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Int8Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int8Bit(` + Inspect.Integer.inspect()(a0) + `)`;
+    return `Int8Bit(` + Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Int16Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int16Bit(` + Inspect.Integer.inspect()(a0) + `)`;
+    return `Int16Bit(` + Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Int32Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int32Bit(` + Inspect.Integer.inspect()(a0) + `)`;
+    return `Int32Bit(` + Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -26,11 +26,11 @@ Inspect['ByteWord']['inspect'] = () => (__$a__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Bytes'] = {};
-Inspect['Bytes']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Bytes_69f1c9d46626f6b4732f10b20d210612'] = {};
+Inspect['Bytes_69f1c9d46626f6b4732f10b20d210612']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Bytes" && true) {
     let a0 = __x__.__args[0];
-    return `Bytes(` + Inspect.List.inspect()(Inspect.ByteWord)(a0) + `)`;
+    return `Bytes(` + Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(Inspect.ByteWord_69f1c9d46626f6b4732f10b20d210612)(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -48,15 +48,15 @@ import B from "./Binary.mjs";
 
 export let TextData = (a => ({ __constructor: "TextData", __args: [ a ] }));
 export let BinaryData = (a => ({ __constructor: "BinaryData", __args: [ a ] }));
-Inspect['Data'] = {};
-Inspect['Data']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Data_9029b04665903b3e1f3a8e816ce9ba2d'] = {};
+Inspect['Data_9029b04665903b3e1f3a8e816ce9ba2d']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "TextData" && true) {
     let a0 = __x__.__args[0];
-    return `TextData(` + Inspect.String.inspect()(a0) + `)`;
+    return `TextData(` + Inspect.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "BinaryData" && true) {
     let a0 = __x__.__args[0];
-    return `BinaryData(` + Inspect.Bytes.inspect()(a0) + `)`;
+    return `BinaryData(` + Inspect.Bytes_69f1c9d46626f6b4732f10b20d210612.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -76,15 +76,15 @@ import B from "./Binary.mjs";
 export let TextBody = (a => ({ __constructor: "TextBody", __args: [ a ] }));
 export let BinaryBody = (a => ({ __constructor: "BinaryBody", __args: [ a ] }));
 export let Response = (a => ({ __constructor: "Response", __args: [ a ] }));
-Inspect['Body'] = {};
-Inspect['Body']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Body_d206b5c3b3648903ef6233d5061d1089'] = {};
+Inspect['Body_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "TextBody" && true) {
     let a0 = __x__.__args[0];
-    return `TextBody(` + Inspect.String.inspect()(a0) + `)`;
+    return `TextBody(` + Inspect.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "BinaryBody" && true) {
     let a0 = __x__.__args[0];
-    return `BinaryBody(` + Inspect.Bytes.inspect()(a0) + `)`;
+    return `BinaryBody(` + Inspect.Bytes_69f1c9d46626f6b4732f10b20d210612.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -97,11 +97,11 @@ Inspect['Body']['inspect'] = () => (__$a__ => ((__x__) => {
 })(__$a__));
 Inspect['Record_bodya'] = {};
 Inspect['Record_bodya']['inspect'] = () => (Inspect_t279) => (__$a__ => `{ ` + `body: ` + Inspect_t279.inspect()(__$a__.body) + ` }`);
-Inspect['Response'] = {};
-Inspect['Response']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Response_d206b5c3b3648903ef6233d5061d1089'] = {};
+Inspect['Response_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Response" && true) {
     let a0 = __x__.__args[0];
-    return `Response(` + Inspect.Record_bodya.inspect()(Inspect.Body)(a0) + `)`;
+    return `Response(` + Inspect.Record_bodya.inspect()(Inspect.Body_d206b5c3b3648903ef6233d5061d1089)(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -139,8 +139,8 @@ W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile(`./f.zip`))(W.map(FS.BinaryData)(
 export default {};
 // file: /root/project/src/Wish.mad
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
-Inspect['Wish'] = {};
-Inspect['Wish']['inspect'] = () => (Inspect_r17) => (Inspect_t19) => (__$a__ => ((__x__) => {
+Inspect['Wish_dfea03aabf5b8615791941bb2605337e'] = {};
+Inspect['Wish_dfea03aabf5b8615791941bb2605337e']['inspect'] = () => (Inspect_r17) => (Inspect_t19) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
