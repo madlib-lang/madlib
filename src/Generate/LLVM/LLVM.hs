@@ -1795,7 +1795,7 @@ generateExp env symbolTable exp = case exp of
           undefined
 
   Core.Typed qt _ _ (Core.Access record (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
-    nameOperand        <- buildStr fieldName
+    nameOperand           <- buildStr fieldName
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- call selectField [(nameOperand, []), (recordOperand, [])]
 

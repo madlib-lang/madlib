@@ -179,9 +179,9 @@ instance Processable Slv.Exp Core.Exp where
       args' <- mapM (toCore enabled) args
       return $ Core.Typed qt area [] (Core.Call fn'' args')
 
-    Slv.Access rec field -> do
-      rec'   <- toCore enabled rec
-      field' <- toCore enabled field
+    Slv.Access rec field@(Slv.Typed fieldQt fieldArea (Slv.Var ('.':fieldName) isConstructor)) -> do
+      rec' <- toCore enabled rec
+      let field' = Core.Typed fieldQt fieldArea [] (Core.Var ('.':fieldName) isConstructor)
       return $ Core.Typed qt area [] (Core.Access rec' field')
 
     Slv.Abs (Slv.Typed _ _ param) body -> do
@@ -201,7 +201,23 @@ instance Processable Slv.Exp Core.Exp where
       return $ Core.Typed qt area [] (Core.NameExport name)
 
     Slv.Var name isConstructor ->
-      return $ Core.Typed qt area [] (Core.Var name isConstructor)
+      case name of
+        '.':fieldName -> do
+          let expPreds    = preds qt
+              recordType  = head (getParamTypes (getQualified qt))
+              recordPreds = selectPredsForType expPreds recordType
+              returnType  = getReturnType (getQualified qt)
+              returnPreds = selectPredsForType expPreds returnType
+          return $ Core.Typed qt area [] (Core.Definition ["__R__"] [
+              Core.Typed (returnPreds :=> returnType) area [] (
+                Core.Access
+                  (Core.Typed (recordPreds :=> recordType) area [] (Core.Var "__R__" False))
+                  (Core.Typed (returnPreds :=> returnType) area [] (Core.Var ('.':fieldName) False))
+              )
+            ])
+
+        _ ->
+          return $ Core.Typed qt area [] (Core.Var name isConstructor)
 
     Slv.TypedExp exp _ _ -> do
       toCore enabled exp
