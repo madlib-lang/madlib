@@ -31,6 +31,7 @@ instance Show Float {
 
 
 #iftarget js
+
 import { Just, Nothing } from "Maybe"
 
 scanInteger :: Number a => String -> Maybe a
@@ -39,11 +40,15 @@ scanInteger = (str) => (#- {
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
-
-
 scanFloat :: Number a => String -> Maybe a
 scanFloat = (str) => (#- {
   const n = parseFloat(str)
+  return isNaN(n) ? Nothing : Just(n)
+} -#)
+
+scanByte :: Number a => String -> Maybe a
+scanByte = (str) => (#- {
+  const n = parseInt(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
@@ -66,6 +71,10 @@ instance Scan Integer {
 
 instance Scan Float {
   scan = scanFloat
+}
+
+instance Scan Byte {
+  scan = scanByte
 }
 
 
@@ -128,15 +137,4 @@ export formatDecimal = (a, x) => #-{
   return isNaN(n) ? "0" : n
 }-#
 
-// TODO: Move to List and write with recursion. Add llvm version.
-range :: Integer -> Integer -> List Integer
-export range = (a, b) => #-{
-  const out = []
-  let x = a
-  while (x < b) {
-    out.push(x)
-    x += 1
-  }
-  return out
-}-#
 #endif

@@ -207,7 +207,7 @@ eqFn target optimized =
         , "        l = l.n;"
         , "        r = r.n;"
         , "      }"
-        , "      return result;"
+        , "      return result && r === null;"
         , "    }"
         , "    const keysL = Object.keys(l);"
         , "    const keysR = Object.keys(r);"

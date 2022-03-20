@@ -10,11 +10,13 @@ import {
   find,
   first,
   init,
+  intercalate,
   intersperse,
   last,
   length,
   mapWithIndex,
   nth,
+  range,
   reject,
   reverse,
   reduce,
@@ -88,6 +90,10 @@ test("singleton should wrap a value in a list", (_) =>
 
 test("intersperse should add an given value between all elements of a list", (_) =>
   assertEquals(intersperse("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
+)
+
+test("intercalate", (_) =>
+  assertEquals(intercalate(["and"], ["cats", "dogs", "rats"]), ["cats", "and", "dogs", "and", "rats"])
 )
 
 test("mapWithIndex", (_) =>
@@ -183,3 +189,7 @@ test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]
 test("takeWhile", (_) => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
 test("reverse", (_) => assertEquals(reverse([1, 2, 3]), [3, 2, 1]))
+
+test("range", (_) => assertEquals(range(3, 7), [3, 4, 5, 6]))
+
+test("range - same start and end", (_) => assertEquals(range(3, 3), []))
