@@ -18,6 +18,8 @@ bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2);
 
 int64_t madlib__string__length(unsigned char *s);
 
+char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s);
+
 char *madlib__string__internal__concat(char *s1, char *s2);
 
 char *stripTrailingZeros(char *number);
