@@ -164,8 +164,21 @@ export mapChars = extern "madlib__string__mapChars"
 reduceChars :: (a -> String -> a) -> a -> String -> a
 export reduceChars = (f, initial, s) => #- s.split("").reduce((a, b) => f(a)(b), initial) -#
 
+#endif
+
+#iftarget js
+
 slice :: Integer -> Integer -> String -> String
 export slice = (start, end, s) => #- s.slice(start, end) -#
+
+#elseif llvm
+
+slice :: Integer -> Integer -> String -> String
+export slice = extern "madlib__string__slice"
+
+#endif
+
+#iftarget js
 
 isEmpty :: String -> Boolean
 export isEmpty = (s) => s == ""
