@@ -89,19 +89,19 @@ instance Applicative Validate {
       NotValid(warnings, f(a))
 
     #[NotValid(warningsA, f), NotValid(warningsB, a)] =>
-      NotValid(mappend(warningsA, warningsB), f(a))
+      NotValid(mconcat(warningsA, warningsB), f(a))
 
     #[NotValid(warningsA, f), ValidationError(warningsB, err, maybeA)] =>
-      ValidationError(mappend(warningsA, warningsB), err, map(f, maybeA))
+      ValidationError(mconcat(warningsA, warningsB), err, map(f, maybeA))
 
     #[ValidationError(warningsA, errA, maybeF), ValidationError(warningsB, errB, maybeA)] =>
-      ValidationError(mappend(warningsA, warningsB), errA, ap(maybeF, maybeA))
+      ValidationError(mconcat(warningsA, warningsB), errA, ap(maybeF, maybeA))
 
     #[ValidationError(warnings, err, maybeF), Valid(a)] =>
       ValidationError(warnings, err, ap(maybeF, Just(a)))
 
     #[ValidationError(warningsA, err, maybeF), NotValid(warningsB, a)] =>
-      ValidationError(mappend(warningsA, warningsB), err, ap(maybeF, Just(a)))
+      ValidationError(mconcat(warningsA, warningsB), err, ap(maybeF, Just(a)))
   }
 }
 
@@ -174,24 +174,24 @@ export combine = (a, b) => where(#[a, b]) {
     NotValid(warnings, x)
 
   #[NotValid(warningsA, _), NotValid(warningsB, x)] =>
-    NotValid(mappend(warningsA, warningsB), x)
+    NotValid(mconcat(warningsA, warningsB), x)
 
   #[NotValid(warningsA, _), ValidationError(warningsB, error, x)] =>
-    ValidationError(mappend(warningsA, warningsB), error, x)
+    ValidationError(mconcat(warningsA, warningsB), error, x)
 
   #[ValidationError(warnings, error, maybeA), Valid(v)] =>
     ValidationError(warnings, error, map(always(v), maybeA))
 
   #[ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)] =>
     ValidationError(
-      mappend(warningsA, warningsB),
+      mconcat(warningsA, warningsB),
       error,
       map(always(v), maybeA)
     )
 
   #[ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)] =>
     ValidationError(
-      mappend(warningsA, warningsB),
+      mconcat(warningsA, warningsB),
       error,
       m
     )

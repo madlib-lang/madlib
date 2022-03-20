@@ -76,14 +76,14 @@ instance Semigroup (List a) {
 
 instance Monoid (List a) {
   mempty = []
-  mappend = assoc
+  mconcat = assoc
 }
 
 // instance Show a => Show (List a) {
 //   show = pipe(
 //     map(show),
 //     intercalate(", "),
-//     reduceL(mappend, ""),
+//     reduceL(mconcat, ""),
 //     (x) => `[${x}]`
 //   )
 // }
