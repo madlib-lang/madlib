@@ -72,6 +72,39 @@ export lines = split("\n")
 
 #iftarget js
 
+toList :: String -> List Char
+export toList = (str) => #- {
+  let result = {}
+  let current = result
+  str.split('').forEach(c => {
+    current = current.n = { v: c, n: null }
+  })
+  return result.n
+} -#
+
+fromList :: List Char -> String
+export fromList = (list) => #- {
+  let chars = []
+  while (list !== null) {
+    chars.push(list.v)
+    list = list.n
+  }
+  return chars.join('')
+} -#
+
+
+#elseif llvm
+
+toList :: String -> List Char
+export toList = extern "madlib__string__toList"
+
+fromList :: List Char -> String
+export fromList = extern "madlib__string__fromList"
+
+#endif
+
+#iftarget js
+
 mapChars :: (Char -> Char) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
 

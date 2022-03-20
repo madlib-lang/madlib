@@ -2,6 +2,7 @@
 #define STRING_H
 
 #include "apply-pap.hpp"
+#include "list.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +23,10 @@ char *madlib__string__internal__concat(char *s1, char *s2);
 char *stripTrailingZeros(char *number);
 
 char *madlib__string__mapChars(PAP_t *pap, char *str);
+
+madlib__list__Node_t *madlib__string__toList(char *str);
+
+char *madlib__string__fromList(madlib__list__Node_t *list);
 
 #ifdef __cplusplus
 }
