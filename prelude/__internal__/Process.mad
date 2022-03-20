@@ -2,62 +2,72 @@
 
 import type { Maybe } from "Maybe"
 
-import W from "Wish"
-import { Nothing, Just } from "Maybe"
 
 #endif
 
+import { Nothing, Just } from "Maybe"
+import Wish from "Wish"
 import Dictionary from "Dictionary"
-import {} from "String"
+import String from "String"
+import List from "List"
+
+
+// exit code, stdout, stderr
+// export type CommandResult = CommandResult(Integer, String, String)
+export alias CommandResult = {
+  exitCode :: Integer,
+  stdout :: String,
+  stderr :: String  
+}
+
+makeCommandResult :: Integer -> String -> String -> CommandResult
+makeCommandResult = (exitCode, stdout, stderr) => ({
+  exitCode,
+  stdout,
+  stderr,
+})
 
 #iftarget js
 
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
-
-export type CommandError = CommandError(Integer, String)
-
-
-getCommandErrorMessage :: CommandError -> String
-export getCommandErrorMessage = where { CommandError(_, message) => message }
-
-exec :: String -> W.Wish CommandError String
-export exec = (command) => W.Wish((bad, good) => #- {
+exec :: String -> Wish.Wish CommandResult CommandResult
+export exec = (command) => Wish.Wish((bad, good) => #- {
     execJs(command, (err, stdout, stderr) => {
       if (err) {
-        bad(CommandError(err.code)(err.message))
+        bad(makeCommandResult(err.code)(stdout)(stderr))
       }
       else {
-        good(stdout)
+        good(makeCommandResult(0)(stdout)(stderr))
       }
     })
   }
 -#)
 
-spawn :: String -> W.Wish CommandError Integer
-export spawn = (command) => W.Wish((bad, good) => #- {
-    const split = command.split(" ")
-    const spawned = spawnJs(split[0], split.slice(1));
+// spawn :: String -> Wish.Wish CommandError Integer
+// export spawn = (command) => Wish.Wish((bad, good) => #- {
+//     const split = command.split(" ")
+//     const spawned = spawnJs(split[0], split.slice(1));
 
-    spawned.stdout.on('data', (data) => {
-      process.stdout.write(data.toString());
-    });
+//     spawned.stdout.on('data', (data) => {
+//       process.stdout.write(data.toString());
+//     });
 
-    spawned.stderr.on('data', (data) => {
-      process.stderr.write(data.toString());
-    });
+//     spawned.stderr.on('data', (data) => {
+//       process.stderr.write(data.toString());
+//     });
 
-    spawned.on('close', (code) => {
-      if (code === 0) {
-        good(0);
-      }
-      else {
-        bad(code)
-      }
-    })
-  }
--#)
+//     spawned.on('close', (code) => {
+//       if (code === 0) {
+//         good(0);
+//       }
+//       else {
+//         bad(code)
+//       }
+//     })
+//   }
+// -#)
 
 
 Argv :: List String
@@ -90,11 +100,11 @@ Env :: Dictionary String String
 Env = buildEnv
 
 
-getCurrentPath :: W.Wish String String
+getCurrentPath :: Wish.Wish String String
 export getCurrentPath = of(#- process.cwd() -#)
 
 
-getExecutablePath :: W.Wish String String
+getExecutablePath :: Wish.Wish String String
 export getExecutablePath = of(#- process.argv[1] -#)
 
 #elseif llvm
@@ -113,5 +123,27 @@ getEnvFFI = extern "madlib__process__internal__getEnv"
 
 Env :: Dictionary String String
 export Env = Dictionary.fromList(getEnvFFI({}))
+
+
+execFFI :: String -> List String -> (Integer -> String -> String -> {}) -> {}
+execFFI = extern "madlib__process__exec"
+
+exec :: String -> Wish.Wish CommandResult CommandResult
+export exec = (command) => Wish.Wish((bad, good) => {
+  commandSplit = String.words(command)
+  argv = List.drop(1, commandSplit)
+
+  return where(List.nth(0, commandSplit)) {
+    Just(cmd) =>
+      execFFI(
+        cmd,
+        argv,
+        (exitCode, stdout, stderr) =>
+          exitCode != 0
+            ? bad(makeCommandResult(exitCode, stdout, stderr))
+            : good(makeCommandResult(exitCode, stdout, stderr))
+      )
+  }
+})
 
 #endif

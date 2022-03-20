@@ -1,0 +1,191 @@
+import IO from "IO"
+import {} from "List"
+
+
+interface Monad m => MonadTrans m t {
+  lift :: m a -> t m a
+}
+
+
+andDo :: Monad m => m b -> m a -> m b
+export andDo = (b, a) => chain((_) => b, a)
+
+
+export type WriterT w m a = WriterT(m #[a, w])
+
+
+runWriterT :: WriterT w m a -> m #[a, w]
+export runWriterT = (x) => where(x) { WriterT(m) => m }
+
+liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+liftA2 = (f, x1, x2) => ap(map(f, x1), x2)
+
+instance Functor m => Functor (WriterT w m) {
+  map = (f, m) => WriterT(map(where { #[a, w] => #[f(a), w] }, runWriterT(m)))
+}
+
+instance (Applicative m, Monoid w) => Applicative (WriterT w m) {
+  pure = (x) => WriterT(pure(#[x, mempty]))
+
+  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1) {
+      // #[a, w] => where(x2) { #[b, ww] => #[a(b), w] }
+      #[a, w] => where(x2) { #[b, ww] => #[a(b), mconcat(w, ww)] }
+    }, runWriterT(mf), runWriterT(mm)))
+}
+
+instance (Monoid w, Monad m) => Monad (WriterT w m) {
+  of = (x) => WriterT(pure(#[x, mempty]))
+
+  chain = (f, m) => WriterT(
+    chain(
+      where { #[a, w] => chain(
+        // where { #[b, ww] => of(#[b, w])
+        where { #[b, ww] => of(#[b, mconcat(w, ww)])
+        }, runWriterT(f(a)))
+      }, runWriterT(m))
+  )
+}
+
+instance (Monad m, Monoid w) => MonadTrans m (WriterT w) {
+  lift = (m) => WriterT(chain((a) => of(#[a, mempty]), m))
+}
+
+export type Identity a = Identity(a)
+
+run :: Identity a -> a
+export runIdentity = (x) => where(x) {
+  Identity(a) => a
+}
+instance Functor Identity {
+  map = (f, m) => Identity(f(runIdentity(m)))
+}
+
+instance Applicative Identity {
+  pure = (x) => Identity(x)
+
+  ap = (mf, mm) => Identity(runIdentity(mf)(runIdentity(mm)))
+}
+
+instance Monad Identity {
+  of = (x) => pure(x)
+
+  chain = (f, mm) => f(runIdentity(mm))
+}
+
+
+export type StateT s m a = StateT(s -> m #[a, s])
+
+runStateT :: StateT s m a -> s -> m #[a, s]
+export runStateT = (m, s) => where(m) {
+  StateT(f) => f(s)
+}
+
+instance Functor m => Functor (StateT s m) {
+  map = (f, m) => StateT((s) =>
+    map(
+      where { #[a, ss] => #[f(a), ss] },
+      runStateT(m, s)
+    )
+  )
+}
+
+instance Monad m => Applicative (StateT s m) {
+  pure = (a) => StateT((s) => of(#[a, s]))
+
+  ap = (mf, mm) => StateT(
+    (s) => chain(
+      where {
+        #[f, ss] => chain(
+          where { #[m, sss] => of(#[f(m), sss]) },
+          runStateT(mm, ss)
+        )
+      },
+      runStateT(mf, s)
+    )
+  )
+}
+
+instance Monad m => Monad (StateT s m) {
+  of = (a) => StateT((s) => of(#[a, s]))
+
+  chain = (f, m) => StateT(
+    (s) => chain(
+      where { #[a, ss] => runStateT(f(a), ss) },
+      runStateT(m, s)
+    )
+  )
+}
+
+instance Monad m => MonadTrans m (StateT s) {
+  lift = (m) => StateT((s) => chain((a) => of(#[a, s]), m))
+}
+
+interface (Monoid w, Monad m) => MonadWriter w m {
+  tell :: w -> m {}
+}
+
+instance (Monoid w, Monad m) => MonadWriter w (WriterT w m) {
+  tell = (v) => WriterT(of(#[{}, v]))
+}
+
+instance (Monoid w, Monad m, MonadWriter w m) => MonadWriter w (StateT s m) {
+  tell = pipe(tell, lift)
+}
+
+interface Monad m => MonadState s m {
+  put :: s -> m {}
+  get :: m s
+  modify :: (s -> s) -> m {}
+}
+
+instance Monad m => MonadState s (StateT s m) {
+  put = (s) => StateT((_) => of(#[{}, s]))
+
+  get = StateT((s) => of(#[s, s]))
+
+  modify = (f) => StateT((s) => of(#[{}, f(s)]))
+}
+
+instance (Monoid w, Monad m, MonadState s m) => MonadState s (WriterT w m) {
+  put = pipe(put, lift)
+  
+  get = lift(get)
+  
+  modify = pipe(modify, lift)
+}
+
+alias Stack a = StateT Integer (WriterT (List String) Identity) a
+
+hep :: MonadWriter w m => w -> m {}
+hep = (a) => tell(a)
+
+sumAndLog :: MonadWriter (List String) m => Integer -> m Integer
+sumAndLog = pipe(
+  (x) => of(x),
+  chain((x) => of(x + 18)),
+  chain((x) => andDo(of(x), tell(["Summed 18"])))
+)
+
+
+runStack :: Integer -> Stack a -> #[#[a, Integer], List String]
+runStack = (x, s) => pipe(
+  (m) => runStateT(m, x),
+  (m) => runWriterT(m),
+  (m) => runIdentity(m)
+)(s)
+
+state = StateT((s) => WriterT(Identity(#[#[31, s], []])))
+
+
+pipe(
+  chain((x) => of(29 * x)),
+  map((x) => x * 17),
+  chain((_) => hep(["HOP"])),
+  chain((_) => tell(["HIP"])),
+  chain((_) => put(157)),
+  chain((_) => tell(["HAP"])),
+  andDo(of(5)),
+  chain((x) => sumAndLog(x)),
+  (m) => runStack(37, m),
+  IO.log
+)(state)

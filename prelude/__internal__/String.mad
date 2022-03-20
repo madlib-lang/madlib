@@ -86,9 +86,6 @@ export split = extern "madlib__string__split"
 
 #endif
 
-lines :: String -> List String
-export lines = split("\n")
-
 
 /**
  * Joins a list with a separator and returns a String.
@@ -111,6 +108,9 @@ export join = (a, xs) => pipe(
 )(xs)
 
 
+lines :: String -> List String
+export lines = split("\n")
+
 /**
  * Transform a List of Strings into a single String,
  * by adding newlines between each item in the List.
@@ -119,8 +119,15 @@ export join = (a, xs) => pipe(
  * @example
  * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
  */
-unlines :: List String -> String
-export unlines = join("\n")
+ unlines :: List String -> String
+ export unlines = join("\n")
+
+
+words :: String -> List String
+export words = split(" ")
+
+unwords :: List String -> String
+export unwords = join(" ")
 
 
 #iftarget js

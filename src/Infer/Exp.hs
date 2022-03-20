@@ -217,12 +217,13 @@ inferBody env (e : es) = do
       return (s, ps, env, e')
 
   e''               <- insertClassPlaceholders env' e' (dedupePreds ps)
-  e'''              <- updatePlaceholders env' (CleanUpEnv False [] [] []) True s e''
+  -- e'''              <- updatePlaceholders env' (CleanUpEnv False [] [] []) True s e''
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') es
 
   let finalS = s `compose` sb
 
-  return (finalS, apply finalS $ ps ++ ps', tb, e''' : eb)
+  return (finalS, apply finalS $ ps ++ ps', tb, e'' : eb)
+  -- return (finalS, apply finalS $ ps ++ ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,

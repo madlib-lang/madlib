@@ -24,6 +24,7 @@ cleanUp :: Config -> String -> Wish DownloadFailure String
 cleanUp = (config, sanitizedUrl) => pipe(
   (url) => `rm -r ${Constants.TEMPORARY_MODULES_PATH}${url}.zip ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
   config.exec,
+  map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
@@ -32,6 +33,7 @@ copyPackageToTmpRoot :: Config -> String -> Wish DownloadFailure String
 copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
   (url) => `cp -R ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${Constants.TEMPORARY_MODULES_PATH}`,
   config.exec,
+  map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
@@ -40,6 +42,7 @@ unzipPkg :: Config -> String -> Wish DownloadFailure String
 unzipPkg = (config, sanitizedUrl) => pipe(
   (url) => `unzip -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
   config.exec,
+  map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
@@ -48,6 +51,7 @@ renameInnerFolder :: Config -> String -> Wish DownloadFailure String
 renameInnerFolder = (config, sanitizedUrl) => pipe(
   (url) => `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
   config.exec,
+  map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
@@ -71,7 +75,6 @@ getPackageData = (config, url) => pipe(
 
 saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
 saveArchive = (config, dependency, data) => pipe(
-  // TODO: This needs to write binary
   config.writeBytes(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
   mapRej(always(DownloadFailure))
 )(data)
