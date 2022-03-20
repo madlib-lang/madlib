@@ -76,6 +76,80 @@ int64_t madlib__string__length(unsigned char *s) {
   return length;
 }
 
+
+char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
+  int skipCount = 0;
+
+  if (start < 0 || end <= 0) {
+    int64_t length = madlib__string__length(s);
+
+    if (start < 0) {
+      start = start + length;
+    }
+    if (end == 0) {
+      end = length - 1;
+    }
+    if (end < 0) {
+      end = end + length;
+    }
+  }
+
+  int charsToTake = end - start + 1;
+
+  while ((*s != '\0' || skipCount != 0) && start > 0) {
+    if (skipCount > 0) {
+      skipCount--;
+    } else {
+      start--;
+
+      if (*s >= 0xf0) {
+        skipCount = 3;
+      } else if (*s >= 0xe0) {
+        skipCount = 2;
+      } else if (*s >= 0xc0) {
+        skipCount = 1;
+      }
+    }
+    s++;
+  }
+
+  unsigned char *startPtr = s;
+
+  // the input string was shorter than the start so we return an empty string
+  if (start > 0) {
+    char *empty = (char*)GC_malloc(sizeof(char));
+    *empty = '\0';
+    return empty;
+  }
+
+  int bytesToCopy = 0;
+  skipCount = 0;
+  while ((*s != '\0' || skipCount != 0) && charsToTake > 0) {
+    bytesToCopy++;
+    if (skipCount > 0) {
+      skipCount--;
+    } else {
+      charsToTake--;
+
+      if (*s >= 0xf0) {
+        skipCount = 3;
+      } else if (*s >= 0xe0) {
+        skipCount = 2;
+      } else if (*s >= 0xc0) {
+        skipCount = 1;
+      }
+    }
+    s++;
+  }
+
+  char *result = (char*)GC_malloc(sizeof(char) * (bytesToCopy + 1));
+  memcpy(result, startPtr, bytesToCopy);
+  result[bytesToCopy] = '\0';
+
+  return result;
+}
+
+
 char *madlib__string__internal__concat(char *s1, char *s2) {
   char *result = (char *)GC_malloc((strlen(s1) + strlen(s2) + 1) * sizeof(char));
   strcpy(result, s1);
