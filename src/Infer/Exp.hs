@@ -824,9 +824,16 @@ inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.
 inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   qt@(qs :=> t') <- instantiate sc
 
-  let env' = case Can.getExpName exp of
-        Just n  -> extendVars env (n, sc)
-        Nothing -> env
+  env' <- case Can.getExpName exp of
+        Just n  -> do
+          -- We convert say Applicative f => .. to (Functor f, Applicative f) => ..
+          -- so that we generate the right dictionary placeholders.
+          psWithParents <- getAllParentPreds env (dedupePreds qs)
+          let scWithParents = quantify (ftv qt) (psWithParents :=> t')
+          return $ extendVars env (n, scWithParents)
+
+        Nothing ->
+          return env
 
   (s, ps, t, e) <- infer env' exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
@@ -954,8 +961,8 @@ inferExp env e = do
       (s, (ds, ps), env'', e') <- inferImplicitlyTyped False env' e
       return (s, ps, env'', e')
 
-  e''  <- insertClassPlaceholders env e' ps
-  e''' <- updatePlaceholders env (CleanUpEnv False [] [] []) False s e''
+  e''  <- insertClassPlaceholders env' e' ps
+  e''' <- updatePlaceholders env' (CleanUpEnv False [] [] []) False s e''
 
   return (Just e''', env')
 

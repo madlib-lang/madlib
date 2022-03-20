@@ -9,14 +9,14 @@ reduceTable = (reduceAST <$>)
 
 reduceAST :: AST -> AST
 reduceAST ast =
-  let reduceedExps = reduce <$> aexps ast
-      reduceedInstances =
+  let reducedExps = reduce <$> aexps ast
+      reducedInstances =
         (
           \(Untyped area metadata (Instance name ps n methods)) ->
-             let reduceedMethods = Bifunctor.first reduce <$> methods
-             in  Untyped area metadata (Instance name ps n reduceedMethods)
+             let reducedMethods = Bifunctor.first reduce <$> methods
+             in  Untyped area metadata (Instance name ps n reducedMethods)
         ) <$> ainstances ast
-  in  ast { aexps = reduceedExps, ainstances = reduceedInstances }
+  in  ast { aexps = reducedExps, ainstances = reducedInstances }
 
 
 reduceIs :: Is -> Is
@@ -121,10 +121,6 @@ reduce exp = case exp of
               updateQualType qt fn
             else
               Typed qt area metadata (Definition params (reduce <$> body))
-            -- else if null paramsLeft then
-            --   Typed callQt callArea callMetadata (Call fn argsLeft)
-            -- else
-            --   Typed qt area metadata (Definition paramsLeft [Typed callQt callArea callMetadata (Call fn argsLeft)])
 
       _ ->
         Typed qt area metadata (Definition params (reduce <$> body))

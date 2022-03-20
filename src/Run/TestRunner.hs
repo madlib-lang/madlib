@@ -122,7 +122,7 @@ runLLVMTests entrypoint coverage = do
             let renamedTable       = Rename.renameTable postProcessedTable
             let reduced            = EtaReduction.reduceTable renamedTable
             let closureConverted   = ClosureConvert.convertTable reduced
-            let withTCE            = TCE.resolve <$> closureConverted
+            let withTCE            = TCE.resolveTable closureConverted
             LLVM.generateTable outputPath rootPath withTCE mainTestPath
 
             testOutput <- case DistributionSystem.buildOS of

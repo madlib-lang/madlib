@@ -344,7 +344,7 @@ The main module must export every name that you want to share.
 ```
 import IO from "IO"
 
-IO.log("Hello World !")
+IO.putLine("Hello World !")
 ```
 
 ## build
@@ -362,7 +362,7 @@ node build/HelloWorld.mjs
 
 ### Setup
 Your system should be setup with the following:
-- [Stack](https://docs.haskellstack.org/en/stable/README/) and [GHC](https://www.haskell.org/ghc/) `8.8.4`
+- [Stack](https://docs.haskellstack.org/en/stable/README/) and [GHC](https://www.haskell.org/ghc/) `8.10.7`
 - [Node.js](https://nodejs.org/) ( > v14 is recommended )
 - [Rollup](https://rollupjs.org/) with the package `@rollup/plugin-node-resolve` installed globally if you want to enable bundling or use the build script located at `/scripts/build`
 
