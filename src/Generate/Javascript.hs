@@ -32,6 +32,7 @@ import           Run.Target
 import           Generate.Utils
 import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
+import qualified Data.Maybe as Maybe
 
 
 data RecursionData
@@ -579,7 +580,7 @@ instance Compilable Exp where
               <> compilePattern "__x__" pat
               <> ") {\n"
               <> buildVars "__x__" pat
-              <> "    return "
+              <> (if Maybe.isJust (recursionData env) then "    " else "    return ")
               <> compile env config exp
               <> ";\n  }\n"
 

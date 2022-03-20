@@ -89,11 +89,12 @@ insertClassPlaceholders env exp (p : ps) = do
                   (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Assignment n e)) _ _) ->
-        let exp' = Slv.Typed a t
-              $ Slv.Assignment
-                  n
-                  (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
+      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Assignment n e)) typing sc) ->
+        let exp' = Slv.Typed a t (Slv.TypedExp 
+                      (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)))
+                      typing
+                      sc
+                    )
         in  insertClassPlaceholders env exp' ps
 
       Slv.Typed a t (Slv.Export (Slv.Typed a' t' (Slv.Assignment n e))) ->
@@ -108,17 +109,14 @@ insertClassPlaceholders env exp (p : ps) = do
               )
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Export (Slv.Typed a'' t'' (Slv.Assignment n e)))) _ _) ->
-        let exp' = Slv.Typed
-              a
-              t
-              (Slv.Export
-                ( Slv.Typed a t
-                $ Slv.Assignment
-                    n
-                    (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
-                )
-              )
+      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Export (Slv.Typed a'' t'' (Slv.Assignment n e)))) typing sc) ->
+        let exp' = Slv.Typed a t (Slv.TypedExp
+                      (Slv.Typed a t (Slv.Export
+                        (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e))
+                      )))
+                      typing
+                      sc
+                   )
         in  insertClassPlaceholders env exp' ps
 
       _ -> return exp
@@ -382,7 +380,7 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
   Slv.Where exp iss -> do
     exp' <- updatePlaceholders env cleanUpEnv push s exp
     iss' <- mapM (updateIs s) iss
-    return $ Slv.Typed qt a $ Slv.Where exp' iss'
+    return $ Slv.Typed (apply s qt) a $ Slv.Where exp' iss'
 
   Slv.Assignment n ph@(Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef{}, _) _)) -> do
     updatedPlaceholder <- updateClassPlaceholder env cleanUpEnv (Just n) push s ph
