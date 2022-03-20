@@ -4,7 +4,6 @@ import type { ComparisonResult } from "Compare"
 import type { Maybe } from "Maybe"
 import {} from "Show"
 import {} from "Monad"
-import {} from "String"
 import Fun from "Function"
 import { MORE } from "Compare"
 import { Just, Nothing } from "Maybe"
@@ -80,14 +79,14 @@ instance Monoid (List a) {
   mappend = assoc
 }
 
-instance Show a => Show (List a) {
-  show = pipe(
-    map(show),
-    intercalate(", "),
-    reduceL(mappend, ""),
-    (x) => `[${x}]`
-  )
-}
+// instance Show a => Show (List a) {
+//   show = pipe(
+//     map(show),
+//     intercalate(", "),
+//     reduceL(mappend, ""),
+//     (x) => `[${x}]`
+//   )
+// }
 
 
 /**
@@ -101,19 +100,7 @@ instance Show a => Show (List a) {
 singleton :: a -> List a
 export singleton = pure
 
-/**
- * Transform a List of Strings into a single String,
- * by adding newlines between each item in the List.
- *
- * @since 0.0.5
- * @example
- * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
- */
-unlines :: List String -> String
-export unlines = pipe(
-  intercalate("\n"),
-  reduce(mappend, "")
-)
+
 
 /**
  * Inserts a value between all elements of a list.
@@ -150,25 +137,7 @@ intercalateWithIndex :: (Integer -> a) -> List a -> List a
 export intercalateWithIndex = _intercalateWithIndex(0)
 
 
-/**
- * Joins a list with a separator and returns a String.
- *
- * IMPORTANT:
- * When coming from JS, beware that there is a small difference with Array.prototype.join.
- * In JS, join relies on its dynamic nature and accepts any type as being valid, and transforms it
- * to a string for you. In Madlib you need to provide an instance of Show for your custom types, and
- * for Madlib types (eg. tuples, List, Boolean, Maybe) it uses the Show instance defined for them.
- *
- * @since 0.0.5
- * @example
- * join(" and ", ["cats", "dogs"])   // "cats and dogs"
- * join("", ["one", "two", "three"]) // "onetwothree"
- */
-join :: String -> List String -> String
-export join = (a, xs) => pipe(
-  intercalate(a),
-  reduce(mappend, "")
-)(xs)
+
 
 
 /**
@@ -440,10 +409,10 @@ export find = (predicate, list) => where(list) {
  *
  * @since 0.0.5
  * @example
- * len([1, 2, 3]) // 3
+ * length([1, 2, 3]) // 3
  */
-len :: List a -> Integer
-export len = (list) => {
+length :: List a -> Integer
+export length = (list) => {
   helper = (list_, count) => where(list_) {
     [] =>
       count
@@ -482,7 +451,7 @@ export slice = (start, end, list) => where(list) {
  * @since 0.0.5
  */
 isEmpty :: List a -> Boolean
-export isEmpty = (xs) => len(xs) == 0
+export isEmpty = (xs) => length(xs) == 0
 
 
 /**
@@ -648,10 +617,10 @@ export includes = (x, list) => where(list) {
 
 
 drop :: Integer -> List a -> List a
-export drop = (amount, xs) => slice(amount, len(xs), xs)
+export drop = (amount, xs) => slice(amount, length(xs), xs)
 
 dropLast :: Integer -> List a -> List a
-export dropLast = (amount, xs) => slice(0, len(xs) - amount, xs)
+export dropLast = (amount, xs) => slice(0, length(xs) - amount, xs)
 
 dropWhile :: (a -> Boolean) -> List a -> List a
 export dropWhile = (predicate, list) => where(list) {

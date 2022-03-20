@@ -10,10 +10,6 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 
 #iftarget js
 
-test(
-  "lines should split a string by line returns",
-  (_) => assertEquals(String.lines("line1\nline2"), ["line1", "line2"])
-)
 
 
 test(
@@ -36,4 +32,17 @@ test(
 test(
   "toList",
   (_) => assertEquals(String.toList("Hello"), ['H', 'e', 'l', 'l', 'o'])
+)
+
+test("join should transform a list into a string by intercalating a value between the elements of the list", (_) =>
+  assertEquals(String.join(" and ", ["cats", "dogs"]), "cats and dogs")
+)
+
+test(
+  "lines should split a string by line returns",
+  (_) => assertEquals(String.lines("line1\nline2"), ["line1", "line2"])
+)
+
+test("unlines should take a list of strings and return a string with \\n characters", (_) =>
+  assertEquals(String.unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
 )

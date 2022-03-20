@@ -150,12 +150,12 @@ formatCopyError :: String -> String
 formatCopyError = (err) => pipe(
   String.lines,
   ifElse(
-    pipe(List.len, gt($, 5)),
+    pipe(List.length, gt($, 5)),
     pipe(List.slice(0, 5), mappend($, ["..."])),
     identity
   ),
   map((line) => `    ${line}`),
-  List.unlines
+  String.unlines
 )(err)
 
 copyPackageFromTmp :: Config -> Validate ValidationOutput -> SideEffect (Validate ValidationOutput)

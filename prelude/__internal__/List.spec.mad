@@ -11,9 +11,8 @@ import {
   first,
   init,
   intercalate,
-  join,
   last,
-  len,
+  length,
   mapWithIndex,
   nth,
   reject,
@@ -21,11 +20,11 @@ import {
   singleton,
   sort,
   sortDesc,
-  uniqueBy,
-  unlines
+  uniqueBy
 } from "./List"
 import {} from "Boolean" // We need the instance Show Boolean
 import { Just, Nothing } from "Maybe"
+import {} from "String"
 
 
 
@@ -42,9 +41,9 @@ test("reduce - all", (_) =>
   assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false)
 )
 
-test("len - 3", (_) => assertEquals(len([1, 2, 3]), 3))
+test("length - 3", (_) => assertEquals(length([1, 2, 3]), 3))
 
-test("len - empty list", (_) => assertEquals(len([]), 0))
+test("length - empty list", (_) => assertEquals(length([]), 0))
 
 test("assoc should concatenate two lists together", (_) =>
   assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
@@ -83,16 +82,8 @@ test("singleton should wrap a value in a list", (_) =>
   assertEquals(singleton("one value"), ["one value"])
 )
 
-test("unlines should take a list of strings and return a string with \\n characters", (_) =>
-  assertEquals(unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
-)
-
 test("intercalate should add an given value between all elements of a list", (_) =>
   assertEquals(intercalate("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
-)
-
-test("join should transform a list into a string by intercalating a value between the elements of the list", (_) =>
-  assertEquals(join(" and ", ["cats", "dogs"]), "cats and dogs")
 )
 
 test("mapWithIndex", (_) =>

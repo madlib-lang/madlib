@@ -169,7 +169,8 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
   char *copy = (char*)GC_malloc(sizeof(char) * (strLength + 1));
   memcpy(copy, str, strLength + 1);
 
-  madlib__list__Node_t *result = madlib__list__empty();
+  madlib__list__Node_t *result = (madlib__list__Node_t*)GC_malloc(sizeof(madlib__list__Node_t));
+  madlib__list__Node_t *current = result;
 
   while (copy != NULL) {
     char *found = strstr(copy, separator);
@@ -185,7 +186,11 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
     part[partLength] = '\0';
     char **boxed = (char**)GC_malloc(sizeof(char*));
     *boxed = part;
-    result = madlib__list__append(boxed, result);
+
+    madlib__list__Node_t *node = (madlib__list__Node_t*)GC_malloc(sizeof(madlib__list__Node_t));
+    node->value = boxed;
+    node->next = NULL;
+    current = current->next = node;
 
     copy = found;
     if (found != NULL) {
@@ -193,7 +198,13 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
     }
   }
 
-  return result;
+  madlib__list__Node_t *last = (madlib__list__Node_t*)GC_malloc(sizeof(madlib__list__Node_t));
+  last->value = NULL;
+  last->next = NULL;
+
+  current->next = last;
+
+  return result->next;
 }
 
 

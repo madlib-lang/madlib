@@ -2,17 +2,34 @@ import { mapChars } from "String"
 
 
 
-replaceSpecialChar :: String -> String
+replaceSpecialChar :: Char -> Char
 replaceSpecialChar = where {
-  ":" => "_"
-  "/" => "_"
-  "#" => "_"
-  "." => "_"
-  "?" => "_"
-  "&" => "_"
-  "=" => "_"
-  "-" => "_"
-  char => char
+  ':' =>
+    '_'
+
+  '/' =>
+    '_'
+
+  '#' =>
+    '_'
+
+  '.' =>
+    '_'
+
+  '?' =>
+    '_'
+
+  '&' =>
+    '_'
+
+  '=' =>
+    '_'
+
+  '-' =>
+    '_'
+
+  char =>
+    char
 }
 
 
