@@ -168,10 +168,8 @@ const buildHeaderObj = (headerItems) => {
 const gunzipResponse = (response) => {
   const gunzip = zlib.createGunzip()
   let output = ""
-  console.log("unzip start")
 
   gunzip.on('data', (data) => {
-    console.log("unzip")
     output += data.toString()
   })
 
@@ -227,10 +225,14 @@ export request = (config) => Wish((bad, good) => #-{
 
       let current = {}
       let headersList = current
-      responseHeaders.forEach((item) => {
-        current = current.n = { v: item, n: null }
-      })
-      headersList = headersList.n
+      if (responseHeaders.length === 0) {
+        headerList = null
+      } else {
+        responseHeaders.forEach((item) => {
+          current = current.n = { v: item, n: null }
+        })
+        headersList = headersList.n
+      }
 
       const buffer = xhr.response
       const ui8 = new Uint8Array(buffer)
@@ -282,10 +284,14 @@ export request = (config) => Wish((bad, good) => #-{
 
         let current = {}
         let headersList = current
-        headers.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+        if (headers.length === 0) {
+          headerList = null
+        } else {
+          headers.forEach((item) => {
+            current = current.n = { v: item, n: null }
+          })
+          headersList = headersList.n
+        }
 
         response.on('end', () => {
           const buffer = Buffer.concat(chunks)
@@ -358,10 +364,14 @@ export requestBytes = (config) => Wish((bad, good) => #-{
 
       let current = {}
       let headersList = current
-      responseHeaders.forEach((item) => {
-        current = current.n = { v: item, n: null }
-      })
-      headersList = headersList.n
+      if (responseHeaders.length === 0) {
+        headerList = null
+      } else {
+        responseHeaders.forEach((item) => {
+          current = current.n = { v: item, n: null }
+        })
+        headersList = headersList.n
+      }
 
       const buffer = xhr.response
       const ui8 = new Uint8Array(buffer)
@@ -390,7 +400,7 @@ export requestBytes = (config) => Wish((bad, good) => #-{
 
     const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
       if (response.statusCode === 302) {
-        fulfill(bad)(good)(request({ ...config, url: response.headers.location }))
+        fulfill(bad)(good)(requestBytes({ ...config, url: response.headers.location }))
       }
       else {
         const contentType = response.headers["content-type"]
@@ -409,10 +419,14 @@ export requestBytes = (config) => Wish((bad, good) => #-{
 
         let current = {}
         let headersList = current
-        headers.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+        if (headers.length === 0) {
+          headerList = null
+        } else {
+          headers.forEach((item) => {
+            current = current.n = { v: item, n: null }
+          })
+          headersList = headersList.n
+        }
 
         response.on('data', (chunk) => {
           chunks.push(Buffer.from(chunk, 'binary'));
@@ -424,6 +438,7 @@ export requestBytes = (config) => Wish((bad, good) => #-{
           const responseBody = (response.headers["content-encoding"] === "gzip")
             ? zlib.gunzipSync(ui8)
             : ui8
+
           if (response.statusCode >= 400) {
             bad(BadResponse({ body: responseBody, status: response.statusCode, headers: headersList }))
           } else {

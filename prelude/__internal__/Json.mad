@@ -65,13 +65,17 @@ export dict = (parser, input) => (#- {
 list :: Parser a -> Parser (List a)
 export list = (parser, input) => (#-{
   try {
+    if (input.length === 0) {
+      return Right(null)
+    }
     let result = {};
+    let current = result;
     input.forEach((a) => {
       const parsed = parser(a);
       if (isLeft(parsed)) {
         throw parsed;
       } else {
-        result = result.n = { v: (fromRight("")(parsed)) };
+        current = current.n = { v: (fromRight("")(parsed)), n: null };
       }
     })
     return Right(result.n);

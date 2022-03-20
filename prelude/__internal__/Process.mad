@@ -75,10 +75,8 @@ export Env = #- (() => {
   let list = {}
   let start = list
   Object.keys(process.env).forEach((key) => {
-    list.n = { v: [key, process.env[key]] }
-    list = list.n
+    list = list.n = { v: [key, process.env[key]], n: null }
   }, {})
-  list.n = null
   return Dictionary.fromList(Comparable.String)(start.n)
 })() -#
 

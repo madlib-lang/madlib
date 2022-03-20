@@ -70,6 +70,7 @@ export formatDecimal = (a, x) => #-{
   return isNaN(n) ? "0" : n
 }-#
 
+// TODO: Move to List and write with recursion
 range :: Integer -> Integer -> List Integer
 export range = (a, b) => #-{
   const out = []

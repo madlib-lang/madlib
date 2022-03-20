@@ -10,6 +10,7 @@ import type { Dependency } from "./Dependency"
 import type { Config } from "./Config"
 
 import Constants from "./Constants"
+import IO from "IO"
 
 
 export type DownloadFailure = DownloadFailure
@@ -61,19 +62,18 @@ extractArchive = (config, sanitizedUrl) => pipe(
 )(sanitizedUrl)
 
 
-getPackageData :: Config -> String -> Wish DownloadFailure String
+getPackageData :: Config -> String -> Wish DownloadFailure ByteArray
 getPackageData = (config, url) => pipe(
-  // TODO: this needs to get bytes
-  config.get,
+  config.getBytes,
   map(.body),
   mapRej(always(DownloadFailure))
 )(url)
 
 
-saveArchive :: Config -> Dependency -> String -> Wish DownloadFailure String
+saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
 saveArchive = (config, dependency, data) => pipe(
   // TODO: This needs to write binary
-  config.writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
+  config.writeBytes(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
   mapRej(always(DownloadFailure))
 )(data)
 

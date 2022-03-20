@@ -203,7 +203,7 @@ findRecursionKind fnType fnName params exps = case exps of
       else
         Nothing
 
-    Typed _ _ _ Call {} | containsRecursion True fnType fnName lastExp ->
+    Typed _ _ _ (Call (Typed (_ :=> t) _ _ _) _) | t == fnType && containsRecursion True fnType fnName lastExp ->
       Just PlainRecursion
 
     Typed _ _ _ (If cond truthy falsy) ->

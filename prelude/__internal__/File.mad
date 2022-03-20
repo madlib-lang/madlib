@@ -13,7 +13,7 @@ import fs from "fs"
 -#
 
 
-write :: String -> String -> Wish IOError String
+write :: String -> String -> Wish IOError {}
 export write = (path, content) =>
   Wish((bad, good) => #- {
     fs.writeFile(path, content, (err) => {
@@ -27,7 +27,7 @@ export write = (path, content) =>
   } -#)
 
 
-writeBytes :: String -> ByteArray -> Wish IOError String
+writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, bytes) =>
   Wish((bad, good) => #- {
     fs.writeFile(path, bytes, (err) => {
@@ -35,7 +35,7 @@ export writeBytes = (path, bytes) =>
         bad(IOError.UnknownError);
       }
       else {
-        good(path)
+        good(null)
       }
     })
   } -#)

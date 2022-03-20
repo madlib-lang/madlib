@@ -6,24 +6,26 @@ import type { IOError } from "IOError"
 import File from "File"
 import Directory from "Directory"
 import { exec } from "Process"
-import { get } from "Http"
+import { getBytes } from "Http"
 
 
 export alias Config = {
   readFile :: String -> Wish IOError String,
-  writeFile :: String -> String -> Wish IOError String,
+  writeFile :: String -> String -> Wish IOError {},
+  writeBytes :: String -> ByteArray -> Wish IOError {},
   readDir :: String -> Wish IOError (List String),
   exec :: String -> Wish CommandError String,
   exists :: String -> Wish IOError String,
-  get :: String -> Wish (Error String) (Response String)
+  getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
 }
 
 defaultConfig :: Config
 export defaultConfig = {
   readFile: File.read,
   writeFile: File.write,
+  writeBytes: File.writeBytes,
   readDir: Directory.read,
   exec,
   exists: File.exists,
-  get
+  getBytes
 }
