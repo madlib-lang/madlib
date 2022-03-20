@@ -1,6 +1,0 @@
-import {} from "./Semigroup"
-
-interface Semigroup w => Monoid w {
-  mempty :: w
-  mappend :: w -> w -> w
-}
