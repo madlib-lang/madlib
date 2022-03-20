@@ -2,6 +2,7 @@
 #define NUMBERS_H
 
 #include <iostream>
+#include "maybe.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +33,8 @@ bool *madlib__number__internal__lteBytes(unsigned char *a, unsigned char *b);
 
 bool *madlib__number__internal__eqByte(unsigned char *a, unsigned char *b);
 
+madlib__maybe__Maybe_t *madlib__number__scanByte(char *s);
+
 // Float
 char *madlib__number__internal__showFloat(double d);
 char **madlib__number__internal__inspectFloat(double *i);
@@ -47,6 +50,8 @@ bool *madlib__number__internal__gteFloats(double *a, double *b);
 bool *madlib__number__internal__lteFloats(double *a, double *b);
 
 bool *madlib__number__internal__eqFloat(double *a, double *b);
+
+madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s);
 
 // Integer
 char *madlib__number__internal__showInteger(int64_t i);
@@ -71,6 +76,8 @@ bool *madlib__number__internal__gteIntegers(int64_t *a, int64_t *b);
 bool *madlib__number__internal__lteIntegers(int64_t *a, int64_t *b);
 
 bool *madlib__number__internal__eqInteger(int64_t *a, int64_t *b);
+
+madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s);
 
 #ifdef __cplusplus
 }

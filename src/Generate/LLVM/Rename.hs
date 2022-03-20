@@ -352,7 +352,6 @@ renameInstance env inst = case inst of
             ([], env)
             methods
         renamedMethods' = Map.fromList renamedMethods
-    -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
     in  (Untyped area metadata (Instance name ps p renamedMethods'), env')
 
   _ ->

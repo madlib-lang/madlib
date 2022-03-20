@@ -208,6 +208,9 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         exps
       return $ foldr S.union S.empty globalNamesAccessed
 
+    (Typed _ area (Var "_" _)) ->
+      throwError $ CompilationError IllegalSkipAccess (Context (envCurrentPath env) area [])
+
     (Typed tipe area (Var ('.' : _) _)) ->
       return S.empty
 
@@ -240,8 +243,14 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
     (Typed tipe area (Abs (Typed t _ name) body)) -> do
       let (nameToFind', foundNames') = case nameToFind of
-            Just n  -> (Nothing, n : foundNames)
-            Nothing -> (Nothing, foundNames)
+            Just "_" ->
+              (Nothing, foundNames)
+
+            Just n ->
+              (Nothing, n : foundNames)
+
+            Nothing ->
+              (Nothing, foundNames)
       let localScope' = S.insert name localScope
       collectFromBody foundNames' nameToFind' globalScope localScope' body
 

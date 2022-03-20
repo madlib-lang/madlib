@@ -148,6 +148,10 @@ formatTypeError json err = case err of
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
     in  "Infinite type " <> printedN <> " -> " <> printedT
 
+  IllegalSkipAccess ->
+    "You accessed the skip symbol '_'. This is not permitted as it does not hold any value\n"
+    <> "and only serves to indicate that you are not interested in whatever it may contain."
+
   UnboundVariable n ->
     "The variable '" <> n <> "' has not been declared, you might have a typo."
 
