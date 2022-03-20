@@ -1,6 +1,6 @@
 import type { Maybe } from "Maybe"
 import { EQUAL, LESS, MORE } from "Compare"
-import {} from "Read"
+import {} from "Scan"
 import { Just, Nothing } from "Maybe"
 
 
@@ -31,12 +31,12 @@ instance Show Float {
 
 
 #iftarget js
-instance Read Float {
-  rread = fromString
+instance Scan Float {
+  scan = fromString
 }
 
-instance Read Integer {
-  rread = fromString
+instance Scan Integer {
+  scan = fromString
 }
 
 intToFloat :: Integer -> Float

@@ -5,7 +5,7 @@ import {} from "Number"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Show"
-import {} from "Read"
+import {} from "Scan"
 import { ge, le } from "Compare"
 import IO from "IO"
 
@@ -32,8 +32,8 @@ instance Show Version {
 }
 
 
-instance Read Version {
-  rread = parse
+instance Scan Version {
+  scan = parse
 }
 
 
@@ -68,7 +68,7 @@ getPatch = where { Version(_, _, patch) => patch }
 parse :: String -> Maybe Version
 export parse = pipe(
   split("."),
-  map(rread),
+  map(scan),
   where {
     [Just(major), Just(minor), Just(patch)] =>
       Just(Version(major, minor, patch))
