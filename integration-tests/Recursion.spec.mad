@@ -1,0 +1,83 @@
+import { test, assertEquals } from "Test"
+import { gt } from "Compare"
+
+descending :: Comparable a => a -> List a -> List a -> List (List a)
+descending = (a, as, xs) => where(xs) {
+  [b, ...bs] =>
+    gt(a, b)
+      ? descending(b, [a, ...as], bs)
+      : [[a, ...as], ...sequences(xs)]
+
+  _ =>
+    [[a, ...as], ...sequences(xs)]
+}
+
+
+ascending :: Comparable a => a -> (List a -> List a) -> List a -> List (List a)
+ascending = (a, as, xs) => where(xs) {
+  [b, ...bs] =>
+    !gt(a, b)
+      ? ascending(b, (ys) => as([a, ...ys]), bs)
+      : [as([a]), ...sequences(xs)]
+
+  _ =>
+    [as([a]), ...sequences(xs)]
+}
+
+
+sequences :: Comparable a => List a -> List (List a)
+sequences = (list) => where(list) {
+  [a, b, ...xs] =>
+    gt(a, b)
+      ? descending(b, [a], xs)
+      : ascending(b, (l) => [a, ...l], xs)
+
+  xs =>
+    [xs]
+}
+
+
+
+sort :: Comparable a => List a -> List a
+sort = (list) => {
+  merge :: Comparable a => List a -> List a -> List a
+  merge = (listA, listB) => where(#[listA, listB]) {
+    #[[a, ...as], [b, ...bs]] =>
+      gt(a, b)
+        ? [b, ...merge(listA, bs)]
+        : [a, ...merge(as, listB)]
+
+    #[[], bs] =>
+      bs
+
+    #[as, []] =>
+      as
+  }
+
+  mergePairs :: Comparable a => List (List a) -> List (List a)
+  mergePairs = (l) => where(l) {
+    [a, b, ...xs] =>
+      [merge(a, b), ...mergePairs(xs)]
+
+    xs =>
+      xs
+  }
+
+  mergeAll :: Comparable a => List (List a) -> List a
+  mergeAll = (l) => where(l) {
+    [x] =>
+      x
+
+    xs =>
+      mergeAll(mergePairs(xs))
+  }
+
+  return pipe(
+    sequences,
+    mergeAll
+  )(list)
+}
+
+test("merge sort with recursion should work", (_) =>
+  assertEquals(sort([17, 1, 14, 3]), [1, 3, 14, 17])
+)
