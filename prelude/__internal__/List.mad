@@ -287,8 +287,8 @@ export nth = (i, list) => where(list) {
  *
  * @since 0.0.5
  */
-reduceR :: (a -> b -> b) -> b -> List a -> b
-export reduceR = (f, acc, list) => reduceL((a, b) => f(b, a), acc, list)
+reduceRight :: (a -> b -> b) -> b -> List a -> b
+export reduceRight = (f, acc, list) => reduceLeft((a, b) => f(b, a), acc, list)
 
 
 // TODO: rename to reduceLeft
@@ -301,13 +301,13 @@ export reduceR = (f, acc, list) => reduceL((a, b) => f(b, a), acc, list)
  *
  * @since 0.0.5
  */
-reduceL :: (a -> b -> a) -> a -> List b -> a
-export reduceL = (f, acc, list) => where(list) {
+reduceLeft :: (a -> b -> a) -> a -> List b -> a
+export reduceLeft = (f, acc, list) => where(list) {
   [] =>
     acc
 
   [a, ...xs] =>
-    reduceL(f, f(acc, a), xs)
+    reduceLeft(f, f(acc, a), xs)
 }
 
 
@@ -325,7 +325,7 @@ export reduceL = (f, acc, list) => where(list) {
  * reduce((a, b) => a + b, 0, [1, 2, 3]) // 6
  */
 reduce :: (a -> b -> a) -> a -> List b -> a
-export reduce = reduceL
+export reduce = reduceLeft
 
 
 reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
@@ -429,19 +429,49 @@ export length = (list) => {
  * Cut a contiguous segment from a List, from start index to end index.
  * @since 0.0.5
  */
-slice :: Integer -> Integer -> List a -> List a
-export slice = (start, end, list) => where(list) {
-  [] =>
-    []
+// slice :: Integer -> Integer -> List a -> List a
+// export slice = (start, end, list) => where(list) {
+//   [] =>
+//     []
 
-  [a, ...xs] =>
-    if (start == 0 && end > 0) {
-      [a, ...slice(0, end - 1, xs)]
-    } else if (start > 0) {
-      slice(start - 1, end - 1, xs)
-    } else {
+//   [a, ...xs] =>
+//     if (start == 0 && end > 0) {
+//       [a, ...slice(0, end - 1, xs)]
+//     } else if (start > 0) {
+//       slice(start - 1, end - 1, xs)
+//     } else {
+//       []
+//     }
+// }
+
+
+slice :: Integer -> Integer -> List a -> List a
+export slice = (start, end, list) => {
+  helper = (start_, end_, list_) => where(list_) {
+    [] =>
       []
-    }
+
+    [a, ...xs] =>
+      if (start_ == 0 && end_ > 0) {
+        [a, ...helper(0, end_ - 1, xs)]
+      } else if (start_ > 0) {
+        helper(start_ - 1, end_ - 1, xs)
+      } else {
+        []
+      }
+  }
+
+  realStart = start < 0
+    ? start + length(list)
+    : start
+
+  realEnd = end == 0
+    ? length(list)
+    : end < 0
+      ? end + length(list)
+      : end
+
+  return helper(realStart, realEnd, list)
 }
 
 
@@ -450,8 +480,8 @@ export slice = (start, end, list) => where(list) {
  *
  * @since 0.0.5
  */
-isEmpty :: List a -> Boolean
-export isEmpty = (xs) => length(xs) == 0
+isEmpty :: Eq a => List a -> Boolean
+export isEmpty = (xs) => xs == []
 
 
 /**
@@ -576,7 +606,7 @@ export sortDesc = sortBy((a, b) => compare(a, b) * -1)
  * @since 0.0.5
  */
 flatten :: List (List a) -> List a
-export flatten = reduceL(concat, [])
+export flatten = reduceLeft(concat, [])
 
 
 /**
@@ -617,10 +647,20 @@ export includes = (x, list) => where(list) {
 
 
 drop :: Integer -> List a -> List a
-export drop = (amount, xs) => slice(amount, length(xs), xs)
+export drop = (n, s) => slice(n, 0, s)
+
 
 dropLast :: Integer -> List a -> List a
-export dropLast = (amount, xs) => slice(0, length(xs) - amount, xs)
+export dropLast = (n, s) => slice(0, -n, s)
+
+
+take :: Integer -> List a -> List a
+export take = (n, s) => slice(0, n, s)
+
+
+takeLast :: Integer -> List a -> List a
+export takeLast = (n, s) => slice(-n, 0, s)
+
 
 dropWhile :: (a -> Boolean) -> List a -> List a
 export dropWhile = (predicate, list) => where(list) {
@@ -631,4 +671,15 @@ export dropWhile = (predicate, list) => where(list) {
     predicate(a)
       ? dropWhile(predicate, xs)
       : [a, ...xs]
+}
+
+takeWhile :: (a -> Boolean) -> List a -> List a
+export takeWhile = (predicate, list) => where(list) {
+  [] =>
+    []
+
+  [a, ...xs] =>
+    predicate(a)
+      ? [a, ...takeWhile(predicate, xs)]
+      : []
 }

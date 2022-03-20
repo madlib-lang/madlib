@@ -20,6 +20,7 @@ export type LcovLine
   | LF(Integer)
   | LH(Integer)
 
+
 /**
  * LcovLine type
  * @since v0.0.5
@@ -36,10 +37,13 @@ export alias LcovSection = {
   lh :: LcovLine
 }
 
+
 export alias LcovInfo = List LcovSection
+
 
 getPath :: LcovSection -> String
 export getPath = (section) => where(section.sf) { SF(p) => p }
+
 
 emptySection :: LcovSection
 emptySection = {
@@ -54,10 +58,12 @@ emptySection = {
   lh: LH(0)
 }
 
+
 parseNumberString :: (Integer -> String -> LcovLine) -> String -> LcovLine
 parseNumberString = (ctor, args) => where(S.split(",", args)) {
   [line, name] => ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
 }
+
 
 parseNumberNumber :: (Integer -> Integer -> LcovLine) -> String -> LcovLine
 parseNumberNumber = (ctor, args) => where(S.split(",", args)) {
@@ -68,34 +74,45 @@ parseNumberNumber = (ctor, args) => where(S.split(",", args)) {
     )
 }
 
+
 parseLcovSection :: String -> LcovSection
 parseLcovSection = (content) =>
   S.lines(content)
     |> L.reject((s) => (s == ""))
-    |> L.reduceR(
+    |> L.reduceRight(
       (line, section) =>
         S.split(":", line)
           |> (namedLine) => where(namedLine) {
-              ["TN", arg] => { ...section, tn: TN(arg) }
+              ["TN", arg] =>
+                { ...section, tn: TN(arg) }
 
-              ["SF", arg] => { ...section, sf: SF(arg) }
+              ["SF", arg] =>
+                { ...section, sf: SF(arg) }
 
-              ["FN", args] => { ...section, fns: L.append(parseNumberString(FN, args), section.fns) }
+              ["FN", args] =>
+                { ...section, fns: L.append(parseNumberString(FN, args), section.fns) }
 
-              ["FNDA", args] => { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
+              ["FNDA", args] =>
+                { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
 
-              ["FNF", arg] => { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
+              ["FNF", arg] =>
+                { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
 
-              ["FNH", arg] => { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
+              ["FNH", arg] =>
+                { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
 
-              ["DA", args] => { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
+              ["DA", args] =>
+                { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
 
-              ["LF", arg] => { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
+              ["LF", arg] =>
+                { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
 
-              ["LH", arg] => { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
+              ["LH", arg] =>
+                { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
             }
       , emptySection
       )
+
 
 parseLcov :: String -> LcovInfo
 export parseLcov = (content) =>
@@ -103,33 +120,54 @@ export parseLcov = (content) =>
     |> L.reject((s) => (s == ""))
     |> map(parseLcovSection)
 
+
 stringifyLine :: LcovLine -> String
 stringifyLine = where {
-  TN(arg) => "TN:" ++ arg ++ "\n"
-  SF(arg) => "SF:" ++ arg ++ "\n"
-  FN(l, name) => "FN:" ++ inspect(l) ++ "," ++ name ++ "\n"
-  FNDA(count, name) => "FNDA:" ++ inspect(count) ++ "," ++ name ++ "\n"
-  FNF(count) => "FNF:" ++ inspect(count) ++ "\n"
-  FNH(count) => "FNH:" ++ inspect(count) ++ "\n"
-  DA(l, count) => "DA:" ++ inspect(l) ++ "," ++ inspect(count) ++ "\n"
-  LF(count) => "LF:" ++ inspect(count) ++ "\n"
-  LH(count) => "LH:" ++ inspect(count) ++ "\n"
+  TN(arg) =>
+    "TN:" ++ arg ++ "\n"
+
+  SF(arg) =>
+    "SF:" ++ arg ++ "\n"
+
+  FN(l, name) =>
+    "FN:" ++ inspect(l) ++ "," ++ name ++ "\n"
+
+  FNDA(count, name) =>
+    "FNDA:" ++ inspect(count) ++ "," ++ name ++ "\n"
+
+  FNF(count) =>
+    "FNF:" ++ inspect(count) ++ "\n"
+
+  FNH(count) =>
+    "FNH:" ++ inspect(count) ++ "\n"
+
+  DA(l, count) =>
+    "DA:" ++ inspect(l) ++ "," ++ inspect(count) ++ "\n"
+
+  LF(count) =>
+    "LF:" ++ inspect(count) ++ "\n"
+
+  LH(count) =>
+    "LH:" ++ inspect(count) ++ "\n"
+
 }
+
 
 stringifySection :: LcovSection -> String
 stringifySection = (section) =>
   stringifyLine(section.tn)
   ++ stringifyLine(section.sf)
-  ++ L.reduceR((line, fns) => fns ++ stringifyLine(line), "", section.fns)
-  ++ L.reduceR((line, fndas) => fndas ++ stringifyLine(line), "", section.fndas)
+  ++ L.reduceRight((line, fns) => fns ++ stringifyLine(line), "", section.fns)
+  ++ L.reduceRight((line, fndas) => fndas ++ stringifyLine(line), "", section.fndas)
   ++ stringifyLine(section.fnf)
   ++ stringifyLine(section.fnh)
-  ++ L.reduceR((line, das) => das ++ stringifyLine(line), "", section.das)
+  ++ L.reduceRight((line, das) => das ++ stringifyLine(line), "", section.das)
   ++ stringifyLine(section.lf)
   ++ stringifyLine(section.lh)
   ++ "end_of_record\n"
 
+
 stringify :: LcovInfo -> String
-export stringify = (lcov) => L.reduceL((r, section) => r ++ stringifySection(section), "", lcov)
+export stringify = (lcov) => L.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
 
 #endif

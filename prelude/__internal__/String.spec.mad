@@ -1,5 +1,6 @@
 import { test, assertEquals } from "Test"
-import { EQUAL, LESS, MORE } from "Compare"
+import { EQUAL, LESS, MORE, eq } from "Compare"
+import {} from "Char"
 
 import String from "./String"
 
@@ -43,4 +44,44 @@ test(
 
 test("unlines should take a list of strings and return a string with \\n characters", (_) =>
   assertEquals(String.unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
+)
+
+test("drop", (_) =>
+  assertEquals(String.drop(3, "abcde"), "de")
+)
+
+test("dropLast", (_) =>
+  assertEquals(String.dropLast(3, "abcde"), "ab")
+)
+
+test("take", (_) =>
+  assertEquals(String.take(3, "abcde"), "abc")
+)
+
+test("takeLast", (_) =>
+  assertEquals(String.takeLast(3, "abcde"), "cde")
+)
+
+test("filterChars", (_) =>
+  assertEquals(String.filterChars(eq('a'), "aAbAaba"), "aaa")
+)
+
+test("reduceChars", (_) =>
+  assertEquals(
+    String.reduceChars(
+      (total, char) => where(char) {
+        'a' =>
+          1 + total
+
+        'b' =>
+          3 + total
+
+        _ =>
+          0
+      },
+      0,
+      "abaaba"
+    ),
+    10
+  )
 )

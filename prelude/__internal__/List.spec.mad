@@ -20,6 +20,9 @@ import {
   singleton,
   sort,
   sortDesc,
+  take,
+  takeLast,
+  takeWhile,
   uniqueBy
 } from "./List"
 import {} from "Boolean" // We need the instance Show Boolean
@@ -170,4 +173,10 @@ test("drop - empty", (_) => assertEquals(drop(2, []), []))
 
 test("dropLast", (_) => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
+test("take", (_) => assertEquals(take(2, [1, 2, 3, 4, 5, 6]), [1, 2]))
+
+test("takeLast", (_) => assertEquals(takeLast(2, [1, 2, 3, 4, 5, 6]), [5, 6]))
+
 test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
+
+test("takeWhile", (_) => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
