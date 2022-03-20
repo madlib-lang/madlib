@@ -84,7 +84,7 @@ installNodeModules = (config, pkgName) => pipe(
   (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
   mapRej(always("")),
-  map(mappend("npm install ")),
+  map(mconcat("npm install ")),
   chain(pipe(config.exec, mapRej(Process.getCommandErrorMessage))),
   map((x) => IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`, x)),
   fromWish((x) => IO.putLineAndPass(`No node modules to install for '${pkgName}'`, x))
@@ -151,7 +151,7 @@ formatCopyError = (err) => pipe(
   String.lines,
   ifElse(
     pipe(List.length, gt($, 5)),
-    pipe(List.slice(0, 5), mappend($, ["..."])),
+    pipe(List.slice(0, 5), mconcat($, ["..."])),
     identity
   ),
   map((line) => `    ${line}`),
@@ -257,7 +257,7 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
       (validationResult) => validationResult.shouldCopy
         ? #[
             validationResult.context,
-            mappend(
+            mconcat(
               Tuple.snd(previousContextAndDeps),
               fromMaybe([], validationResult.madlibDotJson.dependencies)
             )

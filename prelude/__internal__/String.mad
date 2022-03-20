@@ -11,7 +11,7 @@ instance Semigroup String {
 
 instance Monoid String {
   mempty = ""
-  mappend = (a, b) => a ++ b
+  mconcat = (a, b) => a ++ b
 }
 
 #iftarget js
@@ -98,7 +98,7 @@ export lines = split("\n")
 join :: String -> List String -> String
 export join = (a, xs) => pipe(
   List.intercalate(a),
-  List.reduce(mappend, "")
+  List.reduce(mconcat, "")
 )(xs)
 
 
@@ -210,8 +210,22 @@ export isLetter = (s) => #-{
   return RegExp(/^\p{L}/,'u').test(s)
 }-#
 
+
+#endif
+
+#iftarget js
+
 length :: String -> Integer
 export length = (s) => #- s.length -#
+
+#elseif llvm
+
+length :: String -> Integer
+export length = extern "madlib__string__length"
+
+#endif
+
+#iftarget js
 
 /**
  * Returns true if the character is a digit, false otherwise. Note that if the
