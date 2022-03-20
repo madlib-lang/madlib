@@ -19,7 +19,7 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 
 test(
   "lines should split a string by line returns",
-  (_) => assertEquals(lines('line1\nline2'), ["line1", "line2"])
+  (_) => assertEquals(lines("line1\nline2"), ["line1", "line2"])
 )
 
 test("mapChars should map the characters of a String", (_) => {

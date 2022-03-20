@@ -90,6 +90,7 @@ data Pattern_
   | PCon Name [Pattern]
   | PNum String
   | PStr String
+  | PChar Char
   | PBool String
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
@@ -123,6 +124,7 @@ type Exp = Solved Exp_
 data Exp_ = LNum String
           | LFloat String
           | LStr String
+          | LChar Char
           | LBool String
           | LUnit
           | TemplateString [Exp]

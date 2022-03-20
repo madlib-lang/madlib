@@ -124,6 +124,7 @@ initialEnv = Env
         )
       , ("Inspect", Interface [TV "a" Star] []
                 [ Instance ([] :=> IsIn "Inspect" [tStr] Nothing) M.empty
+                , Instance ([] :=> IsIn "Inspect" [tChar] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tInteger] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tByte] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tFloat] Nothing) M.empty
@@ -243,6 +244,7 @@ initialEnv = Env
                 , Instance ([] :=> IsIn "Eq" [tFloat] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tByte] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tStr] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tChar] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tBool] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tUnit] Nothing) M.empty
                 , Instance ([

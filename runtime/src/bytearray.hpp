@@ -38,4 +38,4 @@ void *madlib__bytearray__reduce(PAP_t *f, void *initialValue, madlib__bytearray_
 }
 #endif
 
-#endif  // BYTEARRAY_H
+#endif // BYTEARRAY_H

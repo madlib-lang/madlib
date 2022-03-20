@@ -65,7 +65,6 @@ import           Run.CommandLine
 import           Run.Target
 import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
-import qualified Optimize.Recursion            as Recursion
 import qualified Optimize.EtaExpansion as EtaExpansion
 import qualified Optimize.EtaReduction as EtaReduction
 import System.FilePath.Posix (dropFileName)

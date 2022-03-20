@@ -1,0 +1,21 @@
+import { MORE, LESS, EQUAL } from "Compare"
+
+
+#iftarget js
+
+instance Comparable Char {
+  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
+}
+
+#elseif llvm
+
+import type { ComparisonResult } from "Compare"
+
+charCompare :: Char -> Char -> ComparisonResult
+charCompare = extern "madlib__char__compare"
+
+instance Comparable Char {
+  compare = charCompare
+}
+
+#endif

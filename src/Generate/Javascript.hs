@@ -131,6 +131,9 @@ instance Compilable Exp where
         Literal (LStr v) ->
           hpWrapLine coverage astPath l ("`" <> v <> "`")
 
+        Literal (LChar v) ->
+          hpWrapLine coverage astPath l ("String.fromCharCode(" <> (show . fromEnum) v <> ")")
+
         Literal (LBool v) ->
           hpWrapLine coverage astPath l v
 
@@ -613,6 +616,7 @@ instance Compilable Exp where
             PAny    -> "true"
             PNum  n -> scope <> " === " <> n
             PStr  n -> scope <> " === " <> n
+            PChar n -> scope <> " === " <> "String.fromCharCode(" <> (show . fromEnum) n <> ")"
             PBool n -> scope <> " === " <> n
             PCon n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
             PCon n ps ->

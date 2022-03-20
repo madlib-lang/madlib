@@ -20,6 +20,7 @@ instance Comparable String {
 }
 
 #elseif llvm
+
 import type { ComparisonResult } from "Compare"
 
 stringCompare :: String -> String -> ComparisonResult
