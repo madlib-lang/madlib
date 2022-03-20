@@ -576,7 +576,6 @@ listItems :: { [Src.ListItem] }
   : exp                         { [Src.Source (Src.getArea $1) (Src.getSourceTarget $1) (Src.ListItem $1)] }
   | listItems ',' exp           { $1 <> [Src.Source (Src.getArea $3) (Src.getSourceTarget $3) (Src.ListItem $3)] }
   | listItems rets ',' rets exp { $1 <> [Src.Source (Src.getArea $5) (Src.getSourceTarget $5) (Src.ListItem $5)] }
-  | '...' exp                   { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.ListSpread $2)] }
   | listItems ',' '...' exp     { $1 <> [Src.Source (mergeAreas (tokenArea $3) (Src.getArea $4)) (tokenTarget $3) (Src.ListSpread $4)] }
   | {- empty -}                 { [] }
 

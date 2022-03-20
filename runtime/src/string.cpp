@@ -19,6 +19,19 @@ bool *madlib__string__internal__eq(char **s1, char **s2) {
   return boxed;
 }
 
+
+int64_t madlib__string__compare(char *s1, char *s2) {
+  int64_t result = strcmp(s1, s2);
+  if (result < 0) {
+    return -1;
+  } else if (result > 0) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
 bool madlib__string__internal__areStringsEqual(char *s1, char *s2) {
   if (strcmp(s1, s2) == 0) {
     return true;
@@ -26,6 +39,7 @@ bool madlib__string__internal__areStringsEqual(char *s1, char *s2) {
     return false;
   }
 }
+
 
 bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2) {
   if (strcmp(s1, s2) == 0) {

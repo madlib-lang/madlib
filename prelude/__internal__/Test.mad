@@ -73,7 +73,7 @@ addLineHit = (astPath, line, lcov) =>
 updateLh :: Lcov.LcovSection -> Lcov.LcovSection
 updateLh = (section) => (
   L.reduceR(
-    (total, da) => where(da) { Lcov.DA(_, count) => count > 0 ? total + 1 : total },
+    (da, total) => where(da) { Lcov.DA(_, count) => count > 0 ? total + 1 : total },
     0,
     section.das
   ) |> (counted) => ({ ...section, lh: Lcov.LH(counted) })
@@ -85,7 +85,7 @@ collectLh = (lcov) => map(updateLh, lcov)
 updateFnh :: Lcov.LcovSection -> Lcov.LcovSection
 updateFnh = (section) => (
   L.reduceR(
-    (total, da) =>
+    (da, total) =>
       where(da) { Lcov.FNDA(count, _) => count > 0 ? total + 1 : total },
       0,
       section.fndas
@@ -122,7 +122,7 @@ buildRow = (name, lines, functions) => {
 allRow :: Lcov.LcovInfo -> IO.Row
 allRow = (lcov) => pipe(
   L.reduceR(
-    (total, section) => where(section) {
+    (section, total) => where(section) {
       { lf: Lcov.LF(found), lh: Lcov.LH(hit), fnf: Lcov.FNF(ffound), fnh: Lcov.FNH(fhit) } =>
         {
           lf: total.lf + found,
