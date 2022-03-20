@@ -378,7 +378,7 @@ prepare = (config, packageDotJsonPath) => pipe(
 )(packageDotJsonPath)
 
 
-restorePackageDotJson :: Config -> String -> Wish {} String
+restorePackageDotJson :: Config -> String -> Wish {} {}
 restorePackageDotJson = (config, content) => pipe(
   config.writeFile("package.json"),
   mapRej(always({}))

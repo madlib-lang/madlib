@@ -33,6 +33,11 @@ export replace = (regex, replacing, input) => (#-
 split :: String -> String -> List String
 export split = (separator, str) => #- {
   const items = str.split(separator)
+
+  if (items.length === 0) {
+    return null
+  }
+
   let current = {}
   let output = current
   items.forEach((item) => {

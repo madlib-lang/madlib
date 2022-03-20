@@ -35,6 +35,10 @@ export fromString = (str) => #- new TextEncoder().encode(str) -#
 
 toList :: ByteArray -> List Byte
 export toList = (byteArray) => #- {
+  if (byteArray.length === 0) {
+    return null
+  }
+
   let current = {}
   let result = current
   byteArray.forEach((byte) => {

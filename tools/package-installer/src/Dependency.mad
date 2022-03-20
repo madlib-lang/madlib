@@ -6,7 +6,7 @@ import {} from "Wish"
 import { Nothing } from "Maybe"
 
 import type { VersionRange } from "./Version"
-import { createRange, parse } from "./Version"
+import Version from "./Version"
 import { sanitizeUrl } from "./URL"
 
 
@@ -29,14 +29,14 @@ export dependencyParser = J.field(
       (url, description, maybeMinVersion, maybeMaxVersion) => ({
         url,
         description,
-        versionRange: createRange(maybeMinVersion, maybeMaxVersion),
+        versionRange: Version.createRange(maybeMinVersion, maybeMaxVersion),
         name: Nothing,
         sanitizedUrl: sanitizeUrl(url)
       }),
       J.field("url", J.string),
       J.field("description", J.maybe(J.string)),
-      J.map1(chain(parse), J.maybe(J.field("minVersion", J.string))),
-      J.map1(chain(parse), J.maybe(J.field("maxVersion", J.string)))
+      J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
+      J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string)))
     )
   )
 )
