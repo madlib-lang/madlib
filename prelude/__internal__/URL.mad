@@ -7,4 +7,8 @@ export encode = #- encodeURI -#
 decode :: String -> String
 export decode = #- decodeURI -#
 
+#elseif llvm
+
+// TODO: use libcurl for the llvm version ( https://stackoverflow.com/a/154627 )
+
 #endif

@@ -128,6 +128,24 @@ unsigned char *madlib__number__internal__rightShiftBytes(unsigned char *a,
   return boxed;
 }
 
+madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  unsigned char parsed;
+  int success = sscanf(s, "%c", &parsed);
+
+  if (success == 1) {
+    unsigned char *boxed = (unsigned char*)GC_malloc(sizeof(unsigned char));
+    *boxed = parsed;
+    result->index = 0;
+    result->data = boxed;
+  } else {
+    result->index = 1;
+    result->data = NULL;
+  }
+
+  return result;
+}
+
 // Float
 
 char *madlib__number__internal__showFloat(double d) {
@@ -203,6 +221,24 @@ bool *madlib__number__internal__eqFloat(double *a, double *b) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
   *boxed = *a == *b;
   return boxed;
+}
+
+madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  double parsed;
+  int success = sscanf(s, "%lf", &parsed);
+
+  if (success == 1) {
+    double *boxed = (double*)GC_malloc(sizeof(double));
+    *boxed = parsed;
+    result->index = 0;
+    result->data = boxed;
+  } else {
+    result->index = 1;
+    result->data = NULL;
+  }
+
+  return result;
 }
 
 // Integer
@@ -315,6 +351,24 @@ bool *madlib__number__internal__eqInteger(int64_t *a, int64_t *b) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
   *boxed = *a == *b;
   return boxed;
+}
+
+madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  int64_t parsed;
+  int success = sscanf(s, "%" SCNd64, &parsed);
+
+  if (success == 1) {
+    int64_t *boxed = (int64_t*)GC_malloc(sizeof(int64_t));
+    *boxed = parsed;
+    result->index = 0;
+    result->data = boxed;
+  } else {
+    result->index = 1;
+    result->data = NULL;
+  }
+
+  return result;
 }
 
 #ifdef __cplusplus

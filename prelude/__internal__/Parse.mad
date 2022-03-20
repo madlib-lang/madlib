@@ -1,6 +1,6 @@
 import type { Either } from "Either"
 
-import {} from "Monad"
+import { andDo } from "Monad"
 import {} from "Alternative"
 import {} from "Number"
 import Char from "Char"
@@ -8,7 +8,7 @@ import { apL } from "Applicative"
 import { Right, Left } from "Either"
 import { Just, Nothing } from "Maybe"
 import String from "String"
-import { append, includes, reduce, reverse } from "List"
+import List from "List"
 import { always, complement, equals, ifElse, notEquals } from "Function"
 import { maybeLoop } from "Control"
 
@@ -16,23 +16,26 @@ import { maybeLoop } from "Control"
 
 export type Location = Loc(Integer, Integer, Integer)
 
-type Parser a = Parser (String -> Location -> #[List #[a, String], Location])
+type Parser a = Parser(String -> Location -> #[List #[a, String], Location])
 export type Parser
 
 export type Error = Error(Location)
 
-incLoc :: String -> Location -> Location
+
+incLoc :: Char -> Location -> Location
 incLoc = (c) => where { 
-  Loc(abs, line, col) => c == "\n"
+  Loc(abs, line, col) => c == '\n'
     ? Loc(abs + 1, line + 1, 0)
     : Loc(abs + 1, line, col + 1)
 }
+
 
 parse :: Parser a -> String -> Location -> #[List #[a, String], Location]
 parse = (parser, input, loc) => where(parser) {
   Parser(fn) =>
     fn(input, loc)
 }
+
 
 /**
  * Runs a given parser with a given input. If it successful it returns a Right
@@ -55,6 +58,11 @@ export runParser = (m, s) => where(parse(m, s, Loc(0, 0, 0))) {
     Left(Error(l))
 }
 
+
+fail :: Parser a
+export fail = aempty
+
+
 /**
  * maps the contained value of a Parser.
  *
@@ -69,6 +77,7 @@ instance Functor Parser {
     #[[], loc] => #[[], loc]
   })
 }
+
 
 /**
  * This the heart of how parser combinators work. With ap you can apply many
@@ -102,6 +111,7 @@ instance Applicative Parser {
   )
 }
 
+
 /**
  * The Monad instance of Parser helps when you need to parse something based on
  * the previous computation.
@@ -122,6 +132,7 @@ instance Monad Parser {
   )
 }
 
+
 /**
  * Alternative provides a way to fail over in case a parser failed. alt takes two
  * parsers, and if the first one fails, it tries to run the second one.
@@ -131,7 +142,7 @@ instance Monad Parser {
  * runParser(alt(char("c"), char("a")), "a") // Right "a"
  */
 instance Alternative Parser {
-  empty = Parser((_, l) => #[[], l])
+  aempty = Parser((_, l) => #[[], l])
 
   alt = (ma, mb) => Parser((s, l) =>
     where(parse(ma, s, l)) {
@@ -156,7 +167,7 @@ instance Alternative Parser {
 anyChar :: Parser Char
 export anyChar = Parser((s, l) => where(String.charAt(0, s)) {
   Just(c) =>
-    #[[#[c, String.drop(1, s)]], incLoc(show(c), l)]
+    #[[#[c, String.drop(1, s)]], incLoc(c, l)]
 
   Nothing =>
     #[[], l]
@@ -194,6 +205,7 @@ export anyChar = Parser((s, l) => where(String.charAt(0, s)) {
 location :: Parser Location
 export location = Parser((s, l) => #[[#[l, s]], l])
 
+
 /**
  * A parser combinator that matches any of the given characters.
  *
@@ -204,7 +216,8 @@ export location = Parser((s, l) => #[[#[l, s]], l])
  * runParser(oneOf(["1", "-", "?"]), "2") // Left (Loc 0 0 0)
  */
 oneOf :: List Char -> Parser Char
-export oneOf = (cs) => satisfy(includes($, cs))
+export oneOf = (cs) => satisfy(List.includes($, cs))
+
 
 /**
  * A parser combinator that matches all except the given characters.
@@ -216,7 +229,8 @@ export oneOf = (cs) => satisfy(includes($, cs))
  * runParser(notOneOf(["1", "-", "?"]), "2") // Right "2"
  */
 notOneOf :: List Char -> Parser Char
-export notOneOf = (cs) => satisfy(complement(includes($, cs)))
+export notOneOf = (cs) => satisfy(complement(List.includes($, cs)))
+
 
 /**
  * A parser combinator that successively tries all given parsers until one
@@ -230,7 +244,8 @@ export notOneOf = (cs) => satisfy(complement(includes($, cs)))
  * runParser(parser, "really")      // Left (Loc 0 0 0)
  */
 choice :: List (Parser a) -> Parser a
-export choice = (ps) => reduce(alt, empty, ps)
+export choice = (ps) => List.reduce(alt, fail, ps)
+
 
 /**
  * A parser combinator that applies 0 or more times the given parser.
@@ -257,7 +272,7 @@ export many = (p) => Parser((s, l) => {
 
   return where(result) {
     #[rest, loc, parseResult] =>
-      #[[#[reverse(parseResult), rest]], loc] }
+      #[[#[List.reverse(parseResult), rest]], loc] }
 })
 
 
@@ -273,7 +288,7 @@ export many = (p) => Parser((s, l) => {
 some :: Parser a -> Parser (List a)
 export some = (p) => chain(
   (first) => map(
-    (rest) => mconcat([first], rest),
+    (rest) => [first, ...rest],
     many(p)
   ),
   p
@@ -313,7 +328,7 @@ export manyTill = (p, end) => Parser((s, l) => {
 
   return where(result) {
     #[rest, loc, parseResult] =>
-      #[[#[parseResult, rest]], loc] }
+      #[[#[List.reverse(parseResult), rest]], loc] }
 })
 
 /**
@@ -382,9 +397,22 @@ export takeWhile = (pred) => Parser((s, l) => {
 
   return where(result) {
     #[rest, loc, parseResult] =>
-      #[[#[reverse(parseResult), rest]], loc]
+      #[[#[List.reverse(parseResult), rest]], loc]
   }
 })
+
+
+sepBy :: Parser a -> Parser s -> Parser (List a)
+export sepBy = (parser, separator) =>
+  alt(
+    do {
+      first <- parser
+      rest <- many(andDo(parser, separator))
+      return of([first, ...rest])
+    },
+    fail
+  )
+
 
 /**
  * A parser combinator that parses a character based on a given predicate.
@@ -396,7 +424,7 @@ export takeWhile = (pred) => Parser((s, l) => {
  */
 satisfy :: (Char -> Boolean) -> Parser Char
 export satisfy = (pred) => chain(
-  ifElse(pred, of, always(empty)),
+  ifElse(pred, of, always(fail)),
   anyChar
 )
 
@@ -471,7 +499,7 @@ export string = (s) => where(String.firstChar(s)){
 spaces :: Parser (List Char)
 export spaces = pipe(
   oneOf,
-  some
+  many
 )([' ', '\n', '\r', '\t'])
 
 /**

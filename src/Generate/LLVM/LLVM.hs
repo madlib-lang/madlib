@@ -2549,17 +2549,20 @@ generateMethod env symbolTable methodName exp = case exp of
 
 generateInstance :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Instance -> m SymbolTable
 generateInstance env symbolTable inst = case inst of
-  Core.Untyped _ _ (Core.Instance interface preds typingStr methods) -> do
-    let instanceName = "$" <> interface <> "$" <> typingStr
+  Core.Untyped _ _ (Core.Instance interface preds typingStr methods) -> mdo
+    let dictType = Type.StructureType False (List.replicate (Map.size methods) papType)
+        instanceName = "$" <> interface <> "$" <> typingStr
         prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
         prefixedMethods' = (\(name, method) -> (name, method)) <$> Map.toList prefixedMethods
         prefixedMethodNames = fst <$> prefixedMethods'
-    symbolTable' <- Monad.foldM (\symbolTable (name, (method, _)) -> generateMethod env symbolTable name method) symbolTable prefixedMethods'
+        -- for recursive types we need to have the current dict in the symbol table
+        symbolTableWithDict = Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict) symbolTable
+    symbolTable' <- Monad.foldM (\symbolTable (name, (method, _)) -> generateMethod env symbolTable name method) symbolTableWithDict prefixedMethods'
     let methodConstants = buildDictValues symbolTable' prefixedMethodNames
 
     dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
 
-    Writer.tell $ Map.singleton instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict)
+    Writer.tell $ Map.singleton instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict)
     return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict) symbolTable'
 
   _ ->
