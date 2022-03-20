@@ -106,13 +106,6 @@ initialEnv = Env
 
                        , ("/"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
                        , ("%"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
-                       , ("^"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
-                       , ("|"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
-                       , ("&"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
-                       , ("~"            , Forall [] $ [] :=> (tInteger `fn` tInteger))
-                       , ("<<"           , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
-                       , (">>"           , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
-                       , (">>>"          , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                        , ("|>"           , Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        , ("$"            , Forall [Star] $ [] :=> TGen 0)
                        , ("__dict_ctor__", Forall [Star, Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
@@ -123,6 +116,11 @@ initialEnv = Env
                     , Instance ([] :=> IsIn "Number" [tByte] Nothing) M.empty
                     , Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty
                     ]
+        )
+      , ("Bits", Interface [TV "a" Star] [IsIn "Number" [TVar $ TV "a" Star] Nothing]
+                  [ Instance ([] :=> IsIn "Bits" [tByte] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Bits" [tInteger] Nothing) M.empty
+                  ]
         )
       , ("Inspect", Interface [TV "a" Star] []
                 [ Instance ([] :=> IsIn "Inspect" [tStr] Nothing) M.empty
@@ -369,6 +367,14 @@ initialEnv = Env
       , ("<="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("inspect"      , Forall [Star] $ [IsIn "Inspect" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
+
+      , ("|"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("&"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("^"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("~"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0))
+      , ("<<"           , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , (">>"           , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , (">>>"          , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       ]
   , envCurrentPath = ""
   , envBacktrace   = mempty

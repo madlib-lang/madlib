@@ -1010,7 +1010,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result           <- srem leftOperand' rightOperand'
+    result                <- srem leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "!" _)) [operand]) -> do
@@ -1135,6 +1135,116 @@ generateExp env symbolTable exp = case exp of
 
           _ ->
             undefined
+
+      "<<" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- shl leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- shl leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      ">>" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- ashr leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- ashr leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      ">>>" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- lshr leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- lshr leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "|" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.or leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.or leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "&" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.and leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.and leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "^" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.xor leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- Instruction.xor leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "~" -> case typingStr of
+        "Integer" -> do
+          (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
+          result           <- Instruction.xor operand' (i64ConstOp (-1))
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
+          result           <- Instruction.xor operand' (Operand.ConstantOperand (Constant.Int 8 (-1)))
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
 
       "+" -> case typingStr of
         "Integer" -> do
@@ -1665,12 +1775,6 @@ updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
       ptr' <- safeBitcast ptr $ Type.ptr listType
       store ptr' 0 exp'
       return (symbolTable, exp', Nothing)
-
-    -- Constructed value
-    -- Type.PointerType t (AddrSpace 2)  -> do
-    --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
-    --   store ptr' 0 exp'
-    --   return (symbolTable, exp', Nothing)
 
     Type.PointerType t _  -> do
       ptr'   <- safeBitcast ptr $ typeOf exp'
@@ -2850,26 +2954,45 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__gteIntegers")       [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__lteIntegers")       [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__numberToInteger")   [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__negateInteger")     [boxType] boxType
+
+  -- Bits Integer
+  extern (AST.mkName "madlib__number__internal__andIntegers")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__orIntegers")         [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__xorIntegers")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__complementIntegers") [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__leftShiftIntegers")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__rightShiftIntegers") [boxType, boxType] boxType
 
   -- Number Byte
-  extern (AST.mkName "madlib__number__internal__addBytes")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__substractBytes")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__multiplyBytes")     [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gtBytes")           [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__ltBytes")           [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gteBytes")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__lteBytes")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__numberToByte")      [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__addBytes")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__substractBytes") [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__multiplyBytes")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gtBytes")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__ltBytes")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gteBytes")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__lteBytes")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__numberToByte")   [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__negateByte")     [boxType] boxType
+
+  -- Bits Byte
+  extern (AST.mkName "madlib__number__internal__andBytes")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__orBytes")         [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__xorBytes")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__complementBytes") [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__leftShiftBytes")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__rightShiftBytes") [boxType, boxType] boxType
 
   -- Number Float
-  extern (AST.mkName "madlib__number__internal__addFloats")         [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__substractFloats")   [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__multiplyFloats")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gtFloats")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__ltFloats")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gteFloats")         [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__lteFloats")         [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__numberToFloat")     [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__addFloats")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__substractFloats") [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__multiplyFloats")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gtFloats")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__ltFloats")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gteFloats")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__lteFloats")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__numberToFloat")   [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__negateFloat")     [boxType] boxType
 
   -- Eq
   extern (AST.mkName "madlib__number__internal__eqInteger") [boxType, boxType] boxType
@@ -2891,6 +3014,15 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteIntegers")
       lteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteIntegers")
       numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToInteger")
+      negateInteger     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateInteger")
+
+      -- Bits Integer
+      andIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__andIntegers")
+      orIntegers         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__orIntegers")
+      xorIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__xorIntegers")
+      complementIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__complementIntegers")
+      leftShiftIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__leftShiftIntegers")
+      rightShiftIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__rightShiftIntegers")
 
       -- Number Byte
       addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addBytes")
@@ -2901,6 +3033,15 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteBytes")
       lteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteBytes")
       numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToByte")
+      negateByte        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateByte")
+
+      -- Bits Byte
+      andBytes        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__andBytes")
+      orBytes         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__orBytes")
+      xorBytes        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__xorBytes")
+      complementBytes = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__complementBytes")
+      leftShiftBytes  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__leftShiftBytes")
+      rightShiftBytes = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__rightShiftBytes")
 
       -- Number Float
       addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addFloats")
@@ -2911,6 +3052,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteFloats")
       lteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteFloats")
       numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToFloat")
+      negateFloat       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateFloat")
 
       -- Eq Integer
       eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqInteger")
@@ -2990,16 +3132,26 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "madlib__number__internal__gteFloats" (fnSymbol 2 gteFloats)
         $ Map.insert "madlib__number__internal__lteFloats" (fnSymbol 2 lteFloats)
         $ Map.insert "madlib__number__internal__numberToFloat" (fnSymbol 1 numberToFloat)
+        $ Map.insert "madlib__number__internal__negateFloat" (fnSymbol 1 negateFloat)
 
         -- Number Byte
-        $ Map.insert "madlib__number__internal__addBytes" (fnSymbol 2 addFloats)
-        $ Map.insert "madlib__number__internal__substractBytes" (fnSymbol 2 substractFloats)
-        $ Map.insert "madlib__number__internal__multiplyBytes" (fnSymbol 2 multiplyFloats)
-        $ Map.insert "madlib__number__internal__gtBytes" (fnSymbol 2 gtFloats)
-        $ Map.insert "madlib__number__internal__ltBytes" (fnSymbol 2 ltFloats)
-        $ Map.insert "madlib__number__internal__gteBytes" (fnSymbol 2 gteFloats)
-        $ Map.insert "madlib__number__internal__lteBytes" (fnSymbol 2 lteFloats)
-        $ Map.insert "madlib__number__internal__numberToByte" (fnSymbol 1 numberToFloat)
+        $ Map.insert "madlib__number__internal__addBytes" (fnSymbol 2 addBytes)
+        $ Map.insert "madlib__number__internal__substractBytes" (fnSymbol 2 substractBytes)
+        $ Map.insert "madlib__number__internal__multiplyBytes" (fnSymbol 2 multiplyBytes)
+        $ Map.insert "madlib__number__internal__gtBytes" (fnSymbol 2 gtBytes)
+        $ Map.insert "madlib__number__internal__ltBytes" (fnSymbol 2 ltBytes)
+        $ Map.insert "madlib__number__internal__gteBytes" (fnSymbol 2 gteBytes)
+        $ Map.insert "madlib__number__internal__lteBytes" (fnSymbol 2 lteBytes)
+        $ Map.insert "madlib__number__internal__numberToByte" (fnSymbol 1 numberToByte)
+        $ Map.insert "madlib__number__internal__negateByte" (fnSymbol 1 negateByte)
+
+        -- Bits Byte
+        $ Map.insert "madlib__number__internal__andBytes" (fnSymbol 2 andBytes)
+        $ Map.insert "madlib__number__internal__orBytes" (fnSymbol 2 orBytes)
+        $ Map.insert "madlib__number__internal__xorBytes" (fnSymbol 2 xorBytes)
+        $ Map.insert "madlib__number__internal__complementBytes" (fnSymbol 1 complementBytes)
+        $ Map.insert "madlib__number__internal__leftShiftBytes" (fnSymbol 2 leftShiftBytes)
+        $ Map.insert "madlib__number__internal__rightShiftBytes" (fnSymbol 2 rightShiftBytes)
 
         -- Number Integer
         $ Map.insert "madlib__number__internal__numberToInteger" (fnSymbol 1 numberToInteger)
@@ -3010,6 +3162,15 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "madlib__number__internal__ltIntegers" (fnSymbol 2 ltIntegers)
         $ Map.insert "madlib__number__internal__gteIntegers" (fnSymbol 2 gteIntegers)
         $ Map.insert "madlib__number__internal__lteIntegers" (fnSymbol 2 lteIntegers)
+        $ Map.insert "madlib__number__internal__negateInteger" (fnSymbol 1 negateInteger)
+
+        -- Bits Integer
+        $ Map.insert "madlib__number__internal__andIntegers" (fnSymbol 2 andIntegers)
+        $ Map.insert "madlib__number__internal__orIntegers" (fnSymbol 2 orIntegers)
+        $ Map.insert "madlib__number__internal__xorIntegers" (fnSymbol 2 xorIntegers)
+        $ Map.insert "madlib__number__internal__complementIntegers" (fnSymbol 1 complementIntegers)
+        $ Map.insert "madlib__number__internal__leftShiftIntegers" (fnSymbol 2 leftShiftIntegers)
+        $ Map.insert "madlib__number__internal__rightShiftIntegers" (fnSymbol 2 rightShiftIntegers)
 
         -- Eq
         $ Map.insert "madlib__number__internal__eqInteger" (fnSymbol 2 eqInteger)
@@ -3129,6 +3290,108 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                     , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
+                , ( "unary-minus"
+                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateInteger" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                ]
+              )
+          )
+
+  let integerBitsInstance =
+        Core.Untyped emptyArea []
+          ( Core.Instance "Bits" [] "Integer"
+              (Map.fromList
+                [ ( "&"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "|"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "^"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "~"
+                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "<<"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( ">>"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( ">>>"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
                 ]
               )
           )
@@ -3232,6 +3495,109 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                     , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
+                , ( "unary-minus"
+                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateByte" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                ]
+              )
+          )
+
+
+  let byteBitsInstance =
+        Core.Untyped emptyArea []
+          ( Core.Instance "Bits" [] "Byte"
+              (Map.fromList
+                [ ( "&"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "|"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "^"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "~"
+                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "<<"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( ">>"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( ">>>"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
                 ]
               )
           )
@@ -3328,6 +3694,17 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
                         Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToFloat" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "unary-minus"
+                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateFloat" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
                         ])
@@ -3823,10 +4200,14 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
     env
     symbolTableWithCBindings
     (
-        -- Number
+      -- Number
       [ integerNumberInstance
       , byteNumberInstance
       , floatNumberInstance
+
+      -- Bits
+      , byteBitsInstance
+      , integerBitsInstance
 
         -- Eq
       , byteEqInstance
@@ -3999,7 +4380,12 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]), ("Inspect", Map.fromList [("inspect", (0, 1))]) ]
+    let dictionaryIndices = Map.fromList
+          [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1)), ("unary-minus", (8, 1))])
+          , ("Bits", Map.fromList [("&", (0, 2)), ("<<", (1, 2)), (">>", (2, 2)), (">>>", (3, 2)), ("^", (4, 2)), ("|", (5, 2)), ("~", (6, 1))])
+          , ("Eq", Map.fromList [("==", (0, 2))])
+          , ("Inspect", Map.fromList [("inspect", (0, 1))])
+          ]
         (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] symbolTable)
         defaultInstancesModulePath =
           if takeExtension entrypoint == "" then

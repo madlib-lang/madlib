@@ -30,6 +30,12 @@ unsigned char *madlib__number__internal__numberToByte(int64_t *a) {
   return result;
 }
 
+unsigned char *madlib__number__internal__negateByte(unsigned char *a) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = -(*a);
+  return boxed;
+}
+
 unsigned char *madlib__number__internal__addBytes(unsigned char *a,
                                                   unsigned char *b) {
   unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
@@ -81,6 +87,47 @@ bool *madlib__number__internal__eqByte(unsigned char *a, unsigned char *b) {
   return boxed;
 }
 
+unsigned char *madlib__number__internal__andBytes(unsigned char *a,
+                                                       unsigned char *b) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = *a & *b;
+  return boxed;
+}
+
+unsigned char *madlib__number__internal__orBytes(unsigned char *a,
+                                                       unsigned char *b) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = *a | *b;
+  return boxed;
+}
+
+unsigned char *madlib__number__internal__xorBytes(unsigned char *a,
+                                                       unsigned char *b) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = *a ^ *b;
+  return boxed;
+}
+
+unsigned char *madlib__number__internal__complementBytes(unsigned char *a) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = ~(*a);
+  return boxed;
+}
+
+unsigned char *madlib__number__internal__leftShiftBytes(unsigned char *a,
+                                                       unsigned char *b) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = *a << *b;
+  return boxed;
+}
+
+unsigned char *madlib__number__internal__rightShiftBytes(unsigned char *a,
+                                                       unsigned char *b) {
+  unsigned char *boxed = (unsigned char *)GC_malloc(sizeof(unsigned char));
+  *boxed = *a >> *b;
+  return boxed;
+}
+
 // Float
 
 char *madlib__number__internal__showFloat(double d) {
@@ -102,6 +149,12 @@ double *madlib__number__internal__numberToFloat(int64_t *a) {
   double *result = (double *)GC_malloc(sizeof(double));
   *result = (double)*a;
   return result;
+}
+
+double *madlib__number__internal__negateFloat(double *a) {
+  double *boxed = (double *)GC_malloc(sizeof(double));
+  *boxed = -(*a);
+  return boxed;
 }
 
 double *madlib__number__internal__addFloats(double *a, double *b) {
@@ -174,6 +227,12 @@ int64_t *madlib__number__internal__numberToInteger(int64_t *a) {
   return result;
 }
 
+int64_t *madlib__number__internal__negateInteger(int64_t *a) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = -(*a);
+  return boxed;
+}
+
 int64_t *madlib__number__internal__addIntegers(int64_t *a, int64_t *b) {
   int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
   *boxed = *a + *b;
@@ -189,6 +248,42 @@ int64_t *madlib__number__internal__substractIntegers(int64_t *a, int64_t *b) {
 int64_t *madlib__number__internal__multiplyIntegers(int64_t *a, int64_t *b) {
   int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
   *boxed = *a * *b;
+  return boxed;
+}
+
+int64_t *madlib__number__internal__andIntegers(int64_t *a, int64_t *b) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = *a & *b;
+  return boxed;
+}
+
+int64_t *madlib__number__internal__orIntegers(int64_t *a, int64_t *b) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = *a | *b;
+  return boxed;
+}
+
+int64_t *madlib__number__internal__xorIntegers(int64_t *a, int64_t *b) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = *a ^ *b;
+  return boxed;
+}
+
+int64_t *madlib__number__internal__complementIntegers(int64_t *a) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = ~(*a);
+  return boxed;
+}
+
+int64_t *madlib__number__internal__leftShiftIntegers(int64_t *a, int64_t *b) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = *a << *b;
+  return boxed;
+}
+
+int64_t *madlib__number__internal__rightShiftIntegers(int64_t *a, int64_t *b) {
+  int64_t *boxed = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxed = *a >> *b;
   return boxed;
 }
 
