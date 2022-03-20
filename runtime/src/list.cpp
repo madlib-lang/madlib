@@ -229,6 +229,24 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list
   }
 }
 
+madlib__list__Node_t *madlib__list__internal__append(void *item, madlib__list__Node_t *list) {
+  madlib__list__Node_t *copy = madlib__list__internal__copy(list);
+
+  if (copy->value == NULL || list->next == NULL) {
+    return madlib__list__singleton(item);
+  }
+
+  madlib__list__Node_t *current = copy;
+  while (current->next->value != NULL) {
+    current = current->next;
+  }
+
+  madlib__list__Node_t *nextNode = madlib__list__singleton(item);
+  current->next = nextNode;
+
+  return copy;
+}
+
 madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
   if (list->value == NULL) {
     return madlib__list__empty();

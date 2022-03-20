@@ -171,39 +171,60 @@ renameBranches env branches = case branches of
 renameBranch :: Env -> Is -> (Is, Env)
 renameBranch env is = case is of
   Typed t area metadata (Is pat exp) ->
-    let renamedPattern  = renamePattern env pat
-        (renamedExp, env') = renameExp env exp
-    in  (Typed t area metadata (Is renamedPattern renamedExp), env')
+    let (renamedPattern, env') = renamePattern env pat
+        (renamedExp, env'')    = renameExp env exp
+    in  (Typed t area metadata (Is renamedPattern renamedExp), env'')
 
   _ ->
     undefined
 
 
-renamePattern :: Env -> Pattern -> Pattern
+renamePatterns :: Env -> [Pattern] -> ([Pattern], Env)
+renamePatterns env patterns = case patterns of
+  (pat : next) ->
+    let (renamed, env') = renamePattern env pat
+        (next', env'')  = renamePatterns env' next
+    in  (renamed : next', env'')
+
+  [] ->
+    ([], env)
+
+renamePattern :: Env -> Pattern -> (Pattern, Env)
 renamePattern env pat = case pat of
-  Typed t area metadata (PCon name args) ->
-    let renamed     = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-        renamedArgs = renamePattern env <$> args
-    in  Typed t area metadata (PCon renamed renamedArgs)
+  Typed t area metadata (PCon name args) -> case break (== '.') name of
+    (namespace, '.' : n) ->
+      let moduleHash          = Maybe.fromMaybe namespace $ Map.lookup namespace (defaultImportHashes env)
+          (renamedArgs, env') = renamePatterns env args
+          renamed             = addHashToName moduleHash n
+          env''               = addDefaultImportNameUsage namespace n env'
+      in  (Typed t area metadata (PCon renamed renamedArgs), env'')
+
+    _ ->
+      let renamed             = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
+          (renamedArgs, env') = renamePatterns env args
+      in  (Typed t area metadata (PCon renamed renamedArgs), env')
 
   Typed t area metadata (PRecord fields) ->
-    let renamedFields = Map.map (renamePattern env) fields
-    in  Typed t area metadata (PRecord renamedFields)
+    let fieldsAsList = Map.toList fields
+        fieldNames = fst <$> fieldsAsList
+        fieldPats = snd <$> fieldsAsList
+        (renamedPats, env') = renamePatterns env fieldPats
+    in  (Typed t area metadata (PRecord (Map.fromList (zip fieldNames renamedPats))), env')
 
   Typed t area metadata (PList items) ->
-    let renamedItems = renamePattern env <$> items
-    in  Typed t area metadata (PList renamedItems)
+    let (renamedItems, env') = renamePatterns env items
+    in  (Typed t area metadata (PList renamedItems), env')
 
   Typed t area metadata (PTuple items) ->
-    let renamedItems = renamePattern env <$> items
-    in  Typed t area metadata (PTuple renamedItems)
+    let (renamedItems, env') = renamePatterns env items
+    in  (Typed t area metadata (PTuple renamedItems), env')
 
   Typed t area metadata (PSpread spread) ->
-    let renamedSpread = renamePattern env spread
-    in  Typed t area metadata (PSpread renamedSpread)
+    let (renamedSpread, env') = renamePattern env spread
+    in  (Typed t area metadata (PSpread renamedSpread), env')
 
   other ->
-    other
+    (other, env)
 
 
 renameFields :: Env -> [Field] -> ([Field], Env)

@@ -1,11 +1,9 @@
 import type { Wish } from "Wish"
-import type { SideEffect } from "SideEffect"
 import type { Maybe } from "Maybe"
 
 import List from "List"
 import String from "String"
-import { bad, bichain, chainRej, mapRej } from "Wish"
-import { parallel, fromWish, toWish } from "SideEffect"
+import { bad, bichain, chainRej, discardError, mapRej, parallel } from "Wish"
 import IO from "IO"
 import Json from "JsonParser"
 import Either from "Either"
@@ -60,7 +58,7 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
 )(dependency)
 
 
-getDependencies :: String -> SideEffect (Either.Either String (List Dependency))
+getDependencies :: String -> Wish {} (Either.Either String (List Dependency))
 getDependencies = pipe(
   Json.parse(dependencyParser),
   where {
@@ -79,7 +77,7 @@ getDependencies = pipe(
 )
 
 
-installNodeModules :: Config -> String -> SideEffect String
+installNodeModules :: Config -> String -> Wish {} String
 installNodeModules = (config, pkgName) => pipe(
   (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
@@ -88,7 +86,7 @@ installNodeModules = (config, pkgName) => pipe(
   chain(pipe(config.exec, mapRej(.stderr))),
   map(.stdout),
   map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
-  fromWish(IO.putLineAndPass(`No node modules to install for '${pkgName}'`))
+  discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`))
 )(pkgName)
 
 
@@ -105,34 +103,34 @@ projectBaseUrl = (dependency) =>
   `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
 
 
-readMadlibDotJson :: Config -> Dependency -> SideEffect (Validate MadlibDotJson)
+readMadlibDotJson :: Config -> Dependency -> Wish {} (Validate MadlibDotJson)
 readMadlibDotJson = (config, dependency) => pipe(
   MadlibDotJson.load(config),
   map(Valid),
-  fromWish(pipe(MadlibDotJsonCouldNotBeLoaded, ValidationError([], $, Nothing)))
+  discardError(pipe(MadlibDotJsonCouldNotBeLoaded, ValidationError([], $, Nothing)))
 )(`${projectBaseUrl(dependency)}/madlib.json`)
 
 
-readVersionDotLock :: Config -> Dependency -> SideEffect (Validate (Maybe VersionDotLock))
+readVersionDotLock :: Config -> Dependency -> Wish {} (Validate (Maybe VersionDotLock))
 readVersionDotLock = (config, dependency) => pipe(
   (d) => VersionDotLock.load(config, `${projectBaseUrl(d)}/version.lock`),
   map(pipe(Just, Valid)),
-  fromWish(always(NotValid([VersionDotLockMissing], Nothing)))
+  discardError(always(NotValid([VersionDotLockMissing], Nothing)))
 )(dependency)
 
 
-computeBuildHash :: Config -> Dependency -> SideEffect (Validate String)
+computeBuildHash :: Config -> Dependency -> Wish {} (Validate String)
 computeBuildHash = (config, dependency) => pipe(
   (d) => config.exec(
     `madlib package generate-hash -i ${projectBaseUrl(d)}`
   ),
   map(.stdout),
   map(Valid),
-  fromWish(always(NotValid([BuildHashCouldNotBeGenerated], "")))
+  discardError(always(NotValid([BuildHashCouldNotBeGenerated], "")))
 )(dependency)
 
 
-prepareValidationInput :: Config -> Dependency -> SideEffect (Validate ValidationInput)
+prepareValidationInput :: Config -> Dependency -> Wish {} (Validate ValidationInput)
 prepareValidationInput = (config, dependency) => pipe(
   readVersionDotLock(config),
   map(
@@ -160,7 +158,7 @@ formatCopyError = (err) => pipe(
   String.unlines
 )(err)
 
-copyPackageFromTmp :: Config -> Validate ValidationOutput -> SideEffect (Validate ValidationOutput)
+copyPackageFromTmp :: Config -> Validate ValidationOutput -> Wish {} (Validate ValidationOutput)
 copyPackageFromTmp = (config, validationResult) => where(validationResult) {
   ValidationError(_, _, _) =>
     of(validationResult)
@@ -177,7 +175,7 @@ copyPackageFromTmp = (config, validationResult) => where(validationResult) {
         ),
         always(of(validationResult))
       ),
-      fromWish((commandError) => pipe(
+      discardError((commandError) => pipe(
         unsafeGetValidationValue,
         .madlibDotJson,
         .name,
@@ -269,7 +267,7 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
 }
 
 
-processDependency :: Config -> #[Context, List Dependency] -> Dependency -> SideEffect #[Context, List Dependency]
+processDependency :: Config -> #[Context, List Dependency] -> Dependency -> Wish {} #[Context, List Dependency]
 processDependency = (config, contextAndNextDeps, dependency) => pipe(
   prepareValidationInput(config),
   map(chain(validate(Tuple.fst(contextAndNextDeps), dependency))),
@@ -295,7 +293,7 @@ filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
 )(dependencies)
 
 
-processDependencies :: Config -> Context -> List Dependency -> SideEffect #[Context, List Dependency]
+processDependencies :: Config -> Context -> List Dependency -> Wish {} #[Context, List Dependency]
 processDependencies = (config, context, dependencies) => pipe(
   filterAlreadyInstalledDependencies(context),
   pipe(
@@ -327,33 +325,35 @@ processDependencies = (config, context, dependencies) => pipe(
 )(dependencies)
 
 
-installedDependencyFolders :: Config -> SideEffect (List String)
+installedDependencyFolders :: Config -> Wish {} (List String)
 installedDependencyFolders = (config) => pipe(
   config.readDir,
-  fromWish(always([]))
+  discardError(always([]))
 )(Constants.MADLIB_MODULES_PATH)
 
 
-installPackages :: Config -> Context -> String -> SideEffect (List String)
+installPackages :: Config -> Context -> String -> Wish {} (List String)
 installPackages = (config, context, madlibDotJsonPath) => pipe(
   config.readFile,
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(config, Constants.MADLIB_MODULES_PATH)),
-  fromWish(identity),
+  discardError(identity),
   chain(pipe(
     getDependencies,
     chain(
       where {
-        Either.Right(dependencies) => pipe(
-          processDependencies(config, context),
-          andDo(installedDependencyFolders(config)),
-          chain(pipe(map(installNodeModules(config)), parallel))
-        )(dependencies)
+        Either.Right(dependencies) =>
+          pipe(
+            processDependencies(config, context),
+            andDo(installedDependencyFolders(config)),
+            chain(pipe(map(installNodeModules(config)), parallel))
+          )(dependencies)
 
-        Either.Left(e) => pipe(
-          IO.putLine,
-          always(of([]))
-        )(e)
+        Either.Left(e) =>
+          pipe(
+            IO.putLine,
+            always(of([]))
+          )(e)
       }
     )
   ))
@@ -394,10 +394,9 @@ export run = (config) => {
   return pipe(
     prepare(config),
     bichain(
-      pipe(always("madlib.json"), installPackages(config, initialContext), toWish),
+      pipe(always("madlib.json"), installPackages(config, initialContext)),
       (packageDotJsonContent) => pipe(
         installPackages(config, initialContext),
-        toWish,
         chain((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(of(x))),
         chainRej((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(bad(x)))
       )("madlib.json")

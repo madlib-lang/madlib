@@ -111,7 +111,7 @@ jsonBoolean = pipe(
 jsonArray :: Parse.Parser JsonValue
 jsonArray = do {
   _ <- symbol("[")
-  items <- sepBy(jsonValue, symbol(","))
+  items <- alt(sepBy(jsonValue, symbol(",")), of([]))
   _ <- spaces
   _ <- symbol("]")
 
@@ -134,7 +134,7 @@ objectField = do {
 jsonObject :: Parse.Parser JsonValue
 jsonObject = do {
   _ <- symbol("{")
-  fields <- sepBy(objectField, symbol(","))
+  fields <- alt(sepBy(objectField, symbol(",")), of([]))
   _ <- spaces
   _ <- symbol("}")
 

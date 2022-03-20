@@ -41,6 +41,9 @@ then
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
 
   gcc-ar rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
@@ -64,7 +67,10 @@ then
     "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}stack.o"\
-    "${BUILD_DIR}gc.o"
+    "${BUILD_DIR}gc.o"\
+    "${BUILD_DIR}crypto.o"\
+    "${BUILD_DIR}sha256.o"\
+    "${BUILD_DIR}md5.o"
 else
   clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
   clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
@@ -87,6 +93,9 @@ else
   clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
   clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
   clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
+  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
+  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
+  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
 
   eval $LLVM_AR rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
@@ -110,7 +119,10 @@ else
     "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}stack.o"\
-    "${BUILD_DIR}gc.o"
+    "${BUILD_DIR}gc.o"\
+    "${BUILD_DIR}crypto.o"\
+    "${BUILD_DIR}sha256.o"\
+    "${BUILD_DIR}md5.o"
 fi
 
 

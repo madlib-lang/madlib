@@ -5,7 +5,7 @@ import type { Maybe } from "Maybe"
 
 #endif
 
-import { Nothing, Just } from "Maybe"
+import { Just } from "Maybe"
 import Wish from "Wish"
 import Dictionary from "Dictionary"
 import String from "String"
@@ -29,6 +29,7 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
 
 #iftarget js
 
+import { Nothing } from "Maybe"
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
@@ -127,6 +128,7 @@ export Env = Dictionary.fromList(getEnvFFI({}))
 
 execFFI :: String -> List String -> (Integer -> String -> String -> {}) -> {}
 execFFI = extern "madlib__process__exec"
+
 
 exec :: String -> Wish.Wish CommandResult CommandResult
 export exec = (command) => Wish.Wish((bad, good) => {
