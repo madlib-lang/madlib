@@ -25,10 +25,8 @@ void onDirScan(uv_fs_t *req) {
         strncpy(*boxedItem, dirh.name, itemLength);
         (*boxedItem)[itemLength] = '\0';
 
-        result = madlib__list__append(boxedItem, result);
+        result = madlib__list__internal__append(boxedItem, result);
     }
-
-    GC_free(req);
 
     madlib__list__Node_t** boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
     *boxedList = result;
@@ -36,14 +34,19 @@ void onDirScan(uv_fs_t *req) {
     int64_t *boxedError = (int64_t*)GC_malloc(sizeof(int64_t));
     *boxedError = 0;
 
+    uv_fs_req_cleanup(req);
+    GC_free(req);
+
     __applyPAP__(callback, 2, boxedError, boxedList);
   } else {
-    GC_free(req);
     int64_t *boxedError = (int64_t*)GC_malloc(sizeof(int64_t));
     *boxedError = libuvErrorToMadlibIOError(req->result);
 
     madlib__list__Node_t** boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
     *boxedList = result;
+
+    uv_fs_req_cleanup(req);
+    GC_free(req);
 
     __applyPAP__(callback, 2, boxedError, boxedList);
   }

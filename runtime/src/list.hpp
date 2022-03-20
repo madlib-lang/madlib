@@ -42,6 +42,8 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list
 
 void *madlib__list__reduce(PAP_t *pap, void *initialValue, madlib__list__Node_t *list);
 
+madlib__list__Node_t *madlib__list__internal__append(void *item, madlib__list__Node_t *list);
+
 madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list);
 
 madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *list);

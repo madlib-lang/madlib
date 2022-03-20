@@ -21,9 +21,10 @@ export type Wish e a = Wish((e -> f) -> (a -> b) -> {})
  * map((x) => x + 1, bad(3))  // bad(3)
  */
 instance Functor (Wish e) {
-  map = (f, m) => Wish((badCB, goodCB) =>
-    where(m) { Wish(run) => run(badCB, (x) => (goodCB(f(x)))) }
-  )
+  map = (f, m) => Wish((badCB, goodCB) => where(m) {
+    Wish(run) =>
+      run(badCB, (x) => (goodCB(f(x))))
+  })
 }
 
 
@@ -168,6 +169,15 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
 
   return fork(0, wishes)
 })
+
+
+
+discardError :: (e -> a) -> Wish e a -> Wish {} a
+export discardError = (recover, wish) => Wish((badCB, goodCB) => where(wish) {
+  Wish(run) =>
+    run(pipe(recover, goodCB), goodCB)
+})
+
 
 #iftarget js
 
