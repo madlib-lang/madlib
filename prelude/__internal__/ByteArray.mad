@@ -34,10 +34,24 @@ fromString :: String -> ByteArray
 export fromString = (str) => #- new TextEncoder().encode(str) -#
 
 toList :: ByteArray -> List Byte
-export toList = (byteArray) => #- Array.from(byteArray) -#
+export toList = (byteArray) => #- {
+  let current = {}
+  let result = current
+  byteArray.forEach((byte) => {
+    current = current.n = { v: byte, n: null }
+  })
+  return result.n
+} -#
 
 fromList :: List Byte -> ByteArray
-export fromList = (bytes) => #- Uint8Array.from(bytes) -#
+export fromList = (bytes) => #- {
+  let bytesArray = []
+  while (bytes !== null) {
+    bytesArray.push(bytes.v)
+    bytes = bytes.n
+  }
+  return Uint8Array.from(bytesArray)
+} -#
 
 concat :: ByteArray -> ByteArray -> ByteArray
 export concat = (byteArray1, byteArray2) => #- {
