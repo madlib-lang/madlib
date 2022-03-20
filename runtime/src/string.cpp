@@ -153,10 +153,52 @@ char **madlib__string__internal__inspect(char **boxedInput) {
   return boxed;
 }
 
+
+madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
+  int64_t length = 0;
+  int skipCount = 0;
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+
+  while ((*s != '\0' || skipCount != 0) && length < n) {
+    if (skipCount > 0) {
+      skipCount--;
+    } else {
+      length++;
+
+      if (*s >= 0xf0) {
+        skipCount = 3;
+      } else if (*s >= 0xe0) {
+        skipCount = 2;
+      } else if (*s >= 0xc0) {
+        skipCount = 1;
+      }
+    }
+    s++;
+  }
+
+  if (*s) {
+    int _;
+    int32_t c = utf8DecodeChar((char*)s, &_);
+    int32_t *boxed = (int32_t*)GC_malloc(sizeof(int32_t));
+    *boxed = c;
+    result->index = 0;
+    result->data = boxed;
+  } else {
+    result->index = 1;
+    result->data = NULL;
+  }
+
+  return result;
+}
+
+
+// TODO: do no copy when the end has not changed, but just return an offsetted pointer
+// that will make drop and takeLast a lot more performant
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   int skipCount = 0;
+  int initialEnd = end;
 
-  if (start < 0 || end <= 0) {
+  if (start < 0 || end < 0) {
     int64_t length = madlib__string__length(s);
 
     if (start < 0) {
@@ -187,6 +229,10 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
       }
     }
     s++;
+  }
+
+  if (initialEnd == 0) {
+    return (char*)s;
   }
 
   unsigned char *startPtr = s;
@@ -410,25 +456,29 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
 }
 
 madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
-  size_t strLength = strlen(str);
   size_t separatorLength = strlen(separator);
-  char *copy = (char *)GC_malloc(sizeof(char) * (strLength + 1));
-  memcpy(copy, str, strLength + 1);
-
+  if (separatorLength == 0) {
+    separatorLength = 1;
+  }
+  
   madlib__list__Node_t *result = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
   madlib__list__Node_t *current = result;
 
-  while (copy != NULL) {
-    char *found = strstr(copy, separator);
+  while (str != NULL && *str != '\0') {
+    char *found = strstr(str, separator);
     size_t partLength = 0;
     if (found == NULL) {
-      partLength = strlen(copy);
+      partLength = strlen(str);
     } else {
-      partLength = found - copy;
+      partLength = found - str;
+    }
+
+    if (partLength == 0) {
+      partLength = 1;
     }
 
     char *part = (char *)GC_malloc(sizeof(char) * (partLength + 1));
-    memcpy(part, copy, partLength);
+    memcpy(part, str, partLength);
     part[partLength] = '\0';
     char **boxed = (char **)GC_malloc(sizeof(char *));
     *boxed = part;
@@ -438,9 +488,9 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
     node->next = NULL;
     current = current->next = node;
 
-    copy = found;
+    str = found;
     if (found != NULL) {
-      copy = found + separatorLength;
+      str = found + separatorLength;
     }
   }
 

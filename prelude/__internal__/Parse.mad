@@ -1,0 +1,545 @@
+import type { Either } from "Either"
+
+import {} from "Monad"
+import {} from "Alternative"
+import {} from "Number"
+import {} from "Char"
+import { apL } from "Applicative"
+import { Right, Left } from "Either"
+import { Just, Nothing } from "Maybe"
+import { drop, firstChar, charAt } from "String"
+// import { firstChar, drop, isDigit, isLetter } from "String"
+import { append, includes, reduce, reverse } from "List"
+import { always, complement, equals, ifElse, notEquals } from "Function"
+import { maybeLoop } from "Control"
+
+
+
+export type Location = Loc(Integer, Integer, Integer)
+
+type Parser a = Parser (String -> Location -> #[List #[a, String], Location])
+export type Parser
+
+export type Error = Error(Location)
+
+incLoc :: String -> Location -> Location
+incLoc = (c) => where { 
+  Loc(abs, line, col) => c == "\n"
+    ? Loc(abs + 1, line + 1, 0)
+    : Loc(abs + 1, line, col + 1)
+}
+
+parse :: Parser a -> String -> Location -> #[List #[a, String], Location]
+parse = (parser, input, loc) => where(parser) {
+  Parser(fn) =>
+    fn(input, loc)
+}
+
+/**
+ * Runs a given parser with a given input. If it successful it returns a Right
+ * of the parsed type, otherwise it returns an error with the location of where
+ * it failed.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(anyChar, "a")
+ */
+runParser :: Parser a -> String -> Either Error a
+export runParser = (m, s) => where(parse(m, s, Loc(0, 0, 0))) {
+  #[[#[res, ""]], _] =>
+    Right(res)
+
+  #[[#[_, rest]], l] =>
+    Left(Error(l))
+
+  #[_, l] =>
+    Left(Error(l))
+}
+
+/**
+ * maps the contained value of a Parser.
+ *
+ * @since 0.0.1
+ * @example
+ * type Letter = Letter String
+ * map(Letter, anyChar) // Parser Letter
+ */
+instance Functor Parser {
+  map = (f, m) => Parser((s, l) => where(parse(m, s, l)) {
+    #[[#[a, b]], loc] => #[[#[f(a), b]], loc]
+    #[[], loc] => #[[], loc]
+  })
+}
+
+/**
+ * This the heart of how parser combinators work. With ap you can apply many
+ * arguments to a mapping function.
+ *
+ * @since 0.0.1
+ * @example
+ * parser = pipe(
+ *   map((a, b, c) => a ++ b ++ c),
+ *   ap($, abcParser),
+ *   ap($, abcParser)
+ * )(abcParser)
+ */
+instance Applicative Parser {
+  pure = (a) => Parser((s, l) => #[[#[a, s]], l])
+
+  ap = (parserA, parserB) => Parser((s, l) =>
+    where(parse(parserA, s, l)) {
+      #[[], l1] =>
+        #[[], l1]
+
+      #[[#[f, s1]], l1] =>
+        where(parse(parserB, s1, l1)) {
+          #[[#[a, s2]], l2] =>
+            #[[#[f(a), s2]], l2]
+
+          #[[], l2] =>
+            #[[], l2]
+        }
+    }
+  )
+}
+
+/**
+ * The Monad instance of Parser helps when you need to parse something based on
+ * the previous computation.
+ *
+ * @since 0.0.1
+ */
+instance Monad Parser {
+  of = pure
+
+  chain = (f, m) => Parser((s, l) =>
+    where(parse(m, s, l)) {
+      #[[], ll] =>
+        #[[], ll]
+
+      #[[#[a, s1]], l1] =>
+        parse(f(a), s1, l1)
+    }
+  )
+}
+
+/**
+ * Alternative provides a way to fail over in case a parser failed. alt takes two
+ * parsers, and if the first one fails, it tries to run the second one.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(alt(char("c"), char("a")), "a") // Right "a"
+ */
+instance Alternative Parser {
+  empty = Parser((_, l) => #[[], l])
+
+  alt = (ma, mb) => Parser((s, l) =>
+    where(parse(ma, s, l)) {
+      #[[], _] =>
+        parse(mb, s, l)
+
+      res =>
+        res
+    }
+  )
+}
+
+
+/**
+ * A parser combinator that matches any character and returns a Parser String
+ * containing that character.
+ *
+ * @since 0.0.1
+ * @example
+ * parse(anyChar, "?") // Right "?"
+ */
+anyChar :: Parser String
+export anyChar = Parser((s, l) => where(charAt(0, s)) {
+  Just(c) =>
+    #[[#[show(c), drop(1, s)]], incLoc("show(c)", l)]
+
+  Nothing =>
+    #[[], l]
+})
+
+
+/**
+ * A parser combinator that returns the current location in the given input. This
+ * combinator can be used to collect location information for your parsed AST.
+ *
+ * @since 0.0.1
+ * @example
+ * type Letter = L Location Location String
+ * expected = Right()
+ *
+ * abcParser = pipe(
+ *   map((start, c, end) => L(start, end, c)),
+ *   ap($, oneOf(["a", "b", "c"])),
+ *   ap($, location)
+ * )(location)
+ *
+ * parser = pipe(
+ *   map((a, b, c) => [a, b, c]),
+ *   ap($, abcParser),
+ *   ap($, abcParser)
+ * )(abcParser)
+ *
+ * runParser(parser, "cba")
+ * // Right [
+ * //   L(Loc(0, 0, 0), Loc(1, 0, 1), "c"),
+ * //   L(Loc(1, 0, 1), Loc(2, 0, 2), "b"),
+ * //   L(Loc(2, 0, 2), Loc(3, 0, 3), "a")
+ * // ]
+ */
+location :: Parser Location
+export location = Parser((s, l) => #[[#[l, s]], l])
+
+/**
+ * A parser combinator that matches any of the given characters.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(oneOf(["1", "-", "?"]), "?") // Right "?"
+ * runParser(oneOf(["1", "-", "?"]), "1") // Right "1"
+ * runParser(oneOf(["1", "-", "?"]), "2") // Left (Loc 0 0 0)
+ */
+oneOf :: List String -> Parser String
+export oneOf = (cs) => satisfy(includes($, cs))
+
+/**
+ * A parser combinator that matches all except the given characters.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(notOneOf(["1", "-", "?"]), "?") // Left (Loc 0 0 0)
+ * runParser(notOneOf(["1", "-", "?"]), "1") // Left (Loc 0 0 0)
+ * runParser(notOneOf(["1", "-", "?"]), "2") // Right "2"
+ */
+notOneOf :: List String -> Parser String
+export notOneOf = (cs) => satisfy(complement(includes($, cs)))
+
+/**
+ * A parser combinator that successively tries all given parsers until one
+ * succeeds, or fails if none has succeeded.
+ *
+ * @since 0.0.1
+ * @example
+ * parser = choice([string("good"), string("really good")])
+ * runParser(parser, "good")        // Right "good"
+ * runParser(parser, "really good") // Right "really good"
+ * runParser(parser, "really")      // Left (Loc 0 0 0)
+ */
+choice :: List (Parser a) -> Parser a
+export choice = (ps) => reduce(alt, empty, ps)
+
+/**
+ * A parser combinator that applies 0 or more times the given parser.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(many(string("OK")), "OKOKOK") // Right ["OK", "OK", "OK"]
+ * runParser(many(string("O")), "OKOKOK")  // Left (Loc 1 0 1)
+ */
+many :: Parser a -> Parser (List a)
+export many = (p) => Parser((s, l) => {
+  result = maybeLoop(#[s, l, []], (state) =>
+    where(state) {
+      #[ss, ll, acc] =>
+        where(parse(p, ss, ll)) {
+          #[[#[parsed, rest]], loc] =>
+            Just(#[rest, loc, [parsed, ...acc]])
+
+          _ =>
+            Nothing
+        }
+    }
+  )
+
+  return where(result) {
+    #[rest, loc, parseResult] =>
+      #[[#[reverse(parseResult), rest]], loc] }
+})
+// export many = (p) => Parser((s, l) => where(parse(p, s, l)) {
+// })
+// many :: Parser a -> Parser (List a)
+// export many = (p) => Parser((s, l) => #-{
+//   let ss = s
+//   let ll = l
+//   let acc = []
+//   while (true) {
+//     let [[res], loc] = parse(p)(ss)(ll)
+//     if (!res) break
+//     let [parsed, rest] = res
+//     acc.push(parsed)
+//     ss = rest
+//     ll = loc
+//   }
+//   return [[[acc, ss]], ll]
+// }-#)
+
+/**
+ * A parser combinator that applies 1 or more times the given parser. If no parse
+ * found at all it'll fail.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(some(string("OK")), "OKOKOK") // Right ["OK", "OK", "OK"]
+ * runParser(some(string("OK")), "NOPE")   // Left (Loc 0 0 0)
+ */
+some :: Parser a -> Parser (List a)
+export some = (p) => chain(
+  (first) => map(
+    (rest) => mconcat([first], rest),
+    many(p)
+  ),
+  p
+)
+
+/**
+ * A parser combinator that matches many times the first given parser until the
+ * second one matches. Note that the input matched by the end parser will then
+ * be consumed. If you don't want to consume the end parser's matched input,
+ * you can use lookAhead.
+ *
+ * @since 0.0.1
+ * @example
+ * parser = manyTill(char("a"), char("b"))
+ * runParser(parser, "aaaaab") // Right "aaaaa"
+ */
+manyTill :: Parser a -> Parser b -> Parser (List a)
+export manyTill = (p, end) => Parser((s, l) => {
+  result = maybeLoop(#[s, l, []], (state) =>
+    where(state) {
+      #[ss, ll, acc] =>
+        where(parse(end, ss, ll)) {
+          #[[#[_, _]], _] =>
+            Nothing
+
+          _ =>
+            where(parse(p, ss, ll)) {
+              #[[#[parsed, rest]], loc] =>
+                Just(#[rest, loc, [parsed, ...acc]])
+
+              _ =>
+                Nothing
+            }
+        }
+    }
+  )
+
+  return where(result) {
+    #[rest, loc, parseResult] =>
+      #[[#[parseResult, rest]], loc] }
+})
+
+/**
+ * A parser combinator that matches one or more times the first given parser until the
+ * second one matches. If the first parser does not match the input, it will fail.
+ * Note that the input matched by the end parser will then be consumed. If you don't
+ * want to consume the end parser's matched input, you can use lookAhead.
+ *
+ * @since 0.0.1
+ * @example
+ * parser1 = someTill(char("a"), char("b"))
+ * runParser(parser1, "aaaaab") // Right "aaaaa"
+ *
+ * parser2 = someTill(char("a"), char("b"))
+ * runParser(parser2, "b") // Left (Loc 0 0 0)
+ */
+someTill :: Parser a -> Parser b -> Parser (List a)
+export someTill = (p, end) => chain(
+  (first) => map(
+    (rest) => mconcat([first], rest),
+    manyTill(p, end)
+  ),
+  p
+)
+
+/**
+ * A parser combinator that makes the given parser not consume any input.
+ *
+ * @since 0.0.1
+ * @example
+ * alt(char("a"), lookAhead(anyChar))
+ */
+lookAhead :: Parser a -> Parser a
+export lookAhead = (p) => Parser((s, l) => where(parse(p, s, l)) {
+  #[[#[a, _]], _] =>
+    #[[#[a, s]], l]
+
+  _ =>
+    #[[], l]
+})
+
+/**
+ * A parser combinator that parses all characters while the given predicate
+ * returns true.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(takeWhile(notEquals("-")), "abcdef-")
+ */
+takeWhile :: (String -> Boolean) -> Parser String
+export takeWhile = (pred) => Parser((s, l) => {
+  result = maybeLoop(#[s, l, ""], (state) =>
+    where(state) {
+      #[ss, ll, acc] =>
+        where(parse(anyChar, ss, ll)) {
+          #[[#[parsed, rest]], loc] =>
+            pred(parsed)
+              ? Just(#[rest, loc, acc ++ parsed])
+              : Nothing
+
+          _ =>
+            Nothing
+        }
+    }
+  )
+
+  return where(result) {
+    #[rest, loc, parseResult] =>
+      #[[#[parseResult, rest]], loc]
+  }
+})
+
+/**
+ * A parser combinator that parses a character based on a given predicate.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(satisfy(isDigit), "1")  // Right "1"
+ * runParser(satisfy(isLetter), "1") // Left (Loc 0 0 0)
+ */
+satisfy :: (String -> Boolean) -> Parser String
+export satisfy = (pred) => chain(
+  ifElse(pred, of, always(empty)),
+  anyChar
+)
+
+/**
+ * A parser combinator that parses a single given character.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(char("a"), "a") // Right "a"
+ * runParser(char("a"), "b") // Left (Loc 0 0 0)
+ */
+char :: String -> Parser String
+export char = pipe(equals, satisfy)
+
+/**
+ * The complement of char, it parses any char that not the one given.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(notChar("a"), "a") // Left (Loc 0 0 0)
+ * runParser(notChar("a"), "b") // Right "a"
+ */
+notChar :: String -> Parser String
+export notChar = pipe(notEquals, satisfy)
+
+/**
+ * A parser combinator that parses the eof token, or the end of the input.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(eof, "")  // Right ()
+ * runParser(eof, "a") // Left (Loc 0 0 0)
+ */
+eof :: Parser {}
+export eof = Parser((s, l) => where(parse(anyChar, s, l)) {
+  #[[], _] =>
+    #[[#[{}, ""]], l]
+
+  _ =>
+    #[[], l]
+})
+
+/**
+ * A parser combinator that parses a given string.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(string("hello world"), "hello world") // Right "hello world"
+ * runParser(string("hello world"), "hello")       // Left (Loc 0 0 0)
+ */
+string :: String -> Parser String
+export string = (s) => where(firstChar(s)){
+  Just(c) =>
+    pipe(
+      map((a, b) => a ++ b),
+      ap($, string(drop(1, s)))
+    )(char(show(c)))
+
+  Nothing =>
+    pure("")
+}
+
+/**
+ * A parser combinator that parses empty characters such as spaces, line returns
+ * or tabs.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(spaces, " \t\n")  // Right " \t\n"
+ * runParser(spaces, " \t\na") // Left (Loc 0 0 0)
+ */
+spaces :: Parser String
+export spaces = pipe(
+  oneOf,
+  some,
+  map(reduce(mconcat, ""))
+)([" ", "\n", "\r", "\t"])
+
+/**
+ * A parser combinator that parses the given parser and discards all trailing
+ * spaces.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(token(string("hello")), "hello\n")  // Right "hello"
+ * runParser(token(string("hello")), "hello\n!") // Left (Loc 0 0 0)
+ */
+token :: Parser a -> Parser a
+export token = apL($, spaces)
+
+/**
+ * A parser combinator that parses a given string and discards all trailing
+ * spaces.
+ *
+ * @since 0.0.1
+ * @example
+ * runParser(symbol("hello"), "hello\n")  // Right "hello"
+ * runParser(symbol("hello"), "hello\n!") // Left (Loc 0 0 0)
+ */
+symbol :: String -> Parser String
+export symbol = pipe(string, token)
+
+/**
+ * A parser combinator that parses a digit.
+ *
+ * @since 0.0.1
+ */
+// digit :: Parser String
+// export digit = satisfy(isDigit)
+
+/**
+ * A parser combinator that parses a letter.
+ *
+ * @since 0.0.1
+ */
+// letter :: Parser String
+// export letter = satisfy(isLetter)
+
+/**
+ * A parser combinator that parses many letters.
+ *
+ * @since 0.0.1
+ */
+// letters :: Parser String
+// export letters = pipe(
+//   satisfy,
+//   many,
+//   map(reduce(mconcat, ""))
+// )(isLetter)

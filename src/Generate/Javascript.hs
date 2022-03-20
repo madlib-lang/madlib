@@ -733,7 +733,7 @@ instance Compilable Exp where
               in  if null packed then
                     ""
                   else
-                    "    let " <> packListVars itemsStr <> " = " <> scope <> ";\n" 
+                    "    let " <> packListVars' itemsStr <> " = " <> scope <> ";\n" 
 
           buildListItemVar :: Pattern -> String
           buildListItemVar Untyped{} = undefined
@@ -764,10 +764,18 @@ instance Compilable Exp where
           packListVars :: [String] -> String
           packListVars items = case items of
             [last] ->
+              "{ v: " <> last <> " }"
+
+            _ ->
+              packListVars' items
+
+          packListVars' :: [String] -> String
+          packListVars' items = case items of
+            [last] ->
               last
 
             (item : more) ->
-              let next = packListVars more
+              let next = packListVars' more
                   item' =
                     if null item then
                       ""

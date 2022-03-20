@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+-- {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Optimize.ToCore where
 
 import qualified Control.Monad.State           as MonadState
@@ -14,6 +14,7 @@ import qualified AST.Core                      as Core
 import           Infer.Type
 import           Explain.Location
 import qualified Utils.Types                   as Types
+import Text.Show.Pretty
 
 
 data State
@@ -152,6 +153,7 @@ class Processable a b where
 
 
 instance Processable Slv.Exp Core.Exp where
+  toCore enabled fullExp@(Slv.Untyped area e)  = error $ "not implemented: " <> ppShow e
   toCore enabled fullExp@(Slv.Typed qt area e) = case e of
     Slv.LNum  x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LNum x)
 
@@ -260,6 +262,9 @@ instance Processable Slv.Exp Core.Exp where
         let tsStr = Types.buildTypeStrForPlaceholder ts
         ts' <- getTypeShortname enabled tsStr
         return $ Core.CRPNode cls' ts' var ps'
+
+    other ->
+      error $ "not implemented: " <> ppShow other
 
 
 

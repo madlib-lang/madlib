@@ -230,19 +230,25 @@ export takeLast = (n, s) => slice(-n, 0, s)
 
 #iftarget js
 
-nthChar :: Integer -> String -> Maybe String
-export nthChar = (n, s) => #-{
+// TODO: implement llvm version
+charAt :: Integer -> String -> Maybe Char
+export charAt = (n, s) => #-{
   const c = s[n]
   return !!c ? Just(c) : Nothing
 }-#
 
-firstChar :: String -> Maybe String
-export firstChar = nthChar(0)
+#elseif llvm
 
-lastChar :: String -> Maybe String
-export lastChar = (s) => nthChar(length(s) - 1, s)
+charAt :: Integer -> String -> Maybe Char
+export charAt = extern "madlib__string__charAt"
 
 #endif
+
+firstChar :: String -> Maybe Char
+export firstChar = charAt(0)
+
+lastChar :: String -> Maybe Char
+export lastChar = (s) => charAt(length(s) - 1, s)
 
 #iftarget js
 
