@@ -1866,8 +1866,8 @@ generateBranches env symbolTable exitBlock whereExp iss = case iss of
 generateBranch :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Core.Is -> m [(Operand, AST.Name)]
 generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
   Core.Typed _ _ _ (Core.Is pat exp) -> mdo
-    currBlock <- currentBlock
     test      <- generateBranchTest env symbolTable pat whereExp
+    currBlock <- currentBlock
     condBr test branchExpBlock nextBlock
 
     branchExpBlock <- block `named` "branchExpBlock"
@@ -2038,18 +2038,25 @@ generateBranchTest env symbolTable pat value = case pat of
     let patsWithPtrs = List.zip pats itemPtrs
     Monad.foldM (generateSubPatternTest env symbolTable) true patsWithPtrs
 
-  Core.Typed _ _ _ (Core.PList pats) -> do
+  Core.Typed _ _ _ (Core.PList pats) -> mdo
     let hasSpread = List.any isSpread pats
 
-    -- test that the length of the given list is at least as long as the pattern items
+    lengthTestBlock' <- currentBlock
     lengthTest <-
       if hasSpread then do
         call madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
       else
         call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
+    condBr lengthTest subPatternTestBlock testResultBlock
 
+    subPatternTestBlock <- block `named` "subPatternTestBlock"
     subPatternsTest <- generateListSubPatternTest env symbolTable value pats
-    lengthTest `Instruction.and` subPatternsTest
+    subPatternTestBlock' <- currentBlock
+    br testResultBlock
+
+    testResultBlock <- block `named` "testResultBlock"
+    phi [(subPatternsTest, subPatternTestBlock'), (lengthTest, lengthTestBlock')]
+
     where
       isSpread :: Core.Pattern -> Bool
       isSpread pat = case pat of
@@ -2328,6 +2335,12 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName originalName) ->
+    let arity  = List.length $ IT.getParamTypes t
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
+
+  Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName originalName))) ->
     let arity  = List.length $ IT.getParamTypes t
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))

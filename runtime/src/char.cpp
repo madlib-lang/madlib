@@ -96,12 +96,8 @@ bool *madlib__char__internal__eq(int32_t *a, int32_t *b) {
   return boxed;
 }
 
-char **madlib__char__internal__show(int32_t *unicode) {
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-
-  *boxed = utf8Encode(*unicode);
-
-  return boxed;
+char *madlib__char__internal__show(int32_t unicode) {
+  return utf8Encode(unicode);
 }
 
 char **madlib__char__internal__inspect(int32_t *unicode) {

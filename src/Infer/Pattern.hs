@@ -32,7 +32,7 @@ inferPatterns env pats = do
 inferPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
 inferPattern env (Can.Canonical area pat) = case pat of
   Can.PNum  n ->
-    return (Slv.Typed ([] :=> tNumber) area (Slv.PNum n), [], M.empty, tNumber)
+    return (Slv.Typed qtNumber area (Slv.PNum n), [], M.empty, tNumber)
 
   Can.PBool b ->
     return (Slv.Typed ([] :=> tBool) area (Slv.PBool b), [], M.empty, tBool)

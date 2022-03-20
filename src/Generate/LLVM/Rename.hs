@@ -471,8 +471,13 @@ renameAST env ast =
       env'                         = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
       (renamedImports, env'')      = renameImports env' $ aimports ast
       (renamedTypeDecls, env''')   = renameTypeDecls env'' $ atypedecls ast
-      (renamedExps, env'''')       = renameTopLevelExps env''' $ aexps ast
-      (renamedInstances, env''''') = renameInstances env'''' (ainstances ast)
+      (_, env'''')                 = renameTopLevelExps env''' $ aexps ast
+      (_, env''''')                = renameInstances env'''' (ainstances ast)
+
+      -- we need a second pass as we may need to rename references above the current top level expression
+      (renamedExps, _)             = renameTopLevelExps env''''' $ aexps ast
+      (renamedInstances, _)        = renameInstances env''''' (ainstances ast)
+
       rewrittenImports             = rewriteDefaultImports env''''' renamedImports
   in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = rewrittenImports }, env)
 

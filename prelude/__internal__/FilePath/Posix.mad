@@ -1,6 +1,7 @@
 #iftarget js
 
 import String from "String"
+import {} from "Char"
 import { filter, first, last, drop, dropLast } from "List"
 import { fromMaybe, Nothing, Just } from "Maybe"
 import { complement, equals, identity, ifElse } from "Function"
@@ -19,7 +20,7 @@ export alias FilePath = String
  */
 dropTrailingPathSeparator :: FilePath -> FilePath
 export dropTrailingPathSeparator = ifElse(
-  (path) => path != "/" && String.lastChar(path) == Just("/"),
+  (path) => path != "/" && String.lastChar(path) == Just('/'),
   String.dropLast(1),
   identity
 )
@@ -29,13 +30,13 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
   Nothing =>
     [buffer]
 
-  Just("/") =>
+  Just('/') =>
     performSplitPath(buffer ++ "/", true, String.drop(1, path))
 
   Just(char) =>
     foundSlash
-      ? mconcat([buffer], performSplitPath(char, false, String.drop(1, path)))
-      : performSplitPath(buffer ++ char, false, String.drop(1, path))
+      ? mconcat([buffer], performSplitPath(show(char), false, String.drop(1, path)))
+      : performSplitPath(buffer ++ show(char), false, String.drop(1, path))
 }
 
 
@@ -80,7 +81,7 @@ export canonicalizePath = pipe(
   splitPath,
   map(
     ifElse(
-      pipe(String.lastChar, equals(Just("/"))),
+      pipe(String.lastChar, equals(Just('/'))),
       String.replace("([^/]*)/*", "$1/"),
       identity
     )
@@ -158,7 +159,7 @@ export takeFileName = pipe(
   last,
   where {
     Just(part) =>
-      String.lastChar(part) == Just("/")
+      String.lastChar(part) == Just('/')
         ? ""
         : part
 
