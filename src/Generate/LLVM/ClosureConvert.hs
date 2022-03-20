@@ -32,6 +32,7 @@ data Env
   , lifted :: M.Map String (String, [Exp])
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
   }
+  deriving(Eq, Show)
 
 initialOptimizationState :: State
 initialOptimizationState = State { count = 0, topLevel = [] }
@@ -143,7 +144,13 @@ findFreeVars env exp = do
         findFreeVarsInBody env exps = case exps of
           (e : es) -> case e of
             Typed qt area _ (Assignment name exp) -> do
-              fvs     <- findFreeVars (addGlobalFreeVar name env) exp
+              fvs <-
+                if isFunctionType (getQualified qt) then
+                  findFreeVars (addGlobalFreeVar name env) exp
+                else
+                  findFreeVars env exp
+              -- fvs     <- findFreeVars (addGlobalFreeVar name env) exp
+              -- nextFVs <- findFreeVarsInBody env es
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               if name `elem` freeVarExclusion env then
                 return $ fvs ++ nextFVs ++ [(name, Typed qt area [] (Var name False))]
@@ -209,9 +216,20 @@ findFreeVars env exp = do
 
     Typed _ area _ (Placeholder ph exp) -> do
       (placeholderVars, excludeVars) <- case ph of
-        (ClassRef interface _ _ True, ts) ->
+        (ClassRef interface crpNodes True False, ts) -> do
+          let crpDictNames = S.toList $ S.fromList $ collectCRPFreeVars crpNodes
+              crpFvs = (\dictName -> (dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))) <$> crpDictNames
+          return (crpFvs, [])
+
+        (ClassRef interface crpNodes True True, ts) -> do
           let dictName = "$" <> interface <> "$" <> ts
-          in  return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))], [])
+              crpDictNames = S.toList $ S.fromList $ dictName : collectCRPFreeVars crpNodes
+              crpFvs = (\dictName -> (dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))) <$> crpDictNames
+          return (crpFvs, [])
+
+        (ClassRef interface crpNodes _ True, ts) -> do
+          let dictName = "$" <> interface <> "$" <> ts
+          return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))], [])
 
         (MethodRef interface methodName True, ts) -> do
           let dictName = "$" <> interface <> "$" <> ts
@@ -219,6 +237,7 @@ findFreeVars env exp = do
 
         _ ->
           return ([], [])
+
       expVars <- case ph of
         -- If it's a resolved method, it is accessed from the global scope
         (MethodRef _ _ False, _) ->
@@ -226,7 +245,17 @@ findFreeVars env exp = do
 
         _ ->
           findFreeVars env exp
+
       return $ filter (\(varName, _) -> varName `notElem` excludeVars) $ placeholderVars ++ expVars
+      where
+        collectCRPFreeVars :: [ClassRefPred] -> [String]
+        collectCRPFreeVars crps =
+          crps >>= (\(CRPNode interface ts var crps') ->
+                      if var then
+                        "$" <> interface <> "$" <> ts : collectCRPFreeVars crps'
+                      else
+                        collectCRPFreeVars crps'
+                   )
 
     Typed _ _ _ (Record fields) -> do
       fvs <- mapM findFreeVarsInField fields
@@ -303,7 +332,8 @@ convertBody exclusionVars env body = case body of
   (exp : es) -> case exp of
     Typed qt@(_ :=> t) _ _ (Assignment name abs@(Typed _ _ _ (Definition params body))) -> do
       exp' <- convertDefinition (addVarExclusions exclusionVars env) name [] abs
-      next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
+      next <- convertBody (name : exclusionVars) env es
+      -- next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     abs@(Typed _ _ _ (Definition params body)) -> do
@@ -470,15 +500,19 @@ instance Convertable Exp Exp where
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
         functionName' <- generateLiftedName functionName
-        innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea [] . (`Var` False) <$> paramsWithFreeVars) env) innerExp
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (getType . snd <$> fvs))
-        let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area [] (Definition paramsWithFreeVars [innerExp'])))
-        addTopLevelExp lifted
+        case innerExp of
+          Typed _ _ _ (Definition params body) -> do
+            convertDefinition env functionName paramsWithFreeVars innerExp
 
-        let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
+          _ -> do
+            innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea [] . (`Var` False) <$> paramsWithFreeVars) env) innerExp
+            let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area [] (Definition paramsWithFreeVars [innerExp'])))
+            addTopLevelExp lifted
+            let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
 
-        return $ Typed qt area metadata (Assignment functionName functionNode)
+            return $ Typed qt area metadata (Assignment functionName functionNode)
 
     Assignment name exp -> do
       exp' <- convert env exp
@@ -725,11 +759,7 @@ getGlobalsFromImports imports = case imports of
 
 defaultGlobals :: [String]
 defaultGlobals =
-  [ "madlib__recursion__internal__Thunk"
-  , "madlib__recursion__internal__Done"
-  , "madlib__recursion__internal__Next"
-  , "madlib__recursion__internal__trampoline__1"
-  ]
+  []
 
 
 instance Convertable AST AST where

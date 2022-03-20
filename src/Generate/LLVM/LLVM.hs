@@ -718,17 +718,19 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
-      -- Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
+
       Monad.foldM_
         (\_ (boxed, index, argType, unboxed) ->
-          if IT.isFunctionType argType then do
-            unboxed' <- load unboxed 0
-            newPAP <- call gcMalloc [(Operand.ConstantOperand $ sizeof papStructType, [])]
-            newPAP' <- bitcast newPAP papType
-            store newPAP' 0 unboxed'
-            storeItem envPtr' () (newPAP, index)
-          else
-            storeItem envPtr' () (boxed, index)
+          case typeOf unboxed of
+            Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
+              unboxed' <- load unboxed 0
+              newPAP <- call gcMalloc [(Operand.ConstantOperand $ sizeof papStructType, [])]
+              newPAP' <- bitcast newPAP papType
+              store newPAP' 0 unboxed'
+              storeItem envPtr' () (newPAP, index)
+
+            _ ->
+              storeItem envPtr' () (boxed, index)
         )
         ()
         $ List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')
@@ -840,7 +842,8 @@ generateExp env symbolTable exp = case exp of
             recArgs'  <- mapM (generateExp env { isLast = False } symbolTable) recArgs
             let unboxedArgs = (\(_, x, _) -> x) <$> recArgs'
 
-            let paramUpdatesData = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
+            -- We need to reverse because we may have some closured variables in the params and these need not be updated
+            let paramUpdatesData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
             mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
 
             return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
@@ -888,6 +891,10 @@ generateExp env symbolTable exp = case exp of
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
+
+      Just (Symbol (TCOParamSymbol ptr) _) -> do
+        loaded <- load ptr 0
+        return (symbolTable, loaded, Nothing)
 
       Just (Symbol _ var) ->
         return (symbolTable, var, Nothing)
@@ -1464,12 +1471,13 @@ generateExp env symbolTable exp = case exp of
         args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-        let paramUpdatesData = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
-        mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
+        -- We need to reverse because we may have some closured variables in the params and these need not be updated
+        let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+        mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdateData
 
         return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
 
-    Core.Typed _ _ _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
+    Core.Typed _ area _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
       Just (Symbol (ConstructorSymbol _ arity) fnOperand) ->
         generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
 
@@ -1497,7 +1505,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, unboxed, Just ret)
 
       _ ->
-        error $ "Function not found " <> functionName
+        error $ "Function not found " <> functionName <> "\narea: " <> ppShow area
 
     _ -> case fn of
       -- With this we enable tail call optimization for overloaded functions
@@ -1647,9 +1655,6 @@ generateExp env symbolTable exp = case exp of
       args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-      let d = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
-      mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
-
       let listQualType = [] IT.:=> IT.tListOf (IT.tVar "a")
       (_, item, maybeBoxedItem) <- generateExp env symbolTable li
       item' <- case maybeBoxedItem of
@@ -1669,6 +1674,10 @@ generateExp env symbolTable exp = case exp of
 
       -- end = end.next
       store endPtr 0 newNode'
+
+      -- We need to reverse because we may have some closured variables in the params and these need not be updated
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+      mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) paramUpdateData
 
       -- return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
       return (symbolTable, Operand.ConstantOperand (Constant.Undef (typeOf endValue)), Nothing)
@@ -1799,35 +1808,15 @@ generateExp env symbolTable exp = case exp of
 
 
 updateTCOArg :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> IT.Qual IT.Type -> Operand -> Operand -> m (SymbolTable, Operand, Maybe Operand)
-updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
-  case typeOf exp' of
-    Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-      ptr' <- safeBitcast ptr $ Type.ptr stringType
-      store ptr' 0 exp'
-      return (symbolTable, exp', Nothing)
-
-    Type.PointerType _ _ | IT.isListType ty -> do
-      ptr' <- safeBitcast ptr $ Type.ptr listType
-      store ptr' 0 exp'
-      return (symbolTable, exp', Nothing)
-
-    Type.PointerType t _ | IT.hasNumberPred ps -> do
-      ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
-      exp''  <- safeBitcast exp' Type.i64
-      store ptr' 0 exp''
-      return (symbolTable, exp', Nothing)
-
-    Type.PointerType t _  -> do
-      ptr'   <- safeBitcast ptr $ typeOf exp'
-      loaded <- load exp' 0
-      store ptr' 0 loaded
-      return (symbolTable, exp', Nothing)
-
-    _ -> do
-      ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
-      store ptr' 0 exp'
-      return (symbolTable, exp', Nothing)
-
+updateTCOArg symbolTable (ps IT.:=> t) ptr exp =
+  if IT.isFunctionType t then do
+    ptr' <- load ptr 0
+    exp' <- load exp 0
+    store ptr' 0 exp'
+    return (symbolTable, exp, Nothing)
+  else do
+    store ptr 0 exp
+    return (symbolTable, exp, Nothing)
 
 
 generateBranches :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
@@ -2147,13 +2136,27 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
     if Core.isTCODefinition metadata then mdo
       entry          <- block `named` "entry"
       continue       <- alloca Type.i1 Nothing 0
+
+      let typesWithParams = List.zip paramTypes params
+      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
+      -- unboxedParams <- mapM (uncurry (unbox env symbolTable)) (trace ("typesWithParams: "<>ppShow typesWithParams) typesWithParams)
+
+      allocatedParams <-
+        mapM
+          (\param -> do
+            ptr <- alloca (typeOf param) Nothing 0
+            store ptr 0 param
+            return ptr
+          )
+          unboxedParams
+
       recData <-
             if Core.isPlainRecursiveDefinition metadata then do
               return $
                 PlainRecursionData
                   { entryBlockName = entry
                   , continueRef = continue
-                  , boxedParams = List.drop dictCount params
+                  , boxedParams = List.drop dictCount allocatedParams
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
               start       <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
@@ -2167,7 +2170,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
                 RightListRecursionData
                   { entryBlockName = entry
                   , continueRef = continue
-                  , boxedParams = List.drop dictCount params
+                  , boxedParams = List.drop dictCount allocatedParams
                   , start = start'
                   , end = end
                   }
@@ -2189,7 +2192,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
                 ConstructorRecursionData
                   { entryBlockName = entry
                   , continueRef = continue
-                  , boxedParams = List.drop dictCount params
+                  , boxedParams = List.drop dictCount allocatedParams
                   , start = start'
                   , end = end
                   , holePtr = holePtr
@@ -2201,18 +2204,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       loop <- block `named` "loop"
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
-      -- allocatedParams <-
-      --   mapM
-      --     (\param -> do
-      --       ptr <- alloca boxType Nothing 0
-      --       store ptr 0 param
-      --       return ptr
-      --     )
-      --     params
-      let typesWithParams = List.zip paramTypes params
-
-      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
-      let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
+      let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
 
@@ -4450,8 +4442,8 @@ compileModule outputFolder rootPath astPath astModule = do
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-    Text.putStrLn (ppllvm astModule)
+  -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+  --   Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath

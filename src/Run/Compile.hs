@@ -185,7 +185,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         withTCE          = TCE.resolveTable closureConverted
 
                     -- putStrLn (ppShow renamedTable)
-                    -- putStrLn (ppShow reduced)
+                    -- putStrLn (ppShow closureConverted)
                     -- putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do

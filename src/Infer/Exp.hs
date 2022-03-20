@@ -205,7 +205,7 @@ inferBody env [e] = do
 inferBody env (e : es) = do
   (s, ps, env', e') <- case e of
     Can.Canonical _ Can.TypedExp{} ->
-      inferExplicitlyTyped env e
+      inferExplicitlyTyped True env e
 
     _ -> do
       (s, (_, ps), env, e') <- inferImplicitlyTyped True env e
@@ -623,7 +623,7 @@ inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   s2                <- contextualUnify env e t t1
 
   return (s1 `compose` s2, apply s2 ps1, apply s2 t1, Slv.Typed (apply s2 $ ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
-  -- return (s1 `compose` s2, ps1, t1, Slv.Typed (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
+  -- return (s1, ps1, t1, Slv.Typed (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
   -- return (s1 `compose` s2, ps, t, Slv.Typed (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
 
@@ -820,8 +820,8 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t))
 
 
-inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
-inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
+inferExplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
+inferExplicitlyTyped isLet env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   qt@(qs :=> t') <- instantiate sc
 
   env' <- case Can.getExpName exp of
@@ -869,14 +869,19 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
 
     let qt'  = qs'' :=> t'''
     let sc'' = quantify gs qt'
-    -- let sc'' = quantify (ftv qt') qt'
     let env'' = case Can.getExpName exp of
-          Just n  -> extendVars env' (n, sc'')
-          Nothing -> env'
+          Just n  ->
+            if isLet then
+              extendVars env' (n, Forall [] qt')
+            else
+              extendVars env' (n, sc'')
+
+          Nothing ->
+            env'
 
     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
-inferExplicitlyTyped env _ = undefined
+inferExplicitlyTyped _ _ _ = undefined
 -- inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
 -- inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
 --   qt@(qs :=> t') <- instantiate sc
@@ -954,7 +959,7 @@ inferExp env (Can.Canonical area (Can.TypeExport name)) =
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ Can.TypedExp{} ->
-      inferExplicitlyTyped env e
+      inferExplicitlyTyped False env e
 
     _ -> do
       -- NB: Currently handles Extern nodes as well

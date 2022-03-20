@@ -115,15 +115,16 @@ export bad = (e) => Wish((badCB, _) => badCB(e))
 
 
 
-// parallel :: List (Wish e a) -> Wish e (List a)
+parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => Wish((badCB, goodCB) => {
   amountOfWishesToProcess = len(wishes)
   ko = false
   ok = 0
 
-  // result :: List #[Integer, a]
+  result :: List #[Integer, a]
   result = []
 
+  next :: Integer -> {}
   next = (amountResolved) =>
     amountResolved == amountOfWishesToProcess
       ? pipe(
@@ -133,7 +134,7 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
         )(result)
       : {}
 
-  // fork :: Integer -> List (Wish e a) -> {}
+  fork :: Integer -> List (Wish e a) -> {}
   fork = (index, ws) => where(ws) {
     [wish, ...nextWishes] =>
       do {

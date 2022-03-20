@@ -236,11 +236,16 @@ updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = cas
     ps'   <- buildClassRefPreds env cls instanceTypes'
 
     let newRef = (cls, instanceTypes')
-    let nextEnv =
-          if not call then
-            addDict newRef cleanUpEnv
+    nextEnv <-
+          if not call then do
+            -- we need to gather parent interfaces as a constraint Applicative f => ...
+            -- will generate an additional Functor f constraint and we need this one
+            -- to be in the env or the clean up will not be complete.
+            parents <- getAllParentPreds env [IsIn cls instanceTypes' Nothing]
+            let allRefs = (\(IsIn name ts _) -> (name, ts)) <$> parents
+            return $ foldr addDict cleanUpEnv allRefs
           else
-            addAppliedDict (cls, instanceTypes) cleanUpEnv
+            return $ addAppliedDict (cls, instanceTypes) cleanUpEnv
     exp'  <- updatePlaceholders env nextEnv push s exp
 
     let wrappedExp = getPlaceholderExp ph
@@ -270,7 +275,7 @@ updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = cas
         return exp'
       else
         return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
-    else if (cls, instanceTypes) `elem` appliedDicts cleanUpEnv then
+    else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
       return exp'
     else
       return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
@@ -335,6 +340,12 @@ addName name env =
 updatePlaceholdersForExpList :: Env -> CleanUpEnv -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
 updatePlaceholdersForExpList env cleanUpEnv push s exps = case exps of
   (e : es) -> case e of
+    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed qt area (Slv.Assignment name exp)) _ _) -> do
+      let cleanUpEnv' = addName name cleanUpEnv
+      next <- updatePlaceholdersForExpList env cleanUpEnv' push s es
+      e' <- updatePlaceholders env cleanUpEnv' push s e
+      return (e' : next)
+
     Slv.Typed qt area (Slv.Assignment name exp) -> do
       let cleanUpEnv' = addName name cleanUpEnv
       next <- updatePlaceholdersForExpList env cleanUpEnv' push s es

@@ -1,8 +1,0 @@
-import {} from "./Show"
-
-instance (Show a, Show b) => Show #[a, b] {
-  show = where {
-    #[a, b] =>
-      "#[" ++ show(a) ++ ", " ++ show(b) ++ "]"
-  }
-}
