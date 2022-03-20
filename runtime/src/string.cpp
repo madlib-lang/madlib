@@ -163,6 +163,40 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
 }
 
 
+madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
+  size_t strLength = strlen(str);
+  size_t separatorLength = strlen(separator);
+  char *copy = (char*)GC_malloc(sizeof(char) * (strLength + 1));
+  memcpy(copy, str, strLength + 1);
+
+  madlib__list__Node_t *result = madlib__list__empty();
+
+  while (copy != NULL) {
+    char *found = strstr(copy, separator);
+    size_t partLength = 0;
+    if (found == NULL) {
+      partLength = strlen(copy);
+    } else {
+      partLength = found - copy;
+    }
+
+    char *part = (char*)GC_malloc(sizeof(char) * (partLength + 1));
+    memcpy(part, copy, partLength);
+    part[partLength] = '\0';
+    char **boxed = (char**)GC_malloc(sizeof(char*));
+    *boxed = part;
+    result = madlib__list__append(boxed, result);
+
+    copy = found;
+    if (found != NULL) {
+      copy = found + separatorLength;
+    }
+  }
+
+  return result;
+}
+
+
 #ifdef __cplusplus
 }
 #endif
