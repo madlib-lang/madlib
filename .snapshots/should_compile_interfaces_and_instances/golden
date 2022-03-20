@@ -58,25 +58,38 @@ Functor['Maybe']['map'] = () => (f => __x__ => ((__x__) => {
   }
 })(__x__));
 Functor['List'] = {};
-Functor['List']['map'] = () => (f => __x__ => ((__x__) => {
+Functor['List']['map'] = () => (f => __x__ => {
+    let $result;
+    let $continue = true;
+    let $start = [];
+    let $end = $start;
+    let $f = f;
+    let $__x__ = __x__;
+
+    while($continue) {
+        $continue = false;
+        ((__x__) => {
   if (__x__.length >= 1 && true && true) {
     let [h,...t] = __x__;
-    return ([f(h),  ...Functor.List.map()(f)(t)]);
+    return ($end.push($f(h)), $f = $f, $__x__ = t, $continue = true);
   }
   else if (__x__.length === 1 && true) {
     let [l] = __x__;
-    return ([f(l)]);
+    return ($end.push(...([$f(l)])), $result = $start);
   }
   else if (__x__.length === 0) {
     let [] = __x__;
-    return ([]);
+    return ($end.push(...([])), $result = $start);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__));
+})($__x__)
+    }
+    return $result;
+});
 Monad['Maybe'] = {};
 Monad['Maybe']['chain'] = () => (f => __x__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {

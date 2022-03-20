@@ -186,12 +186,13 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                     -- putStrLn (ppShow renamedTable)
                     -- putStrLn (ppShow reduced)
-                    putStrLn (ppShow withTCE)
+                    -- putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
                         withTCE       = TCE.resolveTable strippedTable
+                    -- putStrLn (ppShow withTCE)
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
                   when bundle $ do

@@ -126,7 +126,7 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
         Typed qtSpread areaSpread metadataSpread (ListSpread (markTRCCalls recursionKind fnType fnName spread))
       ])
     else
-      Typed qt area metadata (ListConstructor [
+      Typed qt area (RecursionEnd recursionKind : metadata) (ListConstructor [
         Typed qtLi areaLi metadataLi (ListItem li),
         Typed qtSpread areaSpread metadataSpread (ListSpread spread)
       ])

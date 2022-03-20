@@ -128,6 +128,8 @@ data SymbolType
   = VariableSymbol
   | LocalVariableSymbol Operand
   -- ^ operand is a ptr to the value for mutation
+  | TCOParamSymbol Operand
+  -- ^ operand is a ptr to the value for mutation
   | FunctionSymbol Int
   -- ^ arity
   | MethodSymbol Int
@@ -160,6 +162,10 @@ varSymbol =
 localVarSymbol :: Operand -> Operand -> Symbol
 localVarSymbol ptr =
   Symbol (LocalVariableSymbol ptr)
+
+tcoParamSymbol :: Operand -> Operand -> Symbol
+tcoParamSymbol ptr =
+  Symbol (TCOParamSymbol ptr)
 
 fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
@@ -625,7 +631,6 @@ applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPre
 
     classRefPreds'  <- mapM box preds
     appliedMethods  <- mapM (\m -> call applyPAP ([(m, []), (i32ConstOp (fromIntegral $ List.length classRefPreds'), [])] ++ ((,[]) <$> classRefPreds'))) methods
-    let papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
     appliedMethods' <- mapM (`safeBitcast` papType) appliedMethods
     appliedMethods'' <- mapM (`load` 0) appliedMethods'
 
@@ -700,7 +705,7 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       return (symbolTable, unboxed, Just ret)
   | otherwise = do
       -- We don't have enough args, so we create a new PAP
-      let papType                 = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+      let papStructType           = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
       let arity'                  = i32ConstOp (fromIntegral arity)
       let argCount                = List.length args
       let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
@@ -713,10 +718,23 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
-      Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
+      -- Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
+      Monad.foldM_
+        (\_ (boxed, index, argType, unboxed) ->
+          if IT.isFunctionType argType then do
+            unboxed' <- load unboxed 0
+            newPAP <- call gcMalloc [(Operand.ConstantOperand $ sizeof papStructType, [])]
+            newPAP' <- bitcast newPAP papType
+            store newPAP' 0 unboxed'
+            storeItem envPtr' () (newPAP, index)
+          else
+            storeItem envPtr' () (boxed, index)
+        )
+        ()
+        $ List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')
 
-      papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
-      papPtr' <- safeBitcast papPtr (Type.ptr papType)
+      papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papStructType, [])]
+      papPtr' <- safeBitcast papPtr (Type.ptr papStructType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
 
       return (symbolTable, papPtr', Just papPtr)
@@ -814,12 +832,15 @@ generateExp env symbolTable exp = case exp of
             let llvmType      = buildLLVMType env symbolTable (getQualType exp)
             let Just continue = continueRef <$> recursionData env
             let Just params   = boxedParams <$> recursionData env
+
             store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
-            
+
+            let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) recArgs
+
             recArgs'  <- mapM (generateExp env { isLast = False } symbolTable) recArgs
             let unboxedArgs = (\(_, x, _) -> x) <$> recArgs'
 
-            let paramUpdatesData = List.zip3 (Core.getQualType <$> recArgs) params unboxedArgs
+            let paramUpdatesData = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
             mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
 
             return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
@@ -853,7 +874,10 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, loaded, Nothing)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
-        return (symbolTable, value, Just ptr)
+        if Maybe.isJust (recursionData env) then
+          return (symbolTable, value, Nothing)
+        else
+          return (symbolTable, value, Just ptr)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         let constructedType = retrieveConstructorStructType env symbolTable t
@@ -1434,11 +1458,13 @@ generateExp env symbolTable exp = case exp of
         let Just continue = continueRef <$> recursionData env
         let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+
+        let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) args
         
-        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+        args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-        let paramUpdatesData = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+        let paramUpdatesData = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
         mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
 
         return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
@@ -1615,11 +1641,13 @@ generateExp env symbolTable exp = case exp of
       endValue <- load endPtr 0
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
-      
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+
+      let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) args
+
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-      let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+      let d = List.zip3 (Core.getQualType <$> filteredArgs) params unboxedArgs
       mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
 
       let listQualType = [] IT.:=> IT.tListOf (IT.tVar "a")
@@ -1627,6 +1655,7 @@ generateExp env symbolTable exp = case exp of
       item' <- case maybeBoxedItem of
         Just boxed ->
           return boxed
+          -- box item
 
         Nothing ->
           box item
@@ -1648,6 +1677,9 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.ListConstructor listItems) -> do
     tail <- case List.last listItems of
       Core.Typed _ _ _ (Core.ListItem lastItem) -> do
+        -- (_, item', _) <- generateExp env { isLast = False } symbolTable lastItem
+        -- boxed <- box item'
+        -- call madlistSingleton [(boxed, [])]
         item <- generateExp env { isLast = False } symbolTable lastItem
         items <- retrieveArgs [item]
         call madlistSingleton [(List.head items, [])]
@@ -1662,6 +1694,9 @@ generateExp env symbolTable exp = case exp of
     list <- Monad.foldM
       (\list' i -> case i of
         Core.Typed _ _ _ (Core.ListItem item) -> do
+          -- (_, item', _) <- generateExp env { isLast = False } symbolTable item
+          -- boxed <- box item'
+          -- call madlistPush [(boxed, []), (list', [])]
           item <- generateExp env { isLast = False } symbolTable item
           items <- retrieveArgs [item]
           call madlistPush [(List.head items, []), (list', [])]
@@ -1776,16 +1811,16 @@ updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
       store ptr' 0 exp'
       return (symbolTable, exp', Nothing)
 
+    Type.PointerType t _ | IT.hasNumberPred ps -> do
+      ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
+      exp''  <- safeBitcast exp' Type.i64
+      store ptr' 0 exp''
+      return (symbolTable, exp', Nothing)
+
     Type.PointerType t _  -> do
       ptr'   <- safeBitcast ptr $ typeOf exp'
       loaded <- load exp' 0
       store ptr' 0 loaded
-      return (symbolTable, exp', Nothing)
-
-    _ | IT.hasNumberPred ps -> do
-      ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
-      exp''  <- safeBitcast exp' Type.i64
-      store ptr' 0 exp''
       return (symbolTable, exp', Nothing)
 
     _ -> do
@@ -2166,7 +2201,16 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       loop <- block `named` "loop"
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
+      -- allocatedParams <-
+      --   mapM
+      --     (\param -> do
+      --       ptr <- alloca boxType Nothing 0
+      --       store ptr 0 param
+      --       return ptr
+      --     )
+      --     params
       let typesWithParams = List.zip paramTypes params
+
       unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
       let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
@@ -4406,8 +4450,8 @@ compileModule outputFolder rootPath astPath astModule = do
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-  --   Text.putStrLn (ppllvm astModule)
+  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+    Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath

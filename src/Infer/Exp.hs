@@ -299,7 +299,7 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
 
   -- return (s1, ps1, t1, applyAssignmentSolve e name e1 (ps1 :=> t1))
   -- return (s1, currentPreds ++ ps1, t1, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t1))
-  return (s, currentPreds ++ ps1, apply s t2, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t2))
+  return (s, currentPreds ++ ps1, apply s t2, applyAssignmentSolve e name e1 (apply s $ (currentPreds ++ ps1) :=> t2))
 
 
 
@@ -808,16 +808,16 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   let sc =
         if isLet then
-          Forall [] $ apply sFinal (ds'' :=> t')
+          Forall [] $ apply sFinal (ds'' :=> t)
         else
-          quantify fs $ apply sFinal (ds'' :=> t')
+          quantify fs $ apply sFinal (ds'' :=> t)
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t'))
+      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t))
 
     Nothing ->
-      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t'))
+      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t))
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -949,6 +949,7 @@ inferExps env (e : es) = do
 
 inferExp :: Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp env (Can.Canonical area (Can.TypeExport name)) =
+  -- TODO: Should this return Nothing?
   return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
