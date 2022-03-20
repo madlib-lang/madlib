@@ -1,29 +1,40 @@
 import type { Either } from "Either"
 import type { Maybe } from "Maybe"
+import type { JsonValue } from "JsonValue"
 
 import Parse from "Parse"
-import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
+import {
+  char,
+  choice,
+  digit,
+  many,
+  notChar,
+  runParser,
+  sepBy,
+  some,
+  spaces,
+  symbol
+} from "Parse"
 import String from "String"
 import List from "List"
+import Tuple from "Tuple"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import {} from "Number"
 import Dictionary from "Dictionary"
-
+import {
+  JsonString,
+  JsonInteger,
+  JsonFloat,
+  JsonBoolean,
+  JsonNull,
+  JsonArray,
+  JsonObject
+} from "JsonValue"
 
 
 // Parser
 // ------
-
-type JsonValue
-  = JsonString(String)
-  | JsonInteger(Integer)
-  | JsonFloat(Float)
-  | JsonBoolean(Boolean)
-  | JsonNull
-  | JsonObject(Dictionary String JsonValue)
-  | JsonArray(List JsonValue)
-
 
 jsonString :: Parse.Parser JsonValue
 jsonString = do {
@@ -145,7 +156,7 @@ jsonValue = choice([
 
 
 
-// Public API
+// Parser Public API
 // ----------
 
 export type Parser r = Parser(JsonValue -> Either String r)
@@ -311,7 +322,6 @@ export field = (fieldName, parser) => Parser((input) => where(input) {
 
         Nothing =>
           Left(`Error parsing fieldname '${fieldName}'`)
-          // getParserFn(parser, JsonNull)
       }
     )(d)
 })

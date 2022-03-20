@@ -79,6 +79,13 @@ bool *madlib__number__internal__eqInteger(int64_t *a, int64_t *b);
 
 madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s);
 
+
+// conversion
+double madlib__number__intToFloat(int64_t x);
+double madlib__number__byteToFloat(char x);
+int64_t madlib__number__byteToInt(char x);
+
+
 #ifdef __cplusplus
 }
 #endif

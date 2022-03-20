@@ -36,6 +36,12 @@ aliasStringGlobal target =
   let global = getGlobalForTarget target
   in global <> ".__String = "<> global <> ".String;\n\n"
 
+-- Do we need this?
+aliasMathGlobal :: Target -> String
+aliasMathGlobal target =
+  let global = getGlobalForTarget target
+  in global <> ".__Math = "<> global <> ".Math;\n\n"
+
 
 inspectStaticInstances :: Target -> Bool -> String
 inspectStaticInstances target optimized = unlines
