@@ -35,7 +35,6 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
   Just(char) =>
     foundSlash
       ? mappend([buffer], performSplitPath(char, false, String.drop(1, path)))
-      // ? [buffer, ...performSplitPath(char, false, String.drop(1, path))]
       : performSplitPath(buffer ++ char, false, String.drop(1, path))
 }
 

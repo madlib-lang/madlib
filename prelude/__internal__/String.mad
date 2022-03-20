@@ -31,7 +31,18 @@ export replace = (regex, replacing, input) => (#-
 -#)
 
 split :: String -> String -> List String
-export split = (separator, str) => (#- str.split(separator) -#)
+export split = (separator, str) => #- {
+  const items = str.split(separator)
+  let current = {}
+  let output = current
+  items.forEach((item) => {
+    current = current.n = {}
+    current.v = item
+  })
+  current.n = null
+
+  return output.n
+} -#
 
 lines :: String -> List String
 export lines = split("\n")
