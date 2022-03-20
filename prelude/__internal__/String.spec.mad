@@ -1,15 +1,8 @@
 import { test, assertEquals } from "Test"
 import { EQUAL, LESS, MORE } from "Compare"
 
-#iftarget js
+import String from "./String"
 
-import { lines, mapChars, replace } from "./String"
-
-#elseif llvm
-
-import {} from "./String"
-
-#endif
 
 test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE))
 test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LESS))
@@ -19,14 +12,28 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 
 test(
   "lines should split a string by line returns",
-  (_) => assertEquals(lines("line1\nline2"), ["line1", "line2"])
+  (_) => assertEquals(String.lines("line1\nline2"), ["line1", "line2"])
 )
 
-test("mapChars should map the characters of a String", (_) => {
-  mapper = (char) => char == "o" ? "a" : char
-  return assertEquals(mapChars(mapper, "Hello World"), "Hella Warld")
-})
 
-test("replace should replace parts of a string given some regex and replacement string", (_) => assertEquals(replace("a", "b", "abc"), "bbc"))
+test(
+  "replace should replace parts of a string given some regex and replacement string",
+  (_) => assertEquals(String.replace("a", "b", "abc"), "bbc")
+)
 
 #endif
+
+test("mapChars should map the characters of a String", (_) => {
+  mapper = (char) => char == 'o' ? 'a' : char
+  return assertEquals(String.mapChars(mapper, "Hello World"), "Hella Warld")
+})
+
+test(
+  "fromList",
+  (_) => assertEquals(String.fromList(['H', 'e', 'l', 'l', 'o']), "Hello")
+)
+
+test(
+  "toList",
+  (_) => assertEquals(String.toList("Hello"), ['H', 'e', 'l', 'l', 'o'])
+)

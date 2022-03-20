@@ -117,6 +117,52 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
   return result;
 }
 
+
+madlib__list__Node_t *madlib__string__toList(char *str) {
+  madlib__list__Node_t *result = madlib__list__empty();
+
+  int32_t *chars = utf8Decode(str);
+
+  int length = 0;
+  while (chars[length] != 0) {
+    length++;
+  }
+
+  for (int i = length - 1; i >= 0; i--) {
+    result = madlib__list__push(&chars[i], result);
+  }
+
+  return result;
+}
+
+char *madlib__string__fromList(madlib__list__Node_t *list) {
+  int64_t charCount = madlib__list__length(list);
+  char **encodedChars = (char**)GC_malloc(sizeof(char*) * charCount);
+  int j = 0;
+  size_t fullLength = 0;
+
+  while (list->value != NULL) {
+    char *encoded = utf8Encode(*(int32_t*)list->value);
+    fullLength += strlen(encoded);
+    encodedChars[j] = encoded;
+    j++;
+    list = list->next;
+  }
+
+  char *result = (char *)GC_malloc(sizeof(char) * (fullLength + 1));
+  size_t offset = 0;
+  for (int i = 0; i < charCount; i++) {
+    size_t sizeOfChar = strlen(encodedChars[i]);
+    memcpy(result + offset, encodedChars[i], sizeOfChar);
+    offset += sizeOfChar;
+  }
+
+  result[offset] = '\0';
+
+  return result;
+}
+
+
 #ifdef __cplusplus
 }
 #endif
