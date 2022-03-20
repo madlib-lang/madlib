@@ -46,7 +46,7 @@ tester :: String -> Either CompilationError Slv.AST
 tester code = do
   ast <- buildAST "path" code
   let table = M.singleton "path" ast
-  ((table, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table "path")
+  ((table, _, _), _) <- runStateT (canonicalizeAST mempty "" TNode Can.initialEnv table "path")
                                   (CanonicalState { warnings = [], typesToDerive = mempty, derivedTypes = mempty })
   canAST <- Can.findAST table "path"
 
@@ -56,7 +56,7 @@ tester code = do
 tableTester :: Src.Table -> Src.AST -> Either CompilationError Slv.Table
 tableTester table ast = do
   let astPath = fromMaybe "" $ Src.apath ast
-  ((canTable, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table astPath)
+  ((canTable, _, _), _) <- runStateT (canonicalizeAST mempty "" TNode Can.initialEnv table astPath)
                                      (CanonicalState { warnings = [], typesToDerive = mempty, derivedTypes = mempty })
   canAST <- Can.findAST canTable astPath
 
@@ -542,8 +542,8 @@ spec = do
     it "correctly infer various record transformations" $ do
       let code = unlines
             [ "ff = (record) => (["
-            , "  ...record.x,"
-            , "  ...record.z,"
+            , "  record.x,"
+            , "  record.z,"
             , "  ...record.y"
             , "])"
             , ""
@@ -803,9 +803,7 @@ spec = do
             , "    where { Todo(txt, checked) => Todo(txt, !checked) },"
             , "    (toggled) => ({"
             , "      ...state,"
-            , "      todos: ["
-            , "        ...slice(0, len(state.todos), state)"
-            , "      ]"
+            , "      todos: slice(0, len(state.todos), state)"
             , "    })"
             , "  )(state))"
             , "]"

@@ -68,6 +68,7 @@ import           Optimize.ToCore
 import qualified Optimize.Recursion            as Recursion
 import qualified Optimize.EtaExpansion as EtaExpansion
 import qualified Optimize.EtaReduction as EtaReduction
+import System.FilePath.Posix (dropFileName)
 
 
 
@@ -117,14 +118,15 @@ globalChecks = do
 runCompilation :: Command -> Bool -> IO ()
 runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage
   = do
-    extraWarnings       <- globalChecks
+    extraWarnings        <- globalChecks
 
-    canonicalEntrypoint <- canonicalizePath entrypoint
-    sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
-    astTable            <- buildManyASTTables target mempty sourcesToCompile
+    canonicalEntrypoint       <- canonicalizePath entrypoint
+    sourcesToCompile          <- getFilesToCompile testsOnly canonicalEntrypoint
+    astTable                  <- buildManyASTTables target mempty sourcesToCompile
+    Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
     let (canTable, warnings) = case astTable of
           Right table ->
-            let (table', warnings) = Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+            let (table', warnings) = Can.canonicalizeMany dictionaryModulePath target Can.initialEnv table sourcesToCompile
             in  (table', extraWarnings ++ warnings)
           Left e -> (Left e, [])
 

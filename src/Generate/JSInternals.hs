@@ -7,8 +7,6 @@ generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
   eqFn target optimized
     <> "\n"
-    <> dictCtorFn target optimized
-    <> "\n"
     <> applyDictsFn target optimized
     <> "\n"
     <> onceFn target optimized
@@ -67,10 +65,16 @@ inspectStaticInstances target optimized = unlines
   , ""
   , "Inspect['Dictionary'] = {};"
   , "Inspect['Dictionary']['inspect'] = () => Inspect_value => Inspect_key => dict => {"
-  , "  const items = dict.__args[0]"
+  , "  let list = dict.__args[0]"
+  , "  let items = [];\n"
+  , "  while (list !== null) {"
+  , "    items.push(list.v);"
+  , "    list = list.n;"
+  , "  }"
+  , "  const renderedItems = items"
   , "    .map(([key, value]) => `${Inspect_key.inspect()(key)}: ${Inspect_value.inspect()(value)}`)"
   , "    .join(', ')"
-  , "  return dict.__args[0].length === 0 ? '{{}}' : `{{ ${items} }}`"
+  , "  return items.length === 0 ? '{{}}' : `{{ ${renderedItems} }}`"
   , "};"
   , ""
   , "Inspect['Tuple_2'] = {};"
@@ -116,22 +120,6 @@ hpFnWrap = unlines
 hpLineWrap :: String
 hpLineWrap =
   unlines ["global.__hpLineWrap = (astPath, line, x) => {", "  __hp(astPath, 'line', line, line)", "  return x", "}"]
-
-dictCtorFn :: Target -> Bool -> String
-dictCtorFn target optimized =
-  let fnName = "__dict_ctor__"
-      eqFn   = eqFnName optimized
-  in  unlines
-        [ getGlobalForTarget target <> "." <> fnName <> " = (items) => {"
-        , "  let addedItems = [];"
-        , "  for(const item of items) {"
-        , "    if (addedItems.find(([key, _]) => " ++ eqFn ++ "(key, item[0])) === undefined) {"
-        , "      addedItems.push(item);"
-        , "    }"
-        , "  }"
-        , "  return { __constructor: \"Dictionary\", __args: [addedItems] };"
-        , "}"
-        ]
 
 
 eqFnName :: Bool -> String

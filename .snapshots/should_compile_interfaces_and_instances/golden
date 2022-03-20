@@ -6,10 +6,10 @@ let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Functor = {};
 global.Monad = {};
 Inspect['Maybe'] = {};
-Inspect['Maybe']['inspect'] = () => (Inspect_g6) => (__$a__ => ((__x__) => {
+Inspect['Maybe']['inspect'] = () => (Inspect_i8) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_g6.inspect()(a0) + `)`;
+    return `Just(` + Inspect_i8.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -24,14 +24,14 @@ Inspect['Maybe']['inspect'] = () => (Inspect_g6) => (__$a__ => ((__x__) => {
   }
 })(__$a__));
 Inspect['Either'] = {};
-Inspect['Either']['inspect'] = () => (Inspect_v21) => (Inspect_s18) => (__$a__ => ((__x__) => {
+Inspect['Either']['inspect'] = () => (Inspect_x23) => (Inspect_u20) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(` + Inspect_s18.inspect()(a0) + `)`;
+    return `Right(` + Inspect_u20.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(` + Inspect_v21.inspect()(a0) + `)`;
+    return `Left(` + Inspect_x23.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -59,27 +59,29 @@ Functor['Maybe']['map'] = () => (f => __x__ => ((__x__) => {
 })(__x__));
 Functor['List'] = {};
 Functor['List']['map'] = () => (f => __x__ => {
-    let $result;
-    let $continue = true;
-    let $start = [];
-    let $end = $start;
-    let $f = f;
-    let $__x__ = __x__;
+    let $_result_;
+    let $_continue_ = true;
+    let $_start_ = {};
+    let $_end_ = $_start_;
+    let $$f = f;
+    let $$__x__ = __x__;
 
-    while($continue) {
-        $continue = false;
+    while($_continue_) {
+      let $f = $$f;
+      let $__x__ = $$__x__;
+
+        $_continue_ = false;
         ((__x__) => {
-  if (__x__.length >= 1 && true && true) {
-    let [h,...t] = __x__;
-    return ($end.push($f(h)), $f = $f, $__x__ = t, $continue = true);
+  if (__x__ !== null && true && true) {
+    let { v: h, n: t } = __x__;
+    ($_end_ = $_end_.n = { v: $f(h) }, $$f = $f, $$__x__ = t, $_continue_ = true);
   }
-  else if (__x__.length === 1 && true) {
-    let [l] = __x__;
-    return ($end.push(...([$f(l)])), $result = $start);
+  else if (__x__ !== null && true && __x__.n === null) {
+    let { v: l } = __x__;
+    ($_end_.n = ({ v: $f(l), n: null }), $_result_ = $_start_.n);
   }
-  else if (__x__.length === 0) {
-    let [] = __x__;
-    return ($end.push(...([])), $result = $start);
+  else if (__x__ === null) {
+    ($_end_.n = (null), $_result_ = $_start_.n);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -88,7 +90,7 @@ Functor['List']['map'] = () => (f => __x__ => {
   }
 })($__x__)
     }
-    return $result;
+    return $_result_;
 });
 Monad['Maybe'] = {};
 Monad['Maybe']['chain'] = () => (f => __x__ => ((__x__) => {
@@ -124,14 +126,14 @@ Monad['Either']['chain'] = () => (f => __x__ => ((__x__) => {
 })(__x__));
 Monad['Either']['of'] = () => (x => Right(x));
 let inc = (a => a + 1);
-Functor.List.map()(inc)(([1, 2, 3]));
+Functor.List.map()(inc)(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
 Monad.Maybe.chain()((x => Just(x + 1)))(Just(3));
-let doIt = (Functor_b313) => (x => Functor_b313.map()((k => k + 1))(x));
+let doIt = (Functor_d315) => (x => Functor_d315.map()((k => k + 1))(x));
 doIt(Functor.Maybe)(Just(3));
 let p = 1;
-let fn = (Functor_m350) => Functor_m350.map()(inc);
+let fn = (Functor_o352) => Functor_o352.map()(inc);
 fn(Functor.Maybe)(Just(3));
-fn(Functor.List)(([4, 5, 6]));
+fn(Functor.List)(({ v: 4, n: { v: 5, n: { v: 6, n: null } } }));
 let hideCall = (x => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0] === 2) {
     return Monad.Either.chain()((a => Right(a + 1)))(Right(2));

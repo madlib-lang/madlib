@@ -96,7 +96,7 @@ Inspect['Body']['inspect'] = () => (__$a__ => ((__x__) => {
   }
 })(__$a__));
 Inspect['Record_bodya'] = {};
-Inspect['Record_bodya']['inspect'] = () => (Inspect_f265) => (__$a__ => `{ ` + `body: ` + Inspect_f265.inspect()(__$a__.body) + ` }`);
+Inspect['Record_bodya']['inspect'] = () => (Inspect_t279) => (__$a__ => `{ ` + `body: ` + Inspect_t279.inspect()(__$a__.body) + ` }`);
 Inspect['Response'] = {};
 Inspect['Response']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Response" && true) {
@@ -140,7 +140,7 @@ export default {};
 // file: /root/project/src/Wish.mad
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
 Inspect['Wish'] = {};
-Inspect['Wish']['inspect'] = () => (Inspect_f5) => (Inspect_h7) => (__$a__ => ((__x__) => {
+Inspect['Wish']['inspect'] = () => (Inspect_r17) => (Inspect_t19) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
