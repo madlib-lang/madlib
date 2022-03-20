@@ -3,7 +3,7 @@ import String from "String"
 import List from "List"
 import {} from "Char"
 
-import IO from "IO"
+// inspired from: https://hackage.haskell.org/package/wl-pprint-1.2.1/docs/src/Text.PrettyPrint.Leijen.html
 
 
 export type Doc
@@ -38,6 +38,57 @@ export char = (c) => where(c) {
   or =>
     CharDoc(or)
 }
+
+
+space :: Doc
+export space = char(' ')
+
+
+colon :: Doc
+export colon = char(':')
+
+
+comma :: Doc
+export comma = char(',')
+
+
+dot :: Doc
+export dot = char('.')
+
+
+quote :: Doc
+export quote = char('"')
+
+
+lbracket :: Doc
+export lbracket = char('[')
+
+
+rbracket :: Doc
+export rbracket = char(']')
+
+
+lbrace :: Doc
+export lbrace = char('{')
+
+
+rbrace :: Doc
+export rbrace = char('}')
+
+
+quotes :: Doc -> Doc
+export quotes = (doc) =>
+  enclose(quote, quote, doc)
+
+
+brackets :: Doc -> Doc
+export brackets = (doc) =>
+  enclose(lbracket, rbracket, doc)
+
+
+braces :: Doc -> Doc
+export braces = (doc) =>
+  enclose(lbrace, rbrace, doc)
 
 
 text :: String -> Doc
@@ -109,7 +160,14 @@ export beside = (x, y) => CatDoc(x, y)
 
 
 hcat :: List Doc -> Doc
-hcat = List.reduceRight(beside, empty)
+export hcat = List.reduceRight(beside, empty)
+
+
+sepBy :: Doc -> List Doc -> Doc
+export sepBy = (separator, docs) => pipe(
+  List.intersperse(separator),
+  hcat
+)(docs)
 
 
 nest :: Integer -> Doc -> Doc
@@ -204,8 +262,8 @@ indentation = (n) =>
   String.repeat(' ', n)
 
 
-prettyPrint :: Doc -> String
-export prettyPrint = (doc) => {
+prettyPrint :: Integer -> Doc -> String
+export prettyPrint = (width, doc) => {
   helper :: String -> SimpleDoc -> String
   helper = (pretty, d) => where(d) {
     SEmpty =>
@@ -221,35 +279,5 @@ export prettyPrint = (doc) => {
       helper(pretty ++ "\n" ++ indentation(i), next)
   }
 
-  return helper("", renderPretty(0, 80, doc))
+  return helper("", renderPretty(0, width, doc))
 }
-
-
-myDoc = pipe(
-  hcat,
-  nest(2)
-)([
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-  softline,
-  text("some text!"),
-])
-
-pipe(
-  prettyPrint,
-  IO.log
-)(myDoc)

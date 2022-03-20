@@ -122,7 +122,7 @@ export lines = split("\n")
  */
 join :: String -> List String -> String
 export join = (a, xs) => pipe(
-  List.intercalate(a),
+  List.intersperse(a),
   List.reduce(mconcat, "")
 )(xs)
 

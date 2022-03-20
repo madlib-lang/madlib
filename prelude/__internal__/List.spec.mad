@@ -10,7 +10,7 @@ import {
   find,
   first,
   init,
-  intercalate,
+  intersperse,
   last,
   length,
   mapWithIndex,
@@ -86,8 +86,8 @@ test("singleton should wrap a value in a list", (_) =>
   assertEquals(singleton("one value"), ["one value"])
 )
 
-test("intercalate should add an given value between all elements of a list", (_) =>
-  assertEquals(intercalate("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
+test("intersperse should add an given value between all elements of a list", (_) =>
+  assertEquals(intersperse("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
 )
 
 test("mapWithIndex", (_) =>

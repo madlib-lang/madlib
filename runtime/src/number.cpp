@@ -371,6 +371,22 @@ madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
   return result;
 }
 
+
+// conversion
+
+double madlib__number__intToFloat(int64_t x) {
+  return x;
+}
+
+double madlib__number__byteToFloat(char x) {
+  return x;
+}
+
+int64_t madlib__number__byteToInt(char x) {
+  return x;
+}
+
+
 #ifdef __cplusplus
 }
 #endif

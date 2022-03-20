@@ -160,12 +160,13 @@ instance Canonicalizable Src.Exp Can.Exp where
         canonicalizeDefineExps :: [Src.Exp] -> CanonicalM [Can.Exp]
         canonicalizeDefineExps []     = return []
         canonicalizeDefineExps (e:es) = case e of
-          Src.Source _ _ (Src.DoAssignment name action) -> do
+          Src.Source assignmentArea@(Area (Loc a l c) _) _ (Src.DoAssignment name action) -> do
             exp' <- canonicalize env target action
             es'  <- canonicalizeDefineExps es
-            let fn  = Can.Canonical area (Can.Var "chain")
-            let abs = Can.Canonical area $ Can.Abs (Can.Canonical area name) es'
-            let app = Can.Canonical area (Can.App (Can.Canonical area $ Can.App fn abs False) exp' True)
+            let symbolArea = Area (Loc a l c) (Loc (a + length name) l (c + length name))
+            let fn  = Can.Canonical emptyArea (Can.Var "chain")
+            let abs = Can.Canonical (mergeAreas assignmentArea area) $ Can.Abs (Can.Canonical symbolArea name) es'
+            let app = Can.Canonical (mergeAreas assignmentArea area) (Can.App (Can.Canonical area $ Can.App fn abs False) exp' True)
             return [app]
 
           _ -> do
