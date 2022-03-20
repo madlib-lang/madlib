@@ -63,6 +63,15 @@ test("unlines should take a list of strings and return a string with \\n charact
   assertEquals(String.unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
 )
 
+test(
+  "words should split a string by spaces",
+  (_) => assertEquals(String.words("word1 word2"), ["word1", "word2"])
+)
+
+test("unwords should take a list of strings and return a string with spaced words", (_) =>
+  assertEquals(String.unwords(["word1", "word2", "word3"]), "word1 word2 word3")
+)
+
 test("drop", (_) =>
   assertEquals(String.drop(3, "abcde"), "de")
 )

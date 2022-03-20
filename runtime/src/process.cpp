@@ -2,10 +2,12 @@
 
 #include <gc.h>
 #include <sys/mman.h>
+#include <uv.h>
 
 #include <cstring>
 
 #include "apply-pap.hpp"
+#include "event-loop.hpp"
 #include "string.hpp"
 #include "tuple.hpp"
 
@@ -31,9 +33,7 @@ void __main__init__(int argc, char **argv) {
   ARGV = argv;
 
   size_t size = 1l * 1024 * 1024 * 1024 * 1024;  // 1TB
-  char *newStack =
-      (char *)mmap(NULL, size, PROT_READ | PROT_WRITE,
-                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+  char *newStack = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   char *stackBottom = newStack + size;
   GC_stackbottom = stackBottom;
 
@@ -57,8 +57,7 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
   char **env = environ;
   for (; *env != NULL; env++) {
     // *env has shape ENV_VAR=VALUE
-    madlib__tuple__Tuple_2_t *item =
-        (madlib__tuple__Tuple_2_t *)GC_malloc(sizeof(madlib__tuple__Tuple_2_t));
+    madlib__tuple__Tuple_2_t *item = (madlib__tuple__Tuple_2_t *)GC_malloc(sizeof(madlib__tuple__Tuple_2_t));
     size_t itemLength = strlen(*env);
     int keyLength = 0;
 
@@ -83,17 +82,150 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
     envItems = madlib__list__push(item, envItems);
   }
 
-  PAP_t stringEqPAP = {.fn = (void *)madlib__string__internal__eq,
-                       .arity = 2,
-                       .missingArgCount = 2,
-                       .env = NULL};
-  madlib__eq__eqDictionary_t *stringEqDictionary =
-      (madlib__eq__eqDictionary_t *)GC_malloc(
-          sizeof(madlib__eq__eqDictionary_t));
-  stringEqDictionary->eq = stringEqPAP;
-
-  // TODO: remove this and simply return the envItems list and make the FFI wrapper use fromList instead
   return envItems;
+}
+
+
+
+// exec
+typedef struct ExecData {
+  void *callback;
+  uv_stream_t *stdoutPipe;
+  uv_stream_t *stderrPipe;
+
+  char *stdoutOutput;
+  char *stderrOutput;
+  size_t stdoutSize;
+  size_t stderrSize;
+} ExecData_t;
+
+
+void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
+  ExecData_t *data = (ExecData_t*)req->data;
+
+  int64_t *boxedStatus = (int64_t*)GC_malloc(sizeof(int64_t));
+  *boxedStatus = exitCode;
+
+  char **boxedStdout = (char**)GC_malloc(sizeof(char*));
+  *boxedStdout = data->stdoutOutput;
+
+  char **boxedStderr = (char**)GC_malloc(sizeof(char*));
+  *boxedStderr = data->stderrOutput;
+
+  GC_free(data->stdoutPipe);
+  GC_free(data->stderrPipe);
+  GC_free(req);
+
+  __applyPAP__(data->callback, 3, boxedStatus, boxedStdout, boxedStderr);
+}
+
+
+void allocExecBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
+  *buffer = uv_buf_init((char*)GC_malloc_uncollectable(suggestedSize), suggestedSize);
+}
+
+
+void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  if (nread > 0) {
+    ExecData_t *data = (ExecData_t*)stream->data;
+    size_t newSize = data->stdoutSize + nread;
+    char *newOutput = (char*)GC_malloc(newSize);
+
+    if (data->stdoutSize > 0) {
+      memcpy(newOutput, data->stdoutOutput, data->stdoutSize);
+    }
+    memcpy(newOutput + data->stdoutSize, buf->base, nread);
+    data->stdoutOutput = newOutput;
+    data->stdoutSize = newSize;
+  }
+}
+
+void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  if (nread > 0) {
+    ExecData_t *data = (ExecData_t*)stream->data;
+    size_t newSize = data->stderrSize + nread;
+    char *newOutput = (char*)GC_malloc(newSize);
+
+    if (data->stderrSize > 0) {
+      memcpy(newOutput, data->stderrOutput, data->stderrSize);
+    }
+    memcpy(newOutput + data->stderrSize, buf->base, nread);
+    data->stderrOutput = newOutput;
+    data->stderrSize = newSize;
+  }
+}
+
+void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *callback) {
+  uv_process_t *childReq = (uv_process_t*)GC_malloc_uncollectable(sizeof(uv_process_t));
+  uv_process_options_t *options = (uv_process_options_t*)GC_malloc_uncollectable(sizeof(uv_process_options_t));
+  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_malloc_uncollectable(sizeof(uv_pipe_t));
+  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_malloc_uncollectable(sizeof(uv_pipe_t));
+
+  ExecData_t *data = (ExecData_t*)GC_malloc_uncollectable(sizeof(ExecData_t));
+  data->callback = callback;
+  data->stdoutSize = 0;
+  data->stderrSize = 0;
+  data->stdoutOutput = (char*)GC_malloc(sizeof(char));
+  *data->stdoutOutput = '\0';
+  data->stderrOutput = (char*)GC_malloc(sizeof(char));
+  *data->stderrOutput = '\0';
+  data->stdoutPipe = (uv_stream_t *)stdoutPipe;
+  data->stderrPipe = (uv_stream_t *)stderrPipe;
+
+  childReq->data = data;
+  stdoutPipe->data = data;
+  stderrPipe->data = data;
+
+  int64_t argc = madlib__list__length(argList);
+  char *args[argc + 2];
+
+  args[0] = command;
+  for (int i = 1; i < argc + 1; i++) {
+    args[i] = *((char**)argList->value);
+    argList = argList->next;
+  }
+  args[argc + 1] = NULL;
+
+  uv_pipe_init(getLoop(), stdoutPipe, 0);
+  uv_pipe_init(getLoop(), stderrPipe, 0);
+
+  options->stdio_count = 3;
+  uv_stdio_container_t child_stdio[3];
+  child_stdio[0].flags = UV_IGNORE;
+  child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+  child_stdio[1].data.stream = (uv_stream_t *)stdoutPipe;
+  child_stdio[2].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+  child_stdio[2].data.stream = (uv_stream_t *)stderrPipe;
+  options->stdio = child_stdio;
+
+  options->exit_cb = onChildExit;
+  options->file = command;
+  options->args = args;
+  options->env = NULL;
+
+  int spawnResult = uv_spawn(getLoop(), childReq, options);
+
+  if (spawnResult) {
+    int64_t *boxedStatus = (int64_t*)GC_malloc(sizeof(int64_t));
+    *boxedStatus = 1;
+
+    char **boxedStdout = (char**)GC_malloc(sizeof(char*));
+    *boxedStdout = data->stdoutOutput;
+
+    char **boxedStderr = (char**)GC_malloc(sizeof(char*));
+    *boxedStderr = data->stderrOutput;
+
+    GC_free(data->stdoutPipe);
+    GC_free(data->stderrPipe);
+    GC_free(childReq);
+    GC_free(options);
+
+    __applyPAP__(callback, 3, boxedStatus, boxedStdout, boxedStderr);
+  } else {
+    uv_read_start((uv_stream_t *)stdoutPipe, allocExecBuffer, onExecStdoutRead);
+    uv_read_start((uv_stream_t *)stderrPipe, allocExecBuffer, onExecStderrRead);
+  }
+
 }
 
 #ifdef __cplusplus

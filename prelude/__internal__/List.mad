@@ -291,7 +291,6 @@ export nth = (i, list) => where(list) {
 }
 
 
-// TODO: rename to reduceRight
 /**
  * Aggregate a single value by iterating over a list, from right-to-left.
  * Takes three parameters:
@@ -308,7 +307,6 @@ export reduceRight = (f, acc, list) => pipe(
 )(list)
 
 
-// TODO: rename to reduceLeft
 /**
  * Aggregate a single value by iterating over a list, from left-to-right.
  * Takes three parameters:
@@ -664,19 +662,19 @@ export includes = (x, list) => where(list) {
 
 
 drop :: Integer -> List a -> List a
-export drop = (n, s) => slice(n, 0, s)
+export drop = (n, list) => slice(n, 0, list)
 
 
 dropLast :: Integer -> List a -> List a
-export dropLast = (n, s) => slice(0, -n, s)
+export dropLast = (n, list) => slice(0, -n, list)
 
 
 take :: Integer -> List a -> List a
-export take = (n, s) => slice(0, n, s)
+export take = (n, list) => slice(0, n, list)
 
 
 takeLast :: Integer -> List a -> List a
-export takeLast = (n, s) => slice(-n, 0, s)
+export takeLast = (n, list) => slice(-n, 0, list)
 
 
 dropWhile :: (a -> Boolean) -> List a -> List a

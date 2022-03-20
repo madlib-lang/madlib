@@ -16,6 +16,8 @@ madlib__list__Node_t *madlib__process__internal__getArgs();
 
 madlib__list__Node_t *madlib__process__internal__getEnv();
 
+void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *callback);
+
 #ifdef __cplusplus
 }
 #endif

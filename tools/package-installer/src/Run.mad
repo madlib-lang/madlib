@@ -49,7 +49,7 @@ import { hashVersion } from "./Hash"
 
 
 
-copyPackageToMadlibModules :: Config -> Dependency -> Wish Process.CommandError String
+copyPackageToMadlibModules :: Config -> Dependency -> Wish Process.CommandResult Process.CommandResult
 copyPackageToMadlibModules = (config, dependency) => pipe(
   (d) => ({
     destination: `${Constants.MADLIB_MODULES_PATH}${fromMaybe("", d.name)}`,
@@ -85,16 +85,17 @@ installNodeModules = (config, pkgName) => pipe(
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
   mapRej(always("")),
   map(mconcat("npm install ")),
-  chain(pipe(config.exec, mapRej(Process.getCommandErrorMessage))),
-  map((x) => IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`, x)),
-  fromWish((x) => IO.putLineAndPass(`No node modules to install for '${pkgName}'`, x))
+  chain(pipe(config.exec, mapRej(.stderr))),
+  map(.stdout),
+  map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
+  fromWish(IO.putLineAndPass(`No node modules to install for '${pkgName}'`))
 )(pkgName)
 
 
 initMadlibModulesFolder :: Config -> String -> a -> Wish String a
 initMadlibModulesFolder = (config, path, a) => pipe(
   (p) => config.exec(`mkdir -p ${p}`),
-  mapRej(where { Process.CommandError(_, msg) => msg }),
+  mapRej(.stderr),
   andDo(of(a))
 )(path)
 
@@ -125,6 +126,7 @@ computeBuildHash = (config, dependency) => pipe(
   (d) => config.exec(
     `madlib package generate-hash -i ${projectBaseUrl(d)}`
   ),
+  map(.stdout),
   map(Valid),
   fromWish(always(NotValid([BuildHashCouldNotBeGenerated], "")))
 )(dependency)
@@ -181,7 +183,7 @@ copyPackageFromTmp = (config, validationResult) => where(validationResult) {
         .name,
         (n) => failWithRecoverable(
           CopyToMadlibModulesFailed(
-            `Failed to copy '${n}'\n${formatCopyError(Process.getCommandErrorMessage(commandError))}`
+            `Failed to copy '${n}'\n${formatCopyError(commandError.stderr)}`
           ),
           validationResult
         )
@@ -367,11 +369,11 @@ prepare :: Config -> String -> Wish String String
 prepare = (config, packageDotJsonPath) => pipe(
   always(config.exec(`mkdir -p ${Constants.TEMPORARY_MODULES_PATH}`)),
   andDo(of(packageDotJsonPath)),
-  mapRej(Process.getCommandErrorMessage),
-  chain(pipe(config.exists, mapRej(always("")))),
+  mapRej(.stderr),
+  chain(pipe(config.exists, mapRej(always("")), map(always(packageDotJsonPath)))),
   chain((path) => pipe(
     config.exec,
-    mapRej(Process.getCommandErrorMessage),
+    mapRej(.stderr),
     andDo(of(path))
   )("npm i")),
   chain(pipe(config.readFile, mapRej(always(""))))
