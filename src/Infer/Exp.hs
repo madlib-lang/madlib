@@ -622,7 +622,8 @@ inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   (s1, ps1, t1, e1) <- infer env exp
   s2                <- contextualUnify env e t t1
 
-  return (s1 `compose` s2, ps1, t1, Slv.Typed (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
+  return (s1 `compose` s2, apply s2 ps1, apply s2 t1, Slv.Typed (apply s2 $ ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
+  -- return (s1 `compose` s2, ps1, t1, Slv.Typed (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
   -- return (s1 `compose` s2, ps, t, Slv.Typed (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
 
@@ -667,6 +668,11 @@ tryDefaults :: Env -> [Pred] -> Infer (Substitution, [Pred])
 tryDefaults env ps = case ps of
   (p : next) -> case p of
     IsIn "Number" [TVar tv] _ -> do
+      (nextSubst, nextPS) <- tryDefaults env next
+      let s = M.singleton tv tInteger
+      return (s `compose` nextSubst, nextPS)
+
+    IsIn "Bits" [TVar tv] _ -> do
       (nextSubst, nextPS) <- tryDefaults env next
       let s = M.singleton tv tInteger
       return (s `compose` nextSubst, nextPS)
@@ -797,7 +803,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
       return (ds ++ rs'', sDef' `compose` sDef)
 
-  let ds'' = dedupePreds ds'
+  ds'' <- dedupePreds <$> getAllParentPreds env ds'
   let sFinal = sDefaults `compose` s''
 
   let sc =

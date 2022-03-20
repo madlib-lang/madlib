@@ -59,6 +59,12 @@ strip exp = case exp of
   Typed _ _ _ (Placeholder (MethodRef "Number" _ _, _) exp) ->
     strip exp
 
+  Typed _ _ _ (Placeholder (ClassRef "Bits" _ _ _, _) exp) ->
+    strip exp
+
+  Typed _ _ _ (Placeholder (MethodRef "Bits" _ _, _) exp) ->
+    strip exp
+
   Typed _ _ _ (Placeholder (ClassRef "Eq" _ _ _, _) exp) ->
     strip exp
 
