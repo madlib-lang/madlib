@@ -66,19 +66,33 @@ export fail = (err, sideEffect) => Wish((bad, good) => where(sideEffect) {
 getSideEffectCB = where { SideEffect(run) => run }
 
 parallel :: List (SideEffect a) -> SideEffect (List a)
-export parallel = (effects) => (
+export parallel = (effectsList) => (
   SideEffect((cb) => (#- {
+    let effects = []
+    while (effectsList !== null) {
+      effects.push(effectsList.v)
+      effectsList = effectsList.n
+    }
     const l = effects.length
     let ok = 0;
     const out = new Array(l);
-    const next = j => (j === l && cb(out))
+    const next = j => {
+      if (j === l) {
+        let resultList = {}
+        let current = resultList
+        out.forEach(r => {
+          current = current.n = { v: r, n: null }
+        })
+        cb(resultList.n)
+      }
+    }
     const fork = (w, j) => (getSideEffectCB(w)
       (x => (out[j] = x, next(++ok))
     ));
     effects.forEach(fork);
 
     if (l === 0) {
-      cb([])
+      cb(null)
     }
   } -#))
 )

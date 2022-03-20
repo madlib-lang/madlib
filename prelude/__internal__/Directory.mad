@@ -18,7 +18,16 @@ export read = (path) => Wish((bad, good) => #- {
     if (err) {
       bad(IOError.UnknownError);
     } else {
-      good(files);
+      if (files.length === 0) {
+        good(null);
+      } else {
+        let result = {}
+        let current = result
+        files.forEach(f => {
+          current = current.n = { v: f, n: null }
+        })
+        good(result.n);
+      }
     }
   })
 } -#)
