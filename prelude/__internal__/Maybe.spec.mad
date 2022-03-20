@@ -21,8 +21,8 @@ test("of wraps a value in a Maybe", (_) => assertEquals(of(3), Just(3)))
 test("chain", (_) => assertEquals(chain((x) => Just(x + 1), Just(1)), Just(2)))
 test("chain - Nothing", (_) => assertEquals(chain((x) => Just(x + 1), Nothing), Nothing))
 
-test("show - Just", (_) => assertEquals(show(Just(3)), "Just 3"))
-test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Integer)), "Nothing"))
+test("inspect - Just", (_) => assertEquals(inspect(Just(3)), "Just(3)"))
+test("inspect - Nothing", (_) => assertEquals(inspect((Nothing :: Maybe Integer)), "Nothing"))
 
 test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
 test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))
