@@ -294,39 +294,46 @@ instance Compilable Exp where
           compileBody :: Env -> [Exp] -> String
           compileBody env body = case body of
             [exp] | isPlainRecursiveDefinition metadata ->
-              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> params
+                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
                   <> "    let $result;\n"
                   <> "    let $continue = true;\n"
-                  <> unlines paramCopies
+                  <> unlines tcoParams
                   <> "\n"
                   <> "    while($continue) {\n"
+                  <> unlines updateParams
+                  <> "\n"
                   <> "        $continue = false;\n"
-                  <> "        "<> compile env { recursionData = Just PlainRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        "<> compile env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
                   <> "    return $result;\n"
                   <> "}"
 
             [exp] | isRightListRecursiveDefinition metadata ->
-              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> params
+                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
                   <> "    let $result;\n"
                   <> "    let $continue = true;\n"
                   <> "    let $start = [];\n"
                   <> "    let $end = $start;\n"
-                  <> unlines paramCopies
+                  <> unlines tcoParams
                   <> "\n"
                   <> "    while($continue) {\n"
+                  <> unlines updateParams
+                  <> "\n"
                   <> "        $continue = false;\n"
-                  <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
                   <> "    return $result;\n"
                   <> "}"
 
             [exp] | isConstructorRecursiveDefinition metadata ->
-              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> params
+                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> params
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
               in  "{\n"
                   <> "    let $result;\n"
@@ -335,11 +342,13 @@ instance Compilable Exp where
                   <> "    let $args = $start.__args;\n"
                   <> "    let $index = 0;\n"
                   <> "    let $newValue;\n"
-                  <> unlines paramCopies
+                  <> unlines tcoParams
                   <> "\n"
                   <> "    while($continue) {\n"
+                  <> unlines updateParams
+                  <> "\n"
                   <> "        $continue = false;\n"
-                  <> "        "<> compile env { recursionData = Just ConstructorRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        "<> compile env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
                   <> "    return $result;\n"
                   <> "}"

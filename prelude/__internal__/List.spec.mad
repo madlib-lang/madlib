@@ -29,7 +29,7 @@ import {} from "Boolean" // We need the instance Show Boolean
 import { Just, Nothing } from "Maybe"
 
 #elseif llvm
-import { reduce, len } from "./List"
+import { reduce, len, sort, sortDesc } from "./List"
 #endif
 
 
@@ -59,6 +59,11 @@ test("mappend should join two lists together", (_) =>
 )
 
 test("mempty should return an empty list", (_) => assertEquals(mempty, []))
+
+test("sort Number", (_) => assertEquals(sort([3, 1, 2]), [1, 2, 3]))
+
+test("sortDesc Number", (_) => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
+
 
 #iftarget js
 
@@ -167,12 +172,10 @@ test("uniqueBy", (_) =>
 )
 
 
-test("sort Number", (_) => assertEquals(sort([3, 1, 2]), [1, 2, 3]))
 test("sort String", (_) =>
   assertEquals(sort(["John", "Paul", "James"]), ["James", "John", "Paul"])
 )
 
-test("sortDesc Number", (_) => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
 test("sortDesc String", (_) =>
   assertEquals(sortDesc(["John", "Paul", "James"]), ["Paul", "John", "James"])
 )

@@ -421,9 +421,82 @@ export uniqueBy = (f) => reduce(
 
 #iftarget llvm
 
+descending :: (a -> a -> ComparisonResult) -> a -> List a -> List a -> List (List a)
+descending = (compareFn, a, as, xs) => where(xs) {
+  [b, ...bs] =>
+    compareFn(a, b) == MORE
+      ? descending(compareFn, b, [a, ...as], bs)
+      : [[a, ...as], ...sequences(compareFn, xs)]
+
+  _ =>
+    [[a, ...as], ...sequences(compareFn, xs)]
+}
+
+
+ascending :: (a -> a -> ComparisonResult) -> a -> (List a -> List a) -> List a -> List (List a)
+ascending = (compareFn, a, as, xs) => where(xs) {
+  [b, ...bs] =>
+    compareFn(a, b) != MORE
+      ? ascending(compareFn, b, (ys) => as([a, ...ys]), bs)
+      : [as([a]), ...sequences(compareFn, xs)]
+
+  _ =>
+    [as([a]), ...sequences(compareFn, xs)]
+}
+
+
+sequences :: (a -> a -> ComparisonResult) -> List a -> List (List a)
+sequences = (compareFn, list) => where(list) {
+  [a, b, ...xs] =>
+    compareFn(a, b) == MORE
+      ? descending(compareFn, b, [a], xs)
+      : ascending(compareFn, b, (l) => [a, ...l], xs)
+
+  xs =>
+    [xs]
+}
+
+
+
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-sortBy = extern "madlib__list__sort"
-export sortBy
+export sortBy = (compareFn, list) => {
+  merge :: List a -> List a -> List a
+  merge = (listA, listB) => where(#[listA, listB]) {
+    #[[a, ...as], [b, ...bs]] =>
+      compareFn(a, b) == MORE
+        ? [b, ...merge(listA, bs)]
+        : [a, ...merge(as, listB)]
+
+    #[[], bs] =>
+      bs
+
+    #[as, []] =>
+      as
+  }
+
+  mergePairs :: List (List a) -> List (List a)
+  mergePairs = (l) => where(l) {
+    [a, b, ...xs] =>
+      [merge(a, b), ...mergePairs(xs)]
+
+    xs =>
+      xs
+  }
+
+  mergeAll :: List (List a) -> List a
+  mergeAll = (l) => where(l) {
+    [x] =>
+      x
+
+    xs =>
+      mergeAll(mergePairs(xs))
+  }
+
+  return pipe(
+    sequences(compareFn),
+    mergeAll
+  )(list)
+}
 
 #elseif js
 
