@@ -25,6 +25,7 @@ import Text.Show.Pretty
   number      { Token _ _ (TokenNumber _) }
   float       { Token _ _ (TokenFloat _) }
   str         { Token _ _ (TokenStr _) }
+  char        { Token _ _ (TokenChar _) }
   strTplStart { Token _ _ (TokenTemplateStringStart) }
   strTplEnd   { Token _ _ (TokenTemplateStringEnd _) }
   name        { Token _ _ (TokenName _) }
@@ -449,6 +450,7 @@ nonCompositePattern :: { Src.Pattern }
   | number           { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PNum $ strV $1) }
   | float            { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PFloat $ strV $1)}
   | str              { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PStr $ strV $1) }
+  | char             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PChar $ charData $1) }
   | true             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PBool $ strV $1) }
   | false            { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PBool $ strV $1) }
   | recordPattern    { $1 }
@@ -591,6 +593,7 @@ literal :: { Src.Exp }
   : number  %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LNum $ strV $1) }
   | float   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LFloat $ strV $1) }
   | str     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LStr $ strV $1) }
+  | char    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LChar $ charData $1) }
   | true    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LBool $ strV $1) }
   | false   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LBool $ strV $1) }
   | '{' '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) Src.LUnit }
@@ -648,6 +651,7 @@ nameToPattern area sourceTarget n
   | (isUpper . head) n = Src.Source area sourceTarget (Src.PNullaryCon (Src.Source area sourceTarget n))
   | otherwise          = Src.Source area sourceTarget (Src.PVar n)
 
+
 access :: Src.Exp -> Src.Exp -> Src.Exp
 access src field = 
   Src.Source (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.getSourceTarget src) (Src.Access src field)
@@ -660,9 +664,11 @@ sanitizeImportPath = init . tail
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
 
+
 parseError :: Token -> Alex a
 parseError (Token (Area (Loc a l c) _) _ cls) =
   alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show cls))
+
 
 parse :: String -> Either String Src.AST
 parse s = runAlex s parseMadlib

@@ -308,6 +308,9 @@ buildLLVMType env symbolTable qt@(ps IT.:=> t) = case t of
   IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
     Type.i8
 
+  IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+    Type.i32
+
   IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
     Type.i64
 
@@ -389,6 +392,10 @@ stringType :: Type.Type
 stringType =
   Type.PointerType Type.i8 (AddrSpace 1)
 
+charType :: Type.Type
+charType =
+  Type.i32
+
 papType :: Type.Type
 papType =
   Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
@@ -426,6 +433,10 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
 
   IT.TCon (IT.TC "Byte" _) _ -> do
     ptr <- safeBitcast what $ Type.ptr Type.i8
+    load ptr 0
+
+  IT.TCon (IT.TC "Char" _) _ -> do
+    ptr <- safeBitcast what $ Type.ptr Type.i32
     load ptr 0
 
   IT.TCon (IT.TC "Integer" _) _ -> do
@@ -484,6 +495,13 @@ box what = case typeOf what of
   Type.IntegerType 64 -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.i64)
+    store ptr' 0 what
+    safeBitcast ptr' boxType
+
+  -- Char
+  Type.IntegerType 32 -> do
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i32, [])]
+    ptr' <- safeBitcast ptr (Type.ptr Type.i32)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
@@ -1129,7 +1147,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt@(_ IT.:=> t) _ metadata (Core.Call fn args) -> case fn of
     -- Calling a known method
     Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> case methodName of
-      "==" | typingStr `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit"] ->
+      "==" | typingStr `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"] ->
         case typingStr of
           "Integer" -> do
             (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
@@ -1138,6 +1156,12 @@ generateExp env symbolTable exp = case exp of
             return (symbolTable, result, Nothing)
 
           "Byte" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+            return (symbolTable, result, Nothing)
+
+          "Char" -> do
             (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
             (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
             result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
@@ -1618,6 +1642,9 @@ generateExp env symbolTable exp = case exp of
     addr <- buildStr s
     return (symbolTable, addr, Nothing)
 
+  Core.Typed _ _ _ (Core.Literal (Core.LChar c)) -> do
+    return (symbolTable, Operand.ConstantOperand $ Constant.Int 32 (fromIntegral $ fromEnum c), Nothing)
+
   Core.Typed _ _ _ (Core.Do exps) -> do
     (ret, boxed) <- generateDoExps env { isLast = False } symbolTable exps
     return (symbolTable, ret, boxed)
@@ -1909,6 +1936,9 @@ generateSymbolTableForPattern env symbolTable baseExp pat = case pat of
   Core.Typed _ _ _ Core.PStr{} ->
     return symbolTable
 
+  Core.Typed _ _ _ Core.PChar{} ->
+    return symbolTable
+
   Core.Typed _ _ _ (Core.PTuple pats) -> do
     let patsWithIds = List.zip pats [0..]
     Monad.foldM (generateSymbolTableForIndexedData env baseExp) symbolTable patsWithIds
@@ -1985,6 +2015,10 @@ generateBranchTest env symbolTable pat value = case pat of
   Core.Typed _ _ _ (Core.PStr s) -> do
     s' <- buildStr (List.init . List.tail $ s)
     call areStringsEqual [(s', []), (value, [])]
+
+  Core.Typed _ _ _ (Core.PChar c) -> do
+    let char = Operand.ConstantOperand $ Constant.Int 32 (fromIntegral $ fromEnum c)
+    icmp IntegerPredicate.EQ char value
 
   Core.Typed _ _ _ Core.PAny ->
     return true
@@ -2968,6 +3002,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__inspectInteger")   [boxType] boxType
   -- Inspect Byte
   extern (AST.mkName "madlib__number__internal__inspectByte")      [boxType] boxType
+  -- Inspect Char
+  extern (AST.mkName "madlib__char__internal__inspect")            [boxType] boxType
   -- Inspect Float
   extern (AST.mkName "madlib__number__internal__inspectFloat")     [boxType] boxType
   -- Inspect Boolean
@@ -3033,6 +3069,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   -- Eq
   extern (AST.mkName "madlib__number__internal__eqInteger") [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__eqByte")    [boxType, boxType] boxType
+  extern (AST.mkName "madlib__char__internal__eq")          [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__eqFloat")   [boxType, boxType] boxType
   extern (AST.mkName "madlib__string__internal__eq")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__boolean__internal__eq")       [boxType, boxType] boxType
@@ -3096,6 +3133,9 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       -- Eq Byte
       eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqByte")
 
+      -- Eq Char
+      eqChar            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__char__internal__eq")
+
       -- Eq Float
       eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqFloat")
 
@@ -3123,6 +3163,9 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       -- Inspect Byte
       inspectByte       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectByte")
 
+      -- Inspect Char
+      inspectChar       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__char__internal__inspect")
+
       -- Inspect Float
       inspectFloat      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectFloat")
 
@@ -3147,6 +3190,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         Map.insert "madlib__number__internal__inspectInteger" (fnSymbol 1 inspectInteger)
         -- Inspect Byte
         $ Map.insert "madlib__number__internal__inspectByte" (fnSymbol 1 inspectByte)
+        -- Inspect Char
+        $ Map.insert "madlib__char__internal__inspect" (fnSymbol 1 inspectChar)
         -- Inspect Float
         $ Map.insert "madlib__number__internal__inspectFloat" (fnSymbol 1 inspectFloat)
         -- Inspect Boolean
@@ -3211,6 +3256,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         -- Eq
         $ Map.insert "madlib__number__internal__eqInteger" (fnSymbol 2 eqInteger)
         $ Map.insert "madlib__number__internal__eqByte" (fnSymbol 2 eqByte)
+        $ Map.insert "madlib__char__internal__eq" (fnSymbol 2 eqChar)
         $ Map.insert "madlib__number__internal__eqFloat" (fnSymbol 2 eqFloat)
         $ Map.insert "madlib__string__internal__eq" (fnSymbol 2 eqString)
         $ Map.insert "madlib__boolean__internal__eq" (fnSymbol 2 eqBoolean)
@@ -3762,6 +3808,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       stringInspectQualType     = [] IT.:=> (IT.tStr `IT.fn` IT.tStr)
       integerInspectQualType    = [] IT.:=> (IT.tInteger `IT.fn` IT.tStr)
       byteInspectQualType       = [] IT.:=> (IT.tByte `IT.fn` IT.tStr)
+      charInspectQualType       = [] IT.:=> (IT.tChar `IT.fn` IT.tStr)
       floatInspectQualType      = [] IT.:=> (IT.tFloat `IT.fn` IT.tStr)
       boolInspectQualType       = [] IT.:=> (IT.tBool `IT.fn` IT.tStr)
       unitInspectQualType       = [] IT.:=> (IT.tUnit `IT.fn` IT.tStr)
@@ -3829,6 +3876,25 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                         ])
                       ))
                     , IT.Forall [] byteInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      charInspectInstance =
+        Core.Untyped emptyArea []
+          ( Core.Instance "Inspect" [] "Char"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Core.Typed charInspectQualType emptyArea [] (Core.Assignment "inspect" (
+                        Core.Typed charInspectQualType emptyArea [] (Core.Definition ["a"] [
+                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed charInspectQualType emptyArea [] (Core.Var "madlib__char__internal__inspect" False)) [
+                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [] charInspectQualType
                     )
                   )
                 ]
@@ -4022,6 +4088,26 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
                         Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqByte" False)) [
+                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+      charEqInstance =
+        Core.Untyped emptyArea []
+          ( Core.Instance "Eq" [] "Char"
+              (Map.fromList
+                [ ( "=="
+                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__char__internal__eq" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
                           ])
@@ -4247,6 +4333,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
         -- Eq
       , byteEqInstance
+      , charEqInstance
       , integerEqInstance
       , floatEqInstance
       , stringEqInstance
@@ -4261,6 +4348,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         -- Inspect
       , stringInspectInstance
       , integerInspectInstance
+      , charInspectInstance
       , byteInspectInstance
       , floatInspectInstance
       , boolInspectInstance

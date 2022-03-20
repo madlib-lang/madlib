@@ -101,6 +101,7 @@ data Pattern_
   | PCon Name [Pattern]
   | PNum String
   | PStr String
+  | PChar Char
   | PBool String
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
@@ -134,6 +135,7 @@ data Literal
   = LNum String
   | LFloat String
   | LStr String
+  | LChar Char
   | LBool String
   | LUnit
   deriving(Eq, Show)

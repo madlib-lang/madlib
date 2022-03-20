@@ -23,20 +23,29 @@ module Parse.Madlib.Lexer
   , tokenArea
   , tokenTarget
   , strV
+  , charData
   )
 where
 
 import           Control.Monad.State
 import           System.Exit
 import qualified Data.Text.Lazy     as T
-import           Data.Char
+import           Data.Char          as Char
 import           Explain.Location
 import           AST.Source
 import           Text.Regex.TDFA
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Text.Printf
+
 import           Text.Show.Pretty
 import           Debug.Trace
+
+import qualified Text.ParserCombinators.ReadP as ReadP
+import qualified Data.Text                    as Text
+import qualified Data.Text.Encoding           as TextEncoding
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Char8 as Char8
 }
 
 %wrapper "monadUserState"
@@ -145,7 +154,7 @@ tokens :-
   <0, stringTemplateMadlib> \<\=                                                              { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                  { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"       { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '(($printable # ')|\\')*'           { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '((. # ')|\\\\|\\')*'               { mapCharToken }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+             ;
@@ -480,6 +489,22 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
   return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
+mapCharToken :: AlexInput -> Int -> Alex Token
+mapCharToken inputData@(posn, prevChar, pending, input) len = do
+  let charData   = take len input
+      parser     = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
+      parsed     = fst $ last $ parser charData
+      charData'  = parsed !! 1
+      token      = TokenChar charData'
+
+  if length parsed == 3 then do
+    sourceTarget <- getCurrentSourceTarget
+    return $ Token (makeArea posn (take len input)) sourceTarget token
+  else do
+    let Area (Loc a l c) _ = makeArea posn (take len input)
+    alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show token))
+
+
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
   sc           <- getStartCode
@@ -577,7 +602,8 @@ data TokenClass
  = TokenConst
  | TokenNumber String
  | TokenFloat String
- | TokenStr  String
+ | TokenStr String
+ | TokenChar Char
  | TokenName String
  | TokenConstraintName String
  | TokenJSBlock String
@@ -653,6 +679,10 @@ data TokenClass
  | TokenMacroElseIf
  | TokenMacroEndIf
  deriving (Eq, Show)
+
+
+charData :: Token -> Char
+charData (Token _ _ (TokenChar x)) = x
 
 
 strV :: Token -> String
