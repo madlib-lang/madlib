@@ -10,7 +10,7 @@ let OnMouseOut = (a => ({ __constructor: "OnMouseOut", __args: [ a ] }));
 global.Show = {};
 global.Functor = {};
 Inspect['Wish'] = {};
-Inspect['Wish']['inspect'] = () => (Inspect_h7) => (Inspect_j9) => (__$a__ => ((__x__) => {
+Inspect['Wish']['inspect'] = () => (Inspect_u20) => (Inspect_w22) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -25,7 +25,7 @@ Inspect['Wish']['inspect'] = () => (Inspect_h7) => (Inspect_j9) => (__$a__ => ((
   }
 })(__$a__));
 Inspect['Element'] = {};
-Inspect['Element']['inspect'] = () => (Inspect_u20) => (__$a__ => ((__x__) => {
+Inspect['Element']['inspect'] = () => (Inspect_h33) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Element") {
     return `Element`;
   }
@@ -53,7 +53,7 @@ Inspect['Event']['inspect'] = () => (__$a__ => ((__x__) => {
   }
 })(__$a__));
 Inspect['Attribute'] = {};
-Inspect['Attribute']['inspect'] = () => (Inspect_h33) => (__$a__ => ((__x__) => {
+Inspect['Attribute']['inspect'] = () => (Inspect_u46) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "AttributeId" && true) {
     let a0 = __x__.__args[0];
     return `AttributeId(` + Inspect.String.inspect()(a0) + `)`;
@@ -100,11 +100,11 @@ export let p = (attrs => children =>  h('p', objectifyAttrs(attrs), children) );
 export let input = (attrs => children =>  h('input', objectifyAttrs(attrs), children) );
 export let button = (attrs => children =>  h('button', objectifyAttrs(attrs), children) );
 let initialState = 0;
-let MyApp = (count => div(([id(`id`), className(`class`)]))(([div(([]))(([`Current count is ` + Show.Integer.show()(count)])), div(([]))(([button(([onClick((state => event => ([good((s => s + 1))])))]))(([`increment`]))]))])));
-div(([]))(([`Some text!`]));
-div(([]))(([div(([]))(([span(([]))(([]))])), div(([]))(([span(([]))(([]))]))]));
-let methods = ([`1`, `2`, `3`]);
-let childElems = Functor.List.map()((method => div(([]))(([method]))))(methods);
-div(([]))(([ ...methods]));
-div(([]))(([ ...childElems]));
+let MyApp = (count => div(({ v: id(`id`), n: { v: className(`class`), n: null } }))(({ v: div((null))(({ v: `Current count is ` + Show.Integer.show()(count), n: null })), n: { v: div((null))(({ v: button(({ v: onClick((state => event => ({ v: good((s => s + 1)), n: null }))), n: null }))(({ v: `increment`, n: null })), n: null })), n: null } })));
+div((null))(({ v: `Some text!`, n: null }));
+div((null))(({ v: div((null))(({ v: span((null))((null)), n: null })), n: { v: div((null))(({ v: span((null))((null)), n: null })), n: null } }));
+let methods = ({ v: `1`, n: { v: `2`, n: { v: `3`, n: null } } });
+let childElems = Functor.List.map()((method => div((null))(({ v: method, n: null }))))(methods);
+div((null))((methods));
+div((null))((childElems));
 export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };

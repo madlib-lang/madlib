@@ -1,6 +1,6 @@
 import type { Maybe } from "Maybe"
 
-import {} from "Compare"
+import { eq, gt } from "Compare"
 import List from "List"
 import Tuple from "Tuple"
 
@@ -26,7 +26,21 @@ Dictionary = extern "madlib__dictionary__typeConstructor"
 
 #endif
 
-#iftarget js // fromList
+
+removeConsecutiveDoubles :: Eq k => List #[k, v] -> List #[k, v]
+removeConsecutiveDoubles = (list) => where(list) {
+  [#[k1, v1], #[k2, v2], ...xs] =>
+    k1 == k2
+      ? [#[k2, v2], ...removeConsecutiveDoubles(xs)]
+      : [#[k1, v1], ...removeConsecutiveDoubles([#[k2, v2], ...xs])]
+
+  [last] =>
+    [last]
+
+  [] =>
+    []
+}
+
 
 /**
  * Creates a Dictionary from a list of <key, value> tuples
@@ -38,11 +52,11 @@ Dictionary = extern "madlib__dictionary__typeConstructor"
  */
 fromList :: Comparable k =>  List (#[k, v]) -> Dictionary k v
 export fromList = pipe(
-  List.uniqueBy((a, b) => Tuple.fst(a) == Tuple.fst(b)),
+  List.sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+  removeConsecutiveDoubles,
   Dictionary
 )
 
-#endif
 
 /**
  * The empty Dictionary
@@ -52,63 +66,29 @@ export fromList = pipe(
 empty :: Dictionary k v
 export empty = Dictionary([])
 
-#iftarget js // insert
 
-#-
-const insertFFI = comparableDict => key => value => dictionary => {
-  let inserted = false
-  let i = 0
-  let resultItems = Array(dictionary.__args.length)
+insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+export insert = (key, value, dict) => {
+  helper = (list) => where(list) {
+    [] =>
+      [#[key, value]]
 
-  for (const [itemIndex, item] of dictionary.__args[0].entries()) {
-    let mustInsert = dictionary.__args[0][itemIndex + 1] !== undefined
-      ? comparableDict.compare()(key)(dictionary.__args[0][itemIndex + 1][0]) == -1
-      : true
-
-    const [currentKey, currentValue] = item
-    if (comparableDict.compare()(key)(currentKey) == 0) {
-      resultItems[i] = [currentKey, value]
-      inserted = true
-    } else if (comparableDict.compare()(key)(currentKey) == 1 && !inserted && mustInsert) {
-      resultItems[i] = item
-      i = i + 1
-      resultItems[i] = [key, value]
-      inserted = true
-    } else {
-      resultItems[i] = item
-    }
-
-    i = i + 1
+    [#[k, v], ...xs] =>
+      if (eq(k, key)) {
+        [#[key, value], ...xs]
+      } else if (gt(k, key)) {
+        [#[key, value], #[k, v], ...xs]
+      } else {
+        [#[k, v], ...helper(xs)]
+      }
   }
 
-  if (!inserted) {
-    resultItems[i] = [key, value]
+  return where(dict) {
+    Dictionary(items) =>
+      Dictionary(helper(items))
   }
-
-  return Dictionary(resultItems)
 }
--#
 
-/**
- * Inserts a value into the Dictionary at a given key.
- * However, if the key already exists, it updates the value at that key.
- *
- * @since 0.0.5
- * @example
- * insert(1, 2, empty)              // fromList([#[1, 2]])
- * insert(1, 7, fromList([#[1, 2]])) // fromList([#[1, 7]])
- */
-insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
-export insert = extern "insertFFI"
-
-#elseif llvm
-
-insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
-export insert = extern "madlib__dictionary__insert"
-
-#endif
-
-#iftarget js // get
 
 /**
  * Get a value from a Dictionary given a key.
@@ -128,10 +108,6 @@ export get = (k) => where {
   )(items)
 }
 
-#endif
-
-
-#iftarget js // merge
 
 /**
  * Combine two Dictionaries together.
@@ -143,7 +119,6 @@ export merge = (a, b) => where(#[a, b]) {
   #[Dictionary(itemsA), Dictionary(itemsB)] => List.concat(itemsA, itemsB) |> fromList
 }
 
-#endif
 
 /**
  * Enumerate the number of keys in a Dictionary

@@ -343,7 +343,6 @@ renameTypeDecls env typeDecls = case typeDecls of
 renameInstance :: Env -> Instance -> (Instance, Env)
 renameInstance env inst = case inst of
   Untyped area metadata (Instance name ps p methods) ->
-    -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
     let (renamedMethods, env') =
           Map.foldrWithKey
             (\methodName (method, sc) (renamedMethods, env') ->

@@ -37,7 +37,7 @@ instance Comparable Float {
 #iftarget js
 
 instance Comparable String {
-  compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#
+  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
 }
 
 #elseif llvm
@@ -58,6 +58,10 @@ instance Comparable Boolean {
     _ => EQUAL
   }
 }
+
+
+eq :: Comparable a => a -> a -> Boolean
+export eq = (a, b) => compare(a, b) == EQUAL
 
 
 /**

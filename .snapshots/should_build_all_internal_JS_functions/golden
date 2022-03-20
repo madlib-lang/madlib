@@ -5,6 +5,12 @@ global.__eq__ = (l, r) => {
   if (typeof l !== typeof r) {
     return false;
   }
+if (l === null && r !== null || l !== null && r === null) {
+  return false;
+}
+if (l === null && r === null) {
+  return true;
+}
   if (typeof l === `object`) {
     if (Array.isArray(l)) {
       return l.length === r.length && l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
@@ -14,16 +20,6 @@ global.__eq__ = (l, r) => {
     return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq__(l[k], r[k]), true);
   }
   return l === r;
-}
-
-global.__dict_ctor__ = (items) => {
-  let addedItems = [];
-  for(const item of items) {
-    if (addedItems.find(([key, _]) => __eq__(key, item[0])) === undefined) {
-      addedItems.push(item);
-    }
-  }
-  return { __constructor: "Dictionary", __args: [addedItems] };
 }
 
 const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
@@ -85,17 +81,33 @@ Inspect['ByteArray']['inspect'] = () => bytearray => {
 };
 
 Inspect['List'] = {};
-Inspect['List']['inspect'] = () => Inspect_a => list => `[${list.map(Inspect_a.inspect()).join(", ")}]`;
+Inspect['List']['inspect'] = () => Inspect_a => list => {
+
+  let items = [];
+
+  while (list !== null) {
+    items.push(Inspect_a.inspect()(list.v));
+    list = list.n;
+  }
+  return "[" + items.join(", ") + "]"
+};
 
 Inspect['Array'] = {};
 Inspect['Array']['inspect'] = () => Inspect_a => array => `Array([${array.map(Inspect_a.inspect()).join(", ")}])`;
 
 Inspect['Dictionary'] = {};
 Inspect['Dictionary']['inspect'] = () => Inspect_value => Inspect_key => dict => {
-  const items = dict.__args[0]
+  let list = dict.__args[0]
+  let items = [];
+
+  while (list !== null) {
+    items.push(list.v);
+    list = list.n;
+  }
+  const renderedItems = items
     .map(([key, value]) => `${Inspect_key.inspect()(key)}: ${Inspect_value.inspect()(value)}`)
     .join(', ')
-  return dict.__args[0].length === 0 ? '{{}}' : `{{ ${items} }}`
+  return items.length === 0 ? '{{}}' : `{{ ${renderedItems} }}`
 };
 
 Inspect['Tuple_2'] = {};

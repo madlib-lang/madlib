@@ -10,17 +10,17 @@ Right
                     (TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "c2" Star)))
-                       (TVar (TV "d3" Star))))
+                          (TVar (TV "j9" Star)))
+                       (TVar (TV "k10" Star))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "c2" Star))))
+                          (TVar (TV "j9" Star))))
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TVar (TV "d3" Star)))))
+                       (TVar (TV "k10" Star)))))
             (Area (Loc 0 1 1) (Loc 68 2 33))
             (TypedExp
                (Typed
@@ -31,17 +31,17 @@ Right
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "c2" Star)))
-                             (TVar (TV "d3" Star))))
+                                (TVar (TV "j9" Star)))
+                             (TVar (TV "k10" Star))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TApp
                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TVar (TV "c2" Star))))
+                                (TVar (TV "j9" Star))))
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "d3" Star)))))
+                             (TVar (TV "k10" Star)))))
                   (Area (Loc 36 2 1) (Loc 68 2 33))
                   (Assignment
                      "map"
@@ -53,17 +53,17 @@ Right
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "c2" Star)))
-                                   (TVar (TV "d3" Star))))
+                                      (TVar (TV "j9" Star)))
+                                   (TVar (TV "k10" Star))))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TApp
                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TVar (TV "c2" Star))))
+                                      (TVar (TV "j9" Star))))
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "d3" Star)))))
+                                   (TVar (TV "k10" Star)))))
                         (Area (Loc 42 2 7) (Loc 68 2 33))
                         (Abs
                            (Typed
@@ -71,8 +71,8 @@ Right
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "c2" Star)))
-                                   (TVar (TV "d3" Star)))
+                                      (TVar (TV "j9" Star)))
+                                   (TVar (TV "k10" Star)))
                               (Area (Loc 43 2 8) (Loc 44 2 9))
                               "f")
                            [ Typed
@@ -82,24 +82,24 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "c2" Star))))
+                                          (TVar (TV "j9" Star))))
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                       (TVar (TV "d3" Star))))
+                                       (TVar (TV "k10" Star))))
                                (Area (Loc 42 2 7) (Loc 68 2 33))
                                (Abs
                                   (Typed
                                      ([] :=>
                                         TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "c2" Star)))
+                                          (TVar (TV "j9" Star)))
                                      (Area (Loc 46 2 11) (Loc 48 2 13))
                                      "xs")
                                   [ Typed
                                       ([] :=>
                                          TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TVar (TV "d3" Star)))
+                                           (TVar (TV "k10" Star)))
                                       (Area (Loc 54 2 19) (Loc 67 2 32))
                                       (JSExp " some JS ")
                                   ])
@@ -147,16 +147,16 @@ Right
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TVar (TV "i8" Star))))
+                       (TVar (TV "p15" Star))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "i8" Star))))
+                          (TVar (TV "p15" Star))))
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TVar (TV "i8" Star)))))
+                       (TVar (TV "p15" Star)))))
             (Area (Loc 69 3 1) (Loc 159 4 54))
             (TypedExp
                (Typed
@@ -166,16 +166,16 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "i8" Star))))
+                             (TVar (TV "p15" Star))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TApp
                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TVar (TV "i8" Star))))
+                                (TVar (TV "p15" Star))))
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "i8" Star)))))
+                             (TVar (TV "p15" Star)))))
                   (Area (Loc 106 4 1) (Loc 159 4 54))
                   (Export
                      (Typed
@@ -185,16 +185,16 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "i8" Star))))
+                                   (TVar (TV "p15" Star))))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TApp
                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TVar (TV "i8" Star))))
+                                      (TVar (TV "p15" Star))))
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "i8" Star)))))
+                                   (TVar (TV "p15" Star)))))
                         (Area (Loc 113 4 8) (Loc 159 4 54))
                         (Assignment
                            "concat"
@@ -205,23 +205,23 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "i8" Star))))
+                                         (TVar (TV "p15" Star))))
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TApp
                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                            (TVar (TV "i8" Star))))
+                                            (TVar (TV "p15" Star))))
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "i8" Star)))))
+                                         (TVar (TV "p15" Star)))))
                               (Area (Loc 122 4 17) (Loc 159 4 54))
                               (Abs
                                  (Typed
                                     ([] :=>
                                        TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "i8" Star)))
+                                         (TVar (TV "p15" Star)))
                                     (Area (Loc 123 4 18) (Loc 126 4 21))
                                     "xs1")
                                  [ Typed
@@ -232,24 +232,24 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                (TVar (TV "i8" Star))))
+                                                (TVar (TV "p15" Star))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                             (TVar (TV "i8" Star))))
+                                             (TVar (TV "p15" Star))))
                                      (Area (Loc 122 4 17) (Loc 159 4 54))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                (TVar (TV "i8" Star)))
+                                                (TVar (TV "p15" Star)))
                                            (Area (Loc 128 4 23) (Loc 131 4 26))
                                            "xs2")
                                         [ Typed
                                             ([] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                 (TVar (TV "i8" Star)))
+                                                 (TVar (TV "p15" Star)))
                                             (Area (Loc 137 4 32) (Loc 158 4 53))
                                             (JSExp " xs1.concat(xs2) ")
                                         ])
@@ -296,23 +296,23 @@ Right
                     (TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "t19" Star)))
+                          (TVar (TV "a26" Star)))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                             (TVar (TV "p15" Star)))
-                          (TVar (TV "t19" Star)))))
+                             (TVar (TV "w22" Star)))
+                          (TVar (TV "a26" Star)))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                       (TVar (TV "t19" Star)))
+                       (TVar (TV "a26" Star)))
                     (TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "p15" Star))))
-                       (TVar (TV "t19" Star)))))
+                             (TVar (TV "w22" Star))))
+                       (TVar (TV "a26" Star)))))
             (Area (Loc 160 5 1) (Loc 269 6 66))
             (TypedExp
                (Typed
@@ -323,23 +323,23 @@ Right
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "t19" Star)))
+                                (TVar (TV "a26" Star)))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TVar (TV "p15" Star)))
-                                (TVar (TV "t19" Star)))))
+                                   (TVar (TV "w22" Star)))
+                                (TVar (TV "a26" Star)))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                             (TVar (TV "t19" Star)))
+                             (TVar (TV "a26" Star)))
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "p15" Star))))
-                             (TVar (TV "t19" Star)))))
+                                   (TVar (TV "w22" Star))))
+                             (TVar (TV "a26" Star)))))
                   (Area (Loc 204 6 1) (Loc 269 6 66))
                   (Export
                      (Typed
@@ -350,23 +350,23 @@ Right
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "t19" Star)))
+                                      (TVar (TV "a26" Star)))
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                         (TVar (TV "p15" Star)))
-                                      (TVar (TV "t19" Star)))))
+                                         (TVar (TV "w22" Star)))
+                                      (TVar (TV "a26" Star)))))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TVar (TV "t19" Star)))
+                                   (TVar (TV "a26" Star)))
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "p15" Star))))
-                                   (TVar (TV "t19" Star)))))
+                                         (TVar (TV "w22" Star))))
+                                   (TVar (TV "a26" Star)))))
                         (Area (Loc 211 6 8) (Loc 269 6 66))
                         (Assignment
                            "reduce"
@@ -379,26 +379,26 @@ Right
                                          (TApp
                                             (TCon
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TVar (TV "t19" Star)))
+                                            (TVar (TV "a26" Star)))
                                          (TApp
                                             (TApp
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TVar (TV "p15" Star)))
-                                            (TVar (TV "t19" Star)))))
+                                               (TVar (TV "w22" Star)))
+                                            (TVar (TV "a26" Star)))))
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                         (TVar (TV "t19" Star)))
+                                         (TVar (TV "a26" Star)))
                                       (TApp
                                          (TApp
                                             (TCon
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TApp
                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                               (TVar (TV "p15" Star))))
-                                         (TVar (TV "t19" Star)))))
+                                               (TVar (TV "w22" Star))))
+                                         (TVar (TV "a26" Star)))))
                               (Area (Loc 220 6 17) (Loc 269 6 66))
                               (Abs
                                  (Typed
@@ -407,14 +407,14 @@ Right
                                          (TApp
                                             (TCon
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TVar (TV "t19" Star)))
+                                            (TVar (TV "a26" Star)))
                                          (TApp
                                             (TApp
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TVar (TV "p15" Star)))
-                                            (TVar (TV "t19" Star))))
+                                               (TVar (TV "w22" Star)))
+                                            (TVar (TV "a26" Star))))
                                     (Area (Loc 221 6 18) (Loc 222 6 19))
                                     "f")
                                  [ Typed
@@ -423,7 +423,7 @@ Right
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "t19" Star)))
+                                             (TVar (TV "a26" Star)))
                                           (TApp
                                              (TApp
                                                 (TCon
@@ -431,12 +431,12 @@ Right
                                                    "prelude")
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                   (TVar (TV "p15" Star))))
-                                             (TVar (TV "t19" Star))))
+                                                   (TVar (TV "w22" Star))))
+                                             (TVar (TV "a26" Star))))
                                      (Area (Loc 220 6 17) (Loc 269 6 66))
                                      (Abs
                                         (Typed
-                                           ([] :=> TVar (TV "t19" Star))
+                                           ([] :=> TVar (TV "a26" Star))
                                            (Area (Loc 224 6 21) (Loc 231 6 28))
                                            "initial")
                                         [ Typed
@@ -448,19 +448,19 @@ Right
                                                        "prelude")
                                                     (TApp
                                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                       (TVar (TV "p15" Star))))
-                                                 (TVar (TV "t19" Star)))
+                                                       (TVar (TV "w22" Star))))
+                                                 (TVar (TV "a26" Star)))
                                             (Area (Loc 220 6 17) (Loc 269 6 66))
                                             (Abs
                                                (Typed
                                                   ([] :=>
                                                      TApp
                                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                       (TVar (TV "p15" Star)))
+                                                       (TVar (TV "w22" Star)))
                                                   (Area (Loc 233 6 30) (Loc 235 6 32))
                                                   "xs")
                                                [ Typed
-                                                   ([] :=> TVar (TV "t19" Star))
+                                                   ([] :=> TVar (TV "a26" Star))
                                                    (Area (Loc 241 6 38) (Loc 268 6 65))
                                                    (JSExp " xs.reduce(f, initial) ")
                                                ])
@@ -524,17 +524,17 @@ Right
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                             (TVar (TV "o40" Star)))
-                          (TVar (TV "q42" Star)))))
+                             (TVar (TV "v47" Star)))
+                          (TVar (TV "x49" Star)))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "o40" Star))))
+                          (TVar (TV "v47" Star))))
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TVar (TV "q42" Star)))))
+                       (TVar (TV "x49" Star)))))
             (Area (Loc 271 8 1) (Loc 416 16 2))
             (TypedExp
                (Typed
@@ -547,17 +547,17 @@ Right
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TVar (TV "o40" Star)))
-                                (TVar (TV "q42" Star)))))
+                                   (TVar (TV "v47" Star)))
+                                (TVar (TV "x49" Star)))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TApp
                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TVar (TV "o40" Star))))
+                                (TVar (TV "v47" Star))))
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "q42" Star)))))
+                             (TVar (TV "x49" Star)))))
                   (Area (Loc 311 9 1) (Loc 416 16 2))
                   (Export
                      (Typed
@@ -570,17 +570,17 @@ Right
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                         (TVar (TV "o40" Star)))
-                                      (TVar (TV "q42" Star)))))
+                                         (TVar (TV "v47" Star)))
+                                      (TVar (TV "x49" Star)))))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TApp
                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TVar (TV "o40" Star))))
+                                      (TVar (TV "v47" Star))))
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "q42" Star)))))
+                                   (TVar (TV "x49" Star)))))
                         (Area (Loc 318 9 8) (Loc 416 16 2))
                         (Assignment
                            "ap"
@@ -596,17 +596,17 @@ Right
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TVar (TV "o40" Star)))
-                                            (TVar (TV "q42" Star)))))
+                                               (TVar (TV "v47" Star)))
+                                            (TVar (TV "x49" Star)))))
                                    (TApp
                                       (TApp
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TApp
                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                            (TVar (TV "o40" Star))))
+                                            (TVar (TV "v47" Star))))
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "q42" Star)))))
+                                         (TVar (TV "x49" Star)))))
                               (Area (Loc 323 9 13) (Loc 416 16 2))
                               (Abs
                                  (Typed
@@ -618,8 +618,8 @@ Right
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TVar (TV "o40" Star)))
-                                            (TVar (TV "q42" Star))))
+                                               (TVar (TV "v47" Star)))
+                                            (TVar (TV "x49" Star))))
                                     (Area (Loc 324 9 14) (Loc 327 9 17))
                                     "fns")
                                  [ Typed
@@ -630,24 +630,24 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                (TVar (TV "o40" Star))))
+                                                (TVar (TV "v47" Star))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                             (TVar (TV "q42" Star))))
+                                             (TVar (TV "x49" Star))))
                                      (Area (Loc 323 9 13) (Loc 416 16 2))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                (TVar (TV "o40" Star)))
+                                                (TVar (TV "v47" Star)))
                                            (Area (Loc 329 9 19) (Loc 331 9 21))
                                            "xs")
                                         [ Typed
                                             ([] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                 (TVar (TV "q42" Star)))
+                                                 (TVar (TV "x49" Star)))
                                             (Area (Loc 336 9 26) (Loc 414 15 6))
                                             (App
                                                (Typed
@@ -670,12 +670,12 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "o40" Star)))
-                                                                (TVar (TV "q42" Star)))))
+                                                                   (TVar (TV "v47" Star)))
+                                                                (TVar (TV "x49" Star)))))
                                                        (TApp
                                                           (TCon
                                                              (TC "List" (Kfun Star Star)) "prelude")
-                                                          (TVar (TV "q42" Star))))
+                                                          (TVar (TV "x49" Star))))
                                                   (Area (Loc 336 9 26) (Loc 407 14 5))
                                                   (App
                                                      (Typed
@@ -691,7 +691,7 @@ Right
                                                                    (TCon
                                                                       (TC "List" (Kfun Star Star))
                                                                       "prelude")
-                                                                   (TVar (TV "q42" Star))))
+                                                                   (TVar (TV "x49" Star))))
                                                              (TApp
                                                                 (TApp
                                                                    (TCon
@@ -715,13 +715,13 @@ Right
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                "prelude")
-                                                                            (TVar (TV "o40" Star)))
-                                                                         (TVar (TV "q42" Star)))))
+                                                                            (TVar (TV "v47" Star)))
+                                                                         (TVar (TV "x49" Star)))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "List" (Kfun Star Star))
                                                                       "prelude")
-                                                                   (TVar (TV "q42" Star)))))
+                                                                   (TVar (TV "x49" Star)))))
                                                         (Area (Loc 336 9 26) (Loc 416 16 2))
                                                         (App
                                                            (Typed
@@ -753,7 +753,7 @@ Right
                                                                                         Star Star))
                                                                                   "prelude")
                                                                                (TVar
-                                                                                  (TV "q42" Star))))
+                                                                                  (TV "x49" Star))))
                                                                          (TApp
                                                                             (TApp
                                                                                (TCon
@@ -778,11 +778,11 @@ Right
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "o40"
+                                                                                           "v47"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "q42"
+                                                                                        "x49"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TCon
@@ -793,7 +793,7 @@ Right
                                                                                   "prelude")
                                                                                (TVar
                                                                                   (TV
-                                                                                     "q42"
+                                                                                     "x49"
                                                                                      Star))))))
                                                                    (TApp
                                                                       (TApp
@@ -810,7 +810,7 @@ Right
                                                                                   "List"
                                                                                   (Kfun Star Star))
                                                                                "prelude")
-                                                                            (TVar (TV "q42" Star))))
+                                                                            (TVar (TV "x49" Star))))
                                                                       (TApp
                                                                          (TApp
                                                                             (TCon
@@ -841,11 +841,11 @@ Right
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "o40"
+                                                                                           "v47"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "q42"
+                                                                                        "x49"
                                                                                         Star)))))
                                                                          (TApp
                                                                             (TCon
@@ -854,7 +854,7 @@ Right
                                                                                   (Kfun Star Star))
                                                                                "prelude")
                                                                             (TVar
-                                                                               (TV "q42" Star))))))
+                                                                               (TV "x49" Star))))))
                                                               (Area (Loc 336 9 26) (Loc 342 9 32))
                                                               (Var "reduce" False))
                                                            (Typed
@@ -874,7 +874,7 @@ Right
                                                                                "List"
                                                                                (Kfun Star Star))
                                                                             "prelude")
-                                                                         (TVar (TV "q42" Star))))
+                                                                         (TVar (TV "x49" Star))))
                                                                    (TApp
                                                                       (TApp
                                                                          (TCon
@@ -896,15 +896,15 @@ Right
                                                                                            Star)))
                                                                                   "prelude")
                                                                                (TVar
-                                                                                  (TV "o40" Star)))
-                                                                            (TVar (TV "q42" Star))))
+                                                                                  (TV "v47" Star)))
+                                                                            (TVar (TV "x49" Star))))
                                                                       (TApp
                                                                          (TCon
                                                                             (TC
                                                                                "List"
                                                                                (Kfun Star Star))
                                                                             "prelude")
-                                                                         (TVar (TV "q42" Star)))))
+                                                                         (TVar (TV "x49" Star)))))
                                                               (Area (Loc 346 10 3) (Loc 401 13 8))
                                                               (Abs
                                                                  (Typed
@@ -915,7 +915,7 @@ Right
                                                                                "List"
                                                                                (Kfun Star Star))
                                                                             "prelude")
-                                                                         (TVar (TV "q42" Star)))
+                                                                         (TVar (TV "x49" Star)))
                                                                     (Area
                                                                        (Loc 347 10 4)
                                                                        (Loc 350 10 7))
@@ -946,11 +946,11 @@ Right
                                                                                       "prelude")
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "o40"
+                                                                                         "v47"
                                                                                          Star)))
                                                                                 (TVar
                                                                                    (TV
-                                                                                      "q42" Star))))
+                                                                                      "x49" Star))))
                                                                           (TApp
                                                                              (TCon
                                                                                 (TC
@@ -958,7 +958,7 @@ Right
                                                                                    (Kfun Star Star))
                                                                                 "prelude")
                                                                              (TVar
-                                                                                (TV "q42" Star))))
+                                                                                (TV "x49" Star))))
                                                                      (Area
                                                                         (Loc 346 10 3)
                                                                         (Loc 401 13 8))
@@ -978,10 +978,10 @@ Right
                                                                                       "prelude")
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "o40"
+                                                                                         "v47"
                                                                                          Star)))
                                                                                 (TVar
-                                                                                   (TV "q42" Star)))
+                                                                                   (TV "x49" Star)))
                                                                            (Area
                                                                               (Loc 352 10 9)
                                                                               (Loc 354 10 11))
@@ -998,7 +998,7 @@ Right
                                                                                     "prelude")
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "q42" Star)))
+                                                                                       "x49" Star)))
                                                                             (Area
                                                                                (Loc 359 10 16)
                                                                                (Loc 401 13 8))
@@ -1026,7 +1026,7 @@ Right
                                                                                                 "prelude")
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "o40"
+                                                                                                   "v47"
                                                                                                    Star))))
                                                                                        (TApp
                                                                                           (TCon
@@ -1038,7 +1038,7 @@ Right
                                                                                              "prelude")
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "q42"
+                                                                                                "x49"
                                                                                                 Star))))
                                                                                   (Area
                                                                                      (Loc 359 10 16)
@@ -1056,7 +1056,7 @@ Right
                                                                                                 "prelude")
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "o40"
+                                                                                                   "v47"
                                                                                                    Star)))
                                                                                         (Area
                                                                                            (Loc
@@ -1080,7 +1080,7 @@ Right
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "q42"
+                                                                                                    "x49"
                                                                                                     Star)))
                                                                                          (Area
                                                                                             (Loc
@@ -1115,7 +1115,7 @@ Right
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "q42"
+                                                                                                                "x49"
                                                                                                                 Star))))
                                                                                                     (TApp
                                                                                                        (TCon
@@ -1127,7 +1127,7 @@ Right
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "q42"
+                                                                                                             "x49"
                                                                                                              Star))))
                                                                                                (Area
                                                                                                   (Loc
@@ -1162,7 +1162,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "q42"
+                                                                                                                      "x49"
                                                                                                                       Star))))
                                                                                                           (TApp
                                                                                                              (TApp
@@ -1185,7 +1185,7 @@ Right
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "q42"
+                                                                                                                         "x49"
                                                                                                                          Star))))
                                                                                                              (TApp
                                                                                                                 (TCon
@@ -1197,7 +1197,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "q42"
+                                                                                                                      "x49"
                                                                                                                       Star)))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1223,7 +1223,7 @@ Right
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "q42"
+                                                                                                                "x49"
                                                                                                                 Star)))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1250,7 +1250,7 @@ Right
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "q42"
+                                                                                                          "x49"
                                                                                                           Star)))
                                                                                                (Area
                                                                                                   (Loc
@@ -1285,7 +1285,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "o40"
+                                                                                                                      "v47"
                                                                                                                       Star))))
                                                                                                           (TApp
                                                                                                              (TCon
@@ -1297,7 +1297,7 @@ Right
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "q42"
+                                                                                                                   "x49"
                                                                                                                    Star))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1335,11 +1335,11 @@ Right
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "o40"
+                                                                                                                               "v47"
                                                                                                                                Star)))
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "q42"
+                                                                                                                            "x49"
                                                                                                                             Star))))
                                                                                                                 (TApp
                                                                                                                    (TApp
@@ -1362,7 +1362,7 @@ Right
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "o40"
+                                                                                                                               "v47"
                                                                                                                                Star))))
                                                                                                                    (TApp
                                                                                                                       (TCon
@@ -1374,7 +1374,7 @@ Right
                                                                                                                          "prelude")
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "q42"
+                                                                                                                            "x49"
                                                                                                                             Star)))))
                                                                                                            (Area
                                                                                                               (Loc
@@ -1403,11 +1403,11 @@ Right
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "o40"
+                                                                                                                         "v47"
                                                                                                                          Star)))
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "q42"
+                                                                                                                      "x49"
                                                                                                                       Star)))
                                                                                                            (Area
                                                                                                               (Loc
@@ -1434,7 +1434,7 @@ Right
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "o40"
+                                                                                                                "v47"
                                                                                                                 Star)))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1463,7 +1463,7 @@ Right
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "o40"
+                                                                                             "v47"
                                                                                              Star)))
                                                                                   (Area
                                                                                      (Loc 398 13 5)
@@ -1479,7 +1479,7 @@ Right
                                                              (TCon
                                                                 (TC "List" (Kfun Star Star))
                                                                 "prelude")
-                                                             (TVar (TV "q42" Star)))
+                                                             (TVar (TV "x49" Star)))
                                                         (Area (Loc 405 14 3) (Loc 407 14 5))
                                                         (ListConstructor []))
                                                      False))
@@ -1494,8 +1494,8 @@ Right
                                                                    "(->)"
                                                                    (Kfun Star (Kfun Star Star)))
                                                                 "prelude")
-                                                             (TVar (TV "o40" Star)))
-                                                          (TVar (TV "q42" Star))))
+                                                             (TVar (TV "v47" Star)))
+                                                          (TVar (TV "x49" Star))))
                                                   (Area (Loc 411 15 3) (Loc 414 15 6))
                                                   (Var "fns" False))
                                                True)

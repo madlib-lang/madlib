@@ -14,7 +14,7 @@ void madlib__process__internal__registerArgs();
 
 madlib__list__Node_t *madlib__process__internal__getArgs();
 
-madlib__dictionary__Dictionary_t *madlib__process__internal__getEnv();
+madlib__list__Node_t *madlib__process__internal__getEnv();
 
 #ifdef __cplusplus
 }

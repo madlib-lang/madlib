@@ -52,7 +52,7 @@ void madlib__process__internal__registerArgs() {
 
 madlib__list__Node_t *madlib__process__internal__getArgs() { return args; }
 
-madlib__dictionary__Dictionary_t *madlib__process__internal__getEnv() {
+madlib__list__Node_t *madlib__process__internal__getEnv() {
   madlib__list__Node_t *envItems = madlib__list__empty();
   char **env = environ;
   for (; *env != NULL; env++) {
@@ -92,7 +92,8 @@ madlib__dictionary__Dictionary_t *madlib__process__internal__getEnv() {
           sizeof(madlib__eq__eqDictionary_t));
   stringEqDictionary->eq = stringEqPAP;
 
-  return madlib__dictionary__fromList(stringEqDictionary, envItems);
+  // TODO: remove this and simply return the envItems list and make the FFI wrapper use fromList instead
+  return envItems;
 }
 
 #ifdef __cplusplus

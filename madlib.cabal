@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 599518da36fb867e15516999c85ff249e2ac179ae83c0f6c9c3858bae360d431
+-- hash: b6b65a3d2b0e2d5ebc508479566defd4804edb185539a6527e5f742c2cd88303
 
 name:           madlib
 version:        0.11.0
@@ -92,6 +92,7 @@ library
       Parse.DocString.Lexer
       Parse.Macro
       Parse.Madlib.AST
+      Parse.Madlib.Dictionary
       Parse.Madlib.Grammar
       Parse.Madlib.Lexer
       Parse.Madlib.TargetMacro
@@ -219,6 +220,7 @@ executable madlib
       Parse.DocString.Lexer
       Parse.Macro
       Parse.Madlib.AST
+      Parse.Madlib.Dictionary
       Parse.Madlib.Grammar
       Parse.Madlib.Lexer
       Parse.Madlib.TargetMacro
