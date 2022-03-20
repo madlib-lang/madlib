@@ -217,12 +217,28 @@ dropLast :: Integer -> String -> String
 export dropLast = (n, s) => slice(0, -n, s)
 
 
+dropWhile :: (Char -> Boolean) -> String -> String
+export dropWhile = (predicate, s) => pipe(
+  toList,
+  List.dropWhile(predicate),
+  fromList
+)(s)
+
+
 take :: Integer -> String -> String
 export take = (n, s) => slice(0, n, s)
 
 
 takeLast :: Integer -> String -> String
 export takeLast = (n, s) => slice(-n, 0, s)
+
+
+takeWhile :: (Char -> Boolean) -> String -> String
+export takeWhile = (predicate, s) => pipe(
+  toList,
+  List.takeWhile(predicate),
+  fromList
+)(s)
 
 
 #iftarget js
@@ -329,7 +345,10 @@ export appendChar = extern "madlib__string__appendChar"
 
 #endif
 
-// TODO: add the following
-// dropWhile
-// takeWhile
-// reverse
+
+reverse :: String -> String
+export reverse = (s) => pipe(
+  toList,
+  List.reverse,
+  fromList
+)(s)
