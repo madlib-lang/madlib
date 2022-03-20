@@ -49,6 +49,9 @@ tVar v = TVar (TV v Star)
 tNumber :: Type
 tNumber = TVar (TV "a" Star)
 
+qtNumber :: Qual Type
+qtNumber = [IsIn "Number" [tNumber] Nothing] :=> tNumber
+
 tFloat :: Type
 tFloat = TCon (TC "Float" Star) "prelude"
 

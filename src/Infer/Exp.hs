@@ -960,7 +960,7 @@ inferExps env (e : es) = do
 inferExp :: Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp env (Can.Canonical area (Can.TypeExport name)) =
   -- TODO: Should this return Nothing?
-  return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
+  return (Nothing, env) -- return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ Can.TypedExp{} ->

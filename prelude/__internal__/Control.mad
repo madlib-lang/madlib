@@ -1,8 +1,7 @@
-#iftarget js
-
 import type { Maybe } from "Maybe"
-import { isJust } from "Maybe"
+import { Just, Nothing } from "Maybe"
 
+#iftarget js
 
 /**
  * A function to perform loops. Might be useful as an alternative to recursion
@@ -26,6 +25,8 @@ export loop = (start, pred, evaluate) => {
   return s
 }
 
+#endif
+
 
 /**
  * A function to perform loops. Might be useful as an alternative to recursion
@@ -45,19 +46,10 @@ export loop = (start, pred, evaluate) => {
  * // 16
  */
 maybeLoop :: a -> (a -> Maybe a) -> a
-export maybeLoop = (start, evaluate) => {
-  s = start
-  #-
-  while(true) {
-    let tmp = evaluate(s)
-    if (isJust(tmp)) {
-      s = tmp.__args[0]
-    } else {
-      break
-    }
-  }
-  -#
-  return s
-}
+export maybeLoop = (start, evaluate) => where(evaluate(start)) {
+  Just(x) =>
+    maybeLoop(x, evaluate)
 
-#endif
+  Nothing =>
+    start
+}

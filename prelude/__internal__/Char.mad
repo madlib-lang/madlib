@@ -1,4 +1,7 @@
+import {} from "Show"
+
 #iftarget js
+
 import { MORE, LESS, EQUAL } from "Compare"
 
 instance Comparable Char {
@@ -6,6 +9,7 @@ instance Comparable Char {
 }
 
 #elseif llvm
+
 import type { ComparisonResult } from "Compare"
 import {} from "Compare"
 
@@ -14,6 +18,23 @@ charCompare = extern "madlib__char__compare"
 
 instance Comparable Char {
   compare = charCompare
+}
+
+#endif
+
+#iftarget js
+
+instance Show Char {
+  show = (x) => #- x -#
+}
+
+#elseif llvm
+
+showChar :: Char -> String
+showChar = extern "madlib__char__internal__show"
+
+instance Show Char {
+  show = showChar
 }
 
 #endif

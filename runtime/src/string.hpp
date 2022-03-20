@@ -3,6 +3,8 @@
 
 #include "apply-pap.hpp"
 #include "list.hpp"
+#include "maybe.hpp"
+#include "char.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +25,8 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s);
 char *madlib__string__trim(char *s);
 char *madlib__string__trimStart(char *s);
 char *madlib__string__trimEnd(char *s);
+
+madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s);
 
 char **madlib__string__internal__inspect(char **s);
 
