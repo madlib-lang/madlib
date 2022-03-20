@@ -153,12 +153,16 @@ headerValue = where { Header(_, val) => val }
 
 #-
 const buildHeaderObj = (headerItems) => {
-  return headerItems.reduce((acc, item) => {
-    const k = headerKey(item)
-    const v = headerValue(item)
+  let headerObj = {}
+  while (headerItems !== null) {
+    const k = headerKey(headerItems.v)
+    const v = headerValue(headerItems.v)
 
-    return { ...acc, [k]: v }
-  }, {});
+    headerObj[k] = v
+    headerItems = headerItems.n
+  }
+  
+  return headerObj
 }
 
 const gunzipResponse = (response) => {
@@ -186,14 +190,15 @@ var capitalizeHeaderName = (input) => input.replace(/(^|[\s-])\S/g, (match) => {
 request :: Request String -> Wish (Error String) (Response String)
 export request = (config) => Wish((bad, good) => #-{
   {Browser}
-    const headers = config.headers
+    let headers = config.headers
     const xhr = new XMLHttpRequest();
     xhr.open(methodStr(config.method), config.url)
     xhr.responseType = "arraybuffer"
 
-    headers.forEach((header) => {
-      xhr.setRequestHeader(headerKey(header), headerValue(header))
-    })
+    while (headers !== null) {
+      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+      headers = headers.n
+    }
 
     if (isJust(config.body)) {
       xhr.send(config.body.__args[0])
@@ -220,13 +225,20 @@ export request = (config) => Wish((bad, good) => #-{
         .filter(s => s.length == 2)
         .map(([key, value]) => Header(key)(value))
 
+      let current = {}
+      let headersList = current
+      responseHeaders.forEach((item) => {
+        current = current.n = { v: item, n: null }
+      })
+      headersList = headersList.n
+
       const buffer = xhr.response
       const ui8 = new Uint8Array(buffer)
 
       if (xhr.status >= 400) {
-        bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: responseHeaders }))
+        bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }))
       } else {
-        good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: responseHeaders })
+        good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
       }
     }
   {/Browser}
@@ -268,18 +280,25 @@ export request = (config) => Wish((bad, good) => #-{
           chunks.push(Buffer.from(chunk, 'binary'));
         });
 
+        let current = {}
+        let headersList = current
+        headers.forEach((item) => {
+          current = current.n = { v: item, n: null }
+        })
+        headersList = headersList.n
+
         response.on('end', () => {
           const buffer = Buffer.concat(chunks)
           const responseBody = (response.headers["content-encoding"] === "gzip")
             ? zlib.gunzipSync(buffer)
             : buffer
           if (response.statusCode >= 400) {
-            bad(BadResponse({ body: responseBody.toString(), status: response.statusCode, headers }))
+            bad(BadResponse({ body: responseBody.toString(), status: response.statusCode, headers: headersList }))
           } else {
             if (response.headers["content-encoding"] === "gzip") {
-              good({ body: responseBody.toString(), status: response.statusCode, headers })
+              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
             } else {
-              good({ body: responseBody.toString(), status: response.statusCode, headers })
+              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
             }
           }
         });
@@ -302,14 +321,15 @@ export request = (config) => Wish((bad, good) => #-{
 requestBytes :: Request ByteArray -> Wish (Error ByteArray) (Response ByteArray)
 export requestBytes = (config) => Wish((bad, good) => #-{
   {Browser}
-    const headers = config.headers
+    let headers = config.headers
     const xhr = new XMLHttpRequest();
     xhr.open(methodStr(config.method), config.url)
     xhr.responseType = "arraybuffer"
 
-    headers.forEach((header) => {
-      xhr.setRequestHeader(headerKey(header), headerValue(header))
-    })
+    while (headers !== null) {
+      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+      headers = headers.n
+    }
 
     if (isJust(config.body)) {
       xhr.send(config.body.__args[0])
@@ -336,13 +356,20 @@ export requestBytes = (config) => Wish((bad, good) => #-{
         .filter(s => s.length == 2)
         .map(([key, value]) => Header(key)(value))
 
+      let current = {}
+      let headersList = current
+      responseHeaders.forEach((item) => {
+        current = current.n = { v: item, n: null }
+      })
+      headersList = headersList.n
+
       const buffer = xhr.response
       const ui8 = new Uint8Array(buffer)
 
       if (xhr.status >= 400) {
-        bad(BadResponse({ body: ui8, status: xhr.status, headers: responseHeaders }))
+        bad(BadResponse({ body: ui8, status: xhr.status, headers: headersList }))
       } else {
-        good({ body: ui8, status: xhr.status, headers: responseHeaders })
+        good({ body: ui8, status: xhr.status, headers: headersList })
       }
     }
   {/Browser}
@@ -380,6 +407,13 @@ export requestBytes = (config) => Wish((bad, good) => #-{
             }
           })
 
+        let current = {}
+        let headersList = current
+        headers.forEach((item) => {
+          current = current.n = { v: item, n: null }
+        })
+        headersList = headersList.n
+
         response.on('data', (chunk) => {
           chunks.push(Buffer.from(chunk, 'binary'));
         });
@@ -391,9 +425,9 @@ export requestBytes = (config) => Wish((bad, good) => #-{
             ? zlib.gunzipSync(ui8)
             : ui8
           if (response.statusCode >= 400) {
-            bad(BadResponse({ body: responseBody, status: response.statusCode, headers }))
+            bad(BadResponse({ body: responseBody, status: response.statusCode, headers: headersList }))
           } else {
-            good({ body: responseBody, status: response.statusCode, headers })
+            good({ body: responseBody, status: response.statusCode, headers: headersList })
           }
         });
       }
