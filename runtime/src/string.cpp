@@ -3,6 +3,9 @@
 #include <gc.h>
 #include <string.h>
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 #include <iostream>
 #include <regex>
 
@@ -27,11 +30,49 @@ char *madlib__string__replace(char *regex, char *replace, char *str) {
   return copy;
 }
 
+
 bool madlib__string__match(char *regex, char *str) {
-  printf("%c -> %c", 'e', toupper('e'));
-  std::cmatch m;
-  return std::regex_match(str, m, std::regex(regex));
+  int errornumber;
+  size_t inputLength = strlen(str);
+  PCRE2_SIZE erroroffset;
+  pcre2_code *re = pcre2_compile(
+    (PCRE2_SPTR)regex,
+    PCRE2_ZERO_TERMINATED,
+    0,
+    &errornumber,
+    &erroroffset,
+    NULL
+  );
+
+  if (re == NULL) {
+    return false;
+  }
+
+  pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+
+  int rc = pcre2_match(
+    re,
+    (PCRE2_SPTR)str,
+    inputLength,
+    0,
+    0,
+    match_data,
+    NULL
+  );
+
+  return rc >= 0;
 }
+
+// bool madlib__string__match(char *regex, char *str) {
+//   std::locale old;
+//   std::locale::global(std::locale("en_US.UTF-8"));
+//   // std::locale::global(old);
+
+//   std::regex r(regex, std::regex_constants::extended);
+//   r.imbue(std::locale("en_US.UTF-8"));
+
+//   return std::regex_match(std::string(str), r);
+// }
 
 bool *madlib__string__internal__eq(char **s1, char **s2) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
@@ -268,6 +309,28 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   memcpy(result, startPtr, bytesToCopy);
   result[bytesToCopy] = '\0';
 
+  return result;
+}
+
+char *madlib__string__pushChar(int32_t c, char* s) {
+  char *encoded = utf8Encode(c);
+  size_t encodedLength = strlen(encoded);
+  size_t stringLength = strlen(s);
+  char *result = (char*)GC_malloc(sizeof(char) * (stringLength + encodedLength + 1));
+  memcpy(result, encoded, encodedLength);
+  memcpy(result + encodedLength, s, stringLength);
+  result[stringLength + encodedLength] = '\0';
+  return result;
+}
+
+char *madlib__string__appendChar(int32_t c, char* s) {
+  char *encoded = utf8Encode(c);
+  size_t encodedLength = strlen(encoded);
+  size_t stringLength = strlen(s);
+  char *result = (char*)GC_malloc(sizeof(char) * (stringLength + encodedLength + 1));
+  memcpy(result, s, stringLength);
+  memcpy(result + stringLength, encoded, encodedLength);
+  result[stringLength + encodedLength] = '\0';
   return result;
 }
 

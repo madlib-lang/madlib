@@ -305,6 +305,24 @@ export match = extern "madlib__string__match"
 
 #endif
 
+#iftarget js
+
+pushChar :: Char -> String -> String
+export pushChar = (c, s) => #- c + s -#
+
+appendChar :: Char -> String -> String
+export appendChar = (c, s) => #- s + c -#
+
+#elseif llvm
+
+pushChar :: Char -> String -> String
+export pushChar = extern "madlib__string__pushChar"
+
+appendChar :: Char -> String -> String
+export appendChar = extern "madlib__string__appendChar"
+
+#endif
+
 // TODO: add the following
 // dropWhile
 // takeWhile

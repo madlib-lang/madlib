@@ -22,6 +22,9 @@ int64_t madlib__string__length(unsigned char *s);
 
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s);
 
+char *madlib__string__pushChar(int32_t c, char* s);
+char *madlib__string__appendChar(int32_t c, char* s);
+
 char *madlib__string__trim(char *s);
 char *madlib__string__trimStart(char *s);
 char *madlib__string__trimEnd(char *s);
