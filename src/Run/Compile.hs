@@ -115,7 +115,7 @@ globalChecks = do
 
 
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly noCache) coverage
   = do
     extraWarnings        <- globalChecks
 
@@ -188,7 +188,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     -- putStrLn (ppShow renamedTable)
                     -- putStrLn (ppShow closureConverted)
                     -- putStrLn (ppShow withTCE)
-                    LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
+                    LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable

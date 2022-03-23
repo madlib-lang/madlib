@@ -40,13 +40,13 @@ import qualified Optimize.EtaReduction as EtaReduction
 import Utils.Path
 
 
-runTests :: String -> Bool -> Target -> IO ()
-runTests entrypoint coverage target = case target of
+runTests :: Bool -> String -> Bool -> Target -> IO ()
+runTests noCache entrypoint coverage target = case target of
   TNode ->
     runNodeTests entrypoint coverage
 
   TLLVM ->
-    runLLVMTests entrypoint coverage
+    runLLVMTests noCache entrypoint coverage
 
   _ ->
     undefined
@@ -70,8 +70,8 @@ runNodeTests entrypoint coverage = do
     Right _ -> return ()
 
 
-runLLVMTests :: String -> Bool -> IO ()
-runLLVMTests entrypoint coverage = do
+runLLVMTests :: Bool -> String -> Bool -> IO ()
+runLLVMTests noCache entrypoint coverage = do
   canonicalEntrypoint       <- canonicalizePath entrypoint
   rootPath                  <- canonicalizePath $ PathUtils.computeRootPath entrypoint
   Just wishModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
@@ -125,7 +125,7 @@ runLLVMTests entrypoint coverage = do
             let reduced            = EtaReduction.reduceTable renamedTable
             let closureConverted   = ClosureConvert.convertTable reduced
             let withTCE            = TCE.resolveTable closureConverted
-            LLVM.generateTable outputPath rootPath withTCE mainTestPath
+            LLVM.generateTable noCache outputPath rootPath withTCE mainTestPath
 
             testOutput <- case DistributionSystem.buildOS of
               DistributionSystem.Windows -> do
