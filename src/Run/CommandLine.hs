@@ -22,8 +22,9 @@ data Command
       , compileTarget :: Target
       , compileJson :: Bool
       , compileTestFilesOnly :: Bool
+      , noCache :: Bool
       }
-  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target }
+  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target, noCache :: Bool }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -78,6 +79,10 @@ parseJson = switch (long "json" <> help "compiles to a JSON ast with types" <> s
 parseTestFilesOnly :: Parser Bool
 parseTestFilesOnly =
   switch (long "test-files-only" <> help "compiles only test files when compiling a path" <> showDefault)
+
+parseNoCache :: Parser Bool
+parseNoCache =
+  switch (long "no-cache" <> help "recompiles all files and skip cache for llvm backend" <> showDefault)
 
 
 parseTargetOption :: ReadM Target
@@ -141,6 +146,7 @@ parseCompile =
     <*> parseTarget
     <*> parseJson
     <*> parseTestFilesOnly
+    <*> parseNoCache
 
 parseCoverage :: Parser Bool
 parseCoverage = switch
@@ -155,7 +161,7 @@ parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget
+parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget <*> parseNoCache
 
 
 parseRunInput :: Parser FilePath
