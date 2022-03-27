@@ -70,6 +70,8 @@ import qualified Distribution.System           as DistributionSystem
 import qualified Data.Text.Lazy.IO as Text
 import Debug.Trace
 import qualified Data.Functor.Constant as Operand
+import GHC.IO.Handle
+import GHC.IO.Handle.FD
 
 
 
@@ -4638,7 +4640,7 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
     Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
       Prelude.putStrLn $ " -" <> "\x1b[90m skipping cached module '" <> displayModulePath <> "'\x1b[0m"
 
-  return outputPath
+  return $ "\"" <> outputPath <> "\""
 
 
 makeExecutablePath :: FilePath -> FilePath
@@ -4715,7 +4717,7 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lpcre2-8  -lcurl -lz -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
+        <> " -lruntime -lmman -lgc -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
 
     _ ->
       callCommand $
@@ -4723,4 +4725,4 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lz -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath

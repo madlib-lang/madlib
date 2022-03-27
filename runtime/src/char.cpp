@@ -1,6 +1,7 @@
 #include "char.hpp"
 
 #include <gc.h>
+#include <string.h>
 #include "string.hpp"
 
 #ifdef __cplusplus

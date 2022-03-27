@@ -44,6 +44,8 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-zlib
             base-devel
             msys2-devel
             unzip
@@ -52,7 +54,6 @@ jobs:
       - name: Install LLVM 9
         run: |
           curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
-          ls -l
           mkdir LLVM
           cd LLVM
           unzip ../LLVM.zip
@@ -86,8 +87,8 @@ jobs:
         shell: msys2 {0}
         run: |
           pacman --noconfirm -S mingw-w64-x86_64-llvm mingw-w64-x86_64-clang mingw-w64-x86_64-gcc mingw-w64-x86_64-libc++ mingw-w64-x86_64-libc++abi
-          TARGET_WINDOWS="ON" ./scripts/build-runtime-libs
-          LLVM_AR="llvm-ar" ./scripts/build-runtime
+          TARGET="WIN_X64" ./scripts/build-runtime-libs
+          TARGET="WIN_X64" CXX="g++" ./scripts/build-runtime
 
       - name: Bundle archive
         shell: msys2 {0}

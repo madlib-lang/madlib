@@ -1,4 +1,5 @@
 #include <gc.h>
+#include <string.h>
 
 #include "event-loop.hpp"
 #include "list.hpp"
