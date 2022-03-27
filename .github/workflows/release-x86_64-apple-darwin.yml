@@ -46,7 +46,7 @@ jobs:
         run: stack build
 
       - name: Install automake
-        run: brew install autoconf automake
+        run: brew install autoconf automake nasm libtool
 
       - name: Build runtime
         run: |

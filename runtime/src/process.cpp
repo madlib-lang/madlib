@@ -32,7 +32,7 @@ void __main__init__(int argc, char **argv) {
   ARGC = argc;
   ARGV = argv;
 
-  size_t size = 1l * 1024 * 1024 * 1024 * 1024;  // 1TB
+  size_t size = 64 * 1024 * 1024;  // 64MB
   char *newStack = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   char *stackBottom = newStack + size;
   GC_stackbottom = stackBottom;

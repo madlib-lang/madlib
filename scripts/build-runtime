@@ -7,44 +7,47 @@ mkdir -p "$BUILD_DIR"
 rm -f "$LIB_TARGET"
 
 
-if [ "$TARGET" = "MACOS_ARM" ]
+if [ "$TARGET" = "MACOS_ARM64" ]
 then
   as "${SRC_DIR}stack/stack-arm64-apple-darwin.s" -o "${BUILD_DIR}stack.o"
-elif [ "$TARGET" = "MACOS_X86" ]
+elif [ "$TARGET" = "MACOS_X64" ]
 then
   nasm -f macho64 "${SRC_DIR}stack/stack-x64-apple-darwin.s" -o "${BUILD_DIR}stack.o"
-elif [ "$TARGET" = "LINUX_X86" ]
+elif [ "$TARGET" = "LINUX_X64" ]
 then
   nasm -f elf64 "${SRC_DIR}stack/stack-x64-linux.s" -o "${BUILD_DIR}stack.o"
+elif [ "$TARGET" = "WIN_X64" ]
+then
+  nasm -f win64 "${SRC_DIR}stack/stack-x64-win64.s" -o "${BUILD_DIR}stack.o"
 fi
 
 if [ "$CXX" = "g++" ]
 then
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}url.o" "${SRC_DIR}url.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}tuple.o" "${SRC_DIR}tuple.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}math.o" "${SRC_DIR}math.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}char.o" "${SRC_DIR}char.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}url.o" "${SRC_DIR}url.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}tuple.o" "${SRC_DIR}tuple.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}math.o" "${SRC_DIR}math.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}char.o" "${SRC_DIR}char.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
+  g++ -DCURL_STATICLIB -DPCRE2_STATIC -g -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
 
   gcc-ar rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
@@ -74,31 +77,31 @@ then
     "${BUILD_DIR}sha256.o"\
     "${BUILD_DIR}md5.o"
 else
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}url.o" "${SRC_DIR}url.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}tuple.o" "${SRC_DIR}tuple.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}math.o" "${SRC_DIR}math.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}char.o" "${SRC_DIR}char.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
-  clang++ -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}url.o" "${SRC_DIR}url.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}tuple.o" "${SRC_DIR}tuple.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}math.o" "${SRC_DIR}math.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}char.o" "${SRC_DIR}char.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}crypto.o" "${SRC_DIR}crypto.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}md5.o" "${SRC_DIR}md5.cpp"
+  clang++ -DCURL_STATICLIB -DPCRE2_STATIC -O2 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}sha256.o" "${SRC_DIR}sha256.cpp"
 
   eval $LLVM_AR rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\

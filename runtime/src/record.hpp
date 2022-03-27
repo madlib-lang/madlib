@@ -1,6 +1,7 @@
 #ifndef RECORD_H
 #define RECORD_H
 
+#include <stdint.h>
 #include <inttypes.h>
 
 #ifdef __cplusplus

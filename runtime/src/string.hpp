@@ -1,6 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <stdint.h>
 #include "apply-pap.hpp"
 #include "list.hpp"
 #include "maybe.hpp"

@@ -2,6 +2,7 @@
 #define DICTIONARY_H
 
 #include <iostream>
+#include <stdint.h>
 #include "eq.hpp"
 #include "comparable.hpp"
 #include "list.hpp"

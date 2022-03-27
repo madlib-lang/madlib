@@ -4,7 +4,7 @@ mkdir -p runtime/lib
 cd .buildlibs
 
 # install libuv
-if [ "$TARGET" = "WINDOWS" ]
+if [ "$TARGET" = "WIN_X64" ]
 then
   # For windows we need to pull a commit that includes a fix related to how mingw changed headers recently
   wget https://github.com/libuv/libuv/archive/0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2.zip
@@ -32,40 +32,50 @@ LIBGC_VERSION="8.2.0"
 # install libgc
 wget "https://github.com/ivmai/bdwgc/archive/refs/tags/v${LIBGC_VERSION}.zip"
 unzip "v${LIBGC_VERSION}.zip" -d libgc
-cd "libgc/bdwgc-${LIBGC_VERSION}" && git clone git@github.com:ivmai/libatomic_ops.git && make -f Makefile.direct
+cd "libgc/bdwgc-${LIBGC_VERSION}" && git clone https://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
 cd ../..
 cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
 cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
 
 
 # install libcurl
-if [ "$TARGET" = "WINDOWS" ]
-then
-  # TODO:
-  echo "not implemented"
-elif [ "$TARGET" = "LINUX_X86" ]
+if [ "$TARGET" = "WIN_X64" ]
 then
   wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
   unzip curl-7.81.0.zip
   cd curl-7.81.0
 
-  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
+  CURL_CC=gcc OPENSSL_PATH=/mingw64/ ZLIB_PATH=/mingw64/ make mingw32 CFG="-ssl-zlib"
+
+  cd ..
+  cp curl-7.81.0/lib/libcurl.a ../runtime/lib/
+  cp /mingw64/lib/libssl.a ../runtime/lib/
+  cp /mingw64/lib/libcrypto.a ../runtime/lib/
+elif [ "$TARGET" = "LINUX_X64" ]
+then
+  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
+  unzip curl-7.81.0.zip
+  cd curl-7.81.0
+  # TODO: remove secure transport and use openssl instead
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2
   make -j10
   make install
   cd ..
+  cp /usr/lib/x86_64-linux-gnu/libcrypto.a ../runtime/lib/
+  cp /usr/lib/x86_64-linux-gnu/libssl.a ../runtime/lib/
   cp -R curl-7.81.0/build/* ../runtime/
-elif [ "$TARGET" = "MACOS_X86" ]
+elif [ "$TARGET" = "MACOS_X64" ]
 then
   wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
   unzip curl-7.81.0.zip
   cd curl-7.81.0
 
-  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
   make -j10
   make install
   cd ..
   cp -R curl-7.81.0/build/* ../runtime/
-elif [ "$TARGET" = "MACOS_ARM" ]
+elif [ "$TARGET" = "MACOS_ARM64" ]
 then
   wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
   unzip curl-7.81.0.zip
@@ -102,6 +112,20 @@ cd zlib-1.2.11
 make
 cp libz.a ../../runtime/lib/
 cd ..
+
+
+#install mman for win64
+if [ "$TARGET" = "WIN_X64" ]
+then
+  wget https://github.com/alitrack/mman-win32/archive/refs/heads/master.zip
+  unzip master.zip
+  cd mman-win32-master
+  ./configure
+  make
+  cp libmman.a ../../runtime/lib/
+  mkdir -p ../../runtime/include/sys
+  cp mman.h ../../runtime/include/sys/
+fi
 
 
 cd ..

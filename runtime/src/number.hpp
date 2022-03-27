@@ -1,6 +1,7 @@
 #ifndef NUMBERS_H
 #define NUMBERS_H
 
+#include <stdint.h>
 #include <iostream>
 #include "maybe.hpp"
 

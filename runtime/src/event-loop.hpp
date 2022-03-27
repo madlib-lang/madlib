@@ -1,6 +1,7 @@
 #ifndef EVENT_LOOP_H
 #define EVENT_LOOP_H
 
+#include <stdint.h>
 #include <uv.h>
 #include "apply-pap.hpp"
 
