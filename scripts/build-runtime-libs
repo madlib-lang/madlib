@@ -38,6 +38,17 @@ cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
 cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
 
 
+# install libz
+wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.zip
+unzip v1.2.11.zip
+cd zlib-1.2.11
+./configure
+make
+make install
+cp libz.a ../../runtime/lib/
+cd ..
+
+
 # install libcurl
 if [ "$TARGET" = "WIN_X64" ]
 then
@@ -56,13 +67,30 @@ then
   wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
   unzip curl-7.81.0.zip
   cd curl-7.81.0
-  # TODO: remove secure transport and use openssl instead
+
   ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2
   make -j10
   make install
+
   cd ..
+
   cp /usr/lib/x86_64-linux-gnu/libcrypto.a ../runtime/lib/
   cp /usr/lib/x86_64-linux-gnu/libssl.a ../runtime/lib/
+  cp -R curl-7.81.0/build/* ../runtime/
+elif [ "$TARGET" = "MUSL_X64" ]
+then
+  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
+  unzip curl-7.81.0.zip
+  cd curl-7.81.0
+
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2 --with-zlib="../zlib-1.2.11"
+  make -j10
+  make install
+
+  cd ..
+
+  cp /usr/lib/libcrypto.a ../runtime/lib/
+  cp /usr/lib/libssl.a ../runtime/lib/
   cp -R curl-7.81.0/build/* ../runtime/
 elif [ "$TARGET" = "MACOS_X64" ]
 then
@@ -73,7 +101,9 @@ then
   ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
   make -j10
   make install
+
   cd ..
+
   cp -R curl-7.81.0/build/* ../runtime/
 elif [ "$TARGET" = "MACOS_ARM64" ]
 then
@@ -102,15 +132,6 @@ cd pcre2-10.39
 make
 cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
-cd ..
-
-# install libz
-wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.zip
-unzip v1.2.11.zip
-cd zlib-1.2.11
-./configure
-make
-cp libz.a ../../runtime/lib/
 cd ..
 
 

@@ -1,13 +1,13 @@
 FROM alpine:3.13.0 as build-musl-runtime
 
-RUN apk add --update git wget unzip cmake musl-dev build-base libuv-static
+RUN apk add --update git wget unzip cmake musl-dev build-base libuv-static bash openssl-dev openssl-libs-static nasm zlib-dev zlib-static
 
 COPY . .
 
 # build runtime
-RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
+RUN TARGET="MUSL_X64" ./scripts/build-runtime-libs
 RUN cp /usr/lib/libuv.a runtime/lib/
-RUN CXX="g++" ./scripts/build-runtime
+RUN TARGET="MUSL_X64" CXX="g++" ./scripts/build-runtime
 
 
 
