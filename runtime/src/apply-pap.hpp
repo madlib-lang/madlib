@@ -2,6 +2,7 @@
 #define APPLY_PAP_H
 
 #include <math.h>
+#include <stdint.h>
 
 typedef struct PAPEnv_1 {
   void *arg0;

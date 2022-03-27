@@ -5,6 +5,7 @@
 #include <gc.h>
 #include <stdlib.h>
 #include <uv.h>
+#include <string.h>
 
 #include "event-loop.hpp"
 #include "list.hpp"

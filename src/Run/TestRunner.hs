@@ -129,7 +129,7 @@ runLLVMTests entrypoint coverage = do
 
             testOutput <- case DistributionSystem.buildOS of
               DistributionSystem.Windows -> do
-                try $ callCommand ".tests\runTests"
+                try $ callCommand "\".tests\\runTests\""
 
               _ -> do
                 try $ callCommand ".tests/runTests"

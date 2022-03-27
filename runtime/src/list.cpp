@@ -1,6 +1,7 @@
 #include "list.hpp"
 
 #include <gc.h>
+#include <string.h>
 
 #include <iostream>
 

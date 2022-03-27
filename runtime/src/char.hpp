@@ -2,6 +2,7 @@
 #define CHAR_H
 
 #include <iostream>
+#include <stdint.h>
 
 
 #ifdef __cplusplus

@@ -1,6 +1,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include <stdint.h>
 #include "apply-pap.hpp"
 #include "record.hpp"
 

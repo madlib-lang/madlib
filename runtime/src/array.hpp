@@ -2,6 +2,7 @@
 #define ARRAY_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include "list.hpp"
 #include "eq.hpp"

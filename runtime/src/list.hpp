@@ -4,6 +4,7 @@
 #include "eq.hpp"
 #include "inspect.hpp"
 #include "apply-pap.hpp"
+#include <stdint.h>
 
 typedef struct madlib__list__Node {
   void *value;

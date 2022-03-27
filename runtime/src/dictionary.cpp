@@ -1,4 +1,5 @@
 #include <gc.h>
+#include <string.h>
 
 #include "dictionary.hpp"
 #include "tuple.hpp"

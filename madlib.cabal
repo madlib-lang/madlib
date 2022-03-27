@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b6846c674c7e3963ba97958666221c115a55e7c54423aa4a8b5de417a5e33056
+-- hash: 617efffecc193f530df33767eee380b163d0b22ccfb1417ae95ac0cc86fb364b
 
 name:           madlib
 version:        0.11.0
@@ -147,6 +147,7 @@ library
     , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel ==3.2.2.0
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
@@ -274,6 +275,7 @@ executable madlib
     , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel ==3.2.2.0
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
@@ -326,6 +328,7 @@ test-suite madlib-test
     , madlib
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel ==3.2.2.0
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0

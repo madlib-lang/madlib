@@ -60,13 +60,15 @@ import qualified Utils.Hash                    as Hash
 import           Utils.List
 import qualified Data.Tuple                    as Tuple
 import           Explain.Location
-import           System.FilePath (takeDirectory, takeExtension, joinPath, takeFileName, dropExtension)
+import           System.FilePath (takeDirectory, takeExtension, normalise, joinPath, takeFileName, dropExtension)
 import qualified LLVM.AST.Linkage              as Linkage
 import           System.Directory
 import qualified Distribution.System           as DistributionSystem
 import qualified Data.Text.Lazy.IO as Text
 import Debug.Trace
 import qualified Data.Functor.Constant as Operand
+import GHC.IO.Handle
+import GHC.IO.Handle.FD
 
 
 
@@ -4555,10 +4557,11 @@ generateTableModules generatedTable symbolTable astTable entrypoint = case Map.l
 
 compileModule :: FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
 compileModule outputFolder rootPath astPath astModule = do
-  let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
+  let outputPath = normalise $ Path.computeLLVMTargetPath outputFolder rootPath astPath
 
-  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $ do
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
+    hFlush stdout
 
   -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
   --   Text.putStrLn (ppllvm astModule)
@@ -4601,7 +4604,7 @@ compileModule outputFolder rootPath astPath astModule = do
         createDirectoryIfMissing True $ takeDirectory outputPath
         writeObjectToFile target (File outputPath) mod''
 
-  return outputPath
+  return $ "\"" <> outputPath <> "\""
 
 
 makeExecutablePath :: FilePath -> FilePath
@@ -4650,7 +4653,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lpcre2-8  -lcurl -lz -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
+        <> " -lruntime -lmman -lgc -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
 
     _ ->
       callCommand $
@@ -4658,4 +4661,4 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lz -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath
