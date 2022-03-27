@@ -404,8 +404,10 @@ generateReportSuiteEndMessage = pipe(
 )
 
 
-runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
-runTestSuite = (suitePath, testsInSuite) => pipe(
+runTestSuite :: String -> List (Wish.Wish String String) -> List (List (Wish.Wish String String)) -> Wish.Wish {} TestReport
+runTestSuite = (suitePath, testsInSuite, batchTests) => pipe(
+  List.flatten,
+  List.concat(testsInSuite),
   map(Wish.bichain(pipe(failureReport, of), pipe(successReport, of))),
   Wish.parallel,
   map(
@@ -414,12 +416,15 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
       updateMessage((str) => `${suitePath}\n${str}${generateReportSuiteEndMessage(testsInSuite)}`)
     )
   )
-)(testsInSuite)
+)(batchTests)
 
 
-runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> {}
+runAllTestSuites :: List #[String, List (Wish.Wish String String), List (List (Wish.Wish String String))] -> {}
 export runAllTestSuites = (testSuites) => pipe(
-  map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
+  map(where {
+    #[description, tests, batchTests] =>
+      runTestSuite(description, tests, batchTests)
+  }),
   Wish.parallel,
   map(List.reduce(mergeReports, EMPTY_REPORT)),
   Wish.fulfill(
