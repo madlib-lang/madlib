@@ -83,7 +83,7 @@ then
   unzip curl-7.81.0.zip
   cd curl-7.81.0
 
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2 --with-zlib="../zlib-1.2.11"
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2 --with-zlib="$(pwd)/../zlib-1.2.11"
   make -j10
   make install
 

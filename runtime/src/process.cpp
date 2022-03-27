@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+#ifndef GLOB_NOMAGIC
+#define GLOB_NOMAGIC 0
+#endif
+
 extern char **environ;
 
 extern void __main__start__();
