@@ -16,6 +16,7 @@ import           System.Directory
 import           Text.Show.Pretty
 import           Parse.Madlib.AST
 import           AST.Source
+import qualified AST.Solved                    as Slv
 import qualified Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import qualified Generate.LLVM.LLVM            as LLVM
@@ -38,6 +39,7 @@ import           Optimize.ToCore
 import qualified Optimize.TCE as TCE
 import qualified Optimize.EtaReduction as EtaReduction
 import Utils.Path
+import Infer.Type
 
 
 runTests :: Bool -> String -> Bool -> Target -> IO ()
@@ -81,7 +83,7 @@ runLLVMTests noCache entrypoint coverage = do
   astTable                  <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
   Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
   let outputPath              = "./.tests/runTests"
-      astTableWithTestExports = (addTestExports <$>) <$> astTable
+      astTableWithTestExports = (addTestExportsAndWishImport wishModulePath <$>) <$> astTable
       mainTestPath            =
         if takeExtension canonicalEntrypoint == "" then
           joinPath [canonicalEntrypoint, "__TestMain__.mad"]
@@ -115,12 +117,14 @@ runLLVMTests noCache entrypoint coverage = do
           error $ ppShow err
 
         Right (solvedTable, InferState { errors }) -> do
+          let tableWithBatchedTests = addBatchTestExports wishModulePath <$> solvedTable
           if not (null errors) then do
+            putStrLn $ ppShow errors
             formattedErrors <- mapM (Explain.format readFile False) errors
             let fullError = List.intercalate "\n\n\n" formattedErrors
             putStrLn fullError >> Exit.exitFailure
           else do
-            let postProcessedTable = tableToCore False solvedTable
+            let postProcessedTable = tableToCore False tableWithBatchedTests
             let renamedTable       = Rename.renameTable postProcessedTable
             let reduced            = EtaReduction.reduceTable renamedTable
             let closureConverted   = ClosureConvert.convertTable reduced
@@ -156,21 +160,14 @@ generateTestSuiteImport (index, path) =
   in  Source emptyArea TargetLLVM (DefaultImport (Source emptyArea TargetLLVM importName) path path)
 
 
--- fulfill(identity, showResult, parallel(__TestSuite1__.__tests__))
-generateRunTestSuiteExp :: Int -> FilePath -> Exp
-generateRunTestSuiteExp index testSuitePath =
-  let testsAccess = Source emptyArea TargetLLVM (Access (Source emptyArea TargetLLVM (Var $ generateTestSuiteName index)) (Source emptyArea TargetLLVM (Var ".__tests__")))
-  in  Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "runTestSuite")) [
-        Source emptyArea TargetLLVM (LStr $ "\"" <> testSuitePath <> "\""),
-        testsAccess
-      ])
-
 generateTestSuiteItemExp :: Int -> FilePath -> ListItem
 generateTestSuiteItemExp index testSuitePath =
   let testsAccess = Source emptyArea TargetLLVM (Access (Source emptyArea TargetLLVM (Var $ generateTestSuiteName index)) (Source emptyArea TargetLLVM (Var ".__tests__")))
+      batchTestsAccess = Source emptyArea TargetLLVM (Access (Source emptyArea TargetLLVM (Var $ generateTestSuiteName index)) (Source emptyArea TargetLLVM (Var ".__batch_tests__")))
   in  Source emptyArea TargetLLVM (ListItem (Source emptyArea TargetLLVM (TupleConstructor [
         Source emptyArea TargetLLVM (LStr $ "\"" <> testSuitePath <> "\""),
-        testsAccess
+        testsAccess,
+        batchTestsAccess
       ])))
 
 generateTestSuiteListExp :: [ListItem] -> Exp
@@ -183,6 +180,7 @@ generateStaticTestMainImports (wishModulePath, listModulePath, testModulePath) =
       testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runAllTestSuites"] "Test" testModulePath)
   in  [wishImports, listImports, testImports]
 
+
 generateRunTestSuitesExp :: Exp -> Exp
 generateRunTestSuitesExp testSuites =
   Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "runAllTestSuites")) [testSuites])
@@ -193,7 +191,6 @@ generateTestMainAST preludeModulePaths suitePaths =
   let indexedSuitePaths = zip [0..] suitePaths
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
-      runTestSuiteExps  = uncurry generateRunTestSuiteExp <$> indexedSuitePaths
       testSuiteItems    = uncurry generateTestSuiteItemExp <$> indexedSuitePaths
       testSuiteList     = generateTestSuiteListExp testSuiteItems
       runAllTestSuites  = generateRunTestSuitesExp testSuiteList
@@ -217,18 +214,79 @@ generateTestAssignment index exp = case exp of
     (exp, Nothing)
 
 
-addTestExports :: AST -> AST
-addTestExports ast@AST{ apath = Just apath } =
+wishImport :: FilePath -> Import
+wishImport wishModulePath =
+  Source emptyArea TargetLLVM (DefaultImport (Source emptyArea TargetLLVM "Wish") "Wish" wishModulePath)
+
+
+addTestExportsAndWishImport :: FilePath -> AST -> AST
+addTestExportsAndWishImport wishModulePath ast@AST{ apath = Just apath } =
   if ".spec.mad" `List.isSuffixOf` apath then
-    let exps           = aexps ast
-        assigned       = uncurry generateTestAssignment <$> zip [0..] exps
-        exps'          = fst <$> assigned
-        namesForExport = Maybe.mapMaybe snd assigned
-        testsExport    = Source emptyArea TargetLLVM (Export (Source emptyArea TargetLLVM (Assignment "__tests__" (Source emptyArea TargetLLVM (ListConstructor (
+    let exps             = aexps ast
+        assigned         = uncurry generateTestAssignment <$> zip [0..] exps
+        exps'            = fst <$> assigned
+        namesForExport   = Maybe.mapMaybe snd assigned
+        testsExport      = Source emptyArea TargetLLVM (Export (Source emptyArea TargetLLVM (Assignment "__tests__" (Source emptyArea TargetLLVM (ListConstructor (
             Source emptyArea TargetLLVM . ListItem . Source emptyArea TargetLLVM . Var <$> namesForExport
           ))))))
-    in  ast { aexps = exps' ++ [testsExport] }
+        -- that export is needed for type checking or else we get an error that the name is not exported
+        batchTestsExport = Source emptyArea TargetLLVM (Export (Source emptyArea TargetLLVM (Assignment "__batch_tests__" (Source emptyArea TargetLLVM (ListConstructor [])))))
+    in  ast { aexps = exps' ++ [testsExport, batchTestsExport] }
   else
     ast
-addTestExports _ =
+addTestExportsAndWishImport _ _ =
+  undefined
+
+
+generateBatchTestAssignment :: Int -> Slv.Exp -> (Slv.Exp, Maybe (String, Qual Type))
+generateBatchTestAssignment index exp = case exp of
+  Slv.Typed qt@(_ :=>
+    (TApp
+      (TCon (TC "List" (Kfun Star Star)) "prelude")
+      (TApp
+        (TApp (TCon (TC "Wish" wishKind) wishPath) (TCon (TC "String" _) _))
+        (TCon (TC "String" _) _))))
+    area
+    _ ->
+      let assignmentName = "__batch_t" <> show index <> "__"
+      in (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (assignmentName, qt))
+
+  _ ->
+    (exp, Nothing)
+
+
+batchTestType :: FilePath -> Type
+batchTestType wishPath =
+  TApp
+    (TCon (TC "List" (Kfun Star Star)) "prelude")
+    (TApp (TApp (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath) tStr) tStr)
+
+
+addBatchTestExports :: FilePath -> Slv.AST -> Slv.AST
+addBatchTestExports wishPath ast@Slv.AST{ Slv.apath = Just apath, Slv.aexps } =
+  if ".spec.mad" `List.isSuffixOf` apath && not (null aexps) then
+    let exps              = init . init $ aexps
+        testsExport       = last . init $ aexps
+        assigned          = uncurry generateBatchTestAssignment <$> zip [0..] exps
+        exps'             = fst <$> assigned
+        namesForExport    = Maybe.mapMaybe snd assigned
+        batchTestsExport  =
+          Slv.Typed
+            ([] :=> tListOf (batchTestType wishPath))
+            emptyArea
+            (Slv.Export
+              (Slv.Typed
+                ([] :=> tListOf (batchTestType wishPath))
+                emptyArea
+                (Slv.Assignment
+                  "__batch_tests__"
+                  (Slv.Typed
+                    ([] :=> tListOf (batchTestType wishPath))
+                    emptyArea
+                    (Slv.ListConstructor
+                      (Slv.Typed ([] :=> batchTestType wishPath) emptyArea . Slv.ListItem . Slv.Typed ([] :=> batchTestType wishPath) emptyArea . (`Slv.Var` False) <$> (fst <$> namesForExport)))))))
+    in  ast { Slv.aexps = exps' ++ [testsExport, batchTestsExport] }
+  else
+    ast
+addBatchTestExports _ _ =
   undefined
