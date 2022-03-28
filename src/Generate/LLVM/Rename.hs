@@ -469,20 +469,57 @@ populateInitialEnv exps env = case exps of
     env
 
 
-rewriteDefaultImports :: Env -> [Import] -> [Import]
-rewriteDefaultImports env imports = case imports of
-  (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) absPath relPath) : next) ->
-    let usedNames      = Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
-        hashFromModule = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
-        hashedNames    = Set.toList $ Set.map (Untyped area' metadata' . addHashToName hashFromModule) usedNames
-        next'          = rewriteDefaultImports env next
-    in  Untyped area metadata (NamedImport hashedNames absPath relPath) : next'
+findAlreadyImportedNamesFromModuleWithPath :: [Import] -> FilePath -> [String]
+findAlreadyImportedNamesFromModuleWithPath imports path = case imports of
+  (Untyped area metadata (NamedImport names relPath absPath) : next) ->
+    let current =
+          if absPath == path then
+            getValue <$> names
+          else
+            []
+    in  current ++ findAlreadyImportedNamesFromModuleWithPath next path
 
-  (imp : next) ->
-    imp : rewriteDefaultImports env next
+  (_ : next) ->
+    findAlreadyImportedNamesFromModuleWithPath next path
 
   [] ->
     []
+
+
+rewriteDefaultImports :: Env -> [Import] -> [Import] -> [Import]
+rewriteDefaultImports env allImports imports = case imports of
+  (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) relPath absPath) : next) ->
+    let alreadyImportedNames = findAlreadyImportedNamesFromModuleWithPath allImports absPath
+        usedNames            = Set.filter (`notElem` alreadyImportedNames) $ Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
+        hashFromModule       = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
+        hashedNames          = Set.map (addHashToName hashFromModule) usedNames
+        hashedNames'         = Set.filter (`notElem` alreadyImportedNames) hashedNames
+        importNames          = Set.toList $ Set.map (Untyped area' metadata') hashedNames'
+        rewrittenImport      = Untyped area metadata (NamedImport importNames relPath absPath)
+        next'                = rewriteDefaultImports env (rewrittenImport : allImports) next
+    in  rewrittenImport : next'
+
+  (imp : next) ->
+    imp : rewriteDefaultImports env allImports next
+
+  [] ->
+    []
+
+
+dedupeNamedImports :: [String] -> [Import] -> [Import]
+dedupeNamedImports alreadyImported imports = case imports of
+  (Untyped area metadata (NamedImport names relPath absPath) : next) ->
+    -- TODO: we don't need to consider where the import comes from, because it's already hashed and its origin does not matter anymore
+    -- as it's already got a unique name.
+    let current = Untyped area metadata (NamedImport (filter ((`notElem` alreadyImported) . getValue) names) relPath absPath)
+    in  current : dedupeNamedImports (alreadyImported ++ (getValue <$> names)) next
+
+  (imp : next) ->
+    imp : dedupeNamedImports alreadyImported next
+
+  [] ->
+    []
+
 
 
 renameAST :: Env -> AST -> (AST, Env)
@@ -498,8 +535,9 @@ renameAST env ast =
       (renamedExps, _)             = renameTopLevelExps env''''' $ aexps ast
       (renamedInstances, _)        = renameInstances env''''' (ainstances ast)
 
-      rewrittenImports             = rewriteDefaultImports env''''' renamedImports
-  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = rewrittenImports }, env)
+      rewrittenImports             = rewriteDefaultImports env''''' renamedImports renamedImports
+      dedupedImports               = dedupeNamedImports [] rewrittenImports
+  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = dedupedImports }, env)
 
 renameTable :: Table -> Table
 renameTable table =
