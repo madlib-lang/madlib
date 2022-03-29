@@ -3,7 +3,6 @@
 #include <gc.h>
 #include <sys/mman.h>
 #include <uv.h>
-#include <glob.h>
 #include <cstring>
 
 #include "apply-pap.hpp"
@@ -11,12 +10,20 @@
 #include "string.hpp"
 #include "tuple.hpp"
 
+#ifndef __MINGW32__
+  #include <glob.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifndef GLOB_NOMAGIC
 #define GLOB_NOMAGIC 0
+#endif
+
+#ifndef MAP_NORESERVE
+#define MAP_NORESERVE 0
 #endif
 
 extern char **environ;
@@ -180,28 +187,39 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
   stdoutPipe->data = data;
   stderrPipe->data = data;
 
-  glob_t globBuffer;
-  globBuffer.gl_offs = 1;
+
   char **args;
 
   int64_t argc = madlib__list__length(argList);
 
-  if (argc > 0) {
-    for (int i = 0; i < argc; i++) {
-      if (i == 0) {
-        glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK, NULL, &globBuffer);
-      } else {
-        glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK | GLOB_APPEND, NULL, &globBuffer);
-      }
+  #ifndef __MINGW32__
+    glob_t globBuffer;
+    globBuffer.gl_offs = 1;
+    if (argc > 0) {
+      for (int i = 0; i < argc; i++) {
+        if (i == 0) {
+          glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK, NULL, &globBuffer);
+        } else {
+          glob(*((const char**)argList->value), GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK | GLOB_APPEND, NULL, &globBuffer);
+        }
 
+        argList = argList->next;
+      }
+      globBuffer.gl_pathv[0] = command;
+      args = globBuffer.gl_pathv;
+    } else {
+      args = (char**)GC_malloc(sizeof(char*));
+      args[0] = command;
+    }
+  #else
+    args = (char**)GC_malloc(sizeof(char*) * (argc + 1));
+    args[0] = command;
+
+    for (int i = 0; i < argc; i++) {
+      args[i + 1] = *((char**) argList->value);
       argList = argList->next;
     }
-    globBuffer.gl_pathv[0] = command;
-    args = globBuffer.gl_pathv;
-  } else {
-    args = (char**)GC_malloc(sizeof(char*));
-    args[0] = command;
-  }
+  #endif // __MINGW32__
 
   uv_pipe_init(getLoop(), stdoutPipe, 0);
   uv_pipe_init(getLoop(), stderrPipe, 0);
@@ -222,9 +240,11 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
 
   int spawnResult = uv_spawn(getLoop(), childReq, options);
 
-  if (argc > 0) {
-    globfree(&globBuffer);
-  }
+  #ifndef __MINGW32__
+    if (argc > 0) {
+      globfree(&globBuffer);
+    }
+  #endif // __MINGW32__
 
   if (spawnResult) {
     int64_t *boxedStatus = (int64_t*)GC_malloc(sizeof(int64_t));

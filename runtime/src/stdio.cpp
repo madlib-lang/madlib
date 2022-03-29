@@ -132,30 +132,30 @@ void allocBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
 
 void madlib__stdio__getLine(PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_tty_t *stdin = (uv_tty_t *)GC_malloc_uncollectable(sizeof(uv_tty_t));
+  uv_tty_t *stdIn = (uv_tty_t *)GC_malloc_uncollectable(sizeof(uv_tty_t));
   
   StdinData_t *data = (StdinData_t *)GC_malloc_uncollectable(sizeof(StdinData_t));
   data->callback = callback;
   data->currentSize = 0;
 
-  stdin->data = data;
+  stdIn->data = data;
 
-  uv_tty_init(getLoop(), stdin, STDIN, 1);
-  uv_read_start((uv_stream_t*)stdin, allocBuffer, onStdinReadLine);
+  uv_tty_init(getLoop(), stdIn, STDIN, 1);
+  uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinReadLine);
 }
 
 void madlib__stdio__get(PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_tty_t *stdin = (uv_tty_t *)GC_malloc_uncollectable(sizeof(uv_tty_t));
+  uv_tty_t *stdIn = (uv_tty_t *)GC_malloc_uncollectable(sizeof(uv_tty_t));
   
   StdinData_t *data = (StdinData_t *)GC_malloc_uncollectable(sizeof(StdinData_t));
   data->callback = callback;
   data->currentSize = 0;
 
-  stdin->data = data;
+  stdIn->data = data;
 
-  uv_tty_init(getLoop(), stdin, STDIN, 1);
-  uv_read_start((uv_stream_t*)stdin, allocBuffer, onStdinRead);
+  uv_tty_init(getLoop(), stdIn, STDIN, 1);
+  uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinRead);
 }
 
 void madlib__stdio__put(char *str) {

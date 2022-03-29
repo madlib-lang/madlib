@@ -1,5 +1,5 @@
-  global    madlib__stack__init
-  section   .text
+global    madlib__stack__init
+section   .text
 
 ; takes new stack address in rdi, and a function pointer in rsi
 madlib__stack__init:
