@@ -51,7 +51,7 @@ jobs:
       - name: Build runtime
         run: |
           TARGET="MACOS_X64" ./scripts/build-runtime-libs
-          TARGET="MACOS_X86" LLVM_AR="llvm-ar-9" ./scripts/build-runtime
+          TARGET="MACOS_X86" AR="llvm-ar-9" ./scripts/build-runtime
 
       - name: Build tools
         run: ./scripts/build
