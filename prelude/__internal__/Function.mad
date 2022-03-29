@@ -110,13 +110,31 @@ export noop = (_) => ({})
 flip :: (a -> b -> c) -> (b -> a -> c)
 export flip = (f) => ((b, a) => f(a, b))
 
-#iftarget js
 
 any :: (a -> Boolean) -> List a -> Boolean
-export any = (predicate, xs) => #- xs.some(predicate) -#
+export any = (predicate, list) => where(list) {
+  [] =>
+    false
+
+  [x, ...xs] =>
+    predicate(x)
+      ? true
+      : any(predicate, xs)
+}
+
 
 all :: (a -> Boolean) -> List a -> Boolean
-export all = (predicate, xs) => #- xs.every(predicate) -#
+export all = (predicate, list) => where(list) {
+  [] =>
+    true
+
+  [x, ...xs] =>
+    !predicate(x)
+      ? false
+      : all(predicate, xs)
+}
+
+#iftarget js
 
 #-
 const nativeMemoize = (fn) => {

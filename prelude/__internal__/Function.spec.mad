@@ -4,7 +4,9 @@ import {} from "List"
 #iftarget js
 
 import {
+  all,
   always,
+  any,
   complement,
   equals,
   flip,
@@ -19,7 +21,9 @@ import {
 #elseif llvm
 
 import {
+  all,
   always,
+  any,
   complement,
   equals,
   flip,
@@ -108,6 +112,26 @@ test("always", (_) => assertEquals(always(true, "1"), true))
 test("always - map", (_) => assertEquals(
   map(always(true), [1, 2 ,3]),
   [true, true, true]
+))
+
+test("any - true", (_) => assertEquals(
+  any((x) => x > 4, [1, 3, 5]),
+  true
+))
+
+test("any - false", (_) => assertEquals(
+  any((x) => x > 4, [1, 3, 2]),
+  false
+))
+
+test("all - true", (_) => assertEquals(
+  all((x) => x > 4, [5, 8, 10]),
+  true
+))
+
+test("all - false", (_) => assertEquals(
+  all((x) => x > 4, [1, 2, 10]),
+  false
 ))
 
 #iftarget js
