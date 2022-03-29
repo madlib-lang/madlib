@@ -1,13 +1,13 @@
 FROM alpine:3.13.0 as build-musl-runtime
 
-RUN apk add --update git wget unzip cmake musl-dev build-base libuv-static
+RUN apk add --update git wget unzip cmake musl-dev build-base libuv-static bash openssl-dev openssl-libs-static nasm zlib-dev zlib-static
 
 COPY . .
 
 # build runtime
-RUN sh ./scripts/build-runtime-libs
+RUN TARGET="MUSL_X64" ./scripts/build-runtime-libs
 RUN cp /usr/lib/libuv.a runtime/lib/
-RUN CXX="g++" ./scripts/build-runtime
+RUN TARGET="MUSL_X64" CXX="g++" ./scripts/build-runtime
 
 
 
@@ -49,8 +49,8 @@ COPY . .
 RUN stack install alex happy
 
 # build runtime
-RUN ./scripts/build-runtime-libs
-RUN LLVM_AR="llvm-ar-9" CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/ ./scripts/build-runtime
+RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
+RUN AR="llvm-ar-9" TARGET="LINUX_X64" LLVM_AR="llvm-ar-9" CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/ ./scripts/build-runtime
 
 
 RUN stack build --jobs 1 --flag madlib:static

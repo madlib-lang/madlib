@@ -50,7 +50,7 @@ RUN stack install alex happy
 
 # build runtime
 RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
-RUN LLVM_AR="llvm-ar-9" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
+RUN AR="llvm-ar-9" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
 
 
 RUN stack build --jobs 1 --flag madlib:static
