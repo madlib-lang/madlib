@@ -67,6 +67,18 @@ hpWrapLine :: Bool -> FilePath -> Int -> String -> String
 hpWrapLine coverage astPath line compiled =
   if coverage then "__hpLineWrap('" <> astPath <> "', " <> show line <> ", " <> compiled <> ")" else compiled
 
+
+escapeStringLiteral :: String -> String
+escapeStringLiteral s = case s of
+  '`' : next ->
+    '\\' : '`' : escapeStringLiteral next
+
+  c : next ->
+    c : escapeStringLiteral next
+
+  "" ->
+    ""
+
 data CompilationConfig
   = CompilationConfig
       { ccrootPath       :: FilePath
@@ -137,10 +149,10 @@ instance Compilable Exp where
           if null v then
             hpWrapLine coverage astPath l "``"
           else
-            hpWrapLine coverage astPath l ("`" <> init v <> "`")
+            hpWrapLine coverage astPath l ("`" <> init (escapeStringLiteral v) <> "`")
 
         Literal (LStr v) ->
-          hpWrapLine coverage astPath l ("`" <> v <> "`")
+          hpWrapLine coverage astPath l ("`" <> escapeStringLiteral v <> "`")
 
         Literal (LChar v) ->
           -- String is aliased to __String as people may use String as a default import

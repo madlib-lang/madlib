@@ -112,7 +112,7 @@ jsonArray :: Parse.Parser JsonValue
 jsonArray = do {
   _ <- symbol("[")
   items <- alt(sepBy(jsonValue, symbol(",")), of([]))
-  _ <- spaces
+  _ <- alt(spaces, pure({}))
   _ <- symbol("]")
 
   return of(JsonArray(items))
@@ -135,7 +135,7 @@ jsonObject :: Parse.Parser JsonValue
 jsonObject = do {
   _ <- symbol("{")
   fields <- alt(sepBy(objectField, symbol(",")), of([]))
-  _ <- spaces
+  _ <- alt(spaces, pure({}))
   _ <- symbol("}")
 
   return of(JsonObject(Dictionary.fromList(fields)))
@@ -144,7 +144,7 @@ jsonObject = do {
 
 jsonValue :: Parse.Parser JsonValue
 jsonValue = do {
-  _ <- spaces
+  _ <- alt(spaces, pure({}))
 
   return choice([
     jsonFloat,

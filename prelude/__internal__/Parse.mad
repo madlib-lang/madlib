@@ -499,7 +499,7 @@ export string = (s) => where(String.firstChar(s)){
 spaces :: Parser (List Char)
 export spaces = pipe(
   oneOf,
-  many
+  some
 )([' ', '\n', '\r', '\t'])
 
 /**
