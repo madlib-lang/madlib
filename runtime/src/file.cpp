@@ -7,7 +7,6 @@
 
 #include "event-loop.hpp"
 
-// GC_COLLECT_AT_MALLOC
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +40,9 @@ void onReadError(uv_fs_t *req) {
   uv_fs_t *openRequest = ((ReadData_t *)req->data)->openRequest;
   uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
   void *data = (ReadData_t *)req->data;
+
+  uv_fs_t closeReq;
+  uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
 
   GC_FREE(dataBuffer);
   GC_FREE(data);
@@ -169,7 +171,7 @@ void madlib__file__readBytes(char *filepath, PAP_t *callback) {
 // write file
 typedef struct WriteData {
   void *callback;
-  uv_fs_t *readRequest;
+  uv_fs_t *writeRequest;
   uv_fs_t *openRequest;
   uv_buf_t contentBuffer;
 } WriteData_t;
@@ -181,13 +183,14 @@ void onWriteError(uv_fs_t *req) {
 
   void *callback = ((WriteData_t *)req->data)->callback;
 
+  uv_fs_t closeReq;
+  uv_fs_close(getLoop(), &closeReq, ((WriteData_t *)req->data)->openRequest->result, NULL);
+
   // free resources
   GC_FREE(((WriteData_t *)req->data)->openRequest);
   GC_FREE(req->data);
   GC_FREE(req);
 
-  uv_fs_t closeReq;
-  uv_fs_close(getLoop(), &closeReq, ((WriteData_t *)req->data)->openRequest->result, NULL);
 
   __applyPAP__(callback, 2, boxedError, result);
 }
@@ -221,7 +224,7 @@ void onWrite(uv_fs_t *req) {
 void onWriteFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
   if (req->result >= 0) {
-    uv_fs_write(getLoop(), ((WriteData_t *)req->data)->readRequest, req->result,
+    uv_fs_write(getLoop(), ((WriteData_t *)req->data)->writeRequest, req->result,
                 &((WriteData_t *)req->data)->contentBuffer, 1, -1, onWrite);
   } else {
     onWriteError(req);
@@ -232,37 +235,37 @@ void onWriteFileOpen(uv_fs_t *req) {
 void madlib__file__write(char *filepath, char *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
+  uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
 
   // we allocate and initialize the data of requests
-  readReq->data = GC_MALLOC_UNCOLLECTABLE(sizeof(WriteData_t));
-  ((WriteData_t *)readReq->data)->callback = callback;
-  ((WriteData_t *)readReq->data)->readRequest = readReq;
-  ((WriteData_t *)readReq->data)->openRequest = openReq;
-  ((WriteData_t *)readReq->data)->contentBuffer.base = content;
-  ((WriteData_t *)readReq->data)->contentBuffer.len = strlen(content);
+  writeReq->data = GC_MALLOC_UNCOLLECTABLE(sizeof(WriteData_t));
+  ((WriteData_t *)writeReq->data)->callback = callback;
+  ((WriteData_t *)writeReq->data)->writeRequest = writeReq;
+  ((WriteData_t *)writeReq->data)->openRequest = openReq;
+  ((WriteData_t *)writeReq->data)->contentBuffer.base = content;
+  ((WriteData_t *)writeReq->data)->contentBuffer.len = strlen(content);
 
-  openReq->data = readReq->data;
+  openReq->data = writeReq->data;
 
   // we open the file
-  uv_fs_open(getLoop(), openReq, filepath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR, onWriteFileOpen);
+  uv_fs_open(getLoop(), openReq, filepath, UV_FS_O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR, onWriteFileOpen);
 }
 
 // Callback receives unit in case of success
 void madlib__file__writeBytes(char *filepath, madlib__bytearray__ByteArray_t *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
+  uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
 
   // we allocate and initialize the data of requests
-  readReq->data = GC_MALLOC_UNCOLLECTABLE(sizeof(WriteData_t));
-  ((WriteData_t *)readReq->data)->callback = callback;
-  ((WriteData_t *)readReq->data)->readRequest = readReq;
-  ((WriteData_t *)readReq->data)->openRequest = openReq;
-  ((WriteData_t *)readReq->data)->contentBuffer.base = (char *)content->bytes;
-  ((WriteData_t *)readReq->data)->contentBuffer.len = content->length;
+  writeReq->data = GC_MALLOC_UNCOLLECTABLE(sizeof(WriteData_t));
+  ((WriteData_t *)writeReq->data)->callback = callback;
+  ((WriteData_t *)writeReq->data)->writeRequest = writeReq;
+  ((WriteData_t *)writeReq->data)->openRequest = openReq;
+  ((WriteData_t *)writeReq->data)->contentBuffer.base = (char *)content->bytes;
+  ((WriteData_t *)writeReq->data)->contentBuffer.len = content->length;
 
-  openReq->data = readReq->data;
+  openReq->data = writeReq->data;
 
   // we open the file
   uv_fs_open(getLoop(), openReq, filepath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR, onWriteFileOpen);

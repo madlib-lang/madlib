@@ -298,7 +298,7 @@ int handleSocket(CURL *easy, curl_socket_t socketfd, int action, void *userp, vo
   uv_poll_t *handle = NULL;
   if (action == CURL_POLL_IN || action == CURL_POLL_OUT) {
     if (!socketp) {
-      handle = (uv_poll_t*)GC_MALLOC(sizeof(uv_poll_t));
+      handle = (uv_poll_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_poll_t));
       handle->data = userp;
       uv_poll_init_socket(getLoop(), handle, socketfd);
     } else {
@@ -439,7 +439,7 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
 
   RequestData_t *requestData = (RequestData_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(RequestData_t));
   requestData->curlHandle = multiHandle;
-  uv_timer_t *timerHandle = (uv_timer_t *)GC_MALLOC(sizeof(uv_timer_t));
+  uv_timer_t *timerHandle = (uv_timer_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_timer_t));
   uv_timer_init(getLoop(), timerHandle);
   timerHandle->data = requestData;
   requestData->asBytes = asBytes;
@@ -502,6 +502,7 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
     curl_multi_cleanup(requestData->curlHandle);
     curl_easy_cleanup(handle);
     curl_url_cleanup(urlp);
+    GC_FREE(timerHandle);
     GC_FREE(requestData);
   }
 }
