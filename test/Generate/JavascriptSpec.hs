@@ -98,9 +98,9 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
         (Right (table, _), _) -> table
         (Left  err       , _) -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
-      resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
+      resolved     = runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   in  case resolved of
-        Right x ->
+        Right (x, InferState { errors = [] }) ->
           concat
             $   compile Generate.Javascript.initialEnv
                         (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
@@ -110,7 +110,12 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
                     in  TCE.resolveAST strippedAST
                 )
             <$> M.elems x
-        Left e -> ppShow e
+
+        Right (_, InferState { errors = errs }) ->
+          ppShow errs
+
+        Left e ->
+          ppShow e
 
 mainCompileFixture :: String
 mainCompileFixture = unlines
@@ -741,7 +746,7 @@ spec = do
           , "import IO from \"./IO\""
           , ""
           , "Http.get(\"https://github.com/open-sorcerers/madlib/archive/master.zip\")"
-          , "  |> W.map((response) => where {"
+          , "  |> W.map((response) => where(response) {"
           , "    Http.Response({ body: Http.BinaryBody(d) }) => d"
           , "  })"
           , "  |> W.map(FS.BinaryData)"
@@ -974,23 +979,23 @@ spec = do
             , ""
             , ""
             , "instance Functor (Wish e) {"
-            , "  map = (f, m) => Wish((bad, good) =>"
+            , "  map = (f, m) => Wish((badCB, goodCB) =>"
             , "    where(m) {"
-            , "      Wish(run) => run(bad, (x) => (good(f(x))))"
+            , "      Wish(run) => run(badCB, (x) => (goodCB(f(x))))"
             , "    }"
             , "  )"
             , "}"
             , ""
             , "instance Applicative (Wish e) {"
-            , "  pure = (a) => Wish((bad, good) => good(a))"
+            , "  pure = (a) => Wish((_, goodCB) => goodCB(a))"
             , ""
-            , "  ap = (mf, m) => Wish((bad, good) => where(#[mf, m]) {"
+            , "  ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {"
             , "    #[Wish(runMF), Wish(runM)] =>"
             , "      runM("
-            , "        bad,"
+            , "        badCB,"
             , "        (x) => runMF("
-            , "          bad,"
-            , "          (f) => good(f(x))"
+            , "          badCB,"
+            , "          (f) => goodCB(f(x))"
             , "        )"
             , "      )"
             , "  })"
@@ -999,12 +1004,12 @@ spec = do
             , "instance Monad (Wish e) {"
             , "  of = pure"
             , ""
-            , "  chain = (f, m) => Wish((bad, good) =>"
+            , "  chain = (f, m) => Wish((badCB, goodCB) =>"
             , "    where(m) {"
             , "      Wish(run) =>"
-            , "        run(bad, (x) =>"
+            , "        run(badCB, (x) =>"
             , "          where(f(x)) {"
-            , "            Wish(r) => r(bad, good)"
+            , "            Wish(r) => r(badCB, goodCB)"
             , "          }"
             , "        )"
             , "    }"
@@ -1014,9 +1019,9 @@ spec = do
             , ""
             , "mapRej :: (e -> f) -> Wish e a -> Wish f a"
             , "export mapRej = (f, m) => ("
-            , "  Wish((bad, good) => ("
+            , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
-            , "      Wish(run) => run((x) => (bad(f(x))), good)"
+            , "      Wish(run) => run((x) => (badCB(f(x))), goodCB)"
             , "    }"
             , "  ))"
             , ")"
@@ -1024,11 +1029,11 @@ spec = do
             , ""
             , "chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a"
             , "export chainRej = (f, m) => ("
-            , "  Wish((bad, good) => ("
+            , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
             , "      Wish(run) => run((x) => ("
             , "        where(f(x)) {"
-            , "          Wish(r) => r(bad, good)"
+            , "          Wish(r) => r(badCB, goodCB)"
             , "        }"
             , "      ), good)"
             , "    }"
@@ -1037,11 +1042,11 @@ spec = do
             , ""
             , ""
             , "good :: a -> Wish e a"
-            , "export good = (a) => Wish((bad, good) => good(a))"
+            , "export good = (a) => Wish((_, goodCB) => goodCB(a))"
             , ""
             , "bad :: e -> Wish e a"
             , "export bad = (e) => ("
-            , "  Wish((bad, good) => (bad(e)))"
+            , "  Wish((badCB, _) => (badCB(e)))"
             , ")"
             , ""
             , ""
@@ -1052,14 +1057,14 @@ spec = do
             , ""
             , "parallel :: List (Wish e a) -> Wish e (List a)"
             , "export parallel = (wishes) => ("
-            , "  Wish((bad, good) => (#- {"
+            , "  Wish((badCB, goodCB) => (#- {"
             , "    const l = wishes.length"
             , "    let ko = false;"
             , "    let ok = 0;"
             , "    const out = new Array(l);"
-            , "    const next = j => (j === l && good(out));"
+            , "    const next = j => (j === l && goodCB(out));"
             , "    const fork = (w, j) => (getWishFn(w)("
-            , "      e => ko || (bad(e), ko = true),"
+            , "      e => ko || (badCB(e), ko = true),"
             , "      x => ko || (out[j] = x, next(++ok))"
             , "    ));"
             , "    wishes.forEach(fork);"
@@ -1068,9 +1073,9 @@ spec = do
             , ""
             , ""
             , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}"
-            , "export fulfill = (bad, good, m) => {"
+            , "export fulfill = (badCB, goodCB, m) => {"
             , "  where(m) {"
-            , "    Wish(run) => run(bad, good)"
+            , "    Wish(run) => run(badCB, goodCB)"
             , "  }"
             , ""
             , "  return {}"

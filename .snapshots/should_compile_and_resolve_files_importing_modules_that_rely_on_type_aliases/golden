@@ -19,10 +19,10 @@ Inspect['Wish_e92c71d0381357b7292e437c88b4ab9b']['inspect'] = () => (Inspect_w22
   }
 })(__$a__));
 Functor['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Functor['Wish_e92c71d0381357b7292e437c88b4ab9b']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
+Functor['Wish_e92c71d0381357b7292e437c88b4ab9b']['map'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
-    return run(bad)((x => good(f(x))));
+    return run(badCB)((x => goodCB(f(x))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -31,10 +31,10 @@ Functor['Wish_e92c71d0381357b7292e437c88b4ab9b']['map'] = () => (f => m => Wish(
   }
 })(m))));
 Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['ap'] = () => (mf => m => Wish((bad => good => ((__x__) => {
+Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['ap'] = () => (mf => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     let [{ __args: [runMF]},{ __args: [runM]}] = __x__;
-    return runM(bad)((x => runMF(bad)((f => good(f(x))))));
+    return runM(badCB)((x => runMF(badCB)((f => goodCB(f(x))))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -42,15 +42,15 @@ Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['ap'] = () => (mf => m => W
     throw 'non exhaustive patterns!';
   }
 })(([mf, m])))));
-Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['pure'] = () => (a => Wish((bad => good => good(a))));
+Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['pure'] = () => (a => Wish((_ => goodCB => goodCB(a))));
 Monad['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['chain'] = () => (f => m => Wish((bad => good => ((__x__) => {
+Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['chain'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
-    return run(bad)((x => ((__x__) => {
+    return run(badCB)((x => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let r = __x__.__args[0];
-    return r(bad)(good);
+    return r(badCB)(goodCB);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -66,10 +66,10 @@ Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['chain'] = () => (f => m => Wish(
   }
 })(m))));
 Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['of'] = () => Applicative.Wish_e92c71d0381357b7292e437c88b4ab9b.pure();
-export let mapRej = (f => m => Wish((bad => good => ((__x__) => {
+export let mapRej = (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
-    return run((x => bad(f(x))))(good);
+    return run((x => badCB(f(x))))(goodCB);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -77,13 +77,13 @@ export let mapRej = (f => m => Wish((bad => good => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m))));
-export let chainRej = (f => m => Wish((bad => good => ((__x__) => {
+export let chainRej = (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run((x => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let r = __x__.__args[0];
-    return r(bad)(good);
+    return r(badCB)(goodCB);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -98,8 +98,8 @@ export let chainRej = (f => m => Wish((bad => good => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m))));
-export let good = (a => Wish((bad => good => good(a))));
-export let bad = (e => Wish((bad => good => bad(e))));
+export let good = (a => Wish((_ => goodCB => goodCB(a))));
+export let bad = (e => Wish((badCB => _ => badCB(e))));
 let getWishFn = (w => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let fn = __x__.__args[0];
@@ -111,23 +111,23 @@ let getWishFn = (w => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(w));
-export let parallel = (wishes => Wish((bad => good =>  {
+export let parallel = (wishes => Wish((badCB => goodCB =>  {
     const l = wishes.length
     let ko = false;
     let ok = 0;
     const out = new Array(l);
-    const next = j => (j === l && good(out));
+    const next = j => (j === l && goodCB(out));
     const fork = (w, j) => (getWishFn(w)(
-      e => ko || (bad(e), ko = true),
+      e => ko || (badCB(e), ko = true),
       x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
   } )));
-export let fulfill = (bad => good => m => {
+export let fulfill = (badCB => goodCB => m => {
     ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
-    return run(bad)(good);
+    return run(badCB)(goodCB);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
