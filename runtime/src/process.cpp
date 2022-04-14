@@ -39,6 +39,7 @@ static char **ARGV = NULL;
 void __main__init__(int argc, char **argv) {
   GC_set_dont_precollect(1);
   GC_set_free_space_divisor(1);
+  GC_expand_hp(16 * 1024 * 1024); // 16MB
 
   ARGC = argc;
   ARGV = argv;

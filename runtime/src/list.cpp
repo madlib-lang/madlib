@@ -78,7 +78,7 @@ char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *ins
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_malloc(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
+  char *result = (char*)GC_malloc_atomic(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
 
   // Leading "["
   strncpy(result, "[", sizeof(char));

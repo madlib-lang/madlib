@@ -238,6 +238,10 @@ gcMalloc :: Operand
 gcMalloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
 
+gcMallocAtomic :: Operand
+gcMallocAtomic =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc_atomic"))
+
 applyPAP :: Operand
 applyPAP =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
@@ -491,42 +495,42 @@ box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
+    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.double, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.double)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
   -- Integer
   Type.IntegerType 64 -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
+    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i64, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.i64)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
   -- Char
   Type.IntegerType 32 -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i32, [])]
+    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i32, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.i32)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
   -- Byte
   Type.IntegerType 8 -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
+    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i8, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.i8)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
   -- Boolean
   Type.IntegerType 1 -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
+    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i1, [])]
     ptr' <- safeBitcast ptr (Type.ptr Type.i1)
     store ptr' 0 what
     safeBitcast ptr' boxType
 
   -- String
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof stringType, [])]
+    ptr <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof stringType, [])]
     ptr' <- safeBitcast ptr (Type.ptr stringType)
     store ptr' 0 what
     safeBitcast ptr' boxType
@@ -576,7 +580,7 @@ buildStr s = do
       bytes      = ByteString.unpack bs
       charCodes  = (fromEnum <$> bytes) ++ [0]
       charCodes' = toInteger <$> charCodes
-  addr  <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'), [])]
+  addr  <- call gcMallocAtomic [(i64ConstOp (fromIntegral $ List.length charCodes'), [])]
   addr' <- addrspacecast addr stringType
 
   let charCodesWithIds = List.zip charCodes' [0..]
@@ -1698,7 +1702,6 @@ generateExp env symbolTable exp = case exp of
       item' <- case maybeBoxedItem of
         Just boxed ->
           return boxed
-          -- box item
 
         Nothing ->
           box item
@@ -3034,6 +3037,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   let preludeHash = generateHashFromPath "prelude"
   externVarArgs (AST.mkName "__applyPAP__")               [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc")                         [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc_atomic")                  [Type.i64] (Type.ptr Type.i8)
 
   extern (AST.mkName "madlib__string__internal__concat")  [stringType, stringType] stringType
 
@@ -4442,6 +4446,7 @@ buildModule' pathsToBuild env isMain currentModuleHashes initialSymbolTable ast@
     extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
 
     extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+    extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)
 
     extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
@@ -4608,7 +4613,7 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
             withPassManager
             defaultCuratedPassSetSpec
               { optLevel                = Just 2
-              , useInlinerWithThreshold = Just 150
+              , useInlinerWithThreshold = Just 100
               , dataLayout              = Just dataLayout
               , targetLibraryInfo       = Just libraryInfo
               }

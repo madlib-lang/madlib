@@ -36,13 +36,13 @@ char *madlib__string__replace(char *regex, char *replace, char *str) {
 
   size_t bufferLengthToUse = inputLength * 1.25;
   size_t bufferLength = bufferLengthToUse;
-  char *buffer = (char*)GC_malloc(sizeof(char)*bufferLength);
+  char *buffer = (char*)GC_malloc_atomic(sizeof(char)*bufferLength);
 
   int result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
 
   while (result == PCRE2_ERROR_NOMEMORY) {
     bufferLengthToUse = bufferLength = bufferLengthToUse * 2;
-    buffer = (char*)GC_malloc(sizeof(char)*bufferLength);
+    buffer = (char*)GC_malloc_atomic(sizeof(char)*bufferLength);
     result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
   }
 
@@ -84,7 +84,7 @@ bool madlib__string__match(char *regex, char *str) {
 
 
 bool *madlib__string__internal__eq(char **s1, char **s2) {
-  bool *boxed = (bool *)GC_malloc(sizeof(bool));
+  bool *boxed = (bool *)GC_malloc_atomic(sizeof(bool));
   if (strcmp(*s1, *s2) == 0) {
     *boxed = true;
   } else {
@@ -159,7 +159,7 @@ char **madlib__string__internal__inspect(char **boxedInput) {
   char *s = *boxedInput;
   int initialLength = strlen(s);
   int currentLength = initialLength + (initialLength + 3) * 0.1;
-  char *result = (char *)GC_malloc(sizeof(char) * (currentLength + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (currentLength + 1));
   int currentIndex = 1;
 
   result[0] = '"';
@@ -167,7 +167,7 @@ char **madlib__string__internal__inspect(char **boxedInput) {
   while (*s != '\0') {
     // if the size of the string isn't enough we resize it
     if (currentLength - currentIndex < 4) {
-      char *resized = (char *)GC_malloc(sizeof(char) * makeNextSize(currentLength));
+      char *resized = (char *)GC_malloc_atomic(sizeof(char) * makeNextSize(currentLength));
       memcpy(resized, result, sizeof(char) * (currentIndex + 1));
       GC_free(result);
       result = resized;
@@ -229,7 +229,7 @@ madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
   if (*s) {
     int _;
     int32_t c = utf8DecodeChar((char*)s, &_);
-    int32_t *boxed = (int32_t*)GC_malloc(sizeof(int32_t));
+    int32_t *boxed = (int32_t*)GC_malloc_atomic(sizeof(int32_t));
     *boxed = c;
     result->index = 0;
     result->data = boxed;
@@ -287,7 +287,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
 
   // the input string was shorter than the start so we return an empty string
   if (start > 0) {
-    char *empty = (char *)GC_malloc(sizeof(char));
+    char *empty = (char *)GC_malloc_atomic(sizeof(char));
     *empty = '\0';
     return empty;
   }
@@ -312,7 +312,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
     s++;
   }
 
-  char *result = (char *)GC_malloc(sizeof(char) * (bytesToCopy + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (bytesToCopy + 1));
   memcpy(result, startPtr, bytesToCopy);
   result[bytesToCopy] = '\0';
 
@@ -323,7 +323,7 @@ char *madlib__string__pushChar(int32_t c, char* s) {
   char *encoded = utf8Encode(c);
   size_t encodedLength = strlen(encoded);
   size_t stringLength = strlen(s);
-  char *result = (char*)GC_malloc(sizeof(char) * (stringLength + encodedLength + 1));
+  char *result = (char*)GC_malloc_atomic(sizeof(char) * (stringLength + encodedLength + 1));
   memcpy(result, encoded, encodedLength);
   memcpy(result + encodedLength, s, stringLength);
   result[stringLength + encodedLength] = '\0';
@@ -334,7 +334,7 @@ char *madlib__string__appendChar(int32_t c, char* s) {
   char *encoded = utf8Encode(c);
   size_t encodedLength = strlen(encoded);
   size_t stringLength = strlen(s);
-  char *result = (char*)GC_malloc(sizeof(char) * (stringLength + encodedLength + 1));
+  char *result = (char*)GC_malloc_atomic(sizeof(char) * (stringLength + encodedLength + 1));
   memcpy(result, s, stringLength);
   memcpy(result + stringLength, encoded, encodedLength);
   result[stringLength + encodedLength] = '\0';
@@ -369,7 +369,7 @@ char *madlib__string__trim(char *s) {
   }
 
   size_t newSize = strLength - removeFromStart - removeFromEnd;
-  char *result = (char *)GC_malloc(sizeof(char) * (newSize + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (newSize + 1));
   memcpy(result, startPtr + removeFromStart, newSize);
   result[newSize] = '\0';
 
@@ -392,7 +392,7 @@ char *madlib__string__trimStart(char *s) {
   }
 
   size_t newSize = strLength - removeFromStart;
-  char *result = (char *)GC_malloc(sizeof(char) * (newSize + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (newSize + 1));
   memcpy(result, startPtr + removeFromStart, newSize);
   result[newSize] = '\0';
 
@@ -414,7 +414,7 @@ char *madlib__string__trimEnd(char *s) {
   }
 
   size_t newSize = strLength - removeFromEnd;
-  char *result = (char *)GC_malloc(sizeof(char) * (newSize + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (newSize + 1));
   memcpy(result, s, newSize);
   result[newSize] = '\0';
 
@@ -422,7 +422,7 @@ char *madlib__string__trimEnd(char *s) {
 }
 
 char *madlib__string__internal__concat(char *s1, char *s2) {
-  char *result = (char *)GC_malloc((strlen(s1) + strlen(s2) + 1) * sizeof(char));
+  char *result = (char *)GC_malloc_atomic((strlen(s1) + strlen(s2) + 1) * sizeof(char));
   strcpy(result, s1);
   strcat(result, s2);
   return result;
@@ -442,7 +442,7 @@ char *stripTrailingZeros(char *number) {
     charsToRemove += 1;
   }
 
-  char *result = (char *)GC_malloc(length - charsToRemove + 1);
+  char *result = (char *)GC_malloc_atomic(length - charsToRemove + 1);
   memcpy(result, number, length - charsToRemove);
   result[length - charsToRemove] = '\0';
 
@@ -467,7 +467,7 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
     encodedChars[j] = encoded;
   }
 
-  char *result = (char *)GC_malloc(sizeof(char) * (fullLength + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (fullLength + 1));
   j = 0;
   size_t offset = 0;
   for (int j = 0; j <= i; j++) {
@@ -512,7 +512,7 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
     list = list->next;
   }
 
-  char *result = (char *)GC_malloc(sizeof(char) * (fullLength + 1));
+  char *result = (char *)GC_malloc_atomic(sizeof(char) * (fullLength + 1));
   size_t offset = 0;
   for (int i = 0; i < charCount; i++) {
     size_t sizeOfChar = strlen(encodedChars[i]);
@@ -547,7 +547,7 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
       partLength = 1;
     }
 
-    char *part = (char *)GC_malloc(sizeof(char) * (partLength + 1));
+    char *part = (char *)GC_malloc_atomic(sizeof(char) * (partLength + 1));
     memcpy(part, str, partLength);
     part[partLength] = '\0';
     char **boxed = (char **)GC_malloc(sizeof(char *));
@@ -586,7 +586,7 @@ unsigned char *madlib__string__toLower(unsigned char *str) { return __strToLower
 
 unsigned char *__strToLower__(unsigned char *s) {
   size_t length = strlen((char*)s);
-  unsigned char *copy = (unsigned char*)GC_malloc(sizeof(unsigned char) * (length + 1));
+  unsigned char *copy = (unsigned char*)GC_malloc_atomic(sizeof(unsigned char) * (length + 1));
   memcpy(copy, s, length + 1);
   unsigned char *p = copy;
   unsigned char *pExtChar = 0;
@@ -1246,7 +1246,7 @@ unsigned char *__strToLower__(unsigned char *s) {
 
 unsigned char *__strToUpper__(unsigned char *s) {
   size_t length = strlen((char *)s);
-  unsigned char *copy = (unsigned char *)GC_malloc(sizeof(unsigned char) * (length + 1));
+  unsigned char *copy = (unsigned char *)GC_malloc_atomic(sizeof(unsigned char) * (length + 1));
   memcpy(copy, s, length + 1);
 
   unsigned char *p = copy;

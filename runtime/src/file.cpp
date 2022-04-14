@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+const size_t BUFFER_SIZE = 32 * 1024; // 32KB
+
 // read file
 typedef struct ReadData {
   void *callback;
@@ -99,7 +101,7 @@ void onRead(uv_fs_t *req) {
     ((ReadData_t *)req->data)->currentSize = currentSize + req->result;
 
     // allocate the next content to the old size + size of current buffer
-    char *nextContent = (char *)GC_malloc(currentSize + req->result);
+    char *nextContent = (char *)GC_malloc_atomic_ignore_off_page(currentSize + req->result);
 
     // if the fileContent is not empty we copy what was in it in the newly
     // allocated one
@@ -124,7 +126,7 @@ void onRead(uv_fs_t *req) {
 void onReadFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
   if (req->result >= 0) {
-    uv_buf_t uvBuffer = uv_buf_init(((ReadData_t *)req->data)->dataBuffer, 1024);
+    uv_buf_t uvBuffer = uv_buf_init(((ReadData_t *)req->data)->dataBuffer, BUFFER_SIZE);
     ((ReadData_t *)((ReadData_t *)req->data)->readRequest->data)->uvBuffer = uvBuffer;
     uv_fs_read(getLoop(), ((ReadData_t *)req->data)->readRequest, req->result, &uvBuffer, 1, -1, onRead);
   } else {
@@ -136,7 +138,7 @@ void madlib__file__read(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_malloc_uncollectable(sizeof(char) * 1024);
+  char *dataBuffer = (char *)GC_malloc_atomic_uncollectable(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
   readReq->data = GC_malloc_uncollectable(sizeof(ReadData_t));
@@ -157,7 +159,7 @@ void madlib__file__readBytes(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_malloc_uncollectable(sizeof(char) * 1024);
+  char *dataBuffer = (char *)GC_malloc_atomic_uncollectable(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
   readReq->data = GC_malloc_uncollectable(sizeof(ReadData_t));
