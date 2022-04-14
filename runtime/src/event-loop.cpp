@@ -1,23 +1,19 @@
+
 #include <gc.h>
+#include <curl/curl.h>
 #include <stdlib.h>
 #include <uv.h>
-#include <curl/curl.h>
-
 #include <cmath>
 
 #include "apply-pap.hpp"
 
 static uv_loop_t *loop;
 
-uv_loop_t *getLoop() {
-  return loop;
-}
-
+uv_loop_t *getLoop() { return loop; }
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 // libuv errors:
 
@@ -425,29 +421,82 @@ int libuvErrorToMadlibIOError(int libuvError) {
   }
 }
 
+
+void *GC_callocWrap(size_t m, size_t n) {
+  return GC_MALLOC_UNCOLLECTABLE((m) * (n));
+}
+
+void *GC_mallocWrap(size_t size) {
+  return GC_MALLOC_UNCOLLECTABLE(size);
+}
+
+void GC_freeWrap(void *ptr) {
+  GC_FREE(ptr);
+}
+
+void *GC_reallocWrap(void *ptr, size_t size) {
+  GC_REALLOC(ptr, size);
+}
+
+char *GC_strdupWrap(const char *s) {
+  return GC_STRDUP(s);
+}
+
 void __initEventLoop__() {
   GC_INIT();
   curl_global_init(CURL_GLOBAL_ALL);
-  loop = (uv_loop_t *)GC_malloc_uncollectable(sizeof(uv_loop_t));
+  curl_global_init_mem(CURL_GLOBAL_ALL, GC_mallocWrap, GC_freeWrap,
+                       GC_reallocWrap, GC_strdupWrap, GC_callocWrap);
+  uv_replace_allocator(GC_mallocWrap, GC_reallocWrap, GC_callocWrap, GC_freeWrap);
+  loop = (uv_loop_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }
 
+
+void on_uv_close(uv_handle_t *handle) {}
+
+void on_uv_walk(uv_handle_t *handle, void *arg) {
+  if (!uv_is_closing(handle)) {  // FALSE: handle is closing
+    uv_close(handle, on_uv_close);
+  }
+}
+
+
 void __startEventLoop__() {
   uv_run(loop, UV_RUN_DEFAULT);
+  int r = uv_loop_close(loop);
 
-  uv_loop_close(loop);
-  GC_free(loop);
+  if (r != 0) {
+    // Close pending handles
+    uv_walk(loop, on_uv_walk, NULL);
+
+    // run the loop until there are no pending callbacks
+    do {
+      r = uv_run(loop, UV_RUN_ONCE);
+    } while (r != 0);
+    // Now we're safe.
+    r = uv_loop_close(loop);
+  }
+
+  GC_FREE(loop);
   curl_global_cleanup();
+}
+
+
+void onTimeoutHandleClose(uv_handle_t *handle) {
+  GC_FREE(handle);
 }
 
 // set timeout
 void forwardTimeoutCallback(uv_timer_t *handle) {
-  __applyPAP__(handle->data, 1, NULL);
+  void *callback = handle->data;
+  uv_close((uv_handle_t*) handle, onTimeoutHandleClose);
+  __applyPAP__(callback, 1, NULL);
 }
 
 void __setTimeout__(PAP_t *pap, int64_t millis) {
   uv_timer_t *timer_req1 =
-      (uv_timer_t *)GC_malloc_uncollectable(sizeof(uv_timer_t));
+      (uv_timer_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_timer_t));
   timer_req1->data = (void *)pap;
   uv_timer_init(loop, timer_req1);
   uv_timer_start(timer_req1, forwardTimeoutCallback, millis, 0);

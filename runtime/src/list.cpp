@@ -1,11 +1,10 @@
-#include "list.hpp"
 
 #include <gc.h>
-#include <string.h>
+#include "list.hpp"
 
+#include <string.h>
 #include <iostream>
 
-// List
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +12,7 @@ extern "C" {
 
 madlib__list__Node_t *madlib__list__empty() {
   madlib__list__Node_t *head =
-      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   head->next = NULL;
   head->value = NULL;
   return head;
@@ -63,7 +62,7 @@ char *madlib__list__internal__inspect(
 
   int currentIndex = 0;
   char **inspectedItems =
-      (char **)GC_malloc_uncollectable(sizeof(char *) * length);
+      (char **)GC_MALLOC(sizeof(char *) * length);
   size_t sizeOfItems = 0;
   void *inspect = &inspectDict->inspect;
 
@@ -74,8 +73,7 @@ char *madlib__list__internal__inspect(
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char *)GC_malloc_atomic(
-      sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
+  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
 
   // Leading "["
   strncpy(result, "[", sizeof(char));
@@ -94,14 +92,14 @@ char *madlib__list__internal__inspect(
   strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
   strncpy(result + currentPosition + lengthOfItem, "]\0", sizeof(char) * 2);
 
-  GC_free(inspectedItems);
+  // GC_free(inspectedItems);
 
   return result;
 }
 
 madlib__list__Node_t *madlib__list__singleton(void *item) {
   madlib__list__Node_t *head =
-      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   head->next = madlib__list__empty();
   head->value = item;
 
@@ -111,7 +109,7 @@ madlib__list__Node_t *madlib__list__singleton(void *item) {
 madlib__list__Node_t *madlib__list__push(void *item,
                                          madlib__list__Node_t *list) {
   madlib__list__Node_t *newHead =
-      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   newHead->next = list;
   newHead->value = item;
 
@@ -121,7 +119,7 @@ madlib__list__Node_t *madlib__list__push(void *item,
 madlib__list__Node_t *madlib__list__internal__push(void *item,
                                                    madlib__list__Node_t *list) {
   madlib__list__Node_t *newHead =
-      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   newHead->next = list;
   newHead->value = item;
 
@@ -132,7 +130,7 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap,
                                         madlib__list__Node_t *list) {
   size_t itemCount = madlib__list__length(list);
   int nodesIndex = 1;
-  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_malloc(
+  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
       sizeof(madlib__list__Node_t) * (itemCount + 1));
   madlib__list__Node_t *newList = nodes;
   madlib__list__Node_t *head = newList;
@@ -190,7 +188,7 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
     return a;
   } else {
     madlib__list__Node_t *newList =
-        (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+        (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
     madlib__list__Node_t *head = newList;
     madlib__list__Node_t *current = a;
 
@@ -200,7 +198,7 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
 
     while (current->next != NULL) {
       madlib__list__Node_t *nextItem =
-          (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+          (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
       nextItem->value = current->value;
       nextItem->next = NULL;
 
@@ -240,7 +238,7 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
   }
 
   madlib__list__Node_t *newList =
-      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   madlib__list__Node_t *head = newList;
   madlib__list__Node_t *current = list;
 
@@ -257,39 +255,6 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
   return head;
 }
 
-// Sort
-
-/**
- * currently a bubble sort algorithm, needs to be improved at some point
- */
-madlib__list__Node_t *madlib__list__sort(PAP_t *compare,
-                                         madlib__list__Node_t *list) {
-  madlib__list__Node_t *copy = madlib__list__internal__copy(list);
-  bool hadPermutation = true;
-
-  while (hadPermutation != false) {
-    madlib__list__Node_t *head = copy;
-    hadPermutation = false;
-
-    while (head->value != NULL) {
-      if (head->next->value != NULL) {
-        int64_t comparisonResult = *(int64_t *)__applyPAP__(
-            (void *)compare, 2, head->value, head->next->value);
-
-        // If the current item is bigger than the next one we need to swap them
-        if (comparisonResult == 1) {
-          void *value = head->value;
-          head->value = head->next->value;
-          head->next->value = value;
-          hadPermutation = true;
-        }
-      }
-      head = head->next;
-    }
-  }
-
-  return copy;
-}
 
 #ifdef __cplusplus
 }

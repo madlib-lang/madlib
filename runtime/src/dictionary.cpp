@@ -1,3 +1,4 @@
+
 #include <gc.h>
 #include <string.h>
 
@@ -49,7 +50,7 @@ char *madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_t
     size_t valueLength = strlen(inspectedValue);
     size_t totalLength = keyLength + valueLength + 3;
 
-    char *keyAndValue = (char*)GC_malloc(sizeof(char) * totalLength);
+    char *keyAndValue = (char*)GC_MALLOC_ATOMIC(sizeof(char) * totalLength);
     strncpy(keyAndValue, inspectedKey, keyLength);
     strncpy(keyAndValue + keyLength, ": ", 2);
     strncpy(keyAndValue + keyLength + 2, inspectedValue, valueLength);
@@ -61,7 +62,7 @@ char *madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_t
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_malloc(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 7));
+  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 7));
 
   // Leading "["
   strncpy(result, "{{ ", sizeof(char) * 3);
@@ -85,7 +86,7 @@ char *madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_t
 
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__list__Node_t *items) {
-  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*) GC_malloc(sizeof(madlib__dictionary__Dictionary_t));
+  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*) GC_MALLOC(sizeof(madlib__dictionary__Dictionary_t));
 
   dictionary->constructorIndex = 0;
   dictionary->items = items;

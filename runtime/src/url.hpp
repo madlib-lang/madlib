@@ -2,6 +2,7 @@
 #define URL_H
 
 #include "maybe.hpp"
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {

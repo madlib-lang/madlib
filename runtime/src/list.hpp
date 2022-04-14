@@ -45,8 +45,6 @@ madlib__list__Node_t *madlib__list__internal__append(void *item, madlib__list__N
 
 madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list);
 
-madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *list);
-
 #ifdef __cplusplus
 }
 #endif

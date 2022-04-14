@@ -185,7 +185,6 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         closureConverted = ClosureConvert.convertTable reduced
                         withTCE          = TCE.resolveTable closureConverted
 
-                    -- putStrLn (ppShow renamedTable)
                     -- putStrLn (ppShow closureConverted)
                     -- putStrLn (ppShow withTCE)
                     LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint

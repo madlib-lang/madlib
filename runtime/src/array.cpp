@@ -45,7 +45,7 @@ char *madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *ins
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_malloc(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 10));
+  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 10));
 
   // Leading "["
   strncpy(result, "Array([", sizeof(char) * 7);
@@ -70,8 +70,8 @@ char *madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *ins
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   int64_t itemCount = madlib__list__length(list);
 
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
-  result->items = (void **)GC_malloc(itemCount * sizeof(void *));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
+  result->items = (void **)GC_MALLOC(itemCount * sizeof(void *));
   result->length = itemCount;
 
   for (int i = 0; i < itemCount; i++) {
@@ -94,8 +94,8 @@ madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
 }
 
 madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib__array__Array_t *b) {
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
-  result->items = (void **)GC_malloc((a->length + b->length) * sizeof(void *));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
+  result->items = (void **)GC_MALLOC((a->length + b->length) * sizeof(void *));
 
   memcpy(result->items, a->items, a->length * sizeof(void *));
   memcpy(result->items + a->length, b->items, b->length * sizeof(void *));
@@ -106,9 +106,9 @@ madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib_
 }
 
 madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr) {
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
   result->length = arr->length;
-  result->items = (void **)GC_malloc(arr->length * sizeof(void *));
+  result->items = (void **)GC_MALLOC(arr->length * sizeof(void *));
 
   for (int i = 0; i < arr->length; i++) {
     result->items[i] = __applyPAP__(f, 1, arr->items[i]);

@@ -1,7 +1,6 @@
-#include "apply-pap.hpp"
 
 #include <gc.h>
-
+#include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
 
@@ -691,10 +690,11 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   } else {
     // We push the args to a newly allocated PAP
     int32_t NEXT_ENV_SIZE = argc + ENV_SIZE;
-    PAP_t *newPAP = (PAP_t *)GC_malloc(sizeof(PAP_t));
+    PAP_t *newPAP = (PAP_t *)GC_MALLOC(sizeof(PAP_t));
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
+    newPAP->env = NULL;
 
     // printf("NEW PAP - NEXT_ENV_SIZE: %d, argc: %d, ENV_SIZE: %d, arity: %d, missing: %d\n", NEXT_ENV_SIZE, argc,
     // ENV_SIZE, unwrappedPAP->arity, newPAP->missingArgCount);
@@ -703,7 +703,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
       case 0: {
         switch (NEXT_ENV_SIZE) {
           case 1: {
-            PAPEnv_1_t *newEnv = (PAPEnv_1_t *)GC_malloc(sizeof(PAPEnv_1_t));
+            PAPEnv_1_t *newEnv = (PAPEnv_1_t *)GC_MALLOC(sizeof(PAPEnv_1_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = arg1;
             va_end(argv);
@@ -711,7 +711,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 2: {
-            PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_malloc(sizeof(PAPEnv_2_t));
+            PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_MALLOC(sizeof(PAPEnv_2_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = arg1;
@@ -721,7 +721,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 3: {
-            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_MALLOC(sizeof(PAPEnv_3_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -733,7 +733,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 4: {
-            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_malloc(sizeof(PAPEnv_4_t));
+            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_MALLOC(sizeof(PAPEnv_4_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -747,7 +747,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 5: {
-            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_malloc(sizeof(PAPEnv_5_t));
+            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_MALLOC(sizeof(PAPEnv_5_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -763,7 +763,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -781,7 +781,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -801,7 +801,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -823,7 +823,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -847,7 +847,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 10: {
-            PAPEnv_10_t *newEnv = (PAPEnv_10_t *)GC_malloc(sizeof(PAPEnv_10_t));
+            PAPEnv_10_t *newEnv = (PAPEnv_10_t *)GC_MALLOC(sizeof(PAPEnv_10_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -873,7 +873,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 11: {
-            PAPEnv_11_t *newEnv = (PAPEnv_11_t *)GC_malloc(sizeof(PAPEnv_11_t));
+            PAPEnv_11_t *newEnv = (PAPEnv_11_t *)GC_MALLOC(sizeof(PAPEnv_11_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -901,7 +901,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 12: {
-            PAPEnv_12_t *newEnv = (PAPEnv_12_t *)GC_malloc(sizeof(PAPEnv_12_t));
+            PAPEnv_12_t *newEnv = (PAPEnv_12_t *)GC_MALLOC(sizeof(PAPEnv_12_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -936,7 +936,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 2: {
-            PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_malloc(sizeof(PAPEnv_2_t));
+            PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_MALLOC(sizeof(PAPEnv_2_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = arg1;
@@ -946,7 +946,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 3: {
-            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_MALLOC(sizeof(PAPEnv_3_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -958,7 +958,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 4: {
-            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_malloc(sizeof(PAPEnv_4_t));
+            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_MALLOC(sizeof(PAPEnv_4_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -972,7 +972,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 5: {
-            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_malloc(sizeof(PAPEnv_5_t));
+            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_MALLOC(sizeof(PAPEnv_5_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -988,7 +988,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1006,7 +1006,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1026,7 +1026,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1048,7 +1048,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1078,7 +1078,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 3: {
-            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+            PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_MALLOC(sizeof(PAPEnv_3_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1089,7 +1089,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 4: {
-            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_malloc(sizeof(PAPEnv_4_t));
+            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_MALLOC(sizeof(PAPEnv_4_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1102,7 +1102,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 5: {
-            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_malloc(sizeof(PAPEnv_5_t));
+            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_MALLOC(sizeof(PAPEnv_5_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1117,7 +1117,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1134,7 +1134,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1153,7 +1153,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1174,7 +1174,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1202,7 +1202,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 4: {
-            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_malloc(sizeof(PAPEnv_4_t));
+            PAPEnv_4_t *newEnv = (PAPEnv_4_t *)GC_MALLOC(sizeof(PAPEnv_4_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1214,7 +1214,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 5: {
-            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_malloc(sizeof(PAPEnv_5_t));
+            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_MALLOC(sizeof(PAPEnv_5_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1228,7 +1228,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1244,7 +1244,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1262,7 +1262,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1282,7 +1282,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1309,7 +1309,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 5: {
-            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_malloc(sizeof(PAPEnv_5_t));
+            PAPEnv_5_t *newEnv = (PAPEnv_5_t *)GC_MALLOC(sizeof(PAPEnv_5_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1322,7 +1322,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1337,7 +1337,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1354,7 +1354,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1373,7 +1373,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1399,7 +1399,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 6: {
-            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_malloc(sizeof(PAPEnv_6_t));
+            PAPEnv_6_t *newEnv = (PAPEnv_6_t *)GC_MALLOC(sizeof(PAPEnv_6_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1413,7 +1413,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1429,7 +1429,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1447,7 +1447,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1472,7 +1472,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_6_t *env = (PAPEnv_6_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 7: {
-            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_malloc(sizeof(PAPEnv_7_t));
+            PAPEnv_7_t *newEnv = (PAPEnv_7_t *)GC_MALLOC(sizeof(PAPEnv_7_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1487,7 +1487,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1504,7 +1504,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             void *arg3 = va_arg(argv, void *);
@@ -1528,7 +1528,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_7_t *env = (PAPEnv_7_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 8: {
-            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_malloc(sizeof(PAPEnv_8_t));
+            PAPEnv_8_t *newEnv = (PAPEnv_8_t *)GC_MALLOC(sizeof(PAPEnv_8_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;
@@ -1544,7 +1544,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             return newPAP;
           }
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             void *arg2 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
@@ -1567,7 +1567,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         PAPEnv_8_t *env = (PAPEnv_8_t *)unwrappedPAP->env;
         switch (NEXT_ENV_SIZE) {
           case 9: {
-            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_malloc(sizeof(PAPEnv_9_t));
+            PAPEnv_9_t *newEnv = (PAPEnv_9_t *)GC_MALLOC(sizeof(PAPEnv_9_t));
             void *arg1 = va_arg(argv, void *);
             newEnv->arg0 = env->arg0;
             newEnv->arg1 = env->arg1;

@@ -437,73 +437,28 @@ retrieveConstructorStructType env symbolTable t =
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand -> m Operand
 unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.double
-    -- load ptr 0
-    -- asInt <- ptrtoint what Type.i64
-    -- asPtr <- safeBitcast what (Type.ptr Type.double)
-    -- safeBitcast asPtr Type.double
-
-
-    -- ptr <- alloca (Type.ptr Type.double) Nothing 0
-    -- what' <- bitcast what (Type.ptr Type.double)
-    -- store ptr 0 what
-    -- load what' 0
-
-
-    -- what' <- bitcast what (Type.ptr Type.double)
-    -- ptr <- alloca (Type.ptr Type.double) Nothing 0
-    -- store ptr 0 what'
-    -- ptr' <- bitcast ptr (Type.ptr Type.double)
-    -- load ptr' 0
-
-
-
-    -- %2 = alloca i8*, align 8
-    -- store i8* %0, i8** %2, align 8
-    -- %3 = bitcast i8** %2 to double*
-    -- %4 = load double, double* %3, align 8
-    -- ret double %4
     ptr <- alloca boxType Nothing 0
     store ptr 0 what
     ptr' <- bitcast ptr (Type.ptr Type.double)
     load ptr' 0
 
-
-
-
-    -- ptr <- alloca Type.double Nothing 0
-    -- store ptr 0 what
-    -- ptr' <- bitcast ptr (Type.ptr boxType)
-    -- load ptr' 0
-
   IT.TCon (IT.TC "Byte" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.i8
-    -- load ptr 0
-    -- ptrtoint what Type.i8
     ptr <- alloca boxType Nothing 0
     store ptr 0 what
     ptr' <- bitcast ptr (Type.ptr Type.i8)
     load ptr' 0
 
   IT.TCon (IT.TC "Char" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.i32
-    -- load ptr 0
     ptrtoint what Type.i32
 
   IT.TCon (IT.TC "Integer" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.i64
-    -- load ptr 0
     ptrtoint what Type.i64
 
   IT.TCon (IT.TC "Boolean" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.i1
-    -- load ptr 0
     ptrtoint what Type.i1
 
   -- boxed strings are char**
   IT.TCon (IT.TC "String" _) _ -> do
-    -- ptr <- safeBitcast what $ Type.ptr stringType
-    -- load ptr 0
     safeBitcast what stringType
 
   IT.TCon (IT.TC "Unit" _) _ -> do
@@ -523,18 +478,11 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     safeBitcast what papType
 
   IT.TVar _ | IT.hasNumberPred ps -> do
-    -- ptr <- safeBitcast what $ Type.ptr Type.i64
-    -- load ptr 0
     ptrtoint what Type.i64
 
   -- That handles tuple types
   _ -> do
     let llvmType = buildLLVMType env symbolTable qt
-    -- if (llvmType == boxType || llvmType == constructedType) && IT.isTCon t && IT.getTConName t `List.notElem` tConExclude then do
-    --   ptr <- safeBitcast what (Type.ptr constructedType)
-    --   load ptr 0
-    -- else
-      -- That handles tuple types
     safeBitcast what llvmType
 
 
@@ -542,37 +490,6 @@ box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
-    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.double, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr Type.double)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
-
-
-    -- %4 = bitcast float* %1 to i8*
-    -- store i8* %4, i8** %2, align 8
-    -- %5 = load i8*, i8** %2, align 8
-    -- ptr <- alloca Type.double Nothing 0
-    -- store ptr 0 what
-    -- ptr2 <- alloca boxType Nothing 0
-    -- ptr' <- bitcast ptr boxType
-    -- store ptr2 0 ptr'
-    -- load ptr2 0
-
-    -- ; box
-    -- %5 = bitcast float* %1 to i8**
-    -- store i8** %5, i8*** %2, align 8
-    -- %6 = load i8**, i8*** %2, align 8
-    -- %7 = load i8*, i8** %6, align 8
-
-
-
-      -- %2 = alloca double, align 8
-      -- %3 = alloca i8**, align 8
-      -- store double %0, double* %2, align 8
-      -- %4 = bitcast double* %2 to i8**
-      -- store i8** %4, i8*** %3, align 8
-      -- %5 = load i8**, i8*** %3, align 8
-      -- %6 = load i8*, i8** %5, align 8
     ptr <- alloca Type.double Nothing 0
     boxWrap <- alloca (Type.ptr boxType) Nothing 0
     store ptr 0 what
@@ -581,55 +498,16 @@ box what = case typeOf what of
     loaded <- load boxWrap 0
     load loaded 0
 
-    -- SHOULD WORK BUT DOES NOT
-    -- -- double x = what
-    -- ptr <- alloca Type.double Nothing 0
-    -- store ptr 0 what
-
-    -- -- void **y = &x
-    -- ptr2 <- alloca (Type.ptr boxType) Nothing 0 -- i8***
-    -- ptr' <- bitcast ptr (Type.ptr boxType) -- i8**
-    -- store ptr2 0 ptr'
-    -- ptr2' <- bitcast ptr2 (Type.ptr boxType)
-    -- load ptr2' 0
-
-
-
-
-
-
-    -- ptr <- alloca Type.double Nothing 0
-    -- store ptr 0 what
-    -- ptr' <- bitcast ptr (Type.ptr boxType)
-    -- load ptr' 0
-
-    -- asPtr <- safeBitcast what (Type.ptr Type.double)
-    -- safeBitcast asPtr boxType
-    -- ptrtoint asInt boxType
-
   -- Integer
   Type.IntegerType 64 -> do
-    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i64, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr Type.i64)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
     inttoptr what boxType
 
   -- Char
   Type.IntegerType 32 -> do
-    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i32, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr Type.i32)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
     inttoptr what boxType
 
   -- Byte
   Type.IntegerType 8 -> do
-    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i8, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr Type.i8)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
-    -- inttoptr what boxType
     ptr <- alloca Type.i8 Nothing 0
     boxWrap <- alloca (Type.ptr boxType) Nothing 0
     store ptr 0 what
@@ -640,42 +518,19 @@ box what = case typeOf what of
 
   -- Boolean
   Type.IntegerType 1 -> do
-    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i1, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr Type.i1)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
     inttoptr what boxType
 
   -- String
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
-    -- ptr <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof stringType, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr stringType)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
     safeBitcast what boxType
-
-  -- Constructed value
-  -- Type.PointerType (Type.IntegerType 8) (AddrSpace 2) -> do
-  --   ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof constructedType, [])]
-  --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
-  --   store ptr' 0 what
-  --   safeBitcast ptr' boxType
 
   -- List
   Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
-    -- ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
-    -- ptr' <- safeBitcast ptr (Type.ptr listType)
-    -- store ptr' 0 what
-    -- safeBitcast ptr' boxType
     safeBitcast what boxType
 
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
     return what
-
-  -- closure?
-  -- t@(Type.PointerType (Type.StructureType _ _) _) -> do
-  --   return what
 
   -- Any pointer type
   _ ->
@@ -2379,19 +2234,11 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName co
           )
           (List.zip coreParams params)
 
-      -- unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
-      -- let paramsWithNames       = Map.fromList $ List.zip coreParams (uncurry localVarSymbol <$> List.zip params unboxedParams)
       let symbolTableWithParams = symbolTable <> Map.fromList paramsWithNames
 
       -- Generate body
       (generatedBody, _) <- generateBody env symbolTableWithParams body
 
-      -- case maybeBoxed of
-      --   Just boxed ->
-      --     ret boxed
-
-      --   Nothing -> do
-          -- box the result
       boxed <- box generatedBody
       ret boxed
 
@@ -4629,7 +4476,6 @@ generateAST pathsToBuild isMain astTable (moduleTable, symbolTable, processedHas
 
 generateAST _ _ _ _ _ =
   undefined
-
 
 
 type ModuleTable = Map.Map FilePath AST.Module

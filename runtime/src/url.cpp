@@ -1,5 +1,6 @@
-#include <curl/curl.h>
+
 #include <gc.h>
+#include <curl/curl.h>
 #include <string.h>
 
 #include "url.hpp"
@@ -11,12 +12,12 @@ extern "C" {
 madlib__maybe__Maybe_t *madlib__url__encode(char *url) {
   CURL *curl = curl_easy_init();
 
-  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   if (curl) {
     char *output = curl_easy_escape(curl, url, 0);
     if (output) {
       size_t outputLength = strlen(output);
-      char *data = (char *)GC_malloc(sizeof(char) * (outputLength + 1));
+      char *data = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (outputLength + 1));
       memcpy(data, output, outputLength + 1);
       curl_free(output);
 
@@ -35,13 +36,13 @@ madlib__maybe__Maybe_t *madlib__url__encode(char *url) {
 madlib__maybe__Maybe_t *madlib__url__decode(char *url) {
   CURL *curl = curl_easy_init();
 
-  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
 
   if (curl) {
     char *output = curl_easy_unescape(curl, url, 0, NULL);
     if (output) {
       size_t outputLength = strlen(output);
-      char *data = (char *)GC_malloc(sizeof(char) * (outputLength + 1));
+      char *data = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (outputLength + 1));
       memcpy(data, output, outputLength + 1);
       curl_free(output);
 

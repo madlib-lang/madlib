@@ -814,16 +814,16 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   let sc =
         if isLet then
-          Forall [] $ apply sFinal (ds'' :=> t)
+          Forall [] $ apply sFinal (ds'' :=> t')
         else
-          quantify fs $ apply sFinal (ds'' :=> t)
+          quantify fs $ apply sFinal (ds'' :=> t')
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t))
+      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t))
+      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t'))
 
 
 inferExplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)

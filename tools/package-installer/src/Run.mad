@@ -394,7 +394,7 @@ export run = (config) => {
   return pipe(
     prepare(config),
     bichain(
-      pipe(always("madlib.json"), installPackages(config, initialContext)),
+      pipe(always("madlib.json"), installPackages(config, initialContext), mapRej(IO.trace("it failed!"))),
       (packageDotJsonContent) => pipe(
         installPackages(config, initialContext),
         chain((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(of(x))),

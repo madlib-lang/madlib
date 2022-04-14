@@ -115,7 +115,6 @@ bad :: e -> Wish e a
 export bad = (e) => Wish((badCB, _) => badCB(e))
 
 
-
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => Wish((badCB, goodCB) => {
   amountOfWishesToProcess = length(wishes)
@@ -198,13 +197,11 @@ export after = (time, a) => Wish((_, goodCB) => #- {
 
 #elseif llvm
 
-
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) =>
-      run(badCB, goodCB)
-      // setTimeout((_) => run(badCB, goodCB), 0)
+      setTimeout((_) => run(badCB, goodCB), 0)
   }
 
   return {}

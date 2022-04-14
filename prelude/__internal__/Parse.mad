@@ -10,7 +10,7 @@ import { Just, Nothing } from "Maybe"
 import String from "String"
 import List from "List"
 import { always, complement, equals, ifElse, notEquals } from "Function"
-import { maybeLoop, loop, while } from "Control"
+import { maybeLoop, while } from "Control"
 
 
 
@@ -245,7 +245,7 @@ export notOneOf = (cs) => satisfy(complement(List.includes($, cs)))
 choice :: List (Parser a) -> Parser a
 export choice = (ps) => List.reduce(alt, fail, ps)
 
-import IO from "IO"
+
 /**
  * A parser combinator that applies 0 or more times the given parser.
  *
@@ -275,53 +275,6 @@ export many = (p) => Parser((s, l) => {
 
   return #[[#[List.reverse(acc), rest]], loc]
 })
-
-// many :: Parser a -> Parser (List a)
-// export many = (p) => Parser((s, l) => {
-//   rest = s
-//   loc = l
-//   acc = []
-//   loop(#[s, l, []], (state) =>
-//     where(state) {
-//       #[ss, ll, a] =>
-//         where(parse(p, ss, ll)) {
-//           #[[#[parsed, r]], loc_] => do {
-//             rest = r
-//             loc = loc_
-//             acc = [parsed, ...a]
-//             return true
-//           }
-
-//           _ =>
-//             false
-//         }
-//     },
-//     (_) => #[rest, loc, acc]
-//   )
-
-//   return #[[#[List.reverse(acc), rest]], loc]
-// })
-
-
-// many :: Parser a -> Parser (List a)
-// export many = (p) => Parser((s, l) => {
-//   result = maybeLoop(#[s, l, []], (state) =>
-//     where(state) {
-//       #[ss, ll, acc] =>
-//         where(parse(p, ss, ll)) {
-//           #[[#[parsed, rest]], loc] =>
-//             Just(#[rest, loc, [parsed, ...acc]])
-
-//           _ =>
-//             Nothing
-//         }
-//     }
-//   )
-
-//   return where(result) {
-//     #[rest, loc, parseResult] =>
-//       #[[#[List.reverse(parseResult), rest]], loc] }
-// })
 
 
 /**
@@ -561,7 +514,7 @@ export spaces = pipe(
  * runParser(token(string("hello")), "hello\n!") // Left (Loc 0 0 0)
  */
 token :: Parser a -> Parser a
-export token = apL($, spaces)
+export token = apL($, alt(spaces, pure([])))
 
 /**
  * A parser combinator that parses a given string and discards all trailing

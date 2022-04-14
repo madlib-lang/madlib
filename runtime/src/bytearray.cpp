@@ -1,9 +1,7 @@
 
-#include "bytearray.hpp"
-
 #include <gc.h>
+#include "bytearray.hpp"
 #include <stdio.h>
-
 #include <cstring>
 
 #ifdef __cplusplus
@@ -45,7 +43,7 @@ char *madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytea
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_malloc_atomic(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
+  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
 
   // Leading "ByteArray(["
   strncpy(result, "ByteArray(", sizeof(char) * 10);
@@ -77,7 +75,7 @@ char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
 
   if (arr->bytes[arr->length - 1] > 0) {
     // TODO: realloc should be ok here
-    string = (char *)GC_malloc_atomic(sizeof(char) * (arr->length + 1));
+    string = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
     memcpy(string, arr->bytes, arr->length);
     string[arr->length] = '\0';
   }
@@ -89,7 +87,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__fromString(char *string) {
   size_t length = strlen(string);
 
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
+      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
 
   result->bytes = (unsigned char*) string;
   result->length = length;
@@ -101,8 +99,8 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__fromList(madlib__list__Node_t
   int64_t itemCount = madlib__list__length(list);
 
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_malloc_atomic(itemCount * sizeof(unsigned char));
+      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(itemCount * sizeof(unsigned char));
   result->length = itemCount;
 
   for (int i = 0; i < itemCount; i++) {
@@ -127,8 +125,8 @@ madlib__list__Node_t *madlib__bytearray__toList(madlib__bytearray__ByteArray_t *
 madlib__bytearray__ByteArray_t *madlib__bytearray__concat(madlib__bytearray__ByteArray_t *a,
                                                           madlib__bytearray__ByteArray_t *b) {
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_malloc_atomic((a->length + b->length) * sizeof(unsigned char));
+      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC((a->length + b->length) * sizeof(unsigned char));
 
   memcpy(result->bytes, a->bytes, a->length * sizeof(unsigned char));
   memcpy(result->bytes + a->length, b->bytes, b->length * sizeof(unsigned char));
@@ -140,9 +138,9 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concat(madlib__bytearray__Byt
 
 madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearray__ByteArray_t *arr) {
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
+      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
   result->length = arr->length;
-  result->bytes = (unsigned char *)GC_malloc_atomic(arr->length * sizeof(unsigned char));
+  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(arr->length * sizeof(unsigned char));
 
   for (int i = 0; i < arr->length; i++) {
     result->bytes[i] = (unsigned char)(int64_t)__applyPAP__(f, 1, (void*)arr->bytes[i]);

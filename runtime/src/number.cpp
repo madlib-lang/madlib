@@ -1,8 +1,10 @@
+
+#include <gc.h>
 #include "number.hpp"
 #include "string.hpp"
 
 #include <inttypes.h>
-#include <gc.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,14 +13,14 @@ extern "C" {
 // Byte
 
 char *madlib__number__internal__showByte(unsigned char i) {
-  char *str = (char *)GC_malloc(3 * sizeof(char));
+  char *str = (char *)GC_MALLOC_ATOMIC(3 * sizeof(char));
   snprintf(str, 3 * sizeof(char), "%02X", i);
 
   return str;
 }
 
 char *madlib__number__internal__inspectByte(unsigned char i) {
-  char *str = (char *)GC_malloc(3 * sizeof(char));
+  char *str = (char *)GC_MALLOC_ATOMIC(3 * sizeof(char));
   snprintf(str, 3 * sizeof(char), "%02X", i);
 
   return str;
@@ -97,7 +99,7 @@ unsigned char madlib__number__internal__rightShiftBytes(unsigned char a,
 }
 
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
-  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   unsigned char parsed;
   int success = sscanf(s, "%c", &parsed);
 
@@ -115,7 +117,7 @@ madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
 // Float
 
 char *madlib__number__internal__showFloat(double d) {
-  char *str = (char *)GC_malloc(200);
+  char *str = (char *)GC_MALLOC_ATOMIC(200);
   sprintf(str, "%.20f", d);
   char *stripped = stripTrailingZeros(str);
 
@@ -135,7 +137,7 @@ double *boxDouble(double x) {
 
 
 char *madlib__number__internal__inspectFloat(double *d) {
-  char *str = (char *)GC_malloc(200);
+  char *str = (char *)GC_MALLOC_ATOMIC(200);
   sprintf(str, "%.20f", unboxDouble(d));
   char *stripped = stripTrailingZeros(str);
 
@@ -183,15 +185,13 @@ bool madlib__number__internal__eqFloat(double *a, double *b) {
 }
 
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
-  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   double parsed;
   int success = sscanf(s, "%lf", &parsed);
 
   if (success == 1) {
-    double *boxed = (double*)GC_malloc(sizeof(double));
-    *boxed = parsed;
     result->index = 0;
-    result->data = boxed;
+    result->data = boxDouble(parsed);
   } else {
     result->index = 1;
     result->data = NULL;
@@ -203,14 +203,14 @@ madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
 // Integer
 
 char *madlib__number__internal__showInteger(int64_t i) {
-  char *str = (char *)GC_malloc_atomic(30);
+  char *str = (char *)GC_MALLOC_ATOMIC(30);
   sprintf(str, "%" PRId64, i);
 
   return str;
 }
 
 char *madlib__number__internal__inspectInteger(int64_t i) {
-  char *str = (char *)GC_malloc_atomic(30);
+  char *str = (char *)GC_MALLOC_ATOMIC(30);
   sprintf(str, "%" PRId64, i);
 
   return str;
@@ -281,7 +281,7 @@ bool madlib__number__internal__eqInteger(int64_t a, int64_t b) {
 }
 
 madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
-  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_malloc(sizeof(madlib__maybe__Maybe_t));
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   int64_t parsed;
   int success = sscanf(s, "%" SCNd64, &parsed);
 

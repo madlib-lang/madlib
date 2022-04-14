@@ -1,8 +1,8 @@
+
 #include <gc.h>
 #include <iostream>
 #include <string.h>
 #include <cstdarg>
-
 #include "record.hpp"
 
 // Records
@@ -32,10 +32,10 @@ madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCou
 
   int32_t actualFieldCount = base == NULL ? fieldCount : base->fieldCount;
 
-  madlib__record__Record_t *record = (madlib__record__Record_t *)GC_malloc(sizeof(madlib__record__Record_t));
+  madlib__record__Record_t *record = (madlib__record__Record_t *)GC_MALLOC(sizeof(madlib__record__Record_t));
 
   madlib__record__Field_t **fields =
-      (madlib__record__Field_t **)GC_malloc(sizeof(madlib__record__Field_t) * actualFieldCount);
+      (madlib__record__Field_t **)GC_MALLOC(sizeof(madlib__record__Field_t) * actualFieldCount);
   record->fieldCount = actualFieldCount;
   record->fields = fields;
 
@@ -50,7 +50,7 @@ madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCou
     // If it's an extension we need to overwrite the update fields
     // first we copy all fields
     for (int i = 0; i < base->fieldCount; i++) {
-      record->fields[i] = (madlib__record__Field_t *)GC_malloc(sizeof(madlib__record__Field_t));
+      record->fields[i] = (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t));
       record->fields[i]->name = base->fields[i]->name;
       record->fields[i]->value = base->fields[i]->value;
     }
