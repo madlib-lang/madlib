@@ -2,7 +2,6 @@
 CXX ?= clang++
 TARGET ?= MACOS_ARM64
 AR ?= llvm-ar
-CXXFLAGS :=
 
 
 INCLUDEDIR := include
@@ -28,7 +27,6 @@ OBJS :=\
   $(BUILDDIR)/stdio.o\
   $(BUILDDIR)/http.o\
   $(BUILDDIR)/url.o\
-  $(BUILDDIR)/recursion.o\
   $(BUILDDIR)/apply-pap.o\
   $(BUILDDIR)/stack.o\
   $(BUILDDIR)/gc.o\

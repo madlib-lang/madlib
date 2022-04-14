@@ -95,8 +95,8 @@ typedef struct madlib__http__Error_ClientError {
  */
 typedef struct madlib__http__Header {
   int64_t index;
-  char **name;
-  char **value;
+  char *name;
+  char *value;
 } madlib__http__Header_t;
 
 /**

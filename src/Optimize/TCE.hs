@@ -51,7 +51,7 @@ markDefinition env exp = case exp of
 
   Typed qt@(_ :=> fnType) area metadata (Definition params body) | Maybe.isJust (envCurrentName env) ->
     let Just fnName = envCurrentName env
-    in  case findRecursionKind fnType fnName params body of
+    in  case findRecursionKind fnType fnName (getValue <$> params) body of
           Just kind ->
             Typed qt area (RecursiveDefinition kind : metadata) (Definition params (markTRCCalls kind fnType fnName . markDefinition env <$> body))
           Nothing ->

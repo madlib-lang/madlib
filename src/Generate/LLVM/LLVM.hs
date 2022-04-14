@@ -437,37 +437,83 @@ retrieveConstructorStructType env symbolTable t =
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand -> m Operand
 unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr Type.double
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.double
+    -- load ptr 0
+    -- asInt <- ptrtoint what Type.i64
+    -- asPtr <- safeBitcast what (Type.ptr Type.double)
+    -- safeBitcast asPtr Type.double
+
+
+    -- ptr <- alloca (Type.ptr Type.double) Nothing 0
+    -- what' <- bitcast what (Type.ptr Type.double)
+    -- store ptr 0 what
+    -- load what' 0
+
+
+    -- what' <- bitcast what (Type.ptr Type.double)
+    -- ptr <- alloca (Type.ptr Type.double) Nothing 0
+    -- store ptr 0 what'
+    -- ptr' <- bitcast ptr (Type.ptr Type.double)
+    -- load ptr' 0
+
+
+
+    -- %2 = alloca i8*, align 8
+    -- store i8* %0, i8** %2, align 8
+    -- %3 = bitcast i8** %2 to double*
+    -- %4 = load double, double* %3, align 8
+    -- ret double %4
+    ptr <- alloca boxType Nothing 0
+    store ptr 0 what
+    ptr' <- bitcast ptr (Type.ptr Type.double)
+    load ptr' 0
+
+
+
+
+    -- ptr <- alloca Type.double Nothing 0
+    -- store ptr 0 what
+    -- ptr' <- bitcast ptr (Type.ptr boxType)
+    -- load ptr' 0
 
   IT.TCon (IT.TC "Byte" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr Type.i8
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.i8
+    -- load ptr 0
+    -- ptrtoint what Type.i8
+    ptr <- alloca boxType Nothing 0
+    store ptr 0 what
+    ptr' <- bitcast ptr (Type.ptr Type.i8)
+    load ptr' 0
 
   IT.TCon (IT.TC "Char" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr Type.i32
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.i32
+    -- load ptr 0
+    ptrtoint what Type.i32
 
   IT.TCon (IT.TC "Integer" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr Type.i64
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.i64
+    -- load ptr 0
+    ptrtoint what Type.i64
 
   IT.TCon (IT.TC "Boolean" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr Type.i1
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.i1
+    -- load ptr 0
+    ptrtoint what Type.i1
 
   -- boxed strings are char**
   IT.TCon (IT.TC "String" _) _ -> do
-    ptr <- safeBitcast what $ Type.ptr stringType
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr stringType
+    -- load ptr 0
+    safeBitcast what stringType
 
   IT.TCon (IT.TC "Unit" _) _ -> do
     safeBitcast what $ Type.ptr Type.i1
 
   -- boxed lists are { i8*, i8* }**
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
-    ptr <- safeBitcast what (Type.ptr listType)
-    load ptr 0
+    -- ptr <- safeBitcast what (Type.ptr listType)
+    -- load ptr 0
+    safeBitcast what listType
 
   IT.TRecord _ _ -> do
     safeBitcast what recordType
@@ -477,8 +523,9 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     safeBitcast what papType
 
   IT.TVar _ | IT.hasNumberPred ps -> do
-    ptr <- safeBitcast what $ Type.ptr Type.i64
-    load ptr 0
+    -- ptr <- safeBitcast what $ Type.ptr Type.i64
+    -- load ptr 0
+    ptrtoint what Type.i64
 
   -- That handles tuple types
   _ -> do
@@ -495,45 +542,117 @@ box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
-    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.double, [])]
-    ptr' <- safeBitcast ptr (Type.ptr Type.double)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.double, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr Type.double)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+
+
+    -- %4 = bitcast float* %1 to i8*
+    -- store i8* %4, i8** %2, align 8
+    -- %5 = load i8*, i8** %2, align 8
+    -- ptr <- alloca Type.double Nothing 0
+    -- store ptr 0 what
+    -- ptr2 <- alloca boxType Nothing 0
+    -- ptr' <- bitcast ptr boxType
+    -- store ptr2 0 ptr'
+    -- load ptr2 0
+
+    -- ; box
+    -- %5 = bitcast float* %1 to i8**
+    -- store i8** %5, i8*** %2, align 8
+    -- %6 = load i8**, i8*** %2, align 8
+    -- %7 = load i8*, i8** %6, align 8
+
+
+
+      -- %2 = alloca double, align 8
+      -- %3 = alloca i8**, align 8
+      -- store double %0, double* %2, align 8
+      -- %4 = bitcast double* %2 to i8**
+      -- store i8** %4, i8*** %3, align 8
+      -- %5 = load i8**, i8*** %3, align 8
+      -- %6 = load i8*, i8** %5, align 8
+    ptr <- alloca Type.double Nothing 0
+    boxWrap <- alloca (Type.ptr boxType) Nothing 0
+    store ptr 0 what
+    ptr' <- bitcast ptr (Type.ptr boxType)
+    store boxWrap 0 ptr'
+    loaded <- load boxWrap 0
+    load loaded 0
+
+    -- SHOULD WORK BUT DOES NOT
+    -- -- double x = what
+    -- ptr <- alloca Type.double Nothing 0
+    -- store ptr 0 what
+
+    -- -- void **y = &x
+    -- ptr2 <- alloca (Type.ptr boxType) Nothing 0 -- i8***
+    -- ptr' <- bitcast ptr (Type.ptr boxType) -- i8**
+    -- store ptr2 0 ptr'
+    -- ptr2' <- bitcast ptr2 (Type.ptr boxType)
+    -- load ptr2' 0
+
+
+
+
+
+
+    -- ptr <- alloca Type.double Nothing 0
+    -- store ptr 0 what
+    -- ptr' <- bitcast ptr (Type.ptr boxType)
+    -- load ptr' 0
+
+    -- asPtr <- safeBitcast what (Type.ptr Type.double)
+    -- safeBitcast asPtr boxType
+    -- ptrtoint asInt boxType
 
   -- Integer
   Type.IntegerType 64 -> do
-    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i64, [])]
-    ptr' <- safeBitcast ptr (Type.ptr Type.i64)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i64, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr Type.i64)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    inttoptr what boxType
 
   -- Char
   Type.IntegerType 32 -> do
-    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i32, [])]
-    ptr' <- safeBitcast ptr (Type.ptr Type.i32)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i32, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr Type.i32)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    inttoptr what boxType
 
   -- Byte
   Type.IntegerType 8 -> do
-    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i8, [])]
-    ptr' <- safeBitcast ptr (Type.ptr Type.i8)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i8, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr Type.i8)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    -- inttoptr what boxType
+    ptr <- alloca Type.i8 Nothing 0
+    boxWrap <- alloca (Type.ptr boxType) Nothing 0
+    store ptr 0 what
+    ptr' <- bitcast ptr (Type.ptr boxType)
+    store boxWrap 0 ptr'
+    loaded <- load boxWrap 0
+    load loaded 0
 
   -- Boolean
   Type.IntegerType 1 -> do
-    ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i1, [])]
-    ptr' <- safeBitcast ptr (Type.ptr Type.i1)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof Type.i1, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr Type.i1)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    inttoptr what boxType
 
   -- String
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
-    ptr <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof stringType, [])]
-    ptr' <- safeBitcast ptr (Type.ptr stringType)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr <- call gcMallocAtomic [(Operand.ConstantOperand $ sizeof stringType, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr stringType)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    safeBitcast what boxType
 
   -- Constructed value
   -- Type.PointerType (Type.IntegerType 8) (AddrSpace 2) -> do
@@ -544,10 +663,11 @@ box what = case typeOf what of
 
   -- List
   Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
-    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
-    ptr' <- safeBitcast ptr (Type.ptr listType)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+    -- ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
+    -- ptr' <- safeBitcast ptr (Type.ptr listType)
+    -- store ptr' 0 what
+    -- safeBitcast ptr' boxType
+    safeBitcast what boxType
 
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
@@ -689,15 +809,20 @@ collectDictArgs symbolTable exp = case exp of
     return ([], exp)
 
 
-retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
-retrieveArgs =
-  mapM (\(_, arg, maybeBoxedArg) -> case maybeBoxedArg of
-          Just boxed ->
-            return boxed
+retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [[Core.Metadata]] -> [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
+retrieveArgs metadata exps =
+  mapM
+    (\(metadata, (_, arg, maybeBoxedArg)) -> case maybeBoxedArg of
+      Just boxed | Core.isReferenceArgument metadata ->
+        return boxed
 
-          Nothing ->
-            box arg
-       )
+      Just _ ->
+        box arg
+
+      Nothing ->
+        box arg
+    )
+    (List.zip metadata exps)
 
 
 generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
@@ -705,7 +830,7 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
   | List.length args == arity = do
       -- We have a known call!
       args'   <- mapM (generateExp env { isLast = False } symbolTable) args
-      args''  <- retrieveArgs args'
+      args''  <- retrieveArgs (Core.getMetadata <$> args) args'
       let args''' = (, []) <$> args''
 
       ret <- call fnOperand args'''
@@ -716,14 +841,14 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       -- We have extra args so we do the known call and the applyPAP the resulting partial application
       let (args', remainingArgs) = List.splitAt arity args
       args''   <- mapM (generateExp env { isLast = False } symbolTable) args'
-      args'''  <- retrieveArgs args''
+      args'''  <- retrieveArgs (Core.getMetadata <$> args') args''
       let args'''' = (, []) <$> args'''
 
       pap <- call fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
       remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
-      remainingArgs'' <- retrieveArgs remainingArgs'
+      remainingArgs'' <- retrieveArgs (Core.getMetadata <$> remainingArgs) remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
       ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
@@ -741,7 +866,7 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       boxedFn  <- box fnOperand
 
       args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-      boxedArgs <- retrieveArgs args'
+      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
@@ -903,11 +1028,13 @@ generateExp env symbolTable exp = case exp of
         loaded <- load ptr 0
         return (symbolTable, loaded, Nothing)
 
-      Just (Symbol (LocalVariableSymbol ptr) value) -> do
+      Just (Symbol (LocalVariableSymbol ptr) value) ->
         if Maybe.isJust (recursionData env) then
           return (symbolTable, value, Nothing)
-        else
-          return (symbolTable, value, Just ptr)
+        else do
+          ptr' <- safeBitcast ptr (Type.ptr (typeOf value))
+          loaded <- load ptr' 0
+          return (symbolTable, loaded, Just ptr)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         let constructedType = retrieveConstructorStructType env symbolTable t
@@ -943,7 +1070,7 @@ generateExp env symbolTable exp = case exp of
         []
         wrapperType
         (Char8.unpack (ShortByteString.fromShort fnName'))
-        dictNameParams
+        (Core.Typed ([] IT.:=> IT.tVar "dict") emptyArea [] <$> dictNameParams)
         [innerExp]
     return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName), Nothing)
     where
@@ -992,7 +1119,8 @@ generateExp env symbolTable exp = case exp of
         -- Handle special nullary cases like assignment methods or mempty
         pap     <- call fnPtr []
         unboxed <- unbox env symbolTable qt pap
-        return (symbolTable, unboxed, Just pap)
+        return (symbolTable, unboxed, Nothing)
+        -- return (symbolTable, unboxed, Just pap)
 
       Just (Symbol (MethodSymbol arity) fnOperand) -> do
         buildReferencePAP symbolTable arity fnOperand
@@ -1003,7 +1131,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Export e) -> do
     generateExp env { isLast = False } symbolTable e
 
-  Core.Typed (ps IT.:=> ty) _ _ (Core.Assignment name e) -> do
+  Core.Typed (ps IT.:=> ty) _ metadata (Core.Assignment name e) -> do
     (symbolTable', exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
 
     if isTopLevel env then do
@@ -1013,57 +1141,21 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp', Nothing)
     else
-      case Map.lookup name symbolTable of
-        Just (Symbol (LocalVariableSymbol ptr) value) ->
-          -- TODO: handle strings properly here
-          case typeOf exp' of
-            Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-              ptr' <- safeBitcast ptr $ Type.ptr stringType
-              store ptr' 0 exp'
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-            Type.PointerType _ _ | IT.isListType ty -> do
-              ptr' <- safeBitcast ptr $ Type.ptr listType
-              store ptr' 0 exp'
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
-
-            Type.PointerType _ _ | IT.isByteArrayType ty || IT.isArrayType ty || IT.isDictionaryType ty -> do
-              let structType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
-              ptr' <- safeBitcast ptr (Type.ptr structType)
-              exp'' <- safeBitcast exp' (Type.ptr structType)
-              loaded <- load exp'' 0
-              store ptr' 0 loaded
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-            _ | ty == IT.tInteger -> do
-              ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
-              exp''  <- safeBitcast exp' Type.i64
-              store ptr' 0 exp''
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Just ptr)
-
-            Type.PointerType t _  -> do
-              ptr'   <- safeBitcast ptr $ typeOf exp'
-              loaded <- load exp' 0
-              store ptr' 0 loaded
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-            _ | IT.hasNumberPred ps -> do
-              ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
-              exp''  <- safeBitcast exp' Type.i64
-              store ptr' 0 exp''
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Just ptr)
-
-            _ -> do
-              ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
-              store ptr' 0 exp'
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-        Just (Symbol _ _) ->
-          return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
-
-        Nothing -> do
-          boxed <- box exp'
-          return (Map.insert name (localVarSymbol boxed exp') symbolTable, exp', Just boxed)
+      if Core.isReferenceAllocation metadata then do
+        let expType = typeOf exp'
+            ptrType = Type.ptr expType
+        ptr  <- call gcMalloc [(Operand.ConstantOperand (sizeof expType), [])]
+        ptr' <- safeBitcast ptr ptrType
+        store ptr' 0 exp'
+        return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr')
+      else if Core.isReferenceStore metadata then
+        case Map.lookup name symbolTable of
+          Just (Symbol (LocalVariableSymbol ptr) value) -> do
+            ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+            store ptr' 0 exp'
+            return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
+      else
+        return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
@@ -1506,7 +1598,7 @@ generateExp env symbolTable exp = case exp of
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
         let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) args
-        
+
         args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
@@ -1537,7 +1629,7 @@ generateExp env symbolTable exp = case exp of
         pap'' <- safeBitcast pap' boxType
 
         args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs args'
+        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
         ret       <- call applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed   <- unbox env symbolTable qt ret
@@ -1554,7 +1646,7 @@ generateExp env symbolTable exp = case exp of
         dictArgs'       <- mapM box dictArgs
 
         args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs args'
+        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
         let allArgs = dictArgs' ++ boxedArgs
 
         case fn' of
@@ -1591,7 +1683,7 @@ generateExp env symbolTable exp = case exp of
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
         args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs args'
+        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed <- unbox env symbolTable qt ret
@@ -1604,7 +1696,7 @@ generateExp env symbolTable exp = case exp of
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
         args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs args'
+        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed <- unbox env symbolTable qt ret
@@ -1667,7 +1759,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.TupleConstructor exps) -> do
     -- exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
     exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
-    boxedExps <- retrieveArgs exps'
+    boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
     tuplePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
@@ -1731,7 +1823,7 @@ generateExp env symbolTable exp = case exp of
         -- boxed <- box item'
         -- call madlistSingleton [(boxed, [])]
         item <- generateExp env { isLast = False } symbolTable lastItem
-        items <- retrieveArgs [item]
+        items <- retrieveArgs [Core.getMetadata lastItem] [item]
         call madlistSingleton [(List.head items, [])]
 
       Core.Typed _ _ _ (Core.ListSpread spread) -> do
@@ -1747,8 +1839,8 @@ generateExp env symbolTable exp = case exp of
           -- (_, item', _) <- generateExp env { isLast = False } symbolTable item
           -- boxed <- box item'
           -- call madlistPush [(boxed, []), (list', [])]
-          item <- generateExp env { isLast = False } symbolTable item
-          items <- retrieveArgs [item]
+          item' <- generateExp env { isLast = False } symbolTable item
+          items <- retrieveArgs [Core.getMetadata item] [item']
           call madlistPush [(List.head items, []), (list', [])]
 
         Core.Typed _ _ _ (Core.ListSpread spread) -> do
@@ -1770,7 +1862,7 @@ generateExp env symbolTable exp = case exp of
     base' <- case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
         field  <- generateExp env { isLast = False } symbolTable exp
-        fields <- retrieveArgs [field]
+        fields <- retrieveArgs [Core.getMetadata exp] [field]
         return (List.head fields)
 
       _ ->
@@ -1787,7 +1879,7 @@ generateExp env symbolTable exp = case exp of
           let fieldType = Type.StructureType False [stringType, boxType]
           nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
           field  <- generateExp env { isLast = False } symbolTable value
-          fields <- retrieveArgs [field]
+          fields <- retrieveArgs [Core.getMetadata value] [field]
 
           fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
           fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
@@ -2171,21 +2263,12 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateInitialResult :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> m Operand
-generateInitialResult qt@(_ IT.:=> t) = case t of
-  IT.TApp (IT.TCon (IT.TC "List" _) "prelude") _ ->
-    emptyList >>= box
-
-  _ ->
-    return $ Operand.ConstantOperand (Constant.Undef Type.i8 )
-
-
-generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [String] -> [Core.Exp] -> m SymbolTable
-generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName paramNames body = do
+generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
+generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName coreParams body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
-      params'       = (boxType,) . makeParamName <$> paramNames
+      params'       = (boxType,) . makeParamName <$> (Core.getValue <$> coreParams)
       functionName' = AST.mkName functionName
-      dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) paramNames
+      dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) (Core.getValue <$> coreParams)
 
   function <- function functionName' params' boxType $ \params ->
     if Core.isTCODefinition metadata then mdo
@@ -2258,7 +2341,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       loop <- block `named` "loop"
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
-      let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
+      let paramsWithNames       = Map.fromList $ List.zip (Core.getValue <$> coreParams) (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
 
@@ -2282,21 +2365,35 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       entry <- block `named` "entry"
 
       let typesWithParams = List.zip paramTypes params
-      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
-      let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
-          symbolTableWithParams = symbolTable <> paramsWithNames
+      paramsWithNames <-
+        mapM
+          (\(Typed paramQt _ metadata paramName, param) ->
+              if Core.isReferenceParameter metadata then do
+                param' <- safeBitcast param (Type.ptr boxType)
+                loaded <- load param' 0
+                unboxed <- unbox env symbolTable paramQt loaded
+                return (paramName, localVarSymbol param unboxed)
+              else do
+                unboxed <- unbox env symbolTable paramQt param
+                return (paramName, varSymbol unboxed)
+          )
+          (List.zip coreParams params)
+
+      -- unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
+      -- let paramsWithNames       = Map.fromList $ List.zip coreParams (uncurry localVarSymbol <$> List.zip params unboxedParams)
+      let symbolTableWithParams = symbolTable <> Map.fromList paramsWithNames
 
       -- Generate body
-      (generatedBody, maybeBoxed) <- generateBody env symbolTableWithParams body
+      (generatedBody, _) <- generateBody env symbolTableWithParams body
 
-      case maybeBoxed of
-        Just boxed ->
-          ret boxed
+      -- case maybeBoxed of
+      --   Just boxed ->
+      --     ret boxed
 
-        Nothing -> do
+      --   Nothing -> do
           -- box the result
-          boxed <- box generatedBody
-          ret boxed
+      boxed <- box generatedBody
+      ret boxed
 
   let symbolConstructor =
         if isMethod then
@@ -2304,8 +2401,8 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
         else
           fnSymbol
 
-  Writer.tell $ Map.singleton functionName (symbolConstructor (List.length paramNames) function)
-  return $ Map.insert functionName (symbolConstructor (List.length paramNames) function) symbolTable
+  Writer.tell $ Map.singleton functionName (symbolConstructor (List.length coreParams) function)
+  return $ Map.insert functionName (symbolConstructor (List.length coreParams) function) symbolTable
 
 
 generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
@@ -2377,19 +2474,11 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
     symbolTable
 
 
-listToIndices :: [a] -> [Int]
-listToIndices l | List.null l = []
-                | otherwise   = [0 .. List.length l - 1]
-
-
-
-
-
 generateDoExps :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateDoExps env symbolTable exps = case exps of
   [exp] -> do
-    (_, result, boxed) <- generateExp env symbolTable exp
-    return (result, boxed)
+    (_, result, _) <- generateExp env symbolTable exp
+    return (result, Nothing)
 
   (exp : es) -> do
     (symbolTable', _, _) <- generateExp env { isLast = False } symbolTable exp
@@ -2398,11 +2487,13 @@ generateDoExps env symbolTable exps = case exps of
   _ ->
     undefined
 
+
 generateBody :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateBody env symbolTable exps = case exps of
   [exp] -> do
-    (_, result, boxed) <- generateExp env { isLast = True } symbolTable exp
-    return (result, boxed)
+    (_, result, _) <- generateExp env { isLast = True } symbolTable exp
+    return (result, Nothing)
+    -- return (result, boxed)
 
   (exp : es) -> do
     (symbolTable', _, _) <- generateExp env symbolTable exp
@@ -2410,7 +2501,6 @@ generateBody env symbolTable exps = case exps of
 
   _ ->
     undefined
-
 
 
 extractEnvArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand -> [Int] -> m [Operand.Operand]
@@ -2897,7 +2987,7 @@ buildTupleNEqInstance n =
           [ ( "=="
             -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
             , ( Core.Typed methodQualType emptyArea [] (Assignment "==" (
-                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse eqDictNames ++ ["a", "b"]) [
+                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse (Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] <$> eqDictNames) ++ (Core.Typed tupleQualType emptyArea [] <$> ["a", "b"])) [
                     Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Where (
                       Core.Typed whereExpQualType emptyArea [] (TupleConstructor [
                         Core.Typed tupleQualType emptyArea [] (Core.Var "a" False),
@@ -3009,7 +3099,7 @@ buildTupleNInspectInstance n =
           [ ( "inspect"
             -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
             , ( Core.Typed methodQualType emptyArea [] (Core.Assignment "==" (
-                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse inspectDictNames ++ ["tuple"]) [
+                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse (Core.Typed ([] IT.:=> IT.tVar "inspectDict") emptyArea [] <$> inspectDictNames) ++ [Core.Typed tupleQualType emptyArea [] "tuple"]) [
                     Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Where (
                       Core.Typed whereExpQualType emptyArea [] (TupleConstructor [
                         Core.Typed tupleQualType emptyArea [] (Core.Var "tuple" False)
@@ -3329,7 +3419,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "+" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3341,7 +3431,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "-" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3353,7 +3443,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "*" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3365,7 +3455,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3377,7 +3467,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3389,7 +3479,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">=" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3401,7 +3491,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<=" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3413,7 +3503,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToInteger" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3424,7 +3514,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "unary-minus"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateInteger" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3443,7 +3533,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "&"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3455,7 +3545,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "|"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3467,7 +3557,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "^"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3479,7 +3569,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "~"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3490,7 +3580,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<<"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3502,7 +3592,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">>"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3514,7 +3604,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">>>"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3534,7 +3624,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3546,7 +3636,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3558,7 +3648,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3570,7 +3660,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3582,7 +3672,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3594,7 +3684,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3606,7 +3696,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3618,7 +3708,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToByte" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3629,7 +3719,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "unary-minus"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateByte" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3649,7 +3739,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "&"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3661,7 +3751,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "|"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3673,7 +3763,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "^"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3685,7 +3775,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "~"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3696,7 +3786,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<<"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3708,7 +3798,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">>"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3720,7 +3810,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">>>"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3740,7 +3830,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3752,7 +3842,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3764,7 +3854,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3776,7 +3866,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3788,7 +3878,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3800,7 +3890,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3812,7 +3902,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
@@ -3824,7 +3914,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToFloat" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3835,7 +3925,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "unary-minus"
                   , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateFloat" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3877,7 +3967,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed stringInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed stringInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed stringInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed stringInspectQualType emptyArea [] (Core.Var "madlib__string__internal__inspect" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3896,7 +3986,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed integerInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed integerInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed integerInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed integerInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectInteger" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3915,7 +4005,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed byteInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed byteInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed byteInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed byteInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectByte" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3934,7 +4024,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed charInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed charInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed charInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed charInspectQualType emptyArea [] (Core.Var "madlib__char__internal__inspect" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3953,7 +4043,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed floatInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed floatInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed floatInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> IT.tFloat) emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed floatInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectFloat" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3972,7 +4062,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed boolInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed boolInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed boolInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed boolInspectQualType emptyArea [] (Core.Var "madlib__boolean__internal__inspectBoolean" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -3991,7 +4081,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed unitInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "\"{}\"")
                         ])
                       ))
@@ -4008,7 +4098,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed unitInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "\"[Function]\"")
                         ])
                       ))
@@ -4025,7 +4115,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed byteArrayInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed byteArrayInspectQualType emptyArea [] (Core.Definition ["a"] [
+                        Core.Typed byteArrayInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed byteArrayInspectQualType emptyArea [] (Core.Var "madlib__bytearray__internal__inspect" False)) [
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
@@ -4044,7 +4134,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition ["inspectDict", "a"] [
+                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDict", Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed overloadedInspectQualType emptyArea [] (Core.Var "madlib__list__internal__inspect" False)) [
                               Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDict" False),
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
@@ -4064,7 +4154,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition ["inspectDict", "a"] [
+                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDict", Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed overloadedInspectQualType emptyArea [] (Core.Var "madlib__array__internal__inspect" False)) [
                               Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDict" False),
                               Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
@@ -4085,7 +4175,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                 [ ( "inspect"
                   -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
                   , ( Core.Typed dictionaryInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed dictionaryInspectQualType emptyArea [] (Core.Definition ["inspectDictB", "inspectDictA", "a"] [
+                        Core.Typed dictionaryInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDictB", Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDictA", Core.Typed inspectVarQualType emptyArea [] "a"] [
                           Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed dictionaryInspectQualType emptyArea [] (Core.Var "madlib__dictionary__internal__inspect" False)) [
                               Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDictA" False),
                               Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDictB" False),
@@ -4112,7 +4202,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqInteger" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4132,7 +4222,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqByte" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4152,7 +4242,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__char__internal__eq" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4172,7 +4262,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqFloat" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4192,7 +4282,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__string__internal__eq" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4212,7 +4302,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__boolean__internal__eq" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4232,7 +4322,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Literal $ LBool "true")
                         ])
                       ))
@@ -4249,7 +4339,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Literal $ LBool "true")
                         ])
                       ))
@@ -4270,7 +4360,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition ["eqDict", "a", "b"] [
+                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDict" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "madlib__list__internal__eq" False)) [
                             Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDict" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
@@ -4291,7 +4381,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition ["eqDict", "a", "b"] [
+                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDict" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "madlib__array__internal__eq" False)) [
                             Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDict" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
@@ -4312,7 +4402,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition ["a", "b"] [
+                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__bytearray__internal__eq" False)) [
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
@@ -4337,7 +4427,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                 [ ( "=="
                   -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
                   , ( Core.Typed dictionaryEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed dictionaryEqQualType emptyArea [] (Core.Definition ["eqDictB", "eqDictA", "a", "b"] [
+                        Core.Typed dictionaryEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDictB" : Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDictA" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
                           Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed dictionaryEqQualType emptyArea [] (Core.Var "madlib__dictionary__internal__eq" False)) [
                             Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDictA" False),
                             Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDictB" False),
@@ -4355,7 +4445,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
-  generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" ["$Eq$eqVar", "a", "b"] [
+  generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" [Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] "$Eq$eqVar", Core.Typed eqVarQualType emptyArea [] "a", Core.Typed eqVarQualType emptyArea [] "b"] [
       Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "!" False)) [
         Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Placeholder (Core.MethodRef "Eq" "==" True, "eqVar") (Core.Typed eqOperationQualType emptyArea [] (Core.Var "==" False)))) [
           Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
@@ -4599,6 +4689,7 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
     --   Text.putStrLn (ppllvm astModule)
     -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     --   Text.putStrLn (ppllvm astModule)
+    -- Text.putStrLn (ppllvm astModule)
 
     -- TODO: only do this on verbose mode
     -- Prelude.putStrLn outputPath
@@ -4684,7 +4775,7 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
           isTargetThere <- doesFileExist outputPath
 
           if isSrcThere && isTargetThere then do
-            srcModified <- getModificationTime astPath 
+            srcModified <- getModificationTime astPath
             targetModified <- getModificationTime outputPath
             return $ srcModified > targetModified
           else

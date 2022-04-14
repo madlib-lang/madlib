@@ -66,21 +66,21 @@ usesParam name exp = case exp of
     False
 
 
-reduceDefinitionParams :: Exp -> [String] -> [Exp] -> ([String], [Exp])
+reduceDefinitionParams :: Exp -> [Core String] -> [Exp] -> ([String], [Exp])
 reduceDefinitionParams fn params args = case (reverse params, reverse args) of
   (param : nextParams, arg : nextArgs) ->
     case arg of
       Typed _ _ _ (Var name _)
-        | name == param
-        && not (or (usesParam param <$> nextArgs))
-        && not (usesParam param fn) ->
+        | name == getValue param
+        && not (or (usesParam (getValue param) <$> nextArgs))
+        && not (usesParam (getValue param) fn) ->
         reduceDefinitionParams fn (reverse nextParams) (reverse nextArgs)
 
       _ ->
-        (params, args)
+        (getValue <$> params, args)
 
   _ ->
-    (params, args)
+    (getValue <$> params, args)
 
 
 blacklist :: [String]

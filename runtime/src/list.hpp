@@ -20,8 +20,8 @@ madlib__list__Node_t *madlib__list__empty();
 
 int64_t madlib__list__length(madlib__list__Node_t *list);
 
-char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__list__Node_t **list);
-bool *madlib__list__internal__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2);
+char *madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__list__Node_t *list);
+bool madlib__list__internal__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t *l1, madlib__list__Node_t *l2);
 
 madlib__list__Node_t *madlib__list__singleton(void *item);
 
@@ -32,8 +32,6 @@ madlib__list__Node_t *madlib__list__push(void *item, madlib__list__Node_t *list)
 madlib__list__Node_t *madlib__list__internal__push(void *item, madlib__list__Node_t *list);
 
 madlib__list__Node_t *madlib__list__map(PAP_t *pap, madlib__list__Node_t *list);
-
-void *madlib__list__nth(double index, madlib__list__Node_t *list);
 
 bool madlib__list__internal__hasMinLength(int64_t l, madlib__list__Node_t *list);
 

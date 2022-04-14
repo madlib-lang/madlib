@@ -432,13 +432,17 @@ getReturnType t = case t of
 
 getParamType :: Type -> Type
 getParamType t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
+  TApp (TApp (TCon (TC "(->)" _) _) p) _ ->
+    p
 
 
 getParamTypes :: Type -> [Type]
 getParamTypes t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) p) n -> p : getParamTypes n
-  _ -> []
+  TApp (TApp (TCon (TC "(->)" _) _) p) n ->
+    p : getParamTypes n
+
+  _ ->
+    []
 
 
 dropFirstParamType :: Type -> Type

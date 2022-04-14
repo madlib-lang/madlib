@@ -9,10 +9,10 @@
 extern "C" {
 #endif
 
-bool *madlib__char__internal__eq(int32_t *a, int32_t *b);
+bool madlib__char__internal__eq(int32_t a, int32_t b);
 
 char *madlib__char__internal__show(int32_t unicode);
-char **madlib__char__internal__inspect(int32_t *unicode);
+char *madlib__char__internal__inspect(int32_t unicode);
 
 int64_t madlib__char__compare(int32_t c1, int32_t c2);
 

@@ -17,12 +17,10 @@ madlib__maybe__Maybe_t *madlib__url__encode(char *url) {
     if (output) {
       size_t outputLength = strlen(output);
       char *data = (char *)GC_malloc(sizeof(char) * (outputLength + 1));
-      char **boxed = (char**)GC_malloc(sizeof(char*));
-      *boxed = data;
       memcpy(data, output, outputLength + 1);
       curl_free(output);
 
-      result->data = boxed;
+      result->data = data;
       result->index = madlib__maybe__Maybe_JUST_INDEX;
     }
     curl_easy_cleanup(curl);
@@ -44,12 +42,10 @@ madlib__maybe__Maybe_t *madlib__url__decode(char *url) {
     if (output) {
       size_t outputLength = strlen(output);
       char *data = (char *)GC_malloc(sizeof(char) * (outputLength + 1));
-      char **boxed = (char**)GC_malloc(sizeof(char*));
-      *boxed = data;
       memcpy(data, output, outputLength + 1);
       curl_free(output);
 
-      result->data = boxed;
+      result->data = data;
       result->index = madlib__maybe__Maybe_JUST_INDEX;
     }
     curl_easy_cleanup(curl);

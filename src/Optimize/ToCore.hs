@@ -186,8 +186,12 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.Abs (Slv.Typed _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
+          ps = preds qt
+          paramTypes = getParamTypes (getQualified qt)
+          paramQts = (\t -> selectPredsForType ps t :=> t) <$> paramTypes
+          params' = (\(paramName, paramQt) -> Core.Typed paramQt emptyArea [] paramName) <$> zip params paramQts
       body'' <- mapM (toCore enabled) body'
-      return $ Core.Typed qt area [] (Core.Definition params body'')
+      return $ Core.Typed qt area [] (Core.Definition params' body'')
 
     Slv.Assignment name exp -> do
       exp' <- toCore enabled exp
@@ -208,7 +212,7 @@ instance Processable Slv.Exp Core.Exp where
               recordPreds = selectPredsForType expPreds recordType
               returnType  = getReturnType (getQualified qt)
               returnPreds = selectPredsForType expPreds returnType
-          return $ Core.Typed qt area [] (Core.Definition ["__R__"] [
+          return $ Core.Typed qt area [] (Core.Definition [Core.Typed (recordPreds :=> recordType) emptyArea [] "__R__"] [
               Core.Typed (returnPreds :=> returnType) area [] (
                 Core.Access
                   (Core.Typed (recordPreds :=> recordType) area [] (Core.Var "__R__" False))

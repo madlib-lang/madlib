@@ -30,8 +30,7 @@ typedef struct ReadData {
 
 void onReadError(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
-  char **boxedResult = (char **)GC_malloc(sizeof(char *));
-  *boxedResult = (char*)"\0";
+  char *result = (char*)"\0";
 
   int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int));
   *boxedError = libuvErrorToMadlibIOError(req->result);
@@ -49,7 +48,7 @@ void onReadError(uv_fs_t *req) {
   GC_free(openRequest);
   GC_free(readRequest);
 
-  __applyPAP__(callback, 2, boxedError, boxedResult);
+  __applyPAP__(callback, 2, boxedError, result);
 }
 
 void onRead(uv_fs_t *req) {
@@ -62,8 +61,7 @@ void onRead(uv_fs_t *req) {
     uv_fs_t closeReq;
     uv_fs_close(getLoop(), &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
 
-    int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int64_t));
-    *boxedError = 0;
+    int64_t *boxedError = (int64_t *)0;
 
     // box the result
     if (((ReadData_t *)req->data)->readBytes) {
@@ -74,11 +72,8 @@ void onRead(uv_fs_t *req) {
 
       __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, (void *)arr);
     } else {
-      char **boxedResult = (char **)GC_malloc(sizeof(char *));
-      *boxedResult = ((ReadData_t *)req->data)->fileContent;
-
       // call the callback
-      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, boxedResult);
+      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, ((ReadData_t *)req->data)->fileContent);
     }
 
     // free resources
@@ -186,13 +181,9 @@ typedef struct WriteData {
 
 void onWriteError(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
-  char **boxedResult = (char **)GC_malloc_uncollectable(sizeof(char *));
-  char *result = (char *)GC_malloc_uncollectable(sizeof(char));
-  *result = 0;
-  *boxedResult = result;
+  char *result = (char *)"\0";
 
-  int64_t *boxedError = (int64_t *)GC_malloc_uncollectable(sizeof(int));
-  *boxedError = libuvErrorToMadlibIOError(req->result);
+  int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 
   void *callback = ((WriteData_t *)req->data)->callback;
 
@@ -201,7 +192,7 @@ void onWriteError(uv_fs_t *req) {
   GC_free(req->data);
   GC_free(req);
 
-  __applyPAP__(callback, 2, boxedError, boxedResult);
+  __applyPAP__(callback, 2, boxedError, result);
 }
 
 void onWrite(uv_fs_t *req) {

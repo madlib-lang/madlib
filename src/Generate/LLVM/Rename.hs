@@ -87,7 +87,7 @@ renameExp env what = case what of
     in  (Typed t area metadata (Access renamedRecord renamedField), env'')
 
   Typed t area metadata (Definition params body) ->
-    let env'                 = foldr (\param env -> extendScope param param env) env params
+    let env'                 = foldr (\param env -> extendScope param param env) env (getValue <$> params)
         (renamedBody, env'') = renameExps env' body
     in  (Typed t area metadata (Definition params renamedBody), env'')
 

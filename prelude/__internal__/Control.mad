@@ -2,6 +2,13 @@ import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
 
+while :: ({} -> Boolean) -> {}
+export while = (f) =>
+  f({})
+    ? while(f)
+    : {}
+
+
 loop :: a -> (a -> Boolean) -> (a -> a) -> a
 export loop = (start, pred, evaluate) =>
   pred(start)

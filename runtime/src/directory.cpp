@@ -20,36 +20,27 @@ void onDirScan(uv_fs_t *req) {
 
     while (uv_fs_scandir_next(req, &dirh) != UV_EOF) {
         size_t itemLength = strlen(dirh.name);
-        char **boxedItem = (char**)GC_malloc(sizeof(char*));
-        *boxedItem = (char*)GC_malloc(sizeof(char) * (itemLength + 1));
+        char *item = (char*)GC_malloc(sizeof(char) * (itemLength + 1));
 
-        strncpy(*boxedItem, dirh.name, itemLength);
-        (*boxedItem)[itemLength] = '\0';
+        strncpy(item, dirh.name, itemLength);
+        item[itemLength] = '\0';
 
-        result = madlib__list__internal__append(boxedItem, result);
+        result = madlib__list__internal__append(item, result);
     }
 
-    madlib__list__Node_t** boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
-    *boxedList = result;
-
-    int64_t *boxedError = (int64_t*)GC_malloc(sizeof(int64_t));
-    *boxedError = 0;
+    int64_t *boxedError = (int64_t*)0;
 
     uv_fs_req_cleanup(req);
     GC_free(req);
 
-    __applyPAP__(callback, 2, boxedError, boxedList);
+    __applyPAP__(callback, 2, boxedError, result);
   } else {
-    int64_t *boxedError = (int64_t*)GC_malloc(sizeof(int64_t));
-    *boxedError = libuvErrorToMadlibIOError(req->result);
-
-    madlib__list__Node_t** boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
-    *boxedList = result;
+    int64_t *boxedError = (int64_t*)libuvErrorToMadlibIOError(req->result);
 
     uv_fs_req_cleanup(req);
     GC_free(req);
 
-    __applyPAP__(callback, 2, boxedError, boxedList);
+    __applyPAP__(callback, 2, boxedError, result);
   }
 }
 

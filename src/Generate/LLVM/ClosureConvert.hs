@@ -5,6 +5,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use guards" #-}
 module Generate.LLVM.ClosureConvert where
 
 import qualified Control.Monad.State           as MonadState
@@ -31,6 +33,10 @@ data Env
   , stillTopLevel :: Bool
   , lifted :: M.Map String (String, [Exp])
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
+  , allocatedMutations :: [String]
+  -- ^ mutations in scope currently. If a mutation is already in scope, an assignment should not allocate it on the heap as it's already there.
+  , mutationsInScope :: [String]
+  -- ^ all mutations that will happen in a function and its inner functions
   }
   deriving(Eq, Show)
 
@@ -138,7 +144,7 @@ findFreeVars env exp = do
 
     Typed _ _ _ (Definition params body) -> do
       vars <- findFreeVarsInBody env body
-      return $ filter (\(varName, _) -> varName `notElem` params) vars
+      return $ filter (\(varName, _) -> varName `notElem` (getValue <$> params)) vars
       where
         findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
         findFreeVarsInBody env exps = case exps of
@@ -319,6 +325,156 @@ getPatternVars (Typed _ _ _ pat) = case pat of
     []
 
 
+findMutationsInExp :: [String] -> Exp -> [String]
+findMutationsInExp params exp = case exp of
+  Typed _ _ _ (Assignment n _) | n `elem` params ->
+    [n]
+
+  Typed _ _ _ (Assignment _ e) ->
+    findMutationsInExp params e
+
+  Typed _ _ _ (Call fn args) ->
+    let fnMutations  = findMutationsInExp params fn
+        argMutations = concat $ findMutationsInExp params <$> args
+    in  fnMutations ++ argMutations
+
+  Typed _ _ _ (Definition _ body) ->
+    findMutationsInBody params body
+
+  Typed _ _ _ (Access rec _) ->
+    findMutationsInExp params rec
+
+  Typed _ _ _ (ListConstructor items) ->
+    concat $ findMutationsInExp params . getListItemExp <$> items
+
+  Typed _ _ _ (TupleConstructor items) ->
+    concat $ findMutationsInExp params <$> items
+
+  Typed _ _ _ (Record fields) ->
+    concat $ findMutationsInExp params . getFieldExp <$> fields
+
+  Typed _ _ _ (If cond truthy falsy) ->
+    findMutationsInExp params cond
+    ++ findMutationsInExp params truthy
+    ++ findMutationsInExp params falsy
+
+  Typed _ _ _ (Do exps) ->
+    findMutationsInBody params exps
+
+  Typed _ _ _ (Where e iss) ->
+    findMutationsInExp params e
+    ++ concat (findMutationsInExp params . getIsExpression <$> iss)
+
+  Typed _ _ _ (Placeholder _ e) ->
+    findMutationsInExp params e
+
+  _ ->
+    []
+
+
+
+
+findMutationsInBody :: [String] -> [Exp] -> [String]
+findMutationsInBody params body = case body of
+  exp : next ->
+    findMutationsInExp params exp ++ findMutationsInBody params next
+
+  [] ->
+    []
+
+
+findMutationsInScope :: [String] -> [Exp] -> [String]
+findMutationsInScope params exps = case exps of
+  (Typed _ _ _ (Assignment n _) : next) | n `elem` params ->
+    n : findMutationsInScope params next
+
+  (_ : next) ->
+    findMutationsInScope params next
+
+  [] ->
+    []
+
+
+findAssignmentsInScope :: [Exp] -> [String]
+findAssignmentsInScope exps = case exps of
+  (Typed _ _ _ (Assignment n _) : next) ->
+    n : findAssignmentsInScope next
+
+  (_ : next) ->
+    findAssignmentsInScope next
+
+  [] ->
+    []
+
+
+findAllMutationsInExp :: [String] -> Exp -> [String]
+findAllMutationsInExp params exp = case exp of
+  Typed _ _ _ (Assignment n e) | n `elem` params ->
+    [n]
+
+  Typed _ _ _ (Assignment _ e) ->
+    findAllMutationsInExp params e
+
+  Typed _ _ _ (Call fn args) ->
+    let fnMutations  = findAllMutationsInExp params fn
+        argMutations = concat $ findAllMutationsInExp params <$> args
+    in  fnMutations ++ argMutations
+
+  Typed _ _ _ (Definition params' body) ->
+    findAllMutationsInExps (params ++ (getValue <$> params')) body
+
+  Typed _ _ _ (Access rec _) ->
+    findAllMutationsInExp params rec
+
+  Typed _ _ _ (ListConstructor items) ->
+    concat $ findAllMutationsInExp params . getListItemExp <$> items
+
+  Typed _ _ _ (TupleConstructor items) ->
+    concat $ findAllMutationsInExp params <$> items
+
+  Typed _ _ _ (Record fields) ->
+    concat $ findAllMutationsInExp params . getFieldExp <$> fields
+
+  Typed _ _ _ (If cond truthy falsy) ->
+    findAllMutationsInExp params cond
+    ++ findAllMutationsInExp params truthy
+    ++ findAllMutationsInExp params falsy
+
+  Typed _ _ _ (Do exps) ->
+    findAllMutationsInExps params exps
+
+  Typed _ _ _ (Where e iss) ->
+    findAllMutationsInExp params e
+    ++ concat (findAllMutationsInExp params . getIsExpression <$> iss)
+
+  Typed _ _ _ (Placeholder _ e) ->
+    findAllMutationsInExp params e
+
+  _ ->
+    []
+
+-- Also finds mutations for inner scopes eg:
+-- fn = (_) => {
+--   count = 0
+
+--   // reports count here
+--   return (_) => {
+--     count = count + 1
+--     return count
+--   }
+-- }
+findAllMutationsInExps :: [String] -> [Exp] -> [String]
+findAllMutationsInExps params exps = case exps of
+  exp@(Typed _ _ _ (Assignment n _)) : next ->
+    findAllMutationsInExp params exp ++ findAllMutationsInExps (n : params) next
+
+  exp : next ->
+    findAllMutationsInExp params exp ++ findAllMutationsInExps params next
+
+  [] ->
+    []
+
+
 class Convertable a b where
   convert :: Env -> a -> Convert b
 
@@ -343,8 +499,15 @@ convertBody exclusionVars env body = case body of
 
     Typed _ _ _ (Assignment name e) -> do
       e'   <- convert env exp
-      next <- convertBody (name : exclusionVars) env es
-      return $ e' : next
+      let (e'', env') =
+            if name `elem` mutationsInScope env && name `notElem` allocatedMutations env then
+              (Typed (getQualType e') (getArea e') (ReferenceAllocation : getMetadata e') (getValue e'), env { allocatedMutations = name : allocatedMutations env })
+            else if name `elem` mutationsInScope env && name `elem` allocatedMutations env then
+              (Typed (getQualType e') (getArea e') (ReferenceStore : getMetadata e') (getValue e'), env)
+            else
+              (e', env)
+      next <- convertBody (name : exclusionVars) env' es
+      return $ e'' : next
 
     _ -> do
       exp' <- convert env exp
@@ -366,11 +529,23 @@ convertDefinition :: Env -> String -> [String] -> Exp -> Convert Exp
 convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metadata (Definition params body)) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
-    let params' = placeholders ++ params
-    body'' <- convertBody [] env { stillTopLevel = False } body
+    let mutations = findMutationsInBody (getValue <$> params) body
+    -- let assignmentsInScope = findAssignmentsInScope body
+    let allMutations = findAllMutationsInExps (getValue <$> params) body
+    body'' <- convertBody [] env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations } body
 
     -- Hacky for now
     let paramTypes = (tVar "dict" <$ placeholders) ++ getParamTypes t
+    let placeholderParams = Typed ([] :=> tVar "dict") emptyArea [] <$> placeholders
+    let params' =
+          placeholderParams
+          ++
+          (
+            (\(Typed qt paramArea paramMetadata n) ->
+                Typed qt paramArea (if n `elem` mutations then ReferenceParameter : paramMetadata else paramMetadata) n
+            ) <$> params
+          )
+
     let t' =
           if length paramTypes < length params' then
             tVar "a" `fn` t
@@ -383,9 +558,12 @@ convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metad
     -- PAP that applies the free vars from the current scope.
     fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
     functionName' <- generateLiftedName functionName
-    body''        <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body
 
-    let paramsWithFreeVars = (fst <$> fvs) ++ params
+    -- let paramsWithFreeVars = (fst <$> fvs) ++ params
+    -- let mutations = findMutationsInBody ((fst <$> fvs) ++ (getValue <$> params)) body
+    let paramsWithFreeVars = ((\(n, exp) -> Typed (getQualType exp) emptyArea [ReferenceParameter | n `elem` mutationsInScope env] n) <$> fvs) ++ params
+
+    body''        <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body
 
     let liftedType = foldr fn t (getType . snd <$> fvs)
     let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
@@ -398,7 +576,15 @@ convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metad
     else
       -- We need to carry types here
       let fvVarNodes = snd <$> fvs
-      in  return $ Typed (ps :=> t) area [] (Assignment functionName (Typed (ps :=> t) area metadata (Call functionNode fvVarNodes)))
+          fvVarNodes' =
+              (\arg -> case arg of
+                  Typed argQt argArea argMeta (Var n False) | n `elem` mutationsInScope env ->
+                    Typed argQt argArea (ReferenceArgument : argMeta) (Var n False)
+
+                  a ->
+                    a
+              ) <$> fvVarNodes
+      in  return $ Typed (ps :=> t) area [] (Assignment functionName (Typed (ps :=> t) area metadata (Call functionNode fvVarNodes')))
 
 
 -- When a lifted lambda is fetched from the env via Var, we apply the captured args to it
@@ -439,9 +625,9 @@ instance Convertable Exp Exp where
     JSExp js         -> return $ Typed qt area metadata (JSExp js)
 
     Call fn args -> do
-        fn'   <- convert env { stillTopLevel = False } fn
-        args' <- mapM (convert env { stillTopLevel = False }) args
-        return $ dedupeCallFn $ Typed qt area metadata (Call fn' args')
+      fn'    <- convert env { stillTopLevel = False } fn
+      args'  <- mapM (convert env { stillTopLevel = False }) args
+      return $ dedupeCallFn $ Typed qt area metadata (Call fn' args')
 
     Access rec field -> do
       rec'   <- convert env { stillTopLevel = False } rec
@@ -459,8 +645,13 @@ instance Convertable Exp Exp where
       body''       <- convertBody [] env body
       fvs          <- findFreeVars env fullExp
       functionName <- generateLiftedName "$lambda"
-
-      let paramsWithFreeVars = (fst <$> fvs) ++ params
+      -- let paramsWithFreeVars = (fst <$> fvs) ++ params
+      let paramsWithFreeVars =
+            (
+              (\(n, exp) ->
+                Typed (getQualType exp) emptyArea [ReferenceParameter | n `elem` mutationsInScope env] n
+              ) <$> fvs
+            ) ++ params
 
       let liftedType = foldr fn t (getType . snd <$> fvs)
       let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
@@ -472,19 +663,28 @@ instance Convertable Exp Exp where
         return functionNode
       else
         let fvVarNodes = snd <$> fvs
-        in  return $ Typed qt area [] (Call functionNode fvVarNodes)
+            fvVarNodes' =
+              (\arg -> case arg of
+                  Typed argQt argArea argMeta (Var n False) | n `elem` mutationsInScope env ->
+                    Typed argQt argArea (ReferenceArgument : argMeta) (Var n False)
+
+                  a ->
+                    a
+              ) <$> fvVarNodes
+        in  return $ Typed qt area [] (Call functionNode fvVarNodes')
 
     Assignment functionName ph@(Typed _ _ _ (Placeholder (placeholderRef@(ClassRef interfaceName _ False _), ts) exp)) -> do
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
+        let placeholderParams = Typed ([] :=> tVar "dict") emptyArea [] <$> params
         case innerExp of
           Typed _ _ _ Definition{} -> do
             convertDefinition env functionName params innerExp
           _ -> do
             innerExp' <- convert env { stillTopLevel = False } innerExp
-            return $ Typed (ps :=> typeWithPlaceholders) area metadata (Assignment functionName (Typed (ps :=> typeWithPlaceholders) area [] (Definition params [innerExp'])))
+            return $ Typed (ps :=> typeWithPlaceholders) area metadata (Assignment functionName (Typed (ps :=> typeWithPlaceholders) area [] (Definition placeholderParams [innerExp'])))
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
             isFunction = isFunctionType (getType exp)
@@ -508,7 +708,10 @@ instance Convertable Exp Exp where
 
           _ -> do
             innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea [] . (`Var` False) <$> paramsWithFreeVars) env) innerExp
-            let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area [] (Definition paramsWithFreeVars [innerExp'])))
+            let placeholderParams = Typed ([] :=> tVar "dict") emptyArea [] <$> dictParams
+            let fvParams = (\(n, exp) -> Typed (getQualType exp) emptyArea [] n) <$> fvsWithoutDictionary
+            let paramsWithFreeVars' = placeholderParams ++ fvParams
+            let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area [] (Definition paramsWithFreeVars' [innerExp'])))
             addTopLevelExp lifted
             let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
 
@@ -525,8 +728,16 @@ instance Convertable Exp Exp where
       return $ Typed qt area metadata (NameExport name)
 
     Var name isConstructor -> case M.lookup name (lifted env) of
-      Just (newName, capturedArgs) ->
-        return $ Typed qt area metadata (Call (Typed qt area [] (Var newName isConstructor)) capturedArgs)
+      Just (newName, capturedArgs) -> do
+        let capturedArgs' =
+              (\arg -> case arg of
+                  Typed argQt argArea argMeta (Var n False) | n `elem` mutationsInScope env ->
+                    Typed argQt argArea (ReferenceArgument : argMeta) (Var n False)
+
+                  a ->
+                    a
+              ) <$> capturedArgs
+        return $ Typed qt area metadata (Call (Typed qt area [] (Var newName isConstructor)) capturedArgs')
 
       Nothing ->
         return $ Typed qt area metadata (Var name isConstructor)
@@ -797,6 +1008,6 @@ instance Convertable AST AST where
 -- an env for optimization to keep track of what dictionaries have been removed.
 convertTable :: Table -> Table
 convertTable table =
-  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
+  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, allocatedMutations = [], mutationsInScope = [] }
       convertd = mapM (convert env) table
   in  MonadState.evalState convertd initialOptimizationState

@@ -12,29 +12,27 @@ extern "C" {
 
 int64_t madlib__bytearray__length(madlib__bytearray__ByteArray_t *array) { return array->length; }
 
-bool *madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madlib__bytearray__ByteArray_t *arr2) {
-  bool *result = (bool *)GC_malloc_atomic(sizeof(bool));
+bool madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madlib__bytearray__ByteArray_t *arr2) {
+  bool result = false;
 
   if (arr1->length != arr2->length) {
-    *result = false;
+    result = false;
   } else {
-    *result = true;
+    result = true;
 
-    for (int i = 0; *result && i < arr1->length; i++) {
-      *result = arr1->bytes[i] == arr2->bytes[i];
+    for (int i = 0; result && i < arr1->length; i++) {
+      result = arr1->bytes[i] == arr2->bytes[i];
     }
   }
 
   return result;
 }
 
-char **madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytearray) {
+char *madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytearray) {
   int64_t length = bytearray->length;
 
   if (length == 0) {
-    char **boxed = (char **)GC_malloc(sizeof(char*));
-    *boxed = (char*)"ByteArray([])";
-    return boxed;
+    return (char*)"ByteArray([])";
   }
 
   int currentIndex = 0;
@@ -42,7 +40,6 @@ char **madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *byte
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {
-    // inspectedItems[i] = *(char **)__applyPAP__((void *)&inspectDict->inspect, 1, array->items[i]);
     inspectedItems[i] = madlib__number__internal__showByte(bytearray->bytes[i]);
     sizeOfItems += strlen(inspectedItems[i]);
   }
@@ -72,9 +69,7 @@ char **madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *byte
   strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
   strncpy(result + currentPosition + lengthOfItem, ")\0", sizeof(char) * 2);
 
-  char **boxed = (char **)GC_malloc(sizeof(char*));
-  *boxed = result;
-  return boxed;
+  return result;
 }
 
 char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
@@ -111,7 +106,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__fromList(madlib__list__Node_t
   result->length = itemCount;
 
   for (int i = 0; i < itemCount; i++) {
-    result->bytes[i] = *(unsigned char *)list->value;
+    result->bytes[i] = (unsigned char)(int64_t)list->value;
     list = list->next;
   }
 
@@ -123,7 +118,7 @@ madlib__list__Node_t *madlib__bytearray__toList(madlib__bytearray__ByteArray_t *
   madlib__list__Node_t *result = madlib__list__empty();
 
   for (int i = itemCount - 1; i >= 0; i--) {
-    result = madlib__list__push(&arr->bytes[i], result);
+    result = madlib__list__push((void*)arr->bytes[i], result);
   }
 
   return result;
@@ -150,7 +145,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearr
   result->bytes = (unsigned char *)GC_malloc_atomic(arr->length * sizeof(unsigned char));
 
   for (int i = 0; i < arr->length; i++) {
-    result->bytes[i] = *(unsigned char *)__applyPAP__(f, 1, &arr->bytes[i]);
+    result->bytes[i] = (unsigned char)(int64_t)__applyPAP__(f, 1, (void*)arr->bytes[i]);
   }
 
   return result;
@@ -158,7 +153,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearr
 
 void *madlib__bytearray__reduce(PAP_t *f, void *initialValue, madlib__bytearray__ByteArray_t *arr) {
   for (int i = 0; i < arr->length; i++) {
-    initialValue = __applyPAP__(f, 2, initialValue, &arr->bytes[i]);
+    initialValue = __applyPAP__(f, 2, initialValue, (void*)arr->bytes[i]);
   }
 
   return initialValue;

@@ -92,27 +92,25 @@ int32_t *utf8Decode(char *str) {
   return output;
 }
 
-bool *madlib__char__internal__eq(int32_t *a, int32_t *b) {
-  bool *boxed = (bool *)GC_malloc_atomic(sizeof(bool));
-  *boxed = *a == *b;
-  return boxed;
+bool madlib__char__internal__eq(int32_t a, int32_t b) {
+  return a == b;
 }
 
 char *madlib__char__internal__show(int32_t unicode) {
   return utf8Encode(unicode);
 }
 
-char **madlib__char__internal__inspect(int32_t *unicode) {
-  char **boxed = (char **)GC_malloc(sizeof(char *));
+char *madlib__char__internal__inspect(int32_t unicode) {
+  char *inspected;
 
-  if (*unicode == '\n' || *unicode == '\t' || *unicode == '\r') {
+  if (unicode == '\n' || unicode == '\t' || unicode == '\r') {
     char *result = (char*)GC_malloc_atomic(sizeof(char) * 5);
     result[0] = '\'';
     result[1] = '\\';
     result[3] = '\'';
     result[4] = '\0';
 
-    switch (*unicode) {
+    switch (unicode) {
       case '\n':
         result[2] = 'n';
         break;
@@ -124,9 +122,9 @@ char **madlib__char__internal__inspect(int32_t *unicode) {
         break;
     }
 
-    *boxed = result;
+    inspected = result;
   } else {
-    char *encoded = utf8Encode(*unicode);
+    char *encoded = utf8Encode(unicode);
     size_t encodedLength = strlen(encoded);
     char *full = (char*)GC_malloc_atomic(sizeof(char) * (encodedLength + 3));
     full[0] = '\'';
@@ -134,11 +132,11 @@ char **madlib__char__internal__inspect(int32_t *unicode) {
     full[1 + encodedLength] = '\'';
     full[2 + encodedLength] = '\0';
 
-    *boxed = full;
+    inspected = full;
   }
 
 
-  return boxed;
+  return inspected;
 }
 
 int64_t madlib__char__compare(int32_t c1, int32_t c2) {

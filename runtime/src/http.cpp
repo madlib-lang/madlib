@@ -193,9 +193,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
     madlib__http__ClientError_1_t *clientError =
         (madlib__http__ClientError_1_t *)GC_malloc(sizeof(madlib__http__ClientError_1_t));
     clientError->index = mapCurlErrorToClientErrorIndex(curlCode);
-    char **boxedErrorMessage = (char**)GC_malloc(sizeof(char*));
-    *boxedErrorMessage = (char*) curl_easy_strerror(curlCode);
-    clientError->arg0 = boxedErrorMessage;
+    clientError->arg0 = (char*) curl_easy_strerror(curlCode);
 
     madlib__http__Error_ClientError_t *error =
         (madlib__http__Error_ClientError_t *)GC_malloc(sizeof(madlib__http__Error_ClientError_t));
@@ -211,8 +209,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
       ((madlib__bytearray__ByteArray_t*)boxedBody)->bytes = (unsigned char*) requestData->body;
       ((madlib__bytearray__ByteArray_t*)boxedBody)->length = requestData->responseSize;
     } else {
-      boxedBody = GC_malloc(sizeof(char *));
-      *(char **)boxedBody = requestData->body;
+      boxedBody = requestData->body;
     }
 
     // box headers
@@ -233,9 +230,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
       madlib__http__ClientError_1_t *clientError =
         (madlib__http__ClientError_1_t *)GC_malloc(sizeof(madlib__http__ClientError_1_t));
       clientError->index = mapCurlErrorToClientErrorIndex(curlCode);
-      char **boxedErrorMessage = (char**)GC_malloc(sizeof(char*));
-      *boxedErrorMessage = (char*) curl_easy_strerror(curlCode);
-      clientError->arg0 = boxedErrorMessage;
+      clientError->arg0 = (char*) curl_easy_strerror(curlCode);
 
       madlib__http__Error_BadResponse_t *error =
           (madlib__http__Error_BadResponse_t *)GC_malloc(sizeof(madlib__http__Error_BadResponse_t));
@@ -335,8 +330,6 @@ static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) 
 
   madlib__http__Header_t *header = (madlib__http__Header_t *)GC_malloc(sizeof(madlib__http__Header_t));
   header->index = 0;
-  header->name = (char **)GC_malloc(sizeof(char *));
-  header->value = (char **)GC_malloc(sizeof(char *));
 
   size_t extraValueOffset = 0;
   size_t nameLength = startOfValue - strData;
@@ -352,8 +345,8 @@ static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) 
   strncpy(headerName, strData, nameLength);
   strncpy(headerValue, strData + nameLength + extraValueOffset + 1, valueLength - extraValueOffset - 3);
 
-  *header->name = headerName;
-  *header->value = headerValue;
+  header->name = headerName;
+  header->value = headerValue;
 
   requestData->headers = madlib__list__push(header, requestData->headers);
 
@@ -367,8 +360,8 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
   while (headers->value != NULL) {
     madlib__http__Header_t *boxedHeader = (madlib__http__Header_t *)headers->value;
 
-    char uppercasedHeaderName[strlen(*boxedHeader->name) + 1];
-    toUpper(uppercasedHeaderName, *boxedHeader->name, strlen(*boxedHeader->name));
+    char uppercasedHeaderName[strlen(boxedHeader->name) + 1];
+    toUpper(uppercasedHeaderName, boxedHeader->name, strlen(boxedHeader->name));
 
     if (strcmp(uppercasedHeaderName, "HOST") == 0) {
       // Host header is set automatically so we just skip it if the user
@@ -378,8 +371,8 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
     }
 
     char *headerStr =
-        (char *)GC_malloc_uncollectable(sizeof(char) * (3 + strlen(*boxedHeader->name) + strlen(*boxedHeader->value)));
-    sprintf(headerStr, headerTpl, *boxedHeader->name, *boxedHeader->value);
+        (char *)GC_malloc_uncollectable(sizeof(char) * (3 + strlen(boxedHeader->name) + strlen(boxedHeader->value)));
+    sprintf(headerStr, headerTpl, boxedHeader->name, boxedHeader->value);
 
     lcurlHeaders = curl_slist_append(lcurlHeaders, headerStr);
     GC_free(headerStr);
@@ -390,8 +383,7 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 }
 
 void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
-char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", request);
-  char *url = *boxedUrl;
+  char *url = (char *)madlib__record__internal__selectField((char *)"url", request);
 
   madlib__http__Method_t *boxedMethod =
       (madlib__http__Method_t *)madlib__record__internal__selectField((char *)"method", request);
@@ -438,7 +430,7 @@ char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", 
       curl_easy_setopt(handle, CURLOPT_POSTFIELDS, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->bytes);
       curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->length);
     } else {
-      curl_easy_setopt(handle, CURLOPT_POSTFIELDS, *((char **)boxedBody->data));
+      curl_easy_setopt(handle, CURLOPT_POSTFIELDS, (char *)boxedBody->data);
       curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, -1L);
     }
   }
@@ -455,7 +447,7 @@ char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", 
     madlib__http__ClientError_1_t *clientError =
         (madlib__http__ClientError_1_t *)GC_malloc(sizeof(madlib__http__ClientError_1_t));
     clientError->index = madlib__http__ClientError_BAD_URL_INDEX;
-    clientError->arg0 = boxedUrl;
+    clientError->arg0 = url;
 
     madlib__http__Error_ClientError_t *error =
         (madlib__http__Error_ClientError_t *)GC_malloc(sizeof(madlib__http__Error_ClientError_t));

@@ -287,7 +287,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
             Nothing ->
               (Nothing, foundNames)
       let localScope' = S.insert name localScope
-      collectFromBody foundNames' nameToFind' globalScope localScope' body
+      collectFromBody (name : foundNames') nameToFind' globalScope localScope' body
 
      where
       collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
@@ -295,7 +295,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       collectFromBody foundNames ntf globalScope localScope (e : es) = do
         let localScope' = extendScope localScope e
         access <- collect env
-                          topLevelAssignments
+                          (topLevelAssignments <> S.singleton name)
                           currentTopLevelAssignment
                           foundNames
                           ntf

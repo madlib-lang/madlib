@@ -27,6 +27,10 @@ data Metadata
   = RecursionEnd RecursionKind
   | RecursiveDefinition RecursionKind
   | RecursiveCall RecursionKind
+  | ReferenceParameter
+  | ReferenceAllocation
+  | ReferenceStore
+  | ReferenceArgument
   deriving(Eq, Show, Ord)
 
 data Core a
@@ -145,7 +149,7 @@ type Exp = Core Exp_
 data Exp_
   = Literal Literal
   | JSExp String
-  | Definition [Name] [Exp]
+  | Definition [Core Name] [Exp]
   | Call Exp [Exp]
   | Access Exp Exp
   | Assignment Name Exp
@@ -177,6 +181,24 @@ getType (Typed (_ Ty.:=> t) _ _ _) = t
 
 getQualType :: Core a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _ _) = t
+
+
+getArea :: Core a -> Area
+getArea core = case core of
+  Typed _ area _ _ ->
+    area
+
+  Untyped area _ _ ->
+    area
+
+
+getMetadata :: Core a -> [Metadata]
+getMetadata core = case core of
+  Typed _ _ metadata _ ->
+    metadata
+
+  Untyped _ metadata _ ->
+    metadata
 
 
 updateQualType :: Ty.Qual Ty.Type -> Core a -> Core a
@@ -406,3 +428,16 @@ getConstructorRecursionInfo metadata = case metadata of
 
   _ ->
     Nothing
+
+
+isReferenceAllocation :: [Metadata] -> Bool
+isReferenceAllocation = elem ReferenceAllocation
+
+isReferenceStore :: [Metadata] -> Bool
+isReferenceStore = elem ReferenceStore
+
+isReferenceParameter :: [Metadata] -> Bool
+isReferenceParameter = elem ReferenceParameter
+
+isReferenceArgument :: [Metadata] -> Bool
+isReferenceArgument = elem ReferenceArgument

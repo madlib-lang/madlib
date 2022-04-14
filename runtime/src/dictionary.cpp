@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-bool *madlib__dictionary__internal__eq(madlib__eq__eqDictionary_t* eqDictA, madlib__eq__eqDictionary_t* eqDictB, madlib__dictionary__Dictionary_t *d1, madlib__dictionary__Dictionary_t *d2) {
+bool madlib__dictionary__internal__eq(madlib__eq__eqDictionary_t* eqDictA, madlib__eq__eqDictionary_t* eqDictB, madlib__dictionary__Dictionary_t *d1, madlib__dictionary__Dictionary_t *d2) {
   PAPEnv_2_t env = {
     .arg0 = eqDictA,
     .arg1 = eqDictB
@@ -28,24 +28,22 @@ bool *madlib__dictionary__internal__eq(madlib__eq__eqDictionary_t* eqDictA, madl
   return madlib__list__internal__eq(&dict, d1->items, d2->items);
 }
 
-char **madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_t* inspectDictA, madlib__inspect__inspectDictionary_t* inspectDictB, madlib__dictionary__Dictionary_t *dict) {
-  int64_t length = madlib__list__length(*dict->items);
+char *madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_t* inspectDictA, madlib__inspect__inspectDictionary_t* inspectDictB, madlib__dictionary__Dictionary_t *dict) {
+  int64_t length = madlib__list__length(dict->items);
 
   if (length == 0) {
-    char **boxed = (char **)GC_malloc(sizeof(char*));
-    *boxed = (char*)"{{}}";
-    return boxed;
+    return (char*)"{{}}";
   }
 
-  madlib__list__Node_t *unboxedList = *dict->items;
+  madlib__list__Node_t *items = dict->items;
   int currentIndex = 0;
   char *inspectedItems[length];
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {
-    madlib__tuple__Tuple_2_t *tuple = (madlib__tuple__Tuple_2_t *)unboxedList->value;
-    char *inspectedKey = *(char **)__applyPAP__(&inspectDictA->inspect, 1, tuple->first);
-    char *inspectedValue = *(char **)__applyPAP__(&inspectDictB->inspect, 1, tuple->second);
+    madlib__tuple__Tuple_2_t *tuple = (madlib__tuple__Tuple_2_t *)items->value;
+    char *inspectedKey = (char *)__applyPAP__(&inspectDictA->inspect, 1, tuple->first);
+    char *inspectedValue = (char *)__applyPAP__(&inspectDictB->inspect, 1, tuple->second);
 
     size_t keyLength = strlen(inspectedKey);
     size_t valueLength = strlen(inspectedValue);
@@ -59,7 +57,7 @@ char **madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_
 
     inspectedItems[i] = keyAndValue;
     sizeOfItems += totalLength;
-    unboxedList = unboxedList->next;
+    items = items->next;
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
@@ -82,19 +80,15 @@ char **madlib__dictionary__internal__inspect(madlib__inspect__inspectDictionary_
   strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
   strncpy(result + currentPosition + lengthOfItem, " }}\0", sizeof(char) * 4);
 
-  char **boxed = (char **)GC_malloc(sizeof(char*));
-  *boxed = result;
-  return boxed;
+  return result;
 }
 
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__list__Node_t *items) {
   madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*) GC_malloc(sizeof(madlib__dictionary__Dictionary_t));
-  madlib__list__Node_t **boxedItems = (madlib__list__Node_t**) GC_malloc(sizeof(madlib__list__Node_t*));
-  *boxedItems = items;
 
   dictionary->constructorIndex = 0;
-  dictionary->items = boxedItems;
+  dictionary->items = items;
 
   return dictionary;
 }

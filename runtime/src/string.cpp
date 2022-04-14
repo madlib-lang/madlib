@@ -83,15 +83,12 @@ bool madlib__string__match(char *regex, char *str) {
 }
 
 
-bool *madlib__string__internal__eq(char **s1, char **s2) {
-  bool *boxed = (bool *)GC_malloc_atomic(sizeof(bool));
-  if (strcmp(*s1, *s2) == 0) {
-    *boxed = true;
+bool madlib__string__internal__eq(char *s1, char *s2) {
+  if (strcmp(s1, s2) == 0) {
+    return true;
   } else {
-    *boxed = false;
+    return false;
   }
-
-  return boxed;
 }
 
 int64_t madlib__string__compare(char *s1, char *s2) {
@@ -154,17 +151,15 @@ int makeNextSize(int oldSize) {
   return newSize;
 }
 
-char **madlib__string__internal__inspect(char **boxedInput) {
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-  char *s = *boxedInput;
-  int initialLength = strlen(s);
+char *madlib__string__internal__inspect(char *input) {
+  int initialLength = strlen(input);
   int currentLength = initialLength + (initialLength + 3) * 0.1;
   char *result = (char *)GC_malloc_atomic(sizeof(char) * (currentLength + 1));
   int currentIndex = 1;
 
   result[0] = '"';
 
-  while (*s != '\0') {
+  while (*input != '\0') {
     // if the size of the string isn't enough we resize it
     if (currentLength - currentIndex < 4) {
       char *resized = (char *)GC_malloc_atomic(sizeof(char) * makeNextSize(currentLength));
@@ -173,34 +168,33 @@ char **madlib__string__internal__inspect(char **boxedInput) {
       result = resized;
     }
 
-    if (*s == '\n') {
+    if (*input == '\n') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = 'n';
 
       currentIndex += 2;
-    } else if (*s == '\t') {
+    } else if (*input == '\t') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = 't';
 
       currentIndex += 2;
-    } else if (*s == '\r') {
+    } else if (*input == '\r') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = 'r';
 
       currentIndex += 2;
     } else {
-      result[currentIndex] = *s;
+      result[currentIndex] = *input;
       currentIndex++;
     }
 
-    s++;
+    input++;
   }
 
   result[currentIndex] = '"';
   result[currentIndex + 1] = '\0';
 
-  *boxed = result;
-  return boxed;
+  return result;
 }
 
 
@@ -229,8 +223,9 @@ madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
   if (*s) {
     int _;
     int32_t c = utf8DecodeChar((char*)s, &_);
-    int32_t *boxed = (int32_t*)GC_malloc_atomic(sizeof(int32_t));
-    *boxed = c;
+    int32_t *boxed = (int32_t*)c;
+    // int32_t *boxed = (int32_t*)GC_malloc_atomic(sizeof(int32_t));
+    // *boxed = c;
     result->index = 0;
     result->data = boxed;
   } else {
@@ -454,7 +449,7 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
 
   int i = 0;
   while (chars[i] != 0) {
-    chars[i] = *((int32_t *)__applyPAP__(pap, 1, &chars[i]));
+    chars[i] = (int32_t)(int64_t)__applyPAP__(pap, 1, (void*)chars[i]);
     i++;
   }
 
@@ -492,7 +487,7 @@ madlib__list__Node_t *madlib__string__toList(char *str) {
   }
 
   for (int i = length - 1; i >= 0; i--) {
-    result = madlib__list__push(&chars[i], result);
+    result = madlib__list__push((void*)chars[i], result);
   }
 
   return result;
@@ -505,7 +500,7 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
   size_t fullLength = 0;
 
   while (list->value != NULL) {
-    char *encoded = utf8Encode(*(int32_t *)list->value);
+    char *encoded = utf8Encode((int32_t)(int64_t)list->value);
     fullLength += strlen(encoded);
     encodedChars[j] = encoded;
     j++;
@@ -550,11 +545,9 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
     char *part = (char *)GC_malloc_atomic(sizeof(char) * (partLength + 1));
     memcpy(part, str, partLength);
     part[partLength] = '\0';
-    char **boxed = (char **)GC_malloc(sizeof(char *));
-    *boxed = part;
 
     madlib__list__Node_t *node = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
-    node->value = boxed;
+    node->value = part;
     node->next = NULL;
     current = current->next = node;
 

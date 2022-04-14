@@ -12,7 +12,8 @@ extern "C" {
 #endif
 
 madlib__list__Node_t *madlib__list__empty() {
-  madlib__list__Node_t *head = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+  madlib__list__Node_t *head =
+      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
   head->next = NULL;
   head->value = NULL;
   return head;
@@ -21,7 +22,7 @@ madlib__list__Node_t *madlib__list__empty() {
 int64_t madlib__list__length(madlib__list__Node_t *list) {
   int64_t total = 0;
 
-  while (list->value != NULL) {
+  while (list->next != NULL) {
     total += 1;
     list = list->next;
   }
@@ -29,56 +30,52 @@ int64_t madlib__list__length(madlib__list__Node_t *list) {
   return total;
 }
 
-bool *madlib__list__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__list__Node_t **l1,
-                                 madlib__list__Node_t **l2) {
-  bool *boxed = (bool *)GC_malloc(sizeof(bool));
-
-  int64_t l1Length = madlib__list__length(*l1);
-  int64_t l2Length = madlib__list__length(*l2);
+bool madlib__list__internal__eq(madlib__eq__eqDictionary_t *eqDict,
+                                madlib__list__Node_t *l1,
+                                madlib__list__Node_t *l2) {
+  int64_t l1Length = madlib__list__length(l1);
+  int64_t l2Length = madlib__list__length(l2);
 
   if (l1Length != l2Length) {
-    *boxed = false;
-  } else {
-    madlib__list__Node_t *unboxedL1 = *l1;
-    madlib__list__Node_t *unboxedL2 = *l2;
-
-    bool result = true;
-
-    for (int i = 0; result && i < l1Length; i++) {
-      result = *(bool *)__applyPAP__((void *)&eqDict->eq, 2, unboxedL1->value, unboxedL2->value);
-      unboxedL1 = unboxedL1->next;
-      unboxedL2 = unboxedL2->next;
-    }
-
-    *boxed = result;
+    return false;
   }
 
-  return boxed;
+
+  bool result = true;
+
+  for (int i = 0; result && i < l1Length; i++) {
+    result = (bool)__applyPAP__((void *)&eqDict->eq, 2, l1->value, l2->value);
+    l1 = l1->next;
+    l2 = l2->next;
+  }
+
+  return result;
 }
 
-char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__list__Node_t **list) {
-  int64_t length = madlib__list__length(*list);
+char *madlib__list__internal__inspect(
+    madlib__inspect__inspectDictionary_t *inspectDict,
+    madlib__list__Node_t *list) {
+  int64_t length = madlib__list__length(list);
 
   if (length == 0) {
-    char **boxed = (char **)GC_malloc(sizeof(char*));
-    *boxed = (char*)"[]";
-    return boxed;
+    return (char *)"[]";
   }
 
-  madlib__list__Node_t *unboxedList = *list;
   int currentIndex = 0;
-  char **inspectedItems = (char **)GC_malloc_uncollectable(sizeof(char*)*length);
+  char **inspectedItems =
+      (char **)GC_malloc_uncollectable(sizeof(char *) * length);
   size_t sizeOfItems = 0;
   void *inspect = &inspectDict->inspect;
 
   for (int i = 0; i < length; i++) {
-    inspectedItems[i] = *(char **)__applyPAP__(inspect, 1, unboxedList->value);
+    inspectedItems[i] = (char *)__applyPAP__(inspect, 1, list->value);
     sizeOfItems += strlen(inspectedItems[i]);
-    unboxedList = unboxedList->next;
+    list = list->next;
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_malloc_atomic(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
+  char *result = (char *)GC_malloc_atomic(
+      sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 3));
 
   // Leading "["
   strncpy(result, "[", sizeof(char));
@@ -99,38 +96,44 @@ char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *ins
 
   GC_free(inspectedItems);
 
-  char **boxed = (char **)GC_malloc(sizeof(char*));
-  *boxed = result;
-
-  return boxed;
+  return result;
 }
 
 madlib__list__Node_t *madlib__list__singleton(void *item) {
-  madlib__list__Node_t *head = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+  madlib__list__Node_t *head =
+      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
   head->next = madlib__list__empty();
   head->value = item;
 
   return head;
 }
 
-
-madlib__list__Node_t *madlib__list__push(void *item, madlib__list__Node_t *list) {
-  madlib__list__Node_t *newHead = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+madlib__list__Node_t *madlib__list__push(void *item,
+                                         madlib__list__Node_t *list) {
+  madlib__list__Node_t *newHead =
+      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
   newHead->next = list;
   newHead->value = item;
 
   return newHead;
 }
 
-madlib__list__Node_t *madlib__list__internal__push(void *item, madlib__list__Node_t *list) {
-  return madlib__list__push(item, list);
+madlib__list__Node_t *madlib__list__internal__push(void *item,
+                                                   madlib__list__Node_t *list) {
+  madlib__list__Node_t *newHead =
+      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+  newHead->next = list;
+  newHead->value = item;
+
+  return newHead;
 }
 
-
-madlib__list__Node_t *madlib__list__map(PAP_t *pap, madlib__list__Node_t *list) {
+madlib__list__Node_t *madlib__list__map(PAP_t *pap,
+                                        madlib__list__Node_t *list) {
   size_t itemCount = madlib__list__length(list);
   int nodesIndex = 1;
-  madlib__list__Node_t *nodes = (madlib__list__Node_t*)GC_malloc(sizeof(madlib__list__Node_t) * (itemCount + 1));
+  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_malloc(
+      sizeof(madlib__list__Node_t) * (itemCount + 1));
   madlib__list__Node_t *newList = nodes;
   madlib__list__Node_t *head = newList;
 
@@ -150,8 +153,8 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap, madlib__list__Node_t *list) 
   return head;
 }
 
-
-void *madlib__list__reduce(PAP_t *pap, void *initialValue, madlib__list__Node_t *list) {
+void *madlib__list__reduce(PAP_t *pap, void *initialValue,
+                           madlib__list__Node_t *list) {
   while (list->value != NULL) {
     initialValue = __applyPAP__(pap, 2, initialValue, list->value);
     list = list->next;
@@ -160,30 +163,9 @@ void *madlib__list__reduce(PAP_t *pap, void *initialValue, madlib__list__Node_t 
   return initialValue;
 }
 
-void *madlib__list__nth(double index, madlib__list__Node_t *list) {
-  // empty list
-  if (list->value == NULL) {
-    // TODO: make it return Nothing ( { 1 } )
-    return NULL;
-  }
-
-  int intIndex = floor(index);
-  int currentIndex = 0;
-
-  while (list->value != NULL && currentIndex < intIndex) {
-    list = list->next;
-  }
-
-  if (list->value != NULL) {
-    return list->value;
-  } else {
-    // TODO: make it return Nothing ( { 1 } )
-    return NULL;
-  }
-}
-
-bool madlib__list__internal__hasMinLength(int64_t l, madlib__list__Node_t *list) {
-  while (list->value != NULL && l > 0) {
+bool madlib__list__internal__hasMinLength(int64_t l,
+                                          madlib__list__Node_t *list) {
+  while (list->next != NULL && l > 0) {
     l -= 1;
     list = list->next;
   }
@@ -192,21 +174,23 @@ bool madlib__list__internal__hasMinLength(int64_t l, madlib__list__Node_t *list)
 }
 
 bool madlib__list__internal__hasLength(int64_t l, madlib__list__Node_t *list) {
-  while (list->value != NULL && l > 0) {
+  while (list->next != NULL && l > 0) {
     l -= 1;
     list = list->next;
   }
 
-  return l == 0 && list->value == NULL;
+  return l == 0 && list->next == NULL;
 }
 
-madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list__Node_t *b) {
+madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
+                                           madlib__list__Node_t *b) {
   if (a->value == NULL) {
     return b;
   } else if (b->value == NULL) {
     return a;
   } else {
-    madlib__list__Node_t *newList = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+    madlib__list__Node_t *newList =
+        (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
     madlib__list__Node_t *head = newList;
     madlib__list__Node_t *current = a;
 
@@ -214,8 +198,9 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list
     newList->next = NULL;
     current = current->next;
 
-    while (current->value != NULL) {
-      madlib__list__Node_t *nextItem = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+    while (current->next != NULL) {
+      madlib__list__Node_t *nextItem =
+          (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
       nextItem->value = current->value;
       nextItem->next = NULL;
 
@@ -230,10 +215,11 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list
   }
 }
 
-madlib__list__Node_t *madlib__list__internal__append(void *item, madlib__list__Node_t *list) {
+madlib__list__Node_t *madlib__list__internal__append(
+    void *item, madlib__list__Node_t *list) {
   madlib__list__Node_t *copy = madlib__list__internal__copy(list);
 
-  if (copy->value == NULL || list->next == NULL) {
+  if (copy->next == NULL || list->next == NULL) {
     return madlib__list__singleton(item);
   }
 
@@ -253,11 +239,12 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
     return madlib__list__empty();
   }
 
-  madlib__list__Node_t *newList = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+  madlib__list__Node_t *newList =
+      (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
   madlib__list__Node_t *head = newList;
   madlib__list__Node_t *current = list;
 
-  while (current->value != NULL) {
+  while (current->next != NULL) {
     madlib__list__Node_t *nextItem = madlib__list__empty();
 
     newList->value = current->value;
@@ -275,7 +262,8 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
 /**
  * currently a bubble sort algorithm, needs to be improved at some point
  */
-madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *list) {
+madlib__list__Node_t *madlib__list__sort(PAP_t *compare,
+                                         madlib__list__Node_t *list) {
   madlib__list__Node_t *copy = madlib__list__internal__copy(list);
   bool hadPermutation = true;
 
@@ -285,7 +273,8 @@ madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *l
 
     while (head->value != NULL) {
       if (head->next->value != NULL) {
-        int64_t comparisonResult = *(int64_t *)__applyPAP__((void *)compare, 2, head->value, head->next->value);
+        int64_t comparisonResult = *(int64_t *)__applyPAP__(
+            (void *)compare, 2, head->value, head->next->value);
 
         // If the current item is bigger than the next one we need to swap them
         if (comparisonResult == 1) {

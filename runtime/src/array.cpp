@@ -12,32 +12,27 @@ extern "C" {
 
 int64_t madlib__array__length(madlib__array__Array_t *array) { return array->length; }
 
-bool *madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2) {
-  bool *boxed = (bool *)GC_malloc(sizeof(bool));
+bool madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2) {
+  bool result;
 
   if (arr1->length != arr2->length) {
-    *boxed = false;
+    result = false;
   } else {
-    bool result = true;
+    result = true;
 
     for (int i = 0; result && i < arr1->length; i++) {
-      result = *(bool *)__applyPAP__((void *)&eqDict->eq, 2, arr1->items[i],
-                                     arr2->items[i]);
+      result = __applyPAP__((void *)&eqDict->eq, 2, arr1->items[i], arr2->items[i]);
     }
-
-    *boxed = result;
   }
 
-  return boxed;
+  return result;
 }
 
-char **madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__array__Array_t *array) {
+char *madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__array__Array_t *array) {
   int64_t length = array->length;
 
   if (length == 0) {
-    char **boxed = (char **)GC_malloc(sizeof(char*));
-    *boxed = (char*)"Array([])";
-    return boxed;
+    return (char*)"Array([])";
   }
 
   int currentIndex = 0;
@@ -45,7 +40,7 @@ char **madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *in
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {
-    inspectedItems[i] = *(char **)__applyPAP__((void *)&inspectDict->inspect, 1, array->items[i]);
+    inspectedItems[i] = (char *)__applyPAP__((void *)&inspectDict->inspect, 1, array->items[i]);
     sizeOfItems += strlen(inspectedItems[i]);
   }
 
@@ -69,11 +64,7 @@ char **madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *in
   strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
   strncpy(result + currentPosition + lengthOfItem, "])\0", sizeof(char) * 3);
 
-  char **boxed = (char **)GC_malloc(sizeof(char*));
-  *boxed = result;
-
-
-  return boxed;
+  return result;
 }
 
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
