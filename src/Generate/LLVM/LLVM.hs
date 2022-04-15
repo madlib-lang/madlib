@@ -63,7 +63,7 @@ import qualified Utils.Hash                    as Hash
 import           Utils.List
 import qualified Data.Tuple                    as Tuple
 import           Explain.Location
-import           System.FilePath (takeDirectory, takeExtension, makeRelative, joinPath, splitPath, takeFileName, dropExtension)
+import           System.FilePath (takeDirectory, takeExtension, makeRelative, joinPath, splitPath, takeFileName, dropExtension, dropFileName)
 import qualified LLVM.AST.Linkage              as Linkage
 import           System.Directory
 import qualified Distribution.System           as DistributionSystem
@@ -4512,7 +4512,7 @@ makeDisplayPath root path =
         afterModules = List.tail $ List.dropWhile (not . ("madlib_modules" `List.isInfixOf`)) parts
     in  joinPath afterModules
   else
-    makeRelative root path
+    makeRelative (dropFileName root) path
 
 
 compileModule :: [FilePath] -> FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
