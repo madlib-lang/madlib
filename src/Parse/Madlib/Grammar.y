@@ -121,6 +121,7 @@ import Text.Show.Pretty
 ast :: { Src.AST }
   : typedecl ast              %shift { $2 { Src.atypedecls =  $1 : Src.atypedecls $2 } }
   | exp ast                   %shift { $2 { Src.aexps = $1 : Src.aexps $2 } }
+  | bodyExp ast               %shift { $2 { Src.aexps = $1 : Src.aexps $2 } }
   | importDecls ast           %shift { $2 { Src.aimports = Src.aimports $2 <> $1, Src.apath = Nothing } }
   | interface ast             %shift { $2 { Src.ainterfaces = $1 : (Src.ainterfaces $2), Src.apath = Nothing } }
   | instance ast              %shift { $2 { Src.ainstances = $1 : (Src.ainstances $2), Src.apath = Nothing } }
@@ -308,6 +309,13 @@ tupleTypings :: { [Src.Typing] }
   | tupleTypings ',' typing             { $1 <> [$3] }
   | tupleTypings ',' compositeTyping    { $1 <> [$3] }
 
+
+bodyExp :: { Src.Exp }
+  : name '=' maybeRet exp                                    %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $1) $4) }
+  | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
+  | exp { $1 }
+
+
 exp :: { Src.Exp }
   : literal                                                         { $1 }
   | jsx                                                             { $1 }
@@ -322,7 +330,6 @@ exp :: { Src.Exp }
   | extern                                                   %shift { $1 }
   | typedExp                                                 %shift { $1 }
   | js                                                       %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.JSExp (strV $1)) }
-  | name '=' maybeRet exp                                    %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $1) $4) }
   | name                                                     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }
   | '.' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' maybeRet args ')' '(' argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.App (buildPipe (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) $4) $7) }
@@ -353,7 +360,7 @@ absOrParenthesizedName :: { Src.Exp }
   | '(' params ')' '=>' '{' rets multiExpBody rets '}'       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.AbsWithMultilineBody $2 $7) }
 
 maybeAbsExps :: { Maybe [Src.Exp] }
-  : '=>' rets exp                       %shift { Just [$3] }
+  : '=>' rets bodyExp                   %shift { Just [$3] }
   | '=>' '{' rets multiExpBody rets '}' %shift { Just $4 }
   | {- nothing -}                       %shift { Nothing }
 
@@ -364,7 +371,7 @@ do :: { Src.Exp }
 doExps :: { [Src.Exp] }
   : 'return' exp              %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
   | name '<-' exp rets doExps %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $3)) (tokenTarget $1) (Src.DoAssignment (strV $1) $3)] <> $5 }
-  | exp rets doExps           %shift { [$1] <> $3 }
+  | bodyExp rets doExps       %shift { [$1] <> $3 }
 
 
 jsx :: { Src.Exp }
@@ -420,12 +427,11 @@ app :: { Src.Exp }
 
 multiExpBody :: { [Src.Exp] }
   : 'return' exp          { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
-  | exp rets multiExpBody { $1:$3 }
+  | bodyExp rets multiExpBody { $1:$3 }
 
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'                       %shift { Src.Source (mergeAreas (Src.getArea $2) (Src.getArea $4)) (tokenTarget $1) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')'                      %shift { Src.Source (mergeAreas (tokenArea $2) (Src.getArea $4)) (tokenTarget $1) (Src.TypedExp (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var (strV $2))) $4) }
-  | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
 
 extern :: { Src.Exp }
   : name '::' constrainedTyping 'ret' name '=' 'extern' str          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.Extern $3 (strV $5) (sanitizeImportPath $ strV $8)) }
