@@ -87,13 +87,13 @@ madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s);
 
 // conversion
 double madlib__number__intToFloat(int64_t x);
-char madlib__number__intToByte(int64_t x);
+unsigned char madlib__number__intToByte(int64_t x);
 
-double madlib__number__byteToFloat(char x);
-int64_t madlib__number__byteToInt(char x);
+double madlib__number__byteToFloat(unsigned char x);
+int64_t madlib__number__byteToInt(unsigned char x);
 
 int64_t madlib__number__floatToInt(double x);
-char madlib__number__floatToByte(double x);
+unsigned char madlib__number__floatToByte(double x);
 
 
 #ifdef __cplusplus

@@ -443,10 +443,7 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     load ptr' 0
 
   IT.TCon (IT.TC "Byte" _) _ -> do
-    ptr <- alloca boxType Nothing 0
-    store ptr 0 what
-    ptr' <- bitcast ptr (Type.ptr Type.i8)
-    load ptr' 0
+    ptrtoint what Type.i8
 
   IT.TCon (IT.TC "Char" _) _ -> do
     ptrtoint what Type.i32
@@ -508,13 +505,7 @@ box what = case typeOf what of
 
   -- Byte
   Type.IntegerType 8 -> do
-    ptr <- alloca Type.i8 Nothing 0
-    boxWrap <- alloca (Type.ptr boxType) Nothing 0
-    store ptr 0 what
-    ptr' <- bitcast ptr (Type.ptr boxType)
-    store boxWrap 0 ptr'
-    loaded <- load boxWrap 0
-    load loaded 0
+    inttoptr what boxType
 
   -- Boolean
   Type.IntegerType 1 -> do

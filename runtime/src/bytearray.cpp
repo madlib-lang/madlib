@@ -74,7 +74,6 @@ char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
   char *string = (char*) arr->bytes;
 
   if (arr->bytes[arr->length - 1] > 0) {
-    // TODO: realloc should be ok here
     string = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
     memcpy(string, arr->bytes, arr->length);
     string[arr->length] = '\0';
@@ -116,7 +115,7 @@ madlib__list__Node_t *madlib__bytearray__toList(madlib__bytearray__ByteArray_t *
   madlib__list__Node_t *result = madlib__list__empty();
 
   for (int i = itemCount - 1; i >= 0; i--) {
-    result = madlib__list__push((void*)arr->bytes[i], result);
+    result = madlib__list__push((void*)(int64_t)arr->bytes[i], result);
   }
 
   return result;
