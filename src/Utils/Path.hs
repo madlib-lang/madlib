@@ -22,6 +22,7 @@ import           System.FilePath                ( dropFileName
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           Data.List                      ( isInfixOf
                                                 , isPrefixOf
+                                                , isSuffixOf
                                                 , (\\)
                                                 )
 import           Utils.PathUtils
@@ -179,11 +180,18 @@ findPreludeModulePath' pathUtils moduleName currDir = do
 
 buildLocalPath :: FilePath -> FilePath -> FilePath -> FilePath
 buildLocalPath outputPath rootPath path =
-  let rootParts   = dropTrailingPathSeparator <$> splitPath (dropFileName rootPath)
+  let rootPath' =
+        if ".mad" `isSuffixOf` rootPath then
+          dropFileName rootPath
+        else
+          rootPath
+      rootParts   = dropTrailingPathSeparator <$> splitPath rootPath'
       pathParts   = dropTrailingPathSeparator <$> splitPath path
-      withoutRoot = if rootParts `isPrefixOf` pathParts
-        then pathParts \\ rootParts -- remove the root path components
-        else pathParts
+      withoutRoot =
+        if rootParts `isPrefixOf` pathParts then
+          pathParts \\ rootParts -- remove the root path components
+        else
+          pathParts
   in  cleanRelativePath . joinPath $ [outputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
 
 
@@ -213,7 +221,12 @@ computeTargetPath outputPath rootPath path =
 
 buildLLVMLocalPath :: FilePath -> FilePath -> FilePath -> FilePath
 buildLLVMLocalPath outputPath rootPath path =
-  let rootParts   = dropTrailingPathSeparator <$> splitPath (dropFileName rootPath)
+  let rootPath' =
+        if ".mad" `isSuffixOf` rootPath then
+          dropFileName rootPath
+        else
+          rootPath
+      rootParts   = dropTrailingPathSeparator <$> splitPath rootPath'
       pathParts   = dropTrailingPathSeparator <$> splitPath path
       withoutRoot =
         if rootParts `isPrefixOf` pathParts then
