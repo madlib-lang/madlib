@@ -244,7 +244,7 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
     args[0] = command;
 
     for (int i = 0; i < argc; i++) {
-      args[i + 1] = *((char**) argList->value);
+      args[i + 1] = (char*) argList->value;
       argList = argList->next;
     }
   #endif // __MINGW32__
