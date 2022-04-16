@@ -435,7 +435,7 @@ void GC_freeWrap(void *ptr) {
 }
 
 void *GC_reallocWrap(void *ptr, size_t size) {
-  GC_REALLOC(ptr, size);
+  return GC_REALLOC(ptr, size);
 }
 
 char *GC_strdupWrap(const char *s) {
