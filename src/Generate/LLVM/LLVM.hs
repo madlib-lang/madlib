@@ -4535,16 +4535,11 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
     withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
-          dataLayout  <- getTargetMachineDataLayout target
-          triple      <- getTargetMachineTriple target
-          libraryInfo <- withTargetLibraryInfo triple return
           mod'' <-
             withPassManager
             defaultCuratedPassSetSpec
               { optLevel                = Just 2
               , useInlinerWithThreshold = Just 100
-              , dataLayout              = Just dataLayout
-              , targetLibraryInfo       = Just libraryInfo
               }
             $ \pm -> do
               runPassManager pm mod'
