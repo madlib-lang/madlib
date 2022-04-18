@@ -71,6 +71,7 @@ jobs:
         run: stack install alex happy
 
       - name: Build madlib
+        shell: msys2 {0}
         run: PATH="/c/Program Files/LLVM/bin:/mingw64/bin:$PATH" stack build -v --flag madlib:static
 
 
