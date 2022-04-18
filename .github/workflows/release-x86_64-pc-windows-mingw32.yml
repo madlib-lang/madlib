@@ -52,6 +52,45 @@ jobs:
             unzip
             tar
 
+            base
+            filesystem
+            gcc
+            git
+            libcurl-devel
+            mingw-w64-clang-x86_64-gss
+            mingw-w64-x86_64-binutils
+            mingw-w64-x86_64-clang
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-crt-git
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-dlfcn
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gcc-ada
+            mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-gcc-libgfortran
+            mingw-w64-x86_64-gcc-objc
+            mingw-w64-x86_64-gdb
+            mingw-w64-x86_64-gdb-multiarch
+            mingw-w64-x86_64-gsasl
+            mingw-w64-x86_64-headers-git
+            mingw-w64-x86_64-jq
+            mingw-w64-x86_64-libc++
+            mingw-w64-x86_64-libc++abi
+            mingw-w64-x86_64-libgccjit
+            mingw-w64-x86_64-libmangle-git
+            mingw-w64-x86_64-llvm
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-ntldd-git
+            mingw-w64-x86_64-pcre2
+            mingw-w64-x86_64-python-pip
+            mingw-w64-x86_64-tools-git
+            mingw-w64-x86_64-winpthreads-git
+            mingw-w64-x86_64-winstorecompat-git
+            msys2-runtime
+
+
       - name: Install LLVM 9
         run: |
           curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
