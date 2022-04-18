@@ -67,11 +67,12 @@ import           System.FilePath (takeDirectory, takeExtension, makeRelative, jo
 import qualified LLVM.AST.Linkage              as Linkage
 import           System.Directory
 import qualified Distribution.System           as DistributionSystem
-import qualified Data.Text.Lazy.IO as Text
-import Debug.Trace
-import qualified Data.Functor.Constant as Operand
+import qualified Data.Text.Lazy.IO             as Text
+import           Debug.Trace
+import qualified Data.Functor.Constant         as Operand
 import GHC.IO.Handle
 import GHC.IO.Handle.FD
+import qualified Utils.IO                      as IOUtils
 
 
 
@@ -4567,11 +4568,11 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
           writeObjectToFile target (File outputPath) mod''
 
     Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-      Prelude.putStrLn $ " - compiled module '" <> displayModulePath <> "'"
+      IOUtils.putStrLnAndFlush $ " - compiled module '" <> displayModulePath <> "'"
 
   else do
     Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-      Prelude.putStrLn $ " -" <> "\x1b[90m skipping cached module '" <> displayModulePath <> "'\x1b[0m"
+      IOUtils.putStrLnAndFlush $ " -" <> "\x1b[90m skipping cached module '" <> displayModulePath <> "'\x1b[0m"
 
   return $ "\"" <> outputPath <> "\""
 
@@ -4631,7 +4632,7 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
 
-  Prelude.putStrLn "Linking.."
+  IOUtils.putStrLnAndFlush "Linking.."
 
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
