@@ -216,7 +216,7 @@ export test = (description, testImpl) => {
   process.env.COVERAGE_MODE = "off"
   Context.initContext((context) => {
     context.id = id;
-    context.__HIT_POINTS = []
+    context.__HIT_POINTS = null
     context.__CACHE = {}
 
   -#

@@ -1,14 +1,15 @@
 import W from "Wish"
 import IO from "IO"
 import { collectCoverage } from "Test"
+import List from "List"
 
 #-
 import { fork, exec } from "child_process";
 import { join, relative, dirname } from "path";
 import fs from "fs/promises";
 
-let hitPoints = [];
-let globalHitPoints = [];
+let hitPoints = null;
+let globalHitPoints = null;
 const testsToRun = {};
 let successCount = 0;
 let testSuiteCount = 0;
@@ -63,14 +64,14 @@ const runTestSuite = (rawMadlibFile, done) => {
           successCount = successCount + 1
         }
         testsToRun[msg.id] = true
-        hitPoints = hitPoints.concat(msg.hitPoints)
+        hitPoints = List.concat(hitPoints)(msg.hitPoints)
         globalHitPoints = msg.globalHitPoints
 
         console.log(msg.message)
 
         if (areAllTestsDone(testsToRun)) {
-          hitPoints = hitPoints.concat(globalHitPoints)
-          globalHitPoints = []
+          hitPoints = List.concat(hitPoints)(globalHitPoints)
+          globalHitPoints = null
           console.log("Test suite finished\n")
           if (done) {
             closed = true
