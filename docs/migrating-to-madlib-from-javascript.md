@@ -71,7 +71,9 @@ no = false
 
 # Strings
 
-Just like JavaScript.
+Backslashes are used for template strings, just like in Javascript.
+Double quotes are used for String literals.
+Single quotes are used for Char literals. A Char is represented as a 32-bit unicode value.
 
 ```
 iAmAString = `yes you are`
@@ -81,11 +83,9 @@ strictlyBetter = `obviously`
 
 # Numbers
 
-Just like JavaScript.
-
 ```
-pi = 3.1415
-pies = 1
+pi = 3.1415 // Float
+pies = 1    // Integer
 ```
 
 # Regular Expressions
