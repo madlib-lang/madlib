@@ -98,14 +98,17 @@ table :: List Row -> a -> a
 export table = (rows, a) => (#- {
   const xSpaces = x => new Array(x).fill(' ').join('')
 
-  const longestId = rows.map(x => x.id.length).reduce((a, b) => Math.max(a, b), 0)
+  let rowsArr = __listToJSArray__(rows)
 
-  const readyRows = rows
+  const longestId = rowsArr.map(x => x.id.length).reduce((a, b) => Math.max(a, b), 0)
+
+  const readyRows = rowsArr
     .map(x => ({ ...x, id: x.id + xSpaces(longestId - x.id.length) }))
     .reduce((rows, row) => {
+      const colsArr = __listToJSArray__(row.cols)
       return {
         ...rows,
-        [row.id]: row.cols.reduce((o, [colName, colValue]) => { o[colName] = colValue; return o; }, {})
+        [row.id]: colsArr.reduce((o, [colName, colValue]) => { o[colName] = colValue; return o; }, {})
       }
     }, {})
   console.table(readyRows)

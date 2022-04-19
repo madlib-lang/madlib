@@ -28,6 +28,8 @@ generateInternalsModuleContent target optimized coverage =
     <> "\n"
     <> inspectStaticInstances target optimized
     <> "\n"
+    <> listToJSArray target
+    <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
 
@@ -249,3 +251,18 @@ onceFn target optimized =
         , "    };\n"
         , "}\n"
         ]
+
+listToJSArray :: Target -> String
+listToJSArray target =
+  unlines
+    [ getGlobalForTarget target <> "." <> "__listToJSArray__ = (list) => {"
+    , "  let res = []"
+    , ""
+    , "  while (list) {"
+    , "    res.push(list.v)"
+    , "    list = list.n"
+    , "  }"
+    , ""
+    , "  return res"
+    , "}"
+    ]
