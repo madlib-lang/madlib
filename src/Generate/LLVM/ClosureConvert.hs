@@ -20,6 +20,8 @@ import Debug.Trace
 import Text.Show.Pretty
 import Explain.Location
 import qualified Utils.Types as Types
+import qualified Utils.Hash as Hash
+import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 
 data State
@@ -37,6 +39,7 @@ data Env
   -- ^ mutations in scope currently. If a mutation is already in scope, an assignment should not allocate it on the heap as it's already there.
   , mutationsInScope :: [String]
   -- ^ all mutations that will happen in a function and its inner functions
+  , moduleHash :: String
   }
   deriving(Eq, Show)
 
@@ -49,11 +52,12 @@ type Convert a = forall m . MonadState.MonadState State m => m a
 numbers :: [String]
 numbers = show <$> [0 ..]
 
-generateLiftedName :: String -> Convert String
-generateLiftedName originalName = do
+generateLiftedName :: Env -> String -> Convert String
+generateLiftedName env originalName = do
+  let hashedName = addHashToName (moduleHash env) originalName
   s@(State count _) <- MonadState.get
   let index = numbers !! count
-  let name = originalName ++ "$lifted$" ++ index
+  let name = hashedName ++ "$lifted$" ++ index
   MonadState.put s { count = count + 1 }
   return name
 
@@ -61,6 +65,11 @@ resetTopLevelExps :: Convert ()
 resetTopLevelExps = do
   s@(State _ topLevel) <- MonadState.get
   MonadState.put s { topLevel = [] }
+
+resetState :: Convert ()
+resetState = do
+  s@(State _ topLevel) <- MonadState.get
+  MonadState.put s { count = 0, topLevel = [] }
 
 addTopLevelExp :: Exp -> Convert ()
 addTopLevelExp exp = do
@@ -557,7 +566,7 @@ convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metad
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
     fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
-    functionName' <- generateLiftedName functionName
+    functionName' <- generateLiftedName env functionName
 
     -- let paramsWithFreeVars = (fst <$> fvs) ++ params
     -- let mutations = findMutationsInBody ((fst <$> fvs) ++ (getValue <$> params)) body
@@ -644,8 +653,8 @@ instance Convertable Exp Exp where
     Definition params body -> do
       body''       <- convertBody [] env body
       fvs          <- findFreeVars env fullExp
-      functionName <- generateLiftedName "$lambda"
-      -- let paramsWithFreeVars = (fst <$> fvs) ++ params
+      functionName <- generateLiftedName env "$lambda"
+
       let paramsWithFreeVars =
             (
               (\(n, exp) ->
@@ -699,7 +708,7 @@ instance Convertable Exp Exp where
         let fvsWithoutDictionary = filter (not . (`elem` dictParams) . fst) fvs
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
-        functionName' <- generateLiftedName functionName
+        functionName' <- generateLiftedName env functionName
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (getType . snd <$> fvs))
         case innerExp of
@@ -976,14 +985,19 @@ defaultGlobals =
   []
 
 
+addHashToName :: String -> String -> String
+addHashToName hash name =
+  "__" ++ hash ++ "__" ++ name
+
+
 instance Convertable AST AST where
-  convert env ast = do
+  convert env ast@AST{ apath = Just path } = do
     let globalVars         = mapMaybe getExpName (aexps ast) ++ defaultGlobals
         globalMethods      = concatMap getMethodNames $ ainterfaces ast
         globalConstructors = getConstructorNames $ atypedecls ast
         globalsFromImports = getGlobalsFromImports $ aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
-        env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ globalsFromImports ++ ["$"] }
+        env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.hash (BLChar8.pack path) }
 
     imports    <- mapM (convert env') $ aimports ast
     exps       <- mapM (convert env') $ aexps ast
@@ -992,15 +1006,15 @@ instance Convertable AST AST where
     instances  <- mapM (convert env') $ ainstances ast
 
     defs <- getTopLevelExps
-    resetTopLevelExps
+    resetState
 
-    return $ AST { aimports    = imports
-                     , aexps       = defs ++ exps
-                     , atypedecls  = typeDecls
-                     , ainterfaces = interfaces
-                     , ainstances  = instances
-                     , apath       = apath ast
-                     }
+    return AST { aimports    = imports
+               , aexps       = defs ++ exps
+               , atypedecls  = typeDecls
+               , ainterfaces = interfaces
+               , ainstances  = instances
+               , apath       = apath ast
+               }
 
 
 -- I think at some point we might want to follow imports in the optimization
@@ -1008,6 +1022,6 @@ instance Convertable AST AST where
 -- an env for optimization to keep track of what dictionaries have been removed.
 convertTable :: Table -> Table
 convertTable table =
-  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, allocatedMutations = [], mutationsInScope = [] }
+  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, allocatedMutations = [], mutationsInScope = [], moduleHash = "" }
       convertd = mapM (convert env) table
   in  MonadState.evalState convertd initialOptimizationState
