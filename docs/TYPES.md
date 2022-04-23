@@ -180,3 +180,58 @@ numbers = [4, 5, 6]
 [true, false, false]
 [{}, {}, {}, {}]
 ```
+
+## Dictionary
+Dictionary is a key/value collection. A given key can only be present once in the collection. A key can be any type that implements the `Comparable` interface.
+
+### Examples
+```madlib
+{{ "key": "value" }}
+```
+
+## Set
+Set is a collection similar to List, but all contained items are unique and ordered. Only values of types implementing Comparable can be part of a Set. There is no built-in syntax sugar for Set like there is for List or Dictionary. So you must use the constructor from the Set module of the standard library.
+
+### Examples
+```madlib
+import Set from "Set"
+Set.fromList([1, 2, 3])
+```
+
+## Tuples
+A tuple is a n-dimension grouping of values. It is analog to vector and can in fact be used to describe vectors or similar thing, but also to group things. As a matter of a fact, the Dictionary constructor `fromList` accepts a List of 2-tuples `#[key, value]`.
+The type is represented like this: `#[type1, type2, ...typeN]`.
+
+### Examples
+Tuple syntax is as follows:
+```madlib
+#[1, 2, 3]
+#["a string", true, {}, {{ "key": "value" }}]
+```
+
+## ByteArray
+A ByteArray is an array of Byte. It can be used to represent any byte sequence such as binary file content, image data, or pretty much anything as raw bytes. Like Set it does not have any special syntax but a few handy constructors and conversion functions such as: `fromList`, `toList`, `fromString`, `toString`.
+
+### Examples
+```madlib
+import ByteArray from "ByteArray"
+
+ByteArray.fromList([50, 100, 150])
+ByteArray.fromString("Hello")
+```
+
+## Array
+Array offers a similar functionality as List but the internals are very much different. It is represented by arrays in JS and as a contiguous set of items in memory with the llvm backend. It is more efficient to push items at the end of an array or concatenate two arrays than lists, but it is more efficient to push items in front of a list. Other than that most functions for lists have their array equivalent such as `map`, `filter`, `reduce`.
+
+### Examples
+```madlib
+import Array from "Array"
+
+Array.fromList([1, 2, 3])
+```
+
+
+## TO ADD:
+- Records
+- ADTs
+- Aliases
