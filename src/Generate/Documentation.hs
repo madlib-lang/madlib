@@ -149,20 +149,20 @@ generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constrain
       docString        = findDocStringForInstanceDeclaration declaration' docStrings
 
       descriptionField = case docString of
-        Just (InstanceDoc _ description _) ->
+        Just (InstanceDoc _ _ description _) ->
           indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
         Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
       exampleField = case docString of
-        Just (InstanceDoc _ _ tags) -> case findExampleTag tags of
+        Just (InstanceDoc _ _ _ tags) -> case findExampleTag tags of
           Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
           Nothing      -> emptyExample $ depth + 1
 
         Nothing -> emptyExample $ depth + 1
 
       sinceField = case docString of
-        Just (InstanceDoc _ _ tags) -> case findSinceTag tags of
+        Just (InstanceDoc _ _ _ tags) -> case findSinceTag tags of
           Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
           Nothing    -> emptySince $ depth + 1
 
@@ -203,20 +203,20 @@ generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constra
       docString        = findDocStringForInterfaceName name docStrings
 
       descriptionField = case docString of
-        Just (InterfaceDoc _ description _) ->
+        Just (InterfaceDoc _ _ description _) ->
           indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
         Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
       exampleField = case docString of
-        Just (InterfaceDoc _ _ tags) -> case findExampleTag tags of
+        Just (InterfaceDoc _ _ _ tags) -> case findExampleTag tags of
           Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
           Nothing      -> emptyExample $ depth + 1
 
         Nothing -> emptyExample $ depth + 1
 
       sinceField = case docString of
-        Just (InterfaceDoc _ _ tags) -> case findSinceTag tags of
+        Just (InterfaceDoc _ _ _ tags) -> case findSinceTag tags of
           Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
           Nothing    -> emptySince $ depth + 1
 
@@ -265,20 +265,20 @@ generateADTDoc depth docStrings typeDecl = case typeDecl of
         docString        = findDocStringForTypeName name docStrings
 
         descriptionField = case docString of
-          Just (TypeDefDoc _ description _) ->
+          Just (TypeDefDoc _ _ description _) ->
             indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
           Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
         exampleField = case docString of
-          Just (TypeDefDoc _ _ tags) -> case findExampleTag tags of
+          Just (TypeDefDoc _ _ _ tags) -> case findExampleTag tags of
             Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
             Nothing      -> emptyExample $ depth + 1
 
           Nothing -> emptyExample $ depth + 1
 
         sinceField = case docString of
-          Just (TypeDefDoc _ _ tags) -> case findSinceTag tags of
+          Just (TypeDefDoc _ _ _ tags) -> case findSinceTag tags of
             Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
             Nothing    -> emptySince $ depth + 1
 
@@ -322,20 +322,20 @@ generateAliasDoc depth docStrings typeDecl = case typeDecl of
         docString        = findDocStringForTypeName name docStrings
 
         descriptionField = case docString of
-          Just (TypeDefDoc _ description _) ->
+          Just (TypeDefDoc _ _ description _) ->
             indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
           Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
         exampleField = case docString of
-          Just (TypeDefDoc _ _ tags) -> case findExampleTag tags of
+          Just (TypeDefDoc _ _ _ tags) -> case findExampleTag tags of
             Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
             Nothing      -> emptyExample $ depth + 1
 
           Nothing -> emptyExample $ depth + 1
 
         sinceField = case docString of
-          Just (TypeDefDoc _ _ tags) -> case findSinceTag tags of
+          Just (TypeDefDoc _ _ _ tags) -> case findSinceTag tags of
             Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
             Nothing    -> emptySince $ depth + 1
 
@@ -389,20 +389,20 @@ generateExpDoc depth docStrings (name, exp) =
   let typing           = formatType exp
       docString        = findDocStringForExpName name docStrings
       descriptionField = case docString of
-        Just (FunctionDoc _ description _) ->
+        Just (FunctionDoc _ _ description _) ->
           indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
         Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
       exampleField = case docString of
-        Just (FunctionDoc _ _ tags) -> case findExampleTag tags of
+        Just (FunctionDoc _ _ _ tags) -> case findExampleTag tags of
           Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
           Nothing      -> emptyExample $ depth + 1
 
         Nothing -> emptyExample $ depth + 1
 
       sinceField = case docString of
-        Just (FunctionDoc _ _ tags) -> case findSinceTag tags of
+        Just (FunctionDoc _ _ _ tags) -> case findSinceTag tags of
           Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
           Nothing    -> emptySince $ depth + 1
 
@@ -428,7 +428,7 @@ findDocStringForExpName name = find $ functionDocNameEquals name
 
 functionDocNameEquals :: String -> DocString -> Bool
 functionDocNameEquals name docString = case docString of
-  (FunctionDoc n _ _) -> n == name
+  (FunctionDoc _ n _ _) -> n == name
   _                   -> False
 
 findDocStringForTypeName :: String -> [DocString] -> Maybe DocString
@@ -436,7 +436,7 @@ findDocStringForTypeName name = find $ typeDefDocNameEquals name
 
 typeDefDocNameEquals :: String -> DocString -> Bool
 typeDefDocNameEquals name docString = case docString of
-  (TypeDefDoc n _ _) -> n == name
+  (TypeDefDoc _ n _ _) -> n == name
   _                  -> False
 
 findDocStringForInterfaceName :: String -> [DocString] -> Maybe DocString
@@ -444,7 +444,7 @@ findDocStringForInterfaceName name = find $ interfaceDocNameEquals name
 
 interfaceDocNameEquals :: String -> DocString -> Bool
 interfaceDocNameEquals name docString = case docString of
-  (InterfaceDoc n _ _) -> n == name
+  (InterfaceDoc _ n _ _) -> n == name
   _                    -> False
 
 findDocStringForInstanceDeclaration :: String -> [DocString] -> Maybe DocString
@@ -452,7 +452,7 @@ findDocStringForInstanceDeclaration decl = find $ instanceDocDeclEquals decl
 
 instanceDocDeclEquals :: String -> DocString -> Bool
 instanceDocDeclEquals decl docString = case docString of
-  (InstanceDoc d _ _) ->
+  (InstanceDoc _ d _ _) ->
     let regex                      = "[A-Z]+[a-zA-Z0-9_]*"
         concreteTypesFromDocString = getAllTextMatches (d =~ regex) :: [String]
         concreteTypesFromInstance  = getAllTextMatches (decl =~ regex) :: [String]

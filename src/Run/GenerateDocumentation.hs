@@ -92,9 +92,11 @@ runDocumentationGenerator fp = do
         _          -> fp
 
   canonicalRootPath <- canonicalizePath rootPath
-
   asts              <- solveASTsForDoc canonicalRootPath filepaths
-  case asts of
-    Right asts' -> putStrLn $ generateASTsDoc asts'
 
-    Left  e     -> putStrLn $ ppShow e
+  case asts of
+    Right asts' ->
+      putStrLn $ generateASTsDoc asts'
+
+    Left  e     ->
+      putStrLn $ ppShow e

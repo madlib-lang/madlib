@@ -21,15 +21,15 @@ import           Text.Show.Pretty (ppShow)
 %lexer { lexerWrap } { TokenEOF }
 
 %token
-  'moduleStart'    { TokenModuleDocStringStart }
-  'functionStart'  { TokenFunctionDocStringStart _ }
-  'typeDefStart'   { TokenTypeDefDocStringStart _ }
-  'interfaceStart' { TokenInterfaceDocStringStart _ }
-  'instanceStart'  { TokenInstanceDocStringStart _ }
-  'end'            { TokenDocStringEnd }
-  'docStringPart'  { TokenDocStringCharacter _ }
-  'exampleStart'   { TokenExampleStart }
-  'sinceStart'     { TokenSinceStart }
+  'moduleStart'    { TokenModuleDocStringStart _ }
+  'functionStart'  { TokenFunctionDocStringStart _ _ }
+  'typeDefStart'   { TokenTypeDefDocStringStart _ _ }
+  'interfaceStart' { TokenInterfaceDocStringStart _ _ }
+  'instanceStart'  { TokenInstanceDocStringStart _ _ }
+  'end'            { TokenDocStringEnd _ }
+  'docStringPart'  { TokenDocStringCharacter _ _ }
+  'exampleStart'   { TokenExampleStart _ }
+  'sinceStart'     { TokenSinceStart _ }
 
 %%
 
@@ -38,19 +38,19 @@ docs :: { [DocString] }
   | doc docs { $1 : $2 }
 
 doc :: { DocString }
-  : 'moduleStart' parts 'end'         { ModuleDoc $ processCharacters $2 }
-  | 'functionStart' parts tags 'end'  { FunctionDoc (getFunctionName $1) (processCharacters $2) $3 }
-  | 'typeDefStart' parts tags 'end'   { TypeDefDoc (getTypeName $1) (processCharacters $2) $3 }
-  | 'interfaceStart' parts tags 'end' { InterfaceDoc (getInterfaceName $1) (processCharacters $2) $3 }
-  | 'instanceStart' parts tags 'end'  { InstanceDoc (trim $ getInstanceName $1) (processCharacters $2) $3 }
+  : 'moduleStart' parts 'end'         { ModuleDoc (tokenTarget $1) (processCharacters $2) }
+  | 'functionStart' parts tags 'end'  { FunctionDoc (tokenTarget $1) (getFunctionName $1) (processCharacters $2) $3 }
+  | 'typeDefStart' parts tags 'end'   { TypeDefDoc (tokenTarget $1) (getTypeName $1) (processCharacters $2) $3 }
+  | 'interfaceStart' parts tags 'end' { InterfaceDoc (tokenTarget $1) (getInterfaceName $1) (processCharacters $2) $3 }
+  | 'instanceStart' parts tags 'end'  { InstanceDoc (tokenTarget $1) (trim $ getInstanceName $1) (processCharacters $2) $3 }
 
 parts :: { [String] }
   : 'docStringPart'       { [getDocStringCharacter $1] }
   | 'docStringPart' parts { getDocStringCharacter $1 : $2 }
 
 tags :: { [DocStringTag] }
-  : 'exampleStart' parts tags { ExampleTag (processCharacters $2) : $3 }
-  | 'sinceStart' parts tags   { SinceTag (processCharacters $2) : $3 }
+  : 'exampleStart' parts tags { ExampleTag (tokenTarget $1) (processCharacters $2) : $3 }
+  | 'sinceStart' parts tags   { SinceTag (tokenTarget $1) (processCharacters $2) : $3 }
   | {--}                      { [] }
 
 
