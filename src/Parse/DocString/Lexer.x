@@ -23,25 +23,32 @@ module Parse.DocString.Lexer
   , getTypeName
   , getInterfaceName
   , getInstanceName
+  , tokenTarget
   )
 where
 
 import           Control.Monad.State
 import           System.Exit
-import qualified Data.Text     as T
+import qualified Data.Text                as T
 import           Explain.Location
 import           Text.Regex.TDFA
+import           AST.Source
 }
 
 %wrapper "monadUserState"
 
 tokens :-
-  <0> \/\*\*            { beginDocString }
-  <docString> \*\/      { endDocString }
-  <docString> \@example { mapToken (\_ -> TokenExampleStart) }
-  <docString> \@since   { mapToken (\_ -> TokenSinceStart) }
-  <docString> (.|\n)    { mapToken (\input -> TokenDocStringCharacter input) }
-  <0> (.|\n)            ;
+  <0> \/\*\*               { beginDocString }
+  <docString> \*\/         { endDocString }
+  <docString> \@example    { mapToken (\_ sourceTarget -> TokenExampleStart sourceTarget) }
+  <docString> \@since      { mapToken (\_ sourceTarget -> TokenSinceStart sourceTarget) }
+  <docString> (.|\n)       { mapToken (\input sourceTarget -> TokenDocStringCharacter sourceTarget input) }
+  <0> \#iftarget[\ ]*llvm  { processIfTarget TargetLLVM }
+  <0> \#iftarget[\ ]*js    { processIfTarget TargetJS }
+  <0> \#elseif[\ ]*llvm    { processElseIfTarget TargetLLVM }
+  <0> \#elseif[\ ]*js      { processElseIfTarget TargetJS }
+  <0> \#endif              { processEndIfTarget }
+  <0> (.|\n)               ;
 
 {
 regexFunctionDocString :: String
@@ -67,10 +74,48 @@ toRegex = makeRegexOpts defaultCompOpt { multiline = False, lastStarGreedy = Fal
 
 
 
-data AlexUserState = AlexUserState
+data AlexUserState = AlexUserState SourceTarget
 
 alexInitUserState :: AlexUserState
-alexInitUserState = AlexUserState
+alexInitUserState = AlexUserState TargetAll
+
+
+getState :: Alex AlexUserState
+getState = Alex $ \s@AlexState{alex_ust = state} -> Right (s, state)
+
+setState :: AlexUserState -> Alex ()
+setState state = Alex $ \s -> Right (s{ alex_ust = state }, ())
+
+
+setCurrentSourceTarget :: SourceTarget -> Alex ()
+setCurrentSourceTarget sourceTarget = do
+  setState $ AlexUserState sourceTarget
+
+getCurrentSourceTarget :: Alex SourceTarget
+getCurrentSourceTarget = do
+  (AlexUserState sourceTarget) <- getState
+  return sourceTarget
+
+
+processIfTarget :: SourceTarget -> AlexInput -> Int -> Alex Token
+processIfTarget sourceTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget sourceTarget
+  skip i len
+  -- return $ Token (makeArea posn (take len input)) sourceTarget TokenMacroIfTarget
+
+processElseIfTarget :: SourceTarget -> AlexInput -> Int -> Alex Token
+processElseIfTarget sourceTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget sourceTarget
+  skip i len
+  -- return $ Token (makeArea posn (take len input)) sourceTarget TokenMacroElseIf
+
+processEndIfTarget :: AlexInput -> Int -> Alex Token
+processEndIfTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget TargetAll
+  skip i len
+  -- return $ Token (makeArea posn (take len input)) TargetAll TokenMacroEndIf
+
+
 
 setStartCode :: Int -> Alex ()
 setStartCode code =
@@ -90,66 +135,113 @@ setDefaultStartCode =
       , ()
       )
 
-getState :: Alex AlexUserState
-getState = Alex $ \s@AlexState{alex_ust = state} -> Right (s, state)
 
 
 beginDocString :: AlexInput -> Int -> Alex Token
 beginDocString i@(posn, prevChar, pending, input) len = do
   setStartCode docString
 
+  sourceTarget <- getCurrentSourceTarget
+
   let (_, _, afterDocString) = match (toRegex regexEndOfDocString) (take 1000 input) :: (String, String, String)
-  let matchedTyping = match (toRegex regexTypingDocString) afterDocString :: (String, String, String, [String])
-  let matchedFn = match (toRegex regexFunctionDocString) afterDocString :: (String, String, String, [String])
-  let matchedTypeDec = match (toRegex regexTypeDefDocString) afterDocString :: (String, String, String, [String])
-  let matchedInterface = match (toRegex regexInterfaceDocString) afterDocString :: (String, String, String, [String])
-  let matchedInstance = match (toRegex regexInstanceDocString) afterDocString :: (String, String, String, [String])
+  let matchedTyping          = match (toRegex regexTypingDocString) afterDocString :: (String, String, String, [String])
+  let matchedFn              = match (toRegex regexFunctionDocString) afterDocString :: (String, String, String, [String])
+  let matchedTypeDec         = match (toRegex regexTypeDefDocString) afterDocString :: (String, String, String, [String])
+  let matchedInterface       = match (toRegex regexInterfaceDocString) afterDocString :: (String, String, String, [String])
+  let matchedInstance        = match (toRegex regexInstanceDocString) afterDocString :: (String, String, String, [String])
 
   case (matchedFn, matchedTyping, matchedTypeDec, matchedInterface, matchedInstance) of
-    ((_, _, _, [fnName]), _, _, _, _)      -> return $ TokenFunctionDocStringStart fnName
-    (_, (_, _, _, [fnName]), _, _, _)      -> return $ TokenFunctionDocStringStart fnName
-    (_, _, (_, _, _, [_, typeName]), _, _) -> return $ TokenTypeDefDocStringStart typeName
-    (_, _, _, (_, _, _, [_, typeName]), _) -> return $ TokenInterfaceDocStringStart typeName
-    (_, _, _, _, (_, _, _, [_, typeName])) -> return $ TokenInstanceDocStringStart typeName
-    _                                      -> return $ TokenModuleDocStringStart
+    ((_, _, _, [fnName]), _, _, _, _) ->
+      return $ TokenFunctionDocStringStart sourceTarget fnName
+
+    (_, (_, _, _, [fnName]), _, _, _) ->
+      return $ TokenFunctionDocStringStart sourceTarget fnName
+
+    (_, _, (_, _, _, [_, typeName]), _, _) ->
+      return $ TokenTypeDefDocStringStart sourceTarget typeName
+
+    (_, _, _, (_, _, _, [_, typeName]), _) ->
+      return $ TokenInterfaceDocStringStart sourceTarget typeName
+
+    (_, _, _, _, (_, _, _, [_, typeName])) ->
+      return $ TokenInstanceDocStringStart sourceTarget typeName
+
+    _ ->
+      return $ TokenModuleDocStringStart sourceTarget
+
 
 endDocString :: AlexInput -> Int -> Alex Token
 endDocString i@(posn, prevChar, pending, input) len = do
+  sourceTarget <- getCurrentSourceTarget
   setDefaultStartCode
-  return $ TokenDocStringEnd
+  return $ TokenDocStringEnd sourceTarget
 
 
-mapToken :: (String -> Token) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (_, _, _, input) len = return $ tokenizer (take len input)
+mapToken :: (String -> SourceTarget -> Token) -> AlexInput -> Int -> Alex Token
+mapToken tokenizer (_, _, _, input) len = do
+  sourceTarget <- getCurrentSourceTarget
+  return $ tokenizer (take len input) sourceTarget
 
 
 data Token
-  = TokenModuleDocStringStart
-  | TokenFunctionDocStringStart String
-  | TokenTypeDefDocStringStart String
-  | TokenInterfaceDocStringStart String
-  | TokenInstanceDocStringStart String
-  | TokenDocStringEnd
-  | TokenExampleStart
-  | TokenSinceStart
-  | TokenDocStringCharacter String
+  = TokenModuleDocStringStart SourceTarget
+  | TokenFunctionDocStringStart SourceTarget String
+  | TokenTypeDefDocStringStart SourceTarget String
+  | TokenInterfaceDocStringStart SourceTarget String
+  | TokenInstanceDocStringStart SourceTarget String
+  | TokenDocStringEnd SourceTarget
+  | TokenExampleStart SourceTarget
+  | TokenSinceStart SourceTarget
+  | TokenDocStringCharacter SourceTarget String
   | TokenEOF
  deriving (Eq, Show)
 
 getDocStringCharacter :: Token -> String
-getDocStringCharacter (TokenDocStringCharacter s) = s
+getDocStringCharacter (TokenDocStringCharacter _ s) = s
 
 getFunctionName :: Token -> String
-getFunctionName (TokenFunctionDocStringStart n) = n
+getFunctionName (TokenFunctionDocStringStart _ n) = n
 
 getTypeName :: Token -> String
-getTypeName (TokenTypeDefDocStringStart n) = n
+getTypeName (TokenTypeDefDocStringStart _ n) = n
 
 getInterfaceName :: Token -> String
-getInterfaceName (TokenInterfaceDocStringStart n) = n
+getInterfaceName (TokenInterfaceDocStringStart _ n) = n
 
 getInstanceName :: Token -> String
-getInstanceName (TokenInstanceDocStringStart n) = n
+getInstanceName (TokenInstanceDocStringStart _ n) = n
+
+tokenTarget :: Token -> SourceTarget
+tokenTarget token = case token of
+  TokenModuleDocStringStart target ->
+    target
+
+  TokenFunctionDocStringStart target _ ->
+    target
+
+  TokenTypeDefDocStringStart target _ ->
+    target
+
+  TokenInterfaceDocStringStart target _ ->
+    target
+
+  TokenInstanceDocStringStart target _ ->
+    target
+
+  TokenDocStringEnd target ->
+    target
+
+  TokenExampleStart target ->
+    target
+
+  TokenSinceStart target ->
+    target
+
+  TokenDocStringCharacter target _ ->
+    target
+
+  TokenEOF ->
+    TargetAll
 
 
 alexEOF :: Alex Token

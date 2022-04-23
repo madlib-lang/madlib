@@ -1,33 +1,40 @@
 module Parse.DocString.DocString where
 
 import Data.List (find)
+import AST.Source
 
 -- Maybe do this instead:
 -- data DocString = ModuleDoc String | Doc String String [DocStringTag] DocStringType
 -- Like this we can have more generic functions to extract data from the DocString.
 
 data DocString
-  = ModuleDoc String
-  | FunctionDoc String String [DocStringTag]
-  | TypeDefDoc String String [DocStringTag]
-  | InterfaceDoc String String [DocStringTag]
-  | InstanceDoc String String [DocStringTag]
+  = ModuleDoc SourceTarget String
+  | FunctionDoc SourceTarget String String [DocStringTag]
+  | TypeDefDoc SourceTarget String String [DocStringTag]
+  | InterfaceDoc SourceTarget String String [DocStringTag]
+  | InstanceDoc SourceTarget String String [DocStringTag]
   deriving(Eq, Show)
 
 data DocStringTag
-  = ExampleTag String
-  | SinceTag String
+  = ExampleTag SourceTarget String
+  | SinceTag SourceTarget String
   deriving(Eq, Show)
 
 getTagContent :: DocStringTag -> String
 getTagContent tag = case tag of
-  ExampleTag c -> c
-  SinceTag   c -> c
+  ExampleTag _ c ->
+    c
+
+  SinceTag _ c ->
+    c
 
 isExampleTag :: DocStringTag -> Bool
 isExampleTag tag = case tag of
-  ExampleTag _ -> True
-  _            -> False
+  ExampleTag _ _ ->
+    True
+
+  _ ->
+    False
 
 findExampleTag :: [DocStringTag] -> Maybe String
 findExampleTag tags =
@@ -36,8 +43,11 @@ findExampleTag tags =
 
 isSinceTag :: DocStringTag -> Bool
 isSinceTag tag = case tag of
-  SinceTag _ -> True
-  _          -> False
+  SinceTag _ _ ->
+    True
+
+  _ ->
+    False
 
 findSinceTag :: [DocStringTag] -> Maybe String
 findSinceTag tags =
@@ -48,8 +58,8 @@ findSinceTag tags =
 
 isModuleDocString :: DocString -> Bool
 isModuleDocString ds = case ds of
-  ModuleDoc _ -> True
+  ModuleDoc _ _ -> True
   _ -> False
 
 getModuleDocDescription :: DocString -> String
-getModuleDocDescription (ModuleDoc desc) = desc
+getModuleDocDescription (ModuleDoc _ desc) = desc
