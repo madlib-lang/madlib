@@ -172,6 +172,10 @@ export mapChars = (f, s) => #- s.split("").map(f).join("") -#
 
 #elseif llvm
 
+/**
+ * maps the chars of a String
+ * @since 0.12.0
+ */
 mapChars :: (Char -> Char) -> String -> String
 export mapChars = extern "madlib__string__mapChars"
 
@@ -329,17 +333,33 @@ export replace = extern "madlib__string__replace"
 
 #iftarget js
 
+/**
+ * pushes a char at the beginning of a String
+ * @since 0.12.0
+ */
 pushChar :: Char -> String -> String
 export pushChar = (c, s) => #- c + s -#
 
+/**
+ * appends a char at the end of a String
+ * @since 0.12.0
+ */
 appendChar :: Char -> String -> String
 export appendChar = (c, s) => #- s + c -#
 
 #elseif llvm
 
+/**
+ * pushes a char at the beginning of a String
+ * @since 0.12.0
+ */
 pushChar :: Char -> String -> String
 export pushChar = extern "madlib__string__pushChar"
 
+/**
+ * appends a char at the end of a String
+ * @since 0.12.0
+ */
 appendChar :: Char -> String -> String
 export appendChar = extern "madlib__string__appendChar"
 
