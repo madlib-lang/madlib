@@ -389,6 +389,11 @@ getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
 
+getInstanceName :: Instance -> String
+getInstanceName inst = case inst of
+  Untyped _ (Instance name _ _ _) ->
+    name
+
 extractExportedADTs :: AST -> [TypeDecl]
 extractExportedADTs ast =
   let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)

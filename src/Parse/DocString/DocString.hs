@@ -63,3 +63,20 @@ isModuleDocString ds = case ds of
 
 getModuleDocDescription :: DocString -> String
 getModuleDocDescription (ModuleDoc _ desc) = desc
+
+getDocStringTarget :: DocString -> SourceTarget
+getDocStringTarget docString = case docString of
+  ModuleDoc sourceTarget _ ->
+    sourceTarget
+
+  FunctionDoc sourceTarget _ _ _ ->
+    sourceTarget
+
+  TypeDefDoc sourceTarget _ _ _ ->
+    sourceTarget
+
+  InterfaceDoc sourceTarget _ _ _ ->
+    sourceTarget
+
+  InstanceDoc sourceTarget _ _ _ ->
+    sourceTarget

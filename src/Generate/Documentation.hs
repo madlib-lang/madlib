@@ -3,7 +3,8 @@ module Generate.Documentation where
 
 import           Data.Aeson.Text                ( encodeToLazyText )
 import           Data.Text.Lazy                 ( unpack )
-import qualified AST.Solved                    as Slv
+import qualified AST.Solved                     as Slv
+import qualified AST.Source                     as Src
 import           Data.Maybe                     ( isJust
                                                 , fromMaybe
                                                 )
@@ -18,11 +19,25 @@ import qualified Data.Maybe                    as Maybe
 import           Infer.Type
 import           Explain.Format
 import           Text.Regex.TDFA
-import Utils.Tuple
+import           Utils.Tuple
+
+
+data DocItemPair
+  = DocItemPair (Maybe DocItem) (Maybe DocItem)
+  deriving(Eq, Show)
+
+data DocItem
+  = DocItemExpression      { diName :: String, diDescription :: String, diExample :: String, diSince :: String, diType :: String }
+  | DocItemTypeDeclaration { diName :: String, diParams :: String, diConstructors :: [String], diDescription :: String, diExample :: String, diSince :: String }
+  | DocItemAlias           { diName :: String, diParams :: String, diAliasedType :: String, diDescription :: String, diExample :: String, diSince :: String }
+  | DocItemInterface       { diName :: String, diVars :: String, diConstraints :: String, diMethods :: [String], diDescription :: String, diExample :: String, diSince :: String }
+  | DocItemInstance        { diName :: String, diDeclaration :: String, diConstraints :: String, diDescription :: String, diExample :: String, diSince :: String }
+  deriving(Eq, Show)
 
 
 indentSize :: Int
 indentSize = 2
+
 
 indent :: Int -> String
 indent depth = concat $ replicate (depth * indentSize) " "
@@ -33,8 +48,10 @@ isAliasExported typeDecl = case typeDecl of
   Slv.Untyped _ Slv.Alias { Slv.aliasexported } -> aliasexported
   _ -> False
 
+
 prepareExportedADTs :: Slv.AST -> [Slv.TypeDecl]
 prepareExportedADTs ast = filter Slv.isADTExported $ Slv.atypedecls ast
+
 
 prepareExportedAliases :: Slv.AST -> [Slv.TypeDecl]
 prepareExportedAliases ast = filter isAliasExported $ Slv.atypedecls ast
@@ -43,8 +60,9 @@ prepareExportedAliases ast = filter isAliasExported $ Slv.atypedecls ast
 prepareInterfacesForDocs :: Slv.AST -> [Slv.Interface]
 prepareInterfacesForDocs = Slv.ainterfaces
 
+
 prepareInstancesForDocs :: Slv.AST -> [Slv.Instance]
-prepareInstancesForDocs = Slv.ainstances
+prepareInstancesForDocs ast = filter ((\name -> name /= "Eq" && name /= "Inspect") . Slv.getInstanceName) (Slv.ainstances ast)
 
 
 prepareExportedExps :: Slv.AST -> [(String, Slv.Exp)]
@@ -58,397 +76,550 @@ prepareExportedExps ast =
           Maybe.mapMaybe (\name -> find (\export -> Slv.getExpName export == Just name) exps) nameExportNames
   in  Data.Bifunctor.first (fromMaybe "") <$> filteredExportedWithNames
 
-generateASTDoc :: Int -> (Slv.AST, String, [DocString]) -> String
-generateASTDoc depth (ast, fullModuleName, docStrings) =
-  let astPath          = fromMaybe "unknown" $ Slv.apath ast
-      expsForDoc       = prepareExportedExps ast
-      adtsForDoc       = prepareExportedADTs ast
-      aliasesForDoc    = prepareExportedAliases ast
-      interfacesForDoc = prepareInterfacesForDocs ast
-      instancesForDoc  = prepareInstancesForDocs ast
-      description      = extractModuleDescription docStrings
-  in  "{\n"
-        <> indent (depth + 1)
-        <> "\"path\": \""
-        <> astPath
-        <> "\",\n"
-        <> indent (depth + 1)
-        <> "\"moduleName\": \""
-        <> fullModuleName
-        <> "\",\n"
-        <> indent (depth + 1)
-        <> "\"description\": "
-        <> escapeString description
-        <> ",\n"
-        <> indent (depth + 1)
-        <> "\"typeDeclarations\": [\n"
-        <> indent (depth + 2)
-        <> generateADTsDoc (depth + 2) docStrings adtsForDoc
-        <> "\n"
-        <> indent (depth + 1)
-        <> "],\n"
-        <> indent (depth + 1)
-        <> "\"aliases\": [\n"
-        <> indent (depth + 2)
-        <> generateAliasesDoc (depth + 2) docStrings aliasesForDoc
-        <> "\n"
-        <> indent (depth + 1)
-        <> "],\n"
-        <> indent (depth + 1)
-        <> "\"interfaces\": [\n"
-        <> indent (depth + 2)
-        <> generateInterfacesDoc (depth + 2) docStrings interfacesForDoc
-        <> "\n"
-        <> indent (depth + 1)
-        <> "],\n"
-        <> indent (depth + 1)
-        <> "\"instances\": [\n"
-        <> indent (depth + 2)
-        <> generateInstancesDoc (depth + 2) docStrings instancesForDoc
-        <> "\n"
-        <> indent (depth + 1)
-        <> "],\n"
-        <> indent (depth + 1)
-        <> "\"expressions\": [\n"
-        <> indent (depth + 2)
-        <> generateExpsDoc (depth + 2) docStrings expsForDoc
-        <> "\n"
-        <> indent (depth + 1)
-        <> "]\n"
-        <> indent depth
-        <> "}"
 
-generateASTsDoc :: [(Slv.AST, String, [DocString])] -> String
-generateASTsDoc asts =
-  let depth   = 0
-      modules = intercalate (",\n" <> indent (depth + 2)) $ generateASTDoc (depth + 2) <$> asts
-  in  indent depth
-        <> "{\n"
-        <> indent (depth + 1)
-        <> "\"modules\": [\n"
-        <> indent (depth + 2)
-        <> modules
-        <> "\n"
-        <> indent (depth + 1)
-        <> "]\n"
-        <> indent depth
-        <> "}"
+isExpressionPair :: DocItemPair -> Bool
+isExpressionPair pair = case pair of
+  DocItemPair (Just DocItemExpression {}) _ ->
+    True
+
+  DocItemPair _ (Just DocItemExpression {}) ->
+    True
+
+  _ ->
+    False
 
 
-generateInstancesDoc :: Int -> [DocString] -> [Slv.Instance] -> String
-generateInstancesDoc depth docStrings instances =
-  intercalate (",\n" <> indent depth) (generateInstanceDoc depth docStrings <$> instances)
+isTypeDeclarationPair :: DocItemPair -> Bool
+isTypeDeclarationPair pair = case pair of
+  DocItemPair (Just DocItemTypeDeclaration {}) _ ->
+    True
 
-generateInstanceDoc :: Int -> [DocString] -> Slv.Instance -> String
-generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constraints declaration _)) =
-  let constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
-        "()" -> ""
-        or   -> or
-      declaration'     = lst $ predToStr False (mempty, mempty) declaration
+  DocItemPair _ (Just DocItemTypeDeclaration {}) ->
+    True
 
-      docString        = findDocStringForInstanceDeclaration declaration' docStrings
-
-      descriptionField = case docString of
-        Just (InstanceDoc _ _ description _) ->
-          indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
-
-        Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
-
-      exampleField = case docString of
-        Just (InstanceDoc _ _ _ tags) -> case findExampleTag tags of
-          Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-          Nothing      -> emptyExample $ depth + 1
-
-        Nothing -> emptyExample $ depth + 1
-
-      sinceField = case docString of
-        Just (InstanceDoc _ _ _ tags) -> case findSinceTag tags of
-          Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-          Nothing    -> emptySince $ depth + 1
-
-        Nothing -> emptySince $ depth + 1
-  in  "{\n"
-        <> indent (depth + 1)
-        <> "\"name\": \""
-        <> name
-        <> "\",\n"
-        <> descriptionField
-        <> exampleField
-        <> sinceField
-        <> indent (depth + 1)
-        <> "\"constraints\": \""
-        <> constraints'
-        <> "\",\n"
-        <> indent (depth + 1)
-        <> "\"declaration\": \""
-        <> declaration'
-        <> "\"\n"
-        <> indent depth
-        <> "}"
+  _ ->
+    False
 
 
-generateInterfacesDoc :: Int -> [DocString] -> [Slv.Interface] -> String
-generateInterfacesDoc depth docStrings interfaces =
-  intercalate (",\n" <> indent depth) (generateInterfaceDoc depth docStrings <$> interfaces)
+isAliasPair :: DocItemPair -> Bool
+isAliasPair pair = case pair of
+  DocItemPair (Just DocItemAlias {}) _ ->
+    True
 
-generateInterfaceDoc :: Int -> [DocString] -> Slv.Interface -> String
-generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
-  let vars'        = unwords $ (\(TV n _) -> n) <$> vars
-      constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
-        "()" -> ""
-        or   -> or
-      methods'         = M.map (prettyPrintConstructorTyping' False) methodTypings
-      methods''        = M.elems $ M.mapWithKey (\n t -> "\"" <> n <> " :: " <> t <> "\"") methods'
-      methods'''       = intercalate (",\n" <> indent (depth + 2)) methods''
-      docString        = findDocStringForInterfaceName name docStrings
+  DocItemPair _ (Just DocItemAlias {}) ->
+    True
 
-      descriptionField = case docString of
-        Just (InterfaceDoc _ _ description _) ->
-          indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
-
-        Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
-
-      exampleField = case docString of
-        Just (InterfaceDoc _ _ _ tags) -> case findExampleTag tags of
-          Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-          Nothing      -> emptyExample $ depth + 1
-
-        Nothing -> emptyExample $ depth + 1
-
-      sinceField = case docString of
-        Just (InterfaceDoc _ _ _ tags) -> case findSinceTag tags of
-          Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-          Nothing    -> emptySince $ depth + 1
-
-        Nothing -> emptySince $ depth + 1
-  in  "{\n"
-        <> indent (depth + 1)
-        <> "\"name\": \""
-        <> name
-        <> "\",\n"
-        <> indent (depth + 1)
-        <> "\"vars\": \""
-        <> vars'
-        <> "\",\n"
-        <> indent (depth + 1)
-        <> "\"constraints\": \""
-        <> constraints'
-        <> "\",\n"
-        <> descriptionField
-        <> exampleField
-        <> sinceField
-        <> indent (depth + 1)
-        <> "\"methods\": [\n"
-        <> indent (depth + 2)
-        <> methods'''
-        <> "\n"
-        <> indent (depth + 1)
-        <> "]\n"
-        <> indent depth
-        <> "}"
+  _ ->
+    False
 
 
-generateADTsDoc :: Int -> [DocString] -> [Slv.TypeDecl] -> String
-generateADTsDoc depth docStrings typeDecls =
-  intercalate (",\n" <> indent depth) (generateADTDoc depth docStrings <$> typeDecls)
+isInterfacePair :: DocItemPair -> Bool
+isInterfacePair pair = case pair of
+  DocItemPair (Just DocItemInterface {}) _ ->
+    True
 
-generateADTDoc :: Int -> [DocString] -> Slv.TypeDecl -> String
-generateADTDoc depth docStrings typeDecl = case typeDecl of
+  DocItemPair _ (Just DocItemInterface {}) ->
+    True
+
+  _ ->
+    False
+
+
+isInstancePair :: DocItemPair -> Bool
+isInstancePair pair = case pair of
+  DocItemPair (Just DocItemInstance {}) _ ->
+    True
+
+  DocItemPair _ (Just DocItemInstance {}) ->
+    True
+
+  _ ->
+    False
+
+
+
+getDescriptionForDocItem :: Maybe DocString -> String
+getDescriptionForDocItem docString = case docString of
+  Just (FunctionDoc _ _ description _) ->
+    description
+
+  Just (TypeDefDoc _ _ description _) ->
+    description
+
+  Just (InterfaceDoc _ _ description _) ->
+    description
+
+  Just (InstanceDoc _ _ description _) ->
+    description
+
+  _ ->
+    ""
+
+getExampleForDocItem :: Maybe DocString -> String
+getExampleForDocItem docString = case docString of
+  Just (FunctionDoc _ _ _ tags) ->
+    case findExampleTag tags of
+      Just example ->
+        example
+
+      Nothing ->
+        ""
+
+  Just (TypeDefDoc _ _ _ tags) ->
+    case findExampleTag tags of
+      Just example ->
+        example
+
+      Nothing ->
+        ""
+
+  Just (InterfaceDoc _ _ _ tags) ->
+    case findExampleTag tags of
+      Just example ->
+        example
+
+      Nothing ->
+        ""
+
+  Just (InstanceDoc _ _ _ tags) ->
+    case findExampleTag tags of
+      Just example ->
+        example
+
+      Nothing ->
+        ""
+
+  _ ->
+    ""
+
+getSinceForDocItem :: Maybe DocString -> String
+getSinceForDocItem docString = case docString of
+  Just (FunctionDoc _ _ _ tags) ->
+    case findSinceTag tags of
+      Just since ->
+        since
+
+      Nothing ->
+        ""
+
+  Just (TypeDefDoc _ _ _ tags) ->
+    case findSinceTag tags of
+      Just since ->
+        since
+
+      Nothing ->
+        ""
+
+  Just (InterfaceDoc _ _ _ tags) ->
+    case findSinceTag tags of
+      Just since ->
+        since
+
+      Nothing ->
+        ""
+
+  Just (InstanceDoc _ _ _ tags) ->
+    case findSinceTag tags of
+      Just since ->
+        since
+
+      Nothing ->
+        ""
+
+  _ ->
+    ""
+
+buildExpressionDocItem :: [DocString] -> (String, Slv.Exp) -> DocItem
+buildExpressionDocItem docStrings (name, exp) =
+  let typing      = formatType exp
+      docString   = findDocStringForExpName name docStrings
+      description = getDescriptionForDocItem docString
+      example     = getExampleForDocItem docString
+      since       = getSinceForDocItem docString
+  in  DocItemExpression { diName = name, diDescription = description, diExample = example, diSince = since, diType = typing }
+
+
+buildTypeDeclarationDocItem :: [DocString] -> Slv.TypeDecl -> DocItem
+buildTypeDeclarationDocItem docStrings typeDecl = case typeDecl of
+  Slv.Untyped _ (Slv.Alias name params tipe _) ->
+    let params'     = unwords params
+        tipe'       = prettyPrintConstructorTyping tipe
+        docString   = findDocStringForTypeName name docStrings
+        description = getDescriptionForDocItem docString
+        example     = getExampleForDocItem docString
+        since       = getSinceForDocItem docString
+    in  DocItemAlias { diName = name, diAliasedType = tipe', diParams = params', diDescription = description, diExample = example, diSince = since }
+
   Slv.Untyped _ (Slv.ADT name params ctors _ _) ->
     let params' = unwords params
         ctors' =
-            (\(Slv.Untyped _ (Slv.Constructor n ts _)) ->
-                "\"" <> n <> " " <> unwords (prettyPrintConstructorTyping <$> ts) <> "\""
-              )
-              <$> ctors
-        ctors''          = intercalate (",\n" <> indent (depth + 2)) ctors'
-        docString        = findDocStringForTypeName name docStrings
-
-        descriptionField = case docString of
-          Just (TypeDefDoc _ _ description _) ->
-            indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
-
-          Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
-
-        exampleField = case docString of
-          Just (TypeDefDoc _ _ _ tags) -> case findExampleTag tags of
-            Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-            Nothing      -> emptyExample $ depth + 1
-
-          Nothing -> emptyExample $ depth + 1
-
-        sinceField = case docString of
-          Just (TypeDefDoc _ _ _ tags) -> case findSinceTag tags of
-            Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-            Nothing    -> emptySince $ depth + 1
-
-          Nothing -> emptySince $ depth + 1
-    in  "{\n"
-          <> indent (depth + 1)
-          <> "\"type\": \"ADT\",\n"
-          <> descriptionField
-          <> exampleField
-          <> sinceField
-          <> indent (depth + 1)
-          <> "\"name\": \""
-          <> name
-          <> "\",\n"
-          <> indent (depth + 1)
-          <> "\"params\": \""
-          <> params'
-          <> "\",\n"
-          <> indent (depth + 1)
-          <> "\"constructors\": [\n"
-          <> indent (depth + 2)
-          <> ctors''
-          <> "\n"
-          <> indent (depth + 1)
-          <> "]\n"
-          <> indent depth
-          <> "}"
-
-  _ -> ""
+          (\(Slv.Untyped _ (Slv.Constructor n ts _)) ->
+            n <> " " <> unwords (prettyPrintConstructorTyping <$> ts)
+          ) <$> ctors
+        docString   = findDocStringForTypeName name docStrings
+        description = getDescriptionForDocItem docString
+        example     = getExampleForDocItem docString
+        since       = getSinceForDocItem docString
+    in  DocItemTypeDeclaration { diName = name, diParams = params', diConstructors = ctors', diDescription = description, diExample = example, diSince = since }
 
 
-generateAliasesDoc :: Int -> [DocString] -> [Slv.TypeDecl] -> String
-generateAliasesDoc depth docStrings typeDecls =
-  intercalate (",\n" <> indent depth) (generateAliasDoc depth docStrings <$> typeDecls)
+buildInterfaceDocItem :: [DocString] -> Slv.Interface -> DocItem
+buildInterfaceDocItem docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
+  let vars'        = unwords $ (\(TV n _) -> n) <$> vars
+      constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
+        "()" ->
+          ""
 
-generateAliasDoc :: Int -> [DocString] -> Slv.TypeDecl -> String
-generateAliasDoc depth docStrings typeDecl = case typeDecl of
-  Slv.Untyped _ (Slv.Alias name params tipe _) ->
-    let params'          = unwords params
-        tipe'            = prettyPrintConstructorTyping tipe
-        docString        = findDocStringForTypeName name docStrings
+        or   ->
+          or
 
-        descriptionField = case docString of
-          Just (TypeDefDoc _ _ description _) ->
-            indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
-
-          Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
-
-        exampleField = case docString of
-          Just (TypeDefDoc _ _ _ tags) -> case findExampleTag tags of
-            Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-            Nothing      -> emptyExample $ depth + 1
-
-          Nothing -> emptyExample $ depth + 1
-
-        sinceField = case docString of
-          Just (TypeDefDoc _ _ _ tags) -> case findSinceTag tags of
-            Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-            Nothing    -> emptySince $ depth + 1
-
-          Nothing -> emptySince $ depth + 1
-    in  "{\n"
-          <> indent (depth + 1)
-          <> "\"type\": \"Alias\",\n"
-          <> descriptionField
-          <> exampleField
-          <> sinceField
-          <> indent (depth + 1)
-          <> "\"name\": \""
-          <> name
-          <> "\",\n"
-          <> indent (depth + 1)
-          <> "\"params\": \""
-          <> params'
-          <> "\",\n"
-          <> indent (depth + 1)
-          <> "\"aliasedType\": \""
-          <> tipe'
-          <> "\"\n"
-          <> indent depth
-          <> "}"
+      methods'    = M.map (prettyPrintConstructorTyping' False) methodTypings
+      methods''   = M.elems $ M.mapWithKey (\n t -> n <> " :: " <> t) methods'
+      docString   = findDocStringForInterfaceName name docStrings
+      description = getDescriptionForDocItem docString
+      example     = getExampleForDocItem docString
+      since       = getSinceForDocItem docString
+  in  DocItemInterface { diName = name, diVars = vars', diConstraints = constraints', diMethods = methods'', diDescription = description, diExample = example, diSince = since }
 
 
-  _ -> ""
+buildInstanceDocItem :: [DocString] -> Slv.Instance -> DocItem
+buildInstanceDocItem docStrings (Slv.Untyped _ (Slv.Instance name constraints declaration _)) =
+  let constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
+        "()" ->
+          ""
+
+        or   ->
+          or
+      declaration' = lst $ predToStr False (mempty, mempty) declaration
+      docString    = findDocStringForInstanceDeclaration declaration' docStrings
+      description  = getDescriptionForDocItem docString
+      example      = getExampleForDocItem docString
+      since        = getSinceForDocItem docString
+  in  DocItemInstance { diName = name, diDeclaration = declaration', diConstraints = constraints', diDescription = description, diExample = example, diSince = since }
 
 
-generateExpsDoc :: Int -> [DocString] -> [(String, Slv.Exp)] -> String
-generateExpsDoc depth docStrings expInfos =
-  intercalate (",\n" <> indent depth) (generateExpDoc depth docStrings <$> expInfos)
-
-emptyExample :: Int -> String
-emptyExample depth = indent depth <> "\"example\": \"\",\n"
-
-emptySince :: Int -> String
-emptySince depth = indent depth <> "\"since\": \"\",\n"
-
-formatType :: Slv.Exp -> String
-formatType (Slv.Typed t _ exp) = case exp of
-  Slv.TypedExp _ typing _ ->
-    prettyPrintConstructorTyping' False typing
-
-  _ ->
-    prettyPrintQualType True t
+buildJSDocItems :: [DocString] -> Slv.AST -> [DocItem]
+buildJSDocItems docStrings ast =
+  let docStrings'       = filter ((\target -> target == Src.TargetJS || target == Src.TargetAll) . getDocStringTarget) docStrings
+      expDocItems       = buildExpressionDocItem docStrings' <$> prepareExportedExps ast
+      typeDeclDocItems  = buildTypeDeclarationDocItem docStrings' <$> (prepareExportedADTs ast ++ prepareExportedAliases ast)
+      interfaceDocItems = buildInterfaceDocItem docStrings' <$> prepareInterfacesForDocs ast
+      instanceDocItems  = buildInstanceDocItem docStrings' <$> prepareInstancesForDocs ast
+  in  expDocItems ++ typeDeclDocItems ++ interfaceDocItems ++ instanceDocItems
 
 
-generateExpDoc :: Int -> [DocString] -> (String, Slv.Exp) -> String
-generateExpDoc depth docStrings (name, exp) =
-  let typing           = formatType exp
-      docString        = findDocStringForExpName name docStrings
-      descriptionField = case docString of
-        Just (FunctionDoc _ _ description _) ->
-          indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
+buildLLVMDocItems :: [DocString] -> Slv.AST -> [DocItem]
+buildLLVMDocItems docStrings ast =
+  let docStrings'       = filter ((\target -> target == Src.TargetLLVM || target == Src.TargetAll) . getDocStringTarget) docStrings
+      expDocItems       = buildExpressionDocItem docStrings' <$> prepareExportedExps ast
+      typeDeclDocItems  = buildTypeDeclarationDocItem docStrings' <$> (prepareExportedADTs ast ++ prepareExportedAliases ast)
+      interfaceDocItems = buildInterfaceDocItem docStrings' <$> prepareInterfacesForDocs ast
+      instanceDocItems  = buildInstanceDocItem docStrings' <$> prepareInstancesForDocs ast
+  in  expDocItems ++ typeDeclDocItems ++ interfaceDocItems ++ instanceDocItems
 
-        Nothing -> indent (depth + 1) <> "\"description\": \"\",\n"
 
-      exampleField = case docString of
-        Just (FunctionDoc _ _ _ tags) -> case findExampleTag tags of
-          Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-          Nothing      -> emptyExample $ depth + 1
+-- returns a potentially found item and the rest of the elements
+findCorrespondingDocItem :: [DocItem] -> DocItem -> [DocItem] -> (Maybe DocItem, [DocItem])
+findCorrespondingDocItem skipped docItem docItems = case (docItem, docItems) of
+  (_, []) ->
+    (Nothing, skipped)
 
-        Nothing -> emptyExample $ depth + 1
+  (DocItemExpression { diName }, found@(DocItemExpression { diName = diName' }) : next) | diName == diName' ->
+    (Just found, skipped ++ next)
 
-      sinceField = case docString of
-        Just (FunctionDoc _ _ _ tags) -> case findSinceTag tags of
-          Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-          Nothing    -> emptySince $ depth + 1
+  (DocItemTypeDeclaration { diName }, found@(DocItemTypeDeclaration { diName = diName' }) : next) | diName == diName' ->
+    (Just found, skipped ++ next)
 
-        Nothing -> emptySince $ depth + 1
+  (DocItemAlias { diName }, found@(DocItemAlias { diName = diName' }) : next) | diName == diName' ->
+    (Just found, skipped ++ next)
+
+  (DocItemInterface { diName }, found@(DocItemInterface { diName = diName' }) : next) | diName == diName' ->
+    (Just found, skipped ++ next)
+
+  (DocItemInstance { diDeclaration }, found@(DocItemInstance { diDeclaration = diDeclaration' }) : next) | diDeclaration == diDeclaration' ->
+    (Just found, skipped ++ next)
+
+  (_, item : next) ->
+    findCorrespondingDocItem (item : skipped) docItem next
+
+
+buildDocItemPairs :: [DocItem] -> [DocItem] -> [DocItemPair]
+buildDocItemPairs jsDocItems llvmDocItems = case jsDocItems of
+  item : next ->
+    case findCorrespondingDocItem [] item llvmDocItems of
+      (res, rest) ->
+        DocItemPair (Just item) res : buildDocItemPairs next rest
+
+  [] ->
+    DocItemPair Nothing . Just <$> llvmDocItems
+
+
+generateDocItem :: DocItem -> String
+generateDocItem docItem = case docItem of
+  DocItemExpression { diName, diDescription, diExample, diSince, diType } ->
+    "{\n"
+    <> indent 6
+    <> "\"name\": "
+    <> "\"" <> diName <> "\",\n"
+    <> indent 6
+    <> "\"description\": "
+    <> escapeString diDescription <> ",\n"
+    <> indent 6
+    <> "\"example\": "
+    <> escapeString diExample <> ",\n"
+    <> indent 6
+    <> "\"diSince\": "
+    <> "\"" <> diSince <> "\",\n"
+    <> indent 6
+    <> "\"type\": "
+    <> "\"" <> diType <> "\"\n"
+    <> indent 5
+    <> "}"
+
+  DocItemTypeDeclaration { diName, diParams, diConstructors, diDescription, diExample, diSince } ->
+    "{\n"
+    <> indent 6
+    <> "\"name\": "
+    <> "\"" <> diName <> "\",\n"
+    <> indent 6
+    <> "\"params\": "
+    <> "\"" <> diParams <> "\",\n"
+    <> indent 6
+    <> "\"constructors\": [\n"
+    <> indent 7
+    <> intercalate (",\n" <> indent 7) (("\"" <>) . (<> "\"") <$> diConstructors) <> "\n" <> indent 6 <> "],\n"
+    <> indent 6
+    <> "\"description\": "
+    <> escapeString diDescription <> ",\n"
+    <> indent 6
+    <> "\"example\": "
+    <> escapeString diExample <> ",\n"
+    <> indent 6
+    <> "\"diSince\": "
+    <> "\"" <> diSince <> "\"\n"
+    <> indent 5
+    <> "}"
+
+  DocItemAlias { diName, diParams, diAliasedType, diDescription, diExample, diSince } ->
+    "{\n"
+    <> indent 6
+    <> "\"name\": "
+    <> "\"" <> diName <> "\",\n"
+    <> indent 6
+    <> "\"params\": "
+    <> "\"" <> diParams <> "\",\n"
+    <> indent 6
+    <> "\"aliasedType\": "
+    <> "\"" <> diAliasedType <> "\",\n"
+    <> indent 6
+    <> "\"description\": "
+    <> escapeString diDescription <> ",\n"
+    <> indent 6
+    <> "\"example\": "
+    <> escapeString diExample <> ",\n"
+    <> indent 6
+    <> "\"diSince\": "
+    <> "\"" <> diSince <> "\"\n"
+    <> indent 5
+    <> "}"
+
+  DocItemInterface { diName, diVars, diConstraints, diMethods, diDescription, diExample, diSince } ->
+    "{\n"
+    <> indent 6
+    <> "\"name\": "
+    <> "\"" <> diName <> "\",\n"
+    <> indent 6
+    <> "\"vars\": "
+    <> "\"" <> diVars <> "\",\n"
+    <> indent 6
+    <> "\"constraints\": "
+    <> "\"" <> diConstraints <> "\",\n"
+    <> indent 6
+    <> "\"methods\": [\n"
+    <> indent 5
+    <> intercalate (",\n" <> indent 5) (("\"" <>) . (<> "\"") <$> diMethods) <> "\n" <> indent 4 <> "],\n"
+    <> indent 6
+    <> indent 6
+    <> "\"description\": "
+    <> escapeString diDescription <> ",\n"
+    <> indent 6
+    <> "\"example\": "
+    <> escapeString diExample <> ",\n"
+    <> indent 6
+    <> "\"diSince\": "
+    <> "\"" <> diSince <> "\"\n"
+    <> indent 5
+    <> "}"
+
+  DocItemInstance { diName, diDeclaration, diConstraints, diDescription, diExample, diSince } ->
+    "{\n"
+    <> indent 6
+    <> "\"name\": "
+    <> "\"" <> diName <> "\",\n"
+    <> indent 6
+    <> "\"declaration\": "
+    <> "\"" <> diDeclaration <> "\",\n"
+    <> indent 6
+    <> "\"constraints\": "
+    <> "\"" <> diConstraints <> "\",\n"
+    <> indent 6
+    <> "\"description\": "
+    <> escapeString diDescription <> ",\n"
+    <> indent 6
+    <> "\"example\": "
+    <> escapeString diExample <> ",\n"
+    <> indent 6
+    <> "\"diSince\": "
+    <> "\"" <> diSince <> "\"\n"
+    <> indent 5
+    <> "}"
+
+
+generatePair :: DocItemPair -> String
+generatePair docItemPair = case docItemPair of
+  DocItemPair (Just js) (Just llvm) ->
+    "{\n"
+    <> indent 5
+    <> "\"js\": "
+    <> generateDocItem js
+    <> ",\n"
+    <> indent 5
+    <> "\"llvm\": "
+    <> generateDocItem llvm
+    <> "\n"
+    <> indent 4
+    <> "}"
+
+  DocItemPair (Just js) Nothing ->
+    "{\n"
+    <> indent 5
+    <> "\"js\": "
+    <> generateDocItem js
+    <> "\n"
+    <> indent 4
+    <> "}"
+
+  DocItemPair Nothing (Just llvm) ->
+    "{\n"
+    <> indent 5
+    <> "\"llvm\": "
+    <> generateDocItem llvm
+    <> "\n"
+    <> indent 4
+    <> "}"
+
+
+generateASTDoc :: (Slv.AST, Slv.AST, String, [DocString]) -> String
+generateASTDoc (jsAST, llvmAST, mouleName, docStrings) =
+  let astPath              = fromMaybe "unknown" $ Slv.apath jsAST
+      description          = extractModuleDescription docStrings
+      jsDocItems           = buildJSDocItems docStrings jsAST
+      llvmDocItems         = buildLLVMDocItems docStrings llvmAST
+      pairs                = buildDocItemPairs jsDocItems llvmDocItems
+      expressionPairs      = filter isExpressionPair pairs
+      typeDeclarationPairs = filter isTypeDeclarationPair pairs
+      aliasPairs           = filter isAliasPair pairs
+      interfacePairs       = filter isInterfacePair pairs
+      instancePairs        = filter isInstancePair pairs
   in  "{\n"
-        <> indent (depth + 1)
-        <> "\"name\": \""
-        <> name
-        <> "\",\n"
-        <> descriptionField
-        <> exampleField
-        <> sinceField
-        <> indent (depth + 1)
-        <> "\"type\": \""
-        <> typing
-        <> "\"\n"
-        <> indent depth
-        <> "}"
+      <> indent 3
+      <> "\"path\": \""
+      <> astPath
+      <> "\",\n"
+      <> indent 3
+      <> "\"moduleName\": \""
+      <> mouleName
+      <> "\",\n"
+      <> indent 3
+      <> "\"description\": "
+      <> escapeString description
+      <> ",\n"
+      <> indent 3
+      <> "\"typeDeclarations\": [\n"
+      <> indent 4
+      <> intercalate ", " (generatePair <$> typeDeclarationPairs)
+      <> "\n"
+      <> indent 3
+      <> "],\n"
+      <> indent 3
+      <> "\"aliases\": [\n"
+      <> indent 4
+      <> intercalate ", " (generatePair <$> aliasPairs)
+      <> "\n"
+      <> indent 3
+      <> "],\n"
+      <> indent 3
+      <> "\"interfaces\": [\n"
+      <> indent 4
+      <> intercalate ", " (generatePair <$> interfacePairs)
+      <> "\n"
+      <> indent 3
+      <> "],\n"
+      <> indent 3
+      <> "\"instances\": [\n"
+      <> indent 4
+      <> intercalate ", " (generatePair <$> instancePairs)
+      <> "\n"
+      <> indent 3
+      <> "],\n"
+      <> indent 3
+      <> "\"expressions\": [\n"
+      <> indent 4
+      <> intercalate ", " (generatePair <$> expressionPairs)
+      <> "\n"
+      <> indent 3
+      <> "]\n"
+      <> indent 2
+      <> "}"
+
+
+generateASTsDoc :: [(Slv.AST, Slv.AST, String, [DocString])] -> String
+generateASTsDoc asts =
+  let modules = intercalate (",\n" <> indent 2) $ generateASTDoc <$> asts
+  in  "{\n"
+      <> indent 1
+      <> "\"modules\": [\n"
+      <> indent 2
+      <> modules
+      <> "\n"
+      <> indent 1
+      <> "]\n"
+      <> "}"
 
 
 findDocStringForExpName :: String -> [DocString] -> Maybe DocString
 findDocStringForExpName name = find $ functionDocNameEquals name
+
 
 functionDocNameEquals :: String -> DocString -> Bool
 functionDocNameEquals name docString = case docString of
   (FunctionDoc _ n _ _) -> n == name
   _                   -> False
 
+
 findDocStringForTypeName :: String -> [DocString] -> Maybe DocString
 findDocStringForTypeName name = find $ typeDefDocNameEquals name
+
 
 typeDefDocNameEquals :: String -> DocString -> Bool
 typeDefDocNameEquals name docString = case docString of
   (TypeDefDoc _ n _ _) -> n == name
   _                  -> False
 
+
 findDocStringForInterfaceName :: String -> [DocString] -> Maybe DocString
 findDocStringForInterfaceName name = find $ interfaceDocNameEquals name
+
 
 interfaceDocNameEquals :: String -> DocString -> Bool
 interfaceDocNameEquals name docString = case docString of
   (InterfaceDoc _ n _ _) -> n == name
   _                    -> False
 
+
 findDocStringForInstanceDeclaration :: String -> [DocString] -> Maybe DocString
 findDocStringForInstanceDeclaration decl = find $ instanceDocDeclEquals decl
+
 
 instanceDocDeclEquals :: String -> DocString -> Bool
 instanceDocDeclEquals decl docString = case docString of
@@ -459,8 +630,18 @@ instanceDocDeclEquals decl docString = case docString of
     in  concreteTypesFromDocString == concreteTypesFromInstance
   _ -> False
 
+
 extractModuleDescription :: [DocString] -> String
 extractModuleDescription docStrings =
   let filtered = filter isModuleDocString docStrings
       descs    = getModuleDocDescription <$> filtered
   in  intercalate "\n" descs
+
+
+formatType :: Slv.Exp -> String
+formatType (Slv.Typed t _ exp) = case exp of
+  Slv.TypedExp _ typing _ ->
+    prettyPrintConstructorTyping' False typing
+
+  _ ->
+    prettyPrintQualType True t

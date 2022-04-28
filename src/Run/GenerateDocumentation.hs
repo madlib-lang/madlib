@@ -39,42 +39,65 @@ import           Run.Utils
 import qualified Utils.PathUtils as PathUtils
 
 
-solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, String, [DocString.DocString])])
+solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, Slv.AST, String, [DocString.DocString])])
 solveASTsForDoc _          []         = return $ Right []
 solveASTsForDoc rootFolder (fp : fps) = do
   canonicalEntrypoint       <- canonicalizePath fp
-  astTable                  <- buildASTTable TNode mempty canonicalEntrypoint
-  Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
-  let (canTable, _) = case astTable of
-        Right table -> Can.runCanonicalization mempty dictionaryModulePath TNode Can.initialEnv table canonicalEntrypoint
-        Left  e     -> (Left e, [])
 
+  Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
   rootPath <- canonicalizePath $ computeRootPath fp
   let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint
 
-  let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint . fst
-      resolvedASTTable = case (entryAST, canTable) of
+  -- TNode build target
+  jsAstTable                  <- buildASTTable TNode mempty canonicalEntrypoint
+  let (jsCanTable, _) = case jsAstTable of
+        Right table -> Can.runCanonicalization mempty dictionaryModulePath TNode Can.initialEnv table canonicalEntrypoint
+        Left  e     -> (Left e, [])
+
+
+  let jsEntryAST         = jsCanTable >>= flip Can.findAST canonicalEntrypoint . fst
+      jsResolvedASTTable = case (jsEntryAST, jsCanTable) of
         (Right ast, Right (table, _)) -> do
           runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
         (_     , Left e) -> Left e
         (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
+  -- End TNode
 
-  case resolvedASTTable of
-    Left  e          -> return $ Left e
+  -- TLLVM build target
+  llvmAstTable <- buildASTTable TLLVM mempty canonicalEntrypoint
+  let (llvmCanTable, _) = case llvmAstTable of
+        Right table -> Can.runCanonicalization mempty dictionaryModulePath TLLVM Can.initialEnv table canonicalEntrypoint
+        Left  e     -> (Left e, [])
 
-    Right (table, _) -> case M.lookup canonicalEntrypoint table of
-      Just ast -> do
-        fileContent <- readFile fp
-        let docStrings = DocString.parse fileContent
-        case docStrings of
-          Right ds -> do
-            next <- solveASTsForDoc rootFolder fps
-            return $ ([(ast, moduleName, ds)] ++) <$> next
-          Left _ -> do
-            next <- solveASTsForDoc rootFolder fps
-            return $ ([(ast, moduleName, [])] ++) <$> next
+  let llvmEntryAST     = llvmCanTable >>= flip Can.findAST canonicalEntrypoint . fst
+      llvmResolvedASTTable = case (llvmEntryAST, llvmCanTable) of
+        (Right ast, Right (table, _)) -> do
+          runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
+        (_     , Left e) -> Left e
+        (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
+  -- End TLLVM
 
-      Nothing -> solveASTsForDoc rootFolder fps
+  case (jsResolvedASTTable, llvmResolvedASTTable) of
+    (Left  e, _) ->
+      return $ Left e
+
+    (_, Left e) ->
+      return $ Left e
+
+    (Right (jsTable, _), Right (llvmTable, _)) ->
+      case (M.lookup canonicalEntrypoint jsTable, M.lookup canonicalEntrypoint llvmTable) of
+        (Just jsAst, Just llvmAst) -> do
+          fileContent <- readFile fp
+          case DocString.parse fileContent of
+            Right ds -> do
+              next <- solveASTsForDoc rootFolder fps
+              return $ ([(jsAst, llvmAst, moduleName, ds)] ++) <$> next
+            Left _ -> do
+              next <- solveASTsForDoc rootFolder fps
+              return $ ([(jsAst, llvmAst, moduleName, [])] ++) <$> next
+
+        _ ->
+          solveASTsForDoc rootFolder fps
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
