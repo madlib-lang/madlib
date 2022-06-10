@@ -81,14 +81,9 @@ library:
     - llvm-hs-pure == 9.0.0
     - llvm-hs-pretty == 0.9.0.0
     - compiler-common
-    # - query
   source-dirs: compiler
 
 internal-libraries:
-  # query:
-  #   source-dirs: query
-  #   dependencies:
-  #     - compiler-common
   compiler-common:
     source-dirs: compiler-common
     dependencies:

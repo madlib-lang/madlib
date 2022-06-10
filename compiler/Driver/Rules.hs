@@ -44,9 +44,11 @@ import qualified Data.List as List
 import Control.Monad.Writer
 import Utils.List
 import Parse.Madlib.ImportCycle (detectCycle)
+import Error.Warning
+import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 
 
-rules :: Options -> Rock.GenRules (Rock.Writer [CompilationError] (Rock.Writer Rock.TaskKind Query)) Query
+rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
   ModulePathsToBuild entrypoint -> input $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
@@ -58,10 +60,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     r <- detectCycle [] path
     case r of
       Just err ->
-        return (True, [err])
+        return (True, (mempty, [err]))
 
       Nothing ->
-        return (False, [])
+        return (False, (mempty, mempty))
 
   File path -> input $ do
     liftIO $ readFile path
@@ -71,50 +73,50 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     ast <- liftIO $ buildAST options path source
     case ast of
       Right ast -> do
-        return (ast, mempty)
+        return (ast, (mempty, mempty))
 
       Left err ->
-        return (emptySrcAST, [err])
+        return (emptySrcAST, (mempty, [err]))
 
   CanonicalizedASTWithEnv path -> nonInput $ do
     sourceAst <- Rock.fetch $ ParsedAST path
 
-    (can, _) <- runCanonicalM $ Can.canonicalizeAST "" (optTarget options) CanEnv.initialEnv sourceAst
+    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST "" (optTarget options) CanEnv.initialEnv sourceAst
     case can of
       Right c ->
-        return (c, mempty)
+        return (c, (warnings, mempty))
 
       Left err ->
-        return ((emptyCanAST, CanEnv.initialEnv), [err])
+        return ((emptyCanAST, CanEnv.initialEnv), (warnings, [err]))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
     let importedModulePaths = Src.getImportAbsolutePath <$> aimports
 
     found <- findCanInterface name importedModulePaths
-    return (found, mempty)
+    return (found, (mempty, mempty))
 
   ForeignADTType modulePath typeName -> nonInput $ do
     (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
       Just found ->
-        return (Just found, mempty)
+        return (Just found, (mempty, mempty))
 
       Nothing ->
-        return (Nothing, mempty)
+        return (Nothing, (mempty, mempty))
 
   SolvedASTWithEnv path -> nonInput $ do
     (canAst, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
     res <- runInfer $ inferAST' initialEnv canAst
     case res of
       Right (astAndEnv, InferState _ []) ->
-        return (astAndEnv, mempty)
+        return (astAndEnv, (mempty, mempty))
 
       Right (_, InferState _ errors) ->
-        return ((emptySlvAST, initialEnv), errors)
+        return ((emptySlvAST, initialEnv), (mempty, errors))
 
       Left error ->
-        return ((emptySlvAST, initialEnv), [error])
+        return ((emptySlvAST, initialEnv), (mempty, [error]))
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -123,16 +125,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     interfac <- findSlvInterface name importedModulePaths
     case interfac of
       Just found ->
-        return (found, mempty)
+        return (found, (mempty, mempty))
 
   ForeignScheme modulePath name -> nonInput $ do
     (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv modulePath
-    case Map.lookup name (SlvEnv.envVars slvEnv <> SlvEnv.envMethods slvEnv) of
-      Just found ->
-        return (Just found, mempty)
-
-      Nothing ->
-        return (Nothing, mempty)
+    return (Map.lookup name (SlvEnv.envVars slvEnv <> SlvEnv.envMethods slvEnv), (mempty, mempty))
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
@@ -142,12 +139,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             renamedAst       = Rename.renameAST coreAst
             reducedAst       = EtaReduction.reduceAST renamedAst
             closureConverted = ClosureConvert.convertAST reducedAst
-        return (TCE.resolveAST closureConverted, mempty)
+        return (TCE.resolveAST closureConverted, (mempty, mempty))
 
       _ -> do
         let coreAst     = astToCore (optOptimized options) slvAst
             strippedAst = stripAST coreAst
-        return (TCE.resolveAST strippedAst, mempty)
+        return (TCE.resolveAST strippedAst, (mempty, mempty))
 
   SymbolTableWithEnv path -> nonInput $ do
     coreAst <- Rock.fetch $ CoreAST path
@@ -160,21 +157,21 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     -- let currStr = if curr < 10 then " " <> show curr else show curr
     -- liftIO $ putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
 
-    return (table, mempty)
+    return (table, (mempty, mempty))
 
   BuiltInSymbolTableWithEnv -> nonInput $ do
     table <- LLVM.compileDefaultModule options
-    return (table, mempty)
+    return (table, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do
     paths <- Rock.fetch $ ModulePathsToBuild path
     moduleResults <- mapM (Rock.fetch . SymbolTableWithEnv) paths
 
     if any (null . LLVMEnv.envASTPath . snd) moduleResults then
-      return ((), mempty)
+      return ((), (mempty, mempty))
     else do
       LLVM.buildTarget options path
-      return ((), mempty)
+      return ((), (mempty, mempty))
 
 
 
@@ -271,13 +268,18 @@ ignoreTaskKind :: Rock.GenRules (Rock.Writer Rock.TaskKind f) f -> Rock.Rules f
 ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
 
 
-printErrors :: Options -> [CompilationError] -> Rock.Task Query ()
-printErrors options [] = return ()
-printErrors options errors = do
+printErrors :: Options -> ([CompilationWarning], [CompilationError]) -> Rock.Task Query ()
+printErrors options ([], []) = return ()
+printErrors options errorsAndWarnings = do
   -- TODO: make Explain.format fetch the file from the store directly
-  formattedErrors <- liftIO $ mapM (Explain.format readFile False) errors
-  let fullError = List.intercalate "\n\n\n" formattedErrors
-  liftIO $ putStrLn fullError-- >> exitFailure
+  formattedWarnings <- liftIO $ mapM (Explain.formatWarning readFile False) (fst errorsAndWarnings)
+  let ppWarnings = List.intercalate "\n\n\n" formattedWarnings
+
+  formattedErrors   <- liftIO $ mapM (Explain.format readFile False) (snd errorsAndWarnings)
+  let ppErrors = List.intercalate "\n\n\n" formattedErrors
+
+  liftIO $ putStrLn ppWarnings-- >> exitFailure
+  liftIO $ putStrLn ppErrors
 
 
 getModules :: Options -> FilePath -> IO ()
