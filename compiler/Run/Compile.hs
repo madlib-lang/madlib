@@ -70,7 +70,7 @@ import qualified Optimize.EtaReduction as EtaReduction
 import System.FilePath.Posix (dropFileName)
 import qualified Driver.Rules as Rules
 import Run.Options
-import Run.Options (Options(optOptimized))
+import Run.Options (Options(optOptimized, optEntrypoint, optOutputPath))
 
 
 
@@ -145,76 +145,86 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     --         runExcept (runStateT (solveManyASTs mempty table sourcesToCompile) InferState { count = 0, errors = [] })
     --       Left e -> Left e
 
-    let options = Options { optPathUtils = PathUtils.defaultPathUtils, optTarget = target, optRootPath = rootPath, optOptimized = optimized }
+    let options =
+          Options
+            { optPathUtils = PathUtils.defaultPathUtils
+            , optEntrypoint = canonicalEntrypoint
+            , optTarget = target
+            , optRootPath = rootPath
+            , optOutputPath = outputPath
+            , optOptimized = optimized
+            }
 
-    table <- Rules.buildSolvedTable options sourcesToCompile
+    -- table <- Rules.buildSolvedTable options sourcesToCompile
+
+    Rules.compile options (head sourcesToCompile)
 
 
-    unless (null table) $ do
-      when verbose $ do
-        putStrLn $ "OUTPUT: " ++ outputPath
-        putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
-        putStrLn $ "ROOT PATH: " ++ rootPath
-      when debug $ do
-        putStrLn $ "PARSED:\n" ++ ppShow table
-        putStrLn $ "RESOLVED:\n" ++ ppShow table
+    -- unless (null table) $ do
+    --   when verbose $ do
+    --     putStrLn $ "OUTPUT: " ++ outputPath
+    --     putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
+    --     putStrLn $ "ROOT PATH: " ++ rootPath
+    --   when debug $ do
+    --     putStrLn $ "PARSED:\n" ++ ppShow table
+    --     putStrLn $ "RESOLVED:\n" ++ ppShow table
 
-      -- case resolvedASTTable of
-      --   Left err -> do
-      --     if json
-      --       then do
-      --         formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
-      --         formattedErr      <- Explain.format readFile json err
-      --         putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
-      --         -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
-      --       else do
-      --         unless (null warnings) (putStrLn "\n")
-      --         Explain.format readFile json err >>= putStrLn >> exitFailure
-      --   Right (table, inferState) ->
-      -- let errs      = errors inferState
-      --     hasErrors = not (null errs)
-      -- if json then do
-      --   formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
-      --                             warnings
-      --   formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-      --   putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings canonicalEntrypoint table
-      -- else if hasErrors then do
-      --   unless (null warnings) (putStrLn "\n")
-      --   formattedErrors <- mapM (Explain.format readFile json) errs
-      --   let fullError = intercalate "\n\n\n" formattedErrors
-      --   putStrLn fullError >> exitFailure
-      -- else do
-      when coverage $ do
-        runCoverageInitialization rootPath table
+    --   -- case resolvedASTTable of
+    --   --   Left err -> do
+    --   --     if json
+    --   --       then do
+    --   --         formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
+    --   --         formattedErr      <- Explain.format readFile json err
+    --   --         putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
+    --   --         -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
+    --   --       else do
+    --   --         unless (null warnings) (putStrLn "\n")
+    --   --         Explain.format readFile json err >>= putStrLn >> exitFailure
+    --   --   Right (table, inferState) ->
+    --   -- let errs      = errors inferState
+    --   --     hasErrors = not (null errs)
+    --   -- if json then do
+    --   --   formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
+    --   --                             warnings
+    --   --   formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+    --   --   putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings canonicalEntrypoint table
+    --   -- else if hasErrors then do
+    --   --   unless (null warnings) (putStrLn "\n")
+    --   --   formattedErrors <- mapM (Explain.format readFile json) errs
+    --   --   let fullError = intercalate "\n\n\n" formattedErrors
+    --   --   putStrLn fullError >> exitFailure
+    --   -- else do
+    --   when coverage $ do
+    --     runCoverageInitialization rootPath table
 
-      if target == TLLVM then do
-        let coreTable        = tableToCore False table
-            renamedTable     = Rename.renameTable coreTable
-            reduced          = EtaReduction.reduceTable renamedTable
-            closureConverted = ClosureConvert.convertTable reduced
-            withTCE          = TCE.resolveTable closureConverted
+    --   if target == TLLVM then do
+    --     let coreTable        = tableToCore False table
+    --         renamedTable     = Rename.renameTable coreTable
+    --         reduced          = EtaReduction.reduceTable renamedTable
+    --         closureConverted = ClosureConvert.convertTable reduced
+    --         withTCE          = TCE.resolveTable closureConverted
 
-        -- putStrLn (ppShow closureConverted)
-        -- putStrLn (ppShow withTCE)
-        LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
-      else do
-        let coreTable     = tableToCore optimized table
-            strippedTable = stripTable coreTable
-            withTCE       = TCE.resolveTable strippedTable
-        -- putStrLn (ppShow withTCE)
-        generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
+    --     -- putStrLn (ppShow closureConverted)
+    --     -- putStrLn (ppShow withTCE)
+    --     LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
+    --   else do
+    --     let coreTable     = tableToCore optimized table
+    --         strippedTable = stripTable coreTable
+    --         withTCE       = TCE.resolveTable strippedTable
+    --     -- putStrLn (ppShow withTCE)
+    --     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
-      when bundle $ do
-        let entrypointOutputPath =
-              computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+    --   when bundle $ do
+    --     let entrypointOutputPath =
+    --           computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
 
-        bundled <- runBundle entrypointOutputPath
-        case bundled of
-          Left  e                    -> putStrLn e
-          Right (bundleContent, err) -> do
-            _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-            writeFile outputPath bundleContent
-            unless (null err) $ putStrLn err
+    --     bundled <- runBundle entrypointOutputPath
+    --     case bundled of
+    --       Left  e                    -> putStrLn e
+    --       Right (bundleContent, err) -> do
+    --         _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+    --         writeFile outputPath bundleContent
+    --         unless (null err) $ putStrLn err
 
 
 rollupNotFoundMessage = unlines

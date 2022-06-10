@@ -17,6 +17,8 @@ import           Data.GADT.Compare.TH (deriveGEq)
 import           Data.Some
 import           Data.Hashable
 import           Infer.Type
+import           Generate.LLVM.SymbolTable
+import qualified Generate.LLVM.Env          as LLVM
 
 data Query a where
   -- Parsing
@@ -36,6 +38,10 @@ data Query a where
 
   -- Core
   CoreAST :: FilePath -> Query Core.AST
+
+  -- LLVM
+  SymbolTableWithEnv :: FilePath -> Query (SymbolTable, LLVM.Env)
+  BuiltInSymbolTableWithEnv :: Query (SymbolTable, LLVM.Env)
 
 deriveGEq ''Query
 
@@ -71,93 +77,13 @@ instance Hashable (Query a) where
     CoreAST path ->
       hashWithSalt salt (path, 9 :: Int)
 
+    SymbolTableWithEnv path ->
+      hashWithSalt salt (path, 10 :: Int)
+
+    BuiltInSymbolTableWithEnv ->
+      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 11 :: Int)
 
 
 instance Hashable (Some Query) where
   hashWithSalt salt (Some query) =
     hashWithSalt salt query
-
--- rules :: Rock.Rules Query
--- rules = \case
---   Parse path -> do
---     source <- liftIO $ readFile path
---     return $ buildAST path source
-
-
--- runQuery :: Query a -> IO a
--- runQuery query = do
---   memoVar <- newIORef mempty
---   let task = Rock.fetch query
---   Rock.runTask (Rock.memoise memoVar rules) task
-
-
--- parse :: FilePath -> IO (Either CompilationError Src.AST)
--- parse = runQuery . Parse
-
-
--- -- input :: (Monoid w, Functor f) => f a -> f (a, w)
--- -- input = fmap (, mempty)
-
--- {-# language FlexibleInstances #-}
--- {-# language GADTs #-}
--- {-# language StandaloneDeriving #-}
--- {-# language DeriveAnyClass #-}
--- {-# language TemplateHaskell #-}
--- {-# OPTIONS_GHC -Wno-missing-methods #-}
--- module Driver.Driver where
--- import Control.Monad.IO.Class
--- import Data.GADT.Compare.TH (deriveGEq)
--- import Data.Hashable
--- import Data.Some
--- import Data.IORef
--- import qualified Rock
--- import Data.GADT.Compare (GEq)
-
--- data Query a where
---   A :: Query Integer
---   B :: Query Integer
---   C :: Query Integer
---   D :: Query Integer
-
--- deriving instance Show (Query a)
-
--- -- deriving instance GEq Query
--- deriveGEq ''Query
--- -- instance GEq Query where
-
--- instance Hashable (Query a) where
---   hashWithSalt salt query =
---     case query of
---       A -> hashWithSalt salt (0 :: Int)
---       B -> hashWithSalt salt (1 :: Int)
---       C -> hashWithSalt salt (2 :: Int)
---       D -> hashWithSalt salt (3 :: Int)
-
--- instance Hashable (Some Query) where
---   hashWithSalt salt (Some query) = hashWithSalt salt query
-
--- rules :: Rock.Rules Query
--- rules key = do
---   liftIO $ putStrLn $ "Fetching " <> show key
---   case key of
---     A -> pure 10
---     B -> do
---       a <- Rock.fetch A
---       pure $ a + 20
---     C -> do
---       a <- Rock.fetch A
---       pure $ a + 30
---     D ->
---       (+) <$> Rock.fetch B <*> Rock.fetch C
-
--- main :: IO ()
--- main = do
---   do
---     liftIO $ putStrLn "Running"
---     result <- Rock.runTask rules (Rock.fetch D)
---     print result
---   do
---     liftIO $ putStrLn "Running with memoisation"
---     memoVar <- newIORef mempty
---     result <- Rock.runTask (Rock.memoise memoVar rules) (Rock.fetch D)
---     liftIO $ print result

@@ -41,55 +41,47 @@ addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
 
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
 verifyInstancePredicates env p' p@(IsIn cls ts _) = do
-  case M.lookup cls (envInterfaces env) of
-    Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
-
-    -- Just (Interface tvs ps' is) ->
-      -- unify (TVar <$> tvs) (trace ("TVS: "<>ppShow tvs) ts) >> return True
-    Just (Interface tvs ps' is) -> do
-      let tvs' = (\(TV n k) -> TV ("_" <> n) k) <$> tvs
-      catchError
-        (unify (TVar <$> tvs') ts >> return True)
-        (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
+  (Interface tvs ps' is) <- lookupInterface env cls
+  let tvs' = (\(TV n k) -> TV ("_" <> n) k) <$> tvs
+  catchError
+    (unify (TVar <$> tvs') ts >> return True)
+    (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env
-addInstance env ps p@(IsIn cls ts _) = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
+addInstance env ps p@(IsIn cls ts _) = do
+  (Interface tvs ps' is) <- lookupInterface env cls
 
-  Just (Interface tvs ps' is) -> do
-    mapM_ (verifyInstancePredicates env p) ps
+  mapM_ (verifyInstancePredicates env p) ps
 
-    let ts'    = TVar <$> tvs
-    let zipped = zip ts' ts
-    s <- match ts' ts
-    catchError (mapM_ (isInstanceDefined env s) ps')
-               (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
-    return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
-               }
+  let ts'    = TVar <$> tvs
+  let zipped = zip ts' ts
+  s <- match ts' ts
+  catchError (mapM_ (isInstanceDefined env s) ps')
+              (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
+  return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
+              }
 
 addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
-addInstanceMethod env ps p@(IsIn cls ts _) (methodName, methodScheme) = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
+addInstanceMethod env ps p@(IsIn cls ts _) (methodName, methodScheme) = do
+  (Interface tvs ps' is) <- lookupInterface env cls
 
-  Just (Interface tvs ps' is) -> do
-    maybeInstance <- findInst env p
-    case maybeInstance of
-      Just inst@(Instance qp methods) -> do
-        let withoutInst = filter (/= inst) is
-        let methods'    = M.insert methodName methodScheme methods
-        return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
+  maybeInstance <- findInst env p
+  case maybeInstance of
+    Just inst@(Instance qp methods) -> do
+      let withoutInst = filter (/= inst) is
+      let methods'    = M.insert methodName methodScheme methods
+      return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
 
 setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
-setInstanceMethods env p@(IsIn cls ts _) methods = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
+setInstanceMethods env p@(IsIn cls ts _) methods = do
+  (Interface tvs ps' is) <- lookupInterface env cls
 
-  Just (Interface tvs ps' is) -> do
-    maybeInstance <- findInst env p
-    case maybeInstance of
-      Just inst@(Instance qp _) -> do
-        let withoutInst = filter (/= inst) is
-        return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods : is)) (envInterfaces env) }
+  maybeInstance <- findInst env p
+  case maybeInstance of
+    Just inst@(Instance qp _) -> do
+      let withoutInst = filter (/= inst) is
+      return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods : is)) (envInterfaces env) }
 
 
 findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)

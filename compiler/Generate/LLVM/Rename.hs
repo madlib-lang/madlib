@@ -545,6 +545,7 @@ renameAST ast =
       dedupedImports               = dedupeNamedImports [] rewrittenImports
   in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = dedupedImports }
 
+
 renameTable :: Table -> Table
 renameTable =
   Map.map renameAST

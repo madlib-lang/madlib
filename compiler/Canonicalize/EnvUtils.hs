@@ -14,6 +14,7 @@ import Control.Monad.Except
 import Error.Error
 import Error.Context
 
+
 addADT :: Env -> String -> Type -> Env
 addADT env name adt =
   let adts         = envTypeDecls env
@@ -28,8 +29,6 @@ isTypeNameInImport typeName ImportInfo { iiType, iiName }
   | otherwise = False
 
 
-
-
 lookupADT :: Env -> String -> CanonicalM Type
 lookupADT env name = do
   maybeType <- case List.find (isTypeNameInImport name) $ envImportInfo env of
@@ -37,9 +36,12 @@ lookupADT env name = do
       Rock.fetch $ Query.ForeignADTType path typeName
 
     Just (ImportInfo path NamespaceImport ns) ->
-      Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
+      if '.' `elem` name then
+        Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
+      else
+        Rock.fetch $ Query.ForeignADTType path name
 
-    Nothing ->
+    _ ->
       return $ Map.lookup name (envTypeDecls env)
 
   case maybeType of
@@ -48,11 +50,3 @@ lookupADT env name = do
 
     Nothing ->
       throwError $ CompilationError (UnknownType name) NoContext
-
-
-
-      -- Just found ->
-      --   return found
-
-      -- Nothing    ->
-      --   throwError $ CompilationError (UnknownType name) NoContext

@@ -22,6 +22,11 @@ import qualified Control.Monad                as Monad
 import qualified Control.Monad.Fix            as MonadFix
 import qualified Control.Monad.Identity       as Identity
 import qualified Control.Monad.Writer         as Writer
+import           Generate.LLVM.SymbolTable
+import           Generate.LLVM.Env
+import           Run.Options
+import qualified Driver.Query                 as Query
+import qualified Rock
 import           Data.ByteString as ByteString
 import           Data.ByteString.Char8 as Char8
 import           System.Process
@@ -73,7 +78,7 @@ import qualified Data.Functor.Constant         as Operand
 import GHC.IO.Handle
 import GHC.IO.Handle.FD
 import qualified Utils.IO                      as IOUtils
-
+import Control.Monad.IO.Class
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -95,70 +100,8 @@ safeBitcast op t = case (typeOf op, t) of
   _ ->
     bitcast op t
 
-data RecursionData
-  = PlainRecursionData
-      { entryBlockName :: AST.Name
-      , continueRef :: Operand.Operand
-      , boxedParams :: [Operand.Operand]
-      }
-  | RightListRecursionData
-      { entryBlockName :: AST.Name
-      , continueRef :: Operand.Operand
-      , boxedParams :: [Operand.Operand]
-      , start :: Operand.Operand
-      , end :: Operand.Operand
-      }
-  | ConstructorRecursionData
-      { entryBlockName :: AST.Name
-      , continueRef :: Operand.Operand
-      , boxedParams :: [Operand.Operand]
-      , start :: Operand.Operand
-      , end :: Operand.Operand
-      , holePtr :: Operand.Operand
-      }
-  deriving(Eq, Show)
-
-data Env
-  = Env
-  { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int))
-    -- ^ Map InterfaceName (Map MethodName (index, arity))
-  , isLast :: Bool
-  , isTopLevel :: Bool
-  , recursionData :: Maybe RecursionData
-  , envASTPath :: String
-  }
-  deriving(Eq, Show)
 
 
-data SymbolType
-  = VariableSymbol
-  | LocalVariableSymbol Operand
-  -- ^ operand is a ptr to the value for mutation
-  | TCOParamSymbol Operand
-  -- ^ operand is a ptr to the value for mutation
-  | FunctionSymbol Int
-  -- ^ arity
-  | MethodSymbol Int
-  -- ^ arity
-  | ConstructorSymbol Int Int
-  -- ^ unique id ( index ) | arity
-  | ADTSymbol Int
-  -- ^ maximum amount of params that a constructor of that type needs
-  -- this will be used to allocate or dereference structs for any
-  -- constructor of that type
-  | TopLevelAssignment
-  -- ^ amount of items in the env
-  | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
-  deriving(Eq, Show)
-
-
-data Symbol
-  = Symbol SymbolType Operand
-  deriving(Eq, Show)
-
-
-type SymbolTable
-  = Map.Map String Symbol
 
 
 varSymbol :: Operand -> Symbol
@@ -329,7 +272,7 @@ buildLLVMType env symbolTable qt@(ps IT.:=> t) = case t of
   IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
     Type.ptr Type.i1
 
-  IT.TVar _ | IT.hasNumberPred ps -> do
+  IT.TVar _ | IT.hasNumberPred ps ->
     Type.i64
 
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
@@ -339,7 +282,8 @@ buildLLVMType env symbolTable qt@(ps IT.:=> t) = case t of
     recordType
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
-    Type.ptr $ Type.FunctionType boxType [boxType] False
+    let arity = List.length $ IT.getParamTypes t
+    in  Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType]
@@ -937,7 +881,12 @@ generateExp env symbolTable exp = case exp of
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
       Just (Symbol _ dict) -> do
-        let interfaceMap   = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
+        let interfaceMap   = case Map.lookup interface (dictionaryIndices env) of
+              Just indices ->
+                indices
+
+              Nothing ->
+                error $ "index table for interface '" <> interface <> "' not found"
         let (index, arity) = Maybe.fromMaybe (0, 0) $ Map.lookup methodName interfaceMap
         let papType        = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
         dict'      <- safeBitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
@@ -1483,7 +1432,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, unboxed, Just ret)
 
       _ ->
-        error $ "Function not found " <> functionName <> "\narea: " <> ppShow area
+        error $ "Function not found " <> functionName <> "\narea: " <> ppShow area <> "\nST: " <> ppShow symbolTable
 
     _ -> case fn of
       -- With this we enable tail call optimization for overloaded functions
@@ -2430,22 +2379,27 @@ generateConstructors env symbolTable tds =
   in  Monad.foldM (generateConstructorsForADT env) symbolTable tds
 
 
-buildDictValues :: SymbolTable -> [String] -> [Constant.Constant]
-buildDictValues symbolTable methodNames = case methodNames of
-  (n : ns) ->
-    case Map.lookup n symbolTable of
-      Just (Symbol _ method) ->
-        let methodType = typeOf method
-            methodRef  = Constant.GlobalReference methodType (AST.mkName n)
-            methodRef' = Constant.BitCast methodRef boxType
-            arity      = List.length $ getLLVMParameterTypes methodType
-            papType    = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-            pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity), Constant.Undef boxType]
-            next       = buildDictValues symbolTable ns
-        in  pap : next
+buildDictValues :: Env -> SymbolTable -> [(String, Core.Exp)] -> [Constant.Constant]
+buildDictValues env symbolTable methods = case methods of
+  ((methodName, methodExp) : ns) ->
+    let arity      = List.length $ IT.getParamTypes (Core.getType methodExp)
+        methodType =
+          case methodExp of
+            Core.Typed _ _ _ (Core.Assignment _ (Core.Typed qt _ metadata (Core.Definition params body))) ->
+              Type.ptr $ Type.FunctionType boxType (List.replicate (List.length params) boxType) False
 
-      _ ->
-        undefined
+            _ ->
+              if arity == 0 then
+                Type.ptr $ Type.FunctionType boxType [] False
+              else
+                Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+
+        methodRef  = Constant.GlobalReference methodType (AST.mkName methodName)
+        methodRef' = Constant.BitCast methodRef boxType
+        papType    = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+        pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity), Constant.Undef boxType]
+        next       = buildDictValues env symbolTable ns
+    in  pap : next
 
   [] ->
     []
@@ -2485,18 +2439,18 @@ generateMethod env symbolTable methodName exp = case exp of
 
 generateInstance :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Instance -> m SymbolTable
 generateInstance env symbolTable inst = case inst of
-  Core.Untyped _ _ (Core.Instance interface preds typingStr methods) -> mdo
+  Core.Untyped _ _ (Core.Instance interface preds typingStr methods) -> do
     let dictType = Type.StructureType False (List.replicate (Map.size methods) papType)
         instanceName = "$" <> interface <> "$" <> typingStr
         prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
         prefixedMethods' = (\(name, method) -> (name, method)) <$> Map.toList prefixedMethods
         prefixedMethodNames = fst <$> prefixedMethods'
         -- for recursive types we need to have the current dict in the symbol table
-        symbolTableWithDict = Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict) symbolTable
-    symbolTable' <- Monad.foldM (\symbolTable (name, (method, _)) -> generateMethod env symbolTable name method) symbolTableWithDict prefixedMethods'
-    let methodConstants = buildDictValues symbolTable' prefixedMethodNames
-
+    let methodConstants = buildDictValues env symbolTable (Map.toList (fst <$> prefixedMethods))
     dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
+    symbolTableWithDict <- return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict) symbolTable
+    symbolTable' <- Monad.foldM (\symbolTable (name, (method, _)) -> generateMethod env symbolTable name method) symbolTableWithDict prefixedMethods'
+
 
     Writer.tell $ Map.singleton instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict)
     return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict) symbolTable'
@@ -2764,6 +2718,7 @@ getTupleName arity = case arity of
   _ ->
     "Tuple_unknown"
 
+
 -- generates AST for a tupleN instance. n must be >= 2
 buildTupleNEqInstance :: Int -> Core.Instance
 buildTupleNEqInstance n =
@@ -2774,7 +2729,7 @@ buildTupleNEqInstance n =
       preds              = (\var -> IT.IsIn "Eq" [var] Nothing) <$> tvars
       tupleName          = getTupleName n
       tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ tvars))
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ (List.take 2 tvars)))
       tupleHeadType      = IT.getTupleCtor n
       tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
       whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
@@ -2883,7 +2838,6 @@ templateStringToCalls exps = case exps of
   [last] ->
     last
 
-
 -- generates AST for a tupleN instance. n must be >= 2
 buildTupleNInspectInstance :: Int -> Core.Instance
 buildTupleNInspectInstance n =
@@ -2894,7 +2848,7 @@ buildTupleNInspectInstance n =
       preds              = (\var -> IT.IsIn "Inspect" [var] Nothing) <$> tvars
       tupleName          = getTupleName n
       tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ tvars))
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ (List.take 1 tvars)))
       tupleHeadType      = IT.getTupleCtor n
       tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
       whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
@@ -4282,7 +4236,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
-      tupleEqInstances = buildTupleNEqInstance <$> [2..10]
+      tupleEqInstances = buildTupleNEqInstance <$> [2..8]
 
   generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" [Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] "$Eq$eqVar", Core.Typed eqVarQualType emptyArea [] "a", Core.Typed eqVarQualType emptyArea [] "b"] [
       Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "!" False)) [
@@ -4516,6 +4470,187 @@ makeDisplayPath root path =
     makeRelative (dropFileName root) path
 
 
+
+buildModule'' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
+buildModule'' _ _ _ _ ast@Core.AST{ Core.apath = Nothing } = undefined
+buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
+  symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
+  let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
+      symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
+      symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
+
+  let moduleFunctionName =
+        if isMain then
+          "main"
+        else
+          "__" <> hashModulePath ast <> "__moduleFunction"
+
+  -- if astPath `List.elem` pathsToBuild then do
+  mapM_ (generateImport initialSymbolTable) $ aimports ast
+  generateExternsForImportedInstances initialSymbolTable
+
+  symbolTable  <- generateInstances env symbolTableWithDefaults (ainstances ast)
+  symbolTable' <- generateTopLevelFunctions env symbolTable (topLevelFunctions $ aexps ast)
+
+  externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+
+  extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
+  externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
+  extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
+  extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
+  extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
+  extern (AST.mkName "madlib__string__internal__concat")             [stringType, stringType] stringType
+
+  extern (AST.mkName "madlib__list__internal__hasMinLength")         [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__list__internal__hasLength")            [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__list__singleton")                      [Type.ptr Type.i8] listType
+  extern (AST.mkName "madlib__list__internal__push")                 [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
+
+  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)
+
+  extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
+
+  Monad.when isMain $ do
+    extern (AST.mkName "madlib__process__internal__registerArgs") [] Type.void
+    extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
+    extern (AST.mkName "__initEventLoop__")                       [] Type.void
+    extern (AST.mkName "__startEventLoop__")                      [] Type.void
+    generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
+
+  moduleFunction <-
+    if isMain then do
+      -- this function starts the runtime with a fresh stack etc
+      function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
+        entry <- block `named` "entry"
+        call initArgs []
+        call initEventLoop []
+        callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
+        generateExps env symbolTable' (expsForMain $ aexps ast)
+        call startEventLoop []
+        retVoid
+        return ()
+
+      let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
+          argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
+      function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+        entry <- block `named` "entry"
+        call mainInit [(argc, []), (argv, [])]
+        ret $ i32ConstOp 0
+    else do
+      function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
+        entry <- block `named` "entry"
+        generateExps env symbolTable' (expsForMain $ aexps ast)
+        retVoid
+
+  Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
+  -- else do
+  --   let expType   = Type.ptr $ Type.FunctionType Type.void [] False
+  --       globalRef = Operand.ConstantOperand (Constant.GlobalReference expType (AST.mkName moduleFunctionName))
+  --   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 globalRef)
+
+  Writer.tell symbolTableWithDefaults
+
+defaultDictionaryIndices =
+  Map.fromList
+    [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1)), ("unary-minus", (8, 1))])
+    , ("Bits", Map.fromList [("&", (0, 2)), ("<<", (1, 2)), (">>", (2, 2)), (">>>", (3, 2)), ("^", (4, 2)), ("|", (5, 2)), ("~", (6, 1))])
+    , ("Eq", Map.fromList [("==", (0, 2))])
+    , ("Inspect", Map.fromList [("inspect", (0, 1))])
+    ]
+
+
+generateAST' :: (Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
+generateAST' options ast@AST{ apath = Just modulePath } = do
+  let imports                          = aimports ast
+      importPaths                      = getImportAbsolutePath <$> imports
+
+  symbolTablesWithEnvs <- mapM (Rock.fetch . Query.SymbolTableWithEnv) importPaths
+  defaultSymbolTableWithEnv <- Rock.fetch Query.BuiltInSymbolTableWithEnv
+
+  let allTablesAndEnvs = defaultSymbolTableWithEnv : symbolTablesWithEnvs
+
+  let symbolTable                  = mconcat $ fst <$> allTablesAndEnvs
+  let dictionaryIndicesFromImports = mconcat $ dictionaryIndices . snd <$> allTablesAndEnvs
+  let computedDictionaryIndices    = buildDictionaryIndices $ ainterfaces ast
+
+  let isMain = optEntrypoint options == modulePath
+  let envForAST =
+        Env
+          { dictionaryIndices = computedDictionaryIndices <> dictionaryIndicesFromImports <> defaultDictionaryIndices
+          , isLast = False
+          , isTopLevel = False
+          , recursionData = Nothing
+          , envASTPath = modulePath
+          }
+  let moduleName =
+        if isMain then
+          "main"
+        else
+          hashModulePath ast
+
+  (mod, table) <- Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (buildModule'' envForAST isMain [] symbolTable ast)
+  return (mod, table, envForAST)
+
+generateAST' _ _ =
+  undefined
+
+
+compileDefaultModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> m (SymbolTable, Env)
+compileDefaultModule options = do
+  let (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = defaultDictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] mempty)
+  let defaultInstancesModulePath =
+        if takeExtension (optEntrypoint options) == "" then
+          joinPath [optEntrypoint options, "__default__instances__.mad"]
+        else
+          joinPath [takeDirectory (optEntrypoint options), "__default__instances__.mad"]
+  let outputFolder   = takeDirectory (optOutputPath options)
+  let path = Path.computeLLVMTargetPath outputFolder (optRootPath options) defaultInstancesModulePath
+
+  liftIO $ buildObjectFile defaultInstancesModule path
+
+  return
+    ( symbolTable'
+    , Env
+      { dictionaryIndices = defaultDictionaryIndices
+      , isLast = False
+      , isTopLevel = False
+      , recursionData = Nothing
+      , envASTPath = ""
+      }
+    )
+
+
+compileModule' :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env)
+compileModule' options ast@Core.AST { Core.apath = Nothing } = undefined
+compileModule' options ast@Core.AST { Core.apath = Just modulePath } = do
+  let outputFolder   = takeDirectory (optOutputPath options)
+  let outputPath     = Path.computeLLVMTargetPath outputFolder (optRootPath options) modulePath
+  (astModule, table, env) <- generateAST' options ast
+
+  liftIO $ buildObjectFile astModule outputPath
+  return (table, env)
+
+
+buildObjectFile :: AST.Module -> FilePath -> IO ()
+buildObjectFile astModule destination = do
+  withHostTargetMachineDefault $ \target -> do
+      withContext $ \ctx -> do
+        withModuleFromAST ctx astModule $ \mod' -> do
+          mod'' <-
+            withPassManager
+            defaultCuratedPassSetSpec
+              { optLevel                = Just 2
+              , useInlinerWithThreshold = Just 100
+              }
+            $ \pm -> do
+              runPassManager pm mod'
+              return mod'
+          createDirectoryIfMissing True $ takeDirectory destination
+          writeObjectToFile target (File destination) mod''
+
+
 compileModule :: [FilePath] -> FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
 compileModule pathsToBuild outputFolder rootPath astPath astModule = do
   let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
@@ -4544,21 +4679,6 @@ compileModule pathsToBuild outputFolder rootPath astPath astModule = do
             $ \pm -> do
               runPassManager pm mod'
               return mod'
-
-          -- mod'' <-
-          --   withPassManager
-          --     defaultPassSetSpec
-          --     { transforms        = [AddressSanitizer]
-          --     , targetMachine     = Just target
-          --     , dataLayout        = Just dataLayout
-          --     , targetLibraryInfo = Just libraryInfo
-          --     }
-          --     $ \pm -> do
-          --       runPassManager pm mod'
-          --       return mod'
-
-          -- verify mod''
-
           createDirectoryIfMissing True $ takeDirectory outputPath
           writeObjectToFile target (File outputPath) mod''
 
