@@ -269,3 +269,14 @@ getSourceTarget (Source _ sourceTarget _) =
 getSourceContent :: Source a -> a
 getSourceContent (Source _ _ a) =
   a
+
+
+getInstanceTypings :: Instance -> [Typing]
+getInstanceTypings inst = case inst of
+  Source _ _ (Instance _ _ typings _) ->
+    typings
+
+getInstanceConstraintTypings :: Instance -> [Typing]
+getInstanceConstraintTypings inst = case inst of
+  Source _ _ (Instance constraints _ _ _) ->
+    constraints

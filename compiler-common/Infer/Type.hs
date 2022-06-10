@@ -13,6 +13,9 @@ import           Data.List                      ( nub
 import           Explain.Location
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
+import           Control.Applicative ((<|>))
+
+
 
 data TVar = TV Id Kind
   deriving (Show, Eq, Ord, Generic, Hashable)
@@ -511,3 +514,19 @@ selectPredsForType ps t = case ps of
 
   [] ->
     []
+
+
+findTypeVarInType :: String -> Type -> Maybe Type
+findTypeVarInType tvName t = case t of
+  TApp l r ->
+    findTypeVarInType tvName l <|> findTypeVarInType tvName r
+
+  TVar (TV n _) | n == tvName ->
+    Just t
+
+  TRecord fields base ->
+    (foldl (<|>) Nothing $ findTypeVarInType tvName <$> (M.elems fields))
+    <|> base >>= findTypeVarInType tvName
+
+  _ ->
+    Nothing

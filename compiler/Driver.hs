@@ -223,6 +223,7 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
   where
     handleException m =
       m `catch` \e -> do
+        -- TODO: test if we can just restore the initial state here instead
         resetState state
         throw (e :: SomeException)
 

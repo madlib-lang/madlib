@@ -26,30 +26,39 @@ import Explain.Location
 import qualified Explain.Location as Loc
 import Language.LSP.Diagnostics
 import qualified Explain.Format as Explain
-import Data.List (group, foldl')
+import           Data.List (group, foldl')
 import qualified Data.List as List
-import Control.Monad (forM_, join, forM, unless)
-import Data.IORef
+import           Control.Monad (forM_, join, forM, unless)
+import           Data.IORef
 import qualified AST.Solved as Slv
-import Explain.Format (prettyPrintQualType, prettyPrintType)
-import Control.Applicative ((<|>))
-import Infer.Type (Qual((:=>)), Type)
-import Error.Warning
+import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr)
+import           Control.Applicative ((<|>))
+import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars)
+import           Error.Warning
 import qualified Error.Warning as Warning
-import Error.Warning (CompilationWarning(CompilationWarning))
+import           Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
-import Data.Time.Clock
+import           Data.Time.Clock
 import qualified Run.Options as Options
 import qualified Utils.PathUtils as PathUtils
-import Run.Target
+import           Run.Target
 import qualified Data.Maybe as Maybe
-import Run.Options (Options(optEntrypoint))
-import Control.Monad.Trans.Control
-import Control.Concurrent
-import Data.Foldable (toList)
-import Control.Concurrent.Async
-import Control.Exception (try)
-import Rock (Cyclic)
+import           Run.Options (Options(optEntrypoint))
+import           Control.Monad.Trans.Control
+import           Control.Concurrent
+import           Data.Foldable (toList)
+import           Control.Concurrent.Async
+import           Control.Exception (try)
+import           Rock (Cyclic)
+import qualified AST.Canonical         as Can
+import qualified Canonicalize.EnvUtils as CanEnv
+import Driver.Query (Query(CanonicalizedASTWithEnv))
+import qualified AST.Source as Src
+import qualified Canonicalize.Typing as Can
+import qualified Infer.Typing as Slv
+import qualified Canonicalize.Env as CanEnv
+import qualified Canonicalize.Interface as Can
+
 
 
 handlers :: State -> Handlers (LspM ())
@@ -141,6 +150,7 @@ data Node
   = ExpNode Bool Slv.Exp
   | NameNode Bool (Slv.Solved String)
   | PatternNode Slv.Pattern
+  | TypingNode (Maybe Slv.Typing) Slv.Typing
   deriving(Eq, Show)
 
 
@@ -162,6 +172,12 @@ getNodeLine n = case n of
     l
 
   PatternNode (Slv.Untyped (Area (Loc _ l _) _) _) ->
+    l
+
+  TypingNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
+    l
+
+  TypingNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
     l
 
 
@@ -229,6 +245,33 @@ findNodeAtLocInIs loc (Slv.Typed _ _ (Slv.Is pat exp)) =
   findNodeAtLocInPattern loc pat <|> findNodeAtLoc False loc exp
 
 
+findNodeInTypeAnnotation :: Loc -> Maybe Slv.Typing -> Slv.Typing -> Maybe Node
+findNodeInTypeAnnotation loc maybeRoot typing =
+  if isInRange loc (Slv.getArea typing) then
+    let deeper =
+          case Slv.getValue typing of
+            Slv.TRComp _ typings ->
+              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc (Just typing) <$> typings
+
+            Slv.TRArr l r ->
+              findNodeInTypeAnnotation loc Nothing l <|> findNodeInTypeAnnotation loc Nothing r
+
+            Slv.TRRecord fields _ ->
+              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> Map.elems fields
+
+            Slv.TRTuple items ->
+              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> items
+
+            Slv.TRConstrained constraints subTyping ->
+              foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> constraints) <|> findNodeInTypeAnnotation loc Nothing subTyping
+
+            _ ->
+              Nothing
+    in  deeper <|> Just (TypingNode maybeRoot typing)
+  else
+    Nothing
+
+
 findNodeAtLoc :: Bool -> Loc -> Slv.Exp -> Maybe Node
 findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
   if isInRange loc area then
@@ -260,8 +303,9 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             Slv.Export exp' ->
               findNodeAtLoc False loc exp'
 
-            Slv.TypedExp exp' _ _ ->
-              findNodeAtLoc False loc exp'
+            Slv.TypedExp exp' typing _ ->
+              findNodeInTypeAnnotation loc Nothing typing
+              <|> findNodeAtLoc False loc exp'
 
             Slv.Var name _ ->
               Just $ NameNode topLevel (Slv.Typed qt area name)
@@ -299,52 +343,163 @@ findNodeAtLoc topLevel loc (Slv.Untyped _ _) =
   Nothing
 
 
+-- TODO: Add search in type annotations
+findNodeInAst :: Loc -> Src.AST -> Slv.AST -> Maybe Node
+findNodeInAst loc srcAst slvAst =
+  findNodeInExps loc (Slv.aexps slvAst ++ Slv.getAllMethods slvAst)
+  <|> findNodeInInstanceHeaders loc (Src.ainstances srcAst)
 
 
-findNodeForLocInExps :: Loc -> [Slv.Exp] -> Maybe Node
-findNodeForLocInExps loc exps = case exps of
+findNodeInExps :: Loc -> [Slv.Exp] -> Maybe Node
+findNodeInExps loc exps = case exps of
   exp : next ->
-    findNodeAtLoc True loc exp <|> findNodeForLocInExps loc next
+    findNodeAtLoc True loc exp <|> findNodeInExps loc next
 
   [] ->
     Nothing
 
 
-nodeToHoverInfo :: FilePath -> Node -> String
-nodeToHoverInfo modulePath node =
-  let typeInfo = case node of
-        ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
-          name <> " :: " <> prettyQt topLevel qt
+findNodeInInstanceHeaders :: Loc -> [Src.Instance] -> Maybe Node
+findNodeInInstanceHeaders loc instances =
+  let srcTypings = concatMap (\i -> Src.getInstanceTypings i ++ Src.getInstanceConstraintTypings i) instances
+      -- srcTypings = findNodeInExps loc $ Slv.aexps ast ++ Slv.getAllMethods ast
+      canTypings = Can.canonicalizeTyping' <$> srcTypings
+      slvTypings = Slv.updateTyping <$> canTypings
+  in  foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> slvTypings
 
-        ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
-          name <> " :: " <> prettyQt topLevel qt
 
-        ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
-          name <> " :: " <> prettyQt topLevel qt
+retrieveKind :: Type -> Kind
+retrieveKind t = case t of
+  TCon (TC _ k) _ ->
+    k
 
-        NameNode topLevel (Slv.Typed qt _ name) ->
-          name <> " :: " <> prettyQt topLevel qt
+  TApp l _ ->
+    retrieveKind l
 
-        ExpNode topLevel (Slv.Typed qt _ _) ->
-          prettyQt topLevel qt
+  TVar (TV _ k) ->
+    k
 
-        PatternNode (Slv.Typed qt _ (Slv.PVar name)) ->
-          name <> " :: " <> prettyQt False qt
+  _ ->
+    kind t
 
-        PatternNode (Slv.Typed qt _ _) ->
-          prettyQt False qt
+
+nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
+nodeToHoverInfo modulePath node = do
+  (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+  typeInfo <- case node of
+    ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
+      return $ name <> " :: " <> prettyQt topLevel qt
+
+    ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
+      return $ name <> " :: " <> prettyQt topLevel qt
+
+    ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
+      return $ name <> " :: " <> prettyQt topLevel qt
+
+    NameNode topLevel (Slv.Typed qt _ name) ->
+      return $ name <> " :: " <> prettyQt topLevel qt
+
+    ExpNode topLevel (Slv.Typed qt _ _) ->
+      return $ prettyQt topLevel qt
+
+    PatternNode (Slv.Typed qt _ (Slv.PVar name)) ->
+      return $ name <> " :: " <> prettyQt False qt
+
+    PatternNode (Slv.Typed qt _ _) ->
+      return $ prettyQt False qt
+
+    -- TODO: make dry with case for TRSingle
+    TypingNode _ (Slv.Untyped _ (Slv.TRComp name ts)) -> do
+      maybeType <- CanEnv.lookupADT' canEnv name
+      case maybeType of
+        Just t ->
+          return $ name <> " :: " <> kindToStr (retrieveKind t)
+
+        Nothing ->
+          return $ name <> " :: " <> List.intercalate " -> " (replicate (length ts + 1) "*")
+
+    -- TypingNode maybeRootTyping typing@(Slv.Untyped _ (Slv.TRSingle name)) -> do
+    --   case maybeRootTyping of
+    --     Just (Slv.Untyped _ (Slv.TRComp rootTypingName typings)) -> do
+    --       maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface modulePath rootTypingName
+    --       return $ "root: " <> ppShow maybeRootTyping <> "\ntyping: " <> ppShow typing <> "\nmaybe interface: " <> ppShow maybeInterface
+    TypingNode maybeRootTyping typing@(Slv.Untyped _ (Slv.TRSingle name)) -> do
+      maybeKind <- case maybeRootTyping of
+        Just (Slv.Untyped _ (Slv.TRComp rootTypingName typings)) -> do
+          -- first we try to find a var in an adt
+          maybeRootType <- CanEnv.lookupADT' canEnv rootTypingName
+          case maybeRootType of
+            Just t -> do
+              let allVars = collectVars t
+              case findTRSingleIndex typings typing of
+                Just i ->
+                  if i < length allVars then
+                    return $ Just $ kind $ allVars !! i
+                  else
+                    return Nothing
+                _ ->
+                  return Nothing
+
+            _ -> do
+              -- otherwise we try to find a var in an interface declaration
+              -- maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface modulePath rootTypingName
+              maybeInterface <- Can.lookupInterface' canEnv rootTypingName
+              return $ maybeInterface >>= \(CanEnv.Interface vars _) -> do
+                case findTRSingleIndex typings typing of
+                  Just i ->
+                    if i < length vars then
+                      Just $ kind $ vars !! i
+                    else
+                      Nothing
+
+                  _ ->
+                    Nothing
+            where
+              findTRSingleIndex :: [Slv.Typing] -> Slv.Typing -> Maybe Int
+              findTRSingleIndex trCompVars trSingle = case trCompVars of
+                (trc : _) | trc == trSingle ->
+                  Just 0
+
+                (_ : next) ->
+                  (+ 1) <$> findTRSingleIndex next trSingle
+
+                _ ->
+                  Nothing
 
         _ ->
-          ""
-  in  "```madlib\n"
-      <> typeInfo
-      <> "\n"
-      <> "```\n\n"
-      <> "*Defined in '"
-      <> modulePath
-      <> "' at line "
-      <> show (getNodeLine node)
-      <> "*"
+          return Nothing
+
+      case maybeKind of
+        Just k ->
+          return $ name <> " :: " <> kindToStr k
+
+        Nothing -> do
+          maybeType <- CanEnv.lookupADT' canEnv name
+          case maybeType of
+            Just t ->
+              return $ name <> " :: " <> kindToStr (retrieveKind t)
+
+            Nothing ->
+              return $ name <> " :: *"
+
+    TypingNode _ (Slv.Untyped _ (Slv.TRArr _ _)) ->
+      return "(->) :: * -> * -> *"
+
+    TypingNode _ _ ->
+      return "*"
+
+    _ ->
+      return ""
+  return $
+    "```madlib\n"
+    <> typeInfo
+    <> "\n"
+    <> "```\n\n"
+    <> "*Defined in '"
+    <> modulePath
+    <> "' at line "
+    <> show (getNodeLine node)
+    <> "*"
 
 
 getDefinitionLink :: State -> Loc -> FilePath -> LspM () (Maybe Location)
@@ -534,6 +689,7 @@ warningToDiagnostic warning = do
         Nothing
         Nothing
 
+
 errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
   formattedError <- Explain.format readFile True err
@@ -607,19 +763,23 @@ hoverInfoTask loc path = do
   if hasCycle then
     return Nothing
   else do
+    srcAst        <- Rock.fetch $ Query.ParsedAST path
     (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-    return $ nodeToHoverInfo path <$> findNodeForLocInExps loc (Slv.aexps typedAst)
+    mapM (nodeToHoverInfo path) (findNodeInAst loc srcAst typedAst)
 
 
-findForeignAstForName :: String -> [Slv.Import] -> Maybe FilePath
+findForeignAstForName :: String -> [Can.Import] -> Maybe FilePath
 findForeignAstForName name imports = case imports of
   [] ->
     Nothing
 
-  (Slv.Untyped _ (Slv.NamedImport names _ path) : _) | name `elem` (Slv.getValue <$> names) ->
+  (Can.Canonical _ (Can.NamedImport names _ path) : _) | name `elem` (Can.getCanonicalContent <$> names) ->
     Just path
 
-  (Slv.Untyped _ (Slv.DefaultImport namespace _ path) : _) | takeWhile (/= '.') name == Slv.getValue namespace ->
+  (Can.Canonical _ (Can.DefaultImport namespace _ path) : _) | takeWhile (/= '.') name == Can.getCanonicalContent namespace ->
+    Just path
+
+  (Can.Canonical _ (Can.TypeImport names _ path) : _) | name `elem` (Can.getCanonicalContent <$> names) ->
     Just path
 
   (_ : next) ->
@@ -637,6 +797,12 @@ findNameInNode node = case node of
   Just (PatternNode (Slv.Typed _ _ (Slv.PCon name _))) ->
     Just name
 
+  Just (TypingNode _ (Slv.Untyped _ (Slv.TRComp name _))) ->
+    return name
+
+  Just (TypingNode _ (Slv.Untyped _ (Slv.TRSingle name))) ->
+    return name
+
   _ ->
     Nothing
 
@@ -647,16 +813,20 @@ definitionLocationTask loc path = do
   if hasCycle then
     return Nothing
   else do
-    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-    case findNameInNode $ findNodeForLocInExps loc (Slv.aexps typedAst) of
+    (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
+    (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+    srcAst         <- Rock.fetch $ Query.ParsedAST path
+    case findNameInNode $ findNodeInAst loc srcAst typedAst of
       Just name -> do
-        maybeExp <- Rock.fetch $ Query.ForeignExp path name
-        case maybeExp of
-          Just (Slv.Typed _ area _) ->
+        maybeExp         <- Rock.fetch $ Query.ForeignExp path name
+        maybeConstructor <- Rock.fetch $ Query.ForeignConstructor path name
+        maybeTypeDecl    <- Rock.fetch $ Query.ForeignTypeDeclaration path name
+        case Slv.getArea <$> maybeExp <|> Slv.getArea <$> maybeConstructor <|> Slv.getArea <$> maybeTypeDecl of
+          Just area ->
             return $ Just (path, area)
 
           _ -> do
-            case findForeignAstForName name (Slv.aimports typedAst) of
+            case findForeignAstForName name (Can.aimports canAst) of
               Just fp -> do
                 let name' =
                       if '.' `elem` name then
@@ -669,9 +839,10 @@ definitionLocationTask loc path = do
                       else
                         name
 
-                maybeConstructor <- Rock.fetch $ Query.ForeignConstructor fp name'
-                maybeExp'        <- Rock.fetch $ Query.ForeignExp fp name'
-                case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor of
+                maybeExp'         <- Rock.fetch $ Query.ForeignExp fp name'
+                maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor fp name'
+                maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration fp name'
+                case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' <|> Slv.getArea <$> maybeTypeDecl' of
                   Just area' ->
                     return $ Just (fp, area')
 
@@ -683,6 +854,7 @@ definitionLocationTask loc path = do
 
       _ ->
         return Nothing
+
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
 runTask state options prune invalidatedPaths fileUpdates task =

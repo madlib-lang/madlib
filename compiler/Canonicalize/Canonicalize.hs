@@ -32,17 +32,23 @@ class Canonicalizable a b where
 
 instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
-    Src.LNum  x           -> return $ Can.Canonical area (Can.LNum x)
+    Src.LNum  x ->
+      return $ Can.Canonical area (Can.LNum x)
 
-    Src.LFloat x          -> return $ Can.Canonical area (Can.LFloat x)
+    Src.LFloat x ->
+      return $ Can.Canonical area (Can.LFloat x)
 
-    Src.LStr  x           -> return $ Can.Canonical area (Can.LStr x)
+    Src.LStr  x ->
+      return $ Can.Canonical area (Can.LStr x)
 
-    Src.LChar  x           -> return $ Can.Canonical area (Can.LChar x)
+    Src.LChar  x ->
+      return $ Can.Canonical area (Can.LChar x)
 
-    Src.LBool x           -> return $ Can.Canonical area (Can.LBool x)
+    Src.LBool x ->
+      return $ Can.Canonical area (Can.LBool x)
 
-    Src.LUnit             -> return $ Can.Canonical area Can.LUnit
+    Src.LUnit ->
+      return $ Can.Canonical area Can.LUnit
 
     Src.TemplateString es -> do
       es' <- mapM (canonicalize env target) (Maybe.mapMaybe cleanUp es)
