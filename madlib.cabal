@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: afc8562f6c35aaffc01ef72bc9fd574db7464180d5dbd3babee2a8449eb1169a
+-- hash: 86ea9db90402696a01393e42ec582edadc21d26eb01537ad4a69807939579b16
 
 name:           madlib
 version:        0.12.2
@@ -115,12 +115,14 @@ library
       Paths_madlib
   hs-source-dirs:
       compiler
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
     , aeson >=1.5.6.0
     , aeson-pretty
+    , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
     , base >=4.7 && <5
@@ -138,6 +140,8 @@ library
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
+    , fold-debounce ==0.2.0.9
+    , fsnotify ==0.3.0.1
     , groupBy
     , hashable
     , hpc-lcov
@@ -193,12 +197,14 @@ library compiler-common
       Paths_madlib
   hs-source-dirs:
       compiler-common
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
     , aeson >=1.5.6.0
     , aeson-pretty
+    , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
     , base >=4.7 && <5
@@ -215,6 +221,8 @@ library compiler-common
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
+    , fold-debounce ==0.2.0.9
+    , fsnotify ==0.3.0.1
     , groupBy
     , hashable
     , hpc-lcov
@@ -250,13 +258,14 @@ executable madlib
       Paths_madlib
   hs-source-dirs:
       src
-  ghc-options: -threaded -funbox-strict-fields -O2 -optc-O2
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
     , aeson >=1.5.6.0
     , aeson-pretty
+    , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
     , base >=4.7 && <5
@@ -273,6 +282,8 @@ executable madlib
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
+    , fold-debounce ==0.2.0.9
+    , fsnotify ==0.3.0.1
     , groupBy
     , hashable
     , hpc-lcov
@@ -323,6 +334,7 @@ test-suite madlib-test
     , MissingH >=1.4.3.0
     , aeson >=1.5.6.0
     , aeson-pretty
+    , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
     , base >=4.7 && <5
@@ -340,6 +352,8 @@ test-suite madlib-test
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
+    , fold-debounce ==0.2.0.9
+    , fsnotify ==0.3.0.1
     , groupBy
     , hashable
     , hpc-lcov

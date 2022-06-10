@@ -6,9 +6,11 @@
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
+{-# HLINT ignore "Use let" #-}
 module Generate.LLVM.LLVM where
 
 
+import           Data.ByteString              as ByteString
 import           Data.ByteString.Short        as ShortByteString
 import qualified Data.Map                     as Map
 import qualified Data.Set                     as Set
@@ -28,7 +30,7 @@ import           Run.Options
 import qualified Driver.Query                 as Query
 import qualified Rock
 import           Data.ByteString as ByteString
-import           Data.ByteString.Char8 as Char8
+import           Data.ByteString.Char8        as Char8
 import           System.Process
 import           System.Environment.Executable
 
@@ -2681,7 +2683,7 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
 generateModuleFunctionExternals' :: (MonadModuleBuilder m) => [FilePath] -> m ()
 generateModuleFunctionExternals' allModulePaths = case allModulePaths of
   (path : next) -> do
-    let functionName = "__" <> (generateHashFromPath path) <> "__moduleFunction"
+    let functionName = "__" <> generateHashFromPath path <> "__moduleFunction"
     extern (AST.mkName functionName) [] Type.void
 
     generateModuleFunctionExternals' next
@@ -2693,7 +2695,7 @@ generateModuleFunctionExternals' allModulePaths = case allModulePaths of
 callModuleFunctions' :: (MonadIRBuilder m, MonadModuleBuilder m) => [FilePath] -> m ()
 callModuleFunctions' allModulePaths = case allModulePaths of
   (path : next) -> do
-    let functionName = "__" <> (generateHashFromPath path) <> "__moduleFunction"
+    let functionName = "__" <> generateHashFromPath path <> "__moduleFunction"
     call (Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName functionName)) []
 
     callModuleFunctions' next
@@ -4421,10 +4423,12 @@ generateModule options ast@AST{ apath = Just modulePath } = do
   let imports                          = aimports ast
       importPaths                      = getImportAbsolutePath <$> imports
 
-  symbolTablesWithEnvs <- mapM (Rock.fetch . Query.SymbolTableWithEnv) importPaths
-  defaultSymbolTableWithEnv <- Rock.fetch Query.BuiltInSymbolTableWithEnv
+  symbolTablesWithEnvs <- mapM (Rock.fetch . Query.BuiltObjectFile) importPaths
+  defaultSymbolTableWithEnv <- Rock.fetch Query.BuiltInBuiltObjectFile
 
-  let allTablesAndEnvs = defaultSymbolTableWithEnv : symbolTablesWithEnvs
+  let dropThird (table, env, _) = (table, env)
+
+  let allTablesAndEnvs = dropThird defaultSymbolTableWithEnv : (dropThird <$> symbolTablesWithEnvs)
 
   let symbolTable                  = mconcat $ fst <$> allTablesAndEnvs
   let dictionaryIndicesFromImports = mconcat $ dictionaryIndices . snd <$> allTablesAndEnvs
@@ -4459,18 +4463,11 @@ generateModule _ _ =
   undefined
 
 
-compileDefaultModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> m (SymbolTable, Env)
+compileDefaultModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> m (SymbolTable, Env, ByteString)
 compileDefaultModule options = do
   let (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = defaultDictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] mempty)
-  let defaultInstancesModulePath =
-        if takeExtension (optEntrypoint options) == "" then
-          joinPath [optEntrypoint options, "__default__instances__.mad"]
-        else
-          joinPath [takeDirectory (optEntrypoint options), "__default__instances__.mad"]
-  let outputFolder   = takeDirectory (optOutputPath options)
-  let path = Path.computeLLVMTargetPath outputFolder (optRootPath options) defaultInstancesModulePath
 
-  liftIO $ buildObjectFile defaultInstancesModule path
+  objectContent <- liftIO $ buildObjectFile defaultInstancesModule
 
   return
     ( symbolTable'
@@ -4481,17 +4478,16 @@ compileDefaultModule options = do
       , recursionData = Nothing
       , envASTPath = ""
       }
+    , objectContent
     )
 
 
-compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env)
-compileModule options ast@Core.AST { Core.apath = Nothing } = return (mempty, initialEnv)
+compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env, ByteString.ByteString)
+compileModule options ast@Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, Char8.pack "")
 compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
-  let outputFolder   = takeDirectory (optOutputPath options)
-  let outputPath     = Path.computeLLVMTargetPath outputFolder (optRootPath options) modulePath
   (astModule, table, env) <- generateModule options ast
 
-  liftIO $ buildObjectFile astModule outputPath
+  objectContent <- liftIO $ buildObjectFile astModule
 
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
   let rest = List.dropWhile (/= modulePath) pathsToBuild
@@ -4500,11 +4496,11 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   let currStr = if curr < 10 then " " <> show curr else show curr
   liftIO $ Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> modulePath <> "'"
 
-  return (table, env)
+  return (table, env, objectContent)
 
 
-buildObjectFile :: AST.Module -> FilePath -> IO ()
-buildObjectFile astModule destination = do
+buildObjectFile :: AST.Module -> IO ByteString.ByteString
+buildObjectFile astModule = do
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
@@ -4517,8 +4513,8 @@ buildObjectFile astModule destination = do
             $ \pm -> do
               runPassManager pm mod'
               return mod'
-          createDirectoryIfMissing True $ takeDirectory destination
-          writeObjectToFile target (File destination) mod''
+          moduleObject target mod''
+          -- writeObjectToFile target (File destination) mod''
 
 
 makeExecutablePath :: FilePath -> FilePath
@@ -4540,7 +4536,7 @@ buildTarget options entrypoint = do
   let outputFolder = takeDirectory (optOutputPath options)
   modulePaths <- Rock.fetch $ Query.ModulePathsToBuild entrypoint
 
-  Rock.fetch $ Query.SymbolTableWithEnv entrypoint
+  Rock.fetch $ Query.BuiltObjectFile entrypoint
 
   let defaultInstancesModulePath =
         if takeExtension entrypoint == "" then
@@ -4585,5 +4581,3 @@ buildTarget options entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath
-
-  liftIO $ IOUtils.putStrLnAndFlush "done."

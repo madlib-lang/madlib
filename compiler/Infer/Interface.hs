@@ -130,9 +130,9 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   inferredMethods <- mapM
     (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
-  let dict'   = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
-  let methods = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
-  envWithMethods <- setInstanceMethods env pred methods
+  let dict'    = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
+  let methods' = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
+  envWithMethods <- setInstanceMethods env pred methods'
   return (envWithMethods, Slv.Untyped area $ Slv.Instance name constraintPreds pred dict')
 
 

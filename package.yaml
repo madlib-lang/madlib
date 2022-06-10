@@ -67,14 +67,27 @@ dependencies:
 - constraints-extras == 0.3.2.0
 - dependent-hashmap == 0.1.0.1
 - time == 1.9.3
+- fold-debounce == 0.2.0.9
+- fsnotify == 0.3.0.1
+- ansi-terminal == 0.5.0
 
 
 _exe-defs: &exe-defaults
   ghc-options:
     - -threaded
     - -funbox-strict-fields
-    - -O2
-    - -optc-O2
+    - -O4
+    - -optc-O3
+    - -fsimpl-tick-factor=500
+    - -rtsopts
+
+    - -fexcess-precision
+    - -optc-ffast-math
+    - -funfolding-use-threshold=16
+    # - -fno-state-hack
+    # - -fllvm
+    # - -optlo-O3
+    # - -with-rtsopts="-A50m"
 
 executables:
   madlib:
@@ -88,6 +101,7 @@ executables:
       ld-options: -static
 
 library:
+  <<: *exe-defaults
   dependencies:
     - llvm-hs == 9.0.1
     - llvm-hs-pure == 9.0.0
@@ -97,6 +111,7 @@ library:
 
 internal-libraries:
   compiler-common:
+    <<: *exe-defaults
     source-dirs: compiler-common
     dependencies:
       - llvm-hs-pure == 9.0.0

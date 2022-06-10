@@ -46,7 +46,6 @@ import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
 import { hashVersion } from "./Hash"
 
 
-
 copyPackageToMadlibModules :: Config -> Dependency -> Wish Process.CommandResult Process.CommandResult
 copyPackageToMadlibModules = (config, dependency) => pipe(
   (d) => ({

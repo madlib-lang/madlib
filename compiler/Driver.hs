@@ -47,7 +47,6 @@ import Run.Options (Options(optGenerateDerivedInstances))
 
 
 
-
 data State err = State
   { _startedVar :: !(IORef (DHashMap Query MemoEntry))
   , _hashesVar :: !(IORef (DHashMap Query (Const Int)))
@@ -83,12 +82,13 @@ data Prune
 
 runIncrementalTask ::
   State CompilationError ->
+  Options ->
   [FilePath] ->
   Map.Map FilePath String ->
   Prune ->
   Task Query a ->
   IO (a, [CompilationWarning], [CompilationError])
-runIncrementalTask state changedFiles fileUpdates prune task =
+runIncrementalTask state options changedFiles fileUpdates prune task =
   handleEx $ do
     reverseDependencies <- readIORef $ _reverseDependenciesVar state
     started <- readIORef $ _startedVar state
@@ -127,6 +127,7 @@ runIncrementalTask state changedFiles fileUpdates prune task =
         --     (\_ _ -> modifyMVar_ printVar $ \n -> do
         --       putText $ fold (replicate (n - 1) "| ") <> "*"
         --       return $ n - 1)
+
         writeErrorsAndWarnings :: Writer TaskKind Query a -> ([CompilationWarning], [CompilationError]) -> Task Query ()
         writeErrorsAndWarnings (Writer key) (warns, errs) = do
           atomicModifyIORef' (_warningsVar state) $
@@ -134,6 +135,7 @@ runIncrementalTask state changedFiles fileUpdates prune task =
           atomicModifyIORef' (_errorsVar state) $
             (,()) . if null errs then DHashMap.delete key else DHashMap.insert key (Const errs)
           return ()
+
         rules :: Rules Query
         rules =
           memoiseWithCycleDetection (_startedVar state) threadDepsVar $
@@ -155,17 +157,8 @@ runIncrementalTask state changedFiles fileUpdates prune task =
                 $ traceFetch_
                 $ writer writeErrorsAndWarnings
                 $ Rules.rules
-                    Options
-                      { optEntrypoint = head changedFiles
-                      , optTarget = TNode
-                      , optRootPath = "/Users/arnaudboeglin/Code/madlib/"
-                      , optOutputPath = ""
-                      , optOptimized = False
-                      , optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ }
-                      , optBundle = False
-                      , optCoverage = False
-                      , optGenerateDerivedInstances = False
-                      }
+                    options
+                      { optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ } }
 
     result <- Rock.runTask rules task
     started <- readIORef $ _startedVar state

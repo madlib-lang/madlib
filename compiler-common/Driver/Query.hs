@@ -21,10 +21,13 @@ import           Data.GADT.Show.TH (deriveGShow)
 import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
+import qualified Data.ByteString as ByteString
 import           Infer.Type
 import           Generate.LLVM.SymbolTable
 import qualified Generate.LLVM.Env          as LLVM
 import           Parse.DocString.DocString
+import qualified LLVM.AST                        as AST hiding (function)
+
 
 data Query a where
   ModulePathsToBuild :: FilePath -> Query [FilePath]
@@ -52,11 +55,11 @@ data Query a where
   CoreAST :: FilePath -> Query Core.AST
 
   -- LLVM
-  SymbolTableWithEnv :: FilePath -> Query (SymbolTable, LLVM.Env)
-  BuiltInSymbolTableWithEnv :: Query (SymbolTable, LLVM.Env)
+  BuiltObjectFile :: FilePath -> Query (SymbolTable, LLVM.Env, ByteString.ByteString)
+  BuiltInBuiltObjectFile :: Query (SymbolTable, LLVM.Env, ByteString.ByteString)
 
   -- JS
-  BuiltJSModule :: FilePath -> Query ()
+  BuiltJSModule :: FilePath -> Query String
 
   BuiltTarget :: FilePath -> Query ()
 
@@ -107,11 +110,11 @@ instance Hashable (Query a) where
     CoreAST path ->
       hashWithSalt salt (path, 12 :: Int)
 
-    SymbolTableWithEnv path ->
+    BuiltObjectFile path ->
       hashWithSalt salt (path, 13 :: Int)
 
-    BuiltInSymbolTableWithEnv ->
-      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 14 :: Int)
+    BuiltInBuiltObjectFile ->
+      hashWithSalt salt ("BuiltInBuiltObjectFile", 14 :: Int)
 
     BuiltJSModule path ->
       hashWithSalt salt (path, 15 :: Int)
