@@ -16,6 +16,7 @@ import           Data.List
 import qualified Data.Map                      as M
 import Debug.Trace
 import Text.Show.Pretty
+import Infer.EnvUtils
 
 
 getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
@@ -23,9 +24,7 @@ getAllParentPreds env ps = concat <$> mapM (getParentPreds env) ps
 
 getParentPreds :: Env -> Pred -> Infer [Pred]
 getParentPreds env p@(IsIn cls ts maybeArea) = do
-  (Interface tvs ps _) <- case M.lookup cls (envInterfaces env) of
-    Just x  -> return x
-    Nothing -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
+  (Interface tvs ps _) <- lookupInterface env cls
 
   s <- unify (TVar <$> tvs) ts
 
