@@ -49,10 +49,13 @@ dependencies:
 - aeson-pretty
 - Glob >= 0.10.2
 - prettyprinter >= 1.6.2
-- llvm-hs == 9.0.1
-- llvm-hs-pure == 9.0.0
-- llvm-hs-pretty == 0.9.0.0
+
 - Cabal == 3.6.2.0
+- rock == 0.3.*
+- dependent-sum-template == 0.1.*
+- some == 1.*
+- hashable
+- template-haskell
 
 _exe-defs: &exe-defaults
   ghc-options:
@@ -66,12 +69,28 @@ executables:
     <<: *exe-defaults
     main: Main.hs
     source-dirs: src
+    dependencies:
+      - madlib
     when:
     - condition: flag(static)
       ld-options: -static
 
 library:
-  source-dirs: src
+  dependencies:
+    - llvm-hs == 9.0.1
+    - llvm-hs-pure == 9.0.0
+    - llvm-hs-pretty == 0.9.0.0
+    - compiler-common
+    - query
+  source-dirs: compiler
+
+internal-libraries:
+  query:
+    source-dirs: query
+    dependencies:
+      - compiler-common
+  compiler-common:
+    source-dirs: compiler-common
 
 tests:
   madlib-test:
@@ -80,7 +99,9 @@ tests:
       - test
     dependencies:
       - hspec >= 2.7.2
+      - query
       - madlib
+      - compiler-common
 
 flags:
   static:
