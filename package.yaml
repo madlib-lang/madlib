@@ -49,7 +49,7 @@ dependencies:
 - aeson-pretty
 - Glob >= 0.10.2
 - prettyprinter >= 1.6.2
-
+- parallel-io == 0.3.5
 - Cabal == 3.6.2.0
 - rock == 0.3.*
 - dependent-sum-template == 0.1.*
@@ -81,14 +81,14 @@ library:
     - llvm-hs-pure == 9.0.0
     - llvm-hs-pretty == 0.9.0.0
     - compiler-common
-    - query
+    # - query
   source-dirs: compiler
 
 internal-libraries:
-  query:
-    source-dirs: query
-    dependencies:
-      - compiler-common
+  # query:
+  #   source-dirs: query
+  #   dependencies:
+  #     - compiler-common
   compiler-common:
     source-dirs: compiler-common
     dependencies:

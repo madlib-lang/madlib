@@ -155,8 +155,6 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
             , optOptimized = optimized
             }
 
-    -- table <- Rules.buildSolvedTable options sourcesToCompile
-
     Rules.compile options (head sourcesToCompile)
 
 

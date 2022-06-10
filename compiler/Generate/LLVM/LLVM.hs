@@ -2678,6 +2678,28 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
   [] ->
     return ()
 
+generateModuleFunctionExternals' :: (MonadModuleBuilder m) => [FilePath] -> m ()
+generateModuleFunctionExternals' allModulePaths = case allModulePaths of
+  (path : next) -> do
+    let functionName = "__" <> (generateHashFromPath path) <> "__moduleFunction"
+    extern (AST.mkName functionName) [] Type.void
+
+    generateModuleFunctionExternals' next
+
+  [] ->
+    return ()
+
+
+callModuleFunctions' :: (MonadIRBuilder m, MonadModuleBuilder m) => [FilePath] -> m ()
+callModuleFunctions' allModulePaths = case allModulePaths of
+  (path : next) -> do
+    let functionName = "__" <> (generateHashFromPath path) <> "__moduleFunction"
+    call (Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName functionName)) []
+
+    callModuleFunctions' next
+
+  [] ->
+    return ()
 
 
 tupleVars :: [String]
@@ -4292,169 +4314,6 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   return ()
 
 
-buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => [FilePath] -> Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
-buildModule' _ _ _ _ _ ast@Core.AST{ Core.apath = Nothing } = undefined
-buildModule' pathsToBuild env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
-  symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
-  let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
-      symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
-      symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
-
-  let moduleFunctionName =
-        if isMain then
-          "main"
-        else
-          "__" <> hashModulePath ast <> "__moduleFunction"
-
-  if astPath `List.elem` pathsToBuild then do
-    mapM_ (generateImport initialSymbolTable) $ aimports ast
-    generateExternsForImportedInstances initialSymbolTable
-
-    symbolTable  <- generateInstances env symbolTableWithDefaults (ainstances ast)
-    symbolTable' <- generateTopLevelFunctions env symbolTable (topLevelFunctions $ aexps ast)
-
-    externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
-
-    extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
-    externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
-    extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
-    extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
-    extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
-    extern (AST.mkName "madlib__string__internal__concat")             [stringType, stringType] stringType
-
-    extern (AST.mkName "madlib__list__internal__hasMinLength")         [Type.i64, listType] Type.i1
-    extern (AST.mkName "madlib__list__internal__hasLength")            [Type.i64, listType] Type.i1
-    extern (AST.mkName "madlib__list__singleton")                      [Type.ptr Type.i8] listType
-    extern (AST.mkName "madlib__list__internal__push")                 [Type.ptr Type.i8, listType] listType
-    extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
-
-    extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
-    extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)
-
-    extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
-
-    Monad.when isMain $ do
-      extern (AST.mkName "madlib__process__internal__registerArgs") [] Type.void
-      extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
-      extern (AST.mkName "__initEventLoop__")                       [] Type.void
-      extern (AST.mkName "__startEventLoop__")                      [] Type.void
-      generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
-
-    moduleFunction <-
-      if isMain then do
-        -- this function starts the runtime with a fresh stack etc
-        function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
-          entry <- block `named` "entry"
-          call initArgs []
-          call initEventLoop []
-          callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
-          generateExps env symbolTable' (expsForMain $ aexps ast)
-          call startEventLoop []
-          retVoid
-          return ()
-
-        let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
-            argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
-        function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
-          entry <- block `named` "entry"
-          call mainInit [(argc, []), (argv, [])]
-          ret $ i32ConstOp 0
-      else do
-        function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
-          entry <- block `named` "entry"
-          generateExps env symbolTable' (expsForMain $ aexps ast)
-          retVoid
-
-    Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
-  else do
-    let expType   = Type.ptr $ Type.FunctionType Type.void [] False
-        globalRef = Operand.ConstantOperand (Constant.GlobalReference expType (AST.mkName moduleFunctionName))
-    Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 globalRef)
-
-  Writer.tell symbolTableWithDefaults
-
-
-toLLVMModule :: [FilePath] -> Env -> Bool -> [String] -> SymbolTable -> AST -> (AST.Module, SymbolTable)
-toLLVMModule pathsToBuild initialEnv isMain currentModuleHashes symbolTable ast =
-  let moduleName =
-        if isMain then
-          "main"
-        else
-          hashModulePath ast
-  in  Writer.runWriter $ buildModuleT (stringToShortByteString moduleName) (buildModule' pathsToBuild initialEnv isMain currentModuleHashes symbolTable ast)
-
-
-generateImportedASTs :: [FilePath] -> Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> [AST] -> (ModuleTable, SymbolTable, [String], Env)
-generateImportedASTs pathsToBuild isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) asts = case asts of
-  ast : more ->
-    let (moduleTable'', symbolTable'', processedHashes'', initialEnv'') = generateAST pathsToBuild isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast
-        (moduleTable', symbolTable', processedHashes', initialEnv') = generateImportedASTs pathsToBuild isMain astTable (moduleTable'', symbolTable'', processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv'', isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" }) more
-    in  (moduleTable', symbolTable', processedHashes', Env { dictionaryIndices = dictionaryIndices initialEnv', isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" })
-
-  [] ->
-    (moduleTable, symbolTable, processedHashes, initialEnv)
-
-
-removeLambdaNames :: SymbolTable -> SymbolTable
-removeLambdaNames = id --Map.filterWithKey (\k _ -> not $ "$lambda" `List.isPrefixOf` k)
-
-
-generateAST :: [FilePath] -> Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> AST -> (ModuleTable, SymbolTable, [String], Env)
-generateAST pathsToBuild isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast@AST{ apath = Just apath } =
-  if Map.member apath moduleTable then
-    (moduleTable, symbolTable, processedHashes, initialEnv)
-  else
-    let imports                          = aimports ast
-        alreadyProcessedPaths            = Map.keys moduleTable
-        importPathsToProcess             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
-        astsForImports                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
-
-        (moduleTableWithImports, symbolTableWithImports, importHashes, envFromImports) =
-          generateImportedASTs pathsToBuild False astTable (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
-
-        computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
-        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = apath }
-        (newModule, newSymbolTableTable) = toLLVMModule pathsToBuild envForAST isMain (importHashes ++ processedHashes) (removeLambdaNames symbolTableWithImports) ast
-
-        updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
-        moduleHash                       = hashModulePath ast
-    in  (updatedModuleTable, removeLambdaNames $ symbolTableWithImports <> newSymbolTableTable, importHashes ++ [moduleHash], envForAST)
-
-generateAST _ _ _ _ _ =
-  undefined
-
-
-type ModuleTable = Map.Map FilePath AST.Module
-
-{-
-  Generates all modules
-
-  generatedTable: the already generated modules
-  symbolTable: accumulated symbolTable, used to map imports to extern instructions
-  astTable: input asts to generate
-  entrypoint: main module to generate
--}
-generateTableModules :: [FilePath] -> ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
-generateTableModules pathsToBuild generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
-  Just ast ->
-    let dictionaryIndices = Map.fromList
-          [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1)), ("unary-minus", (8, 1))])
-          , ("Bits", Map.fromList [("&", (0, 2)), ("<<", (1, 2)), (">>", (2, 2)), (">>>", (3, 2)), ("^", (4, 2)), ("|", (5, 2)), ("~", (6, 1))])
-          , ("Eq", Map.fromList [("==", (0, 2))])
-          , ("Inspect", Map.fromList [("inspect", (0, 1))])
-          ]
-        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] symbolTable)
-        defaultInstancesModulePath =
-          if takeExtension entrypoint == "" then
-            joinPath [entrypoint, "__default__instances__.mad"]
-          else
-            joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
-        (moduleTable, _, _, _) = generateAST pathsToBuild True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" }) ast
-    in  Map.insert defaultInstancesModulePath defaultInstancesModule moduleTable
-
-  _ ->
-    error $ "AST '" <> entrypoint <> "' not found in:\n" <> ppShow (Map.keys astTable)
-
 
 makeDisplayPath :: FilePath -> FilePath -> FilePath
 makeDisplayPath root path =
@@ -4471,9 +4330,9 @@ makeDisplayPath root path =
 
 
 
-buildModule'' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
-buildModule'' _ _ _ _ ast@Core.AST{ Core.apath = Nothing } = undefined
-buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
+generateLLVMModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
+generateLLVMModule _ _ _ _ ast@Core.AST{ Core.apath = Nothing } = undefined
+generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
   symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
       symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
@@ -4485,7 +4344,6 @@ buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Co
         else
           "__" <> hashModulePath ast <> "__moduleFunction"
 
-  -- if astPath `List.elem` pathsToBuild then do
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
@@ -4517,7 +4375,7 @@ buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Co
     extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
     extern (AST.mkName "__initEventLoop__")                       [] Type.void
     extern (AST.mkName "__startEventLoop__")                      [] Type.void
-    generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
+    generateModuleFunctionExternals' currentModulePaths
 
   moduleFunction <-
     if isMain then do
@@ -4526,7 +4384,9 @@ buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Co
         entry <- block `named` "entry"
         call initArgs []
         call initEventLoop []
-        callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
+
+        callModuleFunctions' currentModulePaths
+
         generateExps env symbolTable' (expsForMain $ aexps ast)
         call startEventLoop []
         retVoid
@@ -4545,11 +4405,6 @@ buildModule'' env isMain currentModuleHashes initialSymbolTable ast@Core.AST{ Co
         retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
-  -- else do
-  --   let expType   = Type.ptr $ Type.FunctionType Type.void [] False
-  --       globalRef = Operand.ConstantOperand (Constant.GlobalReference expType (AST.mkName moduleFunctionName))
-  --   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 globalRef)
-
   Writer.tell symbolTableWithDefaults
 
 defaultDictionaryIndices =
@@ -4561,8 +4416,8 @@ defaultDictionaryIndices =
     ]
 
 
-generateAST' :: (Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
-generateAST' options ast@AST{ apath = Just modulePath } = do
+generateModule :: (Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
+generateModule options ast@AST{ apath = Just modulePath } = do
   let imports                          = aimports ast
       importPaths                      = getImportAbsolutePath <$> imports
 
@@ -4590,10 +4445,17 @@ generateAST' options ast@AST{ apath = Just modulePath } = do
         else
           hashModulePath ast
 
-  (mod, table) <- Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (buildModule'' envForAST isMain [] symbolTable ast)
+  importModulePaths <-
+    if isMain then do
+      allPaths <- Rock.fetch $ Query.ModulePathsToBuild modulePath
+      return $ List.filter (/= modulePath) allPaths
+    else
+      return []
+
+  (mod, table) <- Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (generateLLVMModule envForAST isMain importModulePaths symbolTable ast)
   return (mod, table, envForAST)
 
-generateAST' _ _ =
+generateModule _ _ =
   undefined
 
 
@@ -4622,14 +4484,21 @@ compileDefaultModule options = do
     )
 
 
-compileModule' :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env)
-compileModule' options ast@Core.AST { Core.apath = Nothing } = undefined
-compileModule' options ast@Core.AST { Core.apath = Just modulePath } = do
+compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env)
+compileModule options ast@Core.AST { Core.apath = Nothing } = return (mempty, initialEnv)
+compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   let outputFolder   = takeDirectory (optOutputPath options)
   let outputPath     = Path.computeLLVMTargetPath outputFolder (optRootPath options) modulePath
-  (astModule, table, env) <- generateAST' options ast
+  (astModule, table, env) <- generateModule options ast
 
   liftIO $ buildObjectFile astModule outputPath
+  pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
+  let rest = List.dropWhile (/= modulePath) pathsToBuild
+  let total = List.length pathsToBuild
+  let curr = total - List.length rest + 1
+  let currStr = if curr < 10 then " " <> show curr else show curr
+  liftIO $ Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> modulePath <> "'"
+
   return (table, env)
 
 
@@ -4651,47 +4520,6 @@ buildObjectFile astModule destination = do
           writeObjectToFile target (File destination) mod''
 
 
-compileModule :: [FilePath] -> FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
-compileModule pathsToBuild outputFolder rootPath astPath astModule = do
-  let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
-      displayModulePath = makeDisplayPath rootPath astPath
-
-
-  if astPath `List.elem` pathsToBuild then do
-    -- Monad.when (displayModulePath == "Main.mad") $
-    --   Text.putStrLn (ppllvm astModule)
-    -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-    --   Text.putStrLn (ppllvm astModule)
-    -- Text.putStrLn (ppllvm astModule)
-
-    -- TODO: only do this on verbose mode
-    -- Prelude.putStrLn outputPath
-
-    withHostTargetMachineDefault $ \target -> do
-      withContext $ \ctx -> do
-        withModuleFromAST ctx astModule $ \mod' -> do
-          mod'' <-
-            withPassManager
-            defaultCuratedPassSetSpec
-              { optLevel                = Just 2
-              , useInlinerWithThreshold = Just 100
-              }
-            $ \pm -> do
-              runPassManager pm mod'
-              return mod'
-          createDirectoryIfMissing True $ takeDirectory outputPath
-          writeObjectToFile target (File outputPath) mod''
-
-    Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-      IOUtils.putStrLnAndFlush $ " - compiled module '" <> displayModulePath <> "'"
-
-  else do
-    Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-      IOUtils.putStrLnAndFlush $ " -" <> "\x1b[90m skipping cached module '" <> displayModulePath <> "'\x1b[0m"
-
-  return $ "\"" <> outputPath <> "\""
-
-
 makeExecutablePath :: FilePath -> FilePath
 makeExecutablePath output = case output of
   "./build/" ->
@@ -4706,52 +4534,33 @@ makeExecutablePath output = case output of
     or
 
 
-generateTable :: Bool -> FilePath -> FilePath -> Table -> FilePath -> IO ()
-generateTable noCache outputPath rootPath astTable entrypoint = do
-  let outputFolder   = takeDirectory outputPath
-  let astPaths = Map.keys astTable
+buildTarget :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> FilePath -> m ()
+buildTarget options entrypoint = do
+  let outputFolder = takeDirectory (optOutputPath options)
+  modulePaths <- Rock.fetch $ Query.ModulePathsToBuild entrypoint
+
+  Rock.fetch $ Query.SymbolTableWithEnv entrypoint
+
   let defaultInstancesModulePath =
         if takeExtension entrypoint == "" then
           joinPath [entrypoint, "__default__instances__.mad"]
         else
           joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
 
-  pathsToBuild <-
-    if noCache then
-      return $ defaultInstancesModulePath : astPaths
-    else
-      Monad.filterM
-        (\astPath -> do
-          let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
+  let objectFilePaths = Path.computeLLVMTargetPath outputFolder (optRootPath options) <$> (defaultInstancesModulePath : modulePaths)
 
-          isSrcThere <- doesFileExist astPath
-          isTargetThere <- doesFileExist outputPath
-
-          if isSrcThere && isTargetThere then do
-            srcModified <- getModificationTime astPath
-            targetModified <- getModificationTime outputPath
-            return $ srcModified > targetModified
-          else
-            return $ isTargetThere && not ("__default__instances__.mad" `List.isSuffixOf` astPath) || not isTargetThere
-        )
-        (defaultInstancesModulePath : astPaths)
-
-  let moduleTable    = generateTableModules pathsToBuild Map.empty Map.empty astTable entrypoint
-      outputFolder   = takeDirectory outputPath
-      executablePath = makeExecutablePath outputPath
-
-  objectFilePaths <- mapM (uncurry $ compileModule pathsToBuild outputFolder rootPath) $ Map.toList moduleTable
-  compilerPath    <- getExecutablePath
+  compilerPath <- liftIO $ getExecutablePath
+  let executablePath = makeExecutablePath (optOutputPath options)
 
   let objectFilePathsForCli = List.unwords objectFilePaths
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
 
-  IOUtils.putStrLnAndFlush "Linking.."
+  liftIO $ IOUtils.putStrLnAndFlush "Linking.."
 
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
-      callCommand $
+      liftIO $ callCommand $
         "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
@@ -4761,7 +4570,7 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
         <>" -o " <> executablePath
 
     DistributionSystem.Windows ->
-      callCommand $
+      liftIO $ callCommand $
         "g++ -static "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
@@ -4769,7 +4578,7 @@ generateTable noCache outputPath rootPath astTable entrypoint = do
         <> " -lruntime -lmman -lgc -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
 
     _ ->
-      callCommand $
+      liftIO $ callCommand $
         "g++ -static "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt

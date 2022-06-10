@@ -21,18 +21,20 @@ import           Generate.LLVM.SymbolTable
 import qualified Generate.LLVM.Env          as LLVM
 
 data Query a where
+  ModulePathsToBuild :: FilePath -> Query [FilePath]
+
   -- Parsing
+  DetectImportCycle :: FilePath -> Query Bool
   File :: FilePath -> Query String
   ParsedAST :: FilePath -> Query Src.AST
 
   -- Canonicalization
   CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env)
-  CanonicalizedInterface :: FilePath -> String -> Query CanEnv.Interface
+  CanonicalizedInterface :: FilePath -> String -> Query (Maybe CanEnv.Interface)
   ForeignADTType :: FilePath -> String -> Query (Maybe Type)
 
   -- Type checking
   SolvedASTWithEnv :: FilePath -> Query (Slv.AST, SlvEnv.Env)
-  SolvedTable :: [FilePath] -> Query Slv.Table
   SolvedInterface :: FilePath -> String -> Query SlvEnv.Interface
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
 
@@ -43,45 +45,53 @@ data Query a where
   SymbolTableWithEnv :: FilePath -> Query (SymbolTable, LLVM.Env)
   BuiltInSymbolTableWithEnv :: Query (SymbolTable, LLVM.Env)
 
+  BuiltTarget :: FilePath -> Query ()
+
 deriveGEq ''Query
 
 instance Hashable (Query a) where
   hashWithSalt salt query = case query of
-    File path ->
+    ModulePathsToBuild path ->
       hashWithSalt salt (path, 0 :: Int)
 
-    ParsedAST path ->
+    DetectImportCycle path ->
       hashWithSalt salt (path, 1 :: Int)
 
-    CanonicalizedASTWithEnv path ->
+    File path ->
       hashWithSalt salt (path, 2 :: Int)
 
+    ParsedAST path ->
+      hashWithSalt salt (path, 3 :: Int)
+
+    CanonicalizedASTWithEnv path ->
+      hashWithSalt salt (path, 4 :: Int)
+
     CanonicalizedInterface _ name ->
-      hashWithSalt salt (name, 3 :: Int)
+      hashWithSalt salt (name, 5 :: Int)
 
     ForeignADTType modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 4 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 6 :: Int)
 
     SolvedASTWithEnv path ->
-      hashWithSalt salt (path, 5 :: Int)
-
-    SolvedTable modulePaths ->
-      hashWithSalt salt (show modulePaths, 6 :: Int)
+      hashWithSalt salt (path, 7 :: Int)
 
     SolvedInterface _ name ->
-      hashWithSalt salt (name, 7 :: Int)
+      hashWithSalt salt (name, 8 :: Int)
 
     ForeignScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 9 :: Int)
 
     CoreAST path ->
-      hashWithSalt salt (path, 9 :: Int)
-
-    SymbolTableWithEnv path ->
       hashWithSalt salt (path, 10 :: Int)
 
+    SymbolTableWithEnv path ->
+      hashWithSalt salt (path, 11 :: Int)
+
     BuiltInSymbolTableWithEnv ->
-      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 11 :: Int)
+      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 12 :: Int)
+
+    BuiltTarget path ->
+      hashWithSalt salt (path, 13 :: Int)
 
 
 instance Hashable (Some Query) where
