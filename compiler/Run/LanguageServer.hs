@@ -2,6 +2,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use lambda-case" #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
@@ -25,7 +27,7 @@ import Language.LSP.Diagnostics
 import qualified Explain.Format as Explain
 import Data.List (group, foldl')
 import qualified Data.List as List
-import Control.Monad (forM_)
+import Control.Monad (forM_, join, forM)
 import Data.IORef
 import qualified AST.Solved as Slv
 import Explain.Format (prettyPrintQualType, prettyPrintType)
@@ -41,6 +43,10 @@ import qualified Utils.PathUtils as PathUtils
 import Run.Target
 import qualified Data.Maybe as Maybe
 import Run.Options (Options(optEntrypoint))
+import Control.Monad.Trans.Control
+import Control.Concurrent
+import Data.Foldable (toList)
+import Control.Concurrent.Async
 
 
 handlers :: State -> Handlers (LspM ())
@@ -564,6 +570,13 @@ typeCheckFile path = do
   return ()
 
 
+-- typeCheckFile :: FilePath -> Rock.Task Query.Query ()
+-- typeCheckFile path = do
+--   modulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
+--   pooledForConcurrently_ modulePaths $ \p -> Rock.fetch $ Query.SolvedASTWithEnv p
+--   return ()
+
+
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
 runTask state options prune invalidatedPaths fileUpdates task =
   Driver.runIncrementalTask
@@ -573,3 +586,73 @@ runTask state options prune invalidatedPaths fileUpdates task =
     fileUpdates
     prune
     task
+
+
+pooledForConcurrently_ ::
+  (Foldable t, MonadBaseControl IO m) =>
+  t a ->
+  (a -> m b) ->
+  m ()
+pooledForConcurrently_ as f =
+  liftBaseWith $ \runInIO ->
+    pooledForConcurrentlyIO_ as (runInIO . f)
+
+pooledForConcurrentlyIO_ ::
+  Foldable t =>
+  t a ->
+  (a -> IO b) ->
+  IO ()
+pooledForConcurrentlyIO_ as f = do
+  todoRef <- newIORef $ toList as
+  processCount <- getNumCapabilities
+  let go =
+        join $
+          atomicModifyIORef' todoRef $ \todo ->
+            case todo of
+              [] ->
+                (todo, pure ())
+              (a : todo') ->
+                ( todo'
+                , do
+                    _ <- f a
+                    go
+                )
+  replicateConcurrently_ (max 8 processCount) go
+
+
+pooledForConcurrentlyIO ::
+  Traversable t =>
+  t a ->
+  (a -> IO b) ->
+  IO (t b)
+pooledForConcurrentlyIO as f = do
+  jobs <- forM as $ \a -> do
+    ref <- newIORef $ error "pooledForConcurrently not done"
+    pure (a, ref)
+  todoRef <- newIORef $ toList jobs
+  processCount <- getNumCapabilities
+  let go =
+        join $
+          atomicModifyIORef' todoRef $ \todo ->
+            case todo of
+              [] ->
+                (todo, pure ())
+              ((a, ref) : todo') ->
+                ( todo'
+                , do
+                    result <- f a
+                    atomicWriteIORef ref result
+                    go
+                )
+  replicateConcurrently_ (max 8 processCount) go
+  forM jobs $ \(_, ref) ->
+    readIORef ref
+
+pooledForConcurrently ::
+  (Traversable t, MonadBaseControl IO m, StM m b ~ b) =>
+  t a ->
+  (a -> m b) ->
+  m (t b)
+pooledForConcurrently as f =
+  liftBaseWith $ \runInIO ->
+    pooledForConcurrentlyIO as (runInIO . f)

@@ -100,7 +100,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CanonicalizedASTWithEnv path -> nonInput $ do
     sourceAst      <- Rock.fetch $ ParsedAST path
-    dictModulePath <- Rock.fetch $ DictionaryModuleAbsolutePath
+    dictModulePath <- Rock.fetch DictionaryModuleAbsolutePath
 
     (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
     case can of
