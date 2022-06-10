@@ -12,10 +12,18 @@ data WarningKind
   -- ^ pkgName versionRequired versionUsed
   deriving(Eq, Show, Ord)
 
+
 getContext :: CompilationWarning -> Context
 getContext warning = case warning of
   CompilationWarning _ ctx ->
     ctx
+
+
+getPath :: CompilationWarning -> FilePath
+getPath err = case err of
+  CompilationWarning _ (Context path _ _) ->
+    path
+
 
 isUnusedImport :: CompilationWarning -> Bool
 isUnusedImport warning = case warning of
