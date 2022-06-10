@@ -17,6 +17,7 @@ import {
 } from "Parse"
 import String from "String"
 import List from "List"
+import { always } from "Function"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import {} from "Number"
@@ -35,10 +36,19 @@ import {
 // Parser
 // ------
 
+stringCharacter :: Parse.Parser Char
+stringCharacter = choice([
+  map(always('"'), Parse.string("\\\"")),
+  map(always('\n'), Parse.string("\\n")),
+  map(always('\t'), Parse.string("\\t")),
+  notChar('"')
+])
+
+
 jsonString :: Parse.Parser JsonValue
 jsonString = do {
   _ <- char('"')
-  cs <- many(notChar('"'))
+  cs <- many(stringCharacter)
   _ <- symbol(`"`)
 
   return pipe(
@@ -175,8 +185,8 @@ parse :: Parser b -> String -> Either String b
 export parse = (parser, input) => pipe(
   runParser(jsonValue),
   where {
-    Left(_) =>
-      Left("Invalid json")
+    Left(e) =>
+      Left("Invalid json: " ++ inspect(e))
 
     Right(parsed) =>
       where(parser) {
@@ -328,7 +338,37 @@ export field = (fieldName, parser) => Parser((input) => where(input) {
           Left(`Error parsing fieldname '${fieldName}'`)
       }
     )(d)
+
+  _ =>
+    Left(`Error parsing fieldname '${fieldName}'`)
 })
+
+
+path :: List String -> Parser b -> Parser b
+export path = (pathParts, parser) => Parser((input) =>
+  pipe(
+    List.reduce(
+      (val, fieldName) => where(val) {
+        Right(JsonObject(d)) =>
+          pipe(
+            Dictionary.get(fieldName),
+            where {
+              Just(value) =>
+                Right(value)
+      
+              Nothing =>
+                Left(`Error parsing fieldname '${fieldName}'`)
+            }
+          )(d)
+
+        _ =>
+          Left(`Error parsing path: '${inspect(pathParts)}' - value: '${inspect(val)}'`)
+      },
+      Right(input)
+    ),
+    chain(getParserFn(parser))
+  )(pathParts)
+)
 
 
 chain1 :: (a -> Parser b) -> Parser a -> Parser b
@@ -604,6 +644,38 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
       Left(e)
 
     #[_, _, _, _, _, _, Left(e)] =>
+      Left(e)
+  }
+)
+
+map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i
+export map8 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH) => Parser((input) =>
+  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input), getParserFn(parserG, input), getParserFn(parserH, input)]) {
+    #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)] =>
+      Right(fn(a, b, c, d, e, f, g, h))
+
+    #[Left(e), _, _, _, _, _, _, _] =>
+      Left(e)
+
+    #[_, Left(e), _, _, _, _, _, _] =>
+      Left(e)
+
+    #[_, _, Left(e), _, _, _, _, _] =>
+      Left(e)
+
+    #[_, _, _, Left(e), _, _, _, _] =>
+      Left(e)
+
+    #[_, _, _, _, Left(e), _, _, _] =>
+      Left(e)
+
+    #[_, _, _, _, _, Left(e), _, _] =>
+      Left(e)
+
+    #[_, _, _, _, _, _, Left(e), _] =>
+      Left(e)
+
+    #[_, _, _, _, _, _, _, Left(e)] =>
       Left(e)
   }
 )

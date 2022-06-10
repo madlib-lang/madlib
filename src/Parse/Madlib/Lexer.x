@@ -97,7 +97,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> pipe                                { mapToken (\_ -> TokenPipeKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> return                              { mapToken (\_ -> TokenReturnKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> is                                  { mapToken (\_ -> TokenIs) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=                   { mapToken (\_ -> TokenEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=$tail?             { mapToken (\_ -> TokenEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                   { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                            { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal                            { mapToken (\s -> TokenNumber s) }
@@ -511,7 +511,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
   scs          <- getStartCodeStack
   sourceTarget <- getCurrentSourceTarget
 
-  token <- case (tokenizer (take len input)) of
+  token <- case tokenizer (take len input) of
     TokenLeftCurly ->
       if sc == instanceHeader then do
         let next        = BLU.fromString $ ((tail . (take 70)) input)
@@ -521,10 +521,11 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
         else do
           popStartCode
           return TokenLeftDoubleCurly
-      else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
+      -- else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
+      --   pushStartCode 0
+      --   return TokenLeftCurly
+      else do
         pushStartCode 0
-        return TokenLeftCurly
-      else
         return TokenLeftCurly
 
     tok -> return tok
@@ -533,8 +534,11 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
   case token of
     TokenInstance -> pushStartCode instanceHeader
     TokenRightCurly -> do
+      sc           <- getStartCode
       previousCode <- getPreviousStartCode
       if previousCode == jsxText || previousCode == jsxAutoClosed || previousCode == jsxOpeningTag then
+        popStartCode
+      else if sc /= instanceHeader then do
         popStartCode
       else
         return ()
