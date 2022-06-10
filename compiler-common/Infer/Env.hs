@@ -1,13 +1,21 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Infer.Env where
 
 import qualified Data.Set               as Set
 import qualified Data.Map               as Map
 import           Infer.Type
 import           Error.Backtrace
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
-data Interface = Interface [TVar] [Pred] [Instance] deriving(Eq, Show)
+data Interface
+  = Interface [TVar] [Pred] [Instance]
+  deriving(Eq, Show, Generic, Hashable)
 
-data Instance = Instance (Qual Pred) Vars deriving(Eq, Show)
+data Instance
+  = Instance (Qual Pred) Vars
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Vars = Map.Map String Scheme
@@ -20,7 +28,7 @@ data ImportType
   = NamespaceImport
   | TypeImport
   | NameImport
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data ImportInfo
@@ -29,7 +37,7 @@ data ImportInfo
     , iiType :: ImportType
     , iiName :: String
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 data Env
   = Env
@@ -43,4 +51,4 @@ data Env
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)

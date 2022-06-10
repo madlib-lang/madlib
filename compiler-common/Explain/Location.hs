@@ -1,10 +1,13 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Explain.Location where
 
-import Debug.Trace
-import Text.Show.Pretty
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
+
 
 -- Loc ------------------------------------------------------------------------
-data Loc = Loc Int Int Int deriving(Eq, Show, Ord)
+data Loc = Loc Int Int Int deriving(Eq, Show, Ord, Generic, Hashable)
 
 getLine :: Loc -> Int
 getLine (Loc _ l _) = l
@@ -14,7 +17,7 @@ getCol (Loc _ _ c) = c
 
 
 -- Area -----------------------------------------------------------------------
-data Area = Area Loc Loc deriving(Show, Eq, Ord)
+data Area = Area Loc Loc deriving(Show, Eq, Ord, Generic, Hashable)
 
 
 emptyArea :: Area

@@ -1,8 +1,14 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Generate.LLVM.Env where
 
 import qualified Data.Map                        as Map
 import qualified LLVM.AST.Operand                as Operand
 import           LLVM.AST                        as AST hiding (function)
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
+import           Generate.LLVM.Hashable
 
 
 data RecursionData
@@ -26,7 +32,7 @@ data RecursionData
       , end :: Operand.Operand
       , holePtr :: Operand.Operand
       }
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 data Env
   = Env
@@ -37,7 +43,7 @@ data Env
   , recursionData :: Maybe RecursionData
   , envASTPath :: String
   }
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 initialEnv :: Env
 initialEnv =

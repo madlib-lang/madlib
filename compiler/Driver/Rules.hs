@@ -302,6 +302,6 @@ compilationTask options path = do
 compile :: Options -> FilePath -> IO ()
 compile options path = do
   memoVar <- newIORef mempty
-  let task = compilationTask options path--Rock.fetch $ BuiltTarget path
+  let task = compilationTask options path
   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
   return ()

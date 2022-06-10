@@ -1,13 +1,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module AST.Canonical where
 
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Map                      as M
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
-
-data Canonical a = Canonical Area a deriving(Eq, Show, Ord)
+data Canonical a
+  = Canonical Area a
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 -- data NameRef
 --   = Local String
@@ -24,13 +29,17 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show, Ord)
+    deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Interface = Canonical Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
+data Interface_
+  = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Instance = Canonical Instance_
-data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show, Ord)
+data Instance_
+  = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Import = Canonical Import_
 -- The second FilePath parameter is the absolute path to that module
@@ -39,10 +48,12 @@ data Import_
   | TypeImport [Canonical Name] FilePath FilePath
   | DefaultImport (Canonical Name) FilePath FilePath
   | ImportAll FilePath FilePath
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Constructor = Canonical Constructor_
-data Constructor_ = Constructor Name [Typing] Ty.Scheme Ty.Type deriving(Eq, Show, Ord)
+data Constructor_
+  = Constructor Name [Typing] Ty.Scheme Ty.Type
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 getCtorScheme :: Constructor -> Ty.Scheme
 getCtorScheme (Canonical _ (Constructor _ _ sc _)) = sc
@@ -73,7 +84,7 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show, Ord)
+    deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 
@@ -87,11 +98,13 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type Is = Canonical Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
+data Is_
+  = Is Pattern Exp
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type Pattern = Canonical Pattern_
@@ -107,20 +120,20 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Field = Canonical Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type ListItem = Canonical ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type Exp = Canonical Exp_
@@ -148,7 +161,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | JSExp String
           | Extern Ty.Scheme Name Name
-          deriving(Eq, Show, Ord)
+          deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Name = String
 

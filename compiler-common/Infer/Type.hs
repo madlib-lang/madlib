@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Infer.Type where
 
 import qualified Data.Map                      as M
@@ -9,13 +11,14 @@ import           Data.List                      ( nub
                                                 , union
                                                 )
 import           Explain.Location
-
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
 data TVar = TV Id Kind
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic, Hashable)
 
 data TCon = TC Id Kind
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic, Hashable)
 
 data Type
   = TVar TVar          -- Variable type
@@ -24,7 +27,7 @@ data Type
   | TApp Type Type              -- Arrow type
   | TRecord (M.Map Id Type) (Maybe Type) -- Maybe Type is the extended record type, most likely a type variable
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic, Hashable)
 
 infixr `TApp`
 
@@ -209,20 +212,25 @@ predTypes (IsIn _ ts _) = ts
 
 type Id = String
 
-data Kind  = Star | Kfun Kind Kind
-             deriving (Eq, Show, Ord)
+data Kind
+  = Star
+  | Kfun Kind Kind
+  deriving (Eq, Show, Ord, Generic, Hashable)
 
-data Pred   = IsIn Id [Type] (Maybe Area)
-              deriving (Show, Ord)
+data Pred
+  = IsIn Id [Type] (Maybe Area)
+  deriving (Show, Ord, Generic, Hashable)
 
 instance Eq Pred where
   (==) (IsIn id ts _) (IsIn id' ts' _) = id == id' && ts == ts'
 
-data Qual t = [Pred] :=> t
-              deriving (Eq, Show, Ord)
+data Qual t
+  = [Pred] :=> t
+  deriving (Eq, Show, Ord, Generic, Hashable)
 
-data Scheme = Forall [Kind] (Qual Type)
-              deriving (Eq, Show, Ord)
+data Scheme
+  = Forall [Kind] (Qual Type)
+  deriving (Eq, Show, Ord, Generic, Hashable)
 
 
 type Substitution = M.Map TVar Type

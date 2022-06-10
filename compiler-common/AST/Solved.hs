@@ -1,6 +1,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module AST.Solved where
 
 import qualified Data.Map                      as M
@@ -8,13 +10,15 @@ import qualified Data.Map                      as M
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Maybe as Maybe
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
 
 
 data Solved a
   = Typed (Ty.Qual Ty.Type) Area a
   | Untyped Area a
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 data AST =
@@ -26,19 +30,23 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show, Ord)
+    deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Import = Solved Import_
 data Import_
   = NamedImport [Solved Name] FilePath FilePath
   | DefaultImport (Solved Name) FilePath FilePath
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Interface = Solved Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
+data Interface_
+  = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Instance = Solved Instance_
-data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
+data Instance_
+  = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme))
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type TypeDecl = Solved TypeDecl_
 data TypeDecl_
@@ -55,12 +63,12 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show, Ord)
+    deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Constructor = Solved Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Constraints = [Typing]
 
@@ -72,11 +80,13 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type Is = Solved Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
+data Is_
+  = Is Pattern Exp
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Pattern = Solved Pattern_
 data Pattern_
@@ -91,29 +101,29 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Field = Solved Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type ListItem = Solved ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 data ClassRefPred
   = CRPNode String [Ty.Type] Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
   | MethodRef String String Bool
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Exp = Solved Exp_
 data Exp_ = LNum String
@@ -142,7 +152,7 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           | Extern (Ty.Qual Ty.Type) Name Name
-          deriving(Eq, Show, Ord)
+          deriving(Eq, Show, Ord, Generic, Hashable)
 
 
 type Name = String

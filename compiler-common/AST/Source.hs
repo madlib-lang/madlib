@@ -1,16 +1,20 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module AST.Source where
 
 import           Explain.Location
 import qualified Data.Map                      as M
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
 
 data SourceTarget
   = TargetLLVM
   | TargetJS
   | TargetAll
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
-data Source a = Source Area SourceTarget a deriving(Eq, Show)
+data Source a = Source Area SourceTarget a deriving(Eq, Show, Generic, Hashable)
 
 data AST =
   AST
@@ -21,7 +25,7 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 type Import = Source Import_
 -- The second FilePath parameter is the absolute path to that module
@@ -30,7 +34,7 @@ data Import_
   | TypeImport [Source Name] FilePath FilePath
   | DefaultImport (Source Name) FilePath FilePath
   | ImportAll FilePath FilePath
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecl = Source TypeDecl_
 data TypeDecl_
@@ -46,19 +50,23 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 
 type Interface = Source Interface_
-data Interface_ = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+data Interface_
+  = Interface Constraints Name [Name] (M.Map Name Typing)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Instance = Source Instance_
-data Instance_ = Instance Constraints Name [Typing] (M.Map Name Exp) deriving(Eq, Show)
+data Instance_
+  = Instance Constraints Name [Typing] (M.Map Name Exp)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Constructor = Source Constructor_
 data Constructor_
   = Constructor Name [Typing]
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 
@@ -72,17 +80,19 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing) -- Maybe typing for the possible extension
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Is = Source Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_
+  = Is Pattern Exp
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data PatternField
   = PatternField (Source Name) Pattern
   | PatternFieldShorthand (Source Name)
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Pattern = Source Pattern_
@@ -100,24 +110,26 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Field = Source Field_
 data Field_
   = Field (Name, Exp)
   | FieldShorthand Name
   | FieldSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type ListItem = Source ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type DictItem = Source DictItem_
-data DictItem_ = DictItem Exp Exp deriving(Eq, Show)
+data DictItem_
+  = DictItem Exp Exp
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Exp = Source Exp_
@@ -162,17 +174,19 @@ data Exp_
   | IfTarget SourceTarget
   | ElseIfTarget SourceTarget
   | EndIfTarget
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data JsxChild
   = JsxChild Exp
   | JsxExpChild Exp
   | JsxSpreadChild Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type JsxProp = Source JsxProp_
-data JsxProp_ = JsxProp Name Exp deriving(Eq, Show)
+data JsxProp_
+  = JsxProp Name Exp
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Name = String

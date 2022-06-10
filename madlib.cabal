@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 825360c5c995c4139c61acbbc4b5eb7a48dbb562a2694be34692814c436b5f95
+-- hash: aaa661e875648e3c43e4a7dbe9cb8f81838cbb3b26cd9db67feb285e62219d2c
 
 name:           madlib
 version:        0.12.2
@@ -42,6 +42,7 @@ library
       Canonicalize.JSExp
       Canonicalize.Typing
       Coverage.Coverable
+      Driver
       Driver.Rules
       Explain.Format
       Format.Format
@@ -126,9 +127,12 @@ library
     , base >=4.7 && <5
     , bytestring
     , compiler-common
+    , constraints-extras ==0.3.2.0
     , containers >=0.6.2.1
     , cryptohash-md5
     , data-default ==0.7.1.1
+    , dependent-hashmap ==0.1.0.1
+    , dependent-sum ==0.7.1.0
     , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
@@ -140,10 +144,12 @@ library
     , hpc-lcov
     , hspec
     , hspec-golden
+    , lifted-base ==0.2.3.12
     , llvm-hs ==9.0.1
     , llvm-hs-pretty ==0.9.0.0
     , llvm-hs-pure ==9.0.0
     , lsp
+    , monad-control ==1.0.3.1
     , mtl
     , optparse-applicative >=0.16.1.0
     , parallel-io ==0.3.5
@@ -158,6 +164,7 @@ library
     , template-haskell
     , text
     , transformers
+    , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
     , utf8-string
   default-language: Haskell2010
@@ -176,6 +183,7 @@ library compiler-common
       Error.Warning
       Explain.Location
       Generate.LLVM.Env
+      Generate.LLVM.Hashable
       Generate.LLVM.SymbolTable
       Infer.Env
       Infer.Type
@@ -193,9 +201,12 @@ library compiler-common
     , array >=0.5.4.0
     , base >=4.7 && <5
     , bytestring
+    , constraints-extras ==0.3.2.0
     , containers >=0.6.2.1
     , cryptohash-md5
     , data-default ==0.7.1.1
+    , dependent-hashmap ==0.1.0.1
+    , dependent-sum ==0.7.1.0
     , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
@@ -207,8 +218,10 @@ library compiler-common
     , hpc-lcov
     , hspec
     , hspec-golden
+    , lifted-base ==0.2.3.12
     , llvm-hs-pure ==9.0.0
     , lsp
+    , monad-control ==1.0.3.1
     , mtl
     , optparse-applicative >=0.16.1.0
     , parallel-io ==0.3.5
@@ -223,6 +236,7 @@ library compiler-common
     , template-haskell
     , text
     , transformers
+    , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
     , utf8-string
   default-language: Haskell2010
@@ -244,9 +258,12 @@ executable madlib
     , array >=0.5.4.0
     , base >=4.7 && <5
     , bytestring
+    , constraints-extras ==0.3.2.0
     , containers >=0.6.2.1
     , cryptohash-md5
     , data-default ==0.7.1.1
+    , dependent-hashmap ==0.1.0.1
+    , dependent-sum ==0.7.1.0
     , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
@@ -258,8 +275,10 @@ executable madlib
     , hpc-lcov
     , hspec
     , hspec-golden
+    , lifted-base ==0.2.3.12
     , lsp
     , madlib
+    , monad-control ==1.0.3.1
     , mtl
     , optparse-applicative >=0.16.1.0
     , parallel-io ==0.3.5
@@ -274,6 +293,7 @@ executable madlib
     , template-haskell
     , text
     , transformers
+    , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
     , utf8-string
   if flag(static)
@@ -304,9 +324,12 @@ test-suite madlib-test
     , base >=4.7 && <5
     , bytestring
     , compiler-common
+    , constraints-extras ==0.3.2.0
     , containers >=0.6.2.1
     , cryptohash-md5
     , data-default ==0.7.1.1
+    , dependent-hashmap ==0.1.0.1
+    , dependent-sum ==0.7.1.0
     , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
@@ -318,8 +341,10 @@ test-suite madlib-test
     , hpc-lcov
     , hspec >=2.7.2
     , hspec-golden
+    , lifted-base ==0.2.3.12
     , lsp
     , madlib
+    , monad-control ==1.0.3.1
     , mtl
     , optparse-applicative >=0.16.1.0
     , parallel-io ==0.3.5
@@ -335,6 +360,7 @@ test-suite madlib-test
     , template-haskell
     , text
     , transformers
+    , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
     , utf8-string
   default-language: Haskell2010
