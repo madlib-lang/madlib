@@ -139,6 +139,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
             , optOptimized = optimized
             , optBundle = bundle
             , optCoverage = coverage
+            , optGenerateDerivedInstances = True
             }
 
     when verbose $ do
