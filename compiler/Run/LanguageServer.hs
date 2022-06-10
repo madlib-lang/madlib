@@ -49,6 +49,10 @@ import qualified AST.Solved as Slv
 import Explain.Format (prettyPrintQualType, prettyPrintType)
 import Control.Applicative ((<|>))
 import Infer.Type (Qual((:=>)), Type)
+import Error.Warning
+import qualified Error.Warning as Warning
+import Error.Warning (CompilationWarning(CompilationWarning))
+import qualified Error.Error as Error
 
 
 handlers :: State -> Handlers (LspM ())
@@ -109,7 +113,7 @@ prettyQt topLevel qt@(_ :=> t) =
 data Node
   = ExpNode Bool Slv.Exp
   | NameNode Bool (Slv.Solved String)
-  | PatternNode (Slv.Pattern)
+  | PatternNode Slv.Pattern
 
 
 findNodeAtLocInListItem :: Loc -> Slv.ListItem -> Maybe Node
@@ -294,7 +298,7 @@ hoverInfoTask loc path = do
 
 getHoverInformation :: State -> Loc -> FilePath -> IO (Maybe String)
 getHoverInformation state loc path = do
-  (result, _) <- runTask state Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+  (result, _, _) <- runTask state Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
   return result
 
 
@@ -311,20 +315,32 @@ generateDiagnostics state uri fileUpdates = do
   let path = uriToPath uri
   -- retrieve current errors first, so that we can update diagnostics of files
   -- that went from errors > 0 to 0 and remove them completely.
-  (_, errs) <- liftIO $ runTask state Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
+  (_, warnings, errs) <- liftIO $ runTask state Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
   let errsByModule = groupErrsByModule errs
+  let warnsByModule = groupWarnsByModule warnings
 
   flushDiagnosticsBySource 20 (Just "Madlib")
 
   forM_ errsByModule $ \errs' -> do
     let moduleUri = uriOfError $ head errs'
-    diagnostics <- liftIO $ mapM errorToDiagnostic errs'
-    let diagnosticsBySource = partitionBySource diagnostics
+    errorDiagnostics <- liftIO $ mapM errorToDiagnostic errs'
+    let diagnosticsBySource = partitionBySource errorDiagnostics
+    publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
+
+  forM_ warnsByModule $ \warnings' -> do
+    let moduleUri = uriOfWarning $ head warnings'
+    errorDiagnostics <- liftIO $ mapM warningToDiagnostic warnings'
+    let diagnosticsBySource = partitionBySource errorDiagnostics
     publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
 
 
 uriOfError :: CompilationError -> Uri
-uriOfError err = case getContext err of
+uriOfError err = case Error.getContext err of
+  Context path _ _ ->
+    Uri $ T.pack ("file://" <> path)
+
+uriOfWarning :: CompilationWarning -> Uri
+uriOfWarning warning = case Warning.getContext warning of
   Context path _ _ ->
     Uri $ T.pack ("file://" <> path)
 
@@ -352,12 +368,65 @@ errorsForModule errs path =
   filter (isErrorFromModule path) errs
 
 
+areWarningsFromSameModule :: CompilationWarning -> CompilationWarning -> Bool
+areWarningsFromSameModule a b = case (a, b) of
+  (CompilationWarning _ (Context pathA _ _), CompilationWarning _ (Context pathB _ _)) ->
+    pathA == pathB
+
+  _ ->
+    False
+
+
+isWarningFromModule :: FilePath -> CompilationWarning -> Bool
+isWarningFromModule path err = case err of
+  CompilationWarning _ (Context ctxPath _ _) ->
+    ctxPath == path
+
+  _ ->
+    False
+
+
+warningsForModule :: [CompilationWarning] -> FilePath -> [CompilationWarning]
+warningsForModule errs path =
+  filter (isWarningFromModule path) errs
+
+
 groupErrsByModule :: [CompilationError] -> [[CompilationError]]
 groupErrsByModule errs =
-  let errs' = filter ((/= NoContext) . getContext) errs
+  let errs' = filter ((/= NoContext) . Error.getContext) errs
   in  List.groupBy areErrorsFromSameModule errs'
 
 
+groupWarnsByModule :: [CompilationWarning] -> [[CompilationWarning]]
+groupWarnsByModule warnings =
+  let warnings' = filter ((/= NoContext) . Warning.getContext) warnings
+  in  List.groupBy areWarningsFromSameModule warnings'
+
+
+
+warningToDiagnostic :: CompilationWarning -> IO Diagnostic
+warningToDiagnostic warning = do
+  formattedWarning <- Explain.formatWarning readFile True warning
+  case warning of
+    CompilationWarning _ (Context astPath area _) ->
+      return $ Diagnostic
+        (areaToRange area)        -- _range
+        (Just DsWarning)            -- _severity
+        Nothing                   -- _code
+        (Just "Madlib")           -- _source
+        (T.pack formattedWarning)   -- _message
+        (if Warning.isUnusedImport warning then Just $ List [DtUnnecessary] else Nothing)                   -- _tags
+        Nothing                   -- _relatedInformation
+
+    _ ->
+      return $ Diagnostic
+        noRange
+        (Just DsWarning)
+        Nothing
+        (Just "Madlib")
+        (T.pack formattedWarning)
+        Nothing
+        Nothing
 
 errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
@@ -432,7 +501,7 @@ typeCheckFile path = do
   return ()
 
 
-runTask :: State -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationError])
+runTask :: State -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
 runTask state prune invalidatedPaths fileUpdates task =
   Driver.runIncrementalTask
   (_driverState state)

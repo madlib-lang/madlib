@@ -86,7 +86,7 @@ runIncrementalTask ::
   Map.Map FilePath String ->
   Prune ->
   Task Query a ->
-  IO (a, [CompilationError])
+  IO (a, [CompilationWarning], [CompilationError])
 runIncrementalTask state changedFiles fileUpdates prune task =
   handleEx $ do
     reverseDependencies <- readIORef $ _reverseDependenciesVar state
@@ -127,8 +127,9 @@ runIncrementalTask state changedFiles fileUpdates prune task =
         --       putText $ fold (replicate (n - 1) "| ") <> "*"
         --       return $ n - 1)
         writeErrorsAndWarnings :: Writer TaskKind Query a -> ([CompilationWarning], [CompilationError]) -> Task Query ()
-        writeErrorsAndWarnings (Writer key) (_, errs) = do
-        --   errs' <- mapM (prettyError <=< Error.Hydrated.fromError) errs
+        writeErrorsAndWarnings (Writer key) (warns, errs) = do
+          atomicModifyIORef' (_warningsVar state) $
+            (,()) . if null warns then DHashMap.delete key else DHashMap.insert key (Const warns)
           atomicModifyIORef' (_errorsVar state) $
             (,()) . if null errs then DHashMap.delete key else DHashMap.insert key (Const errs)
           return ()
@@ -166,10 +167,23 @@ runIncrementalTask state changedFiles fileUpdates prune task =
           let errors' = DHashMap.intersectionWithKey (\_ _ e -> e) started errors
           (errors', errors')
 
+    warningsMap <- case prune of
+      Don'tPrune ->
+        readIORef $ _warningsVar state
+      Prune -> do
+        atomicModifyIORef' (_tracesVar state) $
+          (,()) . DHashMap.intersectionWithKey (\_ _ t -> t) started
+        atomicModifyIORef' (_warningsVar state) $ \warnings -> do
+          let warnings' = DHashMap.intersectionWithKey (\_ _ e -> e) started warnings
+          (warnings', warnings')
+
     let errors = do
           (_ :=> Const errs) <- DHashMap.toList errorsMap
           errs
-    pure (result, errors)
+    let warnings = do
+          (_ :=> Const warns) <- DHashMap.toList warningsMap
+          warns
+    pure (result, warnings, errors)
   where
     handleEx m =
       m `catch` \e -> do
