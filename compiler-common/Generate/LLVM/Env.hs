@@ -38,3 +38,12 @@ data Env
   , envASTPath :: String
   }
   deriving(Eq, Show)
+
+initialEnv :: Env
+initialEnv =
+  Env { dictionaryIndices = mempty
+      , isLast = True
+      , isTopLevel = True
+      , recursionData = Nothing
+      , envASTPath = ""
+      }

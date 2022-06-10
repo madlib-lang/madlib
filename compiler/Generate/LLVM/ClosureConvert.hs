@@ -991,6 +991,7 @@ addHashToName hash name =
 
 
 instance Convertable AST AST where
+  convert env ast@AST{ apath = Nothing } = return ast
   convert env ast@AST{ apath = Just path } = do
     let globalVars         = mapMaybe getExpName (aexps ast) ++ defaultGlobals
         globalMethods      = concatMap getMethodNames $ ainterfaces ast
