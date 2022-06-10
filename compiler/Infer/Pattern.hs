@@ -9,6 +9,7 @@ import           Infer.Infer
 import           Infer.Instantiate
 import           Infer.Scheme
 import           Infer.Unify
+import           Infer.EnvUtils
 import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T

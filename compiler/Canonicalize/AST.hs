@@ -13,7 +13,7 @@ import qualified Parse.Madlib.AST              as P
 import           Canonicalize.CanonicalM
 import           Canonicalize.ADT
 import           Canonicalize.Interface
-import           Canonicalize.EnvUtil
+import           Canonicalize.EnvUtils
 import           Infer.Type
 import           Error.Error
 import           Error.Warning
@@ -202,10 +202,6 @@ findDictionaryFromListName dictionaryModulePath imports = case imports of
 
   _ ->
     ""
-  -- = NamedImport [Canonical Name] FilePath FilePath
-  -- | TypeImport [Canonical Name] FilePath FilePath
-  -- | DefaultImport (Canonical Name) FilePath FilePath
-  -- | ImportAll FilePath FilePath
 
 
 importInfo :: Src.Import -> [ImportInfo]

@@ -5,6 +5,7 @@ module Infer.Interface where
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
 import           Infer.Env
+import           Infer.EnvUtils
 import           Infer.Infer
 import           Infer.Type
 import           Infer.Exp
@@ -110,18 +111,20 @@ isInstanceDefined env subst (IsIn id ts _) = do
 resolveInstances :: Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])
 resolveInstances env []       = return (env, [])
 resolveInstances env (i : is) = do
-
   curr <- catchError
     (Just <$> resolveInstance env i)
     (\err -> do
       pushError err
       return Nothing
     )
+
   case curr of
-    Just (env', inst) -> do --return $ x : next
+    Just (env', inst) -> do
       (nextEnv, insts) <- resolveInstances env' is
       return (nextEnv, inst : insts)
-    Nothing -> resolveInstances env is
+
+    Nothing ->
+      resolveInstances env is
 
 
 resolveInstance :: Env -> Can.Instance -> Infer (Env, Slv.Instance)

@@ -238,10 +238,18 @@ getExportName exp = case exp of
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
-  Canonical _ (NamedImport   _ _ n) -> n
-  Canonical _ (TypeImport    _ _ n) -> n
-  Canonical _ (DefaultImport _ _ n) -> n
-  Canonical _ (ImportAll _ n)       -> n
+  Canonical _ (NamedImport   _ _ n) ->
+    n
+
+  Canonical _ (TypeImport    _ _ n) ->
+    n
+
+  Canonical _ (DefaultImport _ _ n) ->
+    n
+
+  Canonical _ (ImportAll _ n)       ->
+    n
+
 
 isAssignment :: Exp -> Bool
 isAssignment exp = case exp of

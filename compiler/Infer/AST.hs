@@ -11,6 +11,7 @@ import qualified AST.Canonical                 as Can
 import qualified Canonicalize.AST              as Can
 import           Infer.Infer
 import           Infer.Env
+import           Infer.EnvUtils
 import           Infer.Typing
 import           Infer.Interface
 import           Infer.Type
@@ -93,7 +94,8 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
 
 
 buildInitialEnv :: Env -> Can.AST -> Infer Env
-buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
+buildInitialEnv priorEnv Can.AST { Can.apath = Nothing } = return priorEnv
+buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
   = do
     let methods = foldr (\(Can.Canonical _ (Can.Interface _ _ _ mtds' _)) mtds -> mtds <> mtds') mempty ainterfaces
     env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _ _)) -> addInterface env id vars preds)
@@ -261,8 +263,8 @@ hasModuleNormalImport allImports fp =
   any ((== fp) . Can.getImportAbsolutePath) (filter (not . Can.isTypeImport) allImports)
 
 
-updateImport ::[Can.Import] -> M.Map FilePath (Slv.AST, Env) -> Can.Import -> Maybe Slv.Import
-updateImport allImports solvedTable i = case i of
+updateImport ::[Can.Import] -> Can.Import -> Maybe Slv.Import
+updateImport allImports i = case i of
   Can.Canonical area (Can.NamedImport ns p fp) ->
     Just $ Slv.Untyped area $ Slv.NamedImport (updateImportName <$> ns) p fp
 
@@ -277,8 +279,8 @@ updateImport allImports solvedTable i = case i of
   Can.Canonical area (Can.DefaultImport n p fp) ->
     Just $ Slv.Untyped area $ Slv.DefaultImport (updateImportName n) p fp
 
-  Can.Canonical area (Can.ImportAll p fp) ->
-    Just $ updateImportAll solvedTable i
+  -- Can.Canonical area (Can.ImportAll p fp) ->
+  --   Just $ updateImportAll solvedTable i
 
 
 updateImportAll :: M.Map FilePath (Slv.AST, Env) -> Can.Import -> Slv.Import
@@ -333,7 +335,72 @@ inferAST solvedTable env astPath = do
               )
               <$>
             )
-            . updateImport aimports solvedTable
+            . updateImport aimports
+          )
+          aimports
+      , Slv.ainterfaces = updatedInterfaces
+      , Slv.ainstances  = inferredInstances
+      }
+    , env'
+    )
+
+
+
+
+importInfo :: Can.Import -> [ImportInfo]
+importInfo (Can.Canonical _ imp) = case imp of
+  Can.NamedImport names _ path ->
+    ImportInfo path NameImport . Can.getCanonicalContent <$> names
+
+  Can.TypeImport typeNames _ path ->
+    ImportInfo path TypeImport . Can.getCanonicalContent <$> typeNames
+
+  Can.DefaultImport name _ path ->
+    [ImportInfo path NamespaceImport (Can.getCanonicalContent name)]
+
+  -- TODO: handle correctly or remove import all
+  Can.ImportAll _ _ ->
+    []
+
+buildImportInfos :: Env -> Can.AST -> Env
+buildImportInfos env Can.AST { Can.aimports } =
+  let info = concatMap importInfo aimports
+  in  env { envImportInfo = info }
+
+
+inferAST' :: Env -> Can.AST -> Infer (Slv.AST, Env)
+inferAST' env ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
+  let namespacesInScope = namespacesInScopeFromImports aimports
+      envWithNamespaces = setNamespacesInScope env namespacesInScope
+      envWithImportInfo = buildImportInfos envWithNamespaces ast
+  (env'        , inferredInstances) <- resolveInstances envWithImportInfo { envBacktrace = [] } ainstances
+  (inferredExps, env'             ) <- inferExps env' aexps
+  let updatedInterfaces = updateInterface <$> ainterfaces
+
+  updatedADTs <- mapM updateADT atypedecls
+
+  return
+    ( Slv.AST
+      { Slv.aexps       = inferredExps
+      , Slv.apath       = apath
+      , Slv.atypedecls  = updatedADTs
+      , Slv.aimports    =
+        mapMaybe
+          (
+            (
+              (\case
+                i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
+                  Slv.Untyped area $ Slv.NamedImport
+                    (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
+                    fp
+                    afp
+
+                others ->
+                  others
+              )
+              <$>
+            )
+            . updateImport aimports
           )
           aimports
       , Slv.ainterfaces = updatedInterfaces
@@ -383,7 +450,11 @@ solveTable' solved astPath = do
   checkAST envWithImports inferredAST
 
   case Slv.apath inferredAST of
-    Just fp -> return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
+    Just fp ->
+      return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
+
+    Nothing ->
+      return $ solved <> inferredASTs
 
 
 solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> [FilePath] -> Infer Slv.Table

@@ -148,70 +148,72 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
     table <- Rules.buildSolvedTable options sourcesToCompile
 
-    when verbose $ do
-      putStrLn $ "OUTPUT: " ++ outputPath
-      putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
-      putStrLn $ "ROOT PATH: " ++ rootPath
-    when debug $ do
-      putStrLn $ "PARSED:\n" ++ ppShow table
-      putStrLn $ "RESOLVED:\n" ++ ppShow table
 
-    -- case resolvedASTTable of
-    --   Left err -> do
-    --     if json
-    --       then do
-    --         formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
-    --         formattedErr      <- Explain.format readFile json err
-    --         putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
-    --         -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
-    --       else do
-    --         unless (null warnings) (putStrLn "\n")
-    --         Explain.format readFile json err >>= putStrLn >> exitFailure
-    --   Right (table, inferState) ->
-    -- let errs      = errors inferState
-    --     hasErrors = not (null errs)
-    -- if json then do
-    --   formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
-    --                             warnings
-    --   formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-    --   putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings canonicalEntrypoint table
-    -- else if hasErrors then do
-    --   unless (null warnings) (putStrLn "\n")
-    --   formattedErrors <- mapM (Explain.format readFile json) errs
-    --   let fullError = intercalate "\n\n\n" formattedErrors
-    --   putStrLn fullError >> exitFailure
-    -- else do
-    when coverage $ do
-      runCoverageInitialization rootPath table
+    unless (null table) $ do
+      when verbose $ do
+        putStrLn $ "OUTPUT: " ++ outputPath
+        putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
+        putStrLn $ "ROOT PATH: " ++ rootPath
+      when debug $ do
+        putStrLn $ "PARSED:\n" ++ ppShow table
+        putStrLn $ "RESOLVED:\n" ++ ppShow table
 
-    if target == TLLVM then do
-      let coreTable        = tableToCore False table
-          renamedTable     = Rename.renameTable coreTable
-          reduced          = EtaReduction.reduceTable renamedTable
-          closureConverted = ClosureConvert.convertTable reduced
-          withTCE          = TCE.resolveTable closureConverted
+      -- case resolvedASTTable of
+      --   Left err -> do
+      --     if json
+      --       then do
+      --         formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
+      --         formattedErr      <- Explain.format readFile json err
+      --         putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
+      --         -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
+      --       else do
+      --         unless (null warnings) (putStrLn "\n")
+      --         Explain.format readFile json err >>= putStrLn >> exitFailure
+      --   Right (table, inferState) ->
+      -- let errs      = errors inferState
+      --     hasErrors = not (null errs)
+      -- if json then do
+      --   formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
+      --                             warnings
+      --   formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+      --   putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings canonicalEntrypoint table
+      -- else if hasErrors then do
+      --   unless (null warnings) (putStrLn "\n")
+      --   formattedErrors <- mapM (Explain.format readFile json) errs
+      --   let fullError = intercalate "\n\n\n" formattedErrors
+      --   putStrLn fullError >> exitFailure
+      -- else do
+      when coverage $ do
+        runCoverageInitialization rootPath table
 
-      -- putStrLn (ppShow closureConverted)
-      -- putStrLn (ppShow withTCE)
-      LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
-    else do
-      let coreTable     = tableToCore optimized table
-          strippedTable = stripTable coreTable
-          withTCE       = TCE.resolveTable strippedTable
-      -- putStrLn (ppShow withTCE)
-      generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
+      if target == TLLVM then do
+        let coreTable        = tableToCore False table
+            renamedTable     = Rename.renameTable coreTable
+            reduced          = EtaReduction.reduceTable renamedTable
+            closureConverted = ClosureConvert.convertTable reduced
+            withTCE          = TCE.resolveTable closureConverted
 
-    when bundle $ do
-      let entrypointOutputPath =
-            computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+        -- putStrLn (ppShow closureConverted)
+        -- putStrLn (ppShow withTCE)
+        LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
+      else do
+        let coreTable     = tableToCore optimized table
+            strippedTable = stripTable coreTable
+            withTCE       = TCE.resolveTable strippedTable
+        -- putStrLn (ppShow withTCE)
+        generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
-      bundled <- runBundle entrypointOutputPath
-      case bundled of
-        Left  e                    -> putStrLn e
-        Right (bundleContent, err) -> do
-          _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-          writeFile outputPath bundleContent
-          unless (null err) $ putStrLn err
+      when bundle $ do
+        let entrypointOutputPath =
+              computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+
+        bundled <- runBundle entrypointOutputPath
+        case bundled of
+          Left  e                    -> putStrLn e
+          Right (bundleContent, err) -> do
+            _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+            writeFile outputPath bundleContent
+            unless (null err) $ putStrLn err
 
 
 rollupNotFoundMessage = unlines

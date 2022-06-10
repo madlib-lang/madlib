@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Canonicalize.EnvUtil where
+module Canonicalize.EnvUtils where
 
 import qualified Data.Map as Map
 import           Canonicalize.Env
@@ -28,19 +28,31 @@ isTypeNameInImport typeName ImportInfo { iiType, iiName }
   | otherwise = False
 
 
+
+
 lookupADT :: Env -> String -> CanonicalM Type
-lookupADT env name = case List.find (isTypeNameInImport name) $ envImportInfo env of
-  Just (ImportInfo path TypeImport typeName) -> do
-    Rock.fetch $ Query.ForeignType path typeName
+lookupADT env name = do
+  maybeType <- case List.find (isTypeNameInImport name) $ envImportInfo env of
+    Just (ImportInfo path TypeImport typeName) ->
+      Rock.fetch $ Query.ForeignADTType path typeName
 
-  Just (ImportInfo path NamespaceImport ns) ->
-    Rock.fetch $ Query.ForeignType path (tail $ dropWhile (/= '.') name)
+    Just (ImportInfo path NamespaceImport ns) ->
+      Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
 
-  Nothing ->
-    case Map.lookup name (envTypeDecls env) of
-      Just found ->
-        return found
+    Nothing ->
+      return $ Map.lookup name (envTypeDecls env)
 
-      Nothing    ->
-        throwError $ CompilationError (UnknownType name) NoContext
+  case maybeType of
+    Just t ->
+      return t
 
+    Nothing ->
+      throwError $ CompilationError (UnknownType name) NoContext
+
+
+
+      -- Just found ->
+      --   return found
+
+      -- Nothing    ->
+      --   throwError $ CompilationError (UnknownType name) NoContext

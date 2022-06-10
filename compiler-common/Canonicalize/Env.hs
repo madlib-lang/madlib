@@ -24,22 +24,22 @@ data ImportType
 
 data ImportInfo
   = ImportInfo
-      { iiModulePath :: FilePath
-      , iiType :: ImportType
-      , iiName :: String
-      }
-      deriving(Eq, Show)
+    { iiModulePath :: FilePath
+    , iiType :: ImportType
+    , iiName :: String
+    }
+    deriving(Eq, Show)
 
 
 data Env
   = Env
-      { envImportInfo  :: [ImportInfo]
-      , envTypeDecls   :: TypeDecls
-      , envInterfaces  :: Interfaces
-      , envCurrentPath :: FilePath
-      , envFromDictionaryListName :: String
-      }
-      deriving(Eq, Show)
+    { envImportInfo  :: [ImportInfo]
+    , envTypeDecls   :: TypeDecls
+    , envInterfaces  :: Interfaces
+    , envCurrentPath :: FilePath
+    , envFromDictionaryListName :: String
+    }
+    deriving(Eq, Show)
 
 
 
