@@ -128,7 +128,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   SolvedASTWithEnv path -> nonInput $ do
     (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
-    res <- runInfer $ inferAST initialEnv instancesToDerive canAst
+    res <- runInfer $ inferAST options initialEnv instancesToDerive canAst
     case res of
       Right (astAndEnv, InferState _ []) -> do
         return (astAndEnv, (mempty, mempty))
