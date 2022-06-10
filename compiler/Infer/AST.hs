@@ -93,6 +93,7 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
   populateTopLevelTypings nextEnv' es
 
 
+-- TODO: split this ugly mess
 buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.apath = Nothing } = return priorEnv
 buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
@@ -136,7 +137,6 @@ addConstructors env ctors = do
     ctors
 
 
-
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
 findASTM table path = case M.lookup path table of
   Just a  -> return a
@@ -175,57 +175,13 @@ filterExportsByImport imp vars = case imp of
     vars
 
 
--- solveImports
---   :: M.Map FilePath (Slv.AST, Env)
---   -> [Can.Import]
---   -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods, S.Set String)
--- solveImports previousSolved (imp : is) = do
---   let modulePath = Can.getImportAbsolutePath imp
-
---   (allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
---     Just x@(ast, env) -> return (previousSolved, ast, env)
---     Nothing           -> do
---       (ast, _)  <- Rock.fetch $ Query.CanonicalizedASTWithEnv modulePath
---       solved    <- solveTable' previousSolved (fromMaybe "" $ Can.apath ast)
---       solvedAST <- findASTM (M.map fst solved) modulePath
---       let Just (_, env) = M.lookup modulePath solved
---       return (solved, solvedAST, env)
---     -- Nothing           -> case Can.findAST table modulePath of
---     --   Right ast -> do
---     --     solved    <- solveTable' previousSolved (fromMaybe "" $ Can.apath ast)
---     --     solvedAST <- findASTM (M.map fst solved) modulePath
---     --     let Just (_, env) = M.lookup modulePath solved
---     --     return (solved, solvedAST, env)
-
---   importedVars <- extractImportedVars solvedEnv solvedAST imp
---   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
---   let solvedVars         = constructorImports <> importedVars
---   let solvedMethods      = envMethods solvedEnv
---   let solvedInterfaces   = envInterfaces solvedEnv
-
-
-
---   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
---   (nextTable, nextVars, nextInterfaces, nextMethods, nextConstructorNames) <- solveImports solved' is
-
---   return
---     ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
---     , solvedVars <> nextVars
---     , mergeInterfaces solvedInterfaces nextInterfaces
---     , M.union solvedMethods nextMethods
---     , M.keysSet constructorImports <> nextConstructorNames
---     )
-
--- solveImports _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv, envConstructors initialEnv)
-
-
 mergeEnv' :: Env -> Env -> Env
 mergeEnv' previous new =
   previous
     { envInterfaces = mergeInterfaces (envInterfaces previous) (envInterfaces new)
     , envMethods = M.union (envMethods new) (envMethods previous)
-    -- , envVars = M.union (envVars new) (envVars previous)
     }
+
 
 solveImport :: Env -> Can.Import -> Infer Env
 solveImport env imp = do
@@ -236,23 +192,28 @@ solveImport env imp = do
   let env'' = mergeEnv' env env'
   return env'' { envVars = envVars env'' <> importedVars <> constructorImports }
 
-solveImports' :: Env -> [Can.Import] -> Infer Env
-solveImports' env imports = case imports of
+
+solveImports :: Env -> [Can.Import] -> Infer Env
+solveImports env imports = case imports of
   [] ->
     return env
 
   _ ->
     foldM solveImport env imports
 
+
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
+
 
 mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
 mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ is `union` is')
 
+
 updateInterface :: Can.Interface -> Slv.Interface
 updateInterface (Can.Canonical area (Can.Interface name preds vars methods methodTypings)) =
   Slv.Untyped area $ Slv.Interface name preds vars methods (M.map updateTyping methodTypings)
+
 
 namespacesInScopeFromImports :: [Can.Import] -> Set.Set String
 namespacesInScopeFromImports imports = Set.fromList $ mapMaybe Can.getImportNamespace imports
@@ -326,53 +287,6 @@ updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
 updateImportName (Can.Canonical area name) = Slv.Untyped area name
 
 
-
-
--- inferAST :: M.Map FilePath (Slv.AST, Env) -> Env -> FilePath -> Infer (Slv.AST, Env)
--- inferAST solvedTable env astPath = do
---   (ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces }, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv astPath
-
---   let namespacesInScope = namespacesInScopeFromImports aimports
---       envWithNamespaces = setNamespacesInScope env namespacesInScope
---   (env'        , inferredInstances) <- resolveInstances envWithNamespaces { envBacktrace = [] } ainstances
---   (inferredExps, env'             ) <- inferExps env' aexps
---   let updatedInterfaces = updateInterface <$> ainterfaces
-
---   updatedADTs <- mapM updateADT atypedecls
-
---   return
---     ( Slv.AST
---       { Slv.aexps       = inferredExps
---       , Slv.apath       = apath
---       , Slv.atypedecls  = updatedADTs
---       , Slv.aimports    =
---         mapMaybe
---           (
---             (
---               (\case
---                 i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
---                   Slv.Untyped area $ Slv.NamedImport
---                     (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
---                     fp
---                     afp
-
---                 others ->
---                   others
---               )
---               <$>
---             )
---             . updateImport aimports
---           )
---           aimports
---       , Slv.ainterfaces = updatedInterfaces
---       , Slv.ainstances  = inferredInstances
---       }
---     , env'
---     )
-
-
-
-
 importInfo :: Can.Import -> [ImportInfo]
 importInfo (Can.Canonical _ imp) = case imp of
   Can.NamedImport names _ path ->
@@ -395,13 +309,13 @@ buildImportInfos env Can.AST { Can.aimports } =
   in  env { envImportInfo = info }
 
 
-
 inferAST' :: Env -> Can.AST -> Infer (Slv.AST, Env)
 inferAST' env ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
   let namespacesInScope = namespacesInScopeFromImports aimports
       envWithNamespaces = setNamespacesInScope env namespacesInScope
       envWithImportInfo = buildImportInfos envWithNamespaces ast
-  envWithImports <- solveImports' envWithImportInfo aimports
+  -- TODO: remove this and make the instance retrieval be recursive to add up all instances
+  envWithImports <- solveImports envWithImportInfo aimports
   initialEnv     <- buildInitialEnv envWithImports ast
   fullEnv        <- populateTopLevelTypings initialEnv (Can.aexps ast)
   (env'        , inferredInstances)  <- resolveInstances fullEnv { envBacktrace = [] } ainstances
@@ -439,75 +353,3 @@ inferAST' env ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, 
   checkAST initialEnv ast'
 
   return (ast' , env'')
-
-
--- |The 'solveTable' function is the main function of this module.
--- It runs type checking for a given canonical ast table and an entrypoint ast
--- by following imports and returning a solved table. To do this, it starts
--- by resolving the asts of the imports of the entrypoint AST, which will
--- then themselves recursively call solveTable until all imports are type
--- checked. It then updates the environment with definitions for imported
--- symbols and type checks the given AST, putting it back in the table
--- and returning it.
--- solveTable :: FilePath -> Infer Slv.Table
--- solveTable path = do
---   solved <- solveTable' mempty path
---   return $ M.map fst solved
-
-
--- solveTable' :: M.Map FilePath (Slv.AST, Env) -> FilePath -> Infer (M.Map FilePath (Slv.AST, Env))
--- solveTable' solved astPath = do
--- -- First we resolve imports to update the env
---   (ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces }, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv astPath
---   (inferredASTs, vars, interfaces, methods, constructors) <- solveImports solved aimports
-
---   let importEnv = Env { envVars        = vars
---                       , envCurrentPath = astPath
---                       , envInterfaces  = interfaces
---                       , envMethods     = methods
---                       , envBacktrace   = mempty
---                       , envNamespacesInScope = mempty
---                       , envConstructors = constructors
---                       }
-
---   -- Then we infer the ast
---   env <- buildInitialEnv importEnv ast
---   let envWithImports = env { envVars = M.union (envVars env) vars }
-
---   fullEnv            <- populateTopLevelTypings envWithImports (Can.aexps ast)
-
---   (inferredAST, env) <- inferAST (solved <> inferredASTs) fullEnv astPath
-
---   checkAST envWithImports inferredAST
-
---   case Slv.apath inferredAST of
---     Just fp ->
---       return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
-
---     Nothing ->
---       return $ solved <> inferredASTs
-
-
--- solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> [FilePath] -> Infer Slv.Table
--- solveManyASTs solved fps = case fps of
---   [] ->
---     return (M.map fst solved)
-
---   fp : fps' -> do
---     current <- solveTable' solved fp
---     next    <- solveManyASTs (solved <> current) fps'
---     return $ M.map fst current <> next
-
-
--- solveManyASTs' :: (Rock.MonadFetch Query.Query m) => Can.Table -> [FilePath] -> m (Either [CompilationError] Slv.Table, [CompilationWarning])
--- solveManyASTs' canTable paths = do
---   x <- runExceptT (runStateT (solveManyASTs mempty paths) InferState { count = 0, errors = [] })
---   case x of
---     Left err ->
---       return (Left [err], [])
-
-    -- Right (table, InferState { errors = [] }) ->
-    --   return (Right table, [])
-
-    -- Right (_, InferState { errors }) ->
-    --   return (Left errors, [])
