@@ -33,102 +33,104 @@ import Debug.Trace
 import Text.Show.Pretty
 import Parse.Madlib.TargetMacro
 import Parse.Madlib.Dictionary
+import Run.Options
 
 
 
-buildManyASTTables :: Target -> Table -> [FilePath] -> IO (Either CompilationError Table)
-buildManyASTTables target currentTable fps = case fps of
-  [] -> return $ return mempty
-  fp:fps' -> do
-    current <- buildASTTable target currentTable fp
-    next    <- case current of
-      Left e  -> return $ Left e
-      Right t -> buildManyASTTables target (currentTable <> t) fps'
-    return $ current >>= (\current' -> next >>= (\next' -> return $ current' <> next'))
+-- buildASTTable' :: Target -> Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
+-- buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPath
+--   | srcPath `elem` previousPaths = return $ Left $ CompilationError (ImportCycle (previousPaths ++ [srcPath])) NoContext
+--   | otherwise = do
+--     let parentDir = dropFileName parentPath
+--     resolveAbsoluteSrcPath pathUtils parentDir srcPath >>= \case
+--       Nothing -> do
+--         let ctx = case imp of
+--               Just imp' -> Context parentPath (getArea imp') []
+--               Nothing   -> NoContext
+--         return $ Left $ CompilationError (ImportNotFound srcPath) ctx
+--       Just absoluteSrcPath -> do
+--         code <- try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
+
+--         let ctx = case imp of
+--               Just imp' -> Context parentPath (getArea imp') []
+--               Nothing   -> NoContext
+
+--         let source = case code of
+--               Right a -> Right a
+--               Left  _ -> Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
+
+--         ast <- case source of
+--           Left  e    ->
+--             return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
+
+--           Right code -> do
+--             ast' <- buildAST pathUtils srcPath code
+--             return $ resolveMacros target <$> ast'
+
+--         ast' <- case ast of
+--           Right a -> do
+--             a' <- addDictionaryImportIfNeeded pathUtils (dropFileName srcPath) a
+--             return (Right a')
+
+--           Left e ->
+--             return (Left e)
 
 
-buildASTTable :: Target -> Table -> FilePath -> IO (Either CompilationError Table)
-buildASTTable target table path = do
-  buildASTTable' target table defaultPathUtils path Nothing [] path
+--         getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast' >>= \case
+--           Left  x               -> return $ Left x
+--           Right completeImports -> do
+--             let (jsonImports, madImports) = partition (\case
+--                                                         (Source _ _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
+--                                                         _ -> False
+--                                                       ) completeImports
+--             jsonAssignments <- generateJsonAssignments pathUtils jsonImports
+
+--             let generatedTable =
+--                   uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
+
+--             childTables <- foldM
+--               (\table imp' ->
+--                 case table of
+--                   Left e       -> return $ Left e
+--                   Right table' -> buildChildTable target pathUtils previousPaths srcPath (previousTable <> table') imp'
+--               )
+--               (Right M.empty)
+--               madImports
+
+--             return $ liftM2 M.union generatedTable childTables
 
 
-buildASTTable' :: Target -> Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
-buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPath
-  | srcPath `elem` previousPaths = return $ Left $ CompilationError (ImportCycle (previousPaths ++ [srcPath])) NoContext
-  | otherwise = do
-    let parentDir = dropFileName parentPath
-    resolveAbsoluteSrcPath pathUtils parentDir srcPath >>= \case
-      Nothing -> do
-        let ctx = case imp of
-              Just imp' -> Context parentPath (getArea imp') []
-              Nothing   -> NoContext
-        return $ Left $ CompilationError (ImportNotFound srcPath) ctx
-      Just absoluteSrcPath -> do
-        code <- try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
-
-        let ctx = case imp of
-              Just imp' -> Context parentPath (getArea imp') []
-              Nothing   -> NoContext
-
-        let source = case code of
-              Right a -> Right a
-              Left  _ -> Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
-
-        ast <- case source of
-          Left  e    ->
-            return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
-
-          Right code ->
-            return $ resolveMacros target <$> buildAST srcPath code
-
-        ast' <- case ast of
-          Right a -> do
-            a' <- addDictionaryImportIfNeeded pathUtils (dropFileName srcPath) a
-            return (Right a')
-
-          Left e ->
-            return (Left e)
+-- buildChildTable :: Target -> PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
+-- buildChildTable target pathUtils previousPaths srcPath table imp = do
+--   let absPath = getImportAbsolutePath imp
+--   builtImport <- case M.lookup absPath table of
+--     Just ast -> return $ Right $ M.singleton absPath ast
+--     Nothing  -> buildASTTable' target
+--                                table
+--                                pathUtils
+--                                srcPath
+--                                (Just imp)
+--                                (previousPaths ++ [srcPath])
+--                                (getImportAbsolutePath imp)
+--   case builtImport of
+--     Right x -> return $ Right (M.union table x)
+--     Left  e -> return $ Left e
 
 
-        getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast' >>= \case
-          Left  x               -> return $ Left x
-          Right completeImports -> do
-            let (jsonImports, madImports) = partition (\case
-                                                        (Source _ _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
-                                                        _ -> False
-                                                      ) completeImports
-            jsonAssignments <- generateJsonAssignments pathUtils jsonImports
+isJsonImport :: Import -> Bool
+isJsonImport imp = case imp of
+  (Source _ _ (DefaultImport _ _ absPath)) ->
+    takeExtension absPath == ".json"
 
-            let generatedTable =
-                  uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
-
-            childTables <- foldM
-              (\table imp' ->
-                case table of
-                  Left e       -> return $ Left e
-                  Right table' -> buildChildTable target pathUtils previousPaths srcPath (previousTable <> table') imp'
-              )
-              (Right M.empty)
-              madImports
-
-            return $ liftM2 M.union generatedTable childTables
+  _ ->
+    False
 
 
-buildChildTable :: Target -> PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
-buildChildTable target pathUtils previousPaths srcPath table imp = do
-  let absPath = getImportAbsolutePath imp
-  builtImport <- case M.lookup absPath table of
-    Just ast -> return $ Right $ M.singleton absPath ast
-    Nothing  -> buildASTTable' target
-                               table
-                               pathUtils
-                               srcPath
-                               (Just imp)
-                               (previousPaths ++ [srcPath])
-                               (getImportAbsolutePath imp)
-  case builtImport of
-    Right x -> return $ Right (M.union table x)
-    Left  e -> return $ Left e
+processJsonImports :: Options -> AST -> IO AST
+processJsonImports options ast@AST{ aimports } = do
+  let (jsonImports, madImports) = partition isJsonImport aimports
+  jsonAssignments <- generateJsonAssignments (optPathUtils options) jsonImports
+  return ast { aimports = madImports, aexps = jsonAssignments ++ aexps ast }
 
 
 escapeJSONString :: String -> String
@@ -152,33 +154,33 @@ generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Sou
   return $ assignment : next
 
 
-getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either CompilationError AST -> IO (Either CompilationError [Import])
-getImportsWithAbsolutePaths pathUtils ctxPath ast =
-  let astPath = case ast of
-        Right x ->
-          fromMaybe "" $ apath x
+-- getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either CompilationError AST -> IO (Either CompilationError [Import])
+-- getImportsWithAbsolutePaths pathUtils ctxPath ast =
+--   let astPath = case ast of
+--         Right x ->
+--           fromMaybe "" $ apath x
 
-        Left _ ->
-          ""
+--         Left _ ->
+--           ""
 
-  in  case ast of
-        Left  x ->
-          return $ Left x
+--   in  case ast of
+--         Left  x ->
+--           return $ Left x
 
-        Right ast' ->
-          sequence <$> mapM (updatePath astPath) (aimports ast')
+--         Right ast' ->
+--           sequence <$> mapM (updatePath astPath) (aimports ast')
 
- where
-  updatePath :: FilePath -> Import -> IO (Either CompilationError Import)
-  updatePath path imp = do
-    let importPath = (snd . getImportPath) imp
-    absolutePath <- resolveAbsoluteSrcPath pathUtils ctxPath importPath
-    case absolutePath of
-      Nothing -> do
-        return $ Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp) [])
+--  where
+--   updatePath :: FilePath -> Import -> IO (Either CompilationError Import)
+--   updatePath path imp = do
+--     let importPath = (snd . getImportPath) imp
+--     absolutePath <- resolveAbsoluteSrcPath pathUtils ctxPath importPath
+--     case absolutePath of
+--       Nothing -> do
+--         return $ Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp) [])
 
-      Just abs -> do
-        return $ Right (setImportAbsolutePath imp abs)
+--       Just abs -> do
+--         return $ Right (setImportAbsolutePath imp abs)
 
 
 
@@ -204,21 +206,26 @@ findAST table path = case M.lookup path table of
   Nothing -> Left $ CompilationError (ImportNotFound path) NoContext
 
 
-buildAST :: FilePath -> String -> Either CompilationError AST
-buildAST path code = case parse code of
-  Right ast ->
-    setPath ast path
+buildAST :: Options -> FilePath -> String -> IO (Either CompilationError AST)
+buildAST options path code = case parse code of
+  Right ast -> do
+    let astWithPath = setPath ast path
+    let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
+    astWithDictImport          <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
+    astWithAbsoluteImportPaths <- computeAbsoluteImportPaths (optRootPath options) astWithDictImport
+    astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths
+    return $ Right astWithJsonAssignments
 
-  Left e ->
+  Left e -> do
     let split = lines e
         line  = (read $ head split) :: Int
         col   = (read $ split !! 1) :: Int
         text  = unlines (tail . tail $ split)
-    in  Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
+    return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
 
 
-setPath :: AST -> FilePath -> Either e AST
-setPath ast path = Right ast { apath = Just path }
+setPath :: AST -> FilePath -> AST
+setPath ast path = ast { apath = Just path }
 
 
 

@@ -17,83 +17,84 @@ import           Error.Error
 import           Format.Format
 
 import Text.Show.Pretty
-import Test.Hspec.Discover (writeFile)
 
 
 
-parseASTsToFormat :: [FilePath] -> IO (Either CompilationError [(AST, [Comment])])
-parseASTsToFormat        []         = return $ Right []
-parseASTsToFormat  (fp : fps)   = do
-  canonicalEntrypoint <- Directory.canonicalizePath fp
-  code <- try $ readFile defaultPathUtils canonicalEntrypoint :: IO (Either IOException String)
 
-  let source = case code of
-          Right a -> Right a
-          Left  _ -> Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
+-- parseASTsToFormat :: [FilePath] -> IO (Either CompilationError [(AST, [Comment])])
+-- parseASTsToFormat        []         = return $ Right []
+-- parseASTsToFormat  (fp : fps)   = do
+--   canonicalEntrypoint <- Directory.canonicalizePath fp
+--   code <- try $ readFile defaultPathUtils canonicalEntrypoint :: IO (Either IOException String)
 
-  case source of
-      Left e ->
-        return $ Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
+--   let source = case code of
+--           Right a -> Right a
+--           Left  _ -> Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
 
-      Right code -> do
-        next <- parseASTsToFormat fps
-        let ast = buildAST canonicalEntrypoint code
-        let comments =
-              case parseComments code of
-                Right a ->
-                  Right a
+--   case source of
+--       Left e ->
+--         return $ Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
 
-                Left _ ->
-                  Left $ CompilationError Error NoContext
+--       Right code -> do
+--         next <- parseASTsToFormat fps
+--         ast <- buildAST defaultPathUtils canonicalEntrypoint code
+--         let comments =
+--               case parseComments code of
+--                 Right a ->
+--                   Right a
 
-        let astWithComments = (,) <$> ast <*> comments
+--                 Left _ ->
+--                   Left $ CompilationError Error NoContext
 
-        return $ (:) <$> astWithComments <*> next
+--         let astWithComments = (,) <$> ast <*> comments
 
-
-parseCodeToFormat :: String -> Either CompilationError [(AST, [Comment])]
-parseCodeToFormat code =
-  let ast = buildAST "" code
-      comments =
-        case parseComments code of
-          Right a ->
-            Right a
-
-          Left _ ->
-            Left $ CompilationError Error NoContext
-  in (\a cs -> [(a, cs)]) <$> ast <*> comments
+--         return $ (:) <$> astWithComments <*> next
 
 
-processAST :: Int -> Bool -> AST -> [Comment] -> IO String
-processAST width fix ast comments = do
-  let formatted = astToSource width ast comments
+-- parseCodeToFormat :: String -> IO (Either CompilationError [(AST, [Comment])])
+-- parseCodeToFormat code = do
+--   ast <- buildAST defaultPathUtils "" code
+--   let comments =
+--         case parseComments code of
+--           Right a ->
+--             Right a
 
-  case apath ast of
-    Just path -> do
-      if fix then
-        writeFile path formatted
-      else
-        putStr formatted
+--           Left _ ->
+--             Left $ CompilationError Error NoContext
+--   return $ (\a cs -> [(a, cs)]) <$> ast <*> comments
 
-    Nothing ->
-      return ()
 
-  return formatted
+-- processAST :: Int -> Bool -> AST -> [Comment] -> IO String
+-- processAST width fix ast comments = do
+--   let formatted = astToSource width ast comments
+
+--   case apath ast of
+--     Just path -> do
+--       if fix then
+--         writeFile path formatted
+--       else
+--         putStr formatted
+
+--     Nothing ->
+--       return ()
+
+--   return formatted
 
 runFormatter :: Int -> Bool -> FilePath -> String -> IO ()
 runFormatter width fix path code = do
-  astsWithComments <-
-    if code == "--EMPTY--" then do
-      filesToFormat <- getFilesToCompile False path
-      parseASTsToFormat filesToFormat
-    else
-      return $ parseCodeToFormat code
+  undefined
+  -- astsWithComments <-
+  --   if code == "--EMPTY--" then do
+  --     filesToFormat <- getFilesToCompile False path
+  --     parseASTsToFormat filesToFormat
+  --   else
+  --     parseCodeToFormat code
 
-  case astsWithComments of
-    Right asts' -> do
-      mapM_ (uncurry (processAST width fix)) asts'
-    Left err -> do
-      putStrLn $ ppShow err
-      exitFailure
+  -- case astsWithComments of
+  --   Right asts' -> do
+  --     mapM_ (uncurry (processAST width fix)) asts'
+  --   Left err -> do
+  --     putStrLn $ ppShow err
+  --     exitFailure
 
-  return ()
+  -- return ()

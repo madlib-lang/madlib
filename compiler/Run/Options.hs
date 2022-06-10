@@ -1,0 +1,12 @@
+module Run.Options where
+
+import Utils.PathUtils (PathUtils)
+import Run.Target (Target)
+
+
+data Options
+  = Options
+    { optPathUtils :: PathUtils
+    , optRootPath :: FilePath
+    , optTarget :: Target
+    }
