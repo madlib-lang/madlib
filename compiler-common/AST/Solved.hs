@@ -426,6 +426,9 @@ extractExportedExps AST { aexps, apath } = case apath of
   Just p ->
     M.fromList $ bundleExports <$> filter isExport aexps
 
+  Nothing ->
+    mempty
+
 bundleExports :: Exp -> (Name, Exp)
 bundleExports e'@(Typed _ _ exp) = case exp of
   Export (Typed _ _ (Assignment n _)) ->

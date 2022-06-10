@@ -98,10 +98,27 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
   populateTopLevelTypings nextEnv' es
 
 
+buildDefaultImportNames :: [String] -> Env -> [Can.Import] -> Infer [String]
+buildDefaultImportNames alreadyFound env imports = case imports of
+  [] ->
+    return alreadyFound
+
+  imp : next ->
+    case Can.getImportNamespace imp of
+      Just n ->
+        if n `elem` alreadyFound then
+          throwError $ CompilationError (NameAlreadyDefined n) (Context (envCurrentPath env) (Can.getArea imp) [])
+        else
+          buildDefaultImportNames (n : alreadyFound) env next
+
+      Nothing ->
+        buildDefaultImportNames alreadyFound env next
+
+
 -- TODO: split this ugly mess
 buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.apath = Nothing } = return priorEnv
-buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
+buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath, Can.aimports }
   = do
     let methods = foldr (\(Can.Canonical _ (Can.Interface _ _ _ mtds' _)) mtds -> mtds <> mtds') mempty ainterfaces
     env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _ _)) -> addInterface env id vars preds)
@@ -123,7 +140,11 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
 
     env''' <- addConstructors env'' constructors
 
-    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath }
+    -- We add these to get errors when redefining a default import
+    defaultImportNames <- buildDefaultImportNames [] env''' { envCurrentPath = apath } aimports
+    let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar "__defaultImport__") <$> defaultImportNames
+
+    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
 
 
 addConstructors :: Env -> [Can.Constructor] -> Infer Env

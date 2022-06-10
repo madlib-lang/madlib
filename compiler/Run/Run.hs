@@ -57,7 +57,6 @@ runRunPackage package args =
                                                 , compileTarget        = TNode
                                                 , compileJson          = False
                                                 , compileTestFilesOnly = False
-                                                , noCache              = False
                                                 , compileWatch         = False
                                                 }
 
@@ -80,7 +79,6 @@ runSingleModule input args = do
                                , compileTarget        = TNode
                                , compileJson          = False
                                , compileTestFilesOnly = False
-                               , noCache              = False
                                , compileWatch         = False
                                }
 

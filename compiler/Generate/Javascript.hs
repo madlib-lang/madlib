@@ -1170,8 +1170,6 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
               internalsPath
           )
           ast
-    -- createDirectoryIfMissing True $ takeDirectory computedOutputPath
-    -- writeFile computedOutputPath moduleContent
 
     let rest = List.dropWhile (/= path) pathsToBuild
     let total = List.length pathsToBuild
