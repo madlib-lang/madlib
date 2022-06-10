@@ -75,7 +75,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path
-    ast <- liftIO $ buildAST options path source
+    ast    <- liftIO $ buildAST options path source
     case ast of
       Right ast -> do
         return (ast, (mempty, mempty))
