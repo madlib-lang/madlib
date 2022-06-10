@@ -1,16 +1,26 @@
-Left
-  (CompilationError
-     (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 0 1 1) (Loc 33 6 2)
-       , ctxBacktrace =
-           [ BTExp
-               (Canonical
-                  (Area (Loc 0 1 1) (Loc 33 6 2))
-                  (If
-                     (Canonical (Area (Loc 4 1 5) (Loc 8 1 9)) (LBool "true"))
-                     (Canonical (Area (Loc 14 2 3) (Loc 18 2 7)) (LStr "\"OK\""))
-                     (Canonical (Area (Loc 30 5 3) (Loc 31 5 4)) (LNum "1"))))
-           ]
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 33 6 2)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 0 1 1) (Loc 33 6 2))
+                   (If
+                      (Canonical (Area (Loc 4 1 5) (Loc 8 1 9)) (LBool "true"))
+                      (Canonical (Area (Loc 14 2 3) (Loc 18 2 7)) (LStr "\"OK\""))
+                      (Canonical (Area (Loc 30 5 3) (Loc 31 5 4)) (LNum "1"))))
+            ]
+        }
+  ]
+)

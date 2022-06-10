@@ -11,11 +11,13 @@ import           System.IO                      ( openFile
                                                 , hGetContents
                                                 )
 import           GHC.IO.Encoding                ( utf8 )
+import           System.FilePath (normalise)
 
 data PathUtils
   = PathUtils
       { readFile :: FilePath -> IO String
       , canonicalizePath :: FilePath -> IO FilePath
+      , normalisePath :: FilePath -> FilePath
       , doesFileExist :: FilePath -> IO Bool
       , byteStringReadFile :: FilePath -> IO B.ByteString
       , getExecutablePath :: IO FilePath
@@ -30,6 +32,7 @@ rf fileName = do
 defaultPathUtils :: PathUtils
 defaultPathUtils = PathUtils { readFile           = rf
                              , canonicalizePath   = Dir.canonicalizePath
+                             , normalisePath      = normalise
                              , doesFileExist      = Dir.doesFileExist
                              , byteStringReadFile = B.readFile
                              , getExecutablePath  = E.getExecutablePath

@@ -1,11 +1,21 @@
-Left
-  (CompilationError
-     (UnboundVariable "x")
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
-       , ctxBacktrace =
-           [ BTExp (Canonical (Area (Loc 0 1 1) (Loc 1 1 2)) (Var "x"))
-           , BTExp (Canonical (Area (Loc 0 1 1) (Loc 1 1 2)) (Var "x"))
-           ]
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (UnboundVariable "x")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
+        , ctxBacktrace =
+            [ BTExp (Canonical (Area (Loc 0 1 1) (Loc 1 1 2)) (Var "x"))
+            , BTExp (Canonical (Area (Loc 0 1 1) (Loc 1 1 2)) (Var "x"))
+            ]
+        }
+  ]
+)

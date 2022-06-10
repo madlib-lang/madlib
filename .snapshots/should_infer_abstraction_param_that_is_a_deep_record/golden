@@ -1,5 +1,4 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
@@ -21,21 +20,21 @@ Right
                                                      [ ( "d"
                                                        , TRecord
                                                            (fromList
-                                                              [ ( "e" , TVar (TV "k62" Star) ) ])
-                                                           (Just (TVar (TV "m64" Star)))
+                                                              [ ( "e" , TVar (TV "e30" Star) ) ])
+                                                           (Just (TVar (TV "g32" Star)))
                                                        )
                                                      ])
-                                                  (Just (TVar (TV "p67" Star)))
+                                                  (Just (TVar (TV "j35" Star)))
                                               )
                                             ])
-                                         (Just (TVar (TV "s70" Star)))
+                                         (Just (TVar (TV "m38" Star)))
                                      )
                                    ])
-                                (Just (TVar (TV "v73" Star)))
+                                (Just (TVar (TV "p41" Star)))
                             )
                           ])
-                       (Just (TVar (TV "y76" Star)))))
-                 (TVar (TV "k62" Star)))
+                       (Just (TVar (TV "s44" Star)))))
+                 (TVar (TV "e30" Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
@@ -58,22 +57,22 @@ Right
                                                            [ ( "d"
                                                              , TRecord
                                                                  (fromList
-                                                                    [ ( "e" , TVar (TV "k62" Star) )
+                                                                    [ ( "e" , TVar (TV "e30" Star) )
                                                                     ])
-                                                                 (Just (TVar (TV "m64" Star)))
+                                                                 (Just (TVar (TV "g32" Star)))
                                                              )
                                                            ])
-                                                        (Just (TVar (TV "p67" Star)))
+                                                        (Just (TVar (TV "j35" Star)))
                                                     )
                                                   ])
-                                               (Just (TVar (TV "s70" Star)))
+                                               (Just (TVar (TV "m38" Star)))
                                            )
                                          ])
-                                      (Just (TVar (TV "v73" Star)))
+                                      (Just (TVar (TV "p41" Star)))
                                   )
                                 ])
-                             (Just (TVar (TV "y76" Star)))))
-                       (TVar (TV "k62" Star)))
+                             (Just (TVar (TV "s44" Star)))))
+                       (TVar (TV "e30" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
                      (Typed
@@ -92,32 +91,32 @@ Right
                                                            [ ( "d"
                                                              , TRecord
                                                                  (fromList
-                                                                    [ ( "e" , TVar (TV "k62" Star) )
+                                                                    [ ( "e" , TVar (TV "e30" Star) )
                                                                     ])
-                                                                 (Just (TVar (TV "m64" Star)))
+                                                                 (Just (TVar (TV "g32" Star)))
                                                              )
                                                            ])
-                                                        (Just (TVar (TV "p67" Star)))
+                                                        (Just (TVar (TV "j35" Star)))
                                                     )
                                                   ])
-                                               (Just (TVar (TV "s70" Star)))
+                                               (Just (TVar (TV "m38" Star)))
                                            )
                                          ])
-                                      (Just (TVar (TV "v73" Star)))
+                                      (Just (TVar (TV "p41" Star)))
                                   )
                                 ])
-                             (Just (TVar (TV "y76" Star))))
+                             (Just (TVar (TV "s44" Star))))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
                      [ Typed
-                         ([] :=> TVar (TV "k62" Star))
+                         ([] :=> TVar (TV "e30" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (Access
                             (Typed
                                ([] :=>
                                   TRecord
-                                    (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
-                                    (Just (TVar (TV "m64" Star))))
+                                    (fromList [ ( "e" , TVar (TV "e30" Star) ) ])
+                                    (Just (TVar (TV "g32" Star))))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
                                   (Typed
@@ -126,11 +125,11 @@ Right
                                           (fromList
                                              [ ( "d"
                                                , TRecord
-                                                   (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
-                                                   (Just (TVar (TV "m64" Star)))
+                                                   (fromList [ ( "e" , TVar (TV "e30" Star) ) ])
+                                                   (Just (TVar (TV "g32" Star)))
                                                )
                                              ])
-                                          (Just (TVar (TV "p67" Star))))
+                                          (Just (TVar (TV "j35" Star))))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
                                         (Typed
@@ -144,16 +143,16 @@ Right
                                                               , TRecord
                                                                   (fromList
                                                                      [ ( "e"
-                                                                       , TVar (TV "k62" Star)
+                                                                       , TVar (TV "e30" Star)
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "m64" Star)))
+                                                                  (Just (TVar (TV "g32" Star)))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "p67" Star)))
+                                                         (Just (TVar (TV "j35" Star)))
                                                      )
                                                    ])
-                                                (Just (TVar (TV "s70" Star))))
+                                                (Just (TVar (TV "m38" Star))))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
                                               (Typed
@@ -172,25 +171,25 @@ Right
                                                                                     [ ( "e"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "k62"
+                                                                                             "e30"
                                                                                              Star)
                                                                                       )
                                                                                     ])
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "m64"
+                                                                                          "g32"
                                                                                           Star)))
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "p67" Star)))
+                                                                           (TVar (TV "j35" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "s70" Star)))
+                                                               (Just (TVar (TV "m38" Star)))
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "v73" Star))))
+                                                      (Just (TVar (TV "p41" Star))))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
                                                     (Typed
@@ -212,34 +211,34 @@ Right
                                                                                                    [ ( "e"
                                                                                                      , TVar
                                                                                                          (TV
-                                                                                                            "k62"
+                                                                                                            "e30"
                                                                                                             Star)
                                                                                                      )
                                                                                                    ])
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "m64"
+                                                                                                         "g32"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "p67"
+                                                                                                "j35"
                                                                                                 Star)))
                                                                                    )
                                                                                  ])
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "s70" Star)))
+                                                                                       "m38" Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "v73" Star)))
+                                                                     (Just (TVar (TV "p41" Star)))
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "y76" Star))))
+                                                            (Just (TVar (TV "s44" Star))))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x" False))
                                                     (Typed
@@ -268,37 +267,37 @@ Right
                                                                                                          [ ( "e"
                                                                                                            , TVar
                                                                                                                (TV
-                                                                                                                  "k62"
+                                                                                                                  "e30"
                                                                                                                   Star)
                                                                                                            )
                                                                                                          ])
                                                                                                       (Just
                                                                                                          (TVar
                                                                                                             (TV
-                                                                                                               "m64"
+                                                                                                               "g32"
                                                                                                                Star)))
                                                                                                   )
                                                                                                 ])
                                                                                              (Just
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "p67"
+                                                                                                      "j35"
                                                                                                       Star)))
                                                                                          )
                                                                                        ])
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "s70"
+                                                                                             "m38"
                                                                                              Star)))
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "v73" Star)))
+                                                                                 (TV "p41" Star)))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "y76" Star)))))
+                                                                  (Just (TVar (TV "s44" Star)))))
                                                             (TRecord
                                                                (fromList
                                                                   [ ( "b"
@@ -313,29 +312,29 @@ Right
                                                                                              [ ( "e"
                                                                                                , TVar
                                                                                                    (TV
-                                                                                                      "k62"
+                                                                                                      "e30"
                                                                                                       Star)
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "m64"
+                                                                                                   "g32"
                                                                                                    Star)))
                                                                                       )
                                                                                     ])
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "p67"
+                                                                                          "j35"
                                                                                           Star)))
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "s70" Star)))
+                                                                           (TVar (TV "m38" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "v73" Star)))))
+                                                               (Just (TVar (TV "p41" Star)))))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a" False))))
                                               (Typed
@@ -359,27 +358,27 @@ Right
                                                                                           [ ( "e"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   "k62"
+                                                                                                   "e30"
                                                                                                    Star)
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "m64"
+                                                                                                "g32"
                                                                                                 Star)))
                                                                                    )
                                                                                  ])
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "p67" Star)))
+                                                                                       "j35" Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "s70" Star)))
+                                                                     (Just (TVar (TV "m38" Star)))
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "v73" Star)))))
+                                                            (Just (TVar (TV "p41" Star)))))
                                                       (TRecord
                                                          (fromList
                                                             [ ( "c"
@@ -390,18 +389,18 @@ Right
                                                                            (fromList
                                                                               [ ( "e"
                                                                                 , TVar
-                                                                                    (TV "k62" Star)
+                                                                                    (TV "e30" Star)
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "m64" Star)))
+                                                                                 (TV "g32" Star)))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "p67" Star)))
+                                                                  (Just (TVar (TV "j35" Star)))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "s70" Star)))))
+                                                         (Just (TVar (TV "m38" Star)))))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b" False))))
                                         (Typed
@@ -420,27 +419,27 @@ Right
                                                                     , TRecord
                                                                         (fromList
                                                                            [ ( "e"
-                                                                             , TVar (TV "k62" Star)
+                                                                             , TVar (TV "e30" Star)
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "m64" Star)))
+                                                                           (TVar (TV "g32" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "p67" Star)))
+                                                               (Just (TVar (TV "j35" Star)))
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "s70" Star)))))
+                                                      (Just (TVar (TV "m38" Star)))))
                                                 (TRecord
                                                    (fromList
                                                       [ ( "d"
                                                         , TRecord
                                                             (fromList
-                                                               [ ( "e" , TVar (TV "k62" Star) ) ])
-                                                            (Just (TVar (TV "m64" Star)))
+                                                               [ ( "e" , TVar (TV "e30" Star) ) ])
+                                                            (Just (TVar (TV "g32" Star)))
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "p67" Star)))))
+                                                   (Just (TVar (TV "j35" Star)))))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c" False))))
                                   (Typed
@@ -454,14 +453,14 @@ Right
                                                    [ ( "d"
                                                      , TRecord
                                                          (fromList
-                                                            [ ( "e" , TVar (TV "k62" Star) ) ])
-                                                         (Just (TVar (TV "m64" Star)))
+                                                            [ ( "e" , TVar (TV "e30" Star) ) ])
+                                                         (Just (TVar (TV "g32" Star)))
                                                      )
                                                    ])
-                                                (Just (TVar (TV "p67" Star)))))
+                                                (Just (TVar (TV "j35" Star)))))
                                           (TRecord
-                                             (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
-                                             (Just (TVar (TV "m64" Star)))))
+                                             (fromList [ ( "e" , TVar (TV "e30" Star) ) ])
+                                             (Just (TVar (TV "g32" Star)))))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d" False))))
                             (Typed
@@ -470,9 +469,9 @@ Right
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
-                                          (Just (TVar (TV "m64" Star)))))
-                                    (TVar (TV "k62" Star)))
+                                          (fromList [ ( "e" , TVar (TV "e30" Star) ) ])
+                                          (Just (TVar (TV "g32" Star)))))
+                                    (TVar (TV "e30" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e" False)))
                      ])))
@@ -480,5 +479,8 @@ Right
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)

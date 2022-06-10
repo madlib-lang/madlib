@@ -1,5 +1,4 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
@@ -307,8 +306,8 @@ Right
                                   (TApp
                                      (TApp
                                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TVar (TV "i8" Star)))
-                                     (TVar (TV "j9" Star))))
+                                        (TVar (TV "q16" Star)))
+                                     (TVar (TV "r17" Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 231 14 3) (Loc 300 14 72))
                           (Assignment
@@ -322,12 +321,12 @@ Right
                                            (TApp
                                               (TCon
                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "i8" Star)))
-                                           (TVar (TV "j9" Star))))
+                                              (TVar (TV "q16" Star)))
+                                           (TVar (TV "r17" Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 231 14 3) (Loc 300 14 72))
                                 (Placeholder
-                                   ( ClassRef "Show" [] False True , [ TVar (TV "j9" Star) ] )
+                                   ( ClassRef "Show" [] False True , [ TVar (TV "r17" Star) ] )
                                    (Typed
                                       ([] :=>
                                          TApp
@@ -339,15 +338,17 @@ Right
                                                     (TCon
                                                        (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
-                                                    (TVar (TV "i8" Star)))
-                                                 (TVar (TV "j9" Star))))
+                                                    (TVar (TV "q16" Star)))
+                                                 (TVar (TV "r17" Star))))
                                            (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 231 14 3) (Loc 300 14 72))
                                       (Placeholder
-                                         ( ClassRef "Show" [] False True , [ TVar (TV "i8" Star) ] )
+                                         ( ClassRef "Show" [] False True
+                                         , [ TVar (TV "q16" Star) ]
+                                         )
                                          (Typed
-                                            ([ IsIn "Show" [ TVar (TV "i8" Star) ] Nothing
-                                             , IsIn "Show" [ TVar (TV "j9" Star) ] Nothing
+                                            ([ IsIn "Show" [ TVar (TV "q16" Star) ] Nothing
+                                             , IsIn "Show" [ TVar (TV "r17" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -359,19 +360,19 @@ Right
                                                           (TCon
                                                              (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
-                                                          (TVar (TV "i8" Star)))
-                                                       (TVar (TV "j9" Star))))
+                                                          (TVar (TV "q16" Star)))
+                                                       (TVar (TV "r17" Star))))
                                                  (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 238 14 10) (Loc 300 14 72))
                                             (Abs
                                                (Typed
                                                   ([ IsIn
                                                        "Show"
-                                                       [ TVar (TV "i8" Star) ]
+                                                       [ TVar (TV "q16" Star) ]
                                                        (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
                                                    , IsIn
                                                        "Show"
-                                                       [ TVar (TV "j9" Star) ]
+                                                       [ TVar (TV "r17" Star) ]
                                                        (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
                                                    ] :=>
                                                      TApp
@@ -379,19 +380,19 @@ Right
                                                           (TCon
                                                              (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
-                                                          (TVar (TV "i8" Star)))
-                                                       (TVar (TV "j9" Star)))
+                                                          (TVar (TV "q16" Star)))
+                                                       (TVar (TV "r17" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__x__")
                                                [ Typed
                                                    ([ IsIn
                                                         "Show"
-                                                        [ TVar (TV "i8" Star) ]
+                                                        [ TVar (TV "q16" Star) ]
                                                         (Just
                                                            (Area (Loc 265 14 37) (Loc 269 14 41)))
                                                     , IsIn
                                                         "Show"
-                                                        [ TVar (TV "j9" Star) ]
+                                                        [ TVar (TV "r17" Star) ]
                                                         (Just
                                                            (Area (Loc 284 14 56) (Loc 288 14 60)))
                                                     ] :=>
@@ -407,21 +408,21 @@ Right
                                                                        "(,)"
                                                                        (Kfun Star (Kfun Star Star)))
                                                                     "prelude")
-                                                                 (TVar (TV "i8" Star)))
-                                                              (TVar (TV "j9" Star)))
+                                                                 (TVar (TV "q16" Star)))
+                                                              (TVar (TV "r17" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Var "__x__" False))
                                                       [ Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV "i8" Star) ]
+                                                               [ TVar (TV "q16" Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 265 14 37)
                                                                      (Loc 269 14 41)))
                                                            , IsIn
                                                                "Show"
-                                                               [ TVar (TV "j9" Star) ]
+                                                               [ TVar (TV "r17" Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 284 14 56)
@@ -444,8 +445,8 @@ Right
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "i8" Star)))
-                                                                     (TVar (TV "j9" Star))))
+                                                                        (TVar (TV "q16" Star)))
+                                                                     (TVar (TV "r17" Star))))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 246 14 18) (Loc 298 14 70))
                                                           (Is
@@ -460,21 +461,21 @@ Right
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "i8" Star)))
-                                                                     (TVar (TV "j9" Star)))
+                                                                        (TVar (TV "q16" Star)))
+                                                                     (TVar (TV "r17" Star)))
                                                                 (Area
                                                                    (Loc 246 14 18) (Loc 253 14 25))
                                                                 (PTuple
                                                                    [ Typed
                                                                        ([ IsIn
                                                                             "Show"
-                                                                            [ TVar (TV "i8" Star) ]
+                                                                            [ TVar (TV "q16" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 265 14 37)
                                                                                   (Loc 269 14 41)))
                                                                         ] :=>
-                                                                          TVar (TV "i8" Star))
+                                                                          TVar (TV "q16" Star))
                                                                        (Area
                                                                           (Loc 248 14 20)
                                                                           (Loc 249 14 21))
@@ -482,13 +483,13 @@ Right
                                                                    , Typed
                                                                        ([ IsIn
                                                                             "Show"
-                                                                            [ TVar (TV "j9" Star) ]
+                                                                            [ TVar (TV "r17" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 284 14 56)
                                                                                   (Loc 288 14 60)))
                                                                         ] :=>
-                                                                          TVar (TV "j9" Star))
+                                                                          TVar (TV "r17" Star))
                                                                        (Area
                                                                           (Loc 251 14 23)
                                                                           (Loc 252 14 24))
@@ -497,14 +498,14 @@ Right
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Show"
-                                                                     [ TVar (TV "i8" Star) ]
+                                                                     [ TVar (TV "q16" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 265 14 37)
                                                                            (Loc 269 14 41)))
                                                                  , IsIn
                                                                      "Show"
-                                                                     [ TVar (TV "j9" Star) ]
+                                                                     [ TVar (TV "r17" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 284 14 56)
@@ -594,14 +595,14 @@ Right
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Show"
-                                                                           [ TVar (TV "i8" Star) ]
+                                                                           [ TVar (TV "q16" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 265 14 37)
                                                                                  (Loc 269 14 41)))
                                                                        , IsIn
                                                                            "Show"
-                                                                           [ TVar (TV "j9" Star) ]
+                                                                           [ TVar (TV "r17" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 284 14 56)
@@ -618,7 +619,7 @@ Right
                                                                             ([ IsIn
                                                                                  "Show"
                                                                                  [ TVar
-                                                                                     (TV "i8" Star)
+                                                                                     (TV "q16" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -703,7 +704,7 @@ Right
                                                                                        "Show"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              "i8"
+                                                                                              "q16"
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
@@ -732,7 +733,7 @@ Right
                                                                                              "Show"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "i8"
+                                                                                                    "q16"
                                                                                                     Star)
                                                                                              ]
                                                                                              Nothing
@@ -750,7 +751,7 @@ Right
                                                                                                    "prelude")
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "i8"
+                                                                                                      "q16"
                                                                                                       Star)))
                                                                                              (TCon
                                                                                                 (TC
@@ -773,7 +774,7 @@ Right
                                                                                                True
                                                                                            , [ TVar
                                                                                                  (TV
-                                                                                                    "i8"
+                                                                                                    "q16"
                                                                                                     Star)
                                                                                              ]
                                                                                            )
@@ -782,7 +783,7 @@ Right
                                                                                                    "Show"
                                                                                                    [ TVar
                                                                                                        (TV
-                                                                                                          "i8"
+                                                                                                          "q16"
                                                                                                           Star)
                                                                                                    ]
                                                                                                    Nothing
@@ -800,7 +801,7 @@ Right
                                                                                                          "prelude")
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "i8"
+                                                                                                            "q16"
                                                                                                             Star)))
                                                                                                    (TCon
                                                                                                       (TC
@@ -824,7 +825,7 @@ Right
                                                                                              "Show"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "i8"
+                                                                                                    "q16"
                                                                                                     Star)
                                                                                              ]
                                                                                              (Just
@@ -840,7 +841,7 @@ Right
                                                                                          ] :=>
                                                                                            TVar
                                                                                              (TV
-                                                                                                "i8"
+                                                                                                "q16"
                                                                                                 Star))
                                                                                         (Area
                                                                                            (Loc
@@ -860,7 +861,7 @@ Right
                                                                             ([ IsIn
                                                                                  "Show"
                                                                                  [ TVar
-                                                                                     (TV "i8" Star)
+                                                                                     (TV "q16" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -873,7 +874,7 @@ Right
                                                                              , IsIn
                                                                                  "Show"
                                                                                  [ TVar
-                                                                                     (TV "j9" Star)
+                                                                                     (TV "r17" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -994,7 +995,7 @@ Right
                                                                                        "Show"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              "j9"
+                                                                                              "r17"
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
@@ -1023,7 +1024,7 @@ Right
                                                                                              "Show"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "j9"
+                                                                                                    "r17"
                                                                                                     Star)
                                                                                              ]
                                                                                              (Just
@@ -1124,7 +1125,7 @@ Right
                                                                                                    "Show"
                                                                                                    [ TVar
                                                                                                        (TV
-                                                                                                          "j9"
+                                                                                                          "r17"
                                                                                                           Star)
                                                                                                    ]
                                                                                                    (Just
@@ -1158,7 +1159,7 @@ Right
                                                                                                          "Show"
                                                                                                          [ TVar
                                                                                                              (TV
-                                                                                                                "j9"
+                                                                                                                "r17"
                                                                                                                 Star)
                                                                                                          ]
                                                                                                          Nothing
@@ -1176,7 +1177,7 @@ Right
                                                                                                                "prelude")
                                                                                                             (TVar
                                                                                                                (TV
-                                                                                                                  "j9"
+                                                                                                                  "r17"
                                                                                                                   Star)))
                                                                                                          (TCon
                                                                                                             (TC
@@ -1199,7 +1200,7 @@ Right
                                                                                                            True
                                                                                                        , [ TVar
                                                                                                              (TV
-                                                                                                                "j9"
+                                                                                                                "r17"
                                                                                                                 Star)
                                                                                                          ]
                                                                                                        )
@@ -1208,7 +1209,7 @@ Right
                                                                                                                "Show"
                                                                                                                [ TVar
                                                                                                                    (TV
-                                                                                                                      "j9"
+                                                                                                                      "r17"
                                                                                                                       Star)
                                                                                                                ]
                                                                                                                Nothing
@@ -1226,7 +1227,7 @@ Right
                                                                                                                      "prelude")
                                                                                                                   (TVar
                                                                                                                      (TV
-                                                                                                                        "j9"
+                                                                                                                        "r17"
                                                                                                                         Star)))
                                                                                                                (TCon
                                                                                                                   (TC
@@ -1250,7 +1251,7 @@ Right
                                                                                                          "Show"
                                                                                                          [ TVar
                                                                                                              (TV
-                                                                                                                "j9"
+                                                                                                                "r17"
                                                                                                                 Star)
                                                                                                          ]
                                                                                                          (Just
@@ -1266,7 +1267,7 @@ Right
                                                                                                      ] :=>
                                                                                                        TVar
                                                                                                          (TV
-                                                                                                            "j9"
+                                                                                                            "r17"
                                                                                                             Star))
                                                                                                     (Area
                                                                                                        (Loc
@@ -1287,7 +1288,7 @@ Right
                                                                                              "Show"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "j9"
+                                                                                                    "r17"
                                                                                                     Star)
                                                                                              ]
                                                                                              (Just
@@ -1341,5 +1342,8 @@ Right
                     )
                   ]))
         ]
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)
