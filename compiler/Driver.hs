@@ -38,6 +38,10 @@ import GHC.IO.Handle.FD (stderr)
 import Control.Arrow (first)
 import qualified Data.Set as Set
 import qualified Data.List as List
+import Text.Show.Pretty (ppShow)
+import qualified Data.Map as Map
+import Run.Target (Target(TNode, TLLVM))
+import Utils.PathUtils (defaultPathUtils)
 
 
 
@@ -83,7 +87,7 @@ data Prune
 -- runIncrementalTask state changedFiles sourceDirectories files prettyError prune task =
 runIncrementalTask ::
   State CompilationError ->
-  Set.Set FilePath ->
+  [FilePath] ->
   Prune ->
   Task Query a ->
   IO (a, [CompilationError])
@@ -96,21 +100,21 @@ runIncrementalTask state changedFiles prune task =
 
       -- TODO: Add query to read all files
       case DHashMap.lookup (Query.ModulePathsToBuild "") started of
-        Just (Done inputFiles) -> do
+        _ -> do
           -- TODO find a nicer way to do this
-          let builtinFile = Path.computeLLVMTargetPath "" "" "builtin/Builtin.vix"
+          -- let builtinFile = Path.computeLLVMTargetPath "" "" "builtin/Builtin.vix"
           -- if inputFiles /= files then do
           --   atomicWriteIORef (_reverseDependenciesVar state) mempty
           --   atomicWriteIORef (_startedVar state) mempty
           --   atomicWriteIORef (_hashesVar state) mempty
           -- else do
           do
-            changedFiles' <- flip filterM (Set.toList changedFiles) $ \file ->
-              pure $ case DHashMap.lookup (Query.File file) started of
-                -- Just (Done text) ->
-                --   Just text /= HashMap.lookup file files
-                _ ->
-                  True
+            -- changedFiles' <- flip filterM (Set.toList changedFiles) $ \file ->
+            --   pure $ case DHashMap.lookup (Query.File file) started of
+            --     Just (Done text) ->
+            --       Just text /= HashMap.lookup file files
+            --     _ ->
+            --       True
             -- Text.hPutStrLn stderr $ "Driver changed files " <> show changedFiles'
             let (keysToInvalidate, reverseDependencies') =
                   List.foldl'
@@ -118,7 +122,7 @@ runIncrementalTask state changedFiles prune task =
                         first (<> keysToInvalidate_) $ reachableReverseDependencies (Query.File file) reverseDependencies_
                     )
                     (mempty, reverseDependencies)
-                    changedFiles'
+                    changedFiles
             let started' = DHashMap.difference started keysToInvalidate
 
                 hashes' = DHashMap.difference hashes keysToInvalidate
@@ -133,12 +137,12 @@ runIncrementalTask state changedFiles prune task =
           atomicWriteIORef (_hashesVar state) mempty
 
     threadDepsVar <- newIORef mempty
-    let readSourceFile_ file
-          -- | Just text <- HashMap.lookup file files =
-          --   return text
-          | otherwise =
-            readFile file `catch` \(_ :: IOException) -> pure mempty
-
+    -- let readSourceFile_ file
+    --       -- | Just text <- HashMap.lookup file files =
+    --       --   return text
+    --       | otherwise =
+    --         readFile file `catch` \(_ :: IOException) -> pure mempty
+    let
         traceFetch_ ::
           GenRules (Writer TaskKind Query) Query ->
           GenRules (Writer TaskKind Query) Query
@@ -175,12 +179,10 @@ runIncrementalTask state changedFiles prune task =
                           (,()) . DHashMap.insert query h
                         pure h
                 )
-                $ traceFetch_ $
-                  -- writer writeErrors $
-                  writer (\_ _ -> pure ()) $
-                    Rules.rules Options{}
+                $ traceFetch_
+                $ writer writeErrors
+                $ Rules.rules Options { optEntrypoint = head changedFiles, optTarget = TNode, optRootPath = "/Users/arnaudboeglin/Code/madlib/", optOutputPath = "", optOptimized = False, optPathUtils = defaultPathUtils }
 
-    -- result <- Rock.runMemoisedTask (_startedVar state) rules task
     result <- Rock.runTask rules task
     started <- readIORef $ _startedVar state
     errorsMap <- case prune of
@@ -192,6 +194,7 @@ runIncrementalTask state changedFiles prune task =
         atomicModifyIORef' (_errorsVar state) $ \errors -> do
           let errors' = DHashMap.intersectionWithKey (\_ _ e -> e) started errors
           (errors', errors')
+
     let errors = do
           (_ :=> Const errs) <- DHashMap.toList errorsMap
           errs

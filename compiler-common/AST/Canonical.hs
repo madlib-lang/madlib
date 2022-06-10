@@ -173,6 +173,10 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
+emptyAST :: AST
+emptyAST = AST { aimports = [], aexps = [], atypedecls = [], ainstances = [], ainterfaces = [], apath = Nothing }
+
+
 getImportNames :: Import -> [Canonical Name]
 getImportNames imp = case imp of
   Canonical _ (NamedImport names _ _) ->
