@@ -104,8 +104,11 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.TypeExport name -> do
       pushTypeAccess name
       case Map.lookup name (Env.envTypeDecls env) of
-        Just found -> return $ Can.Canonical area (Can.TypeExport name)
-        Nothing    -> throwError $ CompilationError (UnboundType name) (Context (Env.envCurrentPath env) area [])
+        Just found ->
+          return $ Can.Canonical area (Can.TypeExport name)
+
+        Nothing ->
+          throwError $ CompilationError (UnboundType name) (Context (Env.envCurrentPath env) area [])
 
       return $ Can.Canonical area (Can.TypeExport name)
 

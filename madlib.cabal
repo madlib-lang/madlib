@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2e36f0914bc081f4faa5b3967fdecb469f99e6ccd01b96ec52dfb829a22f521d
+-- hash: d15d4b74af96e9efbd128e9c55b5e9fe059d7210a990ac4337a3870079d3e21c
 
 name:           madlib
 version:        0.12.2
@@ -35,7 +35,9 @@ library
       Canonicalize.ADT
       Canonicalize.AST
       Canonicalize.Canonicalize
+      Canonicalize.CanonicalM
       Canonicalize.Derive
+      Canonicalize.EnvUtil
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
@@ -160,7 +162,6 @@ library compiler-common
       AST.Core
       AST.Solved
       AST.Source
-      Canonicalize.CanonicalM
       Canonicalize.Env
       Error.Backtrace
       Error.Context

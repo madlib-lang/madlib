@@ -1,40 +1,57 @@
 {-# language FlexibleInstances #-}
 {-# language GADTs #-}
 {-# language TemplateHaskell #-}
-{-# language LambdaCase #-}
 {-# language TupleSections #-}
 module Driver.Query where
 
 import qualified Rock
 import qualified AST.Source                 as Src
 import qualified AST.Canonical              as Can
-import qualified Canonicalize.Env           as Can
+import qualified Canonicalize.Env           as CanEnv
 import qualified AST.Solved                 as Slv
 -- import           Parse.Madlib.AST
 import           Error.Error (CompilationError(CompilationError))
 import           Data.GADT.Compare.TH (deriveGEq)
 import           Data.Some
 import           Data.Hashable
+import           Infer.Type
 
 data Query a where
+  -- Parsing
   File :: FilePath -> Query String
-  ParsedAST :: FilePath -> FilePath -> Query Src.AST
-  CanonicalizedAST :: FilePath -> Query (Can.AST, Can.Env)
+  ParsedAST :: FilePath -> Query Src.AST
+
+  -- Canonicalization
+  CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env)
+  CanonicalizedInterface :: FilePath -> String -> Query CanEnv.Interface
+  ForeignType :: FilePath -> FilePath -> Query Type
+
+  -- Type checking
+  SolvedTable :: [FilePath] -> Query Slv.Table
   -- SolvedAST :: FilePath -> Query Slv.AST
   -- BuiltTarget :: FilePath -> Query Slv.AST
 
 deriveGEq ''Query
 
 instance Hashable (Query a) where
-  hashWithSalt salt = \case
+  hashWithSalt salt query = case query of
     File path ->
       hashWithSalt salt (path, 0 :: Int)
 
-    ParsedAST rootPath path ->
-      hashWithSalt salt (rootPath <> ":" <> path, 1 :: Int)
+    ParsedAST path ->
+      hashWithSalt salt (path, 1 :: Int)
 
-    CanonicalizedAST path ->
+    CanonicalizedASTWithEnv path ->
       hashWithSalt salt (path, 2 :: Int)
+
+    CanonicalizedInterface _ name ->
+      hashWithSalt salt (name, 3 :: Int)
+
+    ForeignType modulePath typeName ->
+      hashWithSalt salt (modulePath <> "." <> typeName, 4 :: Int)
+
+    SolvedTable modulePaths ->
+      hashWithSalt salt (show modulePaths, 5 :: Int)
 
 instance Hashable (Some Query) where
   hashWithSalt salt (Some query) =
