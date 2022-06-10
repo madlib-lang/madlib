@@ -88,7 +88,13 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
     return found
 
   Nothing -> do
-    Rock.fetch $ Query.SolvedInterface (envCurrentPath env) name
+    res <- Rock.fetch $ Query.SolvedInterface (envCurrentPath env) name
+    case res of
+      Just found ->
+        return found
+
+      Nothing ->
+        throwError $ CompilationError (InterfaceNotExisting name) NoContext
 
 
 

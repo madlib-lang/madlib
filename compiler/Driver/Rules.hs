@@ -87,7 +87,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (c, (warnings, mempty))
 
       Left err ->
-        return ((emptyCanAST, CanEnv.initialEnv), (warnings, [err]))
+        return ((Can.emptyAST, CanEnv.initialEnv), (warnings, [err]))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
@@ -125,7 +125,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     interfac <- findSlvInterface name importedModulePaths
     case interfac of
       Just found ->
-        return (found, (mempty, mempty))
+        return (Just found, (mempty, mempty))
+
+      Nothing ->
+        return (Nothing, (mempty, mempty))
 
   ForeignScheme modulePath name -> nonInput $ do
     (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv modulePath
@@ -179,9 +182,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
 emptySrcAST :: Src.AST
 emptySrcAST = Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainstances = [], Src.ainterfaces = [], Src.apath = Nothing }
-
-emptyCanAST :: Can.AST
-emptyCanAST = Can.AST { Can.aimports = [], Can.aexps = [], Can.atypedecls = [], Can.ainstances = [], Can.ainterfaces = [], Can.apath = Nothing }
 
 emptySlvAST :: Slv.AST
 emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], Slv.ainstances = [], Slv.ainterfaces = [], Slv.apath = Nothing }

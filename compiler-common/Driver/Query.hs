@@ -40,7 +40,7 @@ data Query a where
 
   -- Type checking
   SolvedASTWithEnv :: FilePath -> Query (Slv.AST, SlvEnv.Env)
-  SolvedInterface :: FilePath -> String -> Query SlvEnv.Interface
+  SolvedInterface :: FilePath -> String -> Query (Maybe SlvEnv.Interface)
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
 
   -- Core

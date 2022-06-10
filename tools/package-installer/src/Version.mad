@@ -41,7 +41,6 @@ instance Comparable Version {
 }
 
 
-
 createRange :: Maybe Version -> Maybe Version -> VersionRange
 export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
   #[Just(minVersion), Just(maxVersion)] => VersionRange(minVersion, maxVersion)
