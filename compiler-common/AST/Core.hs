@@ -1,27 +1,31 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module AST.Core where
-
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Map                      as M
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
+
 
 data RecursionDirection
   = LeftRecursion
   | RightRecursion
   | BothRecursion
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data ConstructorRecursionInfo
   = ConstructorRecursionInfo String Int
   -- ^ String: constructor name, Int: arg position
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data RecursionKind
   = PlainRecursion
   | ListRecursion RecursionDirection
   | ConstructorRecursion (Maybe ConstructorRecursionInfo)
   | NotOptimizable
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data Metadata
   = RecursionEnd RecursionKind
@@ -31,12 +35,12 @@ data Metadata
   | ReferenceAllocation
   | ReferenceStore
   | ReferenceArgument
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data Core a
   = Typed (Ty.Qual Ty.Type) Area [Metadata] a
   | Untyped Area [Metadata] a
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Show, Ord, Generic, Hashable)
 
 data AST =
   AST
@@ -47,19 +51,23 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 type Import = Core Import_
 data Import_
   = NamedImport [Core Name] FilePath FilePath
   | DefaultImport (Core Name) FilePath FilePath
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Interface = Core Interface_
-data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
+data Interface_
+  = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Instance = Core Instance_
-data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+data Instance_
+  = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme))
+  deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecl = Core TypeDecl_
 data TypeDecl_
@@ -75,12 +83,12 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 type Constructor = Core Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Constraints = [Typing]
 
@@ -92,11 +100,13 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Is = Core Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_
+  = Is Pattern Exp
+  deriving(Eq, Show, Generic, Hashable)
 
 type Pattern = Core Pattern_
 data Pattern_
@@ -111,29 +121,29 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Field = Core Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type ListItem = Core ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data ClassRefPred
   = CRPNode String String Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
   | MethodRef String String Bool
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 data Literal
   = LNum String
@@ -142,7 +152,7 @@ data Literal
   | LChar Char
   | LBool String
   | LUnit
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type Exp = Core Exp_
@@ -165,7 +175,7 @@ data Exp_
   | Where Exp [Is]
   | Placeholder (PlaceholderRef, String) Exp
   | Extern (Ty.Qual Ty.Type) Name Name
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 type Name = String
 

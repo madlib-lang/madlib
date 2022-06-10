@@ -1,7 +1,19 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Generate.LLVM.SymbolTable where
-import qualified LLVM.AST.Operand                as Operand
-import qualified Data.Map                        as Map
 
+import qualified LLVM.AST.Operand                as Operand
+import qualified LLVM.AST.Type
+import qualified LLVM.AST.Name
+import qualified LLVM.AST.AddrSpace
+import qualified LLVM.AST.Constant
+import qualified LLVM.AST.Float
+import qualified LLVM.AST.IntegerPredicate
+import qualified LLVM.AST.FloatingPointPredicate
+import qualified Data.Map                        as Map
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
+import           Generate.LLVM.Hashable
 
 
 data SymbolType
@@ -23,12 +35,12 @@ data SymbolType
   | TopLevelAssignment
   -- ^ amount of items in the env
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data Symbol
   = Symbol SymbolType Operand.Operand
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 type SymbolTable
