@@ -43,16 +43,8 @@ handlers state = mconcat
   [ notificationHandler SInitialized $ \_not ->
       sendNotification SWindowLogMessage (LogMessageParams MtInfo "Madlib server initialized")
   , requestHandler STextDocumentHover $ \req responder -> do
-      p <- getRootPath
-      let path = case p of
-            Just x ->
-              x
-
-            _ ->
-              "no path"
       let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos _workDone) = req
           Position _l _c = pos
-      sendNotification SWindowLogMessage (LogMessageParams MtInfo (T.pack $ ppShow uri))
       maybeHoverInfo <- liftIO $ getHoverInformation state (Loc 0 (_l + 1) (_c + 1)) (uriToPath uri)
       case maybeHoverInfo of
         Just info -> do
@@ -65,19 +57,29 @@ handlers state = mconcat
           return ()
 
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) ->
-      generateDiagnostics state uri mempty
+      recordAndPrintDuration "file open" $ generateDiagnostics state uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
-      generateDiagnostics state uri mempty
+      recordAndPrintDuration "file save" $ generateDiagnostics state uri mempty
   , notificationHandler STextDocumentDidChange $ \(NotificationMessage _ _ (DidChangeTextDocumentParams (VersionedTextDocumentIdentifier uri _) (List changes))) -> do
-      startT <- liftIO getCurrentTime
-      let (TextDocumentContentChangeEvent _ _ docContent) = last changes
-      generateDiagnostics state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
-      endT <- liftIO getCurrentTime
-      let diff = diffUTCTime endT startT
-      -- undefined
-      sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("change duration: " <> T.pack (ppShow diff))
-      -- sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("error count: " <> T.pack (ppShow $ last changes))
+      recordAndPrintDuration "file change" $ do
+        let (TextDocumentContentChangeEvent _ _ docContent) = last changes
+        generateDiagnostics state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
   ]
+
+
+recordAndPrintDuration :: T.Text -> LspM a b -> LspM a b
+recordAndPrintDuration title action = do
+  startT       <- liftIO getCurrentTime
+  actionResult <- action
+  endT         <- liftIO getCurrentTime
+  let diff = diffUTCTime endT startT
+  let (ms, _) = properFraction $ diff * 1000
+  sendNotification SWindowLogMessage $ LogMessageParams MtInfo (title <> " - duration: " <> T.pack (show ms <> "ms"))
+  return actionResult
+
+
+
+
 
 
 
@@ -298,9 +300,9 @@ nodeToHoverInfo modulePath node =
       <> typeInfo
       <> "\n"
       <> "```\n\n"
-      <> "*Defined in "
+      <> "*Defined in '"
       <> modulePath
-      <> " at line "
+      <> "' at line "
       <> show (getNodeLine node)
       <> "*"
 

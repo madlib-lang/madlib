@@ -42,22 +42,14 @@ instance Substitutable Type where
             case M.findWithDefault base tyvar s of
               TRecord fields' newBase ->
                 TRecord (M.union initialFields fields') newBase
-                -- if newBase == t' then
-                -- else
-                --   deepUpdateRecord (M.union initialFields fields') newBase
 
               t'' ->
                 TRecord fields (Just t'')
 
       in  deepUpdateRecord fields t' tv
-      -- in  case M.findWithDefault t' tv s of
-      --   TRecord fields' newBase ->
-      --     TRecord (M.union fields fields') newBase
 
-      --   t'' ->
-      --     TRecord fields (Just t'')
-
-    TRecord fields (Just base) -> TRecord fields (Just base)
+    TRecord fields (Just base) ->
+      TRecord fields (Just base)
 
     t'               -> t'
 

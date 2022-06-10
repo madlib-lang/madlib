@@ -40,8 +40,12 @@ underlineWhen when s | when      = "\x1b[4m" <> s <> "\x1b[0m"
 
 
 getModuleContent :: (FilePath -> IO String) -> Context -> IO String
-getModuleContent rf (Context modulePath _ _) = rf modulePath
-getModuleContent _  _                        = return ""
+getModuleContent rf (Context "" _ _) =
+  return ""
+getModuleContent rf (Context modulePath _ _) =
+  rf modulePath
+getModuleContent _  _                        =
+  return ""
 
 
 formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO String
