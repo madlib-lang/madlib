@@ -125,7 +125,7 @@ globalChecks = do
 
 
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly noCache watchMode) coverage
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly watchMode) coverage
   = do
     extraWarnings       <- globalChecks
     canonicalEntrypoint <- canonicalizePath entrypoint

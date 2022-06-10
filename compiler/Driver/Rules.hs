@@ -117,10 +117,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
           
     case ast of
       Right ast ->
-        if optTarget options == TLLVM then
-          return (addTestEmptyExports ast, (mempty, mempty))
-        else
-          return (ast, (mempty, mempty))
+        return (addTestEmptyExports ast, (mempty, mempty))
 
       Left err ->
         return (emptySrcAST, (mempty, [err]))
@@ -166,13 +163,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
     res <- runInfer $ inferAST options initialEnv instancesToDerive canAst
     case res of
-      Right ((ast, env), InferState _ []) ->
-        if optTarget options == TLLVM then do
-          wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
-          listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
-          return ((updateTestExports wishModulePath listModulePath ast, env), (mempty, mempty))
-        else
-          return ((ast, env), (mempty, mempty))
+      Right ((ast, env), InferState _ []) -> do
+        wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
+        listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
+        return ((updateTestExports wishModulePath listModulePath ast, env), (mempty, mempty))
 
       Right (_, InferState _ errors) ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, errors))
@@ -409,19 +403,19 @@ input :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 input = fmap ((, mempty) . (, Rock.Input))
 
 
--- LLVM test runner
+-- Test runner
 
 addTestEmptyExports :: Src.AST -> Src.AST
 addTestEmptyExports ast@Src.AST{ Src.apath = Just apath } =
   if ".spec.mad" `List.isSuffixOf` apath then
     let exps             = Src.aexps ast
         -- that export is needed for type checking or else we get an error that the name is not exported
-        testsExport      = Src.Source emptyArea Src.TargetLLVM (Src.Export (Src.Source emptyArea Src.TargetLLVM (Src.Assignment "__tests__" (Src.Source emptyArea Src.TargetLLVM (Src.ListConstructor [])))))
+        testsExport      = Src.Source emptyArea Src.TargetAll (Src.Export (Src.Source emptyArea Src.TargetAll (Src.Assignment "__tests__" (Src.Source emptyArea Src.TargetAll (Src.ListConstructor [])))))
     in  ast { Src.aexps = exps ++ [testsExport] }
   else
     ast
-addTestEmptyExports _ =
-  undefined
+addTestEmptyExports ast =
+  ast
 
 
 data TestAssignment
@@ -487,7 +481,7 @@ addTestsToSuite wishPath currentTests assignments = case assignments of
                 ([] :=> (testListType wishPath `fn` testListType wishPath))
                 emptyArea
                 (Slv.App
-                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "List.concat" False))
+                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "__List__.concat" False))
                   currentTests
                   False))
               testExp
@@ -509,7 +503,7 @@ addTestsToSuite wishPath currentTests assignments = case assignments of
                 ([] :=> (testListType wishPath `fn` testListType wishPath))
                 emptyArea
                 (Slv.App
-                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "List.concat" False))
+                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "__List__.concat" False))
                   currentTests
                   False))
               batchTestExp
@@ -519,7 +513,7 @@ addTestsToSuite wishPath currentTests assignments = case assignments of
 
 listImport :: FilePath -> Slv.Import
 listImport listModulePath =
-  Slv.Untyped emptyArea (Slv.DefaultImport (Slv.Untyped emptyArea "List") "List" listModulePath)
+  Slv.Untyped emptyArea (Slv.DefaultImport (Slv.Untyped emptyArea "__List__") "List" listModulePath)
 
 
 
@@ -545,5 +539,5 @@ updateTestExports wishPath listPath ast@Slv.AST{ Slv.apath = Just apath, Slv.aex
     in  ast { Slv.aexps = exps' ++ [testsExport], Slv.aimports = listImport listPath : Slv.aimports ast }
   else
     ast
-updateTestExports _ _ _ =
-  undefined
+updateTestExports _ _ ast =
+  ast

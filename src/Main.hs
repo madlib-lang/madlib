@@ -39,8 +39,8 @@ run cmd = do
             Left  e ->
               putStrLn e
 
-    Test entrypoint coverage target noCache ->
-      runTests noCache entrypoint coverage target
+    Test entrypoint coverage target ->
+      runTests entrypoint coverage target
 
     Install ->
       runPackageInstaller
