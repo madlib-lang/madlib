@@ -47,6 +47,10 @@ import Parse.Madlib.ImportCycle (detectCycle)
 import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
+import qualified Generate.Javascript as Javascript
+import System.FilePath (takeDirectory)
+import Utils.Path (computeTargetPath)
+import qualified Parse.DocString.Grammar as DocString
 
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
@@ -78,6 +82,15 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       Left err ->
         return (emptySrcAST, (mempty, [err]))
+
+  DocStrings path -> nonInput $ do
+    file <- Rock.fetch $ File path
+    case DocString.parse file of
+      Right ds ->
+        return (ds, (mempty, mempty))
+
+      Left _ ->
+        return ([], (mempty, mempty))
 
   CanonicalizedASTWithEnv path -> nonInput $ do
     sourceAst <- Rock.fetch $ ParsedAST path
@@ -154,27 +167,50 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     coreAst <- Rock.fetch $ CoreAST path
     table   <- LLVM.compileModule options coreAst
 
-    -- pathsToBuild <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-    -- let rest = dropWhile (/= path) pathsToBuild
-    -- let total = List.length pathsToBuild
-    -- let curr = total - List.length rest + 1
-    -- let currStr = if curr < 10 then " " <> show curr else show curr
-    -- liftIO $ putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
-
     return (table, (mempty, mempty))
 
   BuiltInSymbolTableWithEnv -> nonInput $ do
     table <- LLVM.compileDefaultModule options
     return (table, (mempty, mempty))
 
+  BuiltJSModule path -> nonInput $ do
+    paths   <- Rock.fetch $ ModulePathsToBuild path
+    coreAst <- Rock.fetch $ CoreAST path
+    liftIO $ Javascript.generateJSModule options False paths coreAst
+    return ((), (mempty, mempty))
+
   BuiltTarget path -> nonInput $ do
     paths <- Rock.fetch $ ModulePathsToBuild path
-    moduleResults <- mapM (Rock.fetch . SymbolTableWithEnv) paths
 
-    if any (null . LLVMEnv.envASTPath . snd) moduleResults then
-      return ((), (mempty, mempty))
+    if optTarget options == TLLVM then do
+      moduleResults <- mapM (Rock.fetch . SymbolTableWithEnv) paths
+
+      if any (null . LLVMEnv.envASTPath . snd) moduleResults then
+        return ((), (mempty, mempty))
+      else do
+        LLVM.buildTarget options path
+        return ((), (mempty, mempty))
+
     else do
-      LLVM.buildTarget options path
+      forM_ paths $ Rock.fetch . BuiltJSModule
+      liftIO $ Javascript.generateInternalsModule options
+
+      when (optBundle options) $ do
+        let mainOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) (optEntrypoint options)
+        result <- liftIO $ Javascript.runBundle mainOutputPath
+        case result of
+          Left err ->
+            liftIO $ putStr err
+
+          Right ("", stderr) ->
+            liftIO $ putStrLn stderr
+
+          Right (bundle, _) -> do
+            liftIO $ writeFile (optOutputPath options) bundle
+            liftIO $ putStrLn "done."
+
+        return ()
+
       return ((), (mempty, mempty))
 
 
