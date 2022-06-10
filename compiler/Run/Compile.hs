@@ -1,5 +1,4 @@
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Compile where
 
@@ -20,7 +19,8 @@ import           Control.Exception              ( try
                                                 , SomeException
                                                 )
 import           System.Environment             ( getEnv )
-import           Control.Monad                  ( when
+import           Control.Monad                  ( forever
+                                                , when
                                                 , unless
                                                 )
 import qualified Data.Map                      as Map
@@ -42,7 +42,6 @@ import qualified Generate.LLVM.Rename          as Rename
 import qualified AST.Solved                    as Slv
 import qualified AST.Core                      as Core
 import qualified Optimize.TCE                  as TCE
-import           Optimize.ToCore
 import qualified Explain.Format                as Explain
 import           Error.Warning
 import           Coverage.Coverable             ( collectFromAST
@@ -67,7 +66,6 @@ import qualified System.FilePath       as FP
 import           Control.Concurrent (threadDelay, forkIO, ThreadId)
 import qualified Control.FoldDebounce as Debounce
 import           System.FSNotify
-import           Control.Monad (forever)
 import           Run.Options
 import qualified Driver
 import qualified Rock

@@ -31,6 +31,7 @@ import qualified LLVM.AST                        as AST hiding (function)
 
 data Query a where
   ModulePathsToBuild :: FilePath -> Query [FilePath]
+  AbsolutePreludePath :: FilePath -> Query FilePath
   DictionaryModuleAbsolutePath :: Query FilePath
 
   -- Parsing
@@ -77,65 +78,68 @@ instance Hashable (Query a) where
     ModulePathsToBuild path ->
       hashWithSalt salt (path, 0 :: Int)
 
+    AbsolutePreludePath moduleName ->
+      hashWithSalt salt (moduleName, 1 :: Int)
+
     DictionaryModuleAbsolutePath ->
-      hashWithSalt salt (1 :: Int)
+      hashWithSalt salt (2 :: Int)
 
     DetectImportCycle importChain path ->
-      hashWithSalt salt (importChain, path, 2 :: Int)
+      hashWithSalt salt (importChain, path, 3 :: Int)
 
     File path ->
-      hashWithSalt salt (path, 3 :: Int)
-
-    ParsedAST path ->
       hashWithSalt salt (path, 4 :: Int)
 
-    DocStrings path ->
+    ParsedAST path ->
       hashWithSalt salt (path, 5 :: Int)
 
-    CanonicalizedASTWithEnv path ->
+    DocStrings path ->
       hashWithSalt salt (path, 6 :: Int)
 
+    CanonicalizedASTWithEnv path ->
+      hashWithSalt salt (path, 7 :: Int)
+
     CanonicalizedInterface path name ->
-      hashWithSalt salt (path, name, 7 :: Int)
+      hashWithSalt salt (path, name, 8 :: Int)
 
     ForeignADTType modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 9 :: Int)
 
     SolvedASTWithEnv path ->
-      hashWithSalt salt (path, 9 :: Int)
+      hashWithSalt salt (path, 10 :: Int)
 
     SolvedInterface path name ->
-      hashWithSalt salt (path, name, 10 :: Int)
+      hashWithSalt salt (path, name, 11 :: Int)
 
     ForeignScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 11 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 12 :: Int)
 
     ForeignExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 12 :: Int)
+      hashWithSalt salt (modulePath <> "." <> expName, 13 :: Int)
 
     ForeignConstructor modulePath constructorName ->
-      hashWithSalt salt (modulePath <> "." <> constructorName, 13 :: Int)
+      hashWithSalt salt (modulePath <> "." <> constructorName, 14 :: Int)
 
     ForeignTypeDeclaration modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 14 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 15 :: Int)
 
     CoreAST path ->
-      hashWithSalt salt (path, 15 :: Int)
-
-    BuiltObjectFile path ->
       hashWithSalt salt (path, 16 :: Int)
 
+    BuiltObjectFile path ->
+      hashWithSalt salt (path, 17 :: Int)
+
     BuiltInBuiltObjectFile ->
-      hashWithSalt salt (17 :: Int)
+      hashWithSalt salt (18 :: Int)
 
     GeneratedJSModule path ->
-      hashWithSalt salt (path, 18 :: Int)
-
-    BuiltJSModule path ->
       hashWithSalt salt (path, 19 :: Int)
 
-    BuiltTarget path ->
+    BuiltJSModule path ->
       hashWithSalt salt (path, 20 :: Int)
+
+    BuiltTarget path ->
+      hashWithSalt salt (path, 21 :: Int)
 
 
 instance Hashable (Some Query) where
