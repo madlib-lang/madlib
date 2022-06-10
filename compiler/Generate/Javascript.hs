@@ -1147,8 +1147,8 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
     "./__internals__.mjs"
 
 
-generateJSModule :: Options -> Bool -> [FilePath] -> Core.AST -> IO ()
-generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ()
+generateJSModule :: Options -> Bool -> [FilePath] -> Core.AST -> IO String
+generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ""
 generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
     let rootPath           = optRootPath options
@@ -1157,21 +1157,26 @@ generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Just 
         computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) rootPath path
 
     createDirectoryIfMissing True $ takeDirectory computedOutputPath
-    writeFile computedOutputPath $ compile
-      initialEnv
-      (CompilationConfig rootPath
-                         path
-                         entrypointPath
-                         computedOutputPath
-                         coverage
-                         (optOptimized options)
-                         (optTarget options)
-                         internalsPath
-      )
-      ast
+    let moduleContent = compile
+          initialEnv
+          (
+            CompilationConfig
+              rootPath
+              path
+              entrypointPath
+              computedOutputPath
+              coverage
+              (optOptimized options)
+              (optTarget options)
+              internalsPath
+          )
+          ast
+    writeFile computedOutputPath moduleContent
 
     let rest = List.dropWhile (/= path) pathsToBuild
     let total = List.length pathsToBuild
     let curr = total - List.length rest + 1
     let currStr = if curr < 10 then " " <> show curr else show curr
     Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
+
+    return moduleContent
