@@ -1,7 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Parse.DocString.DocString where
 
-import Data.List (find)
-import AST.Source
+import           Data.List (find)
+import           AST.Source
+import           Data.Hashable
+import           GHC.Generics
 
 -- Maybe do this instead:
 -- data DocString = ModuleDoc String | Doc String String [DocStringTag] DocStringType
@@ -13,12 +17,12 @@ data DocString
   | TypeDefDoc SourceTarget String String [DocStringTag]
   | InterfaceDoc SourceTarget String String [DocStringTag]
   | InstanceDoc SourceTarget String String [DocStringTag]
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 data DocStringTag
   = ExampleTag SourceTarget String
   | SinceTag SourceTarget String
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 getTagContent :: DocStringTag -> String
 getTagContent tag = case tag of

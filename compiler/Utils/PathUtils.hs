@@ -21,6 +21,7 @@ data PathUtils
       , getExecutablePath :: IO FilePath
       }
 
+
 rf fileName = do
   inputHandle <- openFile fileName ReadMode
   hSetEncoding inputHandle utf8

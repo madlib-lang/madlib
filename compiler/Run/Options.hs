@@ -12,4 +12,6 @@ data Options
     , optOutputPath :: FilePath
     , optTarget :: Target
     , optOptimized :: Bool
+    , optBundle :: Bool
+    , optCoverage :: Bool
     }

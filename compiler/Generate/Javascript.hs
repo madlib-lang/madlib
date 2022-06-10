@@ -13,7 +13,7 @@ import           Data.Maybe                     ( fromMaybe )
 import           Data.List                      ( sort
                                                 , find
                                                 , intercalate
-                                                , foldl'
+                                                , foldl', stripPrefix, isInfixOf, isPrefixOf
                                                 )
 import           Data.List.GroupBy              ( groupBy )
 
@@ -25,7 +25,7 @@ import           Utils.Path                     ( cleanRelativePath
                                                 )
 import           System.FilePath                ( replaceExtension
                                                 , dropFileName
-                                                , joinPath
+                                                , joinPath, splitDirectories, takeDirectory, pathSeparator
                                                 )
 import           Explain.Location
 import           Infer.Type
@@ -35,6 +35,14 @@ import           Generate.Utils
 import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
 import qualified Data.Maybe as Maybe
+import Run.CommandLine
+import Control.Exception
+import GHC.IO.Exception
+import System.Process
+import System.Directory
+import System.Environment (getEnv)
+import Run.Options
+import qualified Data.List as List
 
 
 data RecursionData
@@ -725,7 +733,7 @@ instance Compilable Exp where
               in  if null packed then
                     ""
                   else
-                    "    let " <> packListVars' itemsStr <> " = " <> scope <> ";\n" 
+                    "    let " <> packListVars' itemsStr <> " = " <> scope <> ";\n"
 
           buildListItemVar :: Pattern -> String
           buildListItemVar Untyped{} = undefined
@@ -1045,7 +1053,125 @@ buildDefaultExport as es =
   getExportName :: Exp -> String
   getExportName (Typed _ _ _ (Export (Typed _ _ _ (Assignment n _)))) = n
   getExportName (Typed _ _ _ (Export (Typed _ _ _ (Extern _ n _))))   = n
-  
+
 
   getConstructorName :: Constructor -> String
   getConstructorName (Untyped _ _ (Constructor cname _ _)) = cname
+
+
+
+
+
+rollupNotFoundMessage :: String
+rollupNotFoundMessage = unlines
+  [ "Compilation error:"
+  , "Rollup was not found."
+  , "You must have rollup installed in order to use the bundling option. Please visit this page in order to install it: https://rollupjs.org/guide/en/#installation"
+  ]
+
+runBundle :: FilePath -> IO (Either String (String, String))
+runBundle entrypointCompiledPath = do
+  putStrLn "Bundling.."
+  rollupPath        <- try $ getEnv "ROLLUP_PATH"
+  rollupPathChecked <- case (rollupPath :: Either IOError String) of
+    Left _ -> do
+      r <-
+        try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+      case r of
+        Left  err -> do
+          putStrLn $ ppShow err
+          return $ Left rollupNotFoundMessage
+        Right _ -> return $ Right "rollup"
+    Right p -> do
+      r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+      case r of
+        Left err -> do
+          putStrLn $ ppShow err
+          r <-
+            try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
+              (Either SomeException (ExitCode, String, String))
+          case r of
+            Left  err -> do
+              putStrLn $ ppShow err
+              return $ Left rollupNotFoundMessage
+            Right _ -> return $ Right "rollup"
+        Right _ -> return $ Right p
+
+  case rollupPathChecked of
+    Right rollup -> do
+      r <-
+        try
+          (readProcessWithExitCode
+            rollup
+            [ entrypointCompiledPath
+            , "--format"
+            , "umd"
+            , "--name"
+            , "exe"
+            , "-p"
+            , "@rollup/plugin-node-resolve"
+            , "--silent"
+            ]
+            ""
+          ) :: IO (Either SomeException (ExitCode, String, String))
+
+      case r of
+        Left  e ->
+          return $ Left (ppShow e)
+
+        Right (_, stdout, stderr) -> do
+          return $ Right (stdout, stderr)
+
+    Left e ->
+      return $ Left e
+
+
+generateInternalsModule :: Options -> IO ()
+generateInternalsModule options = do
+  writeFile (takeDirectory (optOutputPath options) <> (pathSeparator : "__internals__.mjs"))
+    $ generateInternalsModuleContent (optTarget options) (optOptimized options) (optCoverage options)
+
+
+computeInternalsPath :: FilePath -> FilePath -> FilePath
+computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
+  Just s ->
+    let dirs = splitDirectories (takeDirectory s)
+        minus
+          | joinPath ["prelude", "__internal__"] `isInfixOf` astPath = if joinPath ["prelude", "__internal__"] `isInfixOf` rootPath then 0 else 2
+          | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
+          | otherwise = 1
+        dirLength = length dirs - minus
+    in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
+
+  Nothing ->
+    "./__internals__.mjs"
+
+
+generateJSModule :: Options -> Bool -> [FilePath] -> Core.AST -> IO ()
+generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ()
+generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Just path }
+  = do
+    let rootPath           = optRootPath options
+        internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
+        entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
+        computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) rootPath path
+
+    createDirectoryIfMissing True $ takeDirectory computedOutputPath
+    writeFile computedOutputPath $ compile
+      initialEnv
+      (CompilationConfig rootPath
+                         path
+                         entrypointPath
+                         computedOutputPath
+                         coverage
+                         (optOptimized options)
+                         (optTarget options)
+                         internalsPath
+      )
+      ast
+
+    let rest = List.dropWhile (/= path) pathsToBuild
+    let total = List.length pathsToBuild
+    let curr = total - List.length rest + 1
+    let currStr = if curr < 10 then " " <> show curr else show curr
+    Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
