@@ -8,9 +8,9 @@ import           GHC.IO                         ( )
 import           System.FilePath                ( takeBaseName
                                                 , takeFileName
                                                 , dropExtension
-                                                , joinPath
+                                                , joinPath, makeRelative, dropFileName
                                                 )
-import           System.Directory               ( getCurrentDirectory )
+import           System.Directory               ( getCurrentDirectory, canonicalizePath )
 import           System.Process
 import           Data.List                      ( isSuffixOf )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
@@ -56,6 +56,7 @@ runRunPackage package args =
                                                 , compileTarget        = TNode
                                                 , compileJson          = False
                                                 , compileTestFilesOnly = False
+                                                , noCache              = False
                                                 }
 
                   runCompilation compileCommand False
@@ -77,10 +78,17 @@ runSingleModule input args = do
                                , compileTarget        = TNode
                                , compileJson          = False
                                , compileTestFilesOnly = False
+                               , noCache              = False
                                }
 
   runCompilation compileCommand False
-  let target = runFolder <> (takeBaseName . takeFileName $ input) <> ".mjs"
+
+  canEntrypoint    <- canonicalizePath input
+  canCurrentFolder <- canonicalizePath "./"
+
+  let fromRoot = makeRelative canCurrentFolder (dropFileName canEntrypoint)
+
+  let target = joinPath [runFolder, fromRoot, (takeBaseName . takeFileName $ input) <> ".mjs"]
   callCommand $ "node " <> target <> " " <> unwords args
 
 

@@ -4492,6 +4492,7 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   (astModule, table, env) <- generateModule options ast
 
   liftIO $ buildObjectFile astModule outputPath
+
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
   let rest = List.dropWhile (/= modulePath) pathsToBuild
   let total = List.length pathsToBuild
