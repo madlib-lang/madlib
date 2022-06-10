@@ -99,13 +99,6 @@ buildAST options path code = case parse code of
 
       _ ->
         return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 100000 1)) [])
-    -- tried <- try $ return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
-    -- case tried :: Either SomeException (Either CompilationError AST) of
-    --   Left _ ->
-    --     return $ 
-
-    --   Right err ->
-    --     return err
 
 
 setPath :: AST -> FilePath -> AST

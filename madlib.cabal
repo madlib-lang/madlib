@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ca4670c644a293d4e5f5d5aa72564aef65105f73f92db8892e26d86b35e1555
+-- hash: afc8562f6c35aaffc01ef72bc9fd574db7464180d5dbd3babee2a8449eb1169a
 
 name:           madlib
 version:        0.12.2
@@ -176,6 +176,7 @@ library compiler-common
       AST.Solved
       AST.Source
       Canonicalize.Env
+      Canonicalize.InstanceToDerive
       Driver.Query
       Error.Backtrace
       Error.Context

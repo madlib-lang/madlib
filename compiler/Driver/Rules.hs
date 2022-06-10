@@ -35,7 +35,6 @@ import qualified Data.Map                      as Map
 import qualified Data.Set                      as Set
 import           Control.Monad.State
 import           Control.Monad.Except
-import qualified Utils.PathUtils               as PathUtils
 import Text.Show.Pretty (ppShow)
 import Run.Options
 import Data.Bifunctor (first)
@@ -49,8 +48,9 @@ import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
 import System.FilePath (takeDirectory)
-import Utils.Path (computeTargetPath)
+import Utils.Path (computeTargetPath, resolveAbsoluteSrcPath)
 import qualified Parse.DocString.Grammar as DocString
+import qualified Data.Maybe as Maybe
 
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
@@ -94,14 +94,16 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CanonicalizedASTWithEnv path -> nonInput $ do
     sourceAst <- Rock.fetch $ ParsedAST path
+    dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
+    let dictModulePath' = Maybe.fromMaybe "" dictModulePath
 
-    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST "" (optTarget options) CanEnv.initialEnv sourceAst
+    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST dictModulePath' (optTarget options) CanEnv.initialEnv sourceAst
     case can of
       Right c ->
         return (c, (warnings, mempty))
 
       Left err ->
-        return ((Can.emptyAST, CanEnv.initialEnv), (warnings, [err]))
+        return ((Can.emptyAST, CanEnv.initialEnv, mempty), (warnings, [err]))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
@@ -111,7 +113,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (found, (mempty, mempty))
 
   ForeignADTType modulePath typeName -> nonInput $ do
-    (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (canAst, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
       Just found ->
         return (Just found, (mempty, mempty))
@@ -120,10 +122,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Nothing, (mempty, mempty))
 
   SolvedASTWithEnv path -> nonInput $ do
-    (canAst, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
-    res <- runInfer $ inferAST' initialEnv canAst
+    (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    res <- runInfer $ inferAST initialEnv instancesToDerive canAst
     case res of
-      Right (astAndEnv, InferState _ []) ->
+      Right (astAndEnv, InferState _ []) -> do
         return (astAndEnv, (mempty, mempty))
 
       Right (_, InferState _ errors) ->
@@ -133,7 +135,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((emptySlvAST, initialEnv), (mempty, [error]))
 
   SolvedInterface modulePath name -> nonInput $ do
-    (Can.AST { Can.aimports }, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     let importedModulePaths = Can.getImportAbsolutePath <$> aimports
 
     interfac <- findSlvInterface name importedModulePaths
@@ -250,7 +252,7 @@ findCanInterface name paths = case paths of
     return Nothing
 
   path : next -> do
-    (_, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
     case Map.lookup name (CanEnv.envInterfaces canEnv) of
       Just found ->
         return $ Just found
@@ -262,7 +264,7 @@ findCanInterface name paths = case paths of
             return $ Just found
 
           Nothing -> do
-            (Can.AST { Can.aimports }, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
+            (Can.AST { Can.aimports }, _, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
             let importedModulePaths = Can.getImportAbsolutePath <$> aimports
             findCanInterface name importedModulePaths
 
