@@ -436,3 +436,11 @@ getImportAbsolutePath imp = case imp of
 
   Untyped _ (DefaultImport _ _ n) ->
     n
+
+isPlaceholderExp :: Exp -> Bool
+isPlaceholderExp exp = case exp of
+  Typed _ _ (Placeholder _ _) ->
+    True
+
+  _ ->
+    False

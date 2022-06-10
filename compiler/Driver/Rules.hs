@@ -46,6 +46,7 @@ import Utils.List
 import Parse.Madlib.ImportCycle (detectCycle)
 import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
+import qualified Utils.PathUtils as PathUtils
 
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
@@ -66,7 +67,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (False, (mempty, mempty))
 
   File path -> input $ do
-    liftIO $ readFile path
+    liftIO $ (PathUtils.readFile $ optPathUtils options) path
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path

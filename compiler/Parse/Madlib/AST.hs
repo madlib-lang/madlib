@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE ConstrainedClassMethods   #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -7,33 +5,27 @@
 {-# LANGUAGE NamedFieldPuns   #-}
 module Parse.Madlib.AST where
 
-import qualified Data.Map                      as M
-import           Control.Exception              ( IOException
-                                                , try
-                                                )
-
-import           Parse.Madlib.Grammar           ( parse )
-import           AST.Source
-import           Utils.Path                     ( resolveAbsoluteSrcPath )
+import qualified Data.Map                         as M
+import           Control.Exception                ( IOException
+                                                  , try, SomeException (SomeException)
+                                                  )
+import           Parse.Madlib.Grammar             ( parse )
+import           AST.Source 
+import           Utils.Path                       ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
 import           Error.Error
 import           Error.Context
-
 import           Control.Monad.Except
-import           System.FilePath                ( dropFileName, takeExtension, normalise )
-import qualified Prelude                       as P
-import           Prelude                       hiding ( readFile )
-import qualified System.Environment.Executable as E
-import           Data.Maybe
+import           System.FilePath                  ( dropFileName, takeExtension, normalise )
+import qualified Prelude                          as P
+import           Prelude                          hiding ( readFile )
+import qualified System.Environment.Executable    as E
 import           Explain.Location
-import Data.List
-import           Parse.Macro
-import           Run.Target
-import Debug.Trace
-import Text.Show.Pretty
-import Parse.Madlib.TargetMacro
-import Parse.Madlib.Dictionary
-import Run.Options
+import           Data.List
+import           Parse.Madlib.TargetMacro
+import           Parse.Madlib.Dictionary
+import           Run.Options
+import Text.Read (readMaybe)
 
 
 
@@ -81,42 +73,86 @@ buildAST options path code = case parse code of
     let astWithPath = setPath ast path
     let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
     astWithDictImport          <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
-    astWithAbsoluteImportPaths <- computeAbsoluteImportPaths (optRootPath options) astWithDictImport
-    astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths
-    return $ Right astWithJsonAssignments
+    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optRootPath options) astWithDictImport
+    case astWithAbsoluteImportPaths of
+      Right astWithAbsoluteImportPaths' -> do
+        astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
+        return $ Right astWithJsonAssignments
+
+      Left _ ->
+        return astWithAbsoluteImportPaths
 
   Left e -> do
     let split = lines e
-        line  = (read $ head split) :: Int
-        col   = (read $ split !! 1) :: Int
-        text  = unlines (tail . tail $ split)
-    return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
+        line  = (readMaybe $ head split) :: Maybe Int
+        col   = (readMaybe $ split !! 1) :: Maybe Int
+        text  = if length split < 2 then
+                  "Syntax error"
+                else
+                  unlines (tail . tail $ split)
+    case (line, col) of
+      (Just line', Just col') ->
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))) [])
+
+      (Just line', Nothing) ->
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)) [])
+
+      _ ->
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 100000 1)) [])
+    -- tried <- try $ return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
+    -- case tried :: Either SomeException (Either CompilationError AST) of
+    --   Left _ ->
+    --     return $ 
+
+    --   Right err ->
+    --     return err
 
 
 setPath :: AST -> FilePath -> AST
 setPath ast path = ast { apath = Just path }
 
 
-computeAbsoluteImportPath :: FilePath -> Import -> IO Import
+computeAbsoluteImportPath :: FilePath -> Import -> IO (Maybe Import)
 computeAbsoluteImportPath rootPath (Source area target imp) = case imp of
   NamedImport names rel _ -> do
-    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
-    return $ Source area target $ NamedImport names rel abs
+    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target . NamedImport names rel <$> abs
 
   TypeImport names rel _ -> do
-    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
-    return $ Source area target $ TypeImport names rel abs
+    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target . TypeImport names rel <$> abs
 
   DefaultImport namespace rel _ -> do
-    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
-    return $ Source area target $ DefaultImport namespace rel abs
+    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target . DefaultImport namespace rel <$> abs
 
   ImportAll rel _ -> do
-    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
-    return $ Source area target $ ImportAll rel abs
+    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target . ImportAll rel <$> abs
 
 
-computeAbsoluteImportPaths :: FilePath -> AST -> IO AST
-computeAbsoluteImportPaths rootPath ast@AST{ aimports, apath = Just path } = do
-  updatedImports <- mapM (computeAbsoluteImportPath (dropFileName path)) aimports
-  return ast { aimports = updatedImports }
+computeAbsoluteImportPaths :: FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
+computeAbsoluteImportPaths astPath rootPath imps = case imps of
+  imp : next -> do
+    imp' <- computeAbsoluteImportPath (dropFileName astPath) imp
+    case imp' of
+      Nothing ->
+        return
+          $ Left
+          $ CompilationError
+              (ImportNotFound $ snd $ getImportPath imp)
+              (Context astPath (getArea imp) [])
+
+      Just good -> do
+        next' <- computeAbsoluteImportPaths astPath rootPath next
+        return $ (good :) <$> next'
+
+  [] ->
+    return $ Right []
+
+
+computeAbsoluteImportPathsForAST :: FilePath -> AST -> IO (Either CompilationError AST)
+computeAbsoluteImportPathsForAST rootPath ast@AST{ aimports, apath = Just path } = do
+  updatedImports <- computeAbsoluteImportPaths path rootPath aimports
+  return $ (\updated -> ast { aimports = updated }) <$> updatedImports
+computeAbsoluteImportPathsForAST _ _ = undefined
