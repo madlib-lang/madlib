@@ -69,6 +69,7 @@ import qualified Optimize.EtaExpansion as EtaExpansion
 import qualified Optimize.EtaReduction as EtaReduction
 import System.FilePath.Posix (dropFileName)
 import qualified Driver.Rules as Rules
+import Run.Options
 
 
 
@@ -143,7 +144,9 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     --         runExcept (runStateT (solveManyASTs mempty table sourcesToCompile) InferState { count = 0, errors = [] })
     --       Left e -> Left e
 
-    table <- Rules.buildSolvedTable rootPath sourcesToCompile
+    let options = Options { optPathUtils = PathUtils.defaultPathUtils, optTarget = target, optRootPath = rootPath }
+
+    table <- Rules.buildSolvedTable options sourcesToCompile
 
     when verbose $ do
       putStrLn $ "OUTPUT: " ++ outputPath

@@ -25,20 +25,23 @@ import           Infer.AST
 import           Infer.Infer
 import           Control.Monad.State
 import           Control.Monad.Except
+import qualified Utils.PathUtils             as PathUtils
 import Text.Show.Pretty (ppShow)
+import Run.Options
 
-
-rules :: FilePath -> Rock.GenRules (Rock.Writer Rock.TaskKind Query) Query
-rules rootPath (Rock.Writer query) = case query of
+-- TODO: wrap all inputs into one parameter
+rules :: Options -> Rock.GenRules (Rock.Writer Rock.TaskKind Query) Query
+rules options (Rock.Writer query) = case query of
   File path -> do
     liftIO $ putStrLn path
     input $ liftIO $ readFile path
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path
-    case buildAST path source of
+    ast <- liftIO $ buildAST options path source
+    case ast of
       Right ast -> do
-        liftIO $ computeAbsoluteImportPaths rootPath (resolveMacros TLLVM ast)
+        return ast
 
       Left err ->
         return Src.AST {}
@@ -46,8 +49,7 @@ rules rootPath (Rock.Writer query) = case query of
   CanonicalizedASTWithEnv path -> nonInput $ do
     sourceAst <- Rock.fetch $ ParsedAST path
 
-    (can, _) <- runStateT (runExceptT (Can.canonicalizeAST "" TLLVM CanEnv.initialEnv sourceAst))
-                                    (Can.CanonicalState { Can.warnings = [], Can.namesAccessed = Set.empty, Can.accumulatedJS = "", Can.typesToDerive = [], Can.derivedTypes = Set.empty, Can.placeholderIndex = 0 })
+    (can, _) <- runCanonicalM $ Can.canonicalizeAST "" (optTarget options) CanEnv.initialEnv sourceAst
     case can of
       Right c ->
         return c
@@ -60,37 +62,10 @@ rules rootPath (Rock.Writer query) = case query of
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
     let importedModulePaths = Src.getImportAbsolutePath <$> aimports
 
-    interfac <- tryModules importedModulePaths
+    interfac <- findInterface name importedModulePaths
     case interfac of
       Just found ->
         return found
-    where
-      tryModules :: Rock.MonadFetch Query m => [FilePath] -> m (Maybe CanEnv.Interface)
-      tryModules paths = case paths of
-        [] ->
-          return Nothing
-
-        path : next -> do
-          (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv path
-          case Map.lookup name (CanEnv.envInterfaces canEnv) of
-            Just found ->
-              return $ Just found
-
-            Nothing -> do
-              next' <- tryModules next
-              case next' of
-                Just found ->
-                  return $ Just found
-
-                Nothing -> do
-                  Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST path
-                  let importedModulePaths = Src.getImportAbsolutePath <$> aimports
-                  tryModules importedModulePaths
-
-
-
-
-
 
   ForeignType modulePath typeName -> nonInput $ do
     (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -99,7 +74,7 @@ rules rootPath (Rock.Writer query) = case query of
         return found
 
   SolvedTable paths -> nonInput $ do
-    res <- runExceptT (runStateT (solveManyASTs mempty paths) InferState { count = 0, errors = [] })
+    res <- runInfer $ solveManyASTs mempty paths
     case res of
       Right (table, _) ->
         return table
@@ -107,6 +82,49 @@ rules rootPath (Rock.Writer query) = case query of
   _ ->
     undefined
 
+
+runInfer :: StateT InferState (ExceptT e m) a -> m (Either e (a, InferState))
+runInfer a =
+  runExceptT (runStateT a InferState { count = 0, errors = [] })
+
+
+runCanonicalM :: ExceptT e (StateT Can.CanonicalState m) a -> m (Either e a, Can.CanonicalState)
+runCanonicalM a =
+  runStateT
+    (runExceptT a)
+    (
+      Can.CanonicalState
+        { Can.warnings = []
+        , Can.namesAccessed = Set.empty
+        , Can.accumulatedJS = ""
+        , Can.typesToDerive = []
+        , Can.derivedTypes = Set.empty
+        , Can.placeholderIndex = 0
+        }
+    )
+
+
+findInterface :: Rock.MonadFetch Query m => String -> [FilePath] -> m (Maybe CanEnv.Interface)
+findInterface name paths = case paths of
+  [] ->
+    return Nothing
+
+  path : next -> do
+    (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    case Map.lookup name (CanEnv.envInterfaces canEnv) of
+      Just found ->
+        return $ Just found
+
+      Nothing -> do
+        next' <- findInterface name next
+        case next' of
+          Just found ->
+            return $ Just found
+
+          Nothing -> do
+            Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST path
+            let importedModulePaths = Src.getImportAbsolutePath <$> aimports
+            findInterface name importedModulePaths
 
 
 input :: (Functor f) => f a -> f (a, Rock.TaskKind)
@@ -121,24 +139,9 @@ ignoreTaskKind :: Rock.GenRules (Rock.Writer Rock.TaskKind f) f -> Rock.Rules f
 ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
 
 
--- runQuery :: Query a -> IO a
--- runQuery query = do
---   memoVar <- newIORef mempty
---   let task = Rock.fetch query
---   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind rules)) task
-
-
-
--- TODO: move target resolution
--- parse :: Target -> FilePath -> FilePath -> IO Src.AST
--- parse target rootPath path = do
---   ast <- runQuery $ ParsedAST path
---   return $ resolveMacros target ast
-
-buildSolvedTable :: FilePath -> [FilePath] -> IO Slv.Table
-buildSolvedTable rootPath paths = do
+buildSolvedTable :: Options -> [FilePath] -> IO Slv.Table
+buildSolvedTable options paths = do
   memoVar <- newIORef mempty
   let task = Rock.fetch $ SolvedTable paths
-  Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (rules rootPath))) task
---   x <- runExceptT (runStateT (solveManyASTs mempty paths) InferState { count = 0, errors = [] })
+  Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (rules options))) task
   

@@ -43,8 +43,8 @@ import qualified Utils.PathUtils as PathUtils
 import Utils.Path
 import System.FilePath.Posix
 
-parse :: FilePath -> IO (Either CompilationError Src.Table)
-parse = Src.buildASTTable TNode mempty
+-- parse :: FilePath -> IO (Either CompilationError Src.Table)
+-- parse = Src.buildASTTable TNode mempty
 
 -- canonicalize :: Src.Table -> FilePath -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
 -- canonicalize srcTable dictionaryModulePath main =
