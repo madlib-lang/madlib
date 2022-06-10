@@ -18,6 +18,7 @@ import           Infer.Env
 import qualified Rock
 import qualified Driver.Query as Query
 import qualified Data.List as List
+import Control.Applicative
 
 
 
@@ -42,7 +43,7 @@ lookupVar env name = do
       Rock.fetch $ Query.ForeignScheme path (tail $ dropWhile (/= '.') name)
 
     _ ->
-      return $ M.lookup name (envVars env <> envMethods env)
+      return $ M.lookup name (envVars env) <|> M.lookup name (envMethods env)
 
   case maybeType of
     Just sc ->
@@ -66,7 +67,7 @@ extendVars env (x, s) = env { envVars = M.insert x s $ envVars env }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
-safeExtendVars env (i, sc) = case M.lookup i (envVars env <> envMethods env) of
+safeExtendVars env (i, sc) = case M.lookup i (envVars env) <|> M.lookup i (envMethods env) of
   Just _  -> throwError $ CompilationError (NameAlreadyDefined i) NoContext
   Nothing -> return $ extendVars env (i, sc)
 

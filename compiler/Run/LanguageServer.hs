@@ -338,9 +338,8 @@ uriToPath uri =
 generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics state uri fileUpdates = do
   let path = uriToPath uri
-  -- retrieve current errors first, so that we can update diagnostics of files
-  -- that went from errors > 0 to 0 and remove them completely.
   (_, warnings, errs) <- liftIO $ runTask state Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
+
   let errsByModule = groupErrsByModule errs
   let warnsByModule = groupWarnsByModule warnings
 
