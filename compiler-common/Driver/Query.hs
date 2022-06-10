@@ -77,7 +77,7 @@ instance Hashable (Query a) where
       hashWithSalt salt (path, 0 :: Int)
 
     DictionaryModuleAbsolutePath ->
-      hashWithSalt salt ("DictionaryModuleAbsolutePath", 1 :: Int)
+      hashWithSalt salt (1 :: Int)
 
     DetectImportCycle importChain path ->
       hashWithSalt salt (importChain, path, 2 :: Int)
@@ -125,7 +125,7 @@ instance Hashable (Query a) where
       hashWithSalt salt (path, 16 :: Int)
 
     BuiltInBuiltObjectFile ->
-      hashWithSalt salt ("BuiltInBuiltObjectFile", 17 :: Int)
+      hashWithSalt salt (17 :: Int)
 
     BuiltJSModule path ->
       hashWithSalt salt (path, 18 :: Int)

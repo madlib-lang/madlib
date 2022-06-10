@@ -556,6 +556,9 @@ import           Debug.Trace
 --   , "  |> runStack(37)"
 --   ]
 
+spec :: Spec
+spec = do
+  return ()
 -- spec :: Spec
 -- spec = do
 --   describe "compile" $ do

@@ -1,5 +1,4 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
@@ -547,17 +546,8 @@ Right
                                                                    ]
                                                                    (Just
                                                                       (Area
-                                                                         (Loc 119 5 32)
-                                                                         (Loc 120 5 33)))
-                                                               , IsIn
-                                                                   "Number"
-                                                                   [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                   (Just
-                                                                      (Area
-                                                                         (Loc 115 5 28)
-                                                                         (Loc 118 5 31)))
+                                                                         (Loc 59 3 11)
+                                                                         (Loc 60 3 12)))
                                                                ] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 115 5 28) (Loc 118 5 31))
@@ -656,8 +646,8 @@ Right
                                                                    ]
                                                                    (Just
                                                                       (Area
-                                                                         (Loc 125 5 38)
-                                                                         (Loc 128 5 41)))
+                                                                         (Loc 59 3 11)
+                                                                         (Loc 60 3 12)))
                                                                ] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 125 5 38) (Loc 128 5 41))
@@ -924,5 +914,8 @@ Right
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)

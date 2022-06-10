@@ -26,6 +26,7 @@ import           Parse.Madlib.TargetMacro
 import           Parse.Madlib.Dictionary
 import           Run.Options
 import Text.Read (readMaybe)
+import Text.Show.Pretty (ppShow)
 
 
 
@@ -73,7 +74,7 @@ buildAST options path code = case parse code of
     let astWithPath = setPath ast path
     let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
     astWithDictImport          <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
-    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optRootPath options) astWithDictImport
+    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) astWithDictImport
     case astWithAbsoluteImportPaths of
       Right astWithAbsoluteImportPaths' -> do
         astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
@@ -105,25 +106,25 @@ setPath :: AST -> FilePath -> AST
 setPath ast path = ast { apath = Just path }
 
 
-computeAbsoluteImportPath :: FilePath -> Import -> IO (Maybe Import)
-computeAbsoluteImportPath rootPath (Source area target imp) = case imp of
+computeAbsoluteImportPath :: PathUtils -> FilePath -> Import -> IO (Maybe Import)
+computeAbsoluteImportPath pathUtils rootPath (Source area target imp) = case imp of
   NamedImport names rel _ -> do
-    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    abs <- resolveAbsoluteSrcPath pathUtils rootPath rel
     return $ Source area target . NamedImport names rel <$> abs
 
   TypeImport names rel _ -> do
-    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    abs <- resolveAbsoluteSrcPath pathUtils rootPath rel
     return $ Source area target . TypeImport names rel <$> abs
 
   DefaultImport namespace rel _ -> do
-    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    abs <- resolveAbsoluteSrcPath pathUtils rootPath rel
     return $ Source area target . DefaultImport namespace rel <$> abs
 
 
-computeAbsoluteImportPaths :: FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
-computeAbsoluteImportPaths astPath rootPath imps = case imps of
+computeAbsoluteImportPaths :: PathUtils -> FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
+computeAbsoluteImportPaths pathUtils astPath rootPath imps = case imps of
   imp : next -> do
-    imp' <- computeAbsoluteImportPath (dropFileName astPath) imp
+    imp' <- computeAbsoluteImportPath pathUtils (dropFileName astPath) imp
     case imp' of
       Nothing ->
         return
@@ -133,15 +134,15 @@ computeAbsoluteImportPaths astPath rootPath imps = case imps of
               (Context astPath (getArea imp) [])
 
       Just good -> do
-        next' <- computeAbsoluteImportPaths astPath rootPath next
+        next' <- computeAbsoluteImportPaths pathUtils astPath rootPath next
         return $ (good :) <$> next'
 
   [] ->
     return $ Right []
 
 
-computeAbsoluteImportPathsForAST :: FilePath -> AST -> IO (Either CompilationError AST)
-computeAbsoluteImportPathsForAST rootPath ast@AST{ aimports, apath = Just path } = do
-  updatedImports <- computeAbsoluteImportPaths path rootPath aimports
+computeAbsoluteImportPathsForAST :: PathUtils -> FilePath -> AST -> IO (Either CompilationError AST)
+computeAbsoluteImportPathsForAST pathUtils rootPath ast@AST{ aimports, apath = Just path } = do
+  updatedImports <- computeAbsoluteImportPaths pathUtils path rootPath aimports
   return $ (\updated -> ast { aimports = updated }) <$> updatedImports
-computeAbsoluteImportPathsForAST _ _ = undefined
+computeAbsoluteImportPathsForAST _ _ _ = undefined

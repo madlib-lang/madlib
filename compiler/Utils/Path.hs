@@ -88,7 +88,7 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
 
       case path' of
         Just p  ->
-          Just . normalise <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+          Just . normalisePath pathUtils <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
 
         Nothing ->
           return Nothing
@@ -112,7 +112,7 @@ makePathForPackage pathUtils rootPath pkgName = do
   preludeModulePath <- findPreludeModulePath pathUtils pkgName
   case preludeModulePath of
     Just path ->
-      return $ Just (normalise path)
+      return $ Just (normalisePath pathUtils path)
 
     Nothing   -> do
       (madlibDotJsonFile, _) <- retrieveMadlibDotJson pathUtils rootPath
@@ -160,7 +160,7 @@ findMadlibPackageMainPath pathUtils file = do
       return Nothing
 
     Right json' ->
-      Just . normalise <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
+      Just . normalisePath pathUtils <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
 
 
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)
