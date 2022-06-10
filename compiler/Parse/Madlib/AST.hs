@@ -126,10 +126,6 @@ computeAbsoluteImportPath rootPath (Source area target imp) = case imp of
     abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
     return $ Source area target . DefaultImport namespace rel <$> abs
 
-  ImportAll rel _ -> do
-    abs <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
-    return $ Source area target . ImportAll rel <$> abs
-
 
 computeAbsoluteImportPaths :: FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
 computeAbsoluteImportPaths astPath rootPath imps = case imps of

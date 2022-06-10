@@ -174,7 +174,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (table, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
-    paths   <- Rock.fetch $ ModulePathsToBuild path
+    paths   <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst <- Rock.fetch $ CoreAST path
     liftIO $ Javascript.generateJSModule options False paths coreAst
     return ((), (mempty, mempty))
@@ -214,12 +214,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       return ((), (mempty, mempty))
 
 
-
-
-
+-- TODO: Move to AST.Source module
 emptySrcAST :: Src.AST
 emptySrcAST = Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainstances = [], Src.ainterfaces = [], Src.apath = Nothing }
 
+-- TODO: Move to AST.Solved module
 emptySlvAST :: Slv.AST
 emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], Slv.ainstances = [], Slv.ainterfaces = [], Slv.apath = Nothing }
 
@@ -294,8 +293,10 @@ findSlvInterface name paths = case paths of
 noError :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 noError = fmap ((, mempty) . (, Rock.NonInput))
 
+
 nonInput :: Functor f => f (a, w) -> f ((a, Rock.TaskKind), w)
 nonInput = fmap $ first (, Rock.NonInput)
+
 
 input :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 input = fmap ((, mempty) . (, Rock.Input))

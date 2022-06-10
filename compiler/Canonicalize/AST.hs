@@ -33,6 +33,7 @@ import Utils.List
 import AST.Canonical (Import_(TypeImport))
 import qualified Driver.Query as Query
 import qualified Rock
+import Text.Show.Pretty
 
 
 
@@ -73,27 +74,6 @@ validateImport originAstPath imp = do
     (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
                                    (Context originAstPath (Src.getArea $ head allNotExported) [])
     )
-
-
-mapImportToEnvTypeDecls :: Env -> Src.Import -> Can.AST -> CanonicalM (M.Map String Type)
-mapImportToEnvTypeDecls env imp ast = do
-  envTds <- extractExportsFromAST env ast
-  return $ fromExportToImport imp envTds
-
-
-fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
-fromExportToImport imp exports = case imp of
-  Src.Source _ _ (Src.TypeImport    names _ _) ->
-    M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
-
-  Src.Source _ _ (Src.NamedImport   names _ _) ->
-    mempty
-
-  Src.Source _ _ (Src.DefaultImport name  _ _) ->
-    M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
-
-  Src.Source _ _ (Src.ImportAll _ _) ->
-    mempty
 
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
@@ -173,9 +153,6 @@ findDictionaryFromListName dictionaryModulePath imports = case imports of
     else
       findDictionaryFromListName dictionaryModulePath next
 
-  (imp@(Src.Source _ _ (Src.ImportAll _ path)) : next) | path == dictionaryModulePath ->
-    "fromList"
-
   ((Src.Source _ _ (Src.DefaultImport (Src.Source _ _ namespace) _ path)) : next) | path == dictionaryModulePath ->
     namespace <> ".fromList"
 
@@ -197,9 +174,6 @@ importInfo (Src.Source _ _ imp) = case imp of
   Src.DefaultImport name _ path ->
     [ImportInfo path CanEnv.NamespaceImport (Src.getSourceContent name)]
 
-  -- TODO: handle correctly or remove import all
-  Src.ImportAll _ _ ->
-    []
 
 buildImportInfos :: Env -> Src.AST -> Env
 buildImportInfos env Src.AST { Src.aimports } =
@@ -220,11 +194,11 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
   resetJS
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls sourceAst
+  -- liftIO $ putStrLn (ppShow env''')
   imports               <- mapM (canonicalize env''' target) $ Src.aimports sourceAst
   exps                  <- mapM (canonicalize env''' target) $ Src.aexps sourceAst
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
   instances             <- canonicalizeInstances env'''' target $ Src.ainstances sourceAst
-
 
   checkUnusedImports env'' imports
 
@@ -239,14 +213,17 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
   resetToDerive
 
   let canonicalizedAST = Can.AST { Can.aimports    = imports
-                                  , Can.aexps       = exps
-                                  , Can.atypedecls  = typeDecls
-                                  , Can.ainterfaces = interfaces
-                                  , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
-                                  , Can.apath       = Src.apath sourceAst
-                                  }
+                                 , Can.aexps       = exps
+                                 , Can.atypedecls  = typeDecls
+                                 , Can.ainterfaces = interfaces
+                                 , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
+                                 , Can.apath       = Src.apath sourceAst
+                                 }
 
-  return (canonicalizedAST, env'''')
+  -- add `export type TypeName` types to the current env.
+  envTds <- extractExportsFromAST env'''' canonicalizedAST
+
+  return (canonicalizedAST, env'''' { envTypeDecls = envTypeDecls env'''' <> envTds })
 
 canonicalizeAST _ _ _ _ =
   return (Can.emptyAST, initialEnv)

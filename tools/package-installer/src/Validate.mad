@@ -138,11 +138,6 @@ export printError = (a, error) => where(IO.trace("err", error)) {
     a
 }
 
-// = OutOfRangeVersion
-// | InvalidVersionHash
-// | InvalidBuildHash
-// | VersionDotLockMissing
-// | BuildHashCouldNotBeGenerated
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>

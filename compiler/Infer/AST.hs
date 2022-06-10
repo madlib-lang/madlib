@@ -171,9 +171,6 @@ filterExportsByImport imp vars = case imp of
   Can.Canonical _ Can.TypeImport{} ->
     mempty
 
-  Can.Canonical _ Can.ImportAll{}  ->
-    vars
-
 
 mergeEnv' :: Env -> Env -> Env
 mergeEnv' previous new =
@@ -266,22 +263,6 @@ updateImport allImports i = case i of
   Can.Canonical area (Can.DefaultImport n p fp) ->
     Just $ Slv.Untyped area $ Slv.DefaultImport (updateImportName n) p fp
 
-  -- Can.Canonical area (Can.ImportAll p fp) ->
-  --   Just $ updateImportAll solvedTable i
-
-
-updateImportAll :: M.Map FilePath (Slv.AST, Env) -> Can.Import -> Slv.Import
-updateImportAll solvedTable (Can.Canonical area (Can.ImportAll path absPath)) = case M.lookup absPath solvedTable of
-  Nothing ->
-    Slv.Untyped area (Slv.NamedImport [] path absPath)
-
-  Just (ast, _) ->
-    let exportedNames       = M.keys $ Slv.extractExportedExps ast
-        exportedADTs        = Slv.getValue <$> filter Slv.isADTExported (Slv.atypedecls ast)
-        exportedCtors       = concat $ Slv.adtconstructors <$> exportedADTs
-        exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
-    in  Slv.Untyped area (Slv.NamedImport (Slv.Untyped area <$> exportedNames <> exportedCtorNames) path absPath)
-
 
 updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
 updateImportName (Can.Canonical area name) = Slv.Untyped area name
@@ -297,10 +278,6 @@ importInfo (Can.Canonical _ imp) = case imp of
 
   Can.DefaultImport name _ path ->
     [ImportInfo path NamespaceImport (Can.getCanonicalContent name)]
-
-  -- TODO: handle correctly or remove import all
-  Can.ImportAll _ _ ->
-    []
 
 
 buildImportInfos :: Env -> Can.AST -> Env

@@ -44,7 +44,7 @@ data CanonicalState
       , placeholderIndex :: Int
       }
 
-type CanonicalM a = forall m . (Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
+type CanonicalM a = forall m . (MonadIO m, Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
 
 isNameAccess :: Accessed -> Bool
 isNameAccess a = case a of

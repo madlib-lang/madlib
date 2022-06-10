@@ -22,6 +22,7 @@ import           Error.Error
 import           Error.Context
 import qualified Data.Maybe as Maybe
 import           Text.Show.Pretty
+import qualified Canonicalize.EnvUtils as EnvUtils
 
 
 
@@ -103,12 +104,13 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.TypeExport name -> do
       pushTypeAccess name
-      case Map.lookup name (Env.envTypeDecls env) of
-        Just found ->
-          return $ Can.Canonical area (Can.TypeExport name)
+      EnvUtils.lookupADT env name
+      -- case Map.lookup name (Env.envTypeDecls env) of
+      --   Just found ->
+      --     return $ Can.Canonical area (Can.TypeExport name)
 
-        Nothing ->
-          throwError $ CompilationError (UnboundType name) (Context (Env.envCurrentPath env) area [])
+      --   Nothing ->
+      --     throwError $ CompilationError (UnboundType name) (Context (Env.envCurrentPath env) area [])
 
       return $ Can.Canonical area (Can.TypeExport name)
 
@@ -466,8 +468,6 @@ instance Canonicalizable Src.Import Can.Import where
     Src.DefaultImport namespace relPath absPath ->
       return $ Can.Canonical area (Can.DefaultImport (canonicalizeName namespace) relPath absPath)
 
-    Src.ImportAll relPath absPath ->
-      return $ Can.Canonical area (Can.ImportAll relPath absPath)
 
 canonicalizeName :: Src.Source Src.Name -> Can.Canonical Can.Name
 canonicalizeName (Src.Source area _ name) = Can.Canonical area name

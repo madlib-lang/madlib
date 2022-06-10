@@ -39,15 +39,6 @@ updateImports pathUtils ctxPath dictionaryModulePath found imports = case import
     else do
       next' <- updateImports pathUtils ctxPath dictionaryModulePath found next
       return (imp : next')
-      
-
-  (imp@(Source _ _ (ImportAll path _)) : next) -> do
-    absPath <- resolveAbsoluteSrcPath pathUtils ctxPath path
-    if absPath == dictionaryModulePath then
-      return (imp : next)
-    else do
-      next' <- updateImports pathUtils ctxPath dictionaryModulePath found next
-      return (imp : next')
 
   (imp@(Source _ _ (DefaultImport _ path _)) : next) -> do
     absPath <- resolveAbsoluteSrcPath pathUtils ctxPath path

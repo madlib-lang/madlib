@@ -47,7 +47,6 @@ data Import_
   = NamedImport [Canonical Name] FilePath FilePath
   | TypeImport [Canonical Name] FilePath FilePath
   | DefaultImport (Canonical Name) FilePath FilePath
-  | ImportAll FilePath FilePath
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Constructor = Canonical Constructor_
@@ -262,9 +261,6 @@ getImportAbsolutePath imp = case imp of
     n
 
   Canonical _ (DefaultImport _ _ n) ->
-    n
-
-  Canonical _ (ImportAll _ n)       ->
     n
 
 

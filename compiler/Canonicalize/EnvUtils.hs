@@ -13,6 +13,7 @@ import Infer.Type
 import Control.Monad.Except
 import Error.Error
 import Error.Context
+import Text.Show.Pretty
 
 
 addADT :: Env -> String -> Type -> Env

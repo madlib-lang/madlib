@@ -990,9 +990,6 @@ importToDoc comments imp = case imp of
         , comments
         )
 
-  Source _ _ (ImportAll path _) ->
-    (Pretty.pretty "import " <> Pretty.pretty ("\"" ++ path ++ "\""), comments)
-
 
 constructorsToDoc :: [Comment] -> [Constructor] -> (Pretty.Doc ann, [Comment])
 constructorsToDoc comments ctors = case ctors of
