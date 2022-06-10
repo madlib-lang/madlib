@@ -195,7 +195,12 @@ getQualType :: Solved a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _) = t
 
 getArea :: Solved a -> Area
-getArea (Typed _ a _) = a
+getArea a = case a of
+  Typed _ area _ ->
+    area
+
+  Untyped area _ ->
+    area
 
 extractExp :: Exp -> Exp_
 extractExp (Typed _ (Area _ _) e) = e

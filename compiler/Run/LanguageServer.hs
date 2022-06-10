@@ -4,6 +4,7 @@
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# HLINT ignore "Use forM_" #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
@@ -56,9 +57,8 @@ handlers state = mconcat
   [ notificationHandler SInitialized $ \_not ->
       sendNotification SWindowLogMessage (LogMessageParams MtInfo "Madlib server initialized")
   , requestHandler STextDocumentHover $ \req responder -> do
-      let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos _workDone) = req
-          Position _l _c = pos
-      maybeHoverInfo <- getHoverInformation state (Loc 0 (_l + 1) (_c + 1)) (uriToPath uri)
+      let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos@(Position line col) _workDone) = req
+      maybeHoverInfo <- getHoverInformation state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
       case maybeHoverInfo of
         Just info -> do
           let ms    = HoverContents $ MarkupContent MkMarkdown (T.pack info)
@@ -69,9 +69,14 @@ handlers state = mconcat
         Nothing ->
           return ()
   , requestHandler STextDocumentDefinition $ \req@(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
-      sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
-      -- responder $ Right $ List []
-      return ()
+      recordAndPrintDuration "definition" $ do
+        maybeLink <- getDefinitionLink state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
+        case maybeLink of
+          Just loc ->
+            responder $ Right (InL loc)
+
+          Nothing ->
+            return ()
   -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
   -- , requestHandler STextDocumentImplementation $ \_ responder -> do
@@ -136,6 +141,7 @@ data Node
   = ExpNode Bool Slv.Exp
   | NameNode Bool (Slv.Solved String)
   | PatternNode Slv.Pattern
+  deriving(Eq, Show)
 
 
 getNodeLine :: Node -> Int
@@ -340,6 +346,17 @@ nodeToHoverInfo modulePath node =
       <> show (getNodeLine node)
       <> "*"
 
+
+getDefinitionLink :: State -> Loc -> FilePath -> LspM () (Maybe Location)
+getDefinitionLink state loc path = do
+  options <- buildOptions
+  (result, _, _) <- liftIO $ runTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
+  case result of
+    Nothing ->
+      return Nothing
+
+    Just (path, area) ->
+      return $ Just $ Location (pathToUri path) (areaToRange area)
 
 
 getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
@@ -593,6 +610,79 @@ hoverInfoTask loc path = do
     (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
     return $ nodeToHoverInfo path <$> findNodeForLocInExps loc (Slv.aexps typedAst)
 
+
+findForeignAstForName :: String -> [Slv.Import] -> Maybe FilePath
+findForeignAstForName name imports = case imports of
+  [] ->
+    Nothing
+
+  (Slv.Untyped _ (Slv.NamedImport names _ path) : _) | name `elem` (Slv.getValue <$> names) ->
+    Just path
+
+  (Slv.Untyped _ (Slv.DefaultImport namespace _ path) : _) | takeWhile (/= '.') name == Slv.getValue namespace ->
+    Just path
+
+  (_ : next) ->
+    findForeignAstForName name next
+
+
+findNameInNode :: Maybe Node -> Maybe String
+findNameInNode node = case node of
+  Just (NameNode _ (Slv.Typed _ _ name)) ->
+    Just name
+
+  Just (PatternNode (Slv.Typed _ _ (Slv.PVar name))) ->
+    Just name
+
+  Just (PatternNode (Slv.Typed _ _ (Slv.PCon name _))) ->
+    Just name
+
+  _ ->
+    Nothing
+
+
+definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
+definitionLocationTask loc path = do
+  hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
+  if hasCycle then
+    return Nothing
+  else do
+    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+    case findNameInNode $ findNodeForLocInExps loc (Slv.aexps typedAst) of
+      Just name -> do
+        maybeExp <- Rock.fetch $ Query.ForeignExp path name
+        case maybeExp of
+          Just (Slv.Typed _ area _) ->
+            return $ Just (path, area)
+
+          _ -> do
+            case findForeignAstForName name (Slv.aimports typedAst) of
+              Just fp -> do
+                let name' =
+                      if '.' `elem` name then
+                        case dropWhile (/= '.') name of
+                          '.' : name ->
+                            name
+
+                          or ->
+                            or
+                      else
+                        name
+
+                maybeConstructor <- Rock.fetch $ Query.ForeignConstructor fp name'
+                maybeExp'        <- Rock.fetch $ Query.ForeignExp fp name'
+                case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor of
+                  Just area' ->
+                    return $ Just (fp, area')
+
+                  _ ->
+                    return Nothing
+
+              Nothing ->
+                return Nothing
+
+      _ ->
+        return Nothing
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
 runTask state options prune invalidatedPaths fileUpdates task =
