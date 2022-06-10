@@ -1,26 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use lambda-case" #-}
-
+{-# HLINT ignore "Eta reduce" #-}
 module Run.LanguageServer where
-
--- import qualified Language.Haskell.LSP.Control           as LSP
--- import qualified Language.Haskell.LSP.Core              as LSP
--- import qualified Language.Haskell.LSP.Types             as LSPTypes
--- import           Data.Default (def)
--- import qualified Data.Text as Text
--- import qualified Language.Haskell.LSP.Types as LSP
--- import qualified Language.Haskell.LSP.Messages as LSP
--- import           Data.HashSet (HashSet)
--- import qualified Data.HashSet as HashSet
--- import           Data.HashMap.Lazy (HashMap)
--- import qualified Data.HashMap.Lazy as HashMap
--- import GHC.Conc
--- import Control.Concurrent.STM
--- import Control.Monad
--- import Control.Applicative
--- import Control.Concurrent
-
 
 import Language.LSP.Server
 import Language.LSP.Types
@@ -302,6 +284,11 @@ getHoverInformation state loc path = do
   return result
 
 
+pathToUri :: FilePath -> Uri
+pathToUri path =
+  Uri $ T.pack ("file://" <> path)
+
+
 uriToPath :: Uri -> FilePath
 uriToPath uri =
   let unpacked = T.unpack $ getUri uri
@@ -319,18 +306,31 @@ generateDiagnostics state uri fileUpdates = do
   let errsByModule = groupErrsByModule errs
   let warnsByModule = groupWarnsByModule warnings
 
+  errorDiagnostics <- liftIO $ mapM
+    (\(p, errs) -> do
+      diagnostics <- mapM errorToDiagnostic errs
+      return (p, diagnostics)
+    )
+    $ Map.toList errsByModule
+
+  warningDiagnostics <- liftIO $ mapM
+    (\(p, warnings) -> do
+      diagnostics <- mapM warningToDiagnostic warnings
+      return (p, diagnostics)
+    )
+    $ Map.toList warnsByModule
+
   flushDiagnosticsBySource 20 (Just "Madlib")
 
-  forM_ errsByModule $ \errs' -> do
-    let moduleUri = uriOfError $ head errs'
-    errorDiagnostics <- liftIO $ mapM errorToDiagnostic errs'
-    let diagnosticsBySource = partitionBySource errorDiagnostics
-    publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
+  let allDiagnostics =
+        Map.toList $ Map.unionWith
+          (<>)
+          (Map.fromList errorDiagnostics)
+          (Map.fromList warningDiagnostics)
 
-  forM_ warnsByModule $ \warnings' -> do
-    let moduleUri = uriOfWarning $ head warnings'
-    errorDiagnostics <- liftIO $ mapM warningToDiagnostic warnings'
-    let diagnosticsBySource = partitionBySource errorDiagnostics
+  forM_ allDiagnostics $ \(modulePath, diagnostics) -> do
+    let moduleUri = pathToUri modulePath
+    let diagnosticsBySource = partitionBySource diagnostics
     publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
 
 
@@ -338,6 +338,7 @@ uriOfError :: CompilationError -> Uri
 uriOfError err = case Error.getContext err of
   Context path _ _ ->
     Uri $ T.pack ("file://" <> path)
+
 
 uriOfWarning :: CompilationWarning -> Uri
 uriOfWarning warning = case Warning.getContext warning of
@@ -391,16 +392,16 @@ warningsForModule errs path =
   filter (isWarningFromModule path) errs
 
 
-groupErrsByModule :: [CompilationError] -> [[CompilationError]]
+groupErrsByModule :: [CompilationError] -> Map.Map FilePath [CompilationError]
 groupErrsByModule errs =
   let errs' = filter ((/= NoContext) . Error.getContext) errs
-  in  List.groupBy areErrorsFromSameModule errs'
+  in  Map.fromList $ (\errs -> (Error.getPath $ head errs, errs)) <$> List.groupBy areErrorsFromSameModule errs'
 
 
-groupWarnsByModule :: [CompilationWarning] -> [[CompilationWarning]]
+groupWarnsByModule :: [CompilationWarning] -> Map.Map FilePath [CompilationWarning]
 groupWarnsByModule warnings =
   let warnings' = filter ((/= NoContext) . Warning.getContext) warnings
-  in  List.groupBy areWarningsFromSameModule warnings'
+  in  Map.fromList $ (\warnings -> (Warning.getPath $ head warnings, warnings)) <$> List.groupBy areWarningsFromSameModule warnings'
 
 
 
