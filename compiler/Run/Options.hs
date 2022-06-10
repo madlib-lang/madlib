@@ -9,4 +9,5 @@ data Options
     { optPathUtils :: PathUtils
     , optRootPath :: FilePath
     , optTarget :: Target
+    , optOptimized :: Bool
     }

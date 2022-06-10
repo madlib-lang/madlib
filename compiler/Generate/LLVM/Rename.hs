@@ -522,9 +522,15 @@ dedupeNamedImports alreadyImported imports = case imports of
 
 
 
-renameAST :: Env -> AST -> (AST, Env)
-renameAST env ast =
-  let moduleHash                   = hashModulePath ast
+renameAST :: AST -> AST
+renameAST ast =
+  let env =
+        Env { namesInScope = Map.empty
+            , currentModuleHash = ""
+            , usedDefaultImportNames = Map.empty
+            , defaultImportHashes = Map.empty
+            }
+      moduleHash                   = hashModulePath ast
       env'                         = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
       (renamedImports, env'')      = renameImports env' $ aimports ast
       (renamedTypeDecls, env''')   = renameTypeDecls env'' $ atypedecls ast
@@ -537,13 +543,8 @@ renameAST env ast =
 
       rewrittenImports             = rewriteDefaultImports env''''' renamedImports renamedImports
       dedupedImports               = dedupeNamedImports [] rewrittenImports
-  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = dedupedImports }, env)
+  in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = dedupedImports }
 
 renameTable :: Table -> Table
-renameTable table =
-  let env = Env { namesInScope = Map.empty
-                , currentModuleHash = ""
-                , usedDefaultImportNames = Map.empty
-                , defaultImportHashes = Map.empty
-                }
-  in  Map.map (fst . renameAST env) table
+renameTable =
+  Map.map renameAST

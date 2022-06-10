@@ -1016,6 +1016,18 @@ instance Convertable AST AST where
                , apath       = apath ast
                }
 
+convertAST :: AST -> AST
+convertAST ast =
+  let env =
+        Env { freeVars = []
+            , freeVarExclusion = []
+            , stillTopLevel = True
+            , lifted = M.empty
+            , allocatedMutations = []
+            , mutationsInScope = []
+            , moduleHash = ""
+            }
+  in MonadState.evalState (convert env ast) initialOptimizationState
 
 -- I think at some point we might want to follow imports in the optimization
 -- process in order to correctly reduce dictionaries in the right order and have
@@ -1023,5 +1035,5 @@ instance Convertable AST AST where
 convertTable :: Table -> Table
 convertTable table =
   let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, allocatedMutations = [], mutationsInScope = [], moduleHash = "" }
-      convertd = mapM (convert env) table
-  in  MonadState.evalState convertd initialOptimizationState
+      converted = mapM (convert env) table
+  in  MonadState.evalState converted initialOptimizationState
