@@ -63,6 +63,7 @@ escapeJSONString s = case s of
   x:r    -> x : escapeJSONString r
   _      -> ""
 
+
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
 generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Source _ _ name) _ absPath)):imps) = do
@@ -94,7 +95,6 @@ buildAST options path code = case parse code of
 
 setPath :: AST -> FilePath -> AST
 setPath ast path = ast { apath = Just path }
-
 
 
 computeAbsoluteImportPath :: FilePath -> Import -> IO Import

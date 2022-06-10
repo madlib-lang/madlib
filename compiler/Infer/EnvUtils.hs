@@ -90,14 +90,6 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
   Nothing -> do
     Rock.fetch $ Query.SolvedInterface (envCurrentPath env) name
 
--- lookupInterface :: Env -> Can.Name -> Infer Interface
--- lookupInterface env n = case M.lookup n (envInterfaces env) of
---   Just i ->
---     return i
-
---   _      ->
---     throwError $ CompilationError (InterfaceNotExisting n) NoContext
-
 
 
 mergeVars :: Env -> Vars -> Env
