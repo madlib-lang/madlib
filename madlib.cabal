@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 86ea9db90402696a01393e42ec582edadc21d26eb01537ad4a69807939579b16
+-- hash: 567e322b8959f14a0e04200adb8874481b73e617f5bfe4f6994786a7050f0f70
 
 name:           madlib
 version:        0.12.2
@@ -125,6 +125,7 @@ library
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
+    , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
     , compiler-common
@@ -207,6 +208,7 @@ library compiler-common
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
+    , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
     , constraints-extras ==0.3.2.0
@@ -268,6 +270,7 @@ executable madlib
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
+    , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
     , constraints-extras ==0.3.2.0
@@ -337,6 +340,7 @@ test-suite madlib-test
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
     , array >=0.5.4.0
+    , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
     , compiler-common
