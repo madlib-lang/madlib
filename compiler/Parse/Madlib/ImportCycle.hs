@@ -9,6 +9,7 @@ import qualified Driver.Query                           as Query
 import           Error.Error
 import Error.Context
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 
 
 detectCycle :: [FilePath] -> FilePath -> Rock.Task Query.Query (Maybe CompilationError)
@@ -27,13 +28,14 @@ processImport originAstPath importChain err imp = do
   let importPath = getImportAbsolutePath imp
   let importArea = getArea imp
   case err of
-    Just err' ->
-      return $ Just err'
-
     Nothing ->
       if importPath `elem` importChain then
         return $ Just $ CompilationError (ImportCycle $ importChain ++ [importPath]) (Context originAstPath importArea [])
       else
         detectCycle importChain importPath
+
+    Just err' ->
+      return $ Just err'
+
 
 
