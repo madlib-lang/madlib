@@ -9,6 +9,7 @@ import qualified AST.Source                 as Src
 import qualified AST.Canonical              as Can
 import qualified Canonicalize.Env           as CanEnv
 import qualified AST.Solved                 as Slv
+import qualified Infer.Env                  as SlvEnv
 -- import           Parse.Madlib.AST
 import           Error.Error (CompilationError(CompilationError))
 import           Data.GADT.Compare.TH (deriveGEq)
@@ -24,10 +25,13 @@ data Query a where
   -- Canonicalization
   CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env)
   CanonicalizedInterface :: FilePath -> String -> Query CanEnv.Interface
-  ForeignType :: FilePath -> FilePath -> Query Type
+  ForeignADTType :: FilePath -> String -> Query (Maybe Type)
 
   -- Type checking
+  SolvedASTWithEnv :: FilePath -> Query (Slv.AST, SlvEnv.Env)
   SolvedTable :: [FilePath] -> Query Slv.Table
+  SolvedInterface :: FilePath -> String -> Query SlvEnv.Interface
+  ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   -- SolvedAST :: FilePath -> Query Slv.AST
   -- BuiltTarget :: FilePath -> Query Slv.AST
 
@@ -47,11 +51,22 @@ instance Hashable (Query a) where
     CanonicalizedInterface _ name ->
       hashWithSalt salt (name, 3 :: Int)
 
-    ForeignType modulePath typeName ->
+    ForeignADTType modulePath typeName ->
       hashWithSalt salt (modulePath <> "." <> typeName, 4 :: Int)
 
+    SolvedASTWithEnv path ->
+      hashWithSalt salt (path, 5 :: Int)
+
     SolvedTable modulePaths ->
-      hashWithSalt salt (show modulePaths, 5 :: Int)
+      hashWithSalt salt (show modulePaths, 6 :: Int)
+
+    SolvedInterface _ name ->
+      hashWithSalt salt (name, 7 :: Int)
+
+    ForeignScheme modulePath typeName ->
+      hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
+
+
 
 instance Hashable (Some Query) where
   hashWithSalt salt (Some query) =

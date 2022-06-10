@@ -23,6 +23,7 @@ import           Data.List                      ( (\\)
 import           Infer.Infer
 import           Infer.Type
 import           Infer.Env
+import           Infer.EnvUtils
 import           Infer.Typing
 import           Infer.Substitute
 import           Infer.Unify

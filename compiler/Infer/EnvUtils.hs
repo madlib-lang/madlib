@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-module Infer.Env where
+module Infer.EnvUtils where
 
 
 import qualified AST.Canonical                 as Can
@@ -13,29 +13,12 @@ import           Error.Context
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
 import qualified Data.Set as Set
+import           Infer.Env
 
 
-data Interface = Interface [TVar] [Pred] [Instance] deriving(Eq, Show)
-
-data Instance = Instance (Qual Pred) Vars deriving(Eq, Show)
 
 
-type Vars = M.Map String Scheme
-type Interfaces = M.Map Id Interface
-type Methods = M.Map String Scheme
-type TypeDecls = M.Map String Type
 
-data Env
-  = Env
-    { envVars         :: Vars
-    , envInterfaces   :: Interfaces
-    , envConstructors :: Set.Set String
-    , envMethods      :: Methods
-    , envCurrentPath  :: FilePath
-    , envBacktrace    :: Backtrace
-    , envNamespacesInScope :: Set.Set String
-    }
-    deriving(Eq, Show)
 
 
 isConstructor :: Env -> String -> Bool
@@ -71,8 +54,12 @@ safeExtendVarsForAbsParam env (i, sc) = case M.lookup i (envVars env) of
 
 lookupInterface :: Env -> Can.Name -> Infer Interface
 lookupInterface env n = case M.lookup n (envInterfaces env) of
-  Just i -> return i
-  _      -> throwError $ CompilationError (InterfaceNotExisting n) NoContext
+  Just i ->
+    return i
+
+  _      ->
+    throwError $ CompilationError (InterfaceNotExisting n) NoContext
+
 
 
 mergeVars :: Env -> Vars -> Env
@@ -381,6 +368,7 @@ initialEnv = Env
   , envCurrentPath = ""
   , envBacktrace   = mempty
   , envNamespacesInScope = mempty
+  , envImportInfo = mempty
   }
 
 pushExpToBT :: Env -> Can.Exp -> Env
