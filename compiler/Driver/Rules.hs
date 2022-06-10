@@ -251,17 +251,26 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
                 joinPath [optEntrypoint options, "__default__instances__.mad"]
               else
                 joinPath [takeDirectory (optEntrypoint options), "__default__instances__.mad"]
-      let outputFolder   = takeDirectory (optOutputPath options)
+      let outputFolder = takeDirectory (optOutputPath options)
       let outputPath = Path.computeLLVMTargetPath outputFolder (optRootPath options) defaultInstancesModulePath
       createDirectoryIfMissing True $ takeDirectory outputPath
       ByteString.writeFile outputPath objectContent
 
     return (builtModule, (mempty, mempty))
 
-  BuiltJSModule path -> nonInput $ do
+  GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
-    jsModule <- liftIO $ Javascript.generateJSModule options False paths coreAst
+    jsModule <- liftIO $ Javascript.generateJSModule options paths coreAst
+    return (jsModule, (mempty, mempty))
+
+  BuiltJSModule path -> nonInput $ do
+    jsModule <- Rock.fetch $ GeneratedJSModule path
+    let computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) path
+
+    liftIO $ do
+      createDirectoryIfMissing True $ takeDirectory computedOutputPath
+      writeFile computedOutputPath jsModule
     return (jsModule, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do

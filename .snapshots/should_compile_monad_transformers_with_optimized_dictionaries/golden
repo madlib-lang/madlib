@@ -1,4 +1,5 @@
-// file: path
+// file: Module.mad
+import {} from "./__internals__.mjs"
 export let WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
 export let Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
 export let StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
@@ -11,10 +12,10 @@ global.Ι9 = {};
 global.Ι4 = {};
 global.Ι8 = {};
 Ι10['τ12'] = {};
-Ι10['τ12']['inspect'] = () => (Ι10τ16) => (Ι10τ18) => (Ι10τ17) => (__$a__ => ((__x__) => {
+Ι10['τ12']['inspect'] = () => (Ι10τ24) => (Ι10τ26) => (Ι10τ25) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let a0 = __x__.__args[0];
-    return `WriterT(` + Ι10τ16.inspect()(a0) + `)`;
+    return `WriterT(` + Ι10τ24.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -26,10 +27,10 @@ global.Ι8 = {};
   }
 })(__$a__));
 Ι10['τ10'] = {};
-Ι10['τ10']['inspect'] = () => (Ι10τ19) => (__$a__ => ((__x__) => {
+Ι10['τ10']['inspect'] = () => (Ι10τ27) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a0 = __x__.__args[0];
-    return `Identity(` + Ι10τ19.inspect()(a0) + `)`;
+    return `Identity(` + Ι10τ27.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -41,7 +42,7 @@ global.Ι8 = {};
   }
 })(__$a__));
 Ι10['τ9'] = {};
-Ι10['τ9']['inspect'] = () => (Ι10τ23) => (Ι10τ22) => (Ι10τ21) => (__$a__ => ((__x__) => {
+Ι10['τ9']['inspect'] = () => (Ι10τ30) => (Ι10τ29) => (Ι10τ28) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "StateT" && true) {
     let a0 = __x__.__args[0];
     return `StateT(` + Ι10.τ20.inspect()(a0) + `)`;

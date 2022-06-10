@@ -1,4 +1,5 @@
 // file: /root/project/src/Binary.mad
+import {} from "./__internals__.mjs"
 export let Int8Bit = (a => ({ __constructor: "Int8Bit", __args: [ a ] }));
 export let Int16Bit = (a => ({ __constructor: "Int16Bit", __args: [ a ] }));
 export let Int32Bit = (a => ({ __constructor: "Int32Bit", __args: [ a ] }));
@@ -43,6 +44,7 @@ Inspect['Bytes_69f1c9d46626f6b4732f10b20d210612']['inspect'] = () => (__$a__ => 
 })(__$a__));
 export default { Int8Bit, Int16Bit, Int32Bit, Bytes };
 // file: /root/project/src/FileSystem.mad
+import {} from "./__internals__.mjs"
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 
@@ -70,6 +72,7 @@ Inspect['Data_9029b04665903b3e1f3a8e816ce9ba2d']['inspect'] = () => (__$a__ => (
 export let writeFile = (path => d =>  );
 export default { writeFile, TextData, BinaryData };
 // file: /root/project/src/Http.mad
+import {} from "./__internals__.mjs"
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 
@@ -96,7 +99,7 @@ Inspect['Body_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => (
   }
 })(__$a__));
 Inspect['Record_bodya'] = {};
-Inspect['Record_bodya']['inspect'] = () => (Inspect_t279) => (__$a__ => `{ ` + `body: ` + Inspect_t279.inspect()(__$a__.body) + ` }`);
+Inspect['Record_bodya']['inspect'] = () => (Inspect_y76) => (__$a__ => `{ ` + `body: ` + Inspect_y76.inspect()(__$a__.body) + ` }`);
 Inspect['Response_d206b5c3b3648903ef6233d5061d1089'] = {};
 Inspect['Response_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Response" && true) {
@@ -115,6 +118,7 @@ Inspect['Response_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ 
 export let get = (url =>  );
 export default { get, TextBody, BinaryBody, Response };
 // file: /root/project/src/IO.mad
+import {} from "./__internals__.mjs"
 export let log = (a =>  { console.log(a); return a; } );
 export default { log };
 // file: /root/project/src/Main.mad
@@ -138,9 +142,10 @@ W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile(`./f.zip`))(W.map(FS.BinaryData)(
 })(response)))(Http.get(`https://github.com/open-sorcerers/madlib/archive/master.zip`)))));
 export default {};
 // file: /root/project/src/Wish.mad
+import {} from "./__internals__.mjs"
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
 Inspect['Wish_dfea03aabf5b8615791941bb2605337e'] = {};
-Inspect['Wish_dfea03aabf5b8615791941bb2605337e']['inspect'] = () => (Inspect_r17) => (Inspect_t19) => (__$a__ => ((__x__) => {
+Inspect['Wish_dfea03aabf5b8615791941bb2605337e']['inspect'] = () => (Inspect_g136) => (Inspect_i138) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;

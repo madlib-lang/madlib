@@ -1,112 +1,114 @@
-Right
-  (fromList
-     [ ( "./ModuleA"
-       , AST
-           { aimports = []
-           , aexps =
-               [ Typed
-                   ([] :=>
-                      TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "j9" Star)))
-                        (TApp
-                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                           (TVar (TV "j9" Star))))
-                   (Area (Loc 0 1 1) (Loc 31 1 32))
-                   (Export
-                      (Typed
-                         ([] :=>
-                            TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "j9" Star)))
-                              (TApp
-                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                 (TVar (TV "j9" Star))))
-                         (Area (Loc 0 1 1) (Loc 31 1 32))
-                         (Assignment
-                            "singleton"
-                            (Typed
-                               ([] :=>
-                                  TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "j9" Star)))
-                                    (TApp
-                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                       (TVar (TV "j9" Star))))
-                               (Area (Loc 19 1 20) (Loc 31 1 32))
-                               (Abs
-                                  (Typed
-                                     ([] :=> TVar (TV "j9" Star))
-                                     (Area (Loc 20 1 21) (Loc 21 1 22))
-                                     "a")
-                                  [ Typed
-                                      ([] :=>
-                                         TApp
-                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TVar (TV "j9" Star)))
-                                      (Area (Loc 27 1 28) (Loc 30 1 31))
-                                      (ListConstructor
-                                         [ Typed
-                                             ([] :=> TVar (TV "j9" Star))
-                                             (Area (Loc 28 1 29) (Loc 29 1 30))
-                                             (ListItem
-                                                (Typed
-                                                   ([] :=> TVar (TV "j9" Star))
-                                                   (Area (Loc 28 1 29) (Loc 29 1 30))
-                                                   (Var "a" False)))
-                                         ])
-                                  ])))))
-               ]
-           , atypedecls = []
-           , ainterfaces = []
-           , ainstances = []
-           , apath = Just "./ModuleA"
-           }
-       )
-     , ( "./ModuleB"
-       , AST
-           { aimports =
-               [ Untyped
-                   (Area (Loc 0 1 1) (Loc 25 1 26))
-                   (DefaultImport
-                      (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "L")
-                      "./ModuleA"
-                      "./ModuleA")
-               ]
-           , aexps =
-               [ Typed
-                   ([] :=>
-                      TApp
-                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                        (TCon (TC "Integer" Star) "prelude"))
-                   (Area (Loc 26 2 1) (Loc 40 2 15))
-                   (App
-                      (Typed
-                         ([] :=>
-                            TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TCon (TC "Integer" Star) "prelude"))
-                              (TApp
-                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                 (TCon (TC "Integer" Star) "prelude")))
-                         (Area (Loc 26 2 1) (Loc 37 2 12))
-                         (Var "L.singleton" False))
-                      (Typed
-                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                          ] :=>
-                            TCon (TC "Integer" Star) "prelude")
-                         (Area (Loc 38 2 13) (Loc 39 2 14))
-                         (LNum "3"))
-                      True)
-               ]
-           , atypedecls = []
-           , ainterfaces = []
-           , ainstances = []
-           , apath = Just "./ModuleB"
-           }
-       )
-     ])
+( fromList
+    [ ( "./ModuleA.mad"
+      , AST
+          { aimports = []
+          , aexps =
+              [ Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "f5" Star)))
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "f5" Star))))
+                  (Area (Loc 0 1 1) (Loc 31 1 32))
+                  (Export
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "f5" Star)))
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TVar (TV "f5" Star))))
+                        (Area (Loc 0 1 1) (Loc 31 1 32))
+                        (Assignment
+                           "singleton"
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "f5" Star)))
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "f5" Star))))
+                              (Area (Loc 19 1 20) (Loc 31 1 32))
+                              (Abs
+                                 (Typed
+                                    ([] :=> TVar (TV "f5" Star))
+                                    (Area (Loc 20 1 21) (Loc 21 1 22))
+                                    "a")
+                                 [ Typed
+                                     ([] :=>
+                                        TApp
+                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                          (TVar (TV "f5" Star)))
+                                     (Area (Loc 27 1 28) (Loc 30 1 31))
+                                     (ListConstructor
+                                        [ Typed
+                                            ([] :=> TVar (TV "f5" Star))
+                                            (Area (Loc 28 1 29) (Loc 29 1 30))
+                                            (ListItem
+                                               (Typed
+                                                  ([] :=> TVar (TV "f5" Star))
+                                                  (Area (Loc 28 1 29) (Loc 29 1 30))
+                                                  (Var "a" False)))
+                                        ])
+                                 ])))))
+              ]
+          , atypedecls = []
+          , ainterfaces = []
+          , ainstances = []
+          , apath = Just "./ModuleA.mad"
+          }
+      )
+    , ( "./ModuleB.mad"
+      , AST
+          { aimports =
+              [ Untyped
+                  (Area (Loc 0 1 1) (Loc 25 1 26))
+                  (DefaultImport
+                     (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "L")
+                     "./ModuleA"
+                     "./ModuleA.mad")
+              ]
+          , aexps =
+              [ Typed
+                  ([] :=>
+                     TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "Integer" Star) "prelude"))
+                  (Area (Loc 26 2 1) (Loc 40 2 15))
+                  (App
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Integer" Star) "prelude"))
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TCon (TC "Integer" Star) "prelude")))
+                        (Area (Loc 26 2 1) (Loc 37 2 12))
+                        (Var "L.singleton" False))
+                     (Typed
+                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         ] :=>
+                           TCon (TC "Integer" Star) "prelude")
+                        (Area (Loc 38 2 13) (Loc 39 2 14))
+                        (LNum "3"))
+                     True)
+              ]
+          , atypedecls = []
+          , ainterfaces = []
+          , ainstances = []
+          , apath = Just "./ModuleB.mad"
+          }
+      )
+    ]
+, []
+, []
+)

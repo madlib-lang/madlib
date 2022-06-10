@@ -1,13 +1,14 @@
 // file: /root/project/madlib_modules/random/src/Main.mad
+import {} from "./../../../__internals__.mjs"
 import R from "./Utils/Random.mjs";
 
 export let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37'] = {};
-Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
+Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37']['inspect'] = () => (Inspect_d29) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_v21.inspect()(a0) + `)`;
+    return `Just(` + Inspect_d29.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -24,11 +25,12 @@ Inspect['Maybe_2031693b0664ad7e81fcc075f8b57c37']['inspect'] = () => (Inspect_v2
 export let random = (seed => R.random(seed));
 export default { random, Just, Nothing };
 // file: /root/project/madlib_modules/random/src/Utils/Random.mad
+import {} from "./../../../../__internals__.mjs"
 export let random = (seed => seed / 2);
 export default { random };
 // file: /root/project/src/Main.mad
-import {} from "./__internals__.mjs"
-import R from "./.deps/random/src/Main.mjs";
+import {} from "./../__internals__.mjs"
+import R from "./../madlib_modules/random/src/Main.mjs";
 
 R.random(3);
 export default {};

@@ -11,6 +11,8 @@ import           Data.Text                      ( pack
                                                 , replace
                                                 , unpack
                                                 )
+import           System.FilePath (normalise)
+
 
 type MockFiles = M.Map FilePath String
 
@@ -40,4 +42,5 @@ defaultPathUtils = PathUtils { readFile           = makeReadFile M.empty
                              , doesFileExist      = const $ return True
                              , byteStringReadFile = makeByteStringReadFile M.empty
                              , getExecutablePath  = return "/"
+                             , normalisePath      = normalise
                              }

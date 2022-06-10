@@ -1,16 +1,17 @@
-// file: path
+// file: Module.mad
+import {} from "./__internals__.mjs"
 let Right = (a => ({ __constructor: "Right", __args: [ a ] }));
 let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Show = {};
-Inspect['Either_d6fe1d0be6347b8ef2427fa629c04485'] = {};
-Inspect['Either_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_h7) => (Inspect_e4) => (__$a__ => ((__x__) => {
+Inspect['Either_568c75136c0c369c440814a7af59434a'] = {};
+Inspect['Either_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_f83) => (Inspect_c80) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(` + Inspect_e4.inspect()(a0) + `)`;
+    return `Right(` + Inspect_c80.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(` + Inspect_h7.inspect()(a0) + `)`;
+    return `Left(` + Inspect_f83.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -26,10 +27,10 @@ Show['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (b => (b ? `Tru
 Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
 Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (n =>  new Integer(n).toString() );
 Show['Tuple_2'] = {};
-Show['Tuple_2']['show'] = () => (Show_j61) => (Show_i60) => (__x__ => ((__x__) => {
+Show['Tuple_2']['show'] = () => (Show_a104) => (Show_z103) => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return `#[` + Show_i60.show()(a) + `, ` + Show_j61.show()(b) + `]`;
+    return `#[` + Show_z103.show()(a) + `, ` + Show_a104.show()(b) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -38,10 +39,10 @@ Show['Tuple_2']['show'] = () => (Show_j61) => (Show_i60) => (__x__ => ((__x__) =
   }
 })(__x__));
 Show['Tuple_3'] = {};
-Show['Tuple_3']['show'] = () => (Show_d81) => (Show_c80) => (Show_b79) => (__x__ => ((__x__) => {
+Show['Tuple_3']['show'] = () => (Show_u124) => (Show_t123) => (Show_s122) => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return `#[` + Show_b79.show()(a) + `, ` + Show_c80.show()(b) + `, ` + Show_d81.show()(c) + `]`;
+    return `#[` + Show_s122.show()(a) + `, ` + Show_t123.show()(b) + `, ` + Show_u124.show()(c) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -49,15 +50,15 @@ Show['Tuple_3']['show'] = () => (Show_d81) => (Show_c80) => (Show_b79) => (__x__
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Show['Either_d6fe1d0be6347b8ef2427fa629c04485'] = {};
-Show['Either_d6fe1d0be6347b8ef2427fa629c04485']['show'] = () => (Show_c106) => (Show_f109) => (__x__ => ((__x__) => {
+Show['Either_568c75136c0c369c440814a7af59434a'] = {};
+Show['Either_568c75136c0c369c440814a7af59434a']['show'] = () => (Show_t149) => (Show_w152) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
-    return `Right ` + Show_c106.show()(a);
+    return `Right ` + Show_t149.show()(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
-    return `Left ` + Show_f109.show()(e);
+    return `Left ` + Show_w152.show()(e);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -66,8 +67,8 @@ Show['Either_d6fe1d0be6347b8ef2427fa629c04485']['show'] = () => (Show_c106) => (
   }
 })(__x__));
 Show.Tuple_2.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, false]));
-Show.Either_d6fe1d0be6347b8ef2427fa629c04485.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Right(3));
-let fnWithConstraint = (Show_o170) => Show_o170.show();
+Show.Either_568c75136c0c369c440814a7af59434a.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Right(3));
+let fnWithConstraint = (Show_z25) => Show_z25.show();
 Show.Tuple_2.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, 1]));
 Show.Tuple_3.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([false, 42, true]));
 export default {};

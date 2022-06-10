@@ -24,6 +24,7 @@ import           Run.Compile
 import           Run.CommandLine
 import           Run.PackageInstaller
 import           Run.TestRunner
+import Run.CommandLine (Command(compileWatch))
 
 
 runRun :: FilePath -> [String] -> IO ()
@@ -57,6 +58,7 @@ runRunPackage package args =
                                                 , compileJson          = False
                                                 , compileTestFilesOnly = False
                                                 , noCache              = False
+                                                , compileWatch         = False
                                                 }
 
                   runCompilation compileCommand False
@@ -79,6 +81,7 @@ runSingleModule input args = do
                                , compileJson          = False
                                , compileTestFilesOnly = False
                                , noCache              = False
+                               , compileWatch         = False
                                }
 
   runCompilation compileCommand False

@@ -1,42 +1,43 @@
-// file: path
+// file: Module.mad
+import {} from "./__internals__.mjs"
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485'] = {};
-Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_v21) => __hpFnWrap('path', 0, 'inspect')((__$a__ => ((__x__) => {
-  if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Just" && true) {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_s798) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => ((__x__) => {
+  if (__hp('Module.mad', 'line', 0, 0) || __x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `Just(`)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_v21.inspect())(__hpLineWrap('path', 0, a0)))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, `)`));
+    return __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `Just(`)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_s798.inspect())(__hpLineWrap('Module.mad', 0, a0)))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `)`));
   }
-  else if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('path', 0, `Nothing`);
+  else if (__hp('Module.mad', 'line', 0, 0) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('Module.mad', 0, `Nothing`);
   }
-  else if (__hp('path', 'line', 0, 0) || true) {
-    return __hpLineWrap('path', 0, `Unknown`);
+  else if (__hp('Module.mad', 'line', 0, 0) || true) {
+    return __hpLineWrap('Module.mad', 0, `Unknown`);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 0, __$a__))));
+})(__hpLineWrap('Module.mad', 0, __$a__))));
 Inspect['Record_carsa'] = {};
-Inspect['Record_carsa']['inspect'] = () => (Inspect_k36) => __hpFnWrap('path', 0, 'inspect')((__$a__ => __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `{ `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `cars: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_k36.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).cars))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, ` }`))));
-Inspect['Record_nameb_xa'] = {};
-Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_u46) => (Inspect_b53) => __hpFnWrap('path', 0, 'inspect')((__$a__ => __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `{ `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `x: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_u46.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).x))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `, `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `name: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_b53.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).name))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, ` }`)))));
-export let fn = __hpFnWrap('path', 1, 'fn')((b => c => __hpLineWrap('path', 1, __hpLineWrap('path', 1, b)) + __hpLineWrap('path', 1, __hpLineWrap('path', 1, c))));
-let inc = __hpFnWrap('path', 3, 'inc')((x => __hpLineWrap('path', 3, __hpLineWrap('path', 3, x)) + __hpLineWrap('path', 3, __hpLineWrap('path', 3, 1))));
-let dec = __hpFnWrap('path', 5, 'dec')((x => __hpLineWrap('path', 5, __hpLineWrap('path', 5, x)) - __hpLineWrap('path', 5, __hpLineWrap('path', 5, 1))));
-let double = __hpFnWrap('path', 6, 'double')((x => __hpLineWrap('path', 7, __hpLineWrap('path', 7, x)) * __hpLineWrap('path', 7, __hpLineWrap('path', 7, 2))));
-let half = __hpFnWrap('path', 9, 'half')((x => __hpLineWrap('path', 9, __hpLineWrap('path', 9, x)) / __hpLineWrap('path', 9, __hpLineWrap('path', 9, 2))));
-__hpLineWrap('path', 10, double)(__hpLineWrap('path', 10, half)(__hpLineWrap('path', 10, 3)));
-__eq__(__hpLineWrap('path', 11, __hpLineWrap('path', 11, 3)), __hpLineWrap('path', 11, __hpLineWrap('path', 11, 5)));
-let carResponse = ({ cars: __hpLineWrap('path', 12, (null)) });
+Inspect['Record_carsa']['inspect'] = () => (Inspect_h813) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `{ `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `cars: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_h813.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).cars))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, ` }`))));
+Inspect['Record_namea_xb'] = {};
+Inspect['Record_namea_xb']['inspect'] = () => (Inspect_y830) => (Inspect_r823) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `{ `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `name: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_r823.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).name))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `, `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `x: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_y830.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).x))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, ` }`)))));
+export let fn = __hpFnWrap('Module.mad', 1, 'fn')((b => c => __hpLineWrap('Module.mad', 1, __hpLineWrap('Module.mad', 1, b)) + __hpLineWrap('Module.mad', 1, __hpLineWrap('Module.mad', 1, c))));
+let inc = __hpFnWrap('Module.mad', 3, 'inc')((x => __hpLineWrap('Module.mad', 3, __hpLineWrap('Module.mad', 3, x)) + __hpLineWrap('Module.mad', 3, __hpLineWrap('Module.mad', 3, 1))));
+let dec = __hpFnWrap('Module.mad', 5, 'dec')((x => __hpLineWrap('Module.mad', 5, __hpLineWrap('Module.mad', 5, x)) - __hpLineWrap('Module.mad', 5, __hpLineWrap('Module.mad', 5, 1))));
+let double = __hpFnWrap('Module.mad', 6, 'double')((x => __hpLineWrap('Module.mad', 7, __hpLineWrap('Module.mad', 7, x)) * __hpLineWrap('Module.mad', 7, __hpLineWrap('Module.mad', 7, 2))));
+let half = __hpFnWrap('Module.mad', 9, 'half')((x => __hpLineWrap('Module.mad', 9, __hpLineWrap('Module.mad', 9, x)) / __hpLineWrap('Module.mad', 9, __hpLineWrap('Module.mad', 9, 2))));
+__hpLineWrap('Module.mad', 10, double)(__hpLineWrap('Module.mad', 10, half)(__hpLineWrap('Module.mad', 10, 3)));
+__eq__(__hpLineWrap('Module.mad', 11, __hpLineWrap('Module.mad', 11, 3)), __hpLineWrap('Module.mad', 11, __hpLineWrap('Module.mad', 11, 5)));
+let carResponse = ({ cars: __hpLineWrap('Module.mad', 12, (null)) });
 ((__x__) => {
-  if (__hp('path', 'line', 14, 14) || true) {
+  if (__hp('Module.mad', 'line', 14, 14) || true) {
     let { cars: cs } = __x__;
-    return __hpLineWrap('path', 14, cs);
+    return __hpLineWrap('Module.mad', 14, cs);
   }
-  else if (__hp('path', 'line', 15, 15) || true) {
+  else if (__hp('Module.mad', 'line', 15, 15) || true) {
     return (null);
   }
   else {
@@ -44,109 +45,109 @@ let carResponse = ({ cars: __hpLineWrap('path', 12, (null)) });
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 13, carResponse));
+})(__hpLineWrap('Module.mad', 13, carResponse));
 ((__x__) => {
-  if (__hp('path', 'line', 18, 18) || __x__ === 3) {
-    return __hpLineWrap('path', 18, 3);
+  if (__hp('Module.mad', 'line', 18, 18) || __x__ === 3) {
+    return __hpLineWrap('Module.mad', 18, 3);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 17, 3));
+})(__hpLineWrap('Module.mad', 17, 3));
 ((__x__) => {
-  if (__hp('path', 'line', 21, 21) || __x__ === "3") {
-    return __hpLineWrap('path', 21, 3);
+  if (__hp('Module.mad', 'line', 21, 21) || __x__ === "3") {
+    return __hpLineWrap('Module.mad', 21, 3);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 20, `3`));
+})(__hpLineWrap('Module.mad', 20, `3`));
 ((__x__) => {
-  if (__hp('path', 'line', 24, 24) || __x__ === true) {
-    return __hpLineWrap('path', 24, 3);
+  if (__hp('Module.mad', 'line', 24, 24) || __x__ === true) {
+    return __hpLineWrap('Module.mad', 24, 3);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 23, true));
-let log = __hpFnWrap('path', 27, 'log')((a =>  { console.log(a); return a; } ));
-(__hpLineWrap('path', 28, true) ? __hpLineWrap('path', 28, `OK`) : __hpLineWrap('path', 28, `NOT OK`));
-let mapMaybe = __hpFnWrap('path', 31, 'mapMaybe')((f => m => ((__x__) => {
-  if (__hp('path', 'line', 32, 32) || __x__.__constructor === "Just" && true) {
+})(__hpLineWrap('Module.mad', 23, true));
+let log = __hpFnWrap('Module.mad', 27, 'log')((a =>  { console.log(a); return a; } ));
+(__hpLineWrap('Module.mad', 28, true) ? __hpLineWrap('Module.mad', 28, `OK`) : __hpLineWrap('Module.mad', 28, `NOT OK`));
+let mapMaybe = __hpFnWrap('Module.mad', 31, 'mapMaybe')((f => m => ((__x__) => {
+  if (__hp('Module.mad', 'line', 32, 32) || __x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
-    return __hpLineWrap('path', 32, Just)(__hpLineWrap('path', 32, f)(__hpLineWrap('path', 32, a)));
+    return __hpLineWrap('Module.mad', 32, Just)(__hpLineWrap('Module.mad', 32, f)(__hpLineWrap('Module.mad', 32, a)));
   }
-  else if (__hp('path', 'line', 33, 33) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('path', 33, Nothing);
+  else if (__hp('Module.mad', 'line', 33, 33) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('Module.mad', 33, Nothing);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 31, m))));
-let might = __hpLineWrap('path', 35, Just)(__hpLineWrap('path', 35, 3));
+})(__hpLineWrap('Module.mad', 31, m))));
+let might = __hpLineWrap('Module.mad', 35, Just)(__hpLineWrap('Module.mad', 35, 3));
 let q = ((__x__) => {
-  if (__hp('path', 'line', 37, 37) || __x__.__constructor === "Just" && true) {
+  if (__hp('Module.mad', 'line', 37, 37) || __x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
-    return __hpLineWrap('path', 37, a);
+    return __hpLineWrap('Module.mad', 37, a);
   }
-  else if (__hp('path', 'line', 38, 38) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('path', 38, 1);
+  else if (__hp('Module.mad', 'line', 38, 38) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('Module.mad', 38, 1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 36, might));
-__hpLineWrap('path', 40, __hpLineWrap('path', 40, true)) && __hpLineWrap('path', 40, __hpLineWrap('path', 40, false));
-__hpLineWrap('path', 41, __hpLineWrap('path', 41, false)) || __hpLineWrap('path', 41, __hpLineWrap('path', 41, true));
-__hpLineWrap('path', 42, __hpLineWrap('path', 42, false)) || __hpLineWrap('path', 42, __hpLineWrap('path', 42, __hpLineWrap('path', 42, true)) && __hpLineWrap('path', 42, __hpLineWrap('path', 42, false)));
-__hpLineWrap('path', 43, __hpLineWrap('path', 43, 1)) > __hpLineWrap('path', 43, __hpLineWrap('path', 43, 3));
-__hpLineWrap('path', 44, __hpLineWrap('path', 44, 1)) < __hpLineWrap('path', 44, __hpLineWrap('path', 44, 3));
-__hpLineWrap('path', 45, __hpLineWrap('path', 45, __hpLineWrap('path', 45, __hpLineWrap('path', 45, 1)) > __hpLineWrap('path', 45, __hpLineWrap('path', 45, 3))) && __hpLineWrap('path', 45, __hpLineWrap('path', 45, __hpLineWrap('path', 45, 3)) < __hpLineWrap('path', 45, __hpLineWrap('path', 45, 1)))) || __hpLineWrap('path', 45, __hpLineWrap('path', 45, true));
-__hpLineWrap('path', 46, __hpLineWrap('path', 46, 1)) >= __hpLineWrap('path', 46, __hpLineWrap('path', 46, 3));
-__hpLineWrap('path', 47, __hpLineWrap('path', 47, 1)) <= __hpLineWrap('path', 47, __hpLineWrap('path', 47, 3));
-__hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, 1)) >= __hpLineWrap('path', 48, __hpLineWrap('path', 48, 3))) && __hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, 3)) <= __hpLineWrap('path', 48, __hpLineWrap('path', 48, 1)))) || __hpLineWrap('path', 48, __hpLineWrap('path', 48, true));
-!(__hpLineWrap('path', 49, false));
-!(__hpLineWrap('path', 50, true));
-__hpLineWrap('path', 51, !(__hpLineWrap('path', 51, false))) && __hpLineWrap('path', 51, !(__hpLineWrap('path', 51, true)));
-__hpLineWrap('path', 52, !(__hpLineWrap('path', 52, false))) || __hpLineWrap('path', 52, !(__hpLineWrap('path', 52, true)));
-let arr = ({ v: __hpLineWrap('path', 53, 1), n: { v: __hpLineWrap('path', 53, 2), n: { v: __hpLineWrap('path', 53, 3), n: null } } });
-let all = ({ v: __hpLineWrap('path', 54, 4), n: { v: __hpLineWrap('path', 54, 5), n: { v: __hpLineWrap('path', 54, 6), n: __hpLineWrap('path', 54, arr) } } });
+})(__hpLineWrap('Module.mad', 36, might));
+__hpLineWrap('Module.mad', 40, __hpLineWrap('Module.mad', 40, true)) && __hpLineWrap('Module.mad', 40, __hpLineWrap('Module.mad', 40, false));
+__hpLineWrap('Module.mad', 41, __hpLineWrap('Module.mad', 41, false)) || __hpLineWrap('Module.mad', 41, __hpLineWrap('Module.mad', 41, true));
+__hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, false)) || __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, true)) && __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, false)));
+__hpLineWrap('Module.mad', 43, __hpLineWrap('Module.mad', 43, 1)) > __hpLineWrap('Module.mad', 43, __hpLineWrap('Module.mad', 43, 3));
+__hpLineWrap('Module.mad', 44, __hpLineWrap('Module.mad', 44, 1)) < __hpLineWrap('Module.mad', 44, __hpLineWrap('Module.mad', 44, 3));
+__hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, 1)) > __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, 3))) && __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, 3)) < __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, 1)))) || __hpLineWrap('Module.mad', 45, __hpLineWrap('Module.mad', 45, true));
+__hpLineWrap('Module.mad', 46, __hpLineWrap('Module.mad', 46, 1)) >= __hpLineWrap('Module.mad', 46, __hpLineWrap('Module.mad', 46, 3));
+__hpLineWrap('Module.mad', 47, __hpLineWrap('Module.mad', 47, 1)) <= __hpLineWrap('Module.mad', 47, __hpLineWrap('Module.mad', 47, 3));
+__hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, 1)) >= __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, 3))) && __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, 3)) <= __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, 1)))) || __hpLineWrap('Module.mad', 48, __hpLineWrap('Module.mad', 48, true));
+!(__hpLineWrap('Module.mad', 49, false));
+!(__hpLineWrap('Module.mad', 50, true));
+__hpLineWrap('Module.mad', 51, !(__hpLineWrap('Module.mad', 51, false))) && __hpLineWrap('Module.mad', 51, !(__hpLineWrap('Module.mad', 51, true)));
+__hpLineWrap('Module.mad', 52, !(__hpLineWrap('Module.mad', 52, false))) || __hpLineWrap('Module.mad', 52, !(__hpLineWrap('Module.mad', 52, true)));
+let arr = ({ v: __hpLineWrap('Module.mad', 53, 1), n: { v: __hpLineWrap('Module.mad', 53, 2), n: { v: __hpLineWrap('Module.mad', 53, 3), n: null } } });
+let all = ({ v: __hpLineWrap('Module.mad', 54, 4), n: { v: __hpLineWrap('Module.mad', 54, 5), n: { v: __hpLineWrap('Module.mad', 54, 6), n: __hpLineWrap('Module.mad', 54, arr) } } });
 ((__x__) => {
-  if (__hp('path', 'line', 56, 56) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
-    return __hpLineWrap('path', 56, 1);
+  if (__hp('Module.mad', 'line', 56, 56) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
+    return __hpLineWrap('Module.mad', 56, 1);
   }
-  else if (__hp('path', 'line', 57, 57) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && true && __x__.n.n.n === null) {
+  else if (__hp('Module.mad', 'line', 57, 57) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && true && __x__.n.n.n === null) {
     let { n: { n: { v: n } } } = __x__;
-    return __hpLineWrap('path', 57, n);
+    return __hpLineWrap('Module.mad', 57, n);
   }
-  else if (__hp('path', 'line', 58, 58) || __x__ !== null && true && __x__.n !== null && __x__.n.v === 3 && __x__.n.n === null) {
+  else if (__hp('Module.mad', 'line', 58, 58) || __x__ !== null && true && __x__.n !== null && __x__.n.v === 3 && __x__.n.n === null) {
     let { v: n,  } = __x__;
-    return __hpLineWrap('path', 58, n);
+    return __hpLineWrap('Module.mad', 58, n);
   }
-  else if (__hp('path', 'line', 59, 59) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
+  else if (__hp('Module.mad', 'line', 59, 59) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
     let { v: x1, n: { v: y1, n: { v: z1 } } } = __x__;
-    return __hpLineWrap('path', 59, __hpLineWrap('path', 59, __hpLineWrap('path', 59, x1)) + __hpLineWrap('path', 59, __hpLineWrap('path', 59, y1))) + __hpLineWrap('path', 59, __hpLineWrap('path', 59, z1));
+    return __hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, x1)) + __hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, y1))) + __hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, z1));
   }
-  else if (__hp('path', 'line', 60, 60) || __x__ === null) {
-    return __hpLineWrap('path', 60, 0);
+  else if (__hp('Module.mad', 'line', 60, 60) || __x__ === null) {
+    return __hpLineWrap('Module.mad', 60, 0);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ v: __hpLineWrap('path', 55, 1), n: { v: __hpLineWrap('path', 55, 2), n: { v: __hpLineWrap('path', 55, 3), n: { v: __hpLineWrap('path', 55, 5), n: { v: __hpLineWrap('path', 55, 8), n: null } } } } }));
-export let map = __hpFnWrap('path', 63, 'map')((f => xs => {
+})(({ v: __hpLineWrap('Module.mad', 55, 1), n: { v: __hpLineWrap('Module.mad', 55, 2), n: { v: __hpLineWrap('Module.mad', 55, 3), n: { v: __hpLineWrap('Module.mad', 55, 5), n: { v: __hpLineWrap('Module.mad', 55, 8), n: null } } } } }));
+export let map = __hpFnWrap('Module.mad', 63, 'map')((f => xs => {
     let $_result_;
     let $_continue_ = true;
     let $_start_ = {};
@@ -160,19 +161,19 @@ export let map = __hpFnWrap('path', 63, 'map')((f => xs => {
 
         $_continue_ = false;
         ((__x__) => {
-  if (__hp('path', 'line', 64, 64) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
+  if (__hp('Module.mad', 'line', 64, 64) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
     let { v: a, n: { v: b, n: { v: c } } } = __x__;
-    ($_end_ = $_end_.n = { v: __hpLineWrap('path', 64, $f)(__hpLineWrap('path', 64, a)) }, $$f = __hpLineWrap('path', 64, $f), $$xs = ({ v: __hpLineWrap('path', 64, b), n: { v: __hpLineWrap('path', 64, c), n: null } }), $_continue_ = true);
+    ($_end_ = $_end_.n = { v: __hpLineWrap('Module.mad', 64, $f)(__hpLineWrap('Module.mad', 64, a)) }, $$f = __hpLineWrap('Module.mad', 64, $f), $$xs = ({ v: __hpLineWrap('Module.mad', 64, b), n: { v: __hpLineWrap('Module.mad', 64, c), n: null } }), $_continue_ = true);
   }
-  else if (__hp('path', 'line', 65, 65) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n === null) {
+  else if (__hp('Module.mad', 'line', 65, 65) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n === null) {
     let { v: a, n: { v: b } } = __x__;
-    ($_end_ = $_end_.n = { v: __hpLineWrap('path', 65, $f)(__hpLineWrap('path', 65, a)) }, $$f = __hpLineWrap('path', 65, $f), $$xs = ({ v: __hpLineWrap('path', 65, b), n: null }), $_continue_ = true);
+    ($_end_ = $_end_.n = { v: __hpLineWrap('Module.mad', 65, $f)(__hpLineWrap('Module.mad', 65, a)) }, $$f = __hpLineWrap('Module.mad', 65, $f), $$xs = ({ v: __hpLineWrap('Module.mad', 65, b), n: null }), $_continue_ = true);
   }
-  else if (__hp('path', 'line', 66, 66) || __x__ !== null && true && __x__.n === null) {
+  else if (__hp('Module.mad', 'line', 66, 66) || __x__ !== null && true && __x__.n === null) {
     let { v: a } = __x__;
-    ($_end_.n = ({ v: __hpLineWrap('path', 66, $f)(__hpLineWrap('path', 66, a)), n: null }), $_result_ = $_start_.n);
+    ($_end_.n = ({ v: __hpLineWrap('Module.mad', 66, $f)(__hpLineWrap('Module.mad', 66, a)), n: null }), $_result_ = $_start_.n);
   }
-  else if (__hp('path', 'line', 67, 67) || __x__ === null) {
+  else if (__hp('Module.mad', 'line', 67, 67) || __x__ === null) {
     ($_end_.n = (null), $_result_ = $_start_.n);
   }
   else {
@@ -180,129 +181,129 @@ export let map = __hpFnWrap('path', 63, 'map')((f => xs => {
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 63, $xs))
+})(__hpLineWrap('Module.mad', 63, $xs))
     }
     return $_result_;
 }));
-(__hpLineWrap('path', 69, true) ? __hpLineWrap('path', 70, `ok`) : __hpLineWrap('path', 71, `not ok`));
-(x => __hpLineWrap('path', 75, x))((x => (__eq__(__hpLineWrap('path', 74, __hpLineWrap('path', 74, x)), __hpLineWrap('path', 74, __hpLineWrap('path', 74, `ok`))) ? __hpLineWrap('path', 74, 1) : __hpLineWrap('path', 74, 10)))((x => __hpLineWrap('path', 73, x))((__eq__(__hpLineWrap('path', 72, __hpLineWrap('path', 72, 1)), __hpLineWrap('path', 72, __hpLineWrap('path', 72, 2))) ? __hpLineWrap('path', 72, `ok`) : __hpLineWrap('path', 72, `not ok`)))));
-(__eq__(__hpLineWrap('path', 76, __hpLineWrap('path', 76, 1)), __hpLineWrap('path', 76, __hpLineWrap('path', 76, 2))) ? __hpLineWrap('path', 76, `ok`) : __hpLineWrap('path', 76, `not ok`));
+(__hpLineWrap('Module.mad', 69, true) ? __hpLineWrap('Module.mad', 70, `ok`) : __hpLineWrap('Module.mad', 71, `not ok`));
+(x => __hpLineWrap('Module.mad', 75, x))((x => (__eq__(__hpLineWrap('Module.mad', 74, __hpLineWrap('Module.mad', 74, x)), __hpLineWrap('Module.mad', 74, __hpLineWrap('Module.mad', 74, `ok`))) ? __hpLineWrap('Module.mad', 74, 1) : __hpLineWrap('Module.mad', 74, 10)))((x => __hpLineWrap('Module.mad', 73, x))((__eq__(__hpLineWrap('Module.mad', 72, __hpLineWrap('Module.mad', 72, 1)), __hpLineWrap('Module.mad', 72, __hpLineWrap('Module.mad', 72, 2))) ? __hpLineWrap('Module.mad', 72, `ok`) : __hpLineWrap('Module.mad', 72, `not ok`)))));
+(__eq__(__hpLineWrap('Module.mad', 76, __hpLineWrap('Module.mad', 76, 1)), __hpLineWrap('Module.mad', 76, __hpLineWrap('Module.mad', 76, 2))) ? __hpLineWrap('Module.mad', 76, `ok`) : __hpLineWrap('Module.mad', 76, `not ok`));
 ((__x__) => {
-  if (__hp('path', 'line', 78, 78) || __x__ === 3) {
-    return __hpLineWrap('path', 78, 48);
+  if (__hp('Module.mad', 'line', 78, 78) || __x__ === 3) {
+    return __hpLineWrap('Module.mad', 78, 48);
   }
-  else if (__hp('path', 'line', 79, 79) || true) {
+  else if (__hp('Module.mad', 'line', 79, 79) || true) {
     let n = __x__;
-    return (x => __hpLineWrap('path', 79, __hpLineWrap('path', 79, x)) + __hpLineWrap('path', 79, __hpLineWrap('path', 79, 1)))(__hpLineWrap('path', 79, 1));
+    return (x => __hpLineWrap('Module.mad', 79, __hpLineWrap('Module.mad', 79, x)) + __hpLineWrap('Module.mad', 79, __hpLineWrap('Module.mad', 79, 1)))(__hpLineWrap('Module.mad', 79, 1));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 77, 3));
-(x => __hpLineWrap('path', 84, __hpLineWrap('path', 84, x)) + __hpLineWrap('path', 84, __hpLineWrap('path', 84, 1)))(((__x__) => {
-  if (__hp('path', 'line', 82, 82) || __x__ === "3") {
-    return __hpLineWrap('path', 82, 48);
+})(__hpLineWrap('Module.mad', 77, 3));
+(x => __hpLineWrap('Module.mad', 84, __hpLineWrap('Module.mad', 84, x)) + __hpLineWrap('Module.mad', 84, __hpLineWrap('Module.mad', 84, 1)))(((__x__) => {
+  if (__hp('Module.mad', 'line', 82, 82) || __x__ === "3") {
+    return __hpLineWrap('Module.mad', 82, 48);
   }
-  else if (__hp('path', 'line', 83, 83) || true) {
+  else if (__hp('Module.mad', 'line', 83, 83) || true) {
     let n = __x__;
-    return __hpLineWrap('path', 83, 1);
+    return __hpLineWrap('Module.mad', 83, 1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 81, `3`)));
-(x => __hpLineWrap('path', 88, x))(((__x__) => {
-  if (__hp('path', 'line', 86, 86) || __x__ !== null && __x__.v === 2 && true) {
+})(__hpLineWrap('Module.mad', 81, `3`)));
+(x => __hpLineWrap('Module.mad', 88, x))(((__x__) => {
+  if (__hp('Module.mad', 'line', 86, 86) || __x__ !== null && __x__.v === 2 && true) {
     let { n: rest } = __x__;
-    return __hpLineWrap('path', 86, rest);
+    return __hpLineWrap('Module.mad', 86, rest);
   }
-  else if (__hp('path', 'line', 87, 87) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
+  else if (__hp('Module.mad', 'line', 87, 87) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
     let { n: { n: { n: rest } } } = __x__;
-    return __hpLineWrap('path', 87, rest);
+    return __hpLineWrap('Module.mad', 87, rest);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ v: __hpLineWrap('path', 85, 1), n: { v: __hpLineWrap('path', 85, 2), n: { v: __hpLineWrap('path', 85, 3), n: { v: __hpLineWrap('path', 85, 4), n: { v: __hpLineWrap('path', 85, 5), n: null } } } } })));
+})(({ v: __hpLineWrap('Module.mad', 85, 1), n: { v: __hpLineWrap('Module.mad', 85, 2), n: { v: __hpLineWrap('Module.mad', 85, 3), n: { v: __hpLineWrap('Module.mad', 85, 4), n: { v: __hpLineWrap('Module.mad', 85, 5), n: null } } } } })));
 ((__x__) => {
-  if (__hp('path', 'line', 90, 90) || __x__.name === "Bob") {
+  if (__hp('Module.mad', 'line', 90, 90) || __x__.name === "Bob") {
     let {  } = __x__;
-    return __hpLineWrap('path', 90, `Bob`);
+    return __hpLineWrap('Module.mad', 90, `Bob`);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ x: __hpLineWrap('path', 89, __hpLineWrap('path', 89, 4)), name: __hpLineWrap('path', 89, __hpLineWrap('path', 89, `John`)) }));
-let addXAndY = __hpFnWrap('path', 92, 'addXAndY')((r => ((__x__) => {
-  if (__hp('path', 'line', 94, 94) || true && true) {
+})(({ x: __hpLineWrap('Module.mad', 89, __hpLineWrap('Module.mad', 89, 4)), name: __hpLineWrap('Module.mad', 89, __hpLineWrap('Module.mad', 89, `John`)) }));
+let addXAndY = __hpFnWrap('Module.mad', 92, 'addXAndY')((r => ((__x__) => {
+  if (__hp('Module.mad', 'line', 94, 94) || true && true) {
     let { y: y, x: x1 } = __x__;
-    return __hpLineWrap('path', 94, __hpLineWrap('path', 94, x1)) + __hpLineWrap('path', 94, __hpLineWrap('path', 94, y));
+    return __hpLineWrap('Module.mad', 94, __hpLineWrap('Module.mad', 94, x1)) + __hpLineWrap('Module.mad', 94, __hpLineWrap('Module.mad', 94, y));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 93, r))));
-let fnTCHOU = __hpFnWrap('path', 97, 'fnTCHOU')((x => __hpLineWrap('path', 97, __hpLineWrap('path', 97, __hpLineWrap('path', 97, __hpLineWrap('path', 97, __hpLineWrap('path', 97, __hpLineWrap('path', 97, x).a).b).c).d).e)));
-let tup = ([__hpLineWrap('path', 99, 1), __hpLineWrap('path', 99, 2), __hpLineWrap('path', 99, 3)]);
-__eq__(__hpLineWrap('path', 101, ([__hpLineWrap('path', 101, 1), __hpLineWrap('path', 101, 2), __hpLineWrap('path', 101, 3)])), __hpLineWrap('path', 101, ([__hpLineWrap('path', 101, 1), __hpLineWrap('path', 101, 2), __hpLineWrap('path', 101, 3)])));
+})(__hpLineWrap('Module.mad', 93, r))));
+let fnTCHOU = __hpFnWrap('Module.mad', 97, 'fnTCHOU')((x => __hpLineWrap('Module.mad', 97, __hpLineWrap('Module.mad', 97, __hpLineWrap('Module.mad', 97, __hpLineWrap('Module.mad', 97, __hpLineWrap('Module.mad', 97, __hpLineWrap('Module.mad', 97, x).a).b).c).d).e)));
+let tup = ([__hpLineWrap('Module.mad', 99, 1), __hpLineWrap('Module.mad', 99, 2), __hpLineWrap('Module.mad', 99, 3)]);
+__eq__(__hpLineWrap('Module.mad', 101, ([__hpLineWrap('Module.mad', 101, 1), __hpLineWrap('Module.mad', 101, 2), __hpLineWrap('Module.mad', 101, 3)])), __hpLineWrap('Module.mad', 101, ([__hpLineWrap('Module.mad', 101, 1), __hpLineWrap('Module.mad', 101, 2), __hpLineWrap('Module.mad', 101, 3)])));
 ((__x__) => {
-  if (__hp('path', 'line', 104, 104) || __x__.length === 2 && true && true) {
+  if (__hp('Module.mad', 'line', 104, 104) || __x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return __hpLineWrap('path', 104, __hpLineWrap('path', 104, a)) + __hpLineWrap('path', 104, __hpLineWrap('path', 104, b));
+    return __hpLineWrap('Module.mad', 104, __hpLineWrap('Module.mad', 104, a)) + __hpLineWrap('Module.mad', 104, __hpLineWrap('Module.mad', 104, b));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(([__hpLineWrap('path', 103, 1), __hpLineWrap('path', 103, 2)]));
-let fn2 = __hpFnWrap('path', 108, 'fn2')((a => ([__hpLineWrap('path', 108, a), __hpLineWrap('path', 108, a)])));
-let fst = __hpFnWrap('path', 111, 'fst')((tuple => ((__x__) => {
-  if (__hp('path', 'line', 112, 112) || __x__.length === 2 && true && true) {
+})(([__hpLineWrap('Module.mad', 103, 1), __hpLineWrap('Module.mad', 103, 2)]));
+let fn2 = __hpFnWrap('Module.mad', 108, 'fn2')((a => ([__hpLineWrap('Module.mad', 108, a), __hpLineWrap('Module.mad', 108, a)])));
+let fst = __hpFnWrap('Module.mad', 111, 'fst')((tuple => ((__x__) => {
+  if (__hp('Module.mad', 'line', 112, 112) || __x__.length === 2 && true && true) {
     let [a,] = __x__;
-    return __hpLineWrap('path', 112, a);
+    return __hpLineWrap('Module.mad', 112, a);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 111, tuple))));
-let snd = __hpFnWrap('path', 115, 'snd')((tuple => {
+})(__hpLineWrap('Module.mad', 111, tuple))));
+let snd = __hpFnWrap('Module.mad', 115, 'snd')((tuple => {
     let b = ((__x__) => {
-  if (__hp('path', 'line', 117, 117) || __x__.length === 2 && true && true) {
+  if (__hp('Module.mad', 'line', 117, 117) || __x__.length === 2 && true && true) {
     let [,b1] = __x__;
-    return __hpLineWrap('path', 117, b1);
+    return __hpLineWrap('Module.mad', 117, b1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 116, tuple));
-    return __hpLineWrap('path', 119, b);
+})(__hpLineWrap('Module.mad', 116, tuple));
+    return __hpLineWrap('Module.mad', 119, b);
 }));
-__hpLineWrap('path', 122, fst)(([__hpLineWrap('path', 122, 1), __hpLineWrap('path', 122, 2)]));
-__hpLineWrap('path', 123, snd)(([__hpLineWrap('path', 123, 1), __hpLineWrap('path', 123, 2)]));
+__hpLineWrap('Module.mad', 122, fst)(([__hpLineWrap('Module.mad', 122, 1), __hpLineWrap('Module.mad', 122, 2)]));
+__hpLineWrap('Module.mad', 123, snd)(([__hpLineWrap('Module.mad', 123, 1), __hpLineWrap('Module.mad', 123, 2)]));
 ((__x__) => {
-  if (__hp('path', 'line', 125, 125) || __x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
+  if (__hp('Module.mad', 'line', 125, 125) || __x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
     let [{ __args: [n]},{ __args: [m]}] = __x__;
-    return __hpLineWrap('path', 125, __hpLineWrap('path', 125, n)) + __hpLineWrap('path', 125, __hpLineWrap('path', 125, m));
+    return __hpLineWrap('Module.mad', 125, __hpLineWrap('Module.mad', 125, n)) + __hpLineWrap('Module.mad', 125, __hpLineWrap('Module.mad', 125, m));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(([__hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, 3)), __hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, 4))]));
+})(([__hpLineWrap('Module.mad', 125, Just)(__hpLineWrap('Module.mad', 125, 3)), __hpLineWrap('Module.mad', 125, Just)(__hpLineWrap('Module.mad', 125, 4))]));
 export default { fn, map };
