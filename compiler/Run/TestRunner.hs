@@ -74,80 +74,81 @@ runNodeTests entrypoint coverage = do
 
 runLLVMTests :: Bool -> String -> Bool -> IO ()
 runLLVMTests noCache entrypoint coverage = do
-  canonicalEntrypoint       <- canonicalizePath entrypoint
-  rootPath                  <- canonicalizePath $ PathUtils.computeRootPath entrypoint
-  Just wishModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
-  Just listModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
-  Just testModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
-  sourcesToCompile          <- getFilesToCompile True canonicalEntrypoint
-  astTable                  <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
-  Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
-  let outputPath              = "./.tests/runTests"
-      astTableWithTestExports = (addTestEmptyExports <$>) <$> astTable
-      mainTestPath            =
-        if takeExtension canonicalEntrypoint == "" then
-          joinPath [canonicalEntrypoint, "__TestMain__.mad"]
-        else
-          joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
+  undefined
+  -- canonicalEntrypoint       <- canonicalizePath entrypoint
+  -- rootPath                  <- canonicalizePath $ PathUtils.computeRootPath entrypoint
+  -- Just wishModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
+  -- Just listModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
+  -- Just testModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
+  -- sourcesToCompile          <- getFilesToCompile True canonicalEntrypoint
+  -- astTable                  <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
+  -- Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
+  -- let outputPath              = "./.tests/runTests"
+  --     astTableWithTestExports = (addTestEmptyExports <$>) <$> astTable
+  --     mainTestPath            =
+  --       if takeExtension canonicalEntrypoint == "" then
+  --         joinPath [canonicalEntrypoint, "__TestMain__.mad"]
+  --       else
+  --         joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
 
-  case astTableWithTestExports of
-    Right astTable' -> do
-      let testSuitePaths          = filter (".spec.mad" `List.isSuffixOf`) $ Map.keys astTable'
-          testMainAST             = generateTestMainAST (wishModulePath, listModulePath, testModulePath) testSuitePaths
-          fullASTTable            = Map.insert mainTestPath testMainAST { apath = Just mainTestPath } astTable'
+  -- case astTableWithTestExports of
+  --   Right astTable' -> do
+  --     let testSuitePaths          = filter (".spec.mad" `List.isSuffixOf`) $ Map.keys astTable'
+  --         testMainAST             = generateTestMainAST (wishModulePath, listModulePath, testModulePath) testSuitePaths
+  --         fullASTTable            = Map.insert mainTestPath testMainAST { apath = Just mainTestPath } astTable'
 
-      (canTable, warnings) <- Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv (mainTestPath : sourcesToCompile)
-      -- let (canTable, warnings) =
-      --       case astTable of
-      --         Right table ->
-      --           Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
+  --     (canTable, warnings) <- Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv (mainTestPath : sourcesToCompile)
+  --     -- let (canTable, warnings) =
+  --     --       case astTable of
+  --     --         Right table ->
+  --     --           Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
 
-      --         Left e ->
-      --           error $ ppShow e
+  --     --         Left e ->
+  --     --           error $ ppShow e
 
-      let resolvedASTTable =
-            case canTable of
-              Right table ->
-                runExcept (runStateT (solveManyASTs mempty table (mainTestPath : sourcesToCompile)) InferState { count = 0, errors = [] })
+  --     let resolvedASTTable =
+  --           case canTable of
+  --             Right table ->
+  --               runExcept (runStateT (solveManyASTs mempty table (mainTestPath : sourcesToCompile)) InferState { count = 0, errors = [] })
 
-              Left e ->
-                error $ ppShow e
+  --             Left e ->
+  --               error $ ppShow e
 
-      case resolvedASTTable of
-        Left err ->
-          error $ ppShow err
+  --     case resolvedASTTable of
+  --       Left err ->
+  --         error $ ppShow err
 
-        Right (solvedTable, InferState { errors }) -> do
-          let tableWithBatchedTests = updateTestExports wishModulePath listModulePath <$> solvedTable
-          if not (null errors) then do
-            putStrLn $ ppShow errors
-            formattedErrors <- mapM (Explain.format readFile False) errors
-            let fullError = List.intercalate "\n\n\n" formattedErrors
-            putStrLn fullError >> Exit.exitFailure
-          else do
-            let postProcessedTable = tableToCore False tableWithBatchedTests
-            let renamedTable       = Rename.renameTable postProcessedTable
-            let reduced            = EtaReduction.reduceTable renamedTable
-            let closureConverted   = ClosureConvert.convertTable reduced
-            let withTCE            = TCE.resolveTable closureConverted
-            LLVM.generateTable noCache outputPath rootPath withTCE mainTestPath
+  --       Right (solvedTable, InferState { errors }) -> do
+  --         let tableWithBatchedTests = updateTestExports wishModulePath listModulePath <$> solvedTable
+  --         if not (null errors) then do
+  --           putStrLn $ ppShow errors
+  --           formattedErrors <- mapM (Explain.format readFile False) errors
+  --           let fullError = List.intercalate "\n\n\n" formattedErrors
+  --           putStrLn fullError >> Exit.exitFailure
+  --         else do
+  --           let postProcessedTable = tableToCore False tableWithBatchedTests
+  --           let renamedTable       = Rename.renameTable postProcessedTable
+  --           let reduced            = EtaReduction.reduceTable renamedTable
+  --           let closureConverted   = ClosureConvert.convertTable reduced
+  --           let withTCE            = TCE.resolveTable closureConverted
+  --           LLVM.generateTable noCache outputPath rootPath withTCE mainTestPath
 
-            testOutput <- case DistributionSystem.buildOS of
-              DistributionSystem.Windows -> do
-                try $ callCommand "\".tests\\runTests\""
+  --           testOutput <- case DistributionSystem.buildOS of
+  --             DistributionSystem.Windows -> do
+  --               try $ callCommand "\".tests\\runTests\""
 
-              _ -> do
-                try $ callCommand ".tests/runTests"
+  --             _ -> do
+  --               try $ callCommand ".tests/runTests"
 
-            case (testOutput :: Either IOError ()) of
-              Left e ->
-                error $ ppShow e
+  --           case (testOutput :: Either IOError ()) of
+  --             Left e ->
+  --               error $ ppShow e
 
-              Right _ ->
-                return ()
+  --             Right _ ->
+  --               return ()
 
-    Left _ ->
-      error "asts could not be parsed"
+  --   Left _ ->
+  --     error "asts could not be parsed"
 
 
 

@@ -9,6 +9,11 @@ import qualified Data.Map                      as M
 
 data Canonical a = Canonical Area a deriving(Eq, Show, Ord)
 
+-- data NameRef
+--   = Local String
+--   | Foreign FilePath String
+--   | UnQualified String
+
 
 data AST =
   AST

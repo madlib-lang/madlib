@@ -8,6 +8,7 @@ import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Canonicalize.CanonicalM
 import           Canonicalize.Env
+import           Canonicalize.EnvUtil
 import           Infer.Type
 import           Infer.Scheme
 import           Infer.Unify

@@ -5,6 +5,8 @@ module Infer.Infer where
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Error.Error
+import qualified Rock
+import Driver.Query
 
 
 data InferState = InferState { count :: Int, errors :: [CompilationError] }
@@ -21,13 +23,22 @@ pushError err = do
   put s { errors = errors s ++ [err] }
 
 
-type Infer a = forall m . (MonadError CompilationError m, MonadState InferState m) => m a
+type Infer a = forall m . (Rock.MonadFetch Query m, MonadError CompilationError m, MonadState InferState m) => m a
 
-unsafeRun :: Infer a -> a
-unsafeRun i = case runExcept (runStateT i InferState { count = 0, errors = [] }) of
-  Right (a, _) -> a
+unsafeRun :: (Rock.MonadFetch Query m) => Infer a -> m a
+unsafeRun i = do
+  x <- runExceptT (runStateT i InferState { count = 0, errors = [] })
+  case x of
+    Right (a, _) ->
+      return a
 
-simpleRun :: Infer a -> Either CompilationError a
-simpleRun i = case runExcept (runStateT i InferState { count = 0, errors = [] }) of
-  Right (a, _) -> Right a
-  Left e       -> Left e
+simpleRun :: (Rock.MonadFetch Query m) => Infer a -> m (Either CompilationError a)
+simpleRun i = do
+  x <- runExceptT (runStateT i InferState { count = 0, errors = [] })
+  case x of
+    Right (a, _) ->
+      return $ Right a
+
+    Left e       ->
+      return $ Left e
+

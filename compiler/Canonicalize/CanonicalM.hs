@@ -10,6 +10,8 @@ import qualified Data.Set                      as Set
 import           AST.Canonical
 import Infer.Type
 import qualified Data.List as List
+import qualified Driver.Query as Query
+import qualified Rock
 
 
 data Accessed
@@ -42,7 +44,7 @@ data CanonicalState
       , placeholderIndex :: Int
       }
 
-type CanonicalM a = forall m . (MonadIO m, MonadError CompilationError m, MonadState CanonicalState m) => m a
+type CanonicalM a = forall m . (Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
 
 isNameAccess :: Accessed -> Bool
 isNameAccess a = case a of

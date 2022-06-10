@@ -2,7 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Canonicalize.Env where
 
-import           Canonicalize.CanonicalM
 import           Infer.Type
 import           Error.Error
 import           Error.Context
@@ -10,36 +9,49 @@ import           Control.Monad.Except
 import qualified Data.Map                      as M
 
 
+
 data Interface = Interface [TVar] [Pred] deriving(Eq, Show)
 
 type TypeDecls = M.Map String Type
 type Interfaces = M.Map String Interface
 
+data ImportType
+  = NamespaceImport
+  | TypeImport
+  | NameImport
+  deriving(Eq, Show)
+
+
+data ImportInfo
+  = ImportInfo
+      { iiModulePath :: FilePath
+      , iiType :: ImportType
+      , iiName :: String
+      }
+      deriving(Eq, Show)
+
+
 data Env
   = Env
-    { envTypeDecls   :: TypeDecls
-    , envInterfaces  :: Interfaces
-    , envCurrentPath :: FilePath
-    , envFromDictionaryListName :: String
-    }
-    deriving(Eq, Show)
+      { envImportInfo  :: [ImportInfo]
+      , envTypeDecls   :: TypeDecls
+      , envInterfaces  :: Interfaces
+      , envCurrentPath :: FilePath
+      , envFromDictionaryListName :: String
+      }
+      deriving(Eq, Show)
 
 
 
-addADT :: Env -> String -> Type -> Env
-addADT env name adt =
-  let adts         = envTypeDecls env
-      withAddition = M.insert name adt adts
-  in  env { envTypeDecls = withAddition }
 
 
-lookupADT :: Env -> String -> CanonicalM Type
-lookupADT env name = case M.lookup name (envTypeDecls env) of
-  Just found ->
-    return found
+-- lookupADT :: Env -> String -> CanonicalM Type
+-- lookupADT env name = case M.lookup name (envTypeDecls env) of
+--   Just found ->
+--     return found
 
-  Nothing    ->
-    throwError $ CompilationError (UnknownType name) NoContext
+--   Nothing    ->
+--     throwError $ CompilationError (UnknownType name) NoContext
 
 
 
@@ -48,6 +60,7 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tD
                  , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] []), ("Inspect", Interface [TV "a" Star] [])]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""
+                 , envImportInfo = []
                  }
 
 initialWithPath :: FilePath -> Env
