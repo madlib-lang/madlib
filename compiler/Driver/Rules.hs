@@ -6,16 +6,16 @@
 module Driver.Rules where
 
 import qualified Rock
-import qualified AST.Source                 as Src
-import qualified AST.Canonical              as Can
-import qualified Canonicalize.Env           as CanEnv
-import qualified Canonicalize.AST           as Can
-import qualified Canonicalize.CanonicalM    as Can
-import qualified AST.Solved                 as Slv
+import qualified AST.Source                    as Src
+import qualified AST.Canonical                 as Can
+import qualified Canonicalize.Env              as CanEnv
+import qualified Canonicalize.AST              as Can
+import qualified Canonicalize.CanonicalM       as Can
+import qualified AST.Solved                    as Slv
 import           Infer.AST
 import           Infer.Infer
 import           Infer.EnvUtils
-import qualified Infer.Env                  as SlvEnv
+import qualified Infer.Env                     as SlvEnv
 import           Error.Error (CompilationError(CompilationError))
 import           Data.IORef
 import           Parse.Madlib.AST
@@ -23,11 +23,17 @@ import           Control.Monad.IO.Class
 import           Driver.Query
 import           Run.Target
 import           Parse.Madlib.TargetMacro
-import qualified Data.Map                   as Map
-import qualified Data.Set                   as Set
+import           Optimize.StripNonJSInterfaces
+import           Optimize.ToCore
+import qualified Optimize.EtaReduction         as EtaReduction
+import qualified Optimize.TCE                  as TCE
+import qualified Generate.LLVM.Rename          as Rename
+import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
+import qualified Data.Map                      as Map
+import qualified Data.Set                      as Set
 import           Control.Monad.State
 import           Control.Monad.Except
-import qualified Utils.PathUtils             as PathUtils
+import qualified Utils.PathUtils               as PathUtils
 import Text.Show.Pretty (ppShow)
 import Run.Options
 import Data.Bifunctor (first)
@@ -123,6 +129,21 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       Nothing ->
         return (Nothing, mempty)
+
+  CoreAST path -> nonInput $ do
+    (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
+    case optTarget options of
+      TLLVM -> do
+        let coreAst          = astToCore False slvAst
+            renamedAst       = Rename.renameAST coreAst
+            reducedAst       = EtaReduction.reduceAST renamedAst
+            closureConverted = ClosureConvert.convertAST reducedAst
+        return (TCE.resolveAST closureConverted, mempty)
+
+      _ -> do
+        let coreAst     = astToCore (optOptimized options) slvAst
+            strippedAst = stripAST coreAst
+        return (TCE.resolveAST strippedAst, mempty)
 
   _ ->
     undefined

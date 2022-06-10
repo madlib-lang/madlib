@@ -463,17 +463,9 @@ solveManyASTs solved fps = case fps of
     return (M.map fst solved)
 
   fp : fps' -> do
-    -- (canAst, canEnv) <- Rock.fetch $ Query.CanonicalizedASTWithEnv fp
     current <- solveTable' solved fp
     next    <- solveManyASTs (solved <> current) fps'
     return $ M.map fst current <> next
-
-  -- fp : fps' -> case M.lookup fp table of
-    -- Just ast -> do
-    --   current <- solveTable' solved table ast
-    --   next    <- solveManyASTs (solved <> current) table fps'
-    --   return $ M.map fst current <> next
-    -- Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
 
 
 solveManyASTs' :: (Rock.MonadFetch Query.Query m) => Can.Table -> [FilePath] -> m (Either [CompilationError] Slv.Table, [CompilationWarning])
@@ -488,18 +480,3 @@ solveManyASTs' canTable paths = do
 
     -- Right (_, InferState { errors }) ->
     --   return (Left errors, [])
-
-
--- runInfer :: Env -> FilePath -> Either CompilationError Slv.AST
--- runInfer env astPath =
---   let result = runExcept
---         (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST mempty env' astPath)
---                    InferState { count = 0, errors = [] }
---         )
---   in  case result of
---         Left e -> Left e
-
---         Right ((ast, _), state) ->
---           let errs      = errors state
---               hasErrors = not (null errs)
---           in  if hasErrors then Left (head errs) else Right ast

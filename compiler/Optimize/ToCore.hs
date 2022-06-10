@@ -433,13 +433,19 @@ instance Processable Slv.AST Core.AST where
     interfaces <- mapM (toCore enabled) $ Slv.ainterfaces ast
     instances  <- mapM (toCore enabled) $ Slv.ainstances ast
 
-    return $ Core.AST { Core.aimports    = imports
-                     , Core.aexps       = exps
-                     , Core.atypedecls  = typeDecls
-                     , Core.ainterfaces = interfaces
-                     , Core.ainstances  = instances
-                     , Core.apath       = Slv.apath ast
-                     }
+    return $ Core.AST
+              { Core.aimports    = imports
+              , Core.aexps       = exps
+              , Core.atypedecls  = typeDecls
+              , Core.ainterfaces = interfaces
+              , Core.ainstances  = instances
+              , Core.apath       = Slv.apath ast
+              }
+
+
+astToCore :: Bool -> Slv.AST -> Core.AST
+astToCore enabled ast =
+  MonadState.evalState (toCore enabled ast) initialOptimizationState
 
 
 -- I think at some point we might want to follow imports in the optimization
