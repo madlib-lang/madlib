@@ -35,6 +35,7 @@ import           AST.Canonical (Import_(TypeImport))
 import qualified Driver.Query as Query
 import qualified Rock
 import           Text.Show.Pretty
+import Run.Options
 
 
 
@@ -182,8 +183,8 @@ buildImportInfos env Src.AST { Src.aimports } =
   in  env { envImportInfo = info }
 
 
-canonicalizeAST :: FilePath -> Target -> Env -> Src.AST -> CanonicalM (Can.AST, Env, [InstanceToDerive])
-canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
+canonicalizeAST :: FilePath -> Options -> Env -> Src.AST -> CanonicalM (Can.AST, Env, [InstanceToDerive])
+canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
   mapM_ (validateImport astPath) aimports
 
   let env'  = buildImportInfos env sourceAst
@@ -196,10 +197,10 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls sourceAst
   -- liftIO $ putStrLn (ppShow env''')
-  imports               <- mapM (canonicalize env''' target) $ Src.aimports sourceAst
-  exps                  <- mapM (canonicalize env''' target) $ Src.aexps sourceAst
+  imports               <- mapM (canonicalize env''' (optTarget options)) $ Src.aimports sourceAst
+  exps                  <- mapM (canonicalize env''' (optTarget options)) $ Src.aexps sourceAst
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
-  instances             <- canonicalizeInstances env'''' target $ Src.ainstances sourceAst
+  instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
 
   checkUnusedImports env'' imports
 
@@ -207,8 +208,16 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
   derivedTypes             <- getDerivedTypes
   typeDeclarationsToDerive <- getTypeDeclarationsToDerive
   let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
-      derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
-      derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
+      derivedEqInstances        =
+        if optGenerateDerivedInstances options then
+          mapMaybe deriveEqInstance typeDeclarationsToDerive'
+        else
+          []
+      derivedInspectInstances   =
+        if optGenerateDerivedInstances options then
+          mapMaybe deriveInspectInstance typeDeclarationsToDerive'
+        else
+          []
   
   addDerivedTypes (S.fromList typeDeclarationsToDerive')
   resetToDerive

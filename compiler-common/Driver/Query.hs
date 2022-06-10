@@ -28,6 +28,7 @@ import           Parse.DocString.DocString
 
 data Query a where
   ModulePathsToBuild :: FilePath -> Query [FilePath]
+  DictionaryModuleAbsolutePath :: Query FilePath
 
   -- Parsing
   DetectImportCycle :: FilePath -> Query Bool
@@ -69,50 +70,54 @@ instance Hashable (Query a) where
     ModulePathsToBuild path ->
       hashWithSalt salt (path, 0 :: Int)
 
-    DetectImportCycle path ->
-      hashWithSalt salt (path, 1 :: Int)
+    DictionaryModuleAbsolutePath ->
+      hashWithSalt salt ("DictionaryModuleAbsolutePath", 1 :: Int)
 
-    File path ->
+
+    DetectImportCycle path ->
       hashWithSalt salt (path, 2 :: Int)
 
-    ParsedAST path ->
+    File path ->
       hashWithSalt salt (path, 3 :: Int)
 
-    DocStrings path ->
+    ParsedAST path ->
       hashWithSalt salt (path, 4 :: Int)
 
-    CanonicalizedASTWithEnv path ->
+    DocStrings path ->
       hashWithSalt salt (path, 5 :: Int)
 
+    CanonicalizedASTWithEnv path ->
+      hashWithSalt salt (path, 6 :: Int)
+
     CanonicalizedInterface _ name ->
-      hashWithSalt salt (name, 6 :: Int)
+      hashWithSalt salt (name, 7 :: Int)
 
     ForeignADTType modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 7 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
 
     SolvedASTWithEnv path ->
-      hashWithSalt salt (path, 8 :: Int)
+      hashWithSalt salt (path, 9 :: Int)
 
     SolvedInterface _ name ->
-      hashWithSalt salt (name, 9 :: Int)
+      hashWithSalt salt (name, 10 :: Int)
 
     ForeignScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 10 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 11 :: Int)
 
     CoreAST path ->
-      hashWithSalt salt (path, 11 :: Int)
-
-    SymbolTableWithEnv path ->
       hashWithSalt salt (path, 12 :: Int)
 
+    SymbolTableWithEnv path ->
+      hashWithSalt salt (path, 13 :: Int)
+
     BuiltInSymbolTableWithEnv ->
-      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 13 :: Int)
+      hashWithSalt salt ("BuiltInSymbolTableWithEnv", 14 :: Int)
 
     BuiltJSModule path ->
-      hashWithSalt salt (path, 14 :: Int)
+      hashWithSalt salt (path, 15 :: Int)
 
     BuiltTarget path ->
-      hashWithSalt salt (path, 15 :: Int)
+      hashWithSalt salt (path, 16 :: Int)
 
 
 instance Hashable (Some Query) where

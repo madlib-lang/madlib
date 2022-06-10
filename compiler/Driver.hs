@@ -43,6 +43,7 @@ import qualified Data.Map as Map
 import           Run.Target (Target(TNode, TLLVM))
 import           Utils.PathUtils (defaultPathUtils)
 import qualified Utils.PathUtils as PathUtils
+import Run.Options (Options(optGenerateDerivedInstances))
 
 
 
@@ -163,6 +164,7 @@ runIncrementalTask state changedFiles fileUpdates prune task =
                       , optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ }
                       , optBundle = False
                       , optCoverage = False
+                      , optGenerateDerivedInstances = False
                       }
 
     result <- Rock.runTask rules task

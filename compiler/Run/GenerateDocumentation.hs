@@ -48,6 +48,7 @@ import           Run.Options
 import           Control.Concurrent.MVar
 import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
+import Run.Options (Options(optGenerateDerivedInstances))
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
@@ -73,6 +74,7 @@ generateDocDataTask rootFolder paths = do
           , optOptimized = False
           , optBundle = False
           , optCoverage = False
+          , optGenerateDerivedInstances = False
           }
   let llvmOptions =
         Options
@@ -84,6 +86,7 @@ generateDocDataTask rootFolder paths = do
           , optOptimized = False
           , optBundle = False
           , optCoverage = False
+          , optGenerateDerivedInstances = False
           }
   memoVar <- newIORef mempty
 

@@ -17,9 +17,6 @@ import           Error.Error
 import           Format.Format
 
 import Text.Show.Pretty
-import qualified Rock
-import Driver.Query
-import Run.Options
 import Parse.Madlib.Grammar (parse)
 import Data.Either.Combinators (mapLeft)
 

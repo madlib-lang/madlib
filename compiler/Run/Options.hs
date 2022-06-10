@@ -14,4 +14,5 @@ data Options
     , optOptimized :: Bool
     , optBundle :: Bool
     , optCoverage :: Bool
+    , optGenerateDerivedInstances :: Bool
     }

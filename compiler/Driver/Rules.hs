@@ -55,6 +55,10 @@ import qualified Data.Maybe as Maybe
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
+  DictionaryModuleAbsolutePath -> nonInput $ do
+    dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
+    return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
+
   ModulePathsToBuild entrypoint -> input $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
     let importPaths = Src.getImportAbsolutePath <$> aimports
@@ -93,11 +97,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ([], (mempty, mempty))
 
   CanonicalizedASTWithEnv path -> nonInput $ do
-    sourceAst <- Rock.fetch $ ParsedAST path
-    dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
-    let dictModulePath' = Maybe.fromMaybe "" dictModulePath
+    sourceAst      <- Rock.fetch $ ParsedAST path
+    dictModulePath <- Rock.fetch $ DictionaryModuleAbsolutePath
 
-    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST dictModulePath' (optTarget options) CanEnv.initialEnv sourceAst
+    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
     case can of
       Right c ->
         return (c, (warnings, mempty))
