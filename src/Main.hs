@@ -17,6 +17,7 @@ import           Run.TestRunner
 import           Run.Package
 import           Run.PackageHash
 import           Run.Format
+import           Run.LanguageServer
 
 
 main :: IO ()
@@ -55,3 +56,7 @@ run cmd = do
 
     Format path code fix width ->
       runFormatter width fix path code
+
+    LanguageServer -> do
+      runLanguageServer
+      return ()

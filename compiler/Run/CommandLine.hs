@@ -31,6 +31,7 @@ data Command
   | Format { formatInput :: FilePath, formatTextInput :: String, fix :: Bool, width :: Int }
   | Run { runInput :: FilePath, runArgs :: [String] }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
+  | LanguageServer
   deriving (Eq, Show)
 
 data PackageSubCommand
@@ -229,6 +230,9 @@ parseFormatTextInput = strOption
 parseFormat :: Parser Command
 parseFormat = Format <$> parseFormatInput <*> parseFormatTextInput <*> parseFix <*> parseWidth
 
+parseLanguageServer :: Parser Command
+parseLanguageServer = pure LanguageServer
+
 parseCommand :: Parser Command
 parseCommand =
   subparser
@@ -240,6 +244,7 @@ parseCommand =
     <> command "new"     (parseNew `withInfo` "create a new project")
     <> command "doc"     (parseDoc `withInfo` "generate documentation")
     <> command "format"  (parseFormat `withInfo` "format code")
+    <> command "lsp"     (parseLanguageServer `withInfo` "start language server")
 
 parseTransform :: Parser Command
 parseTransform = parseCommand
