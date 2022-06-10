@@ -11,10 +11,10 @@ import qualified Rock
 import qualified AST.Source                 as Src
 import qualified AST.Canonical              as Can
 import qualified Canonicalize.Env           as CanEnv
+import           Canonicalize.InstanceToDerive
 import qualified AST.Solved                 as Slv
 import qualified Infer.Env                  as SlvEnv
 import qualified AST.Core                   as Core
--- import           Parse.Madlib.AST
 import           Error.Error (CompilationError(CompilationError))
 import           Data.GADT.Compare.TH (deriveGEq, deriveGCompare)
 import           Data.GADT.Show.TH (deriveGShow)
@@ -38,7 +38,7 @@ data Query a where
   DocStrings :: FilePath -> Query [DocString]
 
   -- Canonicalization
-  CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env)
+  CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env, [InstanceToDerive])
   CanonicalizedInterface :: FilePath -> String -> Query (Maybe CanEnv.Interface)
   ForeignADTType :: FilePath -> String -> Query (Maybe Type)
 

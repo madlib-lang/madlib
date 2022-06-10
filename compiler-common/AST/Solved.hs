@@ -122,7 +122,7 @@ data ClassRefPred
 
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
-  | MethodRef String String Bool
+  | MethodRef String String Bool -- bool is isVar
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Exp = Solved Exp_

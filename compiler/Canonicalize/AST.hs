@@ -5,12 +5,13 @@ module Canonicalize.AST where
 
 
 import           Run.Target
-import qualified AST.Source                    as Src
-import qualified AST.Canonical                 as Can
-import           Canonicalize.Env              as CanEnv
+import qualified AST.Source                               as Src
+import qualified AST.Canonical                            as Can
+import           Canonicalize.Env                         as CanEnv
 import           Canonicalize.Canonicalize
-import qualified Parse.Madlib.AST              as P
+import qualified Parse.Madlib.AST                         as P
 import           Canonicalize.CanonicalM
+import           Canonicalize.InstanceToDerive
 import           Canonicalize.ADT
 import           Canonicalize.Interface
 import           Canonicalize.EnvUtils
@@ -19,21 +20,21 @@ import           Error.Error
 import           Error.Warning
 import           Error.Context
 import           Data.Maybe
-import qualified Data.Map                      as M
-import qualified Data.Set                      as S
-import qualified Utils.Tuple                   as T
+import qualified Data.Map                                 as M
+import qualified Data.Set                                 as S
+import qualified Utils.Tuple                              as T
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Explain.Location
 import           Text.Regex.TDFA
-import AST.Solved (Import_(NamedImport))
-import Canonicalize.Derive
-import Data.List
-import Utils.List
-import AST.Canonical (Import_(TypeImport))
+import           AST.Solved (Import_(NamedImport))
+import           Canonicalize.Derive
+import           Data.List
+import           Utils.List
+import           AST.Canonical (Import_(TypeImport))
 import qualified Driver.Query as Query
 import qualified Rock
-import Text.Show.Pretty
+import           Text.Show.Pretty
 
 
 
@@ -57,7 +58,7 @@ findAllExportedTypeNames ast =
 validateImport :: FilePath -> Src.Import -> CanonicalM ()
 validateImport originAstPath imp = do
   let path = Src.getImportAbsolutePath imp
-  (ast, env) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+  (ast, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
 
   let allExportNames   = findAllExportedNames ast
   let allImportNames   = Src.getImportNames imp
@@ -181,7 +182,7 @@ buildImportInfos env Src.AST { Src.aimports } =
   in  env { envImportInfo = info }
 
 
-canonicalizeAST :: FilePath -> Target -> Env -> Src.AST -> CanonicalM (Can.AST, Env)
+canonicalizeAST :: FilePath -> Target -> Env -> Src.AST -> CanonicalM (Can.AST, Env, [InstanceToDerive])
 canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
   mapM_ (validateImport astPath) aimports
 
@@ -216,17 +217,18 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
-                                 , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
+                                --  , Can.ainstances  = instances
+                                 , Can.ainstances  = derivedEqInstances ++ derivedInspectInstances ++ instances
                                  , Can.apath       = Src.apath sourceAst
                                  }
 
   -- add `export type TypeName` types to the current env.
   envTds <- extractExportsFromAST env'''' canonicalizedAST
 
-  return (canonicalizedAST, env'''' { envTypeDecls = envTypeDecls env'''' <> envTds })
+  return (canonicalizedAST, env'''' { envTypeDecls = envTypeDecls env'''' <> envTds }, typeDeclarationsToDerive')
 
 canonicalizeAST _ _ _ _ =
-  return (Can.emptyAST, initialEnv)
+  return (Can.emptyAST, initialEnv, mempty)
 
 
 performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]

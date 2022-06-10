@@ -1,14 +1,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Canonicalize.Derive where
-import Canonicalize.CanonicalM
-import AST.Canonical
-import Infer.Type
-import Explain.Location
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Data.Maybe (mapMaybe)
-import Data.ByteString.Char8 (intersperse)
-import qualified Data.List as List
+
+import           Canonicalize.CanonicalM
+import           Canonicalize.InstanceToDerive
+import           AST.Canonical
+import           Infer.Type
+import           Explain.Location
+import qualified Data.Map                               as Map
+import qualified Data.Set                               as Set
+import           Data.Maybe (mapMaybe)
+import           Data.ByteString.Char8 (intersperse)
+import qualified Data.List                              as List
 
 
 searchTypeInConstructor :: Id -> Type -> Maybe Type
@@ -109,7 +111,7 @@ buildFieldConditions =
     (ec $ LBool "true")
 
 
-deriveEqInstance :: ToDerive -> Maybe Instance
+deriveEqInstance :: InstanceToDerive -> Maybe Instance
 deriveEqInstance toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtname, adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
@@ -144,7 +146,7 @@ deriveEqInstance toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip fieldNames chars
+    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
         fields             = TVar . (`TV` Star) <$> Map.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing
         instPreds          = (\var -> IsIn "Eq" [var] Nothing) <$> Map.elems fields
@@ -153,7 +155,7 @@ deriveEqInstance toDerive = case toDerive of
           "=="
           (
             ec (Assignment "==" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
-              buildFieldConditions fieldNames
+              buildFieldConditions (Set.toList fieldNames)
             ]]))
           )
         ))
@@ -193,7 +195,7 @@ buildConstructorIsForInspect ctor = case ctor of
       ec $ Is (ec $ PCon name (ec . PVar <$> vars)) inspected
 
 
-deriveInspectInstance :: ToDerive -> Maybe Instance
+deriveInspectInstance :: InstanceToDerive -> Maybe Instance
 deriveInspectInstance toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtname, adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
@@ -225,7 +227,7 @@ deriveInspectInstance toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip fieldNames chars
+    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
         fields             = TVar . (`TV` Star) <$> Map.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing
         instPreds          = (\var -> IsIn "Inspect" [var] Nothing) <$> Map.elems fields
@@ -234,7 +236,7 @@ deriveInspectInstance toDerive = case toDerive of
           "inspect"
           (
             ec (Assignment "inspect" (ec $ Abs (ec "__$a__") [
-              inspectFields fieldNames
+              inspectFields (Set.toList fieldNames)
             ]))
           )
         ))
