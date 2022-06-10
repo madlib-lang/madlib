@@ -394,11 +394,11 @@ inferAST env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports,
       envWithNamespaces = setNamespacesInScope envWithDerivedInstances namespacesInScope
       envWithImportInfo = buildImportInfos envWithNamespaces ast
   -- TODO: remove this and make the instance retrieval be recursive to add up all instances
-  envWithImports <- solveImports envWithImportInfo aimports
-  initialEnv     <- buildInitialEnv envWithImports ast
-  fullEnv        <- populateTopLevelTypings initialEnv (Can.aexps ast)
-  (env'        , inferredInstances)  <- resolveInstances fullEnv { envBacktrace = [] } ainstances
-  (inferredExps, env''             ) <- inferExps env' aexps
+  envWithImports                      <- solveImports envWithImportInfo aimports
+  initialEnv                          <- buildInitialEnv envWithImports ast
+  fullEnv                             <- populateTopLevelTypings initialEnv (Can.aexps ast)
+  (inferredExps, env'             )   <- inferExps fullEnv { envBacktrace = [] } aexps
+  (env''        , inferredInstances)  <- resolveInstances env' ainstances
   let updatedInterfaces = updateInterface <$> ainterfaces
   updatedADTs <- mapM updateADT atypedecls
 
