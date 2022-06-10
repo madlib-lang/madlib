@@ -1,8 +1,8 @@
 import type { Maybe } from "Maybe"
 
-import { Just, Nothing } from "Maybe"
 
 #iftarget js
+import { Just, Nothing } from "Maybe"
 
 encode :: String -> Maybe String
 export encode = (url) => #- {
