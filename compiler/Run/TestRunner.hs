@@ -96,13 +96,14 @@ runLLVMTests noCache entrypoint coverage = do
           testMainAST             = generateTestMainAST (wishModulePath, listModulePath, testModulePath) testSuitePaths
           fullASTTable            = Map.insert mainTestPath testMainAST { apath = Just mainTestPath } astTable'
 
-      let (canTable, warnings) =
-            case astTable of
-              Right table ->
-                Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
+      (canTable, warnings) <- Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv (mainTestPath : sourcesToCompile)
+      -- let (canTable, warnings) =
+      --       case astTable of
+      --         Right table ->
+      --           Can.canonicalizeMany dictionaryModulePath TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
 
-              Left e ->
-                error $ ppShow e
+      --         Left e ->
+      --           error $ ppShow e
 
       let resolvedASTTable =
             case canTable of

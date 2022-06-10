@@ -46,10 +46,10 @@ import System.FilePath.Posix
 parse :: FilePath -> IO (Either CompilationError Src.Table)
 parse = Src.buildASTTable TNode mempty
 
-canonicalize :: Src.Table -> FilePath -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
-canonicalize srcTable dictionaryModulePath main =
-  let (result, warnings) = Can.runCanonicalization mempty dictionaryModulePath TAny Can.initialEnv srcTable main
-  in  (fst <$> result, warnings)
+-- canonicalize :: Src.Table -> FilePath -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
+-- canonicalize srcTable dictionaryModulePath main =
+--   let (result, warnings) = Can.runCanonicalization mempty dictionaryModulePath TAny Can.initialEnv srcTable main
+--   in  (fst <$> result, warnings)
 
 typeCheck :: Can.Table -> FilePath -> (Either [CompilationError] Slv.Table, [CompilationWarning])
 typeCheck canTable path = Slv.solveManyASTs' canTable [path]
@@ -59,13 +59,15 @@ typeCheckMain :: FilePath -> IO (Either [CompilationError] Slv.Table, [Compilati
 typeCheckMain main = do
   parsed                    <- parse main
   Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName main) "Dictionary"
-  case parsed of
-    Right srcTable -> case canonicalize srcTable dictionaryModulePath main of
-      (Left err, warnings)       -> return (Left [err], warnings)
+  (Right (canTable, _), warnings) <- Can.runCanonicalization mempty dictionaryModulePath TAny Can.initialEnv main
+  return $ typeCheck canTable main
+  -- case parsed of
+  --   Right srcTable -> case canonicalize srcTable dictionaryModulePath main of
+  --     (Left err, warnings)       -> return (Left [err], warnings)
 
-      (Right canTable, warnings) -> return $ typeCheck canTable main
+  --     (Right canTable, warnings) -> return $ typeCheck canTable main
 
-    Left err    -> return (Left [err], [])
+  --   Left err    -> return (Left [err], [])
 
 
 bumpVersion :: Bool -> APIChange -> Version -> Version

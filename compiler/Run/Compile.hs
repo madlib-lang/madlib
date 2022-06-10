@@ -123,11 +123,12 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     sourcesToCompile          <- getFilesToCompile testsOnly canonicalEntrypoint
     astTable                  <- buildManyASTTables target mempty sourcesToCompile
     Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
-    let (canTable, warnings) = case astTable of
-          Right table ->
-            let (table', warnings) = Can.canonicalizeMany dictionaryModulePath target Can.initialEnv table sourcesToCompile
-            in  (table', extraWarnings ++ warnings)
-          Left e -> (Left e, [])
+    (canTable, warnings) <- Can.canonicalizeMany dictionaryModulePath target Can.initialEnv sourcesToCompile
+    -- let (canTable, warnings) = case astTable of
+    --       Right table ->
+    --         let (table', warnings) = Can.canonicalizeMany dictionaryModulePath target Can.initialEnv table sourcesToCompile
+    --         in  (table', extraWarnings ++ warnings)
+    --       Left e -> (Left e, [])
 
     unless json $ do
       formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
