@@ -185,6 +185,20 @@ global.__listToJSArray__ = (list) => {
   return res
 }
 
+global.__listCtorSpread__ = (_spread, _next) => {
+  if (_spread === null) {
+    return _next;
+  }
+
+  let head = _spread;
+  let result = _spread;
+  while (head.n !== null) {
+    head = head.n;
+  }
+  head.n = _next;
+  return result;
+}
+
 
 global.__hpFnWrap = (astPath, line, name) => (fn) => {
   function wrapped(...args) {

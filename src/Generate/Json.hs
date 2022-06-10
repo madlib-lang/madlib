@@ -25,9 +25,10 @@ indent depth = concat $ replicate (depth * indentSize) " "
 
 
 
-compileASTTable :: [(CompilationError, String)] -> [(CompilationWarning, String)] -> Slv.Table -> String
-compileASTTable errs warnings table =
-  let compiledASTs     = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
+compileASTTable :: [(CompilationError, String)] -> [(CompilationWarning, String)] -> String -> Slv.Table -> String
+compileASTTable errs warnings entrypointPath table =
+  let onlyWithEntrypoint = M.filterWithKey (\k _ -> k == entrypointPath) table
+      compiledASTs     = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList onlyWithEntrypoint
       compiledErrors   = intercalate ",\n    " $ compileError 2 <$> errs
       compiledWarnings = intercalate ",\n    " $ compileWarning 2 <$> warnings
   in  "{\n  \"asts\": {\n    "

@@ -392,8 +392,6 @@ solveManyASTs' canTable paths =
     Right (_, InferState { errors }) -> (Left errors, [])
 
 
--- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)
--- -- Well, or just adapt it somehow
 runInfer :: Env -> Can.AST -> Either CompilationError Slv.AST
 runInfer env ast =
   let result = runExcept

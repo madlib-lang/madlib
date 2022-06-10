@@ -155,7 +155,8 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
           then do
             formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
             formattedErr      <- Explain.format readFile json err
-            putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
+            putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
+            -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
           else do
             unless (null warnings) (putStrLn "\n")
             Explain.format readFile json err >>= putStrLn >> exitFailure
@@ -167,7 +168,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                 formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
                                           warnings
                 formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-                putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings table
+                putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings canonicalEntrypoint table
               else if hasErrors
                 then do
                   unless (null warnings) (putStrLn "\n")
