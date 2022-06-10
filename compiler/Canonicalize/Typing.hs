@@ -60,6 +60,35 @@ canonicalizeTyping (Src.Source area _ t) = case t of
     return $ Can.Canonical area (Can.TRConstrained constraints' typing')
 
 
+canonicalizeTyping' :: Src.Typing -> Can.Typing
+canonicalizeTyping' (Src.Source area _ t) = case t of
+  Src.TRSingle name ->
+    Can.Canonical area (Can.TRSingle name)
+
+  Src.TRComp name typings ->
+    let typings' = canonicalizeTyping' <$> typings
+    in  Can.Canonical area (Can.TRComp name typings')
+
+  Src.TRArr left right -> do
+    let left'  = canonicalizeTyping' left
+    let right' = canonicalizeTyping' right
+    Can.Canonical area (Can.TRArr left' right')
+
+  Src.TRRecord fields base ->
+    let fields' = canonicalizeTyping' <$> fields
+        base'   = canonicalizeTyping' <$> base
+    in  Can.Canonical area (Can.TRRecord fields' base')
+
+  Src.TRTuple typings -> 
+    let typings' = canonicalizeTyping' <$> typings
+    in  Can.Canonical area (Can.TRTuple typings')
+
+  Src.TRConstrained constraints typing -> 
+    let constraints' = canonicalizeTyping' <$> constraints
+        typing'      = canonicalizeTyping' typing
+    in  Can.Canonical area (Can.TRConstrained constraints' typing')
+
+
 
 typingToScheme :: Env -> Src.Typing -> CanonicalM Scheme
 typingToScheme env typing = do

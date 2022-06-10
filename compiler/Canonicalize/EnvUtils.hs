@@ -51,3 +51,19 @@ lookupADT env name = do
 
     Nothing ->
       throwError $ CompilationError (UnknownType name) NoContext
+
+
+lookupADT' :: Rock.MonadFetch Query.Query m => Env -> String -> m (Maybe Type)
+lookupADT' env name = do
+  case List.find (isTypeNameInImport name) $ envImportInfo env of
+    Just (ImportInfo path TypeImport typeName) ->
+      Rock.fetch $ Query.ForeignADTType path typeName
+
+    Just (ImportInfo path NamespaceImport ns) ->
+      if '.' `elem` name then
+        Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
+      else
+        Rock.fetch $ Query.ForeignADTType path name
+
+    _ ->
+      return $ Map.lookup name (envTypeDecls env)

@@ -14,7 +14,7 @@ export andDo = (b, a) => chain((_) => b, a)
 export type WriterT w m a = WriterT(m #[a, w])
 
 
-runWriterT :: WriterT w m a -> m #[a, w]
+runWriterT :: WriterT w n a -> n #[a, w]
 export runWriterT = (x) => where(x) { WriterT(m) => m }
 
 liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
