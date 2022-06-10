@@ -222,7 +222,8 @@ displayResult = (validation) => where(validation) {
         Just(a) =>
           displayInstalling(of(a))
 
-        Nothing => validation
+        Nothing =>
+          validation
       },
       always(err),
       List.reduce(printWarning, $, warnings),

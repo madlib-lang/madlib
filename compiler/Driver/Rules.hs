@@ -57,6 +57,7 @@ import qualified Utils.Path                    as Path
 import           Error.Error
 import           Error.Context
 import Parse.Madlib.ImportCycle (detectCycle)
+import AST.Canonical (AST(atypedecls))
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
@@ -181,6 +182,35 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ForeignScheme modulePath name -> nonInput $ do
     (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return (Map.lookup name (SlvEnv.envVars slvEnv <> SlvEnv.envMethods slvEnv), (mempty, mempty))
+
+  ForeignExp modulePath name -> nonInput $ do
+    (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    return $ findExpByName name (Slv.aexps slvAst)
+    where
+      findExpByName name exps = case exps of
+        [] ->
+          (Nothing, (mempty, mempty))
+
+        (e@(Slv.Typed _ _ (Slv.Assignment n _)) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
+        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
+        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n _)) _ _)) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
+        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) _ _)) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
+        (_ : next) ->
+          findExpByName name next
+
+  ForeignConstructor modulePath name -> nonInput $ do
+    (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    let allConstructors = concat $ Maybe.mapMaybe Slv.getADTConstructors atypedecls
+    return (List.find ((== name) . Slv.getConstructorName) allConstructors, (mempty, mempty))
+
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
