@@ -419,6 +419,7 @@ kindToStr k = case k of
   Star     -> "*"
   Kfun l r -> kindToStr l <> " -> " <> kindToStr r
 
+
 schemeToStr :: Scheme -> String
 schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
 schemeToStr (Forall _ (ps :=> t)) =

@@ -106,6 +106,16 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
         throwError $ CompilationError (InterfaceNotExisting name) (Context (envCurrentPath env) emptyArea [])
 
 
+lookupInterface' :: Rock.MonadFetch Query.Query m => Env -> String -> m (Maybe Interface)
+lookupInterface' env name = case M.lookup name (envInterfaces env) of
+  Just found ->
+    return $ Just found
+
+  Nothing -> do
+    Rock.fetch $ Query.CanonicalizedInterface (envCurrentPath env) name
+
+
+
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
 canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do

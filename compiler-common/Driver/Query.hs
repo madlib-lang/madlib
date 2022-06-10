@@ -52,6 +52,7 @@ data Query a where
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignExp :: FilePath -> String -> Query (Maybe Slv.Exp)
   ForeignConstructor :: FilePath -> String -> Query (Maybe Slv.Constructor)
+  ForeignTypeDeclaration :: FilePath -> String -> Query (Maybe Slv.TypeDecl)
 
   -- Core
   CoreAST :: FilePath -> Query Core.AST
@@ -114,20 +115,23 @@ instance Hashable (Query a) where
     ForeignConstructor modulePath constructorName ->
       hashWithSalt salt (modulePath <> "." <> constructorName, 13 :: Int)
 
-    CoreAST path ->
-      hashWithSalt salt (path, 14 :: Int)
+    ForeignTypeDeclaration modulePath typeName ->
+      hashWithSalt salt (modulePath <> "." <> typeName, 14 :: Int)
 
-    BuiltObjectFile path ->
+    CoreAST path ->
       hashWithSalt salt (path, 15 :: Int)
 
+    BuiltObjectFile path ->
+      hashWithSalt salt (path, 16 :: Int)
+
     BuiltInBuiltObjectFile ->
-      hashWithSalt salt ("BuiltInBuiltObjectFile", 16 :: Int)
+      hashWithSalt salt ("BuiltInBuiltObjectFile", 17 :: Int)
 
     BuiltJSModule path ->
-      hashWithSalt salt (path, 17 :: Int)
+      hashWithSalt salt (path, 18 :: Int)
 
     BuiltTarget path ->
-      hashWithSalt salt (path, 18 :: Int)
+      hashWithSalt salt (path, 19 :: Int)
 
 
 instance Hashable (Some Query) where

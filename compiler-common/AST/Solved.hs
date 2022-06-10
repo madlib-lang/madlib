@@ -393,6 +393,11 @@ getExpName (Typed _ _ exp) = case exp of
     Nothing
 
 
+getAllMethods :: AST -> [Exp]
+getAllMethods AST{ ainstances } =
+  concat $ getInstanceMethods <$> ainstances
+
+
 getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
