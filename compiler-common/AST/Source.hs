@@ -33,7 +33,6 @@ data Import_
   = NamedImport [Source Name] FilePath FilePath
   | TypeImport [Source Name] FilePath FilePath
   | DefaultImport (Source Name) FilePath FilePath
-  | ImportAll FilePath FilePath
   deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecl = Source TypeDecl_
@@ -223,9 +222,6 @@ getImportNames imp = case imp of
   Source _ _ TypeImport{}            ->
     []
 
-  Source _ _ ImportAll{}             ->
-    []
-
 
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
@@ -236,9 +232,6 @@ getImportTypeNames imp = case imp of
     names
 
   Source _ _ DefaultImport{}         ->
-    []
-
-  Source _ _ ImportAll{}             ->
     []
 
 
@@ -253,9 +246,6 @@ getImportAbsolutePath imp = case imp of
   Source _ _ (DefaultImport _ _ n) ->
     n
 
-  Source _ _ (ImportAll _ n) ->
-    n
-
 
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Source _ _ (NamedImport   _ p _)) =
@@ -265,9 +255,6 @@ getImportPath imp@(Source _ _ (TypeImport    _ p _)) =
   (imp, p)
 
 getImportPath imp@(Source _ _ (DefaultImport _ p _)) =
-  (imp, p)
-
-getImportPath imp@(Source _ _ (ImportAll p _)) =
   (imp, p)
 
 
