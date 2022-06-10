@@ -50,9 +50,12 @@ solveASTsForDoc rootFolder (fp : fps) = do
 
   -- TNode build target
   jsAstTable                  <- buildASTTable TNode mempty canonicalEntrypoint
-  let (jsCanTable, _) = case jsAstTable of
-        Right table -> Can.runCanonicalization mempty dictionaryModulePath TNode Can.initialEnv table canonicalEntrypoint
-        Left  e     -> (Left e, [])
+  (jsCanTable, _) <- Can.runCanonicalization mempty dictionaryModulePath TNode Can.initialEnv canonicalEntrypoint
+  -- (jsCanTable, _) <- case jsAstTable of
+  --     Right table ->
+
+  --     Left e ->
+  --       return (Left e, [])
 
 
   let jsEntryAST         = jsCanTable >>= flip Can.findAST canonicalEntrypoint . fst
@@ -65,9 +68,10 @@ solveASTsForDoc rootFolder (fp : fps) = do
 
   -- TLLVM build target
   llvmAstTable <- buildASTTable TLLVM mempty canonicalEntrypoint
-  let (llvmCanTable, _) = case llvmAstTable of
-        Right table -> Can.runCanonicalization mempty dictionaryModulePath TLLVM Can.initialEnv table canonicalEntrypoint
-        Left  e     -> (Left e, [])
+  (llvmCanTable, _) <- Can.runCanonicalization mempty dictionaryModulePath TLLVM Can.initialEnv canonicalEntrypoint
+  -- let (llvmCanTable, _) = case llvmAstTable of
+  --       Right table -> Can.runCanonicalization mempty dictionaryModulePath TLLVM Can.initialEnv table canonicalEntrypoint
+  --       Left  e     -> (Left e, [])
 
   let llvmEntryAST     = llvmCanTable >>= flip Can.findAST canonicalEntrypoint . fst
       llvmResolvedASTTable = case (llvmEntryAST, llvmCanTable) of

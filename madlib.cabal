@@ -1,10 +1,10 @@
-cabal-version: 1.12
+cabal-version: 2.0
 
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 02be8a66a3a9024be6d1b304ce78f38f4dc3322eed107591558952b53c38050d
+-- hash: 2e36f0914bc081f4faa5b3967fdecb469f99e6ccd01b96ec52dfb829a22f521d
 
 name:           madlib
 version:        0.12.2
@@ -32,26 +32,17 @@ flag static
 
 library
   exposed-modules:
-      AST.Canonical
-      AST.Core
-      AST.Solved
-      AST.Source
       Canonicalize.ADT
       Canonicalize.AST
       Canonicalize.Canonicalize
-      Canonicalize.CanonicalM
       Canonicalize.Derive
-      Canonicalize.Env
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
       Coverage.Coverable
-      Error.Backtrace
-      Error.Context
-      Error.Error
-      Error.Warning
+      Driver.Rules
+      Driver.Rules_
       Explain.Format
-      Explain.Location
       Format.Format
       Generate.Documentation
       Generate.Javascript
@@ -74,12 +65,10 @@ library
       Infer.Scope
       Infer.Substitute
       Infer.ToSolved
-      Infer.Type
       Infer.Typing
       Infer.Unify
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
-      Main
       Optimize.EtaExpansion
       Optimize.EtaReduction
       Optimize.StripNonJSInterfaces
@@ -121,7 +110,7 @@ library
   other-modules:
       Paths_madlib
   hs-source-dirs:
-      src
+      compiler
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -132,14 +121,17 @@ library
     , array >=0.5.4.0
     , base >=4.7 && <5
     , bytestring
+    , compiler-common
     , containers >=0.6.2.1
     , cryptohash-md5
+    , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
     , groupBy
+    , hashable
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -152,7 +144,113 @@ library
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , query
     , regex-tdfa
+    , rock ==0.3.*
+    , some ==1.*
+    , template-haskell
+    , text
+    , transformers
+    , utf8-string
+  default-language: Haskell2010
+
+library compiler-common
+  exposed-modules:
+      AST.Canonical
+      AST.Core
+      AST.Solved
+      AST.Source
+      Canonicalize.CanonicalM
+      Canonicalize.Env
+      Error.Backtrace
+      Error.Context
+      Error.Error
+      Error.Warning
+      Explain.Location
+      Infer.Type
+  other-modules:
+      Paths_madlib
+  hs-source-dirs:
+      compiler-common
+  build-depends:
+      Cabal ==3.6.2.0
+    , Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson >=1.5.6.0
+    , aeson-pretty
+    , ansi-wl-pprint >=0.6.9
+    , array >=0.5.4.0
+    , base >=4.7 && <5
+    , bytestring
+    , containers >=0.6.2.1
+    , cryptohash-md5
+    , dependent-sum-template ==0.1.*
+    , directory ==1.3.6.0
+    , either
+    , exceptions
+    , executable-path >=0.0.3.1
+    , filepath
+    , groupBy
+    , hashable
+    , hpc-lcov
+    , hspec
+    , hspec-golden
+    , mtl
+    , optparse-applicative >=0.16.1.0
+    , pretty-show
+    , prettyprinter >=1.6.2
+    , process >=1.6.9.0
+    , process-extras
+    , regex-tdfa
+    , rock ==0.3.*
+    , some ==1.*
+    , template-haskell
+    , text
+    , transformers
+    , utf8-string
+  default-language: Haskell2010
+
+library query
+  exposed-modules:
+      Driver.Query
+  other-modules:
+      Paths_madlib
+  hs-source-dirs:
+      query
+  build-depends:
+      Cabal ==3.6.2.0
+    , Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson >=1.5.6.0
+    , aeson-pretty
+    , ansi-wl-pprint >=0.6.9
+    , array >=0.5.4.0
+    , base >=4.7 && <5
+    , bytestring
+    , compiler-common
+    , containers >=0.6.2.1
+    , cryptohash-md5
+    , dependent-sum-template ==0.1.*
+    , directory ==1.3.6.0
+    , either
+    , exceptions
+    , executable-path >=0.0.3.1
+    , filepath
+    , groupBy
+    , hashable
+    , hpc-lcov
+    , hspec
+    , hspec-golden
+    , mtl
+    , optparse-applicative >=0.16.1.0
+    , pretty-show
+    , prettyprinter >=1.6.2
+    , process >=1.6.9.0
+    , process-extras
+    , regex-tdfa
+    , rock ==0.3.*
+    , some ==1.*
+    , template-haskell
     , text
     , transformers
     , utf8-string
@@ -161,91 +259,6 @@ library
 executable madlib
   main-is: Main.hs
   other-modules:
-      AST.Canonical
-      AST.Core
-      AST.Solved
-      AST.Source
-      Canonicalize.ADT
-      Canonicalize.AST
-      Canonicalize.Canonicalize
-      Canonicalize.CanonicalM
-      Canonicalize.Derive
-      Canonicalize.Env
-      Canonicalize.Interface
-      Canonicalize.JSExp
-      Canonicalize.Typing
-      Coverage.Coverable
-      Error.Backtrace
-      Error.Context
-      Error.Error
-      Error.Warning
-      Explain.Format
-      Explain.Location
-      Format.Format
-      Generate.Documentation
-      Generate.Javascript
-      Generate.JSInternals
-      Generate.Json
-      Generate.LLVM.ClosureConvert
-      Generate.LLVM.LLVM
-      Generate.LLVM.Rename
-      Generate.Utils
-      Infer.AST
-      Infer.Env
-      Infer.Exp
-      Infer.Infer
-      Infer.Instantiate
-      Infer.Interface
-      Infer.Pattern
-      Infer.Placeholder
-      Infer.Pred
-      Infer.Scheme
-      Infer.Scope
-      Infer.Substitute
-      Infer.ToSolved
-      Infer.Type
-      Infer.Typing
-      Infer.Unify
-      MadlibDotJson.MadlibDotJson
-      MadlibDotJson.MadlibVersion
-      Optimize.EtaExpansion
-      Optimize.EtaReduction
-      Optimize.StripNonJSInterfaces
-      Optimize.TCE
-      Optimize.ToCore
-      Parse.Comments.Lexer
-      Parse.DocString.DocString
-      Parse.DocString.Grammar
-      Parse.DocString.Lexer
-      Parse.Macro
-      Parse.Madlib.AST
-      Parse.Madlib.Dictionary
-      Parse.Madlib.Grammar
-      Parse.Madlib.Lexer
-      Parse.Madlib.TargetMacro
-      Run.CommandLine
-      Run.Compile
-      Run.Format
-      Run.GenerateDocumentation
-      Run.GeneratePackage
-      Run.Package
-      Run.PackageHash
-      Run.PackageInstaller
-      Run.Run
-      Run.Target
-      Run.TestRunner
-      Run.Utils
-      Utils.Hash
-      Utils.IO
-      Utils.List
-      Utils.Path
-      Utils.PathUtils
-      Utils.Tuple
-      Utils.Types
-      Utils.URL
-      Utils.Version
-      VersionLock.PublicAPI
-      VersionLock.VersionLock
       Paths_madlib
   hs-source-dirs:
       src
@@ -262,18 +275,18 @@ executable madlib
     , bytestring
     , containers >=0.6.2.1
     , cryptohash-md5
+    , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
     , groupBy
+    , hashable
     , hpc-lcov
     , hspec
     , hspec-golden
-    , llvm-hs ==9.0.1
-    , llvm-hs-pretty ==0.9.0.0
-    , llvm-hs-pure ==9.0.0
+    , madlib
     , mtl
     , optparse-applicative >=0.16.1.0
     , pretty-show
@@ -281,6 +294,9 @@ executable madlib
     , process >=1.6.9.0
     , process-extras
     , regex-tdfa
+    , rock ==0.3.*
+    , some ==1.*
+    , template-haskell
     , text
     , transformers
     , utf8-string
@@ -311,20 +327,20 @@ test-suite madlib-test
     , array >=0.5.4.0
     , base >=4.7 && <5
     , bytestring
+    , compiler-common
     , containers >=0.6.2.1
     , cryptohash-md5
+    , dependent-sum-template ==0.1.*
     , directory ==1.3.6.0
     , either
     , exceptions
     , executable-path >=0.0.3.1
     , filepath
     , groupBy
+    , hashable
     , hpc-lcov
     , hspec >=2.7.2
     , hspec-golden
-    , llvm-hs ==9.0.1
-    , llvm-hs-pretty ==0.9.0.0
-    , llvm-hs-pure ==9.0.0
     , madlib
     , mtl
     , optparse-applicative >=0.16.1.0
@@ -332,7 +348,11 @@ test-suite madlib-test
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , query
     , regex-tdfa
+    , rock ==0.3.*
+    , some ==1.*
+    , template-haskell
     , text
     , transformers
     , utf8-string

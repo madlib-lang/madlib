@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 module Parse.Madlib.AST where
 
 import qualified Data.Map                      as M
@@ -205,7 +206,9 @@ findAST table path = case M.lookup path table of
 
 buildAST :: FilePath -> String -> Either CompilationError AST
 buildAST path code = case parse code of
-  Right ast -> setPath ast path
+  Right ast ->
+    setPath ast path
+
   Left e ->
     let split = lines e
         line  = (read $ head split) :: Int
@@ -216,3 +219,29 @@ buildAST path code = case parse code of
 
 setPath :: AST -> FilePath -> Either e AST
 setPath ast path = Right ast { apath = Just path }
+
+
+
+computeAbsoluteImportPath :: FilePath -> Import -> IO Import
+computeAbsoluteImportPath rootPath (Source area target imp) = case imp of
+  NamedImport names rel _ -> do
+    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target $ NamedImport names rel abs
+
+  TypeImport names rel _ -> do
+    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target $ TypeImport names rel abs
+
+  DefaultImport namespace rel _ -> do
+    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target $ DefaultImport namespace rel abs
+
+  ImportAll rel _ -> do
+    (Just abs) <- resolveAbsoluteSrcPath defaultPathUtils rootPath rel
+    return $ Source area target $ ImportAll rel abs
+
+
+computeAbsoluteImportPaths :: FilePath -> AST -> IO AST
+computeAbsoluteImportPaths rootPath ast@AST{ aimports } = do
+  updatedImports <- mapM (computeAbsoluteImportPath rootPath) aimports
+  return ast { aimports = updatedImports }
