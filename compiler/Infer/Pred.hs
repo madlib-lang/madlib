@@ -118,12 +118,19 @@ isInstanceOf :: Pred -> Pred -> Infer Substitution
 isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
   if interface == interface'
     then do
-      let r  = filter (\(t1, t2) -> not (isTVar t1)) (zip ts ts')
-      let r' = filter (\(t1, t2) -> isTVar t1) (zip ts ts')
-      s1 <- unify (IsIn interface (fst <$> r') Nothing) (IsIn interface (snd <$> r') Nothing)
-      s2 <- match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
-      return $ s1 <> s2
+      let r  = zip ts ts'
+      match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
     else throwError $ CompilationError FatalError NoContext
+-- isInstanceOf :: Pred -> Pred -> Infer Substitution
+-- isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
+--   if interface == interface'
+--     then do
+--       let r  = filter (\(t1, t2) -> not (isTVar t1)) (zip ts ts')
+--       let r' = filter (\(t1, t2) -> isTVar t1) (zip ts ts')
+--       s1 <- unify (IsIn interface (fst <$> r') Nothing) (IsIn interface (snd <$> r') Nothing)
+--       s2 <- match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
+--       return $ s1 <> s2
+--     else throwError $ CompilationError FatalError NoContext
 
 byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts maybeArea) = tryInsts (insts env interface)
