@@ -11,3 +11,16 @@ data WarningKind
   | MadlibVersionMinorTooLow (Maybe String) String String
   -- ^ pkgName versionRequired versionUsed
   deriving(Eq, Show, Ord)
+
+getContext :: CompilationWarning -> Context
+getContext warning = case warning of
+  CompilationWarning _ ctx ->
+    ctx
+
+isUnusedImport :: CompilationWarning -> Bool
+isUnusedImport warning = case warning of
+  CompilationWarning (UnusedImport _ _) _ ->
+    True
+
+  _ ->
+    False
