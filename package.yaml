@@ -91,6 +91,8 @@ internal-libraries:
       - compiler-common
   compiler-common:
     source-dirs: compiler-common
+    dependencies:
+      - llvm-hs-pure == 9.0.0
 
 tests:
   madlib-test:

@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ab473db4edfc13c2c259f4d44476a38f6aa5872270834a66987fd635f704d194
+-- hash: 2b334d71fc638d6b44ca28f60e5a734780dbc3ef1e80368a02955b698b88273a
 
 name:           madlib
 version:        0.12.2
@@ -43,7 +43,6 @@ library
       Canonicalize.Typing
       Coverage.Coverable
       Driver.Rules
-      Driver.Rules_
       Explain.Format
       Format.Format
       Generate.Documentation
@@ -169,6 +168,8 @@ library compiler-common
       Error.Error
       Error.Warning
       Explain.Location
+      Generate.LLVM.Env
+      Generate.LLVM.SymbolTable
       Infer.Env
       Infer.Type
   other-modules:
@@ -198,6 +199,7 @@ library compiler-common
     , hpc-lcov
     , hspec
     , hspec-golden
+    , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative >=0.16.1.0
     , pretty-show

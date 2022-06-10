@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Infer.EnvUtils where
 
 
@@ -14,10 +15,9 @@ import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
 import qualified Data.Set as Set
 import           Infer.Env
-
-
-
-
+import qualified Rock
+import qualified Driver.Query as Query
+import qualified Data.List as List
 
 
 
@@ -25,10 +25,40 @@ isConstructor :: Env -> String -> Bool
 isConstructor env name =
   Set.member name (envConstructors env)
 
+
+isNameInImport :: String -> ImportInfo -> Bool
+isNameInImport name ImportInfo { iiType, iiName }
+  | iiType == NameImport && iiName == name = True
+  | iiType == NamespaceImport && iiName == takeWhile (/= '.') name = True
+  | otherwise = False
+
 lookupVar :: Env -> String -> Infer Scheme
-lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
-  Just x  -> return x
-  Nothing -> throwError $ CompilationError (UnboundVariable x) NoContext
+lookupVar env name = do
+  maybeType <- case List.find (isNameInImport name) $ envImportInfo env of
+    Just (ImportInfo path NameImport name) ->
+      Rock.fetch $ Query.ForeignScheme path name
+
+    Just (ImportInfo path NamespaceImport ns) ->
+      Rock.fetch $ Query.ForeignScheme path (tail $ dropWhile (/= '.') name)
+
+    _ ->
+      return $ M.lookup name (envVars env <> envMethods env)
+
+  case maybeType of
+    Just sc ->
+      return sc
+
+    Nothing ->
+      throwError $ CompilationError (UnboundVariable name) NoContext
+
+
+-- lookupVar :: Env -> String -> Infer Scheme
+-- lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
+--   Just x  ->
+--     return x
+
+--   Nothing ->
+--     throwError $ CompilationError (UnboundVariable x) NoContext
 
 
 extendVars :: Env -> (String, Scheme) -> Env
@@ -53,12 +83,20 @@ safeExtendVarsForAbsParam env (i, sc) = case M.lookup i (envVars env) of
 
 
 lookupInterface :: Env -> Can.Name -> Infer Interface
-lookupInterface env n = case M.lookup n (envInterfaces env) of
-  Just i ->
-    return i
+lookupInterface env name = case M.lookup name (envInterfaces env) of
+  Just found ->
+    return found
 
-  _      ->
-    throwError $ CompilationError (InterfaceNotExisting n) NoContext
+  Nothing -> do
+    Rock.fetch $ Query.SolvedInterface (envCurrentPath env) name
+
+-- lookupInterface :: Env -> Can.Name -> Infer Interface
+-- lookupInterface env n = case M.lookup n (envInterfaces env) of
+--   Just i ->
+--     return i
+
+--   _      ->
+--     throwError $ CompilationError (InterfaceNotExisting n) NoContext
 
 
 

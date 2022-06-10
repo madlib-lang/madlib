@@ -29,6 +29,7 @@ import qualified Optimize.EtaReduction         as EtaReduction
 import qualified Optimize.TCE                  as TCE
 import qualified Generate.LLVM.Rename          as Rename
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
+import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Data.Map                      as Map
 import qualified Data.Set                      as Set
 import           Control.Monad.State
@@ -41,12 +42,14 @@ import qualified Explain.Format as Explain
 import qualified Data.List as List
 import Control.Monad.Writer
 
--- TODO: wrap all inputs into one parameter
+
+
 rules :: Options -> Rock.GenRules (Rock.Writer [CompilationError] (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
   File path -> do
-    liftIO $ putStrLn path
-    input $ liftIO $ readFile path
+    -- liftIO $ putStrLn ("load file: " <> path)
+    input $ do
+      liftIO $ readFile path
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path
@@ -100,17 +103,17 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Left error ->
         return ((emptySlvAST, initialEnv), [error])
 
-  SolvedTable paths -> nonInput $ do
-    res <- runInfer $ solveManyASTs mempty paths
-    case res of
-      Right (table, InferState _ []) ->
-        return (table, mempty)
+  -- SolvedTable paths -> nonInput $ do
+  --   res <- runInfer $ solveManyASTs mempty paths
+  --   case res of
+  --     Right (table, InferState _ []) ->
+  --       return (table, mempty)
 
-      Right (table, InferState _ errors) ->
-        return (table, errors)
+  --     Right (table, InferState _ errors) ->
+  --       return (table, errors)
 
-      Left error ->
-        return (mempty, [error])
+  --     Left error ->
+  --       return (mempty, [error])
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -144,6 +147,15 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let coreAst     = astToCore (optOptimized options) slvAst
             strippedAst = stripAST coreAst
         return (TCE.resolveAST strippedAst, mempty)
+
+  SymbolTableWithEnv path -> nonInput $ do
+    coreAst <- Rock.fetch $ CoreAST path
+    table   <- LLVM.compileModule' options coreAst
+    return (table, mempty)
+
+  BuiltInSymbolTableWithEnv -> nonInput $ do
+    table <- LLVM.compileDefaultModule options
+    return (table, mempty)
 
   _ ->
     undefined
@@ -225,13 +237,6 @@ findSlvInterface name paths = case paths of
             findSlvInterface name importedModulePaths
 
 
--- input :: (Functor f) => f a -> f (a, Rock.TaskKind)
--- input = fmap (, Rock.Input)
-
-
--- nonInput :: (Functor f) => f a -> f (a, Rock.TaskKind)
--- nonInput = fmap (, Rock.NonInput)
-
 noError :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 noError = fmap ((, mempty) . (, Rock.NonInput))
 
@@ -249,13 +254,22 @@ ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
 printErrors :: Options -> [CompilationError] -> Rock.Task Query ()
 printErrors options [] = return ()
 printErrors options errors = do
+  -- TODO: make Explain.format fetch the file from the store directly
   formattedErrors <- liftIO $ mapM (Explain.format readFile False) errors
   let fullError = List.intercalate "\n\n\n" formattedErrors
   liftIO $ putStrLn fullError-- >> exitFailure
 
 
-buildSolvedTable :: Options -> [FilePath] -> IO Slv.Table
-buildSolvedTable options paths = do
+-- buildSolvedTable :: Options -> [FilePath] -> IO Slv.Table
+-- buildSolvedTable options paths = do
+--   memoVar <- newIORef mempty
+--   let task = Rock.fetch $ SolvedTable paths
+--   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
+
+
+compile :: Options -> FilePath -> IO ()
+compile options path = do
   memoVar <- newIORef mempty
-  let task = Rock.fetch $ SolvedTable paths
+  let task = Rock.fetch $ SymbolTableWithEnv path
   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
+  return ()
