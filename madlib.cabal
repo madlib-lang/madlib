@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aaa661e875648e3c43e4a7dbe9cb8f81838cbb3b26cd9db67feb285e62219d2c
+-- hash: 3ca4670c644a293d4e5f5d5aa72564aef65105f73f92db8892e26d86b35e1555
 
 name:           madlib
 version:        0.12.2
@@ -77,7 +77,6 @@ library
       Optimize.TCE
       Optimize.ToCore
       Parse.Comments.Lexer
-      Parse.DocString.DocString
       Parse.DocString.Grammar
       Parse.DocString.Lexer
       Parse.Macro
@@ -163,6 +162,7 @@ library
     , stm ==2.5.0.2
     , template-haskell
     , text
+    , time ==1.9.3
     , transformers
     , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
@@ -187,6 +187,7 @@ library compiler-common
       Generate.LLVM.SymbolTable
       Infer.Env
       Infer.Type
+      Parse.DocString.DocString
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -235,6 +236,7 @@ library compiler-common
     , stm ==2.5.0.2
     , template-haskell
     , text
+    , time ==1.9.3
     , transformers
     , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
@@ -292,6 +294,7 @@ executable madlib
     , stm ==2.5.0.2
     , template-haskell
     , text
+    , time ==1.9.3
     , transformers
     , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
@@ -359,6 +362,7 @@ test-suite madlib-test
     , stm ==2.5.0.2
     , template-haskell
     , text
+    , time ==1.9.3
     , transformers
     , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0

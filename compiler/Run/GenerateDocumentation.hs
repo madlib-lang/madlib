@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 module Run.GenerateDocumentation where
 
 import qualified Data.Map                      as M
@@ -37,78 +39,62 @@ import           Utils.Path
 import           Run.Target
 import           Run.Utils
 import qualified Utils.PathUtils as PathUtils
-
-
-solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, Slv.AST, String, [DocString.DocString])])
-solveASTsForDoc _          []         = return $ Right []
-solveASTsForDoc rootFolder (fp : fps) = do
-  undefined
-  -- canonicalEntrypoint       <- canonicalizePath fp
-
-  -- Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
-  -- rootPath <- canonicalizePath $ computeRootPath fp
-  -- let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint
-
-  -- -- TNode build target
-  -- jsAstTable                  <- buildASTTable TNode mempty canonicalEntrypoint
-  -- (jsCanTable, _) <- Can.runCanonicalization dictionaryModulePath TNode Can.initialEnv canonicalEntrypoint
-  -- -- (jsCanTable, _) <- case jsAstTable of
-  -- --     Right table ->
-
-  -- --     Left e ->
-  -- --       return (Left e, [])
-
-
-  -- let jsEntryAST         = jsCanTable >>= flip Can.findAST canonicalEntrypoint . fst
-  --     jsResolvedASTTable = case (jsEntryAST, jsCanTable) of
-  --       (Right ast, Right (table, _)) -> do
-  --         runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
-  --       (_     , Left e) -> Left e
-  --       (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
-  -- -- End TNode
-
-  -- -- TLLVM build target
-  -- llvmAstTable <- buildASTTable TLLVM mempty canonicalEntrypoint
-  -- (llvmCanTable, _) <- Can.runCanonicalization dictionaryModulePath TLLVM Can.initialEnv canonicalEntrypoint
-  -- -- let (llvmCanTable, _) = case llvmAstTable of
-  -- --       Right table -> Can.runCanonicalization mempty dictionaryModulePath TLLVM Can.initialEnv table canonicalEntrypoint
-  -- --       Left  e     -> (Left e, [])
-
-  -- let llvmEntryAST     = llvmCanTable >>= flip Can.findAST canonicalEntrypoint . fst
-  --     llvmResolvedASTTable = case (llvmEntryAST, llvmCanTable) of
-  --       (Right ast, Right (table, _)) -> do
-  --         runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
-  --       (_     , Left e) -> Left e
-  --       (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
-  -- -- End TLLVM
-
-  -- case (jsResolvedASTTable, llvmResolvedASTTable) of
-  --   (Left  e, _) ->
-  --     return $ Left e
-
-  --   (_, Left e) ->
-  --     return $ Left e
-
-  --   (Right (jsTable, _), Right (llvmTable, _)) ->
-  --     case (M.lookup canonicalEntrypoint jsTable, M.lookup canonicalEntrypoint llvmTable) of
-  --       (Just jsAst, Just llvmAst) -> do
-  --         fileContent <- readFile fp
-  --         case DocString.parse fileContent of
-  --           Right ds -> do
-  --             next <- solveASTsForDoc rootFolder fps
-  --             return $ ([(jsAst, llvmAst, moduleName, ds)] ++) <$> next
-  --           Left _ -> do
-  --             next <- solveASTsForDoc rootFolder fps
-  --             return $ ([(jsAst, llvmAst, moduleName, [])] ++) <$> next
-
-  --       _ ->
-  --         solveASTsForDoc rootFolder fps
+import qualified Rock
+import qualified Driver.Query    as Query
+import qualified Driver.Rules    as Rules
+import           Data.Dependent.HashMap (DHashMap)
+import           Data.IORef.Lifted
+import           Run.Options
+import           Control.Concurrent.MVar
+import           Utils.PathUtils (defaultPathUtils)
+import           Control.Monad
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
 getFilesForDoc fp = do
   allFiles <- getFilesToCompile False fp
   return $ filter (not . isSuffixOf ".spec.mad") allFiles
+
+
+runTask :: Options -> IORef (DHashMap Query.Query MVar) -> Rock.Task Query.Query a -> IO a
+runTask options ioRef task =
+  Rock.runTask (Rock.memoise ioRef (Rules.ignoreTaskKind (Rock.writer (\_ _ -> return ()) $ Rules.rules options))) task
+
+
+generateDocDataTask :: FilePath -> [FilePath] -> IO [(Slv.AST, Slv.AST, String, [DocString.DocString])]
+generateDocDataTask rootFolder paths = do
+  let jsOptions =
+        Options
+          { optPathUtils = defaultPathUtils
+          , optEntrypoint = ""
+          , optRootPath = "./"
+          , optOutputPath = "./"
+          , optTarget = TNode
+          , optOptimized = False
+          , optBundle = False
+          , optCoverage = False
+          }
+  let llvmOptions =
+        Options
+          { optPathUtils = defaultPathUtils
+          , optEntrypoint = ""
+          , optRootPath = "./"
+          , optOutputPath = "./"
+          , optTarget = TLLVM
+          , optOptimized = False
+          , optBundle = False
+          , optCoverage = False
+          }
+  memoVar <- newIORef mempty
+
+  forM paths $ \path -> do
+    canonicalEntrypoint <- canonicalizePath path
+    (jsAst, _)          <- runTask jsOptions memoVar (Rock.fetch $ Query.SolvedASTWithEnv path)
+    (llvmAst, _)        <- runTask llvmOptions memoVar (Rock.fetch $ Query.SolvedASTWithEnv path)
+    docStrings          <- runTask llvmOptions memoVar (Rock.fetch $ Query.DocStrings path)
+    let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint 
+    return (jsAst, llvmAst, moduleName, docStrings)
+
 
 runDocumentationGenerator :: FilePath -> IO ()
 runDocumentationGenerator fp = do
@@ -120,11 +106,5 @@ runDocumentationGenerator fp = do
         _          -> fp
 
   canonicalRootPath <- canonicalizePath rootPath
-  asts              <- solveASTsForDoc canonicalRootPath filepaths
-
-  case asts of
-    Right asts' ->
-      putStrLn $ generateASTsDoc asts'
-
-    Left  e     ->
-      putStrLn $ ppShow e
+  docInfos          <- generateDocDataTask canonicalRootPath filepaths
+  putStrLn $ generateASTsDoc docInfos

@@ -4584,3 +4584,5 @@ buildTarget options entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath
+
+  liftIO $ IOUtils.putStrLnAndFlush "done."

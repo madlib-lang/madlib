@@ -9,39 +9,39 @@
 module Driver where
 
 
-import Control.Monad.Trans.Control
-import Control.Monad.Identity
-import Data.Constraint.Extras (has')
-import Data.Dependent.HashMap (DHashMap)
-import qualified Data.Dependent.HashMap as DHashMap
-import Data.Dependent.Sum (DSum ((:=>)))
-import Data.HashMap.Lazy (HashMap)
-import qualified Data.HashMap.Lazy as HashMap
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HashSet
-import Data.IORef.Lifted
-import qualified Data.Text.IO as Text
-import Driver.Query (Query)
-import qualified Driver.Query as Query
-import Rock
+import           Control.Monad.Trans.Control
+import           Control.Monad.Identity
+import           Data.Constraint.Extras           (has')
+import           Data.Dependent.HashMap           (DHashMap)
+import qualified Data.Dependent.HashMap           as DHashMap
+import           Data.Dependent.Sum               (DSum ((:=>)))
+import           Data.HashMap.Lazy                (HashMap)
+import qualified Data.HashMap.Lazy                as HashMap
+import           Data.HashSet                     (HashSet)
+import qualified Data.HashSet                     as HashSet
+import           Data.IORef.Lifted
+import qualified Data.Text.IO                     as Text
+import           Driver.Query (Query)
+import qualified Driver.Query                     as Query
+import           Rock
 import qualified Driver.Rules as Rules
-import Data.Functor.Const
-import Data.Text (Text)
-import qualified Data.Text as Text
+import           Data.Functor.Const
+import           Data.Text (Text)
+import qualified Data.Text                        as Text
 import           Control.Exception
-import Error.Error (CompilationError(CompilationError))
+import           Error.Error                      (CompilationError(CompilationError))
 import qualified Utils.Path as Path
-import Data.Hashable (Hashable (hash))
-import Run.Options
-import Error.Warning (CompilationWarning(CompilationWarning))
-import GHC.IO.Handle.FD (stderr)
-import Control.Arrow (first)
+import           Data.Hashable                    (Hashable (hash))
+import           Run.Options
+import           Error.Warning                    (CompilationWarning(CompilationWarning))
+import           GHC.IO.Handle.FD (stderr)
+import           Control.Arrow (first)
 import qualified Data.Set as Set
 import qualified Data.List as List
-import Text.Show.Pretty (ppShow)
+import           Text.Show.Pretty (ppShow)
 import qualified Data.Map as Map
-import Run.Target (Target(TNode, TLLVM))
-import Utils.PathUtils (defaultPathUtils)
+import           Run.Target (Target(TNode, TLLVM))
+import           Utils.PathUtils (defaultPathUtils)
 import qualified Utils.PathUtils as PathUtils
 
 
@@ -153,7 +153,17 @@ runIncrementalTask state changedFiles fileUpdates prune task =
                 )
                 $ traceFetch_
                 $ writer writeErrorsAndWarnings
-                $ Rules.rules Options { optEntrypoint = head changedFiles, optTarget = TNode, optRootPath = "/Users/arnaudboeglin/Code/madlib/", optOutputPath = "", optOptimized = False, optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ } }
+                $ Rules.rules
+                    Options
+                      { optEntrypoint = head changedFiles
+                      , optTarget = TNode
+                      , optRootPath = "/Users/arnaudboeglin/Code/madlib/"
+                      , optOutputPath = ""
+                      , optOptimized = False
+                      , optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ }
+                      , optBundle = False
+                      , optCoverage = False
+                      }
 
     result <- Rock.runTask rules task
     started <- readIORef $ _startedVar state

@@ -35,6 +35,7 @@ import Error.Warning
 import qualified Error.Warning as Warning
 import Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
+import Data.Time.Clock
 
 
 handlers :: State -> Handlers (LspM ())
@@ -65,13 +66,16 @@ handlers state = mconcat
 
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) ->
       generateDiagnostics state uri mempty
-
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
       generateDiagnostics state uri mempty
   , notificationHandler STextDocumentDidChange $ \(NotificationMessage _ _ (DidChangeTextDocumentParams (VersionedTextDocumentIdentifier uri _) (List changes))) -> do
+      startT <- liftIO getCurrentTime
       let (TextDocumentContentChangeEvent _ _ docContent) = last changes
       generateDiagnostics state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
-      -- sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("error count: " <> T.pack (ppShow uri))
+      endT <- liftIO getCurrentTime
+      let diff = diffUTCTime endT startT
+      -- undefined
+      sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("change duration: " <> T.pack (ppShow diff))
       -- sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("error count: " <> T.pack (ppShow $ last changes))
   ]
 
