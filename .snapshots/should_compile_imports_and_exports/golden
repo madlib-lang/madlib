@@ -1,7 +1,8 @@
-// file: ./ModuleA
+// file: ./ModuleA.mad
+import {} from "./__internals__.mjs"
 export let singleton = (a => ({ v: a, n: null }));
 export default { singleton };
-// file: ./ModuleB
+// file: ./ModuleB.mad
 import {} from "./__internals__.mjs"
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";

@@ -1147,16 +1147,15 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
     "./__internals__.mjs"
 
 
-generateJSModule :: Options -> Bool -> [FilePath] -> Core.AST -> IO String
-generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ""
-generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Just path }
+generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
+generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ""
+generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
     let rootPath           = optRootPath options
         internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
         entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
         computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) rootPath path
 
-    createDirectoryIfMissing True $ takeDirectory computedOutputPath
     let moduleContent = compile
           initialEnv
           (
@@ -1165,13 +1164,14 @@ generateJSModule options coverage pathsToBuild ast@Core.AST { Core.apath = Just 
               path
               entrypointPath
               computedOutputPath
-              coverage
+              (optCoverage options)
               (optOptimized options)
               (optTarget options)
               internalsPath
           )
           ast
-    writeFile computedOutputPath moduleContent
+    -- createDirectoryIfMissing True $ takeDirectory computedOutputPath
+    -- writeFile computedOutputPath moduleContent
 
     let rest = List.dropWhile (/= path) pathsToBuild
     let total = List.length pathsToBuild

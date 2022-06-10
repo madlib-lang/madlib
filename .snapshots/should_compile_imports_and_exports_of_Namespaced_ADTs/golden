@@ -1,13 +1,14 @@
-// file: ./ADTs
+// file: ./ADTs.mad
+import {} from "./__internals__.mjs"
 export let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 let NotExportedADT = (a => ({ __constructor: "NotExportedADT", __args: [ a ] }));
 let StillNotExported = ({ __constructor: "StillNotExported", __args: [  ] });
-Inspect['Maybe_0e004cf32dea61523ee6cabb7855371f'] = {};
-Inspect['Maybe_0e004cf32dea61523ee6cabb7855371f']['inspect'] = () => (Inspect_d3) => (__$a__ => ((__x__) => {
+Inspect['Maybe_c5af8304491813973bc06c3e9cfa902b'] = {};
+Inspect['Maybe_c5af8304491813973bc06c3e9cfa902b']['inspect'] = () => (Inspect_t45) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_d3.inspect()(a0) + `)`;
+    return `Just(` + Inspect_t45.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -21,11 +22,11 @@ Inspect['Maybe_0e004cf32dea61523ee6cabb7855371f']['inspect'] = () => (Inspect_d3
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['NotExportedADT_0e004cf32dea61523ee6cabb7855371f'] = {};
-Inspect['NotExportedADT_0e004cf32dea61523ee6cabb7855371f']['inspect'] = () => (Inspect_p15) => (__$a__ => ((__x__) => {
+Inspect['NotExportedADT_c5af8304491813973bc06c3e9cfa902b'] = {};
+Inspect['NotExportedADT_c5af8304491813973bc06c3e9cfa902b']['inspect'] = () => (Inspect_f57) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "NotExportedADT" && true) {
     let a0 = __x__.__args[0];
-    return `NotExportedADT(` + Inspect_p15.inspect()(a0) + `)`;
+    return `NotExportedADT(` + Inspect_f57.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "StillNotExported") {
     return `StillNotExported`;
@@ -40,7 +41,7 @@ Inspect['NotExportedADT_0e004cf32dea61523ee6cabb7855371f']['inspect'] = () => (I
   }
 })(__$a__));
 export default { Just, Nothing };
-// file: ./Module
+// file: ./ModuleB.mad
 import {} from "./__internals__.mjs"
 import ADTs from "./ADTs.mjs";
 
