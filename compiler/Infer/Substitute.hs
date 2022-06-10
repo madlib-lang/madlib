@@ -58,11 +58,15 @@ instance Substitutable Type where
     let appliedFields          = apply s <$> fields
         appliedBase            = apply s <$> base
         (allFields', nextBase) = case appliedBase of
-          Just (TRecord fields' base') -> (M.union appliedFields (apply s <$> fields'), base')
-          _                            -> (appliedFields, appliedBase)
+          Just (TRecord fields' base') ->
+            (M.union appliedFields (apply s <$> fields'), base')
+
+          _                            ->
+            (appliedFields, appliedBase)
 
         applied = TRecord allFields' nextBase
-    in  if rec == applied then applied else apply s applied
+    in  applied
+    -- in  if rec == applied then applied else apply s applied
   apply s t = t
 
   ftv TCon{}                       = []
@@ -71,6 +75,7 @@ instance Substitutable Type where
   ftv (TRecord fields Nothing    ) = foldr (\v s -> union s $ ftv v) [] (M.elems fields)
   ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) ++ ftv base
   ftv t                            = []
+
 
 instance Substitutable Scheme where
   apply s (Forall ks t) = Forall ks $ apply s t

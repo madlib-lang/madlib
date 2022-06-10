@@ -43,9 +43,10 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-      s2 <- unifyVars M.empty z
+      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+
       s3 <- unify tBase tBase'
 
       return $ s3 `compose` s2 `compose` s1
@@ -57,8 +58,8 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s2 <- unifyVars M.empty z
+          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       return $ s2 `compose` s1
 
@@ -69,8 +70,8 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s2 <- unifyVars M.empty z
+          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       return $ s2 `compose` s1
 
@@ -80,12 +81,17 @@ instance Unify Type where
       if extraFields' /= mempty || extraFields /= mempty
         then throwError $ CompilationError (UnificationError r l) NoContext
         else do
+          -- let updatedFields  = M.union fields extraFields'
+          --     updatedFields' = M.union fields' extraFields
+          --     types          = M.elems updatedFields
+          --     types'         = M.elems updatedFields'
+          --     z              = zip types types'
+          -- unifyVars M.empty z
           let updatedFields  = M.union fields extraFields'
               updatedFields' = M.union fields' extraFields
               types          = M.elems updatedFields
               types'         = M.elems updatedFields'
-              z              = zip types types'
-          unifyVars M.empty z
+          unifyVars' M.empty types types'
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
@@ -124,6 +130,12 @@ unifyVars s ((tp, tp') : xs) = do
   s1 <- unify tp tp'
   unifyVars (compose s s1) xs
 unifyVars s [] = return s
+
+unifyVars' :: Substitution -> [Type] -> [Type] -> Infer Substitution
+unifyVars' s (tp : xs) (tp' : xs') = do
+  s1 <- unify tp tp'
+  unifyVars' (compose s s1) xs xs'
+unifyVars' s _ _  = return s
 
 
 unifyElems :: Env -> [Type] -> Infer Substitution
