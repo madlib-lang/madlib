@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a0eebb4d2e3725970ee3d8aafb45afeecb7eae6c020a1d42e443ee29d4e12164
+-- hash: ab473db4edfc13c2c259f4d44476a38f6aa5872270834a66987fd635f704d194
 
 name:           madlib
 version:        0.12.2
@@ -37,7 +37,7 @@ library
       Canonicalize.Canonicalize
       Canonicalize.CanonicalM
       Canonicalize.Derive
-      Canonicalize.EnvUtil
+      Canonicalize.EnvUtils
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
@@ -55,7 +55,7 @@ library
       Generate.LLVM.Rename
       Generate.Utils
       Infer.AST
-      Infer.Env
+      Infer.EnvUtils
       Infer.Exp
       Infer.Infer
       Infer.Instantiate
@@ -169,6 +169,7 @@ library compiler-common
       Error.Error
       Error.Warning
       Explain.Location
+      Infer.Env
       Infer.Type
   other-modules:
       Paths_madlib

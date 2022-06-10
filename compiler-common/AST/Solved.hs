@@ -16,13 +16,6 @@ data Solved a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
--- instance Show a => Show (Typed a) where
---   show solved = case solved of
---     Typed _ _ a ->
---       show a
-
---     Untyped _ a ->
---       show a
 
 data AST =
   AST
@@ -425,3 +418,11 @@ bundleExports e'@(Typed _ _ exp) = case exp of
 
   NameExport n ->
     (n, e')
+
+getImportAbsolutePath :: Import -> FilePath
+getImportAbsolutePath imp = case imp of
+  Untyped _ (NamedImport   _ _ n) ->
+    n
+
+  Untyped _ (DefaultImport _ _ n) ->
+    n
