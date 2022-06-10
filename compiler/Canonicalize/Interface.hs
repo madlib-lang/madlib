@@ -117,7 +117,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
       apply subst
         <$> mapM
               (\(Src.Source area _ (Src.TRComp interface' args)) -> do
-                (Interface tvs _) <- lookupInterface env n
+                (Interface tvs _) <- lookupInterface env interface'
                 vars <- mapM
                     (\case
                       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
