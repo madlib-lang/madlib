@@ -10,6 +10,7 @@ import qualified AST.Canonical              as Can
 import qualified Canonicalize.Env           as CanEnv
 import qualified AST.Solved                 as Slv
 import qualified Infer.Env                  as SlvEnv
+import qualified AST.Core                   as Core
 -- import           Parse.Madlib.AST
 import           Error.Error (CompilationError(CompilationError))
 import           Data.GADT.Compare.TH (deriveGEq)
@@ -32,8 +33,9 @@ data Query a where
   SolvedTable :: [FilePath] -> Query Slv.Table
   SolvedInterface :: FilePath -> String -> Query SlvEnv.Interface
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
-  -- SolvedAST :: FilePath -> Query Slv.AST
-  -- BuiltTarget :: FilePath -> Query Slv.AST
+
+  -- Core
+  CoreAST :: FilePath -> Query Core.AST
 
 deriveGEq ''Query
 
@@ -65,6 +67,9 @@ instance Hashable (Query a) where
 
     ForeignScheme modulePath typeName ->
       hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
+
+    CoreAST path ->
+      hashWithSalt salt (path, 9 :: Int)
 
 
 
