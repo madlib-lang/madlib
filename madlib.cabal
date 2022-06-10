@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b334d71fc638d6b44ca28f60e5a734780dbc3ef1e80368a02955b698b88273a
+-- hash: 6e77a6a431d59ce6948defc6a2a3ebfa4d304b7c93f0fb004827c27b83214259
 
 name:           madlib
 version:        0.12.2
@@ -83,6 +83,7 @@ library
       Parse.Madlib.AST
       Parse.Madlib.Dictionary
       Parse.Madlib.Grammar
+      Parse.Madlib.ImportCycle
       Parse.Madlib.Lexer
       Parse.Madlib.TargetMacro
       Run.CommandLine
@@ -142,11 +143,11 @@ library
     , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel-io ==0.3.5
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
-    , query
     , regex-tdfa
     , rock ==0.3.*
     , some ==1.*
@@ -163,6 +164,7 @@ library compiler-common
       AST.Solved
       AST.Source
       Canonicalize.Env
+      Driver.Query
       Error.Backtrace
       Error.Context
       Error.Error
@@ -202,52 +204,7 @@ library compiler-common
     , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative >=0.16.1.0
-    , pretty-show
-    , prettyprinter >=1.6.2
-    , process >=1.6.9.0
-    , process-extras
-    , regex-tdfa
-    , rock ==0.3.*
-    , some ==1.*
-    , template-haskell
-    , text
-    , transformers
-    , utf8-string
-  default-language: Haskell2010
-
-library query
-  exposed-modules:
-      Driver.Query
-  other-modules:
-      Paths_madlib
-  hs-source-dirs:
-      query
-  build-depends:
-      Cabal ==3.6.2.0
-    , Glob >=0.10.2
-    , MissingH >=1.4.3.0
-    , aeson >=1.5.6.0
-    , aeson-pretty
-    , ansi-wl-pprint >=0.6.9
-    , array >=0.5.4.0
-    , base >=4.7 && <5
-    , bytestring
-    , compiler-common
-    , containers >=0.6.2.1
-    , cryptohash-md5
-    , dependent-sum-template ==0.1.*
-    , directory ==1.3.6.0
-    , either
-    , exceptions
-    , executable-path >=0.0.3.1
-    , filepath
-    , groupBy
-    , hashable
-    , hpc-lcov
-    , hspec
-    , hspec-golden
-    , mtl
-    , optparse-applicative >=0.16.1.0
+    , parallel-io ==0.3.5
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
@@ -294,6 +251,7 @@ executable madlib
     , madlib
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel-io ==0.3.5
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
@@ -349,6 +307,7 @@ test-suite madlib-test
     , madlib
     , mtl
     , optparse-applicative >=0.16.1.0
+    , parallel-io ==0.3.5
     , pretty-show
     , prettyprinter >=1.6.2
     , process >=1.6.9.0

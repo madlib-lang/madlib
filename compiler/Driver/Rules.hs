@@ -30,6 +30,7 @@ import qualified Optimize.TCE                  as TCE
 import qualified Generate.LLVM.Rename          as Rename
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.LLVM            as LLVM
+import qualified Generate.LLVM.Env             as LLVMEnv
 import qualified Data.Map                      as Map
 import qualified Data.Set                      as Set
 import           Control.Monad.State
@@ -41,15 +42,29 @@ import Data.Bifunctor (first)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
 import Control.Monad.Writer
-
+import Utils.List
+import Parse.Madlib.ImportCycle (detectCycle)
 
 
 rules :: Options -> Rock.GenRules (Rock.Writer [CompilationError] (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
-  File path -> do
-    -- liftIO $ putStrLn ("load file: " <> path)
-    input $ do
-      liftIO $ readFile path
+  ModulePathsToBuild entrypoint -> input $ do
+    Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
+    let importPaths = Src.getImportAbsolutePath <$> aimports
+    fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths
+    return $ removeDuplicates $ List.concat fromImports ++ importPaths ++ [entrypoint]
+
+  DetectImportCycle path -> nonInput $ do
+    r <- detectCycle [] path
+    case r of
+      Just err ->
+        return (True, [err])
+
+      Nothing ->
+        return (False, [])
+
+  File path -> input $ do
+    liftIO $ readFile path
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path
@@ -76,10 +91,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
     let importedModulePaths = Src.getImportAbsolutePath <$> aimports
 
-    interfac <- findCanInterface name importedModulePaths
-    case interfac of
-      Just found ->
-        return (found, mempty)
+    found <- findCanInterface name importedModulePaths
+    return (found, mempty)
 
   ForeignADTType modulePath typeName -> nonInput $ do
     (canAst, canEnv) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -97,23 +110,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Right (astAndEnv, InferState _ []) ->
         return (astAndEnv, mempty)
 
-      Right (astAndEnv, InferState _ errors) ->
-        return (astAndEnv, errors)
+      Right (_, InferState _ errors) ->
+        return ((emptySlvAST, initialEnv), errors)
 
       Left error ->
         return ((emptySlvAST, initialEnv), [error])
-
-  -- SolvedTable paths -> nonInput $ do
-  --   res <- runInfer $ solveManyASTs mempty paths
-  --   case res of
-  --     Right (table, InferState _ []) ->
-  --       return (table, mempty)
-
-  --     Right (table, InferState _ errors) ->
-  --       return (table, errors)
-
-  --     Left error ->
-  --       return (mempty, [error])
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -150,15 +151,33 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   SymbolTableWithEnv path -> nonInput $ do
     coreAst <- Rock.fetch $ CoreAST path
-    table   <- LLVM.compileModule' options coreAst
+    table   <- LLVM.compileModule options coreAst
+
+    -- pathsToBuild <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    -- let rest = dropWhile (/= path) pathsToBuild
+    -- let total = List.length pathsToBuild
+    -- let curr = total - List.length rest + 1
+    -- let currStr = if curr < 10 then " " <> show curr else show curr
+    -- liftIO $ putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
+
     return (table, mempty)
 
   BuiltInSymbolTableWithEnv -> nonInput $ do
     table <- LLVM.compileDefaultModule options
     return (table, mempty)
 
-  _ ->
-    undefined
+  BuiltTarget path -> nonInput $ do
+    paths <- Rock.fetch $ ModulePathsToBuild path
+    moduleResults <- mapM (Rock.fetch . SymbolTableWithEnv) paths
+
+    if any (null . LLVMEnv.envASTPath . snd) moduleResults then
+      return ((), mempty)
+    else do
+      LLVM.buildTarget options path
+      return ((), mempty)
+
+
+
 
 
 emptySrcAST :: Src.AST
@@ -214,6 +233,7 @@ findCanInterface name paths = case paths of
             let importedModulePaths = Can.getImportAbsolutePath <$> aimports
             findCanInterface name importedModulePaths
 
+
 findSlvInterface :: Rock.MonadFetch Query m => String -> [FilePath] -> m (Maybe SlvEnv.Interface)
 findSlvInterface name paths = case paths of
   [] ->
@@ -260,16 +280,26 @@ printErrors options errors = do
   liftIO $ putStrLn fullError-- >> exitFailure
 
 
--- buildSolvedTable :: Options -> [FilePath] -> IO Slv.Table
--- buildSolvedTable options paths = do
---   memoVar <- newIORef mempty
---   let task = Rock.fetch $ SolvedTable paths
---   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
+getModules :: Options -> FilePath -> IO ()
+getModules options entrypoint = do
+  memoVar <- newIORef mempty
+  let task = Rock.fetch $ ModulePathsToBuild entrypoint
+  r <- Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
+  putStrLn (ppShow r)
+  putStrLn (ppShow $ LLVM.generateHashFromPath <$> r)
+  return ()
+
+
+
+compilationTask :: Options -> FilePath -> Rock.Task Query ()
+compilationTask options path = do
+  hasCycle <- Rock.fetch $ DetectImportCycle path
+  unless hasCycle $ Rock.fetch $ BuiltTarget path
 
 
 compile :: Options -> FilePath -> IO ()
 compile options path = do
   memoVar <- newIORef mempty
-  let task = Rock.fetch $ SymbolTableWithEnv path
+  let task = compilationTask options path--Rock.fetch $ BuiltTarget path
   Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
   return ()
