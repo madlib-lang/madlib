@@ -29,6 +29,7 @@ incLoc = (c) => where {
     : Loc(abs + 1, line, col + 1)
 }
 
+
 parse :: Parser a -> String -> Location -> #[List #[a, String], Location]
 parse = (parser, input, loc) => where(parser) {
   Parser(fn) =>
