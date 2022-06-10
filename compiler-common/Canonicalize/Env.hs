@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Canonicalize.Env where
 
 import           Infer.Type
@@ -7,10 +9,14 @@ import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
 import qualified Data.Map                      as M
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
 
 
-data Interface = Interface [TVar] [Pred] deriving(Eq, Show)
+data Interface
+  = Interface [TVar] [Pred]
+  deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecls = M.Map String Type
 type Interfaces = M.Map String Interface
@@ -19,7 +25,7 @@ data ImportType
   = NamespaceImport
   | TypeImport
   | NameImport
-  deriving(Eq, Show)
+  deriving(Eq, Show, Generic, Hashable)
 
 
 data ImportInfo
@@ -28,7 +34,7 @@ data ImportInfo
     , iiType :: ImportType
     , iiName :: String
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Generic, Hashable)
 
 
 data Env
@@ -39,20 +45,7 @@ data Env
     , envCurrentPath :: FilePath
     , envFromDictionaryListName :: String
     }
-    deriving(Eq, Show)
-
-
-
-
-
--- lookupADT :: Env -> String -> CanonicalM Type
--- lookupADT env name = case M.lookup name (envTypeDecls env) of
---   Just found ->
---     return found
-
---   Nothing    ->
---     throwError $ CompilationError (UnknownType name) NoContext
-
+    deriving(Eq, Show, Generic, Hashable)
 
 
 initialEnv :: Env

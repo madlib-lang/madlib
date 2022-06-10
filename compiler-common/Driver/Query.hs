@@ -2,6 +2,9 @@
 {-# language GADTs #-}
 {-# language TemplateHaskell #-}
 {-# language TupleSections #-}
+{-# language MultiParamTypeClasses #-}
+{-# language TypeFamilies #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module Driver.Query where
 
 import qualified Rock
@@ -13,7 +16,9 @@ import qualified Infer.Env                  as SlvEnv
 import qualified AST.Core                   as Core
 -- import           Parse.Madlib.AST
 import           Error.Error (CompilationError(CompilationError))
-import           Data.GADT.Compare.TH (deriveGEq)
+import           Data.GADT.Compare.TH (deriveGEq, deriveGCompare)
+import           Data.GADT.Show.TH (deriveGShow)
+import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
 import           Infer.Type
@@ -48,6 +53,9 @@ data Query a where
   BuiltTarget :: FilePath -> Query ()
 
 deriveGEq ''Query
+deriveGCompare ''Query
+deriveGShow ''Query
+deriveArgDict ''Query
 
 instance Hashable (Query a) where
   hashWithSalt salt query = case query of
