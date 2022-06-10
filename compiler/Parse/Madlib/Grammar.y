@@ -145,7 +145,8 @@ importDecl :: { Src.Import }
   : 'import' '{' importNames '}' 'from' str rets        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
   | 'import' name 'from' str rets                       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.DefaultImport (Src.Source (tokenArea $2) (tokenTarget $1) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
   | 'import' 'type' '{' importNames '}' 'from' str rets { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.TypeImport $4 (sanitizeImportPath $ strV $7) (sanitizeImportPath $ strV $7)) }
-  | 'import' str rets                                   { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.ImportAll (sanitizeImportPath $ strV $2) (sanitizeImportPath $ strV $2)) }
+  -- TODO: reconsider if we really want global imports as that's receipe for name collisions and unpredictable behavior
+  -- | 'import' str rets                                   { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.ImportAll (sanitizeImportPath $ strV $2) (sanitizeImportPath $ strV $2)) }
 
 importNames :: { [Src.Source Src.Name] }
   : importNames ',' name %shift { $1 <> [Src.Source (tokenArea $3) (tokenTarget $3) (strV $3)] }

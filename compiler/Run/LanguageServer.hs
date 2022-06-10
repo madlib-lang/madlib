@@ -56,7 +56,7 @@ handlers state = mconcat
       maybeHoverInfo <- liftIO $ getHoverInformation state (Loc 0 (_l + 1) (_c + 1)) (uriToPath uri)
       case maybeHoverInfo of
         Just info -> do
-          let ms    = HoverContents $ markedUpContent "Madlib" (T.pack info)
+          let ms    = HoverContents $ MarkupContent MkMarkdown (T.pack info)
               range = Range pos pos
               rsp   = Hover ms (Just range)
           responder (Right $ Just rsp)
@@ -100,6 +100,28 @@ data Node
   = ExpNode Bool Slv.Exp
   | NameNode Bool (Slv.Solved String)
   | PatternNode Slv.Pattern
+
+
+getNodeLine :: Node -> Int
+getNodeLine n = case n of
+  ExpNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
+    l
+
+  ExpNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
+    l
+
+  NameNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
+    l
+
+  NameNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
+    l
+
+  PatternNode (Slv.Typed _ (Area (Loc _ l _) _) _) ->
+    l
+
+  PatternNode (Slv.Untyped (Area (Loc _ l _) _) _) ->
+    l
+
 
 
 findNodeAtLocInListItem :: Loc -> Slv.ListItem -> Maybe Node
@@ -246,38 +268,48 @@ findNodeForLocInExps loc exps = case exps of
     Nothing
 
 
-nodeToHoverInfo :: Node -> String
-nodeToHoverInfo node = case node of
-  ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
-    name <> " :: " <> prettyQt topLevel qt
+nodeToHoverInfo :: FilePath -> Node -> String
+nodeToHoverInfo modulePath node =
+  let typeInfo = case node of
+        ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
+          name <> " :: " <> prettyQt topLevel qt
 
-  ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
-    name <> " :: " <> prettyQt topLevel qt
+        ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
+          name <> " :: " <> prettyQt topLevel qt
 
-  ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
-    name <> " :: " <> prettyQt topLevel qt
+        ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
+          name <> " :: " <> prettyQt topLevel qt
 
-  NameNode topLevel (Slv.Typed qt _ name) ->
-    name <> " :: " <> prettyQt topLevel qt
+        NameNode topLevel (Slv.Typed qt _ name) ->
+          name <> " :: " <> prettyQt topLevel qt
 
-  ExpNode topLevel (Slv.Typed qt _ _) ->
-    prettyQt topLevel qt
+        ExpNode topLevel (Slv.Typed qt _ _) ->
+          prettyQt topLevel qt
 
-  PatternNode (Slv.Typed qt _ (Slv.PVar name)) ->
-    name <> " :: " <> prettyQt False qt
+        PatternNode (Slv.Typed qt _ (Slv.PVar name)) ->
+          name <> " :: " <> prettyQt False qt
 
-  PatternNode (Slv.Typed qt _ _) ->
-    prettyQt False qt
+        PatternNode (Slv.Typed qt _ _) ->
+          prettyQt False qt
 
-  _ ->
-    ""
+        _ ->
+          ""
+  in  "```madlib\n"
+      <> typeInfo
+      <> "\n"
+      <> "```\n\n"
+      <> "*Defined in "
+      <> modulePath
+      <> " at line "
+      <> show (getNodeLine node)
+      <> "*"
 
 
 
 hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)
 hoverInfoTask loc path = do
   (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-  return $ nodeToHoverInfo <$> findNodeForLocInExps loc (Slv.aexps typedAst)
+  return $ nodeToHoverInfo path <$> findNodeForLocInExps loc (Slv.aexps typedAst)
 
 
 
