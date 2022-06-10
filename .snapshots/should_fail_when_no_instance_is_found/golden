@@ -1,23 +1,33 @@
-Left
-  (CompilationError
-     (AmbiguousType
-        ( TV "-" Star
-        , [ IsIn
-              "Show"
-              [ TVar (TV "b27" Star) ]
-              (Just (Area (Loc 227 13 1) (Loc 231 13 5)))
-          ]
-        ))
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 227 13 1) (Loc 234 13 8)
-       , ctxBacktrace =
-           [ BTExp
-               (Canonical
-                  (Area (Loc 227 13 1) (Loc 234 13 8))
-                  (App
-                     (Canonical (Area (Loc 227 13 1) (Loc 231 13 5)) (Var "show"))
-                     (Canonical (Area (Loc 232 13 6) (Loc 233 13 7)) (LNum "3"))
-                     True))
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (AmbiguousType
+         ( TV "-" Star
+         , [ IsIn
+               "Show"
+               [ TVar (TV "d3" Star) ]
+               (Just (Area (Loc 227 13 1) (Loc 231 13 5)))
            ]
-       })
+         ))
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 227 13 1) (Loc 234 13 8)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 227 13 1) (Loc 234 13 8))
+                   (App
+                      (Canonical (Area (Loc 227 13 1) (Loc 231 13 5)) (Var "show"))
+                      (Canonical (Area (Loc 232 13 6) (Loc 233 13 7)) (LNum "3"))
+                      True))
+            ]
+        }
+  ]
+)

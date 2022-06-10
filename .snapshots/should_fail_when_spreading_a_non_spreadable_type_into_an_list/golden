@@ -1,0 +1,34 @@
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (NoInstanceFound
+         "Number"
+         [ TApp
+             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "e4" Star))
+         ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 9 1 10)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 0 1 1) (Loc 9 1 10))
+                   (ListConstructor
+                      [ Canonical
+                          (Area (Loc 1 1 2) (Loc 2 1 3))
+                          (ListItem (Canonical (Area (Loc 1 1 2) (Loc 2 1 3)) (LNum "1")))
+                      , Canonical
+                          (Area (Loc 4 1 5) (Loc 8 1 9))
+                          (ListSpread (Canonical (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "3")))
+                      ]))
+            ]
+        }
+  ]
+)

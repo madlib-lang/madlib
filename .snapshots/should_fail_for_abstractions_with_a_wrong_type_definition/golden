@@ -1,83 +1,114 @@
-Left
-  (CompilationError
-     (UnificationError
-        (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TCon (TC "String" Star) "prelude"))
-           (TApp
-              (TApp
-                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                 (TCon (TC "Integer" Star) "prelude"))
-              (TCon (TC "Boolean" Star) "prelude")))
-        (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TVar (TV "b1" Star)))
-           (TApp
-              (TApp
-                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                 (TVar (TV "b1" Star)))
-              (TCon (TC "Boolean" Star) "prelude"))))
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 0 1 1) (Loc 58 2 24)
-       , ctxBacktrace =
-           [ BTExp
-               (Canonical
-                  (Area (Loc 0 1 1) (Loc 58 2 24))
-                  (TypedExp
-                     (Canonical
-                        (Area (Loc 35 2 1) (Loc 58 2 24))
-                        (Assignment
-                           "fn"
-                           (Canonical
-                              (Area (Loc 40 2 6) (Loc 58 2 24))
-                              (Abs
-                                 (Canonical (Area (Loc 41 2 7) (Loc 42 2 8)) "a")
-                                 [ Canonical
-                                     (Area (Loc 40 2 6) (Loc 58 2 24))
-                                     (Abs
-                                        (Canonical (Area (Loc 44 2 10) (Loc 45 2 11)) "b")
-                                        [ Canonical
-                                            (Area (Loc 51 2 17) (Loc 57 2 23))
-                                            (App
-                                               (Canonical
-                                                  (Area (Loc 51 2 17) (Loc 57 2 23))
-                                                  (App
-                                                     (Canonical
-                                                        (Area (Loc 53 2 19) (Loc 55 2 21))
-                                                        (Var "=="))
-                                                     (Canonical
-                                                        (Area (Loc 51 2 17) (Loc 52 2 18))
-                                                        (Var "a"))
-                                                     False))
-                                               (Canonical
-                                                  (Area (Loc 56 2 22) (Loc 57 2 23)) (Var "b"))
-                                               True)
-                                        ])
-                                 ]))))
-                     (Canonical
-                        (Area (Loc 6 1 7) (Loc 34 1 35))
-                        (TRArr
-                           (Canonical (Area (Loc 6 1 7) (Loc 12 1 13)) (TRSingle "String"))
-                           (Canonical
-                              (Area (Loc 16 1 17) (Loc 34 1 35))
-                              (TRArr
-                                 (Canonical (Area (Loc 16 1 17) (Loc 23 1 24)) (TRSingle "Integer"))
-                                 (Canonical
-                                    (Area (Loc 27 1 28) (Loc 34 1 35)) (TRSingle "Boolean"))))))
-                     (Forall
-                        []
-                        ([] :=>
-                           TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "String" Star) "prelude"))
-                             (TApp
-                                (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TCon (TC "Integer" Star) "prelude"))
-                                (TCon (TC "Boolean" Star) "prelude"))))))
-           ]
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (UnificationError
+         (TApp
+            (TApp
+               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+               (TCon (TC "String" Star) "prelude"))
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                  (TCon (TC "Integer" Star) "prelude"))
+               (TCon (TC "Boolean" Star) "prelude")))
+         (TApp
+            (TApp
+               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+               (TVar (TV "b1" Star)))
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                  (TVar (TV "b1" Star)))
+               (TCon (TC "Boolean" Star) "prelude"))))
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 58 2 24)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 0 1 1) (Loc 58 2 24))
+                   (TypedExp
+                      (Canonical
+                         (Area (Loc 35 2 1) (Loc 58 2 24))
+                         (Assignment
+                            "fn"
+                            (Canonical
+                               (Area (Loc 40 2 6) (Loc 58 2 24))
+                               (Abs
+                                  (Canonical (Area (Loc 41 2 7) (Loc 42 2 8)) "a")
+                                  [ Canonical
+                                      (Area (Loc 40 2 6) (Loc 58 2 24))
+                                      (Abs
+                                         (Canonical (Area (Loc 44 2 10) (Loc 45 2 11)) "b")
+                                         [ Canonical
+                                             (Area (Loc 51 2 17) (Loc 57 2 23))
+                                             (App
+                                                (Canonical
+                                                   (Area (Loc 51 2 17) (Loc 57 2 23))
+                                                   (App
+                                                      (Canonical
+                                                         (Area (Loc 53 2 19) (Loc 55 2 21))
+                                                         (Var "=="))
+                                                      (Canonical
+                                                         (Area (Loc 51 2 17) (Loc 52 2 18))
+                                                         (Var "a"))
+                                                      False))
+                                                (Canonical
+                                                   (Area (Loc 56 2 22) (Loc 57 2 23)) (Var "b"))
+                                                True)
+                                         ])
+                                  ]))))
+                      (Canonical
+                         (Area (Loc 6 1 7) (Loc 34 1 35))
+                         (TRArr
+                            (Canonical (Area (Loc 6 1 7) (Loc 12 1 13)) (TRSingle "String"))
+                            (Canonical
+                               (Area (Loc 16 1 17) (Loc 34 1 35))
+                               (TRArr
+                                  (Canonical
+                                     (Area (Loc 16 1 17) (Loc 23 1 24)) (TRSingle "Integer"))
+                                  (Canonical
+                                     (Area (Loc 27 1 28) (Loc 34 1 35)) (TRSingle "Boolean"))))))
+                      (Forall
+                         []
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "String" Star) "prelude"))
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                    (TCon (TC "Integer" Star) "prelude"))
+                                 (TCon (TC "Boolean" Star) "prelude"))))))
+            ]
+        }
+  , CompilationError
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 59 3 1) (Loc 66 3 8)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 59 3 1) (Loc 66 3 8))
+                   (App
+                      (Canonical
+                         (Area (Loc 59 3 1) (Loc 67 3 9))
+                         (App
+                            (Canonical (Area (Loc 59 3 1) (Loc 61 3 3)) (Var "fn"))
+                            (Canonical (Area (Loc 62 3 4) (Loc 63 3 5)) (LNum "3"))
+                            False))
+                      (Canonical (Area (Loc 65 3 7) (Loc 66 3 8)) (LNum "4"))
+                      True))
+            ]
+        }
+  ]
+)

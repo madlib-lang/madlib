@@ -33,6 +33,10 @@ snapshotTest name actualOutput = Golden { output        = pack $ ppShow actualOu
                                         }
 
 
+
+spec :: Spec
+spec = return ()
+
 -- spec :: Spec
 -- spec = do
   -- describe "findAST" $ do

@@ -79,6 +79,7 @@ initialState = do
       , _warningsVar            = warningsVar
       }
 
+
 resetState :: State err -> IO ()
 resetState state = do
   atomicWriteIORef (_startedVar state) mempty
@@ -174,7 +175,7 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
               $ writer writeErrorsAndWarnings
               $ Rules.rules
                   options
-                    { optPathUtils = PathUtils.defaultPathUtils { PathUtils.readFile = readSourceFile_ } }
+                    { optPathUtils = (optPathUtils options) { PathUtils.readFile = readSourceFile_ } }
 
   result    <- Rock.runTask rules task
   started   <- readIORef $ _startedVar state

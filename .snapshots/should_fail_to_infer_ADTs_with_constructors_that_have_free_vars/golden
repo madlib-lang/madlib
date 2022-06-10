@@ -1,8 +1,18 @@
-Left
-  (CompilationError
-     (UnboundVariable "b")
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 14 1 15) (Loc 24 1 25)
-       , ctxBacktrace = []
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Nothing
+    }
+, []
+, [ CompilationError
+      (UnboundVariable "b")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 14 1 15) (Loc 24 1 25)
+        , ctxBacktrace = []
+        }
+  ]
+)

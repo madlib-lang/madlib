@@ -1,12 +1,11 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
             ([] :=>
                TApp
                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                 (TVar (TV "f5" Star)))
+                 (TVar (TV "d3" Star)))
             (Area (Loc 0 1 1) (Loc 2 1 3))
             (ListConstructor [])
         , Typed
@@ -17,8 +16,8 @@ Right
             (Area (Loc 3 2 1) (Loc 12 2 10))
             (ListConstructor
                [ Typed
-                   ([ IsIn "Number" [ TVar (TV "v21" Star) ] Nothing ] :=>
-                      TVar (TV "v21" Star))
+                   ([ IsIn "Number" [ TVar (TV "l11" Star) ] Nothing ] :=>
+                      TVar (TV "l11" Star))
                    (Area (Loc 4 2 2) (Loc 5 2 3))
                    (ListItem
                       (Typed
@@ -28,8 +27,8 @@ Right
                          (Area (Loc 4 2 2) (Loc 5 2 3))
                          (LNum "1")))
                , Typed
-                   ([ IsIn "Number" [ TVar (TV "w22" Star) ] Nothing ] :=>
-                      TVar (TV "w22" Star))
+                   ([ IsIn "Number" [ TVar (TV "m12" Star) ] Nothing ] :=>
+                      TVar (TV "m12" Star))
                    (Area (Loc 7 2 5) (Loc 8 2 6))
                    (ListItem
                       (Typed
@@ -39,8 +38,8 @@ Right
                          (Area (Loc 7 2 5) (Loc 8 2 6))
                          (LNum "2")))
                , Typed
-                   ([ IsIn "Number" [ TVar (TV "x23" Star) ] Nothing ] :=>
-                      TVar (TV "x23" Star))
+                   ([ IsIn "Number" [ TVar (TV "n13" Star) ] Nothing ] :=>
+                      TVar (TV "n13" Star))
                    (Area (Loc 10 2 8) (Loc 11 2 9))
                    (ListItem
                       (Typed
@@ -86,5 +85,8 @@ Right
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)

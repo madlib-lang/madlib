@@ -1,14 +1,13 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
-            ([] :=> TCon (TC "Result" Star) "path")
+            ([] :=> TCon (TC "Result" Star) "Module.mad")
             (Area (Loc 38 2 1) (Loc 67 2 30))
             (Assignment
                "result1"
                (Typed
-                  ([] :=> TCon (TC "Result" Star) "path")
+                  ([] :=> TCon (TC "Result" Star) "Module.mad")
                   (Area (Loc 48 2 11) (Loc 67 2 30))
                   (App
                      (Typed
@@ -17,7 +16,7 @@ Right
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TCon (TC "String" Star) "prelude"))
-                             (TCon (TC "Result" Star) "path"))
+                             (TCon (TC "Result" Star) "Module.mad"))
                         (Area (Loc 48 2 11) (Loc 55 2 18))
                         (Var "Success" True))
                      (Typed
@@ -26,12 +25,12 @@ Right
                         (LStr "\"response\""))
                      True)))
         , Typed
-            ([] :=> TCon (TC "Result" Star) "path")
+            ([] :=> TCon (TC "Result" Star) "Module.mad")
             (Area (Loc 68 3 1) (Loc 83 3 16))
             (Assignment
                "result2"
                (Typed
-                  ([] :=> TCon (TC "Result" Star) "path")
+                  ([] :=> TCon (TC "Result" Star) "Module.mad")
                   (Area (Loc 78 3 11) (Loc 83 3 16))
                   (Var "Error" True)))
         , Typed
@@ -41,68 +40,68 @@ Right
                (Typed
                   ([ IsIn
                        "Eq"
-                       [ TCon (TC "Result" Star) "path" ]
+                       [ TCon (TC "Result" Star) "Module.mad" ]
                        (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                    ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TCon (TC "Result" Star) "path"))
+                          (TCon (TC "Result" Star) "Module.mad"))
                        (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 84 4 1) (Loc 122 4 39))
                   (App
                      (Typed
                         ([ IsIn
                              "Eq"
-                             [ TCon (TC "Result" Star) "path" ]
+                             [ TCon (TC "Result" Star) "Module.mad" ]
                              (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                          ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "Result" Star) "path"))
+                                (TCon (TC "Result" Star) "Module.mad"))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TCon (TC "Result" Star) "path"))
+                                   (TCon (TC "Result" Star) "Module.mad"))
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 85 4 2) (Loc 103 4 20))
                         (Abs
                            (Typed
                               ([ IsIn
                                    "Eq"
-                                   [ TCon (TC "Result" Star) "path" ]
+                                   [ TCon (TC "Result" Star) "Module.mad" ]
                                    (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                ] :=>
-                                 TCon (TC "Result" Star) "path")
+                                 TCon (TC "Result" Star) "Module.mad")
                               (Area (Loc 86 4 3) (Loc 87 4 4))
                               "a")
                            [ Typed
                                ([ IsIn
                                     "Eq"
-                                    [ TCon (TC "Result" Star) "path" ]
+                                    [ TCon (TC "Result" Star) "Module.mad" ]
                                     (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                 ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TCon (TC "Result" Star) "path"))
+                                       (TCon (TC "Result" Star) "Module.mad"))
                                     (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 85 4 2) (Loc 103 4 20))
                                (Abs
                                   (Typed
                                      ([ IsIn
                                           "Eq"
-                                          [ TCon (TC "Result" Star) "path" ]
+                                          [ TCon (TC "Result" Star) "Module.mad" ]
                                           (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                       ] :=>
-                                        TCon (TC "Result" Star) "path")
+                                        TCon (TC "Result" Star) "Module.mad")
                                      (Area (Loc 89 4 6) (Loc 90 4 7))
                                      "b")
                                   [ Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TCon (TC "Result" Star) "path" ]
+                                           [ TCon (TC "Result" Star) "Module.mad" ]
                                            (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                        ] :=>
                                          TCon (TC "Boolean" Star) "prelude")
@@ -111,7 +110,7 @@ Right
                                          (Typed
                                             ([ IsIn
                                                  "Eq"
-                                                 [ TCon (TC "Result" Star) "path" ]
+                                                 [ TCon (TC "Result" Star) "Module.mad" ]
                                                  (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                              ] :=>
                                                TApp
@@ -119,14 +118,14 @@ Right
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
-                                                    (TCon (TC "Result" Star) "path"))
+                                                    (TCon (TC "Result" Star) "Module.mad"))
                                                  (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 96 4 13) (Loc 102 4 19))
                                             (App
                                                (Typed
                                                   ([ IsIn
                                                        "Eq"
-                                                       [ TCon (TC "Result" Star) "path" ]
+                                                       [ TCon (TC "Result" Star) "Module.mad" ]
                                                        Nothing
                                                    ] :=>
                                                      TApp
@@ -135,7 +134,7 @@ Right
                                                              (TC
                                                                 "(->)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
-                                                          (TCon (TC "Result" Star) "path"))
+                                                          (TCon (TC "Result" Star) "Module.mad"))
                                                        (TApp
                                                           (TApp
                                                              (TCon
@@ -143,17 +142,18 @@ Right
                                                                    "(->)"
                                                                    (Kfun Star (Kfun Star Star)))
                                                                 "prelude")
-                                                             (TCon (TC "Result" Star) "path"))
+                                                             (TCon (TC "Result" Star) "Module.mad"))
                                                           (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 98 4 15) (Loc 100 4 17))
                                                   (Placeholder
                                                      ( MethodRef "Eq" "==" False
-                                                     , [ TCon (TC "Result" Star) "path" ]
+                                                     , [ TCon (TC "Result" Star) "Module.mad" ]
                                                      )
                                                      (Typed
                                                         ([ IsIn
                                                              "Eq"
-                                                             [ TCon (TC "Result" Star) "path" ]
+                                                             [ TCon (TC "Result" Star) "Module.mad"
+                                                             ]
                                                              Nothing
                                                          ] :=>
                                                            TApp
@@ -163,7 +163,8 @@ Right
                                                                       "(->)"
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
-                                                                (TCon (TC "Result" Star) "path"))
+                                                                (TCon
+                                                                   (TC "Result" Star) "Module.mad"))
                                                              (TApp
                                                                 (TApp
                                                                    (TCon
@@ -172,7 +173,9 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 98 4 15) (Loc 100 4 17))
@@ -180,20 +183,20 @@ Right
                                                (Typed
                                                   ([ IsIn
                                                        "Eq"
-                                                       [ TCon (TC "Result" Star) "path" ]
+                                                       [ TCon (TC "Result" Star) "Module.mad" ]
                                                        (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                                    ] :=>
-                                                     TCon (TC "Result" Star) "path")
+                                                     TCon (TC "Result" Star) "Module.mad")
                                                   (Area (Loc 96 4 13) (Loc 97 4 14))
                                                   (Var "a" False))
                                                False))
                                          (Typed
                                             ([ IsIn
                                                  "Eq"
-                                                 [ TCon (TC "Result" Star) "path" ]
+                                                 [ TCon (TC "Result" Star) "Module.mad" ]
                                                  (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                                              ] :=>
-                                               TCon (TC "Result" Star) "path")
+                                               TCon (TC "Result" Star) "Module.mad")
                                             (Area (Loc 101 4 18) (Loc 102 4 19))
                                             (Var "b" False))
                                          True)
@@ -202,20 +205,20 @@ Right
                      (Typed
                         ([ IsIn
                              "Eq"
-                             [ TCon (TC "Result" Star) "path" ]
+                             [ TCon (TC "Result" Star) "Module.mad" ]
                              (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                          ] :=>
-                           TCon (TC "Result" Star) "path")
+                           TCon (TC "Result" Star) "Module.mad")
                         (Area (Loc 105 4 22) (Loc 112 4 29))
                         (Var "result1" False))
                      False))
                (Typed
                   ([ IsIn
                        "Eq"
-                       [ TCon (TC "Result" Star) "path" ]
+                       [ TCon (TC "Result" Star) "Module.mad" ]
                        (Just (Area (Loc 98 4 15) (Loc 100 4 17)))
                    ] :=>
-                     TCon (TC "Result" Star) "path")
+                     TCon (TC "Result" Star) "Module.mad")
                   (Area (Loc 114 4 31) (Loc 121 4 38))
                   (Var "result2" False))
                True)
@@ -236,12 +239,12 @@ Right
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TCon (TC "String" Star) "prelude"))
-                            (TCon (TC "Result" Star) "path")))
+                            (TCon (TC "Result" Star) "Module.mad")))
                   , Untyped
                       (Area (Loc 32 1 33) (Loc 37 1 38))
-                      (Constructor "Error" [] (TCon (TC "Result" Star) "path"))
+                      (Constructor "Error" [] (TCon (TC "Result" Star) "Module.mad"))
                   ]
-              , adtType = TCon (TC "Result" Star) "path"
+              , adtType = TCon (TC "Result" Star) "Module.mad"
               , adtexported = False
               }
         ]
@@ -250,251 +253,9 @@ Right
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
-               []
-               (IsIn "Inspect" [ TCon (TC "Result" Star) "path" ] Nothing)
-               (fromList
-                  [ ( "inspect"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "Result" Star) "path"))
-                               (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                          (Assignment
-                             "inspect"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "Result" Star) "path"))
-                                     (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                (Abs
-                                   (Typed
-                                      ([ IsIn
-                                           "Inspect"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       ] :=>
-                                         TCon (TC "Result" Star) "path")
-                                      (Area (Loc 0 0 0) (Loc 0 0 0))
-                                      "__$a__")
-                                   [ Typed
-                                       ([ IsIn
-                                            "Inspect"
-                                            [ TCon (TC "String" Star) "prelude" ]
-                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                        ] :=>
-                                          TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                                       (Where
-                                          (Typed
-                                             ([] :=> TCon (TC "Result" Star) "path")
-                                             (Area (Loc 0 0 0) (Loc 0 0 0))
-                                             (Var "__$a__" False))
-                                          [ Typed
-                                              ([ IsIn
-                                                   "Inspect"
-                                                   [ TCon (TC "String" Star) "prelude" ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               ] :=>
-                                                 TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TCon (TC "Result" Star) "path"))
-                                                   (TCon (TC "String" Star) "prelude"))
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (Is
-                                                 (Typed
-                                                    ([] :=> TCon (TC "Result" Star) "path")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (PCon
-                                                       "Success"
-                                                       [ Typed
-                                                           ([ IsIn
-                                                                "Inspect"
-                                                                [ TCon (TC "String" Star) "prelude"
-                                                                ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            ] :=>
-                                                              TCon (TC "String" Star) "prelude")
-                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (PVar "a0")
-                                                       ]))
-                                                 (Typed
-                                                    ([ IsIn
-                                                         "Inspect"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     ] :=>
-                                                       TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (TemplateString
-                                                       [ Typed
-                                                           ([] :=>
-                                                              TCon (TC "String" Star) "prelude")
-                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\"Success(\"")
-                                                       , Typed
-                                                           ([ IsIn
-                                                                "Inspect"
-                                                                [ TCon (TC "String" Star) "prelude"
-                                                                ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            ] :=>
-                                                              TCon (TC "String" Star) "prelude")
-                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (App
-                                                              (Typed
-                                                                 ([ IsIn
-                                                                      "Inspect"
-                                                                      [ TCon
-                                                                          (TC "String" Star)
-                                                                          "prelude"
-                                                                      ]
-                                                                      Nothing
-                                                                  ] :=>
-                                                                    TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "(->)"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun Star Star)))
-                                                                            "prelude")
-                                                                         (TCon
-                                                                            (TC "String" Star)
-                                                                            "prelude"))
-                                                                      (TCon
-                                                                         (TC "String" Star)
-                                                                         "prelude"))
-                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Placeholder
-                                                                    ( MethodRef
-                                                                        "Inspect" "inspect" False
-                                                                    , [ TCon
-                                                                          (TC "String" Star)
-                                                                          "prelude"
-                                                                      ]
-                                                                    )
-                                                                    (Typed
-                                                                       ([ IsIn
-                                                                            "Inspect"
-                                                                            [ TCon
-                                                                                (TC "String" Star)
-                                                                                "prelude"
-                                                                            ]
-                                                                            Nothing
-                                                                        ] :=>
-                                                                          TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC "String" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude"))
-                                                                       (Area
-                                                                          (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "inspect" False))))
-                                                              (Typed
-                                                                 ([ IsIn
-                                                                      "Inspect"
-                                                                      [ TCon
-                                                                          (TC "String" Star)
-                                                                          "prelude"
-                                                                      ]
-                                                                      (Just
-                                                                         (Area
-                                                                            (Loc 0 0 0)
-                                                                            (Loc 0 0 0)))
-                                                                  ] :=>
-                                                                    TCon
-                                                                      (TC "String" Star) "prelude")
-                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "a0" False))
-                                                              True)
-                                                       , Typed
-                                                           ([] :=>
-                                                              TCon (TC "String" Star) "prelude")
-                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\")\"")
-                                                       ])))
-                                          , Typed
-                                              ([] :=>
-                                                 TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TCon (TC "Result" Star) "path"))
-                                                   (TCon (TC "String" Star) "prelude"))
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (Is
-                                                 (Typed
-                                                    ([] :=> TCon (TC "Result" Star) "path")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (PCon "Error" []))
-                                                 (Typed
-                                                    ([] :=> TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Error\"")))
-                                          , Typed
-                                              ([] :=>
-                                                 TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TCon (TC "Result" Star) "path"))
-                                                   (TCon (TC "String" Star) "prelude"))
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (Is
-                                                 (Typed
-                                                    ([] :=> TCon (TC "Result" Star) "path")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    PAny)
-                                                 (Typed
-                                                    ([] :=> TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Unknown\"")))
-                                          ])
-                                   ])))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "Result" Star) "path"))
-                               (TCon (TC "String" Star) "prelude"))
-                      )
-                    )
-                  ]))
-        , Untyped
-            (Area (Loc 0 0 0) (Loc 0 0 0))
-            (Instance
                "Eq"
                []
-               (IsIn "Eq" [ TCon (TC "Result" Star) "path" ] Nothing)
+               (IsIn "Eq" [ TCon (TC "Result" Star) "Module.mad" ] Nothing)
                (fromList
                   [ ( "=="
                     , ( Typed
@@ -502,11 +263,11 @@ Right
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "Result" Star) "path"))
+                                  (TCon (TC "Result" Star) "Module.mad"))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "Result" Star) "path"))
+                                     (TCon (TC "Result" Star) "Module.mad"))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -516,11 +277,11 @@ Right
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "Result" Star) "path"))
+                                        (TCon (TC "Result" Star) "Module.mad"))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "Result" Star) "path"))
+                                           (TCon (TC "Result" Star) "Module.mad"))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
@@ -530,7 +291,7 @@ Right
                                            [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
-                                         TCon (TC "Result" Star) "path")
+                                         TCon (TC "Result" Star) "Module.mad")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -544,7 +305,7 @@ Right
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TCon (TC "Result" Star) "path"))
+                                               (TCon (TC "Result" Star) "Module.mad"))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -554,7 +315,7 @@ Right
                                                   [ TCon (TC "String" Star) "prelude" ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
-                                                TCon (TC "Result" Star) "path")
+                                                TCon (TC "Result" Star) "Module.mad")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -575,16 +336,18 @@ Right
                                                                   "(,)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TCon (TC "Result" Star) "path"))
-                                                         (TCon (TC "Result" Star) "path"))
+                                                            (TCon (TC "Result" Star) "Module.mad"))
+                                                         (TCon (TC "Result" Star) "Module.mad"))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TupleConstructor
                                                        [ Typed
-                                                           ([] :=> TCon (TC "Result" Star) "path")
+                                                           ([] :=>
+                                                              TCon (TC "Result" Star) "Module.mad")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$a__" False)
                                                        , Typed
-                                                           ([] :=> TCon (TC "Result" Star) "path")
+                                                           ([] :=>
+                                                              TCon (TC "Result" Star) "Module.mad")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$b__" False)
                                                        ]))
@@ -609,8 +372,12 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path")))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star)
+                                                                   "Module.mad")))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -624,13 +391,18 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path"))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star) "Module.mad"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
                                                               [ Typed
                                                                   ([] :=>
-                                                                     TCon (TC "Result" Star) "path")
+                                                                     TCon
+                                                                       (TC "Result" Star)
+                                                                       "Module.mad")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Success"
@@ -655,7 +427,9 @@ Right
                                                                      ])
                                                               , Typed
                                                                   ([] :=>
-                                                                     TCon (TC "Result" Star) "path")
+                                                                     TCon
+                                                                       (TC "Result" Star)
+                                                                       "Module.mad")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Success"
@@ -1028,8 +802,12 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path")))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star)
+                                                                   "Module.mad")))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -1043,18 +821,25 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path"))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star) "Module.mad"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
                                                               [ Typed
                                                                   ([] :=>
-                                                                     TCon (TC "Result" Star) "path")
+                                                                     TCon
+                                                                       (TC "Result" Star)
+                                                                       "Module.mad")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Error" [])
                                                               , Typed
                                                                   ([] :=>
-                                                                     TCon (TC "Result" Star) "path")
+                                                                     TCon
+                                                                       (TC "Result" Star)
+                                                                       "Module.mad")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Error" [])
                                                               ]))
@@ -1080,8 +865,12 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path")))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star)
+                                                                   "Module.mad")))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -1095,8 +884,11 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon (TC "Result" Star) "path"))
-                                                                (TCon (TC "Result" Star) "path"))
+                                                                   (TCon
+                                                                      (TC "Result" Star)
+                                                                      "Module.mad"))
+                                                                (TCon
+                                                                   (TC "Result" Star) "Module.mad"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
                                                         (Typed
@@ -1113,15 +905,260 @@ Right
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "Result" Star) "path"))
+                                  (TCon (TC "Result" Star) "Module.mad"))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "Result" Star) "path"))
+                                     (TCon (TC "Result" Star) "Module.mad"))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
                   ]))
+        , Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (Instance
+               "Inspect"
+               []
+               (IsIn "Inspect" [ TCon (TC "Result" Star) "Module.mad" ] Nothing)
+               (fromList
+                  [ ( "inspect"
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Result" Star) "Module.mad"))
+                               (TCon (TC "String" Star) "prelude"))
+                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                          (Assignment
+                             "inspect"
+                             (Typed
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "Result" Star) "Module.mad"))
+                                     (TCon (TC "String" Star) "prelude"))
+                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                (Abs
+                                   (Typed
+                                      ([ IsIn
+                                           "Inspect"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       ] :=>
+                                         TCon (TC "Result" Star) "Module.mad")
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      "__$a__")
+                                   [ Typed
+                                       ([ IsIn
+                                            "Inspect"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        ] :=>
+                                          TCon (TC "String" Star) "prelude")
+                                       (Area (Loc 0 0 0) (Loc 0 0 0))
+                                       (Where
+                                          (Typed
+                                             ([] :=> TCon (TC "Result" Star) "Module.mad")
+                                             (Area (Loc 0 0 0) (Loc 0 0 0))
+                                             (Var "__$a__" False))
+                                          [ Typed
+                                              ([ IsIn
+                                                   "Inspect"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               ] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Result" Star) "Module.mad"))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Is
+                                                 (Typed
+                                                    ([] :=> TCon (TC "Result" Star) "Module.mad")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (PCon
+                                                       "Success"
+                                                       [ Typed
+                                                           ([ IsIn
+                                                                "Inspect"
+                                                                [ TCon (TC "String" Star) "prelude"
+                                                                ]
+                                                                (Just
+                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                            ] :=>
+                                                              TCon (TC "String" Star) "prelude")
+                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                           (PVar "a0")
+                                                       ]))
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Inspect"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (TemplateString
+                                                       [ Typed
+                                                           ([] :=>
+                                                              TCon (TC "String" Star) "prelude")
+                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                           (LStr "\"Success(\"")
+                                                       , Typed
+                                                           ([ IsIn
+                                                                "Inspect"
+                                                                [ TCon (TC "String" Star) "prelude"
+                                                                ]
+                                                                (Just
+                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                            ] :=>
+                                                              TCon (TC "String" Star) "prelude")
+                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                           (App
+                                                              (Typed
+                                                                 ([ IsIn
+                                                                      "Inspect"
+                                                                      [ TCon
+                                                                          (TC "String" Star)
+                                                                          "prelude"
+                                                                      ]
+                                                                      Nothing
+                                                                  ] :=>
+                                                                    TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "String" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"))
+                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                 (Placeholder
+                                                                    ( MethodRef
+                                                                        "Inspect" "inspect" False
+                                                                    , [ TCon
+                                                                          (TC "String" Star)
+                                                                          "prelude"
+                                                                      ]
+                                                                    )
+                                                                    (Typed
+                                                                       ([ IsIn
+                                                                            "Inspect"
+                                                                            [ TCon
+                                                                                (TC "String" Star)
+                                                                                "prelude"
+                                                                            ]
+                                                                            Nothing
+                                                                        ] :=>
+                                                                          TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(->)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"))
+                                                                            (TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"))
+                                                                       (Area
+                                                                          (Loc 0 0 0) (Loc 0 0 0))
+                                                                       (Var "inspect" False))))
+                                                              (Typed
+                                                                 ([ IsIn
+                                                                      "Inspect"
+                                                                      [ TCon
+                                                                          (TC "String" Star)
+                                                                          "prelude"
+                                                                      ]
+                                                                      (Just
+                                                                         (Area
+                                                                            (Loc 0 0 0)
+                                                                            (Loc 0 0 0)))
+                                                                  ] :=>
+                                                                    TCon
+                                                                      (TC "String" Star) "prelude")
+                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                 (Var "a0" False))
+                                                              True)
+                                                       , Typed
+                                                           ([] :=>
+                                                              TCon (TC "String" Star) "prelude")
+                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                           (LStr "\")\"")
+                                                       ])))
+                                          , Typed
+                                              ([] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Result" Star) "Module.mad"))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Is
+                                                 (Typed
+                                                    ([] :=> TCon (TC "Result" Star) "Module.mad")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (PCon "Error" []))
+                                                 (Typed
+                                                    ([] :=> TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (LStr "\"Error\"")))
+                                          , Typed
+                                              ([] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Result" Star) "Module.mad"))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Is
+                                                 (Typed
+                                                    ([] :=> TCon (TC "Result" Star) "Module.mad")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    PAny)
+                                                 (Typed
+                                                    ([] :=> TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (LStr "\"Unknown\"")))
+                                          ])
+                                   ])))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Result" Star) "Module.mad"))
+                               (TCon (TC "String" Star) "prelude"))
+                      )
+                    )
+                  ]))
         ]
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)

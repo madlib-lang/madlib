@@ -1,67 +1,79 @@
-Left
-  (CompilationError
-     (UnboundVariable "Integer")
-     Context
-       { ctxAstPath = "path"
-       , ctxArea = Area (Loc 82 4 12) (Loc 89 4 19)
-       , ctxBacktrace =
-           [ BTExp
-               (Canonical
-                  (Area (Loc 60 3 1) (Loc 127 6 2))
-                  (Where
-                     (Canonical (Area (Loc 66 3 7) (Loc 67 3 8)) (Var "u"))
-                     [ Canonical
-                         (Area (Loc 73 4 3) (Loc 98 4 28))
-                         (Is
-                            (Canonical
-                               (Area (Loc 73 4 3) (Loc 93 4 23))
-                               (PCon
-                                  "LoggedIn"
-                                  [ Canonical (Area (Loc 82 4 12) (Loc 89 4 19)) (PCon "Integer" [])
-                                  , Canonical (Area (Loc 91 4 21) (Loc 92 4 22)) (PVar "x")
-                                  ]))
-                            (Canonical (Area (Loc 97 4 27) (Loc 98 4 28)) (Var "x")))
-                     , Canonical
-                         (Area (Loc 101 5 3) (Loc 125 5 27))
-                         (Is
-                            (Canonical
-                               (Area (Loc 101 5 3) (Loc 120 5 22))
-                               (PCon
-                                  "LoggedIn"
-                                  [ Canonical
-                                      (Area (Loc 110 5 12) (Loc 116 5 18)) (PCon "String" [])
-                                  , Canonical (Area (Loc 118 5 20) (Loc 119 5 21)) (PVar "x")
-                                  ]))
-                            (Canonical (Area (Loc 124 5 26) (Loc 125 5 27)) (Var "x")))
-                     ]))
-           , BTExp
-               (Canonical
-                  (Area (Loc 60 3 1) (Loc 127 6 2))
-                  (Where
-                     (Canonical (Area (Loc 66 3 7) (Loc 67 3 8)) (Var "u"))
-                     [ Canonical
-                         (Area (Loc 73 4 3) (Loc 98 4 28))
-                         (Is
-                            (Canonical
-                               (Area (Loc 73 4 3) (Loc 93 4 23))
-                               (PCon
-                                  "LoggedIn"
-                                  [ Canonical (Area (Loc 82 4 12) (Loc 89 4 19)) (PCon "Integer" [])
-                                  , Canonical (Area (Loc 91 4 21) (Loc 92 4 22)) (PVar "x")
-                                  ]))
-                            (Canonical (Area (Loc 97 4 27) (Loc 98 4 28)) (Var "x")))
-                     , Canonical
-                         (Area (Loc 101 5 3) (Loc 125 5 27))
-                         (Is
-                            (Canonical
-                               (Area (Loc 101 5 3) (Loc 120 5 22))
-                               (PCon
-                                  "LoggedIn"
-                                  [ Canonical
-                                      (Area (Loc 110 5 12) (Loc 116 5 18)) (PCon "String" [])
-                                  , Canonical (Area (Loc 118 5 20) (Loc 119 5 21)) (PVar "x")
-                                  ]))
-                            (Canonical (Area (Loc 124 5 26) (Loc 125 5 27)) (Var "x")))
-                     ]))
-           ]
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (UnboundVariable "Integer")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 82 4 12) (Loc 89 4 19)
+        , ctxBacktrace =
+            [ BTExp
+                (Canonical
+                   (Area (Loc 60 3 1) (Loc 127 6 2))
+                   (Where
+                      (Canonical (Area (Loc 66 3 7) (Loc 67 3 8)) (Var "u"))
+                      [ Canonical
+                          (Area (Loc 73 4 3) (Loc 98 4 28))
+                          (Is
+                             (Canonical
+                                (Area (Loc 73 4 3) (Loc 93 4 23))
+                                (PCon
+                                   "LoggedIn"
+                                   [ Canonical
+                                       (Area (Loc 82 4 12) (Loc 89 4 19)) (PCon "Integer" [])
+                                   , Canonical (Area (Loc 91 4 21) (Loc 92 4 22)) (PVar "x")
+                                   ]))
+                             (Canonical (Area (Loc 97 4 27) (Loc 98 4 28)) (Var "x")))
+                      , Canonical
+                          (Area (Loc 101 5 3) (Loc 125 5 27))
+                          (Is
+                             (Canonical
+                                (Area (Loc 101 5 3) (Loc 120 5 22))
+                                (PCon
+                                   "LoggedIn"
+                                   [ Canonical
+                                       (Area (Loc 110 5 12) (Loc 116 5 18)) (PCon "String" [])
+                                   , Canonical (Area (Loc 118 5 20) (Loc 119 5 21)) (PVar "x")
+                                   ]))
+                             (Canonical (Area (Loc 124 5 26) (Loc 125 5 27)) (Var "x")))
+                      ]))
+            , BTExp
+                (Canonical
+                   (Area (Loc 60 3 1) (Loc 127 6 2))
+                   (Where
+                      (Canonical (Area (Loc 66 3 7) (Loc 67 3 8)) (Var "u"))
+                      [ Canonical
+                          (Area (Loc 73 4 3) (Loc 98 4 28))
+                          (Is
+                             (Canonical
+                                (Area (Loc 73 4 3) (Loc 93 4 23))
+                                (PCon
+                                   "LoggedIn"
+                                   [ Canonical
+                                       (Area (Loc 82 4 12) (Loc 89 4 19)) (PCon "Integer" [])
+                                   , Canonical (Area (Loc 91 4 21) (Loc 92 4 22)) (PVar "x")
+                                   ]))
+                             (Canonical (Area (Loc 97 4 27) (Loc 98 4 28)) (Var "x")))
+                      , Canonical
+                          (Area (Loc 101 5 3) (Loc 125 5 27))
+                          (Is
+                             (Canonical
+                                (Area (Loc 101 5 3) (Loc 120 5 22))
+                                (PCon
+                                   "LoggedIn"
+                                   [ Canonical
+                                       (Area (Loc 110 5 12) (Loc 116 5 18)) (PCon "String" [])
+                                   , Canonical (Area (Loc 118 5 20) (Loc 119 5 21)) (PVar "x")
+                                   ]))
+                             (Canonical (Area (Loc 124 5 26) (Loc 125 5 27)) (Var "x")))
+                      ]))
+            ]
+        }
+  ]
+)
