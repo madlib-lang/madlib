@@ -23,6 +23,7 @@ data Command
       , compileJson :: Bool
       , compileTestFilesOnly :: Bool
       , noCache :: Bool
+      , compileWatch :: Bool
       }
   | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target, noCache :: Bool }
   | Install
@@ -84,6 +85,10 @@ parseTestFilesOnly =
 parseNoCache :: Parser Bool
 parseNoCache =
   switch (long "no-cache" <> help "recompiles all files and skip cache for llvm backend" <> showDefault)
+
+parseWatch :: Parser Bool
+parseWatch =
+  switch (long "watch" <> short 'w' <> help "watch file changes for fast rebuilds" <> showDefault)
 
 
 parseTargetOption :: ReadM Target
@@ -148,6 +153,7 @@ parseCompile =
     <*> parseJson
     <*> parseTestFilesOnly
     <*> parseNoCache
+    <*> parseWatch
 
 parseCoverage :: Parser Bool
 parseCoverage = switch

@@ -413,7 +413,8 @@ extractExportedAliases ast =
 
 extractExportedExps :: AST -> M.Map Name Exp
 extractExportedExps AST { aexps, apath } = case apath of
-  Just p -> M.fromList $ bundleExports <$> filter isExport aexps
+  Just p ->
+    M.fromList $ bundleExports <$> filter isExport aexps
 
 bundleExports :: Exp -> (Name, Exp)
 bundleExports e'@(Typed _ _ exp) = case exp of

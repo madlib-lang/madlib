@@ -36,6 +36,11 @@ import qualified Error.Warning as Warning
 import Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
 import Data.Time.Clock
+import qualified Run.Options as Options
+import qualified Utils.PathUtils as PathUtils
+import Run.Target
+import qualified Data.Maybe as Maybe
+import Run.Options (Options(optEntrypoint))
 
 
 handlers :: State -> Handlers (LspM ())
@@ -45,7 +50,7 @@ handlers state = mconcat
   , requestHandler STextDocumentHover $ \req responder -> do
       let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos _workDone) = req
           Position _l _c = pos
-      maybeHoverInfo <- liftIO $ getHoverInformation state (Loc 0 (_l + 1) (_c + 1)) (uriToPath uri)
+      maybeHoverInfo <- getHoverInformation state (Loc 0 (_l + 1) (_c + 1)) (uriToPath uri)
       case maybeHoverInfo of
         Just info -> do
           let ms    = HoverContents $ MarkupContent MkMarkdown (T.pack info)
@@ -56,7 +61,7 @@ handlers state = mconcat
         Nothing ->
           return ()
 
-  , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) ->
+  , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
       recordAndPrintDuration "file open" $ generateDiagnostics state uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
       recordAndPrintDuration "file save" $ generateDiagnostics state uri mempty
@@ -65,6 +70,24 @@ handlers state = mconcat
         let (TextDocumentContentChangeEvent _ _ docContent) = last changes
         generateDiagnostics state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
   ]
+
+
+buildOptions :: LspM () Options.Options
+buildOptions = do
+  maybeRootPath <- getRootPath
+  let rootPath = Maybe.fromMaybe "./" maybeRootPath
+  return
+    Options.Options
+      { Options.optEntrypoint = ""
+      , Options.optTarget = TNode
+      , Options.optRootPath = rootPath
+      , Options.optOutputPath = ""
+      , Options.optOptimized = False
+      , Options.optPathUtils = PathUtils.defaultPathUtils
+      , Options.optBundle = False
+      , Options.optCoverage = False
+      , Options.optGenerateDerivedInstances = False
+      }
 
 
 recordAndPrintDuration :: T.Text -> LspM a b -> LspM a b
@@ -316,9 +339,10 @@ hoverInfoTask loc path = do
 
 
 
-getHoverInformation :: State -> Loc -> FilePath -> IO (Maybe String)
+getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
 getHoverInformation state loc path = do
-  (result, _, _) <- runTask state Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+  options <- buildOptions
+  (result, _, _) <- liftIO $ runTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
   return result
 
 
@@ -337,8 +361,9 @@ uriToPath uri =
 
 generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics state uri fileUpdates = do
+  options <- buildOptions
   let path = uriToPath uri
-  (_, warnings, errs) <- liftIO $ runTask state Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
+  (_, warnings, errs) <- liftIO $ runTask state options { optEntrypoint = path }  Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
 
   let errsByModule = groupErrsByModule errs
   let warnsByModule = groupWarnsByModule warnings
@@ -539,11 +564,12 @@ typeCheckFile path = do
   return ()
 
 
-runTask :: State -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
-runTask state prune invalidatedPaths fileUpdates task =
+runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
+runTask state options prune invalidatedPaths fileUpdates task =
   Driver.runIncrementalTask
-  (_driverState state)
-  invalidatedPaths
-  fileUpdates
-  prune
-  task
+    (_driverState state)
+    options
+    invalidatedPaths
+    fileUpdates
+    prune
+    task

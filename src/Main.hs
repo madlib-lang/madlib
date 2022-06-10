@@ -33,8 +33,11 @@ run cmd = do
     Compile{} ->
       let sanitizedOutput = sanitizeOutputPath cmd
       in  case sanitizedOutput of
-            Right s -> runCompilation cmd { compileOutput = s } coverage
-            Left  e -> putStrLn e
+            Right s ->
+              runCompilation cmd { compileOutput = s } coverage
+
+            Left  e ->
+              putStrLn e
 
     Test entrypoint coverage target noCache ->
       runTests noCache entrypoint coverage target

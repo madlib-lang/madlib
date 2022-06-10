@@ -6,6 +6,18 @@ module Generate.LLVM.Hashable where
 
 import qualified LLVM.AST.Operand                as Operand
 import qualified LLVM.AST.Type
+import qualified LLVM.AST
+import qualified LLVM.AST.DataLayout
+import qualified LLVM.AST.Linkage
+import qualified LLVM.AST.FunctionAttribute
+import qualified LLVM.AST.Visibility
+import qualified LLVM.AST.COMDAT
+import qualified LLVM.AST.DLL
+import qualified LLVM.AST.ThreadLocalStorage
+import qualified LLVM.AST.CallingConvention
+import qualified LLVM.AST.ParameterAttribute
+import qualified LLVM.AST.InlineAssembly
+import qualified LLVM.AST.RMWOperation
 import qualified LLVM.AST.Name
 import qualified LLVM.AST.AddrSpace
 import qualified LLVM.AST.Constant
@@ -92,3 +104,35 @@ deriving instance Hashable (Operand.MDRef Operand.DILocalScope)
 deriving instance Hashable (Operand.MDRef Operand.DIGlobalVariable)
 deriving instance Hashable (Operand.MDRef Operand.MDNode)
 deriving instance Hashable Operand.Operand
+-- deriving instance Hashable LLVM.AST.Module
+-- deriving instance Hashable LLVM.AST.DataLayout.DataLayout
+-- deriving instance Hashable LLVM.AST.DataLayout.Endianness
+-- deriving instance Hashable LLVM.AST.DataLayout.AlignmentInfo
+-- deriving instance Hashable LLVM.AST.DataLayout.Mangling
+-- deriving instance Hashable LLVM.AST.DataLayout.AlignType
+-- deriving instance Hashable LLVM.AST.Linkage.Linkage
+-- deriving instance Hashable LLVM.AST.FunctionAttribute.GroupID
+-- deriving instance Hashable LLVM.AST.FunctionAttribute.FunctionAttribute
+-- deriving instance Hashable LLVM.AST.Visibility.Visibility
+-- deriving instance Hashable LLVM.AST.COMDAT.SelectionKind
+-- deriving instance Hashable LLVM.AST.DLL.StorageClass
+-- deriving instance Hashable LLVM.AST.ThreadLocalStorage.Model
+-- deriving instance Hashable LLVM.AST.CallingConvention.CallingConvention
+-- deriving instance Hashable LLVM.AST.ParameterAttribute.ParameterAttribute
+-- deriving instance Hashable LLVM.AST.Parameter
+-- deriving instance Hashable LLVM.AST.BasicBlock
+-- deriving instance Hashable LLVM.AST.Terminator
+-- deriving instance Hashable (LLVM.AST.Named LLVM.AST.Terminator)
+-- deriving instance Hashable LLVM.AST.InlineAssembly.InlineAssembly
+-- deriving instance Hashable LLVM.AST.Instruction
+-- deriving instance Hashable (LLVM.AST.Named LLVM.AST.Instruction)
+-- deriving instance Hashable LLVM.AST.FastMathFlags
+-- deriving instance Hashable LLVM.AST.InlineAssembly.Dialect
+-- deriving instance Hashable LLVM.AST.SynchronizationScope
+-- deriving instance Hashable LLVM.AST.MemoryOrdering
+-- deriving instance Hashable LLVM.AST.RMWOperation.RMWOperation
+-- deriving instance Hashable LLVM.AST.UnnamedAddr
+-- deriving instance Hashable LLVM.AST.Definition
+-- deriving instance Hashable LLVM.AST.Global
+-- deriving instance Hashable LLVM.AST.TailCallKind
+-- deriving instance Hashable LLVM.AST.LandingPadClause

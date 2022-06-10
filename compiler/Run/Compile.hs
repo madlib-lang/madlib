@@ -23,13 +23,8 @@ import           System.Environment             ( getEnv )
 import           Control.Monad                  ( when
                                                 , unless
                                                 )
-import qualified Data.Map                      as M
-import           Data.List                      ( isInfixOf
-                                                , isSuffixOf
-                                                , isPrefixOf
-                                                , intercalate
-                                                , stripPrefix
-                                                )
+import qualified Data.Map                      as Map
+import           Data.List                     as List
 import           Data.String.Utils
 import           Text.Show.Pretty
 
@@ -67,23 +62,34 @@ import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
 import qualified Optimize.EtaExpansion as EtaExpansion
 import qualified Optimize.EtaReduction as EtaReduction
-import System.FilePath.Posix (dropFileName)
-import qualified Driver.Rules as Rules
-import Run.Options
-
+import           System.FilePath.Posix (dropFileName)
+import qualified System.FilePath       as FP
+import           Control.Concurrent (threadDelay, forkIO, ThreadId)
+import qualified Control.FoldDebounce as Debounce
+import           System.FSNotify
+import           Control.Monad (forever)
+import qualified Driver.Rules         as Rules
+import           Run.Options
+import qualified Driver
+import qualified Rock
+import Driver.Query
+import Error.Error
+import Driver (Prune(Don'tPrune))
+import Data.Time.Clock
+import System.Console.ANSI
 
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
-shouldBeCovered rootPath path | rootPath `isPrefixOf` path && not (".spec.mad" `isSuffixOf` path) = True
+shouldBeCovered rootPath path | rootPath `List.isPrefixOf` path && not (".spec.mad" `List.isSuffixOf` path) = True
                               | otherwise = False
 
 
 runCoverageInitialization :: FilePath -> Slv.Table -> IO ()
 runCoverageInitialization rootPath table = do
-  let filteredTable      = M.filterWithKey (\path _ -> shouldBeCovered rootPath path) table
-  let coverableFunctions = M.map collectFromAST filteredTable
-  let generated          = M.mapWithKey generateLCovInfoForAST coverableFunctions
-  let lcovInfoContent    = rstrip $ unlines $ M.elems generated
+  let filteredTable      = Map.filterWithKey (\path _ -> shouldBeCovered rootPath path) table
+  let coverableFunctions = Map.map collectFromAST filteredTable
+  let generated          = Map.mapWithKey generateLCovInfoForAST coverableFunctions
+  let lcovInfoContent    = rstrip $ unlines $ Map.elems generated
 
   createDirectoryIfMissing True ".coverage"
   writeFile ".coverage/lcov.info" lcovInfoContent
@@ -121,7 +127,7 @@ globalChecks = do
 
 
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly noCache) coverage
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly noCache watchMode) coverage
   = do
     extraWarnings       <- globalChecks
     canonicalEntrypoint <- canonicalizePath entrypoint
@@ -149,67 +155,111 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
       putStrLn $ "bundle: " <> show bundle
       putStrLn $ "target: " <> show target
 
-    Rules.compile options (head sourcesToCompile)
+
+    if watchMode then
+      when watchMode $ do
+        -- hideCursor
+        state <- Driver.initialState
+        runCompilationTask state options [canonicalEntrypoint]
+        watch rootPath (runCompilationTask state options)
+        return ()
+    else
+      Rules.compile options (head sourcesToCompile)
 
 
-    -- unless (null table) $ do
-    --   when verbose $ do
-    --     putStrLn $ "OUTPUT: " ++ outputPath
-    --     putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
-    --     putStrLn $ "ROOT PATH: " ++ rootPath
-    --   when debug $ do
-    --     putStrLn $ "PARSED:\n" ++ ppShow table
-    --     putStrLn $ "RESOLVED:\n" ++ ppShow table
+recordAndPrintDuration :: String -> IO a -> IO a
+recordAndPrintDuration title action = do
+  startT       <- getCurrentTime
+  actionResult <- action
+  endT         <- getCurrentTime
+  let diff = diffUTCTime endT startT
+  let (ms, _) = properFraction $ diff * 1000
+  putStrLn $ title <> show ms <> "ms"
+  return actionResult
 
-    --   -- case resolvedASTTable of
-    --   --   Left err -> do
-    --   --     if json
-    --   --       then do
-    --   --         formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
-    --   --         formattedErr      <- Explain.format readFile json err
-    --   --         putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings canonicalEntrypoint mempty
-    --   --         -- putStrLn $ GenerateJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
-    --   --       else do
-    --   --         unless (null warnings) (putStrLn "\n")
-    --   --         Explain.format readFile json err >>= putStrLn >> exitFailure
-    --   --   Right (table, inferState) ->
-    --   -- let errs      = errors inferState
-    --   --     hasErrors = not (null errs)
-    --   -- if hasErrors then do
-    --   --   unless (null warnings) (putStrLn "\n")
-    --   --   formattedErrors <- mapM (Explain.format readFile json) errs
-    --   --   let fullError = intercalate "\n\n\n" formattedErrors
-    --   --   putStrLn fullError >> exitFailure
-    --   -- else do
-    --   when coverage $ do
-    --     runCoverageInitialization rootPath table
 
-    --   if target == TLLVM then do
-    --     let coreTable        = tableToCore False table
-    --         renamedTable     = Rename.renameTable coreTable
-    --         reduced          = EtaReduction.reduceTable renamedTable
-    --         closureConverted = ClosureConvert.convertTable reduced
-    --         withTCE          = TCE.resolveTable closureConverted
+compilationTask :: Options -> Rock.Task Query ()
+compilationTask options = do
+  hasCycle <- Rock.fetch $ DetectImportCycle (optEntrypoint options)
+  unless hasCycle $ Rock.fetch $ BuiltTarget (optEntrypoint options)
 
-    --     -- putStrLn (ppShow closureConverted)
-    --     -- putStrLn (ppShow withTCE)
-    --     LLVM.generateTable noCache outputPath rootPath withTCE canonicalEntrypoint
-    --   else do
-    --     let coreTable     = tableToCore optimized table
-    --         strippedTable = stripTable coreTable
-    --         withTCE       = TCE.resolveTable strippedTable
-    --     -- putStrLn (ppShow withTCE)
-    --     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
-    --   when bundle $ do
-    --     let entrypointOutputPath =
-    --           computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+runCompilationTask :: Driver.State CompilationError -> Options -> [FilePath] -> IO ()
+runCompilationTask state options invalidatedPaths = do
+  clearScreen
+  setCursorPosition 0 0
+  recordAndPrintDuration "Built in " $ do
+    (_, warnings, errors) <-
+      Driver.runIncrementalTask
+        state
+        options
+        invalidatedPaths
+        mempty
+        Don'tPrune
+        (compilationTask options)
 
-    --     bundled <- runBundle entrypointOutputPath
-    --     case bundled of
-    --       Left  e                    -> putStrLn e
-    --       Right (bundleContent, err) -> do
-    --         _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-    --         writeFile outputPath bundleContent
-    --         unless (null err) $ putStrLn err
+    formattedWarnings <- mapM (Explain.formatWarning readFile False) warnings
+    let ppWarnings =
+          if null warnings then
+            ""
+          else
+            List.intercalate "\n\n\n" formattedWarnings <> "\n"
 
+    formattedErrors   <- mapM (Explain.format readFile False) errors
+    let ppErrors =
+          if null errors then
+            ""
+          else
+            List.intercalate "\n\n\n" formattedErrors <> "\n"
+
+    putStr ppWarnings
+    putStr ppErrors
+
+  putStrLn "\nWatching... (press ctrl-C to quit)"
+  return ()
+
+
+watch :: FilePath -> ([FilePath] -> IO ()) -> IO ThreadId
+watch root action = do
+  withManager $ \mgr -> do
+    trigger <-
+      Debounce.new
+        Debounce.Args
+          { Debounce.cb = action
+          , Debounce.fold = \l v -> List.nub $ v:l
+          , Debounce.init = []
+          }
+        Debounce.def
+          { Debounce.delay = 50000 -- 50ms
+          , Debounce.alwaysResetTimer = True
+          }
+
+    -- start a watching job (in the background)
+    watchTree
+      mgr          -- manager
+      root         -- directory to watch
+      (const True) -- predicate
+      (\e -> do
+        let
+          f = case e of
+                Added f _ _ ->
+                  f
+
+                Modified f _ _ ->
+                  f
+
+                Removed f _ _ ->
+                  f
+
+                Unknown f _ _ ->
+                  f
+
+          -- @TODO it would be better to not listen to these folders in the `watchTree` when available
+          -- https://github.com/haskell-fswatch/hfsnotify/issues/101
+          shouldTrigger = ".mad" `List.isSuffixOf` f
+
+        when shouldTrigger $ Debounce.send trigger f
+      )
+
+    -- sleep forever (until interrupted)
+    forever $ threadDelay 1000000

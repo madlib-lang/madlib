@@ -47,11 +47,13 @@ import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
-import System.FilePath (takeDirectory)
+import System.FilePath (takeDirectory, joinPath, takeExtension)
 import Utils.Path (computeTargetPath, resolveAbsoluteSrcPath)
 import qualified Parse.DocString.Grammar as DocString
 import qualified Data.Maybe as Maybe
-
+import qualified Data.ByteString as ByteString
+import System.Directory
+import qualified Utils.Path                    as Path
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
@@ -132,10 +134,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (astAndEnv, (mempty, mempty))
 
       Right (_, InferState _ errors) ->
-        return ((emptySlvAST, initialEnv), (mempty, errors))
+        return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, errors))
 
       Left error ->
-        return ((emptySlvAST, initialEnv), (mempty, [error]))
+        return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -168,29 +170,48 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             strippedAst = stripAST coreAst
         return (TCE.resolveAST strippedAst, (mempty, mempty))
 
-  SymbolTableWithEnv path -> nonInput $ do
-    coreAst <- Rock.fetch $ CoreAST path
-    table   <- LLVM.compileModule options coreAst
+  BuiltObjectFile path -> nonInput $ do
+    coreAst                           <- Rock.fetch $ CoreAST path
+    builtModule@(_, _, objectContent) <- LLVM.compileModule options coreAst
 
-    return (table, (mempty, mempty))
+    liftIO $ do
+      let outputFolder   = takeDirectory (optOutputPath options)
+      let outputPath     = Path.computeLLVMTargetPath outputFolder (optRootPath options) path
+      createDirectoryIfMissing True $ takeDirectory outputPath
+      ByteString.writeFile outputPath objectContent
 
-  BuiltInSymbolTableWithEnv -> nonInput $ do
-    table <- LLVM.compileDefaultModule options
-    return (table, (mempty, mempty))
+    return (builtModule, (mempty, mempty))
+
+  BuiltInBuiltObjectFile -> nonInput $ do
+    builtModule@(_, _, objectContent) <- LLVM.compileDefaultModule options
+
+    liftIO $ do
+      let defaultInstancesModulePath =
+              if takeExtension (optEntrypoint options) == "" then
+                joinPath [optEntrypoint options, "__default__instances__.mad"]
+              else
+                joinPath [takeDirectory (optEntrypoint options), "__default__instances__.mad"]
+      let outputFolder   = takeDirectory (optOutputPath options)
+      let outputPath = Path.computeLLVMTargetPath outputFolder (optRootPath options) defaultInstancesModulePath
+      createDirectoryIfMissing True $ takeDirectory outputPath
+      ByteString.writeFile outputPath objectContent
+
+    return (builtModule, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
-    paths   <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-    coreAst <- Rock.fetch $ CoreAST path
-    liftIO $ Javascript.generateJSModule options False paths coreAst
-    return ((), (mempty, mempty))
+    paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    coreAst  <- Rock.fetch $ CoreAST path
+    jsModule <- liftIO $ Javascript.generateJSModule options False paths coreAst
+    return (jsModule, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do
     paths <- Rock.fetch $ ModulePathsToBuild path
 
     if optTarget options == TLLVM then do
-      moduleResults <- mapM (Rock.fetch . SymbolTableWithEnv) paths
+      moduleResults <- mapM (Rock.fetch . BuiltObjectFile) paths
+      let moduleEnvs = (\(_, env, _) -> env) <$> moduleResults
 
-      if any (null . LLVMEnv.envASTPath . snd) moduleResults then
+      if any (null . LLVMEnv.envASTPath) moduleEnvs then
         return ((), (mempty, mempty))
       else do
         LLVM.buildTarget options path
@@ -212,7 +233,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
           Right (bundle, _) -> do
             liftIO $ writeFile (optOutputPath options) bundle
-            liftIO $ putStrLn "done."
 
         return ()
 
