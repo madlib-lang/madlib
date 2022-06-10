@@ -1,14 +1,16 @@
 // file: /madlib_modules/random/src/Main.mad
+import {} from "./../../__internals__.mjs"
 import R from "./Utils/Random.mjs";
 
 export let random = (seed => R.random(seed));
 export default { random };
 // file: /madlib_modules/random/src/Utils/Random.mad
+import {} from "./../../../__internals__.mjs"
 export let random = (seed => seed / 2);
 export default { random };
 // file: /src/Main.mad
 import {} from "./__internals__.mjs"
-import R from "./.deps/random/src/Main.mjs";
+import R from "./../madlib_modules/random/src/Main.mjs";
 
 R.random(3);
 export default {};

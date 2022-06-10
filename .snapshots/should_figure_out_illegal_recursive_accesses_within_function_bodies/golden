@@ -1,8 +1,18 @@
-Left
-  (CompilationError
-     (RecursiveVarAccess "p")
-     Context
-       { ctxAstPath = "./Module"
-       , ctxArea = Area (Loc 19 2 7) (Loc 20 2 8)
-       , ctxBacktrace = []
-       })
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (RecursiveVarAccess "p")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 19 2 7) (Loc 20 2 8)
+        , ctxBacktrace = []
+        }
+  ]
+)

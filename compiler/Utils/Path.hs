@@ -209,14 +209,15 @@ computeTargetPath outputPath rootPath path =
                 complete     = [cleanOutputPath, ".prelude"] <> fromInternal
             in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
           else
-            if rootPath `isPrefixOf` path then
+            if rootPath `isPrefixOf` path && not (joinPath [rootPath, "madlib_modules"] `isPrefixOf` path) then
               buildLocalPath cleanOutputPath rootPath path
             else
               let split                 = dropTrailingPathSeparator <$> splitPath path
                   fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
-                  complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
-                  madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
-              in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".mjs"
+                  complete              = [cleanOutputPath, "madlib_modules"] <> fromMadlibModules
+                  -- complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
+                  -- madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
+              in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
 
 
 buildLLVMLocalPath :: FilePath -> FilePath -> FilePath -> FilePath

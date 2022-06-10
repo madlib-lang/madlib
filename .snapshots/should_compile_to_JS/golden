@@ -1,11 +1,12 @@
-// file: path
+// file: Module.mad
+import {} from "./__internals__.mjs"
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485'] = {};
-Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_v21) => (__$a__ => ((__x__) => {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_s798) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_v21.inspect()(a0) + `)`;
+    return `Just(` + Inspect_s798.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -20,9 +21,9 @@ Inspect['Maybe_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_v2
   }
 })(__$a__));
 Inspect['Record_carsa'] = {};
-Inspect['Record_carsa']['inspect'] = () => (Inspect_k36) => (__$a__ => `{ ` + `cars: ` + Inspect_k36.inspect()(__$a__.cars) + ` }`);
-Inspect['Record_nameb_xa'] = {};
-Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_u46) => (Inspect_b53) => (__$a__ => `{ ` + `x: ` + Inspect_u46.inspect()(__$a__.x) + `, ` + `name: ` + Inspect_b53.inspect()(__$a__.name) + ` }`);
+Inspect['Record_carsa']['inspect'] = () => (Inspect_h813) => (__$a__ => `{ ` + `cars: ` + Inspect_h813.inspect()(__$a__.cars) + ` }`);
+Inspect['Record_namea_xb'] = {};
+Inspect['Record_namea_xb']['inspect'] = () => (Inspect_y830) => (Inspect_r823) => (__$a__ => `{ ` + `name: ` + Inspect_r823.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_y830.inspect()(__$a__.x) + ` }`);
 export let fn = (b => c => b + c);
 let inc = (x => x + 1);
 let dec = (x => x - 1);

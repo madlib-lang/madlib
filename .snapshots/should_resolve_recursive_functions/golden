@@ -1,121 +1,120 @@
-Right
-  AST
+( AST
     { aimports = []
     , aexps =
         [ Typed
             ([ IsIn
                  "Number"
-                 [ TVar (TV "u20" Star) ]
+                 [ TVar (TV "j9" Star) ]
                  (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
              ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TVar (TV "u20" Star)))
-                 (TVar (TV "u20" Star)))
+                    (TVar (TV "j9" Star)))
+                 (TVar (TV "j9" Star)))
             (Area (Loc 0 1 1) (Loc 23 1 24))
             (Assignment
                "fn"
                (Typed
                   ([ IsIn
                        "Number"
-                       [ TVar (TV "u20" Star) ]
+                       [ TVar (TV "j9" Star) ]
                        (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                    ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "u20" Star)))
-                       (TVar (TV "u20" Star)))
+                          (TVar (TV "j9" Star)))
+                       (TVar (TV "j9" Star)))
                   (Area (Loc 0 1 1) (Loc 23 1 24))
                   (Placeholder
-                     ( ClassRef "Number" [] False True , [ TVar (TV "u20" Star) ] )
+                     ( ClassRef "Number" [] False True , [ TVar (TV "j9" Star) ] )
                      (Typed
                         ([ IsIn
                              "Number"
-                             [ TVar (TV "u20" Star) ]
+                             [ TVar (TV "j9" Star) ]
                              (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                          , IsIn
                              "Number"
-                             [ TVar (TV "u20" Star) ]
+                             [ TVar (TV "j9" Star) ]
                              (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                          ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "u20" Star)))
-                             (TVar (TV "u20" Star)))
+                                (TVar (TV "j9" Star)))
+                             (TVar (TV "j9" Star)))
                         (Area (Loc 5 1 6) (Loc 23 1 24))
                         (Abs
                            (Typed
                               ([ IsIn
                                    "Number"
-                                   [ TVar (TV "u20" Star) ]
+                                   [ TVar (TV "j9" Star) ]
                                    (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                , IsIn
                                    "Number"
-                                   [ TVar (TV "u20" Star) ]
+                                   [ TVar (TV "j9" Star) ]
                                    (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                                ] :=>
-                                 TVar (TV "u20" Star))
+                                 TVar (TV "j9" Star))
                               (Area (Loc 6 1 7) (Loc 7 1 8))
                               "x")
                            [ Typed
                                ([ IsIn
                                     "Number"
-                                    [ TVar (TV "u20" Star) ]
+                                    [ TVar (TV "j9" Star) ]
                                     (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                 , IsIn
                                     "Number"
-                                    [ TVar (TV "u20" Star) ]
+                                    [ TVar (TV "j9" Star) ]
                                     (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                                 ] :=>
-                                  TVar (TV "u20" Star))
+                                  TVar (TV "j9" Star))
                                (Area (Loc 13 1 14) (Loc 22 1 23))
                                (App
                                   (Typed
                                      ([ IsIn
                                           "Number"
-                                          [ TVar (TV "u20" Star) ]
+                                          [ TVar (TV "j9" Star) ]
                                           (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                       ] :=>
                                         TApp
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "u20" Star)))
-                                          (TVar (TV "u20" Star)))
+                                             (TVar (TV "j9" Star)))
+                                          (TVar (TV "j9" Star)))
                                      (Area (Loc 13 1 14) (Loc 22 1 23))
                                      (App
                                         (Typed
-                                           ([ IsIn "Number" [ TVar (TV "u20" Star) ] Nothing ] :=>
+                                           ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
                                               TApp
                                                 (TApp
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "u20" Star)))
+                                                   (TVar (TV "j9" Star)))
                                                 (TApp
                                                    (TApp
                                                       (TCon
                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                          "prelude")
-                                                      (TVar (TV "u20" Star)))
-                                                   (TVar (TV "u20" Star))))
+                                                      (TVar (TV "j9" Star)))
+                                                   (TVar (TV "j9" Star))))
                                            (Area (Loc 15 1 16) (Loc 16 1 17))
                                            (Placeholder
                                               ( MethodRef "Number" "+" True
-                                              , [ TVar (TV "u20" Star) ]
+                                              , [ TVar (TV "j9" Star) ]
                                               )
                                               (Typed
-                                                 ([ IsIn "Number" [ TVar (TV "u20" Star) ] Nothing
+                                                 ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing
                                                   ] :=>
                                                     TApp
                                                       (TApp
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "u20" Star)))
+                                                         (TVar (TV "j9" Star)))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -123,73 +122,73 @@ Right
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "u20" Star)))
-                                                         (TVar (TV "u20" Star))))
+                                                            (TVar (TV "j9" Star)))
+                                                         (TVar (TV "j9" Star))))
                                                  (Area (Loc 15 1 16) (Loc 16 1 17))
                                                  (Var "+" False))))
                                         (Typed
                                            ([ IsIn
                                                 "Number"
-                                                [ TVar (TV "u20" Star) ]
+                                                [ TVar (TV "j9" Star) ]
                                                 (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                             ] :=>
-                                              TVar (TV "u20" Star))
+                                              TVar (TV "j9" Star))
                                            (Area (Loc 13 1 14) (Loc 14 1 15))
                                            (Var "x" False))
                                         False))
                                   (Typed
                                      ([ IsIn
                                           "Number"
-                                          [ TVar (TV "u20" Star) ]
+                                          [ TVar (TV "j9" Star) ]
                                           (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                       , IsIn
                                           "Number"
-                                          [ TVar (TV "u20" Star) ]
+                                          [ TVar (TV "j9" Star) ]
                                           (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                                       ] :=>
-                                        TVar (TV "u20" Star))
+                                        TVar (TV "j9" Star))
                                      (Area (Loc 17 1 18) (Loc 22 1 23))
                                      (App
                                         (Typed
                                            ([ IsIn
                                                 "Number"
-                                                [ TVar (TV "u20" Star) ]
-                                                (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
+                                                [ TVar (TV "j9" Star) ]
+                                                (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                             ] :=>
                                               TApp
                                                 (TApp
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "u20" Star)))
-                                                (TVar (TV "u20" Star)))
+                                                   (TVar (TV "j9" Star)))
+                                                (TVar (TV "j9" Star)))
                                            (Area (Loc 17 1 18) (Loc 19 1 20))
                                            (Placeholder
                                               ( ClassRef "Number" [] True True
-                                              , [ TVar (TV "u20" Star) ]
+                                              , [ TVar (TV "j9" Star) ]
                                               )
                                               (Typed
                                                  ([ IsIn
                                                       "Number"
-                                                      [ TVar (TV "u20" Star) ]
-                                                      (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
+                                                      [ TVar (TV "j9" Star) ]
+                                                      (Just (Area (Loc 15 1 16) (Loc 16 1 17)))
                                                   ] :=>
                                                     TApp
                                                       (TApp
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "u20" Star)))
-                                                      (TVar (TV "u20" Star)))
+                                                         (TVar (TV "j9" Star)))
+                                                      (TVar (TV "j9" Star)))
                                                  (Area (Loc 17 1 18) (Loc 19 1 20))
                                                  (Var "fn" False))))
                                         (Typed
                                            ([ IsIn
                                                 "Number"
-                                                [ TVar (TV "u20" Star) ]
+                                                [ TVar (TV "j9" Star) ]
                                                 (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
                                             ] :=>
-                                              TVar (TV "u20" Star))
+                                              TVar (TV "j9" Star))
                                            (Area (Loc 20 1 21) (Loc 21 1 22))
                                            (Var "x" False))
                                         True))
@@ -199,5 +198,8 @@ Right
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
-    , apath = Just "path"
+    , apath = Just "Module.mad"
     }
+, []
+, []
+)
