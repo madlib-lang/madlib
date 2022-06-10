@@ -43,7 +43,6 @@ import qualified Data.Map as Map
 import           Run.Target (Target(TNode, TLLVM))
 import           Utils.PathUtils (defaultPathUtils)
 import qualified Utils.PathUtils as PathUtils
-import Run.Options (Options(optGenerateDerivedInstances))
 import Control.Concurrent (MVar)
 import qualified Explain.Format as Explain
 import Control.Monad.IO.Class (liftIO)
@@ -78,6 +77,13 @@ initialState = do
       , _errorsVar              = errorsVar
       , _warningsVar            = warningsVar
       }
+
+
+setQueryResult :: IORef (DHashMap Query MemoEntry) -> Query a -> a -> IO ()
+setQueryResult ref query value = do
+  started <- readIORef ref
+  let inserted = DHashMap.insert query (Done value) started
+  atomicWriteIORef ref inserted
 
 
 resetState :: State err -> IO ()

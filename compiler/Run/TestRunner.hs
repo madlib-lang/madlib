@@ -40,6 +40,10 @@ import qualified Optimize.TCE as TCE
 import qualified Optimize.EtaReduction as EtaReduction
 import Utils.Path
 import Infer.Type
+import qualified Driver
+import qualified Driver.Query as Query
+import Run.Options
+import Utils.PathUtils (defaultPathUtils)
 
 
 runTests :: Bool -> String -> Bool -> Target -> IO ()
@@ -74,13 +78,43 @@ runNodeTests entrypoint coverage = do
 
 runLLVMTests :: Bool -> String -> Bool -> IO ()
 runLLVMTests noCache entrypoint coverage = do
-  undefined
-  -- canonicalEntrypoint       <- canonicalizePath entrypoint
-  -- rootPath                  <- canonicalizePath $ PathUtils.computeRootPath entrypoint
-  -- Just wishModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
-  -- Just listModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
-  -- Just testModulePath       <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
-  -- sourcesToCompile          <- getFilesToCompile True canonicalEntrypoint
+  canonicalEntrypoint <- canonicalizePath entrypoint
+  rootPath            <- canonicalizePath $ PathUtils.computeRootPath entrypoint
+  Just wishModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
+  Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
+  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
+  sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
+
+  let testSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
+      mainTestPath   =
+        if takeExtension canonicalEntrypoint == "" then
+          joinPath [canonicalEntrypoint, "__TestMain__.mad"]
+        else
+          joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
+      testMainAST    = generateTestMainAST mainTestPath (wishModulePath, listModulePath, testModulePath) testSuitePaths
+
+  state <- Driver.initialState
+  Driver.setQueryResult (Driver._startedVar state) (Query.ParsedAST mainTestPath) testMainAST
+
+  Driver.runIncrementalTask
+    state
+    Options
+      { optPathUtils = defaultPathUtils
+      , optEntrypoint = mainTestPath
+      , optRootPath = "./"
+      , optOutputPath = ".tests/runTests"
+      , optTarget = TLLVM
+      , optOptimized = False
+      , optBundle = False
+      , optCoverage = False
+      , optGenerateDerivedInstances = True
+      , optInsertInstancePlaholders = True
+      }
+    []
+    mempty
+    Driver.Don'tPrune
+    (Driver.compilationTask mainTestPath)
+
   -- astTable                  <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
   -- Just dictionaryModulePath <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (dropFileName canonicalEntrypoint) "Dictionary"
   -- let outputPath              = "./.tests/runTests"
@@ -149,6 +183,21 @@ runLLVMTests noCache entrypoint coverage = do
 
   --   Left _ ->
   --     error "asts could not be parsed"
+  
+  
+  testOutput <- case DistributionSystem.buildOS of
+    DistributionSystem.Windows -> do
+      try $ callCommand "\".tests\\runTests\""
+
+    _ -> do
+      try $ callCommand ".tests/runTests"
+
+  case (testOutput :: Either IOError ()) of
+    Left e ->
+      error $ ppShow e
+
+    Right _ ->
+      return ()
 
 
 
@@ -186,8 +235,8 @@ generateRunTestSuitesExp testSuites =
   Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "runAllTestSuites")) [testSuites])
 
 
-generateTestMainAST :: (FilePath, FilePath, FilePath) -> [FilePath] -> AST
-generateTestMainAST preludeModulePaths suitePaths =
+generateTestMainAST :: FilePath -> (FilePath, FilePath, FilePath) -> [FilePath] -> AST
+generateTestMainAST testMainPath preludeModulePaths suitePaths =
   let indexedSuitePaths = zip [0..] suitePaths
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
@@ -200,7 +249,7 @@ generateTestMainAST preludeModulePaths suitePaths =
         , atypedecls  = []
         , ainterfaces = []
         , ainstances  = []
-        , apath       = Nothing
+        , apath       = Just testMainPath
         }
 
 

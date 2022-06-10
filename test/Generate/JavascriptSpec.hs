@@ -45,7 +45,6 @@ import           System.FilePath (normalise)
 import Run.Options
 import Driver (Prune(Don'tPrune))
 import qualified Data.ByteString.Lazy          as LazyByteString
-import Run.Options (Options(optRootPath))
 
 
 snapshotTest :: String -> String -> Golden Text
@@ -125,72 +124,6 @@ compileManyModules entrypoint modules = do
 
   return $ concat builtModules
 
--- -- TODO: Refactor in order to use the inferAST function instead that supports imports
--- tester :: Bool -> String -> String
--- tester optimized code =
---   let Right ast              = buildAST "path" code
---       table                  = M.singleton "path" ast
---       (Right (table', _), _) = runCanonicalization mempty "" TNode Can.initialEnv table "path"
---       Right canAST           = Can.findAST table' "path"
---       inferred               = runEnv canAST >>= (`runInfer` canAST)
---   in  case inferred of
---         Right x ->
---           let coreAST     = evalState (toCore optimized x) initialOptimizationState
---               strippedAST = stripAST coreAST
---               withTCE     = TCE.resolveAST strippedAST
---           in  compile
---                 Generate.Javascript.initialEnv
---                 (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
---                 withTCE
---         Left e -> ppShow e
---  where
---   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
-
--- coverageTester :: String -> String
--- coverageTester code =
---   let Right ast              = buildAST "path" code
---       table                  = M.singleton "path" ast
---       (Right (table', _), _) = runCanonicalization mempty "" TNode Can.initialEnv table "path"
---       Right canAST           = Can.findAST table' "path"
---       inferred               = runEnv canAST >>= (`runInfer` canAST)
---   in  case inferred of
---         Right x ->
---           let coreAST     = evalState (toCore False x) initialOptimizationState
---               strippedAST = stripAST coreAST
---               withTCE     = TCE.resolveAST strippedAST
---           in  compile
---                 Generate.Javascript.initialEnv
---                 (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
---                 withTCE
---         Left e -> ppShow e
---  where
---   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
-
--- tableTester :: FilePath -> Src.Table -> Src.AST -> String
--- tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
-
---   let canTable = case runCanonicalization mempty "" TNode Can.initialEnv table path of
---         (Right (table, _), _) -> table
---         (Left  err       , _) -> trace ("ERR: " <> ppShow err) mempty
---       Right canAST = Can.findAST canTable path
---       resolved     = runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
---   in  case resolved of
---         Right (x, InferState { errors = [] }) ->
---           concat
---             $   compile Generate.Javascript.initialEnv
---                         (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
---             .   (\a ->
---                     let coreAST     = evalState (toCore False a) initialOptimizationState
---                         strippedAST = stripAST coreAST
---                     in  TCE.resolveAST strippedAST
---                 )
---             <$> M.elems x
-
---         Right (_, InferState { errors = errs }) ->
---           ppShow errs
-
---         Left e ->
---           ppShow e
 
 mainCompileFixture :: String
 mainCompileFixture = unlines
