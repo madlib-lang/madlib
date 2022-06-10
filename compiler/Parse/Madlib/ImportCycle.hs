@@ -19,7 +19,7 @@ detectCycle found path = do
       foldM (processImport astPath (found ++ [astPath])) Nothing aimports
 
     _ ->
-      undefined
+      return Nothing
 
 
 processImport :: FilePath -> [FilePath] -> Maybe CompilationError -> Import -> Rock.Task Query.Query (Maybe CompilationError)

@@ -65,3 +65,8 @@ limitContextArea maxLines err = case err of
       CompilationError e (Context fp (Area (Loc a l c) (Loc a' (l + 2) 1)) bt)
     else
       CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')) bt)
+
+getContext :: CompilationError -> Context
+getContext err = case err of
+  CompilationError _ ctx ->
+    ctx

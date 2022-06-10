@@ -36,6 +36,14 @@ import qualified Driver
 import Error.Error
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Error.Context
+import Explain.Location
+import qualified Explain.Location as Loc
+import Language.LSP.Diagnostics
+import qualified Explain.Format as Explain
+import Data.List (group)
+import qualified Data.List as List
+import Control.Monad (forM_)
 
 
 handlers :: State -> Handlers (LspM ())
@@ -47,7 +55,7 @@ handlers state = mconcat
       --   case res of
       --     Right (Just (MessageActionItem "Turn on")) -> do
       --       let regOpts = CodeLensRegistrationOptions Nothing Nothing (Just False)
-              
+
       --       _ <- registerCapability STextDocumentCodeLens regOpts $ \_req responder -> do
       --         let cmd = Command "Say hello" "lsp-hello-command" Nothing
       --             rsp = List [CodeLens (mkRange 0 0 0 100) (Just cmd) Nothing]
@@ -60,7 +68,6 @@ handlers state = mconcat
       sendNotification SWindowShowMessage (ShowMessageParams MtInfo "Initialized")
       pure ()
   , requestHandler STextDocumentHover $ \req responder -> do
-      -- x <- liftIO $ Rock.fetch $ Query.ModulePathsToBuild "entrypoint"
       p <- getRootPath
       let path = case p of
             Just x ->
@@ -71,14 +78,100 @@ handlers state = mconcat
       let RequestMessage _ _ _ (HoverParams _doc pos _workDone) = req
           Position _l _c' = pos
           rsp = Hover ms (Just range)
-          ms = HoverContents $ markedUpContent "madlib" ("hover in: " <> T.pack path <> T.pack (ppShow _doc))
+          ms = HoverContents $ markedUpContent "madlib" "hover"
           range = Range pos pos
-      -- liftIO $ putStrLn (ppShow _doc)
       responder (Right $ Just rsp)
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
-      sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("open: " <> getUri uri)
+      generateDiagnostics state uri
 
+  , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) -> do
+      generateDiagnostics state uri
   ]
+
+
+-- publishDiagnostics :: MonadLsp config m => Int -> NormalizedUri -> TextDocumentVersion -> DiagnosticsBySource -> m ()
+
+uriToPath :: Uri -> FilePath
+uriToPath uri =
+  let unpacked = T.unpack $ getUri uri
+  in  if take 7 unpacked == "file://" then
+        drop 7 unpacked
+      else
+        unpacked
+
+generateDiagnostics :: State -> Uri -> LspM () ()
+generateDiagnostics state uri = do
+  let path = uriToPath uri
+  -- retrieve current errors first, so that we can update diagnostics of files
+  -- that went from errors > 0 to 0 and remove them completely.
+  (_, errs) <- liftIO $ runTask state Driver.Don'tPrune [path] (typeCheckFile path)
+  let errsByModule = groupErrsByModule errs
+
+
+  forM_ errsByModule $ \errs' -> do
+    let moduleUri = uriOfError $ head errs'
+    diagnostics <- liftIO $ mapM errorToDiagnostic errs'
+    let diagnosticsBySource = partitionBySource diagnostics
+    -- sendNotification SWindowLogMessage $ LogMessageParams MtInfo ("errs: " <> T.pack (ppShow errs))
+    -- flushDiagnosticsBySource 20 (Just "Madlib")
+    publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
+
+
+uriOfError :: CompilationError -> Uri
+uriOfError err = case getContext err of
+  Context path _ _ ->
+    Uri $ T.pack ("file://" <> path)
+
+
+areErrorsFromSameModule :: CompilationError -> CompilationError -> Bool
+areErrorsFromSameModule a b = case (a, b) of
+  (CompilationError _ (Context pathA _ _), CompilationError _ (Context pathB _ _)) ->
+    pathA == pathB
+
+  _ ->
+    False
+
+
+groupErrsByModule :: [CompilationError] -> [[CompilationError]]
+groupErrsByModule errs =
+  let errs' = filter ((/= NoContext) . getContext) errs
+  in  List.groupBy areErrorsFromSameModule errs'
+
+
+
+errorToDiagnostic :: CompilationError -> IO Diagnostic
+errorToDiagnostic err = do
+  formattedError <- Explain.format readFile True err
+  case err of
+    CompilationError _ (Context astPath area _) ->
+      return $ Diagnostic
+        (areaToRange area)        -- _range
+        (Just DsError)            -- _severity
+        Nothing                   -- _code
+        (Just "Madlib")           -- _source
+        (T.pack formattedError)   -- _message
+        Nothing                   -- _tags
+        Nothing                   -- _relatedInformation
+
+    _ ->
+      return $ Diagnostic
+        noRange
+        (Just DsError)
+        Nothing
+        (Just "Madlib")
+        (T.pack formattedError)
+        Nothing
+        Nothing
+
+noRange :: Range
+noRange =
+  Range (Position 0 0) (Position 0 0)
+
+areaToRange :: Area -> Range
+areaToRange area =
+  Range
+    (Position (Loc.getLine (Loc.getStartLoc area) - 1) (Loc.getCol (Loc.getStartLoc area) - 1))
+    (Position (Loc.getLine (Loc.getEndLoc area) - 1) (Loc.getCol (Loc.getEndLoc area) - 1))
 
 
 data State = State
@@ -112,21 +205,24 @@ runLanguageServer = do
     }
 
 
-runTask :: State -> Driver.Prune -> Rock.Task Query.Query a -> IO (a, [CompilationError])
-runTask state prune task = do
-  -- let prettyError :: Error.Hydrated -> Task Query (Error.Hydrated, Doc ann)
-  --     prettyError err = do
-  --       (heading, body) <- Error.Hydrated.headingAndBody $ Error.Hydrated._error err
-  --       pure (err, heading <> Doc.line <> body)
+typeCheckFile :: FilePath -> Rock.Task Query.Query ()
+typeCheckFile path = do
+  Rock.fetch $ Query.SolvedASTWithEnv path
+  return ()
 
-      -- files =
-      --   fmap Rope.toText (_openFiles state) <> _diskFiles state
 
+runTask :: State -> Driver.Prune -> [FilePath] -> Rock.Task Query.Query a -> IO (a, [CompilationError])
+runTask state prune invalidatedPaths task = do
+  -- filePaths <- Rock.fetch $ Query.ModulePathsToBuild path
+  -- files <- mapM
+  --       (\path -> do
+  --           file <- Rock.fetch $ Query.File path
+  --           return (path, file)
+  --       )
+  --       filePaths
   Driver.runIncrementalTask
     (_driverState state)
-    (_changedFiles state)
-    -- (HashSet.fromList $ _sourceDirectories state)
-    -- files
-    -- prettyError
+    invalidatedPaths
+    -- (_changedFiles state)
     prune
     task

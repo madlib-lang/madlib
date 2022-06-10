@@ -53,8 +53,8 @@ findAllExportedTypeNames ast =
   in  typeExportNames ++ typeNames
 
 
-validateImport :: Target -> FilePath -> Src.Import -> CanonicalM ()
-validateImport target originAstPath imp = do
+validateImport :: FilePath -> Src.Import -> CanonicalM ()
+validateImport originAstPath imp = do
   let path = Src.getImportAbsolutePath imp
   (ast, env) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
 
@@ -209,7 +209,7 @@ buildImportInfos env Src.AST { Src.aimports } =
 
 canonicalizeAST :: FilePath -> Target -> Env -> Src.AST -> CanonicalM (Can.AST, Env)
 canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
-  mapM_ (validateImport target astPath) aimports
+  mapM_ (validateImport astPath) aimports
 
   let env'  = buildImportInfos env sourceAst
   let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports sourceAst) }
@@ -248,7 +248,8 @@ canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = J
 
   return (canonicalizedAST, env'''')
 
-canonicalizeAST _ _ _ _ = undefined
+canonicalizeAST _ _ _ _ =
+  return (Can.emptyAST, initialEnv)
 
 
 performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]
