@@ -161,7 +161,7 @@ formatTypeError json err = case err of
 
   UnboundVariableFromNamespace namespace name ->
     "The default import '" <> namespace <> "' does not export the function '" <> name <> "'.\n\n"
-    <> "Hint: Verify that is it exported or that you spelled it correctly."
+    <> "Hint: Verify that it is exported or that you spelled it correctly."
 
   CapitalizedADTTVar adtname param ->
     "The type parameter '" <> param <> "' in the type declaration '" <> adtname <> "' is capitalized.\n"

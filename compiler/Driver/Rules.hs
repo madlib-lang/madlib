@@ -58,9 +58,16 @@ import           Error.Error
 import           Error.Context
 import Parse.Madlib.ImportCycle (detectCycle)
 import AST.Canonical (AST(atypedecls))
+import Explain.Location (emptyArea)
+import Infer.Type
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
+  AbsolutePreludePath moduleName -> nonInput $ do
+    dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) moduleName
+    return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
+
+
   DictionaryModuleAbsolutePath -> nonInput $ do
     dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
     return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
@@ -105,12 +112,15 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     liftIO $ (PathUtils.readFile $ optPathUtils options) path
 
   ParsedAST path -> nonInput $ do
-    -- liftIO $ putStrLn $ "fetch " <> path
     source <- Rock.fetch $ File path
     ast    <- liftIO $ buildAST options path source
+          
     case ast of
-      Right ast -> do
-        return (ast, (mempty, mempty))
+      Right ast ->
+        if optTarget options == TLLVM then
+          return (addTestEmptyExports ast, (mempty, mempty))
+        else
+          return (ast, (mempty, mempty))
 
       Left err ->
         return (emptySrcAST, (mempty, [err]))
@@ -156,15 +166,18 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
     res <- runInfer $ inferAST options initialEnv instancesToDerive canAst
     case res of
-      Right (astAndEnv, InferState _ []) -> do
-        return (astAndEnv, (mempty, mempty))
+      Right ((ast, env), InferState _ []) ->
+        if optTarget options == TLLVM then do
+          wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
+          listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
+          return ((updateTestExports wishModulePath listModulePath ast, env), (mempty, mempty))
+        else
+          return ((ast, env), (mempty, mempty))
 
       Right (_, InferState _ errors) ->
-        -- return ((emptySlvAST, initialEnv), (mempty, errors))
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, errors))
 
       Left error ->
-        -- return ((emptySlvAST, initialEnv), (mempty, [error]))
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
 
   SolvedInterface modulePath name -> nonInput $ do
@@ -394,3 +407,143 @@ nonInput = fmap $ first (, Rock.NonInput)
 
 input :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 input = fmap ((, mempty) . (, Rock.Input))
+
+
+-- LLVM test runner
+
+addTestEmptyExports :: Src.AST -> Src.AST
+addTestEmptyExports ast@Src.AST{ Src.apath = Just apath } =
+  if ".spec.mad" `List.isSuffixOf` apath then
+    let exps             = Src.aexps ast
+        -- that export is needed for type checking or else we get an error that the name is not exported
+        testsExport      = Src.Source emptyArea Src.TargetLLVM (Src.Export (Src.Source emptyArea Src.TargetLLVM (Src.Assignment "__tests__" (Src.Source emptyArea Src.TargetLLVM (Src.ListConstructor [])))))
+    in  ast { Src.aexps = exps ++ [testsExport] }
+  else
+    ast
+addTestEmptyExports _ =
+  undefined
+
+
+data TestAssignment
+  = SingleTest String
+  | BatchTest String
+
+
+generateTestAssignment :: Int -> Slv.Exp -> (Slv.Exp, Maybe TestAssignment)
+generateTestAssignment index exp = case exp of
+  Slv.Typed qt@(_ :=>
+    (TApp
+      (TCon (TC "List" (Kfun Star Star)) "prelude")
+      (TApp
+        (TApp (TCon (TC "Wish" wishKind) wishPath) (TCon (TC "String" _) _))
+        (TCon (TC "String" _) _))))
+    area
+    _ ->
+      let assignmentName = "__t" <> show index <> "__"
+      in (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (BatchTest assignmentName))
+
+  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" wishKind) wishPath) (TCon (TC "String" _) _)) (TCon (TC "String" _) _)) area _ ->
+    let assignmentName = "__t" <> show index <> "__"
+    in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
+
+  -- Slv.Typed qt area (Slv.App (Slv.Typed _ _ (Slv.App (Slv.Typed _ _ (Slv.Var "test" _)) _ _)) _ _) ->
+  --   let assignmentName = "__t" <> show index <> "__"
+  --   in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
+
+  _ ->
+    (exp, Nothing)
+
+
+testType :: FilePath -> Type
+testType wishPath =
+  TApp (TApp (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath) tStr) tStr
+
+testListType :: FilePath -> Type
+testListType wishPath =
+  TApp
+    (TCon (TC "List" (Kfun Star Star)) "prelude")
+    (testType wishPath)
+
+
+
+addTestsToSuite :: FilePath -> Slv.Exp -> [TestAssignment] -> Slv.Exp
+addTestsToSuite wishPath currentTests assignments = case assignments of
+  [] ->
+    currentTests
+
+  (SingleTest name : more) ->
+    let testExp =
+          Slv.Typed
+            ([] :=> tListOf (testListType wishPath))
+            emptyArea
+            (Slv.ListConstructor
+              [Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.ListItem (Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.Var name False)))])
+        added =
+          Slv.Typed
+            ([] :=> testListType wishPath)
+            emptyArea
+            (Slv.App
+              (Slv.Typed
+                ([] :=> (testListType wishPath `fn` testListType wishPath))
+                emptyArea
+                (Slv.App
+                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "List.concat" False))
+                  currentTests
+                  False))
+              testExp
+              True)
+    in  addTestsToSuite wishPath added more
+
+  (BatchTest name : more) ->
+    let batchTestExp =
+          Slv.Typed
+            ([] :=> tListOf (testListType wishPath))
+            emptyArea
+            (Slv.Var name False)
+        added =
+          Slv.Typed
+            ([] :=> testListType wishPath)
+            emptyArea
+            (Slv.App
+              (Slv.Typed
+                ([] :=> (testListType wishPath `fn` testListType wishPath))
+                emptyArea
+                (Slv.App
+                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "List.concat" False))
+                  currentTests
+                  False))
+              batchTestExp
+              True)
+    in  addTestsToSuite wishPath added more
+
+
+listImport :: FilePath -> Slv.Import
+listImport listModulePath =
+  Slv.Untyped emptyArea (Slv.DefaultImport (Slv.Untyped emptyArea "List") "List" listModulePath)
+
+
+
+updateTestExports :: FilePath -> FilePath -> Slv.AST -> Slv.AST
+updateTestExports wishPath listPath ast@Slv.AST{ Slv.apath = Just apath, Slv.aexps } =
+  if ".spec.mad" `List.isSuffixOf` apath && not (null aexps) then
+    let exps              = init aexps
+        assigned          = uncurry generateTestAssignment <$> zip [0..] exps
+        exps'             = fst <$> assigned
+        testAssignments   = Maybe.mapMaybe snd assigned
+        initialTests      = Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.ListConstructor [])
+        testsExport       =
+          Slv.Typed
+            ([] :=> tListOf (testListType wishPath))
+            emptyArea
+            (Slv.Export
+              (Slv.Typed
+                ([] :=> tListOf (testListType wishPath))
+                emptyArea
+                (Slv.Assignment
+                  "__tests__"
+                  (addTestsToSuite wishPath initialTests testAssignments))))
+    in  ast { Slv.aexps = exps' ++ [testsExport], Slv.aimports = listImport listPath : Slv.aimports ast }
+  else
+    ast
+updateTestExports _ _ _ =
+  undefined
