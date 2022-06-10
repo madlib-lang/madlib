@@ -15,4 +15,5 @@ data Options
     , optBundle :: Bool
     , optCoverage :: Bool
     , optGenerateDerivedInstances :: Bool
+    , optInsertInstancePlaholders :: Bool
     }

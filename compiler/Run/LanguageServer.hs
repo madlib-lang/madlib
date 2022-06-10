@@ -93,6 +93,7 @@ buildOptions = do
       , Options.optBundle = False
       , Options.optCoverage = False
       , Options.optGenerateDerivedInstances = False
+      , Options.optInsertInstancePlaholders = False
       }
 
 
@@ -564,17 +565,17 @@ runLanguageServer = do
     }
 
 
-typeCheckFile :: FilePath -> Rock.Task Query.Query ()
-typeCheckFile path = do
-  Rock.fetch $ Query.SolvedASTWithEnv path
-  return ()
-
-
 -- typeCheckFile :: FilePath -> Rock.Task Query.Query ()
 -- typeCheckFile path = do
---   modulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
---   pooledForConcurrently_ modulePaths $ \p -> Rock.fetch $ Query.SolvedASTWithEnv p
+--   Rock.fetch $ Query.SolvedASTWithEnv path
 --   return ()
+
+
+typeCheckFile :: FilePath -> Rock.Task Query.Query ()
+typeCheckFile path = do
+  modulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
+  pooledForConcurrently_ modulePaths $ \p -> Rock.fetch $ Query.SolvedASTWithEnv p
+  return ()
 
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
