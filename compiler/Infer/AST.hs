@@ -42,6 +42,7 @@ import           Canonicalize.InstanceToDerive
 import qualified Driver.Query                               as Query
 import qualified Rock
 import Explain.Location (emptyArea)
+import Run.Options
 
 
 {-|
@@ -387,8 +388,8 @@ buildEnvForDerivedInstances env instancesToDerive =
   foldr (flip buildEnvForDerivedInstance) env instancesToDerive
 
 
-inferAST :: Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
-inferAST env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
+inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
+inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
   let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive
       namespacesInScope = namespacesInScopeFromImports aimports
       envWithNamespaces = setNamespacesInScope envWithDerivedInstances namespacesInScope
@@ -397,8 +398,8 @@ inferAST env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports,
   envWithImports                      <- solveImports envWithImportInfo aimports
   initialEnv                          <- buildInitialEnv envWithImports ast
   fullEnv                             <- populateTopLevelTypings initialEnv (Can.aexps ast)
-  (inferredExps, env'             )   <- inferExps fullEnv { envBacktrace = [] } aexps
-  (env''        , inferredInstances)  <- resolveInstances env' ainstances
+  (inferredExps, env'             )   <- inferExps options fullEnv { envBacktrace = [] } aexps
+  (env''        , inferredInstances)  <- resolveInstances options env' ainstances
   let updatedInterfaces = updateInterface <$> ainterfaces
   updatedADTs <- mapM updateADT atypedecls
 

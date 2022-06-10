@@ -146,6 +146,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
             , optBundle = bundle
             , optCoverage = coverage
             , optGenerateDerivedInstances = True
+            , optInsertInstancePlaholders = True
             }
 
     when verbose $ do

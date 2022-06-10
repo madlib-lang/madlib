@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Interface where
 
 import qualified AST.Canonical                 as Can
@@ -24,6 +25,7 @@ import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
 import Debug.Trace
 import Text.Show.Pretty
+import Run.Options
 
 
 -- defined :: Maybe a -> Bool
@@ -100,11 +102,11 @@ isInstanceDefined env subst (IsIn id ts _) = do
     Nothing -> throwError $ CompilationError (NoInstanceFound id (apply subst ts)) NoContext
 
 
-resolveInstances :: Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])
-resolveInstances env []       = return (env, [])
-resolveInstances env (i : is) = do
+resolveInstances :: Options -> Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])
+resolveInstances _ env []       = return (env, [])
+resolveInstances options env (i : is) = do
   curr <- catchError
-    (Just <$> resolveInstance env i)
+    (Just <$> resolveInstance options env i)
     (\err -> do
       pushError err
       return Nothing
@@ -112,15 +114,15 @@ resolveInstances env (i : is) = do
 
   case curr of
     Just (env', inst) -> do
-      (nextEnv, insts) <- resolveInstances env' is
+      (nextEnv, insts) <- resolveInstances options env' is
       return (nextEnv, inst : insts)
 
     Nothing ->
-      resolveInstances env is
+      resolveInstances options env is
 
 
-resolveInstance :: Env -> Can.Instance -> Infer (Env, Slv.Instance)
-resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
+resolveInstance :: Options -> Env -> Can.Instance -> Infer (Env, Slv.Instance)
+resolveInstance options env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
   let instanceTypes = predTypes pred
   let subst = foldr (\t s -> s `compose` buildVarSubsts t) mempty instanceTypes
   (Interface _ ps _) <- catchError (lookupInterface env name) (addContext env inst)
@@ -128,7 +130,7 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   let psTypes       = concat $ predTypes <$> constraintPreds
   let subst'        = foldr (\t s -> s `compose` buildVarSubsts t) mempty psTypes
   inferredMethods <- mapM
-    (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
+    (inferMethod options (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
   let dict'    = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
   let methods' = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
@@ -136,13 +138,13 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   return (envWithMethods, Slv.Untyped area $ Slv.Instance name constraintPreds pred dict')
 
 
-inferMethod :: Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
-inferMethod env instancePreds constraintPreds (mn, m) =
-  upgradeContext (pushExpToBT env m) (Can.getArea m) (inferMethod' env instancePreds constraintPreds (mn, m))
+inferMethod :: Options -> Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
+inferMethod options env instancePreds constraintPreds (mn, m) =
+  upgradeContext (pushExpToBT env m) (Can.getArea m) (inferMethod' options env instancePreds constraintPreds (mn, m))
 
 
-inferMethod' :: Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
-inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assignment n' m)) = do
+inferMethod' :: Options -> Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
+inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assignment n' m)) = do
   sc'             <- lookupVar env mn
   qt@(mps :=> mt) <- instantiate sc'
   s1              <- specialMatchMany mps instancePreds
@@ -151,7 +153,7 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
 
   let sc              = quantify (ftv qt') qt'
 
-  (s, ps, t, e) <- infer env m
+  (s, ps, t, e) <- infer options env m
   (qs :=> t')   <- instantiate sc
   s'            <- (`compose` s) <$> unify t' t
 
@@ -174,9 +176,7 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
         $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateQualType e (qs :=> t'')
-        e''  <- insertClassPlaceholders env (Slv.Typed (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
-        e''' <- updatePlaceholders env (CleanUpEnv True [] [] []) True s' e''
+        e''  <- insertClassPlaceholders options env (Slv.Typed (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
+        e''' <- updatePlaceholders options env (CleanUpEnv True [] [] []) True s' e''
 
         return (mn, e''', sc)
-
-inferMethod' _ _ _ _ = undefined

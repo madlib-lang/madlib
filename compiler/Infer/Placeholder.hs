@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Infer.Placeholder where
 
 import           Infer.Type
@@ -20,6 +21,7 @@ import           Infer.Instantiate
 import LLVM.AST.Instruction (Instruction(cleanup))
 import Debug.Trace
 import Text.Show.Pretty
+import Run.Options
 
 
 {-
@@ -49,45 +51,45 @@ the updateMethod/ClassPlaceholder whenever a placeholder is encountered.
 -}
 
 
-insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
-insertVarPlaceholders _   exp                    []       = return exp
+insertVarPlaceholders :: Options -> Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
+insertVarPlaceholders _ _   exp                    []       = return exp
+insertVarPlaceholders options env exp@(Slv.Typed t a e) (p : ps) =
+  if optInsertInstancePlaholders options then do
+    ts <- getCanonicalPlaceholderTypes env p
+    if isMethod env exp (p:ps)
+      then case e of
+        Slv.Var n _ -> do
+          var <- shouldInsert env $ IsIn (predClass p) (predTypes p) Nothing
+          return $ Slv.Typed t a $ Slv.Placeholder (Slv.MethodRef (predClass p) n var, ts) exp
+        _ -> return exp
+      else do
+        insert <- shouldInsert env p
 
-insertVarPlaceholders env exp@(Slv.Typed t a e) (p : ps) = do
-  ts <- getCanonicalPlaceholderTypes env p
-  if isMethod env exp (p:ps)
-    then case e of
-      Slv.Var n _ -> do
-        var <- shouldInsert env $ IsIn (predClass p) (predTypes p) Nothing
-        return $ Slv.Typed t a $ Slv.Placeholder (Slv.MethodRef (predClass p) n var, ts) exp
-      _ -> return exp
-    else do
-      insert <- shouldInsert env p
-
-      let exp' =
-            if insert then
-              Slv.Typed t a $ Slv.Placeholder (Slv.ClassRef (predClass p) [] True insert, ts) exp
-            else
-              exp
-      insertVarPlaceholders env exp' ps
-
-insertVarPlaceholders _ _ _ =
-  undefined
-
+        let exp' =
+              if insert then
+                Slv.Typed t a $ Slv.Placeholder (Slv.ClassRef (predClass p) [] True insert, ts) exp
+              else
+                exp
+        insertVarPlaceholders options env exp' ps
+  else
+    return exp
 
 
-insertClassPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
-insertClassPlaceholders _   exp []       = return exp
-insertClassPlaceholders env exp (p : ps) = do
-  insert <- shouldInsert env p
-  if not insert
-    then insertClassPlaceholders env exp ps
+
+insertClassPlaceholders :: Options -> Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
+insertClassPlaceholders _ _   exp []       = return exp
+insertClassPlaceholders options env exp (p : ps) =
+  if optInsertInstancePlaholders options then do
+    insert <- shouldInsert env p
+    if not insert then
+      insertClassPlaceholders options env exp ps
     else case exp of
       Slv.Typed a t (Slv.Assignment n e) ->
         let exp' = Slv.Typed a t
               $ Slv.Assignment
                   n
                   (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
-        in  insertClassPlaceholders env exp' ps
+        in  insertClassPlaceholders options env exp' ps
 
       Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Assignment n e)) typing sc) ->
         let exp' = Slv.Typed a t (Slv.TypedExp 
@@ -95,7 +97,7 @@ insertClassPlaceholders env exp (p : ps) = do
                       typing
                       sc
                     )
-        in  insertClassPlaceholders env exp' ps
+        in  insertClassPlaceholders options env exp' ps
 
       Slv.Typed a t (Slv.Export (Slv.Typed a' t' (Slv.Assignment n e))) ->
         let exp' = Slv.Typed a t $ Slv.Export
@@ -107,7 +109,7 @@ insertClassPlaceholders env exp (p : ps) = do
                   (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
                 )
               )
-        in  insertClassPlaceholders env exp' ps
+        in  insertClassPlaceholders options env exp' ps
 
       Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Export (Slv.Typed a'' t'' (Slv.Assignment n e)))) typing sc) ->
         let exp' = Slv.Typed a t (Slv.TypedExp
@@ -116,10 +118,12 @@ insertClassPlaceholders env exp (p : ps) = do
                       )))
                       typing
                       sc
-                   )
-        in  insertClassPlaceholders env exp' ps
+                    )
+        in  insertClassPlaceholders options env exp' ps
 
       _ -> return exp
+  else
+    return exp
 
 
 shouldInsert :: Env -> Pred -> Infer Bool
@@ -145,9 +149,9 @@ getCanonicalPlaceholderTypes env p@(IsIn cls ts _) = do
     Nothing -> ts
 
 
-updateMethodPlaceholder :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateMethodPlaceholder env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Typed qt' a' exp)))
-  = do
+updateMethodPlaceholder :: Options -> Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
+updateMethodPlaceholder options env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Typed qt' a' exp))) =
+  if optInsertInstancePlaholders options then do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes' Nothing)
     var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing -- Reconsider if the instance is fully resolved
@@ -185,6 +189,8 @@ updateMethodPlaceholder env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeholder
           )
       )
       ps'
+  else
+    return ph
 
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -226,62 +232,66 @@ isNameInScope maybeName cleanUpEnv = case maybeName of
     False
 
 
-updateClassPlaceholder :: Env -> CleanUpEnv -> Maybe String ->  Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = case ph of
-  Slv.Typed qt a (Slv.Placeholder (Slv.ClassRef cls crps call var, instanceTypes) exp) -> do
-    let instanceTypes' = apply s instanceTypes
-    types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
-    var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
+updateClassPlaceholder :: Options -> Env -> CleanUpEnv -> Maybe String ->  Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
+updateClassPlaceholder options env cleanUpEnv maybeWrapperAssignmentName push s ph =
+  if optInsertInstancePlaholders options then
+    case ph of
+      Slv.Typed qt a (Slv.Placeholder (Slv.ClassRef cls crps call var, instanceTypes) exp) -> do
+        let instanceTypes' = apply s instanceTypes
+        types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
+        var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
 
-    ps'   <- buildClassRefPreds env cls instanceTypes'
+        ps'   <- buildClassRefPreds env cls instanceTypes'
 
-    let newRef = (cls, instanceTypes')
-    nextEnv <-
-          if not call then do
-            -- we need to gather parent interfaces as a constraint Applicative f => ...
-            -- will generate an additional Functor f constraint and we need this one
-            -- to be in the env or the clean up will not be complete.
-            parents <- getAllParentPreds env [IsIn cls instanceTypes' Nothing]
-            let allRefs = (\(IsIn name ts _) -> (name, ts)) <$> parents
-            return $ foldr addDict cleanUpEnv allRefs
+        let newRef = (cls, instanceTypes')
+        nextEnv <-
+              if not call then do
+                -- we need to gather parent interfaces as a constraint Applicative f => ...
+                -- will generate an additional Functor f constraint and we need this one
+                -- to be in the env or the clean up will not be complete.
+                parents <- getAllParentPreds env [IsIn cls instanceTypes' Nothing]
+                let allRefs = (\(IsIn name ts _) -> (name, ts)) <$> parents
+                return $ foldr addDict cleanUpEnv allRefs
+              else
+                return $ addAppliedDict (cls, instanceTypes) cleanUpEnv
+        exp'  <- updatePlaceholders options env nextEnv push s exp
+
+        let wrappedExp = getPlaceholderExp ph
+
+        let maybeName =
+              case wrappedExp of
+                Slv.Typed _ _ (Slv.Var n _) ->
+                  Just n
+
+                _ ->
+                  Nothing
+
+        if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
+          -- this class ref is already in scope so we skip the placeholder
+          return exp'
+        else if not call then
+          if not var' then
+            -- if the instance is resolve there's no point in having (IntegerDict) => ... and we can
+            -- safely drop the dictionary.
+            return exp'
+          else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+            -- In that case we need to extend the env to express what dictionary was removed so that we can
+            -- remove the dictionaries at call sites
+            -- In the case of method definition, the predicates come from interface declaration and instance
+            -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+            -- just yet.
+            return exp'
           else
-            return $ addAppliedDict (cls, instanceTypes) cleanUpEnv
-    exp'  <- updatePlaceholders env nextEnv push s exp
+            return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+        else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
+          return exp'
+        else
+          return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
-    let wrappedExp = getPlaceholderExp ph
-
-    let maybeName =
-          case wrappedExp of
-            Slv.Typed _ _ (Slv.Var n _) ->
-              Just n
-
-            _ ->
-              Nothing
-
-    if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
-      -- this class ref is already in scope so we skip the placeholder
-      return exp'
-    else if not call then
-      if not var' then
-        -- if the instance is resolve there's no point in having (IntegerDict) => ... and we can
-        -- safely drop the dictionary.
-        return exp'
-      else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
-        -- In that case we need to extend the env to express what dictionary was removed so that we can
-        -- remove the dictionaries at call sites
-        -- In the case of method definition, the predicates come from interface declaration and instance
-        -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
-        -- just yet.
-        return exp'
-      else
-        return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
-    else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
-      return exp'
-    else
-      return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-
-  _ ->
-    undefined
+      _ ->
+        undefined
+  else
+    return ph
 
 
 
@@ -337,68 +347,68 @@ addName name env =
 
 
 
-updatePlaceholdersForExpList :: Env -> CleanUpEnv -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
-updatePlaceholdersForExpList env cleanUpEnv push s exps = case exps of
+updatePlaceholdersForExpList :: Options -> Env -> CleanUpEnv -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
+updatePlaceholdersForExpList options env cleanUpEnv push s exps = case exps of
   (e : es) -> case e of
     Slv.Typed _ _ (Slv.TypedExp (Slv.Typed qt area (Slv.Assignment name exp)) _ _) -> do
       let cleanUpEnv' = addName name cleanUpEnv
-      next <- updatePlaceholdersForExpList env cleanUpEnv' push s es
-      e' <- updatePlaceholders env cleanUpEnv' push s e
+      next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
+      e' <- updatePlaceholders options env cleanUpEnv' push s e
       return (e' : next)
 
     Slv.Typed qt area (Slv.Assignment name exp) -> do
       let cleanUpEnv' = addName name cleanUpEnv
-      next <- updatePlaceholdersForExpList env cleanUpEnv' push s es
-      e' <- updatePlaceholders env cleanUpEnv' push s e
+      next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
+      e' <- updatePlaceholders options env cleanUpEnv' push s e
       return (e' : next)
 
     _ -> do
-      next <- updatePlaceholdersForExpList env cleanUpEnv push s es
-      e'   <- updatePlaceholders env cleanUpEnv push s e
+      next <- updatePlaceholdersForExpList options env cleanUpEnv push s es
+      e'   <- updatePlaceholders options env cleanUpEnv push s e
       return (e' : next)
 
   [] ->
     return []
 
 
-updatePlaceholders :: Env -> CleanUpEnv -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updatePlaceholders _ _ _ _ fullExp@(Slv.Untyped _ _)   = return fullExp
-updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
+updatePlaceholders :: Options -> Env -> CleanUpEnv -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
+updatePlaceholders _ _ _ _ _ fullExp@(Slv.Untyped _ _)   = return fullExp
+updatePlaceholders options env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
   Slv.Placeholder (ref, t) exp -> case ref of
     Slv.MethodRef{} ->
-      updateMethodPlaceholder env push s fullExp
+      updateMethodPlaceholder options env push s fullExp
 
     _  ->
-      updateClassPlaceholder env cleanUpEnv Nothing push s fullExp
+      updateClassPlaceholder options env cleanUpEnv Nothing push s fullExp
 
 
   Slv.App abs arg final -> do
-    abs' <- updatePlaceholders env cleanUpEnv { appliedDicts = [] } push s abs
-    arg' <- updatePlaceholders env cleanUpEnv { appliedDicts = [] } push s arg
+    abs' <- updatePlaceholders options env cleanUpEnv { appliedDicts = [] } push s abs
+    arg' <- updatePlaceholders options env cleanUpEnv { appliedDicts = [] } push s arg
     return $ Slv.Typed (apply s qt) a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Typed paramType paramArea param) es -> do
     -- Once we encountered an Abs we processed all the instance placeholders and we can then
     -- strip the inner placeholders.
-    es' <- updatePlaceholdersForExpList env cleanUpEnv { isMethodDef = False } push s es
+    es' <- updatePlaceholdersForExpList options env cleanUpEnv { isMethodDef = False } push s es
     let param' = Slv.Typed (apply s paramType) paramArea param
     return $ Slv.Typed (apply s qt) a $ Slv.Abs param' es'
 
   Slv.Do exps -> do
-    exps' <- updatePlaceholdersForExpList env cleanUpEnv push s exps
+    exps' <- updatePlaceholdersForExpList options env cleanUpEnv push s exps
     return $ Slv.Typed (apply s qt) a $ Slv.Do exps'
 
   Slv.Where exp iss -> do
-    exp' <- updatePlaceholders env cleanUpEnv push s exp
+    exp' <- updatePlaceholders options env cleanUpEnv push s exp
     iss' <- mapM (updateIs s) iss
     return $ Slv.Typed (apply s qt) a $ Slv.Where exp' iss'
 
   Slv.Assignment n ph@(Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef{}, _) _)) -> do
-    updatedPlaceholder <- updateClassPlaceholder env cleanUpEnv (Just n) push s ph
+    updatedPlaceholder <- updateClassPlaceholder options env cleanUpEnv (Just n) push s ph
     return $ Slv.Typed  (apply s qt) a (Slv.Assignment n updatedPlaceholder)
 
   Slv.Assignment n exp -> do
-    exp' <- updatePlaceholders env cleanUpEnv push s exp
+    exp' <- updatePlaceholders options env cleanUpEnv push s exp
     return $ Slv.Typed (apply s qt) a $ Slv.Assignment n exp'
 
   Slv.ListConstructor li -> do
@@ -406,30 +416,30 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
     return $ Slv.Typed (apply s qt) a $ Slv.ListConstructor li'
 
   Slv.TypedExp exp typing sc -> do
-    exp' <- updatePlaceholders env cleanUpEnv push s exp
+    exp' <- updatePlaceholders options env cleanUpEnv push s exp
     return $ Slv.Typed (apply s qt) a $ Slv.TypedExp exp' typing sc
 
   Slv.Export exp -> do
-    exp' <- updatePlaceholders env cleanUpEnv push s exp
+    exp' <- updatePlaceholders options env cleanUpEnv push s exp
     return $ Slv.Typed (apply s qt) a $ Slv.Export exp'
 
   Slv.If econd eif eelse -> do
-    econd' <- updatePlaceholders env cleanUpEnv push s econd
-    eif'   <- updatePlaceholders env cleanUpEnv push s eif
-    eelse' <- updatePlaceholders env cleanUpEnv push s eelse
+    econd' <- updatePlaceholders options env cleanUpEnv push s econd
+    eif'   <- updatePlaceholders options env cleanUpEnv push s eif
+    eelse' <- updatePlaceholders options env cleanUpEnv push s eelse
     return $ Slv.Typed (apply s qt) a $ Slv.If econd' eif' eelse'
 
   Slv.TupleConstructor es -> do
-    es' <- mapM (updatePlaceholders env cleanUpEnv push s) es
+    es' <- mapM (updatePlaceholders options env cleanUpEnv push s) es
     return $ Slv.Typed (apply s qt) a $ Slv.TupleConstructor es'
 
   Slv.TemplateString es -> do
-    es' <- mapM (updatePlaceholders env cleanUpEnv push s) es
+    es' <- mapM (updatePlaceholders options env cleanUpEnv push s) es
     return $ Slv.Typed (apply s qt) a $ Slv.TemplateString es'
 
   Slv.Access rec field -> do
-    rec'   <- updatePlaceholders env cleanUpEnv push s rec
-    field' <- updatePlaceholders env cleanUpEnv push s field
+    rec'   <- updatePlaceholders options env cleanUpEnv push s rec
+    field' <- updatePlaceholders options env cleanUpEnv push s field
     return $ Slv.Typed (apply s qt) a $ Slv.Access rec' field'
 
   Slv.Record fields -> do
@@ -437,51 +447,52 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
     return $ Slv.Typed (apply s qt) a $ Slv.Record fields'
 
   _ -> return $ Slv.Typed (apply s qt) a e
- where
-  updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
-  updateIs s (Slv.Typed qt@(ps :=> _) a is) = case is of
-    Slv.Is pat exp -> do
-      exp' <- updatePlaceholders env cleanUpEnv push s exp
-      return $ Slv.Typed (apply s qt) a $ Slv.Is (updatePattern s ps pat) exp'
 
-  updatePattern :: Substitution -> [Pred] -> Slv.Pattern -> Slv.Pattern
-  updatePattern s preds pat@(Slv.Typed (_ :=> t) _ _) =
-    let ps = selectPredsForType preds t
-    in  case pat of
-      Slv.Typed (ps' :=> t') area (Slv.PCon n pats) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PCon n (updatePattern s preds <$> pats))
+  where
+    updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
+    updateIs s (Slv.Typed qt@(ps :=> _) a is) = case is of
+      Slv.Is pat exp -> do
+        exp' <- updatePlaceholders options env cleanUpEnv push s exp
+        return $ Slv.Typed (apply s qt) a $ Slv.Is (updatePattern s ps pat) exp'
 
-      Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PRecord (updatePattern s preds <$> fields))
+    updatePattern :: Substitution -> [Pred] -> Slv.Pattern -> Slv.Pattern
+    updatePattern s preds pat@(Slv.Typed (_ :=> t) _ _) =
+      let ps = selectPredsForType preds t
+      in  case pat of
+        Slv.Typed (ps' :=> t') area (Slv.PCon n pats) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PCon n (updatePattern s preds <$> pats))
 
-      Slv.Typed (ps' :=> t') area (Slv.PList items) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PList (updatePattern s preds <$> items))
+        Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PRecord (updatePattern s preds <$> fields))
 
-      Slv.Typed (ps' :=> t') area (Slv.PTuple items) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PTuple (updatePattern s preds <$> items))
+        Slv.Typed (ps' :=> t') area (Slv.PList items) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PList (updatePattern s preds <$> items))
 
-      Slv.Typed (ps' :=> t') area (Slv.PSpread pat) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PSpread (updatePattern s preds pat))
+        Slv.Typed (ps' :=> t') area (Slv.PTuple items) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PTuple (updatePattern s preds <$> items))
 
-      Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PVar n)
+        Slv.Typed (ps' :=> t') area (Slv.PSpread pat) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PSpread (updatePattern s preds pat))
 
-      Slv.Typed (ps' :=> t') area p ->
-        Slv.Typed (apply s ((ps ++ ps') :=> t')) area p
+        Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PVar n)
+
+        Slv.Typed (ps' :=> t') area p ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area p
 
 
-  updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
-  updateListItem s (Slv.Typed t area li) = case li of
-    Slv.ListItem e ->
-      Slv.Typed t area . Slv.ListItem <$> updatePlaceholders env cleanUpEnv push s e
+    updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
+    updateListItem s (Slv.Typed t area li) = case li of
+      Slv.ListItem e ->
+        Slv.Typed t area . Slv.ListItem <$> updatePlaceholders options env cleanUpEnv push s e
 
-    Slv.ListSpread e ->
-      Slv.Typed t area . Slv.ListSpread <$> updatePlaceholders env cleanUpEnv push s e
+      Slv.ListSpread e ->
+        Slv.Typed t area . Slv.ListSpread <$> updatePlaceholders options env cleanUpEnv push s e
 
-  updateField :: Substitution -> Slv.Field -> Infer Slv.Field
-  updateField s (Slv.Typed t area field) = case field of
-    Slv.Field       (n, e) -> Slv.Typed t area . Slv.Field . (n, ) <$> updatePlaceholders env cleanUpEnv push s e
-    Slv.FieldSpread e      -> Slv.Typed t area . Slv.FieldSpread <$> updatePlaceholders env cleanUpEnv push s e
+    updateField :: Substitution -> Slv.Field -> Infer Slv.Field
+    updateField s (Slv.Typed t area field) = case field of
+      Slv.Field       (n, e) -> Slv.Typed t area . Slv.Field . (n, ) <$> updatePlaceholders options env cleanUpEnv push s e
+      Slv.FieldSpread e      -> Slv.Typed t area . Slv.FieldSpread <$> updatePlaceholders options env cleanUpEnv push s e
 
 
 
