@@ -1,17 +1,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Canonicalize.AST where
 
 
 import           Run.Target
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
-import           Canonicalize.Env
+import           Canonicalize.Env              as CanEnv
 import           Canonicalize.Canonicalize
 import qualified Parse.Madlib.AST              as P
 import           Canonicalize.CanonicalM
 import           Canonicalize.ADT
 import           Canonicalize.Interface
+import           Canonicalize.EnvUtil
 import           Infer.Type
 import           Error.Error
 import           Error.Warning
@@ -28,7 +30,8 @@ import AST.Solved (Import_(NamedImport))
 import Canonicalize.Derive
 import Data.List
 import Utils.List
-import qualified Driver.Rules as Rules
+import AST.Canonical (Import_(TypeImport))
+-- import qualified Driver.Rules as Rules
 
 
 type TableCache = M.Map FilePath (Env, Can.AST)
@@ -48,38 +51,38 @@ findAllExportedTypeNames ast =
       typeNames       = Can.getTypeDeclName <$> exportedADTs
   in  typeExportNames ++ typeNames
 
-canonicalizeImportedAST
-  :: TableCache -> FilePath -> Target -> FilePath -> Src.Import -> CanonicalM (Can.Table, Env, TableCache)
-canonicalizeImportedAST tableCache dictionaryModulePath target originAstPath imp = do
-  let path = Src.getImportAbsolutePath imp
+-- canonicalizeImportedAST
+--   :: TableCache -> FilePath -> Target -> FilePath -> Src.Import -> CanonicalM (Can.Table, Env, TableCache)
+-- canonicalizeImportedAST dictionaryModulePath target originAstPath imp = do
+--   let path = Src.getImportAbsolutePath imp
 
-  (table', env, cache) <- canonicalizeAST tableCache dictionaryModulePath target initialEnv path
-  ast                  <- findASTM table' path
+--   (table', env) <- canonicalizeAST dictionaryModulePath target initialEnv path
+--   ast                  <- findASTM table' path
 
-  let allExportNames   = findAllExportedNames ast
-  let allImportNames   = Src.getImportNames imp
-  let namesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
+--   let allExportNames   = findAllExportedNames ast
+--   let allImportNames   = Src.getImportNames imp
+--   let namesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
 
-  let allExportTypes   = findAllExportedTypeNames ast
-  let allImportTypes   = Src.getImportTypeNames imp
-  let typesNotExported = filter (not . (`elem` allExportTypes) . Src.getSourceContent) allImportTypes
+--   let allExportTypes   = findAllExportedTypeNames ast
+--   let allImportTypes   = Src.getImportTypeNames imp
+--   let typesNotExported = filter (not . (`elem` allExportTypes) . Src.getSourceContent) allImportTypes
 
-  let allNotExported   = namesNotExported ++ typesNotExported
+--   let allNotExported   = namesNotExported ++ typesNotExported
 
-  unless
-    (null allNotExported)
-    (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
-                                   (Context originAstPath (Src.getArea $ head allNotExported) [])
-    )
+--   unless
+--     (null allNotExported)
+--     (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
+--                                    (Context originAstPath (Src.getArea $ head allNotExported) [])
+--     )
 
-  envTds <- mapImportToEnvTypeDecls env imp ast
+--   envTds <- mapImportToEnvTypeDecls env imp ast
 
-  let interfaces = case imp of
-        Src.Source _ _ Src.TypeImport{} -> mempty
-        _                             -> envInterfaces env
+--   let interfaces = case imp of
+--         Src.Source _ _ Src.TypeImport{} -> mempty
+--         _                             -> envInterfaces env
 
-  let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = interfaces }
-  return (table', env', tableCache <> cache)
+--   let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = interfaces }
+--   return (table', env', tableCache <> cache)
 
 mapImportToEnvTypeDecls :: Env -> Src.Import -> Can.AST -> CanonicalM (M.Map String Type)
 mapImportToEnvTypeDecls env imp ast = do
@@ -135,22 +138,22 @@ getAllImportedTypes :: [Can.Import] -> [(String, Area)]
 getAllImportedTypes imports =
   (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> concat (Can.getImportTypeNames <$> imports)
 
-processImports
-  :: TableCache -> FilePath -> Target -> FilePath -> [Src.Import] -> CanonicalM (Can.Table, Env, TableCache)
-processImports tableCache dictionaryModulePath target astPath imports = do
-  foldM
-    (\(table', env', tableCache') imp -> do
-      (table'', env'', tableCache'') <- canonicalizeImportedAST tableCache' dictionaryModulePath target astPath imp
-      return
-        ( table' <> table''
-        , env' { envTypeDecls  = envTypeDecls env' <> envTypeDecls env''
-               , envInterfaces = envInterfaces env' <> envInterfaces env''
-               }
-        , tableCache' <> tableCache''
-        )
-    )
-    (mempty, initialEnv, tableCache)
-    imports
+-- processImports
+--   :: FilePath -> Target -> FilePath -> [Src.Import] -> CanonicalM (Can.Table, Env, TableCache)
+-- processImports dictionaryModulePath target astPath imports = do
+--   foldM
+--     (\(table', env', tableCache') imp -> do
+--       (table'', env'', tableCache'') <- canonicalizeImportedAST tableCache' dictionaryModulePath target astPath imp
+--       return
+--         ( table' <> table''
+--         , env' { envTypeDecls  = envTypeDecls env' <> envTypeDecls env''
+--                , envInterfaces = envInterfaces env' <> envInterfaces env''
+--                }
+--         , tableCache' <> tableCache''
+--         )
+--     )
+--     (mempty, initialEnv, tableCache)
+--     imports
 
 
 checkUnusedImports :: Env -> [Can.Import] -> CanonicalM ()
@@ -199,94 +202,123 @@ findDictionaryFromListName dictionaryModulePath imports = case imports of
 
   _ ->
     ""
+  -- = NamedImport [Canonical Name] FilePath FilePath
+  -- | TypeImport [Canonical Name] FilePath FilePath
+  -- | DefaultImport (Canonical Name) FilePath FilePath
+  -- | ImportAll FilePath FilePath
 
 
--- canonicalizeAST' :: FilePath -> Target -> Env -> FilePath -> CanonicalM (Can.AST, Env)
--- canonicalizeAST' dictionaryModulePath target env astPath = do
---   ast <- liftIO $ Rules.parse target "/Users/a.boeglin/Code/madlib" astPath
---   (table, env', nextCache) <- processImports tableCache dictionaryModulePath target astPath $ Src.aimports ast
+importInfo :: Src.Import -> [ImportInfo]
+importInfo (Src.Source _ _ imp) = case imp of
+  Src.NamedImport names _ path ->
+    ImportInfo path CanEnv.NameImport . Src.getSourceContent <$> names
 
---   let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports ast) }
+  Src.TypeImport typeNames _ path ->
+    ImportInfo path CanEnv.TypeImport . Src.getSourceContent <$> typeNames
 
---   foldM_ (verifyExport env'') [] (Src.aexps ast)
+  Src.DefaultImport name _ path ->
+    [ImportInfo path CanEnv.NamespaceImport (Src.getSourceContent name)]
 
---   resetNameAccesses
---   resetJS
+  -- TODO: handle correctly or remove import all
+  Src.ImportAll _ _ ->
+    []
 
---   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
---   imports               <- mapM (canonicalize env''' target) $ Src.aimports ast
---   exps                  <- mapM (canonicalize env''' target) $ Src.aexps ast
---   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
---   instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
-
-
---   checkUnusedImports env'' imports
+buildImportInfos :: Env -> Src.AST -> Env
+buildImportInfos env Src.AST { Src.aimports } =
+  let info = concatMap importInfo aimports
+  in  env { envImportInfo = info }
 
 
---   derivedTypes             <- getDerivedTypes
---   typeDeclarationsToDerive <- getTypeDeclarationsToDerive
---   let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
---       derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
---       derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
+canonicalizeAST :: FilePath -> Target -> Env -> Src.AST -> CanonicalM (Can.AST, Env)
+canonicalizeAST dictionaryModulePath target env sourceAst@Src.AST{ Src.apath = Just astPath } = do
+  -- ast <- liftIO $ Rules.parse target "/Users/a.boeglin/Code/madlib" astPath
+  -- (table, env', nextCache) <- processImports dictionaryModulePath target astPath $ Src.aimports sourceAst
+
+  let env'  = buildImportInfos env sourceAst
+  let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports sourceAst) }
+
+  foldM_ (verifyExport env'') [] (Src.aexps sourceAst)
+
+  resetNameAccesses
+  resetJS
+
+  (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls sourceAst
+  imports               <- mapM (canonicalize env''' target) $ Src.aimports sourceAst
+  exps                  <- mapM (canonicalize env''' target) $ Src.aexps sourceAst
+  (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
+  instances             <- canonicalizeInstances env'''' target $ Src.ainstances sourceAst
+
+
+  checkUnusedImports env'' imports
+
+
+  derivedTypes             <- getDerivedTypes
+  typeDeclarationsToDerive <- getTypeDeclarationsToDerive
+  let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
+      derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
+      derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
   
---   addDerivedTypes (S.fromList typeDeclarationsToDerive')
---   resetToDerive
+  addDerivedTypes (S.fromList typeDeclarationsToDerive')
+  resetToDerive
 
---   let canonicalizedAST = Can.AST { Can.aimports    = imports
---                                   , Can.aexps       = exps
---                                   , Can.atypedecls  = typeDecls
---                                   , Can.ainterfaces = interfaces
---                                   , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
---                                   , Can.apath       = Src.apath ast
---                                   }
+  let canonicalizedAST = Can.AST { Can.aimports    = imports
+                                  , Can.aexps       = exps
+                                  , Can.atypedecls  = typeDecls
+                                  , Can.ainterfaces = interfaces
+                                  , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
+                                  , Can.apath       = Src.apath sourceAst
+                                  }
 
---   return (M.insert astPath canonicalizedAST table, env'''', M.insert astPath (env'''', canonicalizedAST) nextCache)
+  return (canonicalizedAST, env'''')
 
-
-canonicalizeAST :: TableCache -> FilePath -> Target -> Env -> FilePath -> CanonicalM (Can.Table, Env, TableCache)
-canonicalizeAST tableCache dictionaryModulePath target env astPath = case M.lookup astPath tableCache of
-  Just (env', ast') ->
-    return (snd <$> tableCache, env', tableCache)
-
-  Nothing           -> do
-    ast <- liftIO $ Rules.parse target "/Users/a.boeglin/Code/madlib" astPath
-    (table, env', nextCache) <- processImports tableCache dictionaryModulePath target astPath $ Src.aimports ast
-
-    let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports ast) }
-
-    foldM_ (verifyExport env'') [] (Src.aexps ast)
-
-    resetNameAccesses
-    resetJS
-
-    (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
-    imports               <- mapM (canonicalize env''' target) $ Src.aimports ast
-    exps                  <- mapM (canonicalize env''' target) $ Src.aexps ast
-    (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
-    instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
+canonicalizeAST _ _ _ _ = undefined
+  -- return (M.insert astPath canonicalizedAST table, env'''', M.insert astPath (env'''', canonicalizedAST) nextCache)
 
 
-    checkUnusedImports env'' imports
+-- canonicalizeAST :: TableCache -> FilePath -> Target -> Env -> FilePath -> CanonicalM (Can.Table, Env, TableCache)
+-- canonicalizeAST tableCache dictionaryModulePath target env astPath = case M.lookup astPath tableCache of
+--   Just (env', ast') ->
+--     return (snd <$> tableCache, env', tableCache)
+
+--   Nothing           -> do
+--     ast <- liftIO $ Rules.parse target "/Users/a.boeglin/Code/madlib" astPath
+--     (table, env', nextCache) <- processImports tableCache dictionaryModulePath target astPath $ Src.aimports ast
+
+--     let env'' = env' { envCurrentPath = astPath, envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports ast) }
+
+--     foldM_ (verifyExport env'') [] (Src.aexps ast)
+
+--     resetNameAccesses
+--     resetJS
+
+--     (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
+--     imports               <- mapM (canonicalize env''' target) $ Src.aimports ast
+--     exps                  <- mapM (canonicalize env''' target) $ Src.aexps ast
+--     (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
+--     instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
 
 
-    derivedTypes             <- getDerivedTypes
-    typeDeclarationsToDerive <- getTypeDeclarationsToDerive
-    let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
-        derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
-        derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
+--     checkUnusedImports env'' imports
+
+
+--     derivedTypes             <- getDerivedTypes
+--     typeDeclarationsToDerive <- getTypeDeclarationsToDerive
+--     let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
+--         derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
+--         derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
     
-    addDerivedTypes (S.fromList typeDeclarationsToDerive')
-    resetToDerive
+--     addDerivedTypes (S.fromList typeDeclarationsToDerive')
+--     resetToDerive
 
-    let canonicalizedAST = Can.AST { Can.aimports    = imports
-                                   , Can.aexps       = exps
-                                   , Can.atypedecls  = typeDecls
-                                   , Can.ainterfaces = interfaces
-                                   , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
-                                   , Can.apath       = Src.apath ast
-                                   }
+--     let canonicalizedAST = Can.AST { Can.aimports    = imports
+--                                    , Can.aexps       = exps
+--                                    , Can.atypedecls  = typeDecls
+--                                    , Can.ainterfaces = interfaces
+--                                    , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
+--                                    , Can.apath       = Src.apath ast
+--                                    }
 
-    return (M.insert astPath canonicalizedAST table, env'''', M.insert astPath (env'''', canonicalizedAST) nextCache)
+--     return (M.insert astPath canonicalizedAST table, env'''', M.insert astPath (env'''', canonicalizedAST) nextCache)
 
 
 performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]
@@ -317,35 +349,34 @@ findAST table path = case M.lookup path table of
   Just found -> return found
   Nothing    -> Left $ CompilationError (ImportNotFound path) NoContext
 
-runCanonicalization
-  :: TableCache
-  -> FilePath
-  -> Target
-  -> Env
-  -> FilePath
-  -> IO (Either CompilationError (Can.Table, TableCache), [CompilationWarning])
-runCanonicalization tableCache dictionaryModulePath target env entrypoint = do
-  (canonicalized, s) <- runStateT (runExceptT (canonicalizeAST tableCache dictionaryModulePath target env entrypoint))
-                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = [], derivedTypes = S.empty, placeholderIndex = 0 })
-  return ((\(table, _, cache) -> (table, cache)) <$> canonicalized, warnings s)
+-- runCanonicalization
+--   :: FilePath
+--   -> Target
+--   -> Env
+--   -> Src.AST
+--   -> IO (Either CompilationError (Can.AST, Env), [CompilationWarning])
+-- runCanonicalization dictionaryModulePath target env ast = do
+--   (canonicalized, s) <- runStateT (runExceptT (canonicalizeAST dictionaryModulePath target env ast))
+--                                     (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = [], derivedTypes = S.empty, placeholderIndex = 0 })
+--   return (canonicalized, warnings s)
 
 
-canonicalizeMany
-  :: FilePath -> Target -> Env -> [FilePath] -> IO (Either CompilationError Can.Table, [CompilationWarning])
-canonicalizeMany = canonicalizeMany' mempty
+-- canonicalizeMany
+--   :: FilePath -> Target -> Env -> [FilePath] -> IO (Either CompilationError [Can.AST], [CompilationWarning])
+-- canonicalizeMany = canonicalizeMany'
 
-canonicalizeMany'
-  :: TableCache -> FilePath -> Target -> Env -> [FilePath] -> IO (Either CompilationError Can.Table, [CompilationWarning])
-canonicalizeMany' tableCache dictionaryModulePath target env fps = case fps of
-  [] ->
-    return (Right mempty, [])
+-- canonicalizeMany'
+--   :: FilePath -> Target -> Env -> [FilePath] -> IO (Either CompilationError [Can.AST], [CompilationWarning])
+-- canonicalizeMany' dictionaryModulePath target env fps = case fps of
+--   [] ->
+--     return (Right mempty, [])
 
-  fp : fps' -> do
-    result <- runCanonicalization tableCache dictionaryModulePath target env fp
-    case result of
-      (curr@(Right (_, cache)), warnings) -> do
-        (next, nextWarnings) <- canonicalizeMany' cache dictionaryModulePath target env fps'
-        return (liftM2 (\(table', _) table'' -> table' <> table'') curr next, warnings ++ nextWarnings)
+--   fp : fps' -> do
+--     result <- runCanonicalization dictionaryModulePath target env fp
+--     case result of
+--       (curr@(Right _), warnings) -> do
+--         (next, nextWarnings) <- canonicalizeMany' dictionaryModulePath target env fps'
+--         return (liftM2 (\(table') table'' -> table' <> table'') curr next, warnings ++ nextWarnings)
 
-      (Left e, ws) ->
-        return (Left e, ws)
+--       (Left e, ws) ->
+--         return (Left e, ws)

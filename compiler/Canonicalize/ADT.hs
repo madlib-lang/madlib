@@ -6,6 +6,7 @@ module Canonicalize.ADT where
 import qualified AST.Canonical                 as Can
 import qualified AST.Source                    as Src
 import           Canonicalize.Env
+import           Canonicalize.EnvUtil
 import           Canonicalize.CanonicalM
 import           Canonicalize.Typing
 import           Infer.Substitute

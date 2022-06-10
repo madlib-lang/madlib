@@ -35,6 +35,9 @@ import Infer.Pred
 import Infer.Scheme
 import Infer.Substitute
 import AST.Canonical (getImportAbsolutePath)
+import qualified Driver.Query as Query
+import qualified Rock
+
 
 {-|
 Module      : AST
@@ -172,20 +175,25 @@ filterExportsByImport imp vars = case imp of
 
 solveImports
   :: M.Map FilePath (Slv.AST, Env)
-  -> Can.Table
   -> [Can.Import]
   -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods, S.Set String)
-solveImports previousSolved table (imp : is) = do
+solveImports previousSolved (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
   (allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
     Just x@(ast, env) -> return (previousSolved, ast, env)
-    Nothing           -> case Can.findAST table modulePath of
-      Right ast -> do
-        solved    <- solveTable' previousSolved table ast
-        solvedAST <- findASTM (M.map fst solved) modulePath
-        let Just (_, env) = M.lookup modulePath solved
-        return (solved, solvedAST, env)
+    Nothing           -> do
+      (ast, _)  <- Rock.fetch $ Query.CanonicalizedASTWithEnv modulePath
+      solved    <- solveTable' previousSolved (fromMaybe "" $ Can.apath ast)
+      solvedAST <- findASTM (M.map fst solved) modulePath
+      let Just (_, env) = M.lookup modulePath solved
+      return (solved, solvedAST, env)
+    -- Nothing           -> case Can.findAST table modulePath of
+    --   Right ast -> do
+    --     solved    <- solveTable' previousSolved (fromMaybe "" $ Can.apath ast)
+    --     solvedAST <- findASTM (M.map fst solved) modulePath
+    --     let Just (_, env) = M.lookup modulePath solved
+    --     return (solved, solvedAST, env)
 
   importedVars <- extractImportedVars solvedEnv solvedAST imp
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
@@ -196,7 +204,7 @@ solveImports previousSolved table (imp : is) = do
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
-  (nextTable, nextVars, nextInterfaces, nextMethods, nextConstructorNames) <- solveImports solved' table is
+  (nextTable, nextVars, nextInterfaces, nextMethods, nextConstructorNames) <- solveImports solved' is
 
   return
     ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
@@ -206,7 +214,7 @@ solveImports previousSolved table (imp : is) = do
     , M.keysSet constructorImports <> nextConstructorNames
     )
 
-solveImports _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv, envConstructors initialEnv)
+solveImports _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv, envConstructors initialEnv)
 
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
@@ -220,46 +228,6 @@ updateInterface (Can.Canonical area (Can.Interface name preds vars methods metho
 
 namespacesInScopeFromImports :: [Can.Import] -> Set.Set String
 namespacesInScopeFromImports imports = Set.fromList $ mapMaybe Can.getImportNamespace imports
-
-inferAST :: M.Map FilePath (Slv.AST, Env) -> Env -> Can.AST -> Infer (Slv.AST, Env)
-inferAST solvedTable env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
-  let namespacesInScope = namespacesInScopeFromImports aimports
-      envWithNamespaces = setNamespacesInScope env namespacesInScope
-  (env'        , inferredInstances) <- resolveInstances envWithNamespaces { envBacktrace = [] } ainstances
-  (inferredExps, env'             ) <- inferExps env' aexps
-  let updatedInterfaces = updateInterface <$> ainterfaces
-
-  updatedADTs <- mapM updateADT atypedecls
-
-  return
-    ( Slv.AST
-      { Slv.aexps       = inferredExps
-      , Slv.apath       = apath
-      , Slv.atypedecls  = updatedADTs
-      , Slv.aimports    =
-        mapMaybe
-          (
-            (
-              (\case
-                i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
-                  Slv.Untyped area $ Slv.NamedImport
-                    (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
-                    fp
-                    afp
-
-                others ->
-                  others
-              )
-              <$>
-            )
-            . updateImport aimports solvedTable
-          )
-          aimports
-      , Slv.ainterfaces = updatedInterfaces
-      , Slv.ainstances  = inferredInstances
-      }
-    , env'
-    )
 
 
 updateADT :: Can.TypeDecl -> Infer Slv.TypeDecl
@@ -330,6 +298,51 @@ updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
 updateImportName (Can.Canonical area name) = Slv.Untyped area name
 
 
+
+
+inferAST :: M.Map FilePath (Slv.AST, Env) -> Env -> FilePath -> Infer (Slv.AST, Env)
+inferAST solvedTable env astPath = do
+  (ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces }, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv astPath
+
+  let namespacesInScope = namespacesInScopeFromImports aimports
+      envWithNamespaces = setNamespacesInScope env namespacesInScope
+  (env'        , inferredInstances) <- resolveInstances envWithNamespaces { envBacktrace = [] } ainstances
+  (inferredExps, env'             ) <- inferExps env' aexps
+  let updatedInterfaces = updateInterface <$> ainterfaces
+
+  updatedADTs <- mapM updateADT atypedecls
+
+  return
+    ( Slv.AST
+      { Slv.aexps       = inferredExps
+      , Slv.apath       = apath
+      , Slv.atypedecls  = updatedADTs
+      , Slv.aimports    =
+        mapMaybe
+          (
+            (
+              (\case
+                i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
+                  Slv.Untyped area $ Slv.NamedImport
+                    (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
+                    fp
+                    afp
+
+                others ->
+                  others
+              )
+              <$>
+            )
+            . updateImport aimports solvedTable
+          )
+          aimports
+      , Slv.ainterfaces = updatedInterfaces
+      , Slv.ainstances  = inferredInstances
+      }
+    , env'
+    )
+
+
 -- |The 'solveTable' function is the main function of this module.
 -- It runs type checking for a given canonical ast table and an entrypoint ast
 -- by following imports and returning a solved table. To do this, it starts
@@ -338,19 +351,20 @@ updateImportName (Can.Canonical area name) = Slv.Untyped area name
 -- checked. It then updates the environment with definitions for imported
 -- symbols and type checks the given AST, putting it back in the table
 -- and returning it.
-solveTable :: Can.Table -> Can.AST -> Infer Slv.Table
-solveTable table ast = do
-  solved <- solveTable' mempty table ast
+solveTable :: FilePath -> Infer Slv.Table
+solveTable path = do
+  solved <- solveTable' mempty path
   return $ M.map fst solved
 
 
-solveTable' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (M.Map FilePath (Slv.AST, Env))
-solveTable' solved table ast@Can.AST { Can.aimports } = do
-  -- First we resolve imports to update the env
-  (inferredASTs, vars, interfaces, methods, constructors) <- solveImports solved table aimports
+solveTable' :: M.Map FilePath (Slv.AST, Env) -> FilePath -> Infer (M.Map FilePath (Slv.AST, Env))
+solveTable' solved astPath = do
+-- First we resolve imports to update the env
+  (ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces }, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv astPath
+  (inferredASTs, vars, interfaces, methods, constructors) <- solveImports solved aimports
 
   let importEnv = Env { envVars        = vars
-                      , envCurrentPath = fromMaybe "" (Can.apath ast)
+                      , envCurrentPath = astPath
                       , envInterfaces  = interfaces
                       , envMethods     = methods
                       , envBacktrace   = mempty
@@ -363,7 +377,8 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
   let envWithImports = env { envVars = M.union (envVars env) vars }
 
   fullEnv            <- populateTopLevelTypings envWithImports (Can.aexps ast)
-  (inferredAST, env) <- inferAST (solved <> inferredASTs) fullEnv ast
+
+  (inferredAST, env) <- inferAST (solved <> inferredASTs) fullEnv astPath
 
   checkAST envWithImports inferredAST
 
@@ -371,37 +386,49 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
     Just fp -> return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
 
 
-solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> [FilePath] -> Infer Slv.Table
-solveManyASTs solved table fps = case fps of
-  []        -> return (M.map fst solved)
-  fp : fps' -> case M.lookup fp table of
-    Just ast -> do
-      current <- solveTable' solved table ast
-      next    <- solveManyASTs (solved <> current) table fps'
-      return $ M.map fst current <> next
-    Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
+solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> [FilePath] -> Infer Slv.Table
+solveManyASTs solved fps = case fps of
+  [] ->
+    return (M.map fst solved)
+
+  fp : fps' -> do
+    -- (canAst, canEnv) <- Rock.fetch $ Query.CanonicalizedASTWithEnv fp
+    current <- solveTable' solved fp
+    next    <- solveManyASTs (solved <> current) fps'
+    return $ M.map fst current <> next
+
+  -- fp : fps' -> case M.lookup fp table of
+    -- Just ast -> do
+    --   current <- solveTable' solved table ast
+    --   next    <- solveManyASTs (solved <> current) table fps'
+    --   return $ M.map fst current <> next
+    -- Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
 
 
-solveManyASTs' :: Can.Table -> [FilePath] -> (Either [CompilationError] Slv.Table, [CompilationWarning])
-solveManyASTs' canTable paths =
-  case runExcept (runStateT (solveManyASTs mempty canTable paths) InferState { count = 0, errors = [] }) of
-    Left err -> (Left [err], [])
+solveManyASTs' :: (Rock.MonadFetch Query.Query m) => Can.Table -> [FilePath] -> m (Either [CompilationError] Slv.Table, [CompilationWarning])
+solveManyASTs' canTable paths = do
+  x <- runExceptT (runStateT (solveManyASTs mempty paths) InferState { count = 0, errors = [] })
+  case x of
+    Left err ->
+      return (Left [err], [])
 
-    Right (table, InferState { errors = [] }) -> (Right table, [])
+    -- Right (table, InferState { errors = [] }) ->
+    --   return (Right table, [])
 
-    Right (_, InferState { errors }) -> (Left errors, [])
+    -- Right (_, InferState { errors }) ->
+    --   return (Left errors, [])
 
 
-runInfer :: Env -> Can.AST -> Either CompilationError Slv.AST
-runInfer env ast =
-  let result = runExcept
-        (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST mempty env' ast)
-                   InferState { count = 0, errors = [] }
-        )
-  in  case result of
-        Left e -> Left e
+-- runInfer :: Env -> FilePath -> Either CompilationError Slv.AST
+-- runInfer env astPath =
+--   let result = runExcept
+--         (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST mempty env' astPath)
+--                    InferState { count = 0, errors = [] }
+--         )
+--   in  case result of
+--         Left e -> Left e
 
-        Right ((ast, _), state) ->
-          let errs      = errors state
-              hasErrors = not (null errs)
-          in  if hasErrors then Left (head errs) else Right ast
+--         Right ((ast, _), state) ->
+--           let errs      = errors state
+--               hasErrors = not (null errs)
+--           in  if hasErrors then Left (head errs) else Right ast

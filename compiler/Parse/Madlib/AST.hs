@@ -242,6 +242,6 @@ computeAbsoluteImportPath rootPath (Source area target imp) = case imp of
 
 
 computeAbsoluteImportPaths :: FilePath -> AST -> IO AST
-computeAbsoluteImportPaths rootPath ast@AST{ aimports } = do
-  updatedImports <- mapM (computeAbsoluteImportPath rootPath) aimports
+computeAbsoluteImportPaths rootPath ast@AST{ aimports, apath = Just path } = do
+  updatedImports <- mapM (computeAbsoluteImportPath (dropFileName path)) aimports
   return ast { aimports = updatedImports }

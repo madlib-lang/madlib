@@ -21,6 +21,8 @@ import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.List
 import           Utils.List
+import qualified Rock
+import qualified Driver.Query                  as Query
 
 
 
@@ -87,34 +89,55 @@ canonicalizeInstances env target (i : is) = do
   return $ current : next
 
 
+
+lookupInterface :: Env -> String -> CanonicalM Interface
+lookupInterface env name = case M.lookup name (envInterfaces env) of
+  Just found ->
+    return found
+
+  Nothing -> do
+    Rock.fetch $ Query.CanonicalizedInterface (envCurrentPath env) name
+
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
 canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do
-    ts <- case M.lookup n (envInterfaces env) of
-      Just (Interface tvs _) ->
-        zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
+    (Interface tvs _) <- lookupInterface env n
 
-      Nothing ->
-        throwError $
-          CompilationError (InterfaceNotExisting n) (Context (envCurrentPath env) area [])
+    ts <- zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
+    -- ts <- case M.lookup n (envInterfaces env) of
+    --   Just (Interface tvs _) ->
+    --     zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
+
+    --   Nothing ->
+    --     throwError $
+    --       CompilationError (InterfaceNotExisting n) (Context (envCurrentPath env) area [])
 
     let subst = foldr (\t s -> s `compose` buildVarSubsts t) mempty ts
 
     ps <-
       apply subst
         <$> mapM
-              (\(Src.Source area _ (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
-                Just (Interface tvs _) -> do
-                  vars <- mapM
+              (\(Src.Source area _ (Src.TRComp interface' args)) -> do
+                (Interface tvs _) <- lookupInterface env n
+                vars <- mapM
                     (\case
                       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
                       (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
                     )
                     (zip args tvs)
-                  return $ IsIn interface' vars Nothing
+                return $ IsIn interface' vars Nothing
+                -- case M.lookup interface' (envInterfaces env) of
+                -- Just (Interface tvs _) -> do
+                --   vars <- mapM
+                --     (\case
+                --       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
+                --       (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
+                --     )
+                --     (zip args tvs)
+                --   return $ IsIn interface' vars Nothing
 
-                Nothing -> throwError
-                  $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
+                -- Nothing -> throwError
+                --   $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 
