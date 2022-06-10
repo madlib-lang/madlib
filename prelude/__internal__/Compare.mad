@@ -68,9 +68,9 @@ export ge = (a, b) => compare(a, b) >= EQUAL
  *
  * @since 0.8.0
  * @example
- * gt(3, 2) // false
- * gt(3, 4) // true
- * gt(3, 3) // false
+ * lt(3, 2) // false
+ * lt(3, 4) // true
+ * lt(3, 3) // false
  */
 lt :: Comparable a => a -> a -> Boolean
 export lt = (a, b) => compare(a, b) == LESS
@@ -83,9 +83,9 @@ export lt = (a, b) => compare(a, b) == LESS
  *
  * @since 0.8.0
  * @example
- * gt(3, 2) // false
- * gt(3, 4) // true
- * gt(3, 3) // true
+ * le(3, 2) // false
+ * le(3, 4) // true
+ * le(3, 3) // true
  */
 le :: Comparable a => a -> a -> Boolean
 export le = (a, b) => compare(a, b) <= EQUAL

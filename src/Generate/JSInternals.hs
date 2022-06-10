@@ -30,6 +30,8 @@ generateInternalsModuleContent target optimized coverage =
     <> "\n"
     <> listToJSArray target
     <> "\n"
+    <> listConstructorSpreadFn target
+    <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
 
@@ -264,5 +266,23 @@ listToJSArray target =
     , "  }"
     , ""
     , "  return res"
+    , "}"
+    ]
+
+listConstructorSpreadFn :: Target -> String
+listConstructorSpreadFn target =
+  unlines
+    [ getGlobalForTarget target <> ".__listCtorSpread__ = (_spread, _next) => {"
+    , "  if (_spread === null) {"
+    , "    return _next;"
+    , "  }"
+    , ""
+    , "  let head = _spread;"
+    , "  let result = _spread;"
+    , "  while (head.n !== null) {"
+    , "    head = head.n;"
+    , "  }"
+    , "  head.n = _next;"
+    , "  return result;"
     , "}"
     ]

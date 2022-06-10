@@ -20,7 +20,8 @@ import           Infer.Type
 import           Explain.Format
 import           Text.Regex.TDFA
 import           Utils.Tuple
-
+import Debug.Trace
+import Text.Show.Pretty
 
 data DocItemPair
   = DocItemPair (Maybe DocItem) (Maybe DocItem)
@@ -368,7 +369,7 @@ generateDocItem docItem = case docItem of
     <> "\"example\": "
     <> escapeString diExample <> ",\n"
     <> indent 6
-    <> "\"diSince\": "
+    <> "\"since\": "
     <> "\"" <> diSince <> "\",\n"
     <> indent 6
     <> "\"type\": "
@@ -395,7 +396,7 @@ generateDocItem docItem = case docItem of
     <> "\"example\": "
     <> escapeString diExample <> ",\n"
     <> indent 6
-    <> "\"diSince\": "
+    <> "\"since\": "
     <> "\"" <> diSince <> "\"\n"
     <> indent 5
     <> "}"
@@ -418,7 +419,7 @@ generateDocItem docItem = case docItem of
     <> "\"example\": "
     <> escapeString diExample <> ",\n"
     <> indent 6
-    <> "\"diSince\": "
+    <> "\"since\": "
     <> "\"" <> diSince <> "\"\n"
     <> indent 5
     <> "}"
@@ -436,9 +437,8 @@ generateDocItem docItem = case docItem of
     <> "\"" <> diConstraints <> "\",\n"
     <> indent 6
     <> "\"methods\": [\n"
-    <> indent 5
-    <> intercalate (",\n" <> indent 5) (("\"" <>) . (<> "\"") <$> diMethods) <> "\n" <> indent 4 <> "],\n"
-    <> indent 6
+    <> indent 7
+    <> intercalate (",\n" <> indent 7) (("\"" <>) . (<> "\"") <$> diMethods) <> "\n" <> indent 6 <> "],\n"
     <> indent 6
     <> "\"description\": "
     <> escapeString diDescription <> ",\n"
@@ -446,7 +446,7 @@ generateDocItem docItem = case docItem of
     <> "\"example\": "
     <> escapeString diExample <> ",\n"
     <> indent 6
-    <> "\"diSince\": "
+    <> "\"since\": "
     <> "\"" <> diSince <> "\"\n"
     <> indent 5
     <> "}"
@@ -469,7 +469,7 @@ generateDocItem docItem = case docItem of
     <> "\"example\": "
     <> escapeString diExample <> ",\n"
     <> indent 6
-    <> "\"diSince\": "
+    <> "\"since\": "
     <> "\"" <> diSince <> "\"\n"
     <> indent 5
     <> "}"
@@ -537,35 +537,35 @@ generateASTDoc (jsAST, llvmAST, mouleName, docStrings) =
       <> indent 3
       <> "\"typeDeclarations\": [\n"
       <> indent 4
-      <> intercalate ", " (generatePair <$> typeDeclarationPairs)
+      <> intercalate (",\n" <> indent 4) (generatePair <$> typeDeclarationPairs)
       <> "\n"
       <> indent 3
       <> "],\n"
       <> indent 3
       <> "\"aliases\": [\n"
       <> indent 4
-      <> intercalate ", " (generatePair <$> aliasPairs)
+      <> intercalate (",\n" <> indent 4) (generatePair <$> aliasPairs)
       <> "\n"
       <> indent 3
       <> "],\n"
       <> indent 3
       <> "\"interfaces\": [\n"
       <> indent 4
-      <> intercalate ", " (generatePair <$> interfacePairs)
+      <> intercalate (",\n" <> indent 4) (generatePair <$> interfacePairs)
       <> "\n"
       <> indent 3
       <> "],\n"
       <> indent 3
       <> "\"instances\": [\n"
       <> indent 4
-      <> intercalate ", " (generatePair <$> instancePairs)
+      <> intercalate (",\n" <> indent 4) (generatePair <$> instancePairs)
       <> "\n"
       <> indent 3
       <> "],\n"
       <> indent 3
       <> "\"expressions\": [\n"
       <> indent 4
-      <> intercalate ", " (generatePair <$> expressionPairs)
+      <> intercalate (",\n" <> indent 4) (generatePair <$> expressionPairs)
       <> "\n"
       <> indent 3
       <> "]\n"
@@ -639,9 +639,9 @@ extractModuleDescription docStrings =
 
 
 formatType :: Slv.Exp -> String
-formatType (Slv.Typed t _ exp) = case exp of
-  Slv.TypedExp _ typing _ ->
-    prettyPrintConstructorTyping' False typing
+formatType (Slv.Typed qt _ exp) = case exp of
+  -- Slv.TypedExp _ typing _ ->
+  --   prettyPrintConstructorTyping' False typing
 
   _ ->
-    prettyPrintQualType True t
+    prettyPrintQualType True qt

@@ -537,6 +537,9 @@ instance Compilable Exp where
               [Typed _ _ _ (ListSpread last)] ->
                 compile env config last
 
+              (Typed _ _ _ (ListSpread spread) : next) ->
+                "__listCtorSpread__(" <> compile env config spread <> ", " <> compileListElements next <> ")"
+
               [] ->
                 "null"
 
@@ -545,18 +548,6 @@ instance Compilable Exp where
 
               _ ->
                 "null"
-        --  where
-        --   compileListItem :: ListItem -> String
-        --   compileListItem (Typed _ _ _ li) = case li of
-        --     ListItem   exp -> compile env config exp
-        --     ListSpread exp -> " ..." <> compile env config exp
-
-        -- ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
-        --  where
-        --   compileListItem :: ListItem -> String
-        --   compileListItem (Typed _ _ _ li) = case li of
-        --     ListItem   exp -> compile env config exp
-        --     ListSpread exp -> " ..." <> compile env config exp
 
         TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
