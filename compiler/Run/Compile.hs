@@ -68,7 +68,6 @@ import           Control.Concurrent (threadDelay, forkIO, ThreadId)
 import qualified Control.FoldDebounce as Debounce
 import           System.FSNotify
 import           Control.Monad (forever)
-import qualified Driver.Rules         as Rules
 import           Run.Options
 import qualified Driver
 import qualified Rock
@@ -77,6 +76,7 @@ import Error.Error
 import Driver (Prune(Don'tPrune))
 import Data.Time.Clock
 import System.Console.ANSI
+import Rock (Cyclic)
 
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
@@ -159,13 +159,15 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
     if watchMode then
       when watchMode $ do
-        -- hideCursor
         state <- Driver.initialState
         runCompilationTask state options [canonicalEntrypoint]
+        putStrLn "\nWatching... (press ctrl-C to quit)"
         watch rootPath (runCompilationTask state options)
         return ()
-    else
-      Rules.compile options (head sourcesToCompile)
+    else do
+      state <- Driver.initialState
+      runCompilationTask state options [canonicalEntrypoint]
+      -- Driver.compile options (head sourcesToCompile)
 
 
 recordAndPrintDuration :: String -> IO a -> IO a
@@ -179,10 +181,15 @@ recordAndPrintDuration title action = do
   return actionResult
 
 
-compilationTask :: Options -> Rock.Task Query ()
-compilationTask options = do
-  hasCycle <- Rock.fetch $ DetectImportCycle (optEntrypoint options)
-  unless hasCycle $ Rock.fetch $ BuiltTarget (optEntrypoint options)
+-- compilationTask :: Options -> Rock.Task Query ()
+-- compilationTask options = do
+--   -- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
+--   -- return ()
+
+--   -- hasCycle <- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
+--   Rock.fetch $ BuiltTarget (optEntrypoint options)
+--   -- hasCycle <- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
+--   -- unless hasCycle $ Rock.fetch $ BuiltTarget (optEntrypoint options)
 
 
 runCompilationTask :: Driver.State CompilationError -> Options -> [FilePath] -> IO ()
@@ -190,14 +197,40 @@ runCompilationTask state options invalidatedPaths = do
   clearScreen
   setCursorPosition 0 0
   recordAndPrintDuration "Built in " $ do
-    (_, warnings, errors) <-
-      Driver.runIncrementalTask
+    result <-
+      try $ Driver.runIncrementalTask
         state
         options
         invalidatedPaths
         mempty
         Don'tPrune
-        (compilationTask options)
+        (Driver.typeCheckFileTask $ optEntrypoint options)
+        :: IO (Either (Cyclic Query) ((), [CompilationWarning], [CompilationError]))
+
+    (warnings, errors) <- case result of
+      Right (_, warnings, []) -> do
+        Driver.runIncrementalTask
+          state
+          options
+          invalidatedPaths
+          mempty
+          Don'tPrune
+          (Driver.compilationTask $ optEntrypoint options)
+        return (warnings, [])
+
+      Right (_, warnings, errors) ->
+        return (warnings, errors)
+
+      Left _ -> do
+        (_, warnings, errors) <- Driver.runIncrementalTask
+          state
+          options
+          invalidatedPaths
+          mempty
+          Don'tPrune
+          (Driver.detectCyleTask (optEntrypoint options))
+
+        return (warnings, errors)
 
     formattedWarnings <- mapM (Explain.formatWarning readFile False) warnings
     let ppWarnings =
@@ -215,8 +248,6 @@ runCompilationTask state options invalidatedPaths = do
 
     putStr ppWarnings
     putStr ppErrors
-
-  putStrLn "\nWatching... (press ctrl-C to quit)"
   return ()
 
 

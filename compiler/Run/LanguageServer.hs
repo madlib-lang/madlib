@@ -27,7 +27,7 @@ import Language.LSP.Diagnostics
 import qualified Explain.Format as Explain
 import Data.List (group, foldl')
 import qualified Data.List as List
-import Control.Monad (forM_, join, forM)
+import Control.Monad (forM_, join, forM, unless)
 import Data.IORef
 import qualified AST.Solved as Slv
 import Explain.Format (prettyPrintQualType, prettyPrintType)
@@ -47,6 +47,8 @@ import Control.Monad.Trans.Control
 import Control.Concurrent
 import Data.Foldable (toList)
 import Control.Concurrent.Async
+import Control.Exception (try)
+import Rock (Cyclic)
 
 
 handlers :: State -> Handlers (LspM ())
@@ -66,7 +68,14 @@ handlers state = mconcat
 
         Nothing ->
           return ()
-
+  , requestHandler STextDocumentDefinition $ \req@(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
+      sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
+      -- responder $ Right $ List []
+      return ()
+  -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
+  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
+  -- , requestHandler STextDocumentImplementation $ \_ responder -> do
+  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo "tdi"
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
       recordAndPrintDuration "file open" $ generateDiagnostics state uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
@@ -106,11 +115,6 @@ recordAndPrintDuration title action = do
   let (ms, _) = properFraction $ diff * 1000
   sendNotification SWindowLogMessage $ LogMessageParams MtInfo (title <> " - duration: " <> T.pack (show ms <> "ms"))
   return actionResult
-
-
-
-
-
 
 
 isInRange :: Loc -> Area -> Bool
@@ -338,14 +342,6 @@ nodeToHoverInfo modulePath node =
 
 
 
-hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)
-hoverInfoTask loc path = do
-  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-  return $ nodeToHoverInfo path <$> findNodeForLocInExps loc (Slv.aexps typedAst)
-
-
-
-
 getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
 getHoverInformation state loc path = do
   options <- buildOptions
@@ -370,7 +366,30 @@ generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics state uri fileUpdates = do
   options <- buildOptions
   let path = uriToPath uri
-  (_, warnings, errs) <- liftIO $ runTask state options { optEntrypoint = path }  Driver.Don'tPrune [path] fileUpdates (typeCheckFile path)
+  (warnings, errs) <- liftIO $ do
+    result <- try $
+      runTask
+        state
+        options { optEntrypoint = path }
+        Driver.Don'tPrune
+        [path]
+        fileUpdates
+        (Driver.typeCheckFileTask path)
+        :: IO (Either (Cyclic Query.Query) ((), [CompilationWarning], [CompilationError]))
+
+    case result of
+      Left _ -> do
+        (_, warnings, errors) <- runTask
+          state
+          options { optEntrypoint = path }
+          Driver.Don'tPrune
+          [path]
+          fileUpdates
+          (Driver.detectCyleTask path)
+        return (warnings, errors)
+
+      Right (_, warnings, errors) ->
+        return (warnings, errors)
 
   let errsByModule = groupErrsByModule errs
   let warnsByModule = groupWarnsByModule warnings
@@ -565,17 +584,14 @@ runLanguageServer = do
     }
 
 
--- typeCheckFile :: FilePath -> Rock.Task Query.Query ()
--- typeCheckFile path = do
---   Rock.fetch $ Query.SolvedASTWithEnv path
---   return ()
-
-
-typeCheckFile :: FilePath -> Rock.Task Query.Query ()
-typeCheckFile path = do
-  modulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
-  pooledForConcurrently_ modulePaths $ \p -> Rock.fetch $ Query.SolvedASTWithEnv p
-  return ()
+hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)
+hoverInfoTask loc path = do
+  hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
+  if hasCycle then
+    return Nothing
+  else do
+    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+    return $ nodeToHoverInfo path <$> findNodeForLocInExps loc (Slv.aexps typedAst)
 
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
