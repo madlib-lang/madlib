@@ -34,7 +34,7 @@ data Query a where
   DictionaryModuleAbsolutePath :: Query FilePath
 
   -- Parsing
-  DetectImportCycle :: FilePath -> Query Bool
+  DetectImportCycle :: [FilePath] -> FilePath -> Query Bool
   File :: FilePath -> Query String
   ParsedAST :: FilePath -> Query Src.AST
 
@@ -76,9 +76,8 @@ instance Hashable (Query a) where
     DictionaryModuleAbsolutePath ->
       hashWithSalt salt ("DictionaryModuleAbsolutePath", 1 :: Int)
 
-
-    DetectImportCycle path ->
-      hashWithSalt salt (path, 2 :: Int)
+    DetectImportCycle importChain path ->
+      hashWithSalt salt (importChain, path, 2 :: Int)
 
     File path ->
       hashWithSalt salt (path, 3 :: Int)
@@ -92,8 +91,8 @@ instance Hashable (Query a) where
     CanonicalizedASTWithEnv path ->
       hashWithSalt salt (path, 6 :: Int)
 
-    CanonicalizedInterface _ name ->
-      hashWithSalt salt (name, 7 :: Int)
+    CanonicalizedInterface path name ->
+      hashWithSalt salt (path, name, 7 :: Int)
 
     ForeignADTType modulePath typeName ->
       hashWithSalt salt (modulePath <> "." <> typeName, 8 :: Int)
@@ -101,8 +100,8 @@ instance Hashable (Query a) where
     SolvedASTWithEnv path ->
       hashWithSalt salt (path, 9 :: Int)
 
-    SolvedInterface _ name ->
-      hashWithSalt salt (name, 10 :: Int)
+    SolvedInterface path name ->
+      hashWithSalt salt (path, name, 10 :: Int)
 
     ForeignScheme modulePath typeName ->
       hashWithSalt salt (modulePath <> "." <> typeName, 11 :: Int)

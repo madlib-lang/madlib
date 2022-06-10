@@ -42,7 +42,7 @@ import qualified Explain.Format as Explain
 import qualified Data.List as List
 import Control.Monad.Writer
 import Utils.List
-import Parse.Madlib.ImportCycle (detectCycle)
+-- import Parse.Madlib.ImportCycle (detectCycle)
 import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
@@ -54,6 +54,9 @@ import qualified Data.Maybe as Maybe
 import qualified Data.ByteString as ByteString
 import System.Directory
 import qualified Utils.Path                    as Path
+import           Error.Error
+import           Error.Context
+import Parse.Madlib.ImportCycle (detectCycle)
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
@@ -67,7 +70,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths
     return $ removeDuplicates $ List.concat fromImports ++ importPaths ++ [entrypoint]
 
-  DetectImportCycle path -> nonInput $ do
+  DetectImportCycle _ path -> nonInput $ do
     r <- detectCycle [] path
     case r of
       Just err ->
@@ -76,10 +79,32 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Nothing ->
         return (False, (mempty, mempty))
 
+  -- DetectImportCycle importChain path -> nonInput $ do
+  --   Src.AST { Src.aimports, Src.apath } <- Rock.fetch $ ParsedAST path
+
+  --   case apath of
+  --     Just path ->
+  --       foldM
+  --         (\(alreadyErrored, errorsAndWarnings) imp ->
+  --           if alreadyErrored then
+  --             return (alreadyErrored, errorsAndWarnings)
+  --           else do
+  --             let importPath = Src.getImportAbsolutePath imp
+  --             let importArea = Src.getArea imp
+  --             if importPath `elem` importChain then
+  --               return (True, ([], [CompilationError (ImportCycle $ importChain ++ [path, importPath]) (Context path importArea [])]))
+  --             else do
+  --               res <- Rock.fetch $ DetectImportCycle (importChain ++ [path]) importPath
+  --               return (res, (mempty, mempty))
+  --         )
+  --         (False, ([], []))
+  --         aimports
+
   File path -> input $ do
     liftIO $ (PathUtils.readFile $ optPathUtils options) path
 
   ParsedAST path -> nonInput $ do
+    -- liftIO $ putStrLn $ "fetch " <> path
     source <- Rock.fetch $ File path
     ast    <- liftIO $ buildAST options path source
     case ast of
@@ -134,9 +159,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (astAndEnv, (mempty, mempty))
 
       Right (_, InferState _ errors) ->
+        -- return ((emptySlvAST, initialEnv), (mempty, errors))
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, errors))
 
       Left error ->
+        -- return ((emptySlvAST, initialEnv), (mempty, [error]))
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
 
   SolvedInterface modulePath name -> nonInput $ do
@@ -325,46 +352,3 @@ nonInput = fmap $ first (, Rock.NonInput)
 
 input :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)
 input = fmap ((, mempty) . (, Rock.Input))
-
-
-ignoreTaskKind :: Rock.GenRules (Rock.Writer Rock.TaskKind f) f -> Rock.Rules f
-ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
-
-
-printErrors :: Options -> ([CompilationWarning], [CompilationError]) -> Rock.Task Query ()
-printErrors options ([], []) = return ()
-printErrors options errorsAndWarnings = do
-  -- TODO: make Explain.format fetch the file from the store directly
-  formattedWarnings <- liftIO $ mapM (Explain.formatWarning readFile False) (fst errorsAndWarnings)
-  let ppWarnings = List.intercalate "\n\n\n" formattedWarnings
-
-  formattedErrors   <- liftIO $ mapM (Explain.format readFile False) (snd errorsAndWarnings)
-  let ppErrors = List.intercalate "\n\n\n" formattedErrors
-
-  liftIO $ putStrLn ppWarnings-- >> exitFailure
-  liftIO $ putStrLn ppErrors
-
-
-getModules :: Options -> FilePath -> IO ()
-getModules options entrypoint = do
-  memoVar <- newIORef mempty
-  let task = Rock.fetch $ ModulePathsToBuild entrypoint
-  r <- Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
-  putStrLn (ppShow r)
-  putStrLn (ppShow $ LLVM.generateHashFromPath <$> r)
-  return ()
-
-
-
-compilationTask :: Options -> FilePath -> Rock.Task Query ()
-compilationTask options path = do
-  hasCycle <- Rock.fetch $ DetectImportCycle path
-  unless hasCycle $ Rock.fetch $ BuiltTarget path
-
-
-compile :: Options -> FilePath -> IO ()
-compile options path = do
-  memoVar <- newIORef mempty
-  let task = compilationTask options path
-  Rock.runTask (Rock.memoise memoVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options))) task
-  return ()

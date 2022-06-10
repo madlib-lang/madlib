@@ -49,6 +49,7 @@ import           Control.Concurrent.MVar
 import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
 import Run.Options (Options(optGenerateDerivedInstances))
+import qualified Driver
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
@@ -59,7 +60,7 @@ getFilesForDoc fp = do
 
 runTask :: Options -> IORef (DHashMap Query.Query MVar) -> Rock.Task Query.Query a -> IO a
 runTask options ioRef task =
-  Rock.runTask (Rock.memoise ioRef (Rules.ignoreTaskKind (Rock.writer (\_ _ -> return ()) $ Rules.rules options))) task
+  Rock.runTask (Rock.memoise ioRef (Driver.ignoreTaskKind (Rock.writer (\_ _ -> return ()) $ Rules.rules options))) task
 
 
 generateDocDataTask :: FilePath -> [FilePath] -> IO [(Slv.AST, Slv.AST, String, [DocString.DocString])]
@@ -75,6 +76,7 @@ generateDocDataTask rootFolder paths = do
           , optBundle = False
           , optCoverage = False
           , optGenerateDerivedInstances = False
+          , optInsertInstancePlaholders = False
           }
   let llvmOptions =
         Options
@@ -87,6 +89,7 @@ generateDocDataTask rootFolder paths = do
           , optBundle = False
           , optCoverage = False
           , optGenerateDerivedInstances = False
+          , optInsertInstancePlaholders = False
           }
   memoVar <- newIORef mempty
 
