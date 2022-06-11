@@ -63,16 +63,12 @@ import qualified Optimize.EtaExpansion as EtaExpansion
 import qualified Optimize.EtaReduction as EtaReduction
 import           System.FilePath.Posix (dropFileName)
 import qualified System.FilePath       as FP
-import           Control.Concurrent (threadDelay, forkIO, ThreadId)
-import qualified Control.FoldDebounce as Debounce
-import           System.FSNotify
 import           Run.Options
 import qualified Driver
 import qualified Rock
 import Driver.Query
 import Error.Error
 import Driver (Prune(Don'tPrune))
-import Data.Time.Clock
 import System.Console.ANSI
 import Rock (Cyclic)
 
@@ -129,9 +125,9 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
   = do
     extraWarnings       <- globalChecks
     canonicalEntrypoint <- canonicalizePath entrypoint
+    canonicalOutputPath <- canonicalizePath outputPath
     rootPath            <- canonicalizePath "./"
     -- rootPath            <- canonicalizePath $ computeRootPath entrypoint
-    sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
 
     let options =
           Options
@@ -139,7 +135,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
             , optEntrypoint = canonicalEntrypoint
             , optTarget = target
             , optRootPath = rootPath
-            , optOutputPath = outputPath
+            , optOutputPath = canonicalOutputPath
             , optOptimized = optimized
             , optBundle = bundle
             , optCoverage = coverage
@@ -160,41 +156,18 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
         state <- Driver.initialState
         runCompilationTask state options [canonicalEntrypoint]
         putStrLn "\nWatching... (press ctrl-C to quit)"
-        watch rootPath (runCompilationTask state options)
+        Driver.watch rootPath (runCompilationTask state options)
         return ()
     else do
       state <- Driver.initialState
       runCompilationTask state options [canonicalEntrypoint]
-      -- Driver.compile options (head sourcesToCompile)
-
-
-recordAndPrintDuration :: String -> IO a -> IO a
-recordAndPrintDuration title action = do
-  startT       <- getCurrentTime
-  actionResult <- action
-  endT         <- getCurrentTime
-  let diff = diffUTCTime endT startT
-  let (ms, _) = properFraction $ diff * 1000
-  putStrLn $ title <> show ms <> "ms"
-  return actionResult
-
-
--- compilationTask :: Options -> Rock.Task Query ()
--- compilationTask options = do
---   -- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
---   -- return ()
-
---   -- hasCycle <- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
---   Rock.fetch $ BuiltTarget (optEntrypoint options)
---   -- hasCycle <- Rock.fetch $ DetectImportCycle [] (optEntrypoint options)
---   -- unless hasCycle $ Rock.fetch $ BuiltTarget (optEntrypoint options)
 
 
 runCompilationTask :: Driver.State CompilationError -> Options -> [FilePath] -> IO ()
 runCompilationTask state options invalidatedPaths = do
   clearScreen
   setCursorPosition 0 0
-  recordAndPrintDuration "Built in " $ do
+  Driver.recordAndPrintDuration "Built in " $ do
     result <-
       try $ Driver.runIncrementalTask
         state
@@ -247,49 +220,3 @@ runCompilationTask state options invalidatedPaths = do
     putStr ppWarnings
     putStr ppErrors
   return ()
-
-
-watch :: FilePath -> ([FilePath] -> IO ()) -> IO ThreadId
-watch root action = do
-  withManager $ \mgr -> do
-    trigger <-
-      Debounce.new
-        Debounce.Args
-          { Debounce.cb = action
-          , Debounce.fold = \l v -> List.nub $ v:l
-          , Debounce.init = []
-          }
-        Debounce.def
-          { Debounce.delay = 50000 -- 50ms
-          , Debounce.alwaysResetTimer = True
-          }
-
-    -- start a watching job (in the background)
-    watchTree
-      mgr          -- manager
-      root         -- directory to watch
-      (const True) -- predicate
-      (\e -> do
-        let
-          f = case e of
-                Added f _ _ ->
-                  f
-
-                Modified f _ _ ->
-                  f
-
-                Removed f _ _ ->
-                  f
-
-                Unknown f _ _ ->
-                  f
-
-          -- @TODO it would be better to not listen to these folders in the `watchTree` when available
-          -- https://github.com/haskell-fswatch/hfsnotify/issues/101
-          shouldTrigger = ".mad" `List.isSuffixOf` f
-
-        when shouldTrigger $ Debounce.send trigger f
-      )
-
-    -- sleep forever (until interrupted)
-    forever $ threadDelay 1000000
