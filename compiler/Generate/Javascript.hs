@@ -45,6 +45,7 @@ import Run.Options
 import qualified Data.List as List
 
 
+
 data RecursionData
   = PlainRecursionData { rdParams :: [String] }
   | RightListRecursionData { rdParams :: [String] }
@@ -1144,7 +1145,11 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
     in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
 
   Nothing ->
-    "./__internals__.mjs"
+    if joinPath ["prelude", "__internal__"] `isInfixOf` astPath then
+      let dirLength = length $ dropWhile (/= "__internal__") $ splitDirectories (takeDirectory astPath)
+      in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
+    else
+      "./__internals__.mjs"
 
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String

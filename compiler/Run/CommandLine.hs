@@ -24,7 +24,7 @@ data Command
       , compileTestFilesOnly :: Bool
       , compileWatch :: Bool
       }
-  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target }
+  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target, testWatch :: Bool }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -162,7 +162,7 @@ parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget
+parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget <*> parseWatch
 
 
 parseRunInput :: Parser FilePath

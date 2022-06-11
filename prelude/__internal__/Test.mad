@@ -25,6 +25,25 @@ colorString = (color, v) => color ++ v ++"\x1b[0m"
 red = colorString("\x1b[31m")
 green = colorString("\x1b[32m")
 
+
+#iftarget llvm
+
+checkChar :: String
+checkChar = "\x2713"
+
+crossChar :: String
+crossChar = "\x00d7"
+
+#elseif js
+
+checkChar :: String
+checkChar = "\u2713"
+
+crossChar :: String
+crossChar = "\u00d7"
+
+#endif
+
 // #iftarget js
 
 // export type AssertionError a
@@ -379,11 +398,11 @@ export assertEquals = (actual, expected) => actual == expected
 test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   (run) => run(description),
-  map((_) => green(`\x2713 ${description}\n`)),
+  map((_) => green(`${checkChar} ${description}\n`)),
   Wish.mapRej(
     where{
       AssertionError(expected, actual) => 
-        red(`\x00d7 ${description}`)
+        red(`${crossChar} ${description}`)
         ++ "\n  expected:\n    "
         ++ green(inspect(expected))
         ++ "\n  actual:\n    "

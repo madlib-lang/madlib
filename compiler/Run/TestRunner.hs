@@ -45,86 +45,101 @@ import qualified Driver.Query as Query
 import Run.Options
 import Utils.PathUtils (defaultPathUtils)
 import qualified AST.Source as Src
+import Error.Error
 
 
 
-runTests :: String -> Bool -> Target -> IO ()
-runTests entrypoint coverage target = do
+runTests :: String -> Bool -> Target -> Bool -> IO ()
+runTests entrypoint coverage target watchMode = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
-  Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
-  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
-  sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
 
-  let testSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
-      mainTestPath   =
+  let mainTestPath   =
         if takeExtension canonicalEntrypoint == "" then
           joinPath [canonicalEntrypoint, "__TestMain__.mad"]
         else
           joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
-      testMainAST    = generateTestMainAST mainTestPath (listModulePath, testModulePath) testSuitePaths
-      outputPath     =
-        if target == TLLVM then
-          ".tests/runTests"
-        else
-          ".tests/runTests.mjs"
+
+  outputPath <-
+    if target == TLLVM then
+      canonicalizePath ".tests/runTests"
+    else
+      canonicalizePath ".tests/runTests.mjs"
 
   state <- Driver.initialState
-  Driver.setQueryResult (Driver._startedVar state) (Query.ParsedAST mainTestPath) testMainAST
+  let options =
+        Options
+          { optPathUtils = defaultPathUtils
+          , optEntrypoint = mainTestPath
+          , optRootPath = rootPath
+          , optOutputPath = outputPath
+          , optTarget = target
+          , optOptimized = False
+          , optBundle = False
+          , optCoverage = False
+          , optGenerateDerivedInstances = True
+          , optInsertInstancePlaholders = True
+          }
 
-  (_, warnings, errors) <- Driver.runIncrementalTask
-    state
-    Options
-      { optPathUtils = defaultPathUtils
-      , optEntrypoint = mainTestPath
-      , optRootPath = rootPath
-      , optOutputPath = outputPath
-      , optTarget = target
-      , optOptimized = False
-      , optBundle = False
-      , optCoverage = False
-      , optGenerateDerivedInstances = True
-      , optInsertInstancePlaholders = True
-      }
-    []
-    mempty
-    Driver.Don'tPrune
-    (Driver.compilationTask mainTestPath)
+  runTestTask state options canonicalEntrypoint []
+  when watchMode $ do
+    Driver.watch rootPath (runTestTask state options canonicalEntrypoint)
+    return ()
 
-  let rf p =
-        if "__TestMain__.mad" `List.isSuffixOf` p then
-          return ""
-        else
-          readFile p
 
-  unless (null warnings) $ do
-    formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
-    putStrLn $ List.intercalate "\n\n\n" formattedWarnings
+runTestTask :: Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
+runTestTask state options canonicalEntrypoint invalidatedPaths = do
+  Driver.recordAndPrintDuration "Tests built and run in " $ do
+    sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
+    Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
+    Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
+    let testSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
+        testMainAST    = generateTestMainAST (optEntrypoint options) (listModulePath, testModulePath) testSuitePaths
 
-  if null errors then do
-    let jsExePath = computeTargetPath (takeDirectory outputPath) rootPath mainTestPath
-    testOutput <- case DistributionSystem.buildOS of
-      DistributionSystem.Windows ->
-        if target == TLLVM then
-          try $ callCommand "\".tests\\runTests\""
-        else
-          try $ callCommand $ "node \"" <> jsExePath <> "\""
+    Driver.setQueryResult (Driver._startedVar state) (Query.ParsedAST (optEntrypoint options)) testMainAST
 
-      _ ->
-        if target == TLLVM then
-          try $ callCommand ".tests/runTests"
-        else
-          try $ callCommand $ "node " <> jsExePath
+    (_, warnings, errors) <- Driver.runIncrementalTask
+      state
+      options
+      invalidatedPaths
+      mempty
+      Driver.Don'tPrune
+      (Driver.compilationTask (optEntrypoint options))
 
-    case (testOutput :: Either IOError ()) of
-      Left e ->
-        error $ ppShow e
+    let rf p =
+          if "__TestMain__.mad" `List.isSuffixOf` p then
+            return ""
+          else
+            readFile p
 
-      Right _ ->
-        return ()
-  else do
-    formattedErrors <- mapM (Explain.format rf False) errors
-    putStrLn $ List.intercalate "\n\n\n" formattedErrors
+    unless (null warnings) $ do
+      formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
+      putStrLn $ List.intercalate "\n\n\n" formattedWarnings
+
+    if null errors then do
+      let jsExePath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) (optEntrypoint options)
+      testOutput <- case DistributionSystem.buildOS of
+        DistributionSystem.Windows ->
+          if optTarget options == TLLVM then
+            try $ callCommand "\".tests\\runTests\""
+          else
+            try $ callCommand $ "node \"" <> jsExePath <> "\""
+
+        _ ->
+          if optTarget options == TLLVM then
+            try $ callCommand ".tests/runTests"
+          else
+            try $ callCommand $ "node " <> jsExePath
+
+      case (testOutput :: Either IOError ()) of
+        Left e ->
+          error $ ppShow e
+
+        Right _ ->
+          return ()
+    else do
+      formattedErrors <- mapM (Explain.format rf False) errors
+      putStrLn $ List.intercalate "\n\n\n" formattedErrors
 
 
 generateTestSuiteName :: Int -> String

@@ -4514,7 +4514,6 @@ buildObjectFile astModule = do
               runPassManager pm mod'
               return mod'
           moduleObject target mod''
-          -- writeObjectToFile target (File destination) mod''
 
 
 makeExecutablePath :: FilePath -> FilePath
