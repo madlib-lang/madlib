@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fdc6e3e6e7e8f8381952dcd5af435a7daac2b079a1afaf970237d4d496be6f2c
+-- hash: 63be70bbfd4c20ae1daf7798ce88e5c3dab3749fd209c1c7634d9b2b42ce1cc5
 
 name:           madlib
 version:        0.12.2
@@ -145,6 +145,7 @@ library
     , fsnotify ==0.3.0.1
     , groupBy
     , hashable
+    , hpc-codecov
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -227,6 +228,7 @@ library compiler-common
     , fsnotify ==0.3.0.1
     , groupBy
     , hashable
+    , hpc-codecov
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -289,6 +291,7 @@ executable madlib
     , fsnotify ==0.3.0.1
     , groupBy
     , hashable
+    , hpc-codecov
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -359,6 +362,7 @@ test-suite madlib-test
     , fsnotify ==0.3.0.1
     , groupBy
     , hashable
+    , hpc-codecov
     , hpc-lcov
     , hspec >=2.7.2
     , hspec-golden
