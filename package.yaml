@@ -91,7 +91,7 @@ executables:
   madlib:
     <<: *exe-defaults
     main: Main.hs
-    source-dirs: src
+    source-dirs: compiler/app
     dependencies:
       - madlib
     when:
@@ -104,13 +104,13 @@ library:
     - llvm-hs == 9.0.1
     - llvm-hs-pure == 9.0.0
     - llvm-hs-pretty == 0.9.0.0
-    - compiler-common
-  source-dirs: compiler
+    - common
+  source-dirs: compiler/main
 
 internal-libraries:
-  compiler-common:
+  common:
     <<: *exe-defaults
-    source-dirs: compiler-common
+    source-dirs: compiler/common
     dependencies:
       - llvm-hs-pure == 9.0.0
 
@@ -118,11 +118,11 @@ tests:
   madlib-test:
     main: Spec.hs
     source-dirs:
-      - test
+      - compiler/test
     dependencies:
       - hspec >= 2.7.2
       - madlib
-      - compiler-common
+      - common
 
 flags:
   static:
