@@ -1,5 +1,5 @@
 ![build](https://github.com/madlib-lang/madlib/workflows/build/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/madlib-lang/madlib/badge.svg?branch=master)](https://coveralls.io/github/madlib-lang/madlib?branch=master)
+[![codecov](https://codecov.io/gh/madlib-lang/madlib/branch/master/graph/badge.svg?token=4L2SE3380B)](https://codecov.io/gh/madlib-lang/madlib)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
 [![Discord](https://img.shields.io/discord/530598289813536771?label=discord%20madlib%20channel)](https://discord.com/channels/530598289813536771/932841899914571787)
