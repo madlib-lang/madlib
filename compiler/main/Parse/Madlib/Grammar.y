@@ -296,11 +296,11 @@ compositeTypingArgs :: { [Src.Typing] }
   | '(' typing '->' typings ')'                     %shift { [Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRArr $2 $4)] }
   | compositeTypingArgs '(' typing '->' typings ')' %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $ head $1) (tokenArea $6)) (tokenTarget $2) (Src.TRArr $3 $5)] }
 
-recordTypingArgs :: { M.Map Src.Name Src.Typing }
-  : name '::' typings                               { M.fromList [(strV $1, $3)] }
-  | name '::' typings ','                           { M.fromList [(strV $1, $3)] }
-  | recordTypingArgs ',' name '::' typings          { M.insert (strV $3) $5 $1 }
-  | recordTypingArgs ',' name '::' typings ','      { M.insert (strV $3) $5 $1 }
+recordTypingArgs :: { M.Map Src.Name (Area, Src.Typing) }
+  : name '::' typings                               { M.fromList [(strV $1, (mergeAreas (tokenArea $1) (tokenArea $2), $3))] }
+  | name '::' typings ','                           { M.fromList [(strV $1, (mergeAreas (tokenArea $1) (tokenArea $2), $3))] }
+  | recordTypingArgs ',' name '::' typings          { M.insert (strV $3) (mergeAreas (tokenArea $3) (tokenArea $4), $5) $1 }
+  | recordTypingArgs ',' name '::' typings ','      { M.insert (strV $3) (mergeAreas (tokenArea $3) (tokenArea $4), $5) $1 }
 
 tupleTypings :: { [Src.Typing] }
   : typing ',' typing                   { [$1, $3] }

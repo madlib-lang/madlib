@@ -302,7 +302,7 @@ instance Processable Slv.Typing Core.Typing where
       return $ Core.Untyped area [] $ Core.TRArr left' right'
 
     Slv.TRRecord fields base -> do
-      fields' <- mapM (toCore enabled) fields
+      fields' <- mapM (toCore enabled) (snd <$> fields)
       base'   <- mapM (toCore enabled) base
       return $ Core.Untyped area [] $ Core.TRRecord fields' base'
 
