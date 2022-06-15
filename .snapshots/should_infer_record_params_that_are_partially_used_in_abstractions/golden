@@ -1311,15 +1311,21 @@
                     (TRRecord
                        (fromList
                           [ ( "id"
-                            , Untyped (Area (Loc 967 43 9) (Loc 973 43 15)) (TRSingle "String")
+                            , ( Area (Loc 961 43 3) (Loc 966 43 8)
+                              , Untyped (Area (Loc 967 43 9) (Loc 973 43 15)) (TRSingle "String")
+                              )
                             )
                           , ( "itemId"
-                            , Untyped
-                                (Area (Loc 987 44 13) (Loc 994 44 20)) (TRSingle "Integer")
+                            , ( Area (Loc 977 44 3) (Loc 986 44 12)
+                              , Untyped
+                                  (Area (Loc 987 44 13) (Loc 994 44 20)) (TRSingle "Integer")
+                              )
                             )
                           , ( "multiplier"
-                            , Untyped
-                                (Area (Loc 1012 45 17) (Loc 1019 45 24)) (TRSingle "Integer")
+                            , ( Area (Loc 998 45 3) (Loc 1011 45 16)
+                              , Untyped
+                                  (Area (Loc 1012 45 17) (Loc 1019 45 24)) (TRSingle "Integer")
+                              )
                             )
                           ])
                        Nothing)
@@ -1336,26 +1342,34 @@
                     (TRRecord
                        (fromList
                           [ ( "cost"
-                            , Untyped
-                                (Area (Loc 1093 50 11) (Loc 1100 50 18)) (TRSingle "Integer")
+                            , ( Area (Loc 1085 50 3) (Loc 1092 50 10)
+                              , Untyped
+                                  (Area (Loc 1093 50 11) (Loc 1100 50 18)) (TRSingle "Integer")
+                              )
                             )
                           , ( "description"
-                            , Untyped
-                                (Area (Loc 1075 49 18) (Loc 1081 49 24)) (TRSingle "String")
+                            , ( Area (Loc 1060 49 3) (Loc 1074 49 17)
+                              , Untyped
+                                  (Area (Loc 1075 49 18) (Loc 1081 49 24)) (TRSingle "String")
+                              )
                             )
                           , ( "discounts"
-                            , Untyped
-                                (Area (Loc 1117 51 16) (Loc 1134 51 33))
-                                (TRComp
-                                   "List"
-                                   [ Untyped
-                                       (Area (Loc 1122 51 21) (Loc 1134 51 33))
-                                       (TRSingle "ShopDiscount")
-                                   ])
+                            , ( Area (Loc 1104 51 3) (Loc 1116 51 15)
+                              , Untyped
+                                  (Area (Loc 1117 51 16) (Loc 1134 51 33))
+                                  (TRComp
+                                     "List"
+                                     [ Untyped
+                                         (Area (Loc 1122 51 21) (Loc 1134 51 33))
+                                         (TRSingle "ShopDiscount")
+                                     ])
+                              )
                             )
                           , ( "id"
-                            , Untyped
-                                (Area (Loc 1049 48 9) (Loc 1056 48 16)) (TRSingle "Integer")
+                            , ( Area (Loc 1043 48 3) (Loc 1048 48 8)
+                              , Untyped
+                                  (Area (Loc 1049 48 9) (Loc 1056 48 16)) (TRSingle "Integer")
+                              )
                             )
                           ])
                        Nothing)
@@ -1372,22 +1386,28 @@
                     (TRRecord
                        (fromList
                           [ ( "cart"
-                            , Untyped
-                                (Area (Loc 1186 55 11) (Loc 1199 55 24))
-                                (TRComp
-                                   "List"
-                                   [ Untyped
-                                       (Area (Loc 1191 55 16) (Loc 1199 55 24))
-                                       (TRSingle "ShopItem")
-                                   ])
+                            , ( Area (Loc 1178 55 3) (Loc 1185 55 10)
+                              , Untyped
+                                  (Area (Loc 1186 55 11) (Loc 1199 55 24))
+                                  (TRComp
+                                     "List"
+                                     [ Untyped
+                                         (Area (Loc 1191 55 16) (Loc 1199 55 24))
+                                         (TRSingle "ShopItem")
+                                     ])
+                              )
                             )
                           , ( "id"
-                            , Untyped
-                                (Area (Loc 1168 54 9) (Loc 1174 54 15)) (TRSingle "String")
+                            , ( Area (Loc 1162 54 3) (Loc 1167 54 8)
+                              , Untyped
+                                  (Area (Loc 1168 54 9) (Loc 1174 54 15)) (TRSingle "String")
+                              )
                             )
                           , ( "money"
-                            , Untyped
-                                (Area (Loc 1212 56 12) (Loc 1219 56 19)) (TRSingle "Integer")
+                            , ( Area (Loc 1203 56 3) (Loc 1211 56 11)
+                              , Untyped
+                                  (Area (Loc 1212 56 12) (Loc 1219 56 19)) (TRSingle "Integer")
+                              )
                             )
                           ])
                        Nothing)
@@ -1404,34 +1424,40 @@
                     (TRRecord
                        (fromList
                           [ ( "customers"
-                            , Untyped
-                                (Area (Loc 1259 59 16) (Loc 1276 59 33))
-                                (TRComp
-                                   "List"
-                                   [ Untyped
-                                       (Area (Loc 1264 59 21) (Loc 1276 59 33))
-                                       (TRSingle "ShopCustomer")
-                                   ])
+                            , ( Area (Loc 1246 59 3) (Loc 1258 59 15)
+                              , Untyped
+                                  (Area (Loc 1259 59 16) (Loc 1276 59 33))
+                                  (TRComp
+                                     "List"
+                                     [ Untyped
+                                         (Area (Loc 1264 59 21) (Loc 1276 59 33))
+                                         (TRSingle "ShopCustomer")
+                                     ])
+                              )
                             )
                           , ( "inventory"
-                            , Untyped
-                                (Area (Loc 1293 60 16) (Loc 1306 60 29))
-                                (TRComp
-                                   "List"
-                                   [ Untyped
-                                       (Area (Loc 1298 60 21) (Loc 1306 60 29))
-                                       (TRSingle "ShopItem")
-                                   ])
+                            , ( Area (Loc 1280 60 3) (Loc 1292 60 15)
+                              , Untyped
+                                  (Area (Loc 1293 60 16) (Loc 1306 60 29))
+                                  (TRComp
+                                     "List"
+                                     [ Untyped
+                                         (Area (Loc 1298 60 21) (Loc 1306 60 29))
+                                         (TRSingle "ShopItem")
+                                     ])
+                              )
                             )
                           , ( "sales"
-                            , Untyped
-                                (Area (Loc 1319 61 12) (Loc 1336 61 29))
-                                (TRComp
-                                   "List"
-                                   [ Untyped
-                                       (Area (Loc 1324 61 17) (Loc 1336 61 29))
-                                       (TRSingle "ShopDiscount")
-                                   ])
+                            , ( Area (Loc 1310 61 3) (Loc 1318 61 11)
+                              , Untyped
+                                  (Area (Loc 1319 61 12) (Loc 1336 61 29))
+                                  (TRComp
+                                     "List"
+                                     [ Untyped
+                                         (Area (Loc 1324 61 17) (Loc 1336 61 29))
+                                         (TRSingle "ShopDiscount")
+                                     ])
+                              )
                             )
                           ])
                        Nothing)

@@ -519,7 +519,7 @@ typingToDoc comments typing = case typing of
     in  (Pretty.pretty "#[" <> typings' <> Pretty.pretty "]", comments')
 
   Source _ _ (TRRecord fields maybeExt) ->
-    let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList fields)
+    let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList (snd <$> fields))
         (maybeExt', comments'') = case maybeExt of
           Just ext ->
             let (ext', comments''') = typingToDoc comments' ext

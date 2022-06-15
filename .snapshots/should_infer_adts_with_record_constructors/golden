@@ -290,8 +290,10 @@
                              (TRRecord
                                 (fromList
                                    [ ( "value"
-                                     , Untyped
-                                         (Area (Loc 33 1 34) (Loc 39 1 40)) (TRSingle "String")
+                                     , ( Area (Loc 24 1 25) (Loc 32 1 33)
+                                       , Untyped
+                                           (Area (Loc 33 1 34) (Loc 39 1 40)) (TRSingle "String")
+                                       )
                                      )
                                    ])
                                 Nothing)
@@ -312,8 +314,10 @@
                              (TRRecord
                                 (fromList
                                    [ ( "message"
-                                     , Untyped
-                                         (Area (Loc 64 1 65) (Loc 70 1 71)) (TRSingle "String")
+                                     , ( Area (Loc 53 1 54) (Loc 63 1 64)
+                                       , Untyped
+                                           (Area (Loc 64 1 65) (Loc 70 1 71)) (TRSingle "String")
+                                       )
                                      )
                                    ])
                                 Nothing)

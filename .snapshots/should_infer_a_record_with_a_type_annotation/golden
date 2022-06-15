@@ -53,10 +53,14 @@
                   (TRRecord
                      (fromList
                         [ ( "x"
-                          , Untyped (Area (Loc 26 1 27) (Loc 33 1 34)) (TRSingle "Integer")
+                          , ( Area (Loc 21 1 22) (Loc 25 1 26)
+                            , Untyped (Area (Loc 26 1 27) (Loc 33 1 34)) (TRSingle "Integer")
+                            )
                           )
                         , ( "y"
-                          , Untyped (Area (Loc 40 1 41) (Loc 47 1 48)) (TRSingle "Integer")
+                          , ( Area (Loc 35 1 36) (Loc 39 1 40)
+                            , Untyped (Area (Loc 40 1 41) (Loc 47 1 48)) (TRSingle "Integer")
+                            )
                           )
                         ])
                      Nothing))
