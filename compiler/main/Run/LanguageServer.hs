@@ -33,7 +33,7 @@ import qualified Data.List as List
 import           Control.Monad (forM_, join, forM, unless)
 import           Data.IORef
 import qualified AST.Solved as Slv
-import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr)
+import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintConstructorTyping, prettyPrintConstructorTyping')
 import           Control.Applicative ((<|>))
 import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified)
 import           Error.Warning
@@ -60,6 +60,7 @@ import qualified Canonicalize.Typing as Can
 import qualified Infer.Typing as Slv
 import qualified Canonicalize.Env as CanEnv
 import qualified Canonicalize.Interface as Can
+import System.FilePath (takeFileName, dropExtension)
 
 
 
@@ -97,13 +98,13 @@ handlers state = mconcat
   -- , requestHandler STextDocumentImplementation $ \_ responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo "tdi"
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
-      recordAndPrintDuration "file open" $ generateDiagnostics state uri mempty
+      recordAndPrintDuration "file open" $ generateDiagnostics False state uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
-      recordAndPrintDuration "file save" $ generateDiagnostics state uri mempty
+      recordAndPrintDuration "file save" $ generateDiagnostics False state uri mempty
   , notificationHandler STextDocumentDidChange $ \(NotificationMessage _ _ (DidChangeTextDocumentParams (VersionedTextDocumentIdentifier uri _) (List changes))) -> do
       recordAndPrintDuration "file change" $ do
         let (TextDocumentContentChangeEvent _ _ docContent) = last changes
-        generateDiagnostics state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
+        generateDiagnostics True state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
   ]
 
 
@@ -157,7 +158,11 @@ data Node
   | NameNode Bool (Slv.Solved String)
   | PatternNode Slv.Pattern
   | TypingNode (Maybe Slv.Typing) Slv.Typing
+  | RecordFieldAnnotation Area String Slv.Typing
   | ADTNode String Area Kind
+  | DefaultImportNode Area FilePath
+  | NamedImportNode Area String FilePath
+  | TypeImportNode Area String FilePath
   deriving(Eq, Show)
 
 
@@ -188,6 +193,18 @@ getNodeLine n = case n of
     l
 
   ADTNode _ (Area (Loc _ l _) _) _ ->
+    l
+
+  RecordFieldAnnotation (Area (Loc _ l _) _) _ _ ->
+    l
+
+  DefaultImportNode (Area (Loc _ l _) _) _ ->
+    l
+
+  NamedImportNode (Area (Loc _ l _) _) _ _ ->
+    l
+
+  TypeImportNode (Area (Loc _ l _) _) _ _ ->
     l
 
 
@@ -255,6 +272,14 @@ findNodeAtLocInIs loc (Slv.Typed _ _ (Slv.Is pat exp)) =
   findNodeAtLocInPattern loc pat <|> findNodeAtLoc False loc exp
 
 
+findNodeInRecordFieldTypeAnnotation :: Loc -> (String, (Area, Slv.Typing)) -> Maybe Node
+findNodeInRecordFieldTypeAnnotation loc (fieldName, (area, typing)) =
+  if isInRange loc area then
+    Just $ RecordFieldAnnotation area fieldName typing
+  else
+    Nothing
+
+
 findNodeInTypeAnnotation :: Loc -> Maybe Slv.Typing -> Slv.Typing -> Maybe Node
 findNodeInTypeAnnotation loc maybeRoot typing =
   if isInRange loc (Slv.getArea typing) then
@@ -267,7 +292,8 @@ findNodeInTypeAnnotation loc maybeRoot typing =
               findNodeInTypeAnnotation loc Nothing l <|> findNodeInTypeAnnotation loc Nothing r
 
             Slv.TRRecord fields _ ->
-              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> Map.elems fields
+              foldl' (<|>) Nothing (findNodeInRecordFieldTypeAnnotation loc <$> Map.toList fields)
+              <|> foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> Map.elems (snd <$> fields))
 
             Slv.TRTuple items ->
               foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> items
@@ -362,6 +388,39 @@ findNodeInAst loc srcAst slvAst =
   findNodeInExps loc (Slv.aexps slvAst ++ Slv.getAllMethods slvAst)
   <|> findNodeInTypeDeclarations loc (Slv.atypedecls slvAst)
   <|> findNodeInInstanceHeaders loc (Src.ainstances srcAst)
+  <|> findNodeInImports loc (Src.aimports srcAst)
+
+
+findNodeInImports :: Loc -> [Src.Import] -> Maybe Node
+findNodeInImports loc imports =
+  foldl' (<|>) Nothing $ findNodeInImport loc <$> imports
+
+
+findNodeInImport :: Loc -> Src.Import -> Maybe Node
+findNodeInImport loc imp =
+  if isInRange loc $ Src.getArea imp then
+    case imp of
+      Src.Source area _ (Src.DefaultImport _ _ filepath) ->
+        Just $ DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath
+
+      -- TODO: check names and return a node for the named import if area match
+      Src.Source area _ (Src.NamedImport names _ filepath) ->
+        foldl' (<|>) Nothing (findNamedImportNode loc filepath NamedImportNode <$> names)
+        <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
+
+      -- TODO: check type names and return a node for the named type import if area match
+      Src.Source area _ (Src.TypeImport typeNames _ filepath) ->
+        foldl' (<|>) Nothing (findNamedImportNode loc filepath TypeImportNode <$> typeNames)
+        <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
+  else
+    Nothing
+
+findNamedImportNode :: Loc -> FilePath -> (Area -> String -> FilePath -> Node) -> Src.Source Src.Name -> Maybe Node
+findNamedImportNode loc importPath ctor (Src.Source area _ n) =
+  if isInRange loc area then
+    Just $ ctor area n importPath
+  else
+    Nothing
 
 
 findNodeInTypeDeclarations :: Loc -> [Slv.TypeDecl] -> Maybe Node
@@ -438,7 +497,7 @@ retrieveKind t = case t of
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
   (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
-  typeInfo <- case node of
+  nodeInfo <- case node of
     ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
       return $ name <> " :: " <> prettyQt topLevel qt
 
@@ -462,6 +521,9 @@ nodeToHoverInfo modulePath node = do
 
     ADTNode name _ k ->
       return $ name <> " :: " <> kindToStr k
+
+    RecordFieldAnnotation _ name typing ->
+      return $ name <> " :: " <> prettyPrintConstructorTyping' False typing
 
     -- TODO: make dry with case for TRSingle
     TypingNode _ (Slv.Untyped _ (Slv.TRComp name ts)) -> do
@@ -543,11 +605,35 @@ nodeToHoverInfo modulePath node = do
     TypingNode _ _ ->
       return "*"
 
+    -- TODO: add docstring for the module here
+    DefaultImportNode _ filepath ->
+      return $ dropExtension (takeFileName filepath)
+
+    NamedImportNode _ name filepath -> do
+      maybeExp <- Rock.fetch $ Query.ForeignExp filepath name
+      case maybeExp of
+        Just exp ->
+          let qt = Slv.getQualType exp
+          in  return $ name <> " :: " <> prettyQt False qt
+
+        Nothing ->
+          return name
+
+    TypeImportNode _ name filepath -> do
+      maybeType <- CanEnv.lookupADT' canEnv name
+      case maybeType of
+        Just t ->
+          return $ name <> " :: " <> kindToStr (retrieveKind t)
+
+        Nothing ->
+          return name
+
     _ ->
       return ""
+
   return $
     "```madlib\n"
-    <> typeInfo
+    <> nodeInfo
     <> "\n"
     <> "```\n\n"
     <> "*Defined in '"
@@ -604,8 +690,13 @@ uriToPath uri =
         unpacked
 
 
-runTypeCheck :: State -> Target -> FilePath -> Map.Map FilePath String -> LspM () ([CompilationWarning], [CompilationError])
-runTypeCheck state target path fileUpdates = do
+runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () ([CompilationWarning], [CompilationError])
+runTypeCheck invalidatePath state target path fileUpdates = do
+  let changedFiles =
+        if invalidatePath then
+          [path]
+        else
+          []
   options <- buildOptions target
   liftIO $ do
     result <- try $
@@ -613,7 +704,7 @@ runTypeCheck state target path fileUpdates = do
         state
         options { optEntrypoint = path }
         Driver.Don'tPrune
-        [path]
+        changedFiles
         fileUpdates
         (Driver.typeCheckFileTask path)
         :: IO (Either (Cyclic Query.Query) ((), [CompilationWarning], [CompilationError]))
@@ -624,7 +715,7 @@ runTypeCheck state target path fileUpdates = do
           state
           options { optEntrypoint = path }
           Driver.Don'tPrune
-          [path]
+          changedFiles
           fileUpdates
           (Driver.detectCyleTask path)
         return (warnings, errors)
@@ -666,15 +757,15 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
     publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
 
 
-generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
-generateDiagnostics state uri fileUpdates = do
+generateDiagnostics :: Bool -> State -> Uri -> Map.Map FilePath String -> LspM () ()
+generateDiagnostics invalidatePath state uri fileUpdates = do
   options <- buildOptions TNode
   let path = uriToPath uri
-  (jsWarnings, jsErrors) <- runTypeCheck state TNode path fileUpdates
+  (jsWarnings, jsErrors) <- runTypeCheck invalidatePath state TNode path fileUpdates
 
   sendDiagnosticsForWarningsAndErrors jsWarnings jsErrors
 
-  (llvmWarnings, llvmErrors) <- runTypeCheck state TLLVM path fileUpdates
+  (llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
   let allWarnings = jsWarnings `List.union` llvmWarnings
   let allErrors = jsErrors `List.union` llvmErrors
 
@@ -906,7 +997,9 @@ definitionLocationTask loc path = do
     (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
     (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
     srcAst         <- Rock.fetch $ Query.ParsedAST path
-    case findNameInNode $ findNodeInAst loc srcAst typedAst of
+
+    let foundNode = findNodeInAst loc srcAst typedAst
+    case findNameInNode foundNode of
       Just name -> do
         maybeExp         <- Rock.fetch $ Query.ForeignExp path name
         maybeConstructor <- Rock.fetch $ Query.ForeignConstructor path name
@@ -943,7 +1036,31 @@ definitionLocationTask loc path = do
                 return Nothing
 
       _ ->
-        return Nothing
+        case foundNode of
+          Just (NamedImportNode _ importName importPath) -> do
+            maybeExp'         <- Rock.fetch $ Query.ForeignExp importPath importName
+            maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor importPath importName
+            case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' of
+              Just area' ->
+                return $ Just (importPath, area')
+
+              _ ->
+                return Nothing
+
+          Just (TypeImportNode _ importName importPath) -> do
+            maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration importPath importName
+            case Slv.getArea <$> maybeTypeDecl' of
+              Just area' ->
+                return $ Just (importPath, area')
+
+              _ ->
+                return Nothing
+
+          Just (DefaultImportNode area filepath) ->
+            return $ Just (filepath, area)
+
+          _ ->
+            return Nothing
 
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])

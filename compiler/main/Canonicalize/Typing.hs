@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 module Canonicalize.Typing where
 
 
@@ -46,7 +47,7 @@ canonicalizeTyping (Src.Source area _ t) = case t of
     return $ Can.Canonical area (Can.TRArr left' right')
 
   Src.TRRecord fields base -> do
-    fields' <- mapM canonicalizeTyping fields
+    fields' <- mapM (\(area, t) -> (area,) <$> canonicalizeTyping t) fields
     base'   <- mapM canonicalizeTyping base
     return $ Can.Canonical area (Can.TRRecord fields' base')
 
@@ -75,7 +76,7 @@ canonicalizeTyping' (Src.Source area _ t) = case t of
     Can.Canonical area (Can.TRArr left' right')
 
   Src.TRRecord fields base ->
-    let fields' = canonicalizeTyping' <$> fields
+    let fields' = (\(area, t) -> (area, canonicalizeTyping' t)) <$> fields
         base'   = canonicalizeTyping' <$> base
     in  Can.Canonical area (Can.TRRecord fields' base')
 
@@ -223,7 +224,7 @@ typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
   return $ l' `fn` r'
 
 typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
-  fields' <- mapM (typingToType env (KindRequired Star)) fields
+  fields' <- mapM (typingToType env (KindRequired Star)) (snd <$> fields)
   base'   <- mapM (typingToType env (KindRequired Star)) base
   when (Maybe.isNothing base) $ do
     let fieldNames = M.keys fields'
