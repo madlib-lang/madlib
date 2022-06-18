@@ -22,6 +22,7 @@ import           Utils.Path                     ( cleanRelativePath
                                                 , computeTargetPath
                                                 , makeRelativeEx
                                                 , convertWindowsSeparators
+                                                , takeDirectoryIfFile
                                                 )
 import           System.FilePath                ( replaceExtension
                                                 , dropFileName
@@ -1129,7 +1130,7 @@ runBundle entrypointCompiledPath = do
 
 generateInternalsModule :: Options -> IO ()
 generateInternalsModule options = do
-  writeFile (takeDirectory (optOutputPath options) <> (pathSeparator : "__internals__.mjs"))
+  writeFile (takeDirectoryIfFile (optOutputPath options) <> (pathSeparator : "__internals__.mjs"))
     $ generateInternalsModuleContent (optTarget options) (optOptimized options) (optCoverage options)
 
 
@@ -1159,7 +1160,7 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
     let rootPath           = optRootPath options
         internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
         entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
-        computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) rootPath path
+        computedOutputPath = computeTargetPath (optOutputPath options) rootPath path
 
     let moduleContent = compile
           initialEnv

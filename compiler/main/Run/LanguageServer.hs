@@ -5,6 +5,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use forM_" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
@@ -33,7 +35,7 @@ import           Data.IORef
 import qualified AST.Solved as Slv
 import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr)
 import           Control.Applicative ((<|>))
-import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars)
+import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified)
 import           Error.Warning
 import qualified Error.Warning as Warning
 import           Error.Warning (CompilationWarning(CompilationWarning))
@@ -79,13 +81,17 @@ handlers state = mconcat
           return ()
   , requestHandler STextDocumentDefinition $ \req@(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
       recordAndPrintDuration "definition" $ do
-        maybeLink <- getDefinitionLink state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
-        case maybeLink of
-          Just loc ->
+        links <- getDefinitionLinks state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
+        case links of
+          [] ->
+            return ()
+
+          [loc] ->
             responder $ Right (InL loc)
 
-          Nothing ->
-            return ()
+          locs ->
+            responder $ Right (InR $ InL $ List locs)
+
   -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
   -- , requestHandler STextDocumentImplementation $ \_ responder -> do
@@ -101,14 +107,14 @@ handlers state = mconcat
   ]
 
 
-buildOptions :: LspM () Options.Options
-buildOptions = do
+buildOptions :: Target -> LspM () Options.Options
+buildOptions target = do
   maybeRootPath <- getRootPath
   let rootPath = Maybe.fromMaybe "./" maybeRootPath
   return
     Options.Options
       { Options.optEntrypoint = ""
-      , Options.optTarget = TNode
+      , Options.optTarget = target
       , Options.optRootPath = rootPath
       , Options.optOutputPath = ""
       , Options.optOptimized = False
@@ -151,6 +157,7 @@ data Node
   | NameNode Bool (Slv.Solved String)
   | PatternNode Slv.Pattern
   | TypingNode (Maybe Slv.Typing) Slv.Typing
+  | ADTNode String Area Kind
   deriving(Eq, Show)
 
 
@@ -178,6 +185,9 @@ getNodeLine n = case n of
     l
 
   TypingNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
+    l
+
+  ADTNode _ (Area (Loc _ l _) _) _ ->
     l
 
 
@@ -310,6 +320,9 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             Slv.Var name _ ->
               Just $ NameNode topLevel (Slv.Typed qt area name)
 
+            Slv.Extern _ name _ ->
+              Just $ NameNode topLevel (Slv.Typed qt area name)
+
             Slv.TemplateString exps ->
               foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> exps
 
@@ -343,11 +356,50 @@ findNodeAtLoc topLevel loc (Slv.Untyped _ _) =
   Nothing
 
 
--- TODO: Add search in type annotations
+-- TODO: Add search in type declarations
 findNodeInAst :: Loc -> Src.AST -> Slv.AST -> Maybe Node
 findNodeInAst loc srcAst slvAst =
   findNodeInExps loc (Slv.aexps slvAst ++ Slv.getAllMethods slvAst)
+  <|> findNodeInTypeDeclarations loc (Slv.atypedecls slvAst)
   <|> findNodeInInstanceHeaders loc (Src.ainstances srcAst)
+
+
+findNodeInTypeDeclarations :: Loc -> [Slv.TypeDecl] -> Maybe Node
+findNodeInTypeDeclarations loc typeDecls = case typeDecls of
+  typeDeclaration : next ->
+    findNodeInTypeDeclaration loc typeDeclaration
+    <|> findNodeInTypeDeclarations loc next
+
+  [] ->
+    Nothing
+
+
+findNodeInConstructor :: Loc -> Slv.Constructor -> Maybe Node
+findNodeInConstructor loc constructor =
+  if isInRange loc (Slv.getArea constructor) then
+    foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> Slv.getConstructorTypings constructor)
+    <|> Just (NameNode False (Slv.Typed ([] :=> Slv.getConstructorType constructor) (Slv.getArea constructor) $ Slv.getConstructorName constructor))
+  else
+    Nothing
+
+
+findNodeInTypeDeclaration :: Loc -> Slv.TypeDecl -> Maybe Node
+findNodeInTypeDeclaration loc typeDeclaration = case typeDeclaration of
+  Slv.Untyped area Slv.ADT { Slv.adtname, Slv.adtconstructors, Slv.adtparams } ->
+    -- TODO: look in constructors as well and make it a prio as it should be deeper in the AST if found
+    if isInRange loc area then
+      foldl' (<|>) Nothing (findNodeInConstructor loc <$> adtconstructors)
+      <|> Just (ADTNode adtname area (buildKind $ length adtparams))
+    else
+      Nothing
+
+  Slv.Untyped area Slv.Alias { Slv.aliasname, Slv.aliasparams, Slv.aliastype } ->
+    -- TODO: look in typing as well and make it a prio as it should be deeper in the AST if found
+    if isInRange loc area then
+      findNodeInTypeAnnotation loc Nothing aliastype
+      <|> Just (ADTNode aliasname area (buildKind $ length aliasparams))
+    else
+      Nothing
 
 
 findNodeInExps :: Loc -> [Slv.Exp] -> Maybe Node
@@ -361,7 +413,7 @@ findNodeInExps loc exps = case exps of
 
 findNodeInInstanceHeaders :: Loc -> [Src.Instance] -> Maybe Node
 findNodeInInstanceHeaders loc instances =
-  let srcTypings = concatMap (\i -> Src.getInstanceTypings i ++ Src.getInstanceConstraintTypings i) instances
+  let srcTypings = concatMap (\i -> Src.getInstanceConstraintTypings i ++ Src.getInstanceTypings i) instances
       -- srcTypings = findNodeInExps loc $ Slv.aexps ast ++ Slv.getAllMethods ast
       canTypings = Can.canonicalizeTyping' <$> srcTypings
       slvTypings = Slv.updateTyping <$> canTypings
@@ -407,6 +459,9 @@ nodeToHoverInfo modulePath node = do
 
     PatternNode (Slv.Typed qt _ _) ->
       return $ prettyQt False qt
+
+    ADTNode name _ k ->
+      return $ name <> " :: " <> kindToStr k
 
     -- TODO: make dry with case for TRSingle
     TypingNode _ (Slv.Untyped _ (Slv.TRComp name ts)) -> do
@@ -502,23 +557,37 @@ nodeToHoverInfo modulePath node = do
     <> "*"
 
 
-getDefinitionLink :: State -> Loc -> FilePath -> LspM () (Maybe Location)
-getDefinitionLink state loc path = do
-  options <- buildOptions
-  (result, _, _) <- liftIO $ runTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
-  case result of
+getDefinitionLinks :: State -> Loc -> FilePath -> LspM () [Location]
+getDefinitionLinks state loc path = do
+  jsOptions        <- buildOptions TNode
+  (jsResult, _, _) <- liftIO $ runTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
+  let jsLocations = case jsResult of
+        Nothing ->
+          []
+
+        Just (path, area) ->
+          [Location (pathToUri path) (areaToRange area)]
+
+  llvmOptions        <- buildOptions TLLVM
+  (llvmResult, _, _) <- liftIO $ runTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
+  case llvmResult of
     Nothing ->
-      return Nothing
+      return jsLocations
 
     Just (path, area) ->
-      return $ Just $ Location (pathToUri path) (areaToRange area)
+      return $ [Location (pathToUri path) (areaToRange area)] `List.union` jsLocations
 
 
 getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
 getHoverInformation state loc path = do
-  options <- buildOptions
-  (result, _, _) <- liftIO $ runTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
-  return result
+  jsOptions <- buildOptions TNode
+  (jsResult, _, _) <- liftIO $ runTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+  if Maybe.isNothing jsResult then do
+    llvmOptions <- buildOptions TLLVM
+    (llvmResult, _, _) <- liftIO $ runTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+    return llvmResult
+  else
+    return jsResult
 
 
 pathToUri :: FilePath -> Uri
@@ -534,11 +603,11 @@ uriToPath uri =
       else
         unpacked
 
-generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
-generateDiagnostics state uri fileUpdates = do
-  options <- buildOptions
-  let path = uriToPath uri
-  (warnings, errs) <- liftIO $ do
+
+runTypeCheck :: State -> Target -> FilePath -> Map.Map FilePath String -> LspM () ([CompilationWarning], [CompilationError])
+runTypeCheck state target path fileUpdates = do
+  options <- buildOptions target
+  liftIO $ do
     result <- try $
       runTask
         state
@@ -563,7 +632,10 @@ generateDiagnostics state uri fileUpdates = do
       Right (_, warnings, errors) ->
         return (warnings, errors)
 
-  let errsByModule = groupErrsByModule errs
+
+sendDiagnosticsForWarningsAndErrors :: [CompilationWarning] -> [CompilationError] -> LspM () ()
+sendDiagnosticsForWarningsAndErrors warnings errors = do
+  let errsByModule = groupErrsByModule errors
   let warnsByModule = groupWarnsByModule warnings
 
   errorDiagnostics <- liftIO $ mapM
@@ -592,6 +664,22 @@ generateDiagnostics state uri fileUpdates = do
     let moduleUri = pathToUri modulePath
     let diagnosticsBySource = partitionBySource diagnostics
     publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
+
+
+generateDiagnostics :: State -> Uri -> Map.Map FilePath String -> LspM () ()
+generateDiagnostics state uri fileUpdates = do
+  options <- buildOptions TNode
+  let path = uriToPath uri
+  (jsWarnings, jsErrors) <- runTypeCheck state TNode path fileUpdates
+
+  sendDiagnosticsForWarningsAndErrors jsWarnings jsErrors
+
+  (llvmWarnings, llvmErrors) <- runTypeCheck state TLLVM path fileUpdates
+  let allWarnings = jsWarnings `List.union` llvmWarnings
+  let allErrors = jsErrors `List.union` llvmErrors
+
+  flushDiagnosticsBySource 20 (Just "Madlib")
+  sendDiagnosticsForWarningsAndErrors allWarnings allErrors
 
 
 uriOfError :: CompilationError -> Uri
@@ -726,7 +814,8 @@ areaToRange area =
 
 
 data State = State
-  { _driverState :: Driver.State CompilationError
+  { _jsDriverState :: Driver.State CompilationError
+  , _llvmDriverState :: Driver.State CompilationError
   , _openFiles :: IORef (Map.Map FilePath String)
   , _changedFiles :: Set.Set FilePath
   }
@@ -744,9 +833,10 @@ textDocumentSyncOptions =
 
 runLanguageServer :: IO Int
 runLanguageServer = do
-  driverState <- Driver.initialState
+  jsDriverState <- Driver.initialState
+  llvmDriverState <- Driver.initialState
   openFiles <- newIORef mempty
-  let state = State driverState openFiles mempty
+  let state = State jsDriverState llvmDriverState openFiles mempty
   runServer $ ServerDefinition
     { defaultConfig = ()
     , onConfigurationChange = const $ pure $ Right ()
@@ -857,9 +947,14 @@ definitionLocationTask loc path = do
 
 
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
-runTask state options prune invalidatedPaths fileUpdates task =
+runTask state options prune invalidatedPaths fileUpdates task = do
+  let driverState =
+        if Options.optTarget options == TLLVM then
+          _llvmDriverState state
+        else
+          _jsDriverState state
   Driver.runIncrementalTask
-    (_driverState state)
+    driverState
     options
     invalidatedPaths
     fileUpdates
