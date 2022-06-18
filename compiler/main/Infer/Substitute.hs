@@ -35,7 +35,7 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `union` ftv t
 
 instance Substitutable Type where
-  apply _ tc@(TCon a fp   ) = tc
+  apply _ tc@(TCon _ _   ) = tc
   apply s t@( TVar a      ) = case M.findWithDefault t a s of
     TRecord fields (Just t'@(TVar tv)) ->
       let deepUpdateRecord initialFields base tyvar = 
@@ -54,7 +54,7 @@ instance Substitutable Type where
     t'               -> t'
 
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
-  apply s rec@(TRecord fields base) =
+  apply s (TRecord fields base) =
     let appliedFields          = apply s <$> fields
         appliedBase            = apply s <$> base
         (allFields', nextBase) = case appliedBase of
@@ -67,14 +67,14 @@ instance Substitutable Type where
         applied = TRecord allFields' nextBase
     in  applied
     -- in  if rec == applied then applied else apply s applied
-  apply s t = t
+  apply _ t = t
 
   ftv TCon{}                       = []
   ftv (TVar a                    ) = [a]
   ftv (t1      `TApp` t2         ) = ftv t1 `union` ftv t2
   ftv (TRecord fields Nothing    ) = foldr (\v s -> union s $ ftv v) [] (M.elems fields)
   ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) ++ ftv base
-  ftv t                            = []
+  ftv _                            = []
 
 
 instance Substitutable Scheme where
@@ -101,10 +101,10 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
             _                          -> Nothing
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base
 
-    (TRecord fields base, TVar _) ->
+    (TRecord fields _, TVar _) ->
       TRecord fields (Just t2)
 
-    (TVar _, TRecord fields base) ->
+    (TVar _, TRecord fields _) ->
       TRecord fields (Just t1)
 
     (TApp tl tr, TApp tl' tr') ->
@@ -120,7 +120,7 @@ merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError
 
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
-  TVar (TV n k)   -> M.singleton (TV n Star) t
+  TVar (TV n _)   -> M.singleton (TV n Star) t
   TApp    l  r    -> M.union (buildVarSubsts l) (buildVarSubsts r)
   TRecord ts base -> foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
   _               -> mempty

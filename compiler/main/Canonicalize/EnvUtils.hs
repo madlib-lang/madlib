@@ -36,7 +36,7 @@ lookupADT env name = do
     Just (ImportInfo path TypeImport typeName) ->
       Rock.fetch $ Query.ForeignADTType path typeName
 
-    Just (ImportInfo path NamespaceImport ns) ->
+    Just (ImportInfo path NamespaceImport _) ->
       if '.' `elem` name then
         Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
       else
@@ -59,7 +59,7 @@ lookupADT' env name = do
     Just (ImportInfo path TypeImport typeName) ->
       Rock.fetch $ Query.ForeignADTType path typeName
 
-    Just (ImportInfo path NamespaceImport ns) ->
+    Just (ImportInfo path NamespaceImport _) ->
       if '.' `elem` name then
         Rock.fetch $ Query.ForeignADTType path (tail $ dropWhile (/= '.') name)
       else

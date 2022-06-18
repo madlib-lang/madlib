@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Generate.Javascript where
 
 import qualified Data.Set                      as S
@@ -127,7 +128,7 @@ instance Compilable Exp where
           let compiledExp = compile env config (Typed qt area [] exp)
           in  "($args[$index] = "<>compiledExp<>", $_result_ = $_start_.__args[0])"
 
-        Call fn@(Typed _ _ _ (Var constructorName True)) args | isConstructorRecursiveCall metadata ->
+        Call (Typed _ _ _ (Var constructorName True)) args | isConstructorRecursiveCall metadata ->
           case getConstructorRecursionInfo metadata of
             Just (ConstructorRecursionInfo _ position) ->
               let Just params   = rdParams <$> recursionData env
@@ -291,7 +292,7 @@ instance Compilable Exp where
           <> " <= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call fn args | isPlainRecursiveCall metadata ->
+        Call _ args | isPlainRecursiveCall metadata ->
           let params  = case recursionData env of
                 Just PlainRecursionData { rdParams } ->
                   rdParams
@@ -328,7 +329,7 @@ instance Compilable Exp where
         Definition params body -> compileAbs Nothing (getValue <$> params) body
          where
           compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String
-          compileAbs parent params body =
+          compileAbs _ params body =
             let params' = intercalate " => " params
             in  "("
                 <> params'
@@ -434,12 +435,13 @@ instance Compilable Exp where
                   else
                     hpWrapLine coverage astPath l safeName
 
-        Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
+        Placeholder (ClassRef{}, _) _ ->
+          insertPlaceholderArgs "" e
 
          where
           insertPlaceholderArgs :: String -> Exp -> String
           insertPlaceholderArgs prev exp'' = case exp'' of
-            Core.Typed _ _ _ (Placeholder (ClassRef cls ps call var, ts) exp''') ->
+            Core.Typed _ _ _ (Placeholder (ClassRef cls ps _ var, ts) exp''') ->
               let dict  = generateRecordName optimized cls ts var
                   dict' = partiallyApplySubDicts dict ps
               in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
@@ -464,7 +466,7 @@ instance Compilable Exp where
             else dict
 
 
-        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var name _)) ->
+        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var _ _)) ->
           let compiled = generateRecordName optimized cls ts var <> "." <> method <> "()"
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
@@ -702,7 +704,7 @@ instance Compilable Exp where
                 name
                 <> ": "
                 <> "{ __args: ["
-                <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
+                <> intercalate ", " ((\(_, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
                 <> "] }"
 
             PList  pats ->
@@ -846,13 +848,11 @@ instance Compilable TypeDecl where
 
 
 instance Compilable Constructor where
-  compile _ config (Untyped _ _ (Constructor cname cparams _)) =
-    let coverage  = cccoverage config
-        optimized = ccoptimize config
-    in  case cparams of
-          [] -> "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
-          _ ->
-            "let " <> cname <> " = " <> "(" <> compileParams cparams <> " => " <> compileBody cname cparams <> ");\n"
+  compile _ _ (Untyped _ _ (Constructor cname cparams _)) =
+    case cparams of
+      [] -> "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
+      _ ->
+        "let " <> cname <> " = " <> "(" <> compileParams cparams <> " => " <> compileBody cname cparams <> ");\n"
    where
     compileParams n = let argNames = (: []) <$> take (length n) ['a' ..] in intercalate " => " argNames
 
@@ -975,7 +975,6 @@ generateRecordName optimized cls ts var =
 instance Compilable AST where
   compile env config ast =
     let entrypointPath     = ccentrypointPath config
-        coverage           = cccoverage config
         internalsPath      = ccinternalsPath config
         exps               = aexps ast
         typeDecls          = atypedecls ast
@@ -1002,7 +1001,7 @@ instance Compilable AST where
           x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledExps = case exps of
           [] -> ""
-          x  -> compileExps env configWithASTPath exps
+          _  -> compileExps env configWithASTPath exps
           -- x  -> foldr1 (<>) (terminate . compile env configWithASTPath <$> x)
         compiledImports = case imports of
           [] -> ""
@@ -1059,9 +1058,6 @@ buildDefaultExport as es =
 
   getConstructorName :: Constructor -> String
   getConstructorName (Untyped _ _ (Constructor cname _ _)) = cname
-
-
-
 
 
 rollupNotFoundMessage :: String
@@ -1154,7 +1150,7 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
 
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
-generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Nothing } = return ""
+generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ""
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
     let rootPath           = optRootPath options

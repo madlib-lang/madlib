@@ -23,7 +23,7 @@ checkVersion :: Maybe String -> String -> Version -> Maybe CompilationWarning
 checkVersion pkgName versionFromPkg versionFromCompiler =
   let versionFromPkg' = parse versionFromPkg
   in  case (versionFromPkg', versionFromCompiler) of
-        (Just (Version (major : minor : patch : _) _), Version (major' : minor' : patch' : _) _) -> if major /= major'
+        (Just (Version (major : minor : _ : _) _), Version (major' : minor' : _ : _) _) -> if major /= major'
           then return $ CompilationWarning
             (MadlibVersionMajorDiffer pkgName versionFromPkg (showVersion versionFromCompiler))
             NoContext

@@ -264,12 +264,6 @@ getImportAbsolutePath imp = case imp of
     n
 
 
-isAssignment :: Exp -> Bool
-isAssignment exp = case exp of
-  Canonical _ (Export (Canonical _ (Assignment _ _))) -> True
-  Canonical _ (Assignment _ _) -> True
-  _ -> False
-
 getArea :: Canonical a -> Area
 getArea (Canonical a _) = a
 
@@ -304,17 +298,6 @@ getExportNameAndScheme (Canonical _ exp) = case exp of
 
   _ ->
     (Nothing, Nothing)
-
-
-
-getTypedExpExp :: Exp -> Exp
-getTypedExpExp exp = case exp of
-  Canonical _ (Export (Canonical _ (TypedExp e _ _))) ->
-    e
-
-  Canonical _ (TypedExp e _ _) ->
-    e
-
 
 
 getFieldName :: Field -> Maybe String

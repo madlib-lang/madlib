@@ -34,7 +34,6 @@ import qualified Canonicalize.Env              as Can
 import           Infer.AST
 import           Infer.Infer
 import           Generate.Javascript           as GenerateJS
-import qualified Generate.Json                 as GenerateJson
 import           Generate.JSInternals
 import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
@@ -121,7 +120,7 @@ globalChecks = do
 
 
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly watchMode) coverage
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target testsOnly watchMode) coverage
   = do
     extraWarnings       <- globalChecks
     canonicalEntrypoint <- canonicalizePath entrypoint

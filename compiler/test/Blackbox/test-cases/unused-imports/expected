@@ -1,0 +1,28 @@
+\ESC[43mWarning\ESC[0m in module 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad' at line 3:
+\ESC[90m1|import Maybe from \"Maybe\"\ESC[0m
+\ESC[90m2|import type { Either } from \"Either\"\ESC[0m
+3|import { fulfill } from \"Wish\"
+           ^^^^^^^
+
+You imported 'fulfill' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+but it seems that you never use it.
+
+
+\ESC[43mWarning\ESC[0m in module 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad' at line 1:
+1|import Maybe from \"Maybe\"
+         ^^^^^
+\ESC[90m2|import type { Either } from \"Either\"\ESC[0m
+\ESC[90m3|import { fulfill } from \"Wish\"\ESC[0m
+
+You imported 'Maybe' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+but it seems that you never use it.
+
+
+\ESC[43mWarning\ESC[0m in module 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad' at line 2:
+\ESC[90m1|import Maybe from \"Maybe\"\ESC[0m
+2|import type { Either } from \"Either\"
+                ^^^^^^
+\ESC[90m3|import { fulfill } from \"Wish\"\ESC[0m
+
+You imported 'Either' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+but it seems that you never use it.

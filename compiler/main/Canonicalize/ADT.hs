@@ -39,7 +39,7 @@ verifyTypeVars area astPath adtname ps = do
   mapM_
     (\case
       f:rest | isUpper f ->
-        throwError $ CompilationError (CapitalizedADTTVar adtname (f:rest)) (Context astPath area [])
+        throwError $ CompilationError (CapitalizedADTTVar adtname (f:rest)) (Context astPath area)
       _ ->
         return ()
     )
@@ -49,9 +49,9 @@ canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.
 canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl of
   adt@Src.ADT{} ->
     if isLower . head $ Src.adtname adt then
-      throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area [])
+      throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area)
     else case M.lookup (Src.adtname adt) (envTypeDecls env) of
-      Just t  -> throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area [])
+      Just t  -> throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area)
       Nothing -> do
         verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
@@ -79,7 +79,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
                     , Can.aliasexported = Src.aliasexported alias
                     }
     if isLower . head $ name then
-      throwError $ CompilationError (NotCapitalizedAliasName name) (Context astPath area [])
+      throwError $ CompilationError (NotCapitalizedAliasName name) (Context astPath area)
     else
       return (env', alias')
 
@@ -96,7 +96,7 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
                   (TCon (TC name (buildKind $ length params)) astPath)
                   ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
-    (\(n, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
+    (\(_, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]
           sc = quantify (collectVars (apply s cf)) ([] :=> apply s cf)
       typings' <- mapM canonicalizeTyping typings
@@ -134,7 +134,7 @@ resolveADTConstructorParams
   -> [Src.Name]
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
-resolveADTConstructorParams env astPath n params c@(Src.Source area _ (Src.Constructor cname cparams)) = do
+resolveADTConstructorParams env astPath _ params c@(Src.Source area _ (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
   mapM_
@@ -143,7 +143,7 @@ resolveADTConstructorParams env astPath n params c@(Src.Source area _ (Src.Const
         if n `elem` params then
           return ()
         else
-          throwError (CompilationError (UnboundVariable n) (Context astPath area []))
+          throwError (CompilationError (UnboundVariable n) (Context astPath area))
 
       _ ->
         return ()
@@ -153,7 +153,7 @@ resolveADTConstructorParams env astPath n params c@(Src.Source area _ (Src.Const
   let s = foldr (\t s -> buildCtorSubst t <> s) M.empty ts
 
   if isLower . head $ cname then
-    throwError $ CompilationError (NotCapitalizedConstructorName cname) (Context astPath area [])
+    throwError $ CompilationError (NotCapitalizedConstructorName cname) (Context astPath area)
   else
     return (cname, ts, s, c)
 

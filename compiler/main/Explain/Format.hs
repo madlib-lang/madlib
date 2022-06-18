@@ -2,7 +2,6 @@ module Explain.Format where
 
 import           Error.Error
 import           Error.Warning
-import           Error.Backtrace
 import           Error.Context
 import           Explain.Location
 import qualified AST.Source                    as Src
@@ -40,9 +39,9 @@ underlineWhen when s | when      = "\x1b[4m" <> s <> "\x1b[0m"
 
 
 getModuleContent :: (FilePath -> IO String) -> Context -> IO String
-getModuleContent rf (Context "" _ _) =
+getModuleContent _ (Context "" _) =
   return ""
-getModuleContent rf (Context modulePath _ _) =
+getModuleContent rf (Context modulePath _) =
   rf modulePath
 getModuleContent _  _                        =
   return ""
@@ -52,7 +51,7 @@ formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO Str
 formatWarning rf json (CompilationWarning warning ctx) = do
   moduleContent <- lines <$> getModuleContent rf ctx
   let formattedWarning = case ctx of
-        Context fp area bt ->
+        Context fp area ->
           let (Area (Loc _ line _) _) = area
           in  "in module '"
                 <> fp
@@ -108,14 +107,13 @@ format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
 format rf json (CompilationError err ctx) = do
   moduleContent <- lines <$> getModuleContent rf ctx
   let formattedError = case ctx of
-        Context fp area bt ->
+        Context fp area ->
           let (Area (Loc _ line _) _) = area
           in  "in module '"
                 <> fp
                 <> "' at line "
                 <> show line
                 <> ":\n"
-                <> analyzeBacktrace json err bt
                 <> showAreaInSource json area area moduleContent
                 <> "\n"
                 <> formatTypeError json err
@@ -123,25 +121,6 @@ format rf json (CompilationError err ctx) = do
         _ -> formatTypeError json err
 
   return $ colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
-
-
-analyzeBacktrace :: Bool -> TypeError -> Backtrace -> String
-analyzeBacktrace json err exps = case exps of
-  ((BTExp e1) : BTExp (Can.Canonical _ (Can.If cond _ falsy)) : ex) -> if e1 == cond
-    then "The " <> underlineWhen (not json) "condition" <> " of the following if/else expression is not correct:\n"
-    else "\nThe error occured in the following if/else expression:\n"
-
-  (BTExp (Can.Canonical _ Can.TypedExp{}) : ex) -> case err of
-    UnificationError _ _ ->
-      "The " <> underlineWhen (not json) "type declaration" <> " does not match the inferred type:\n"
-    _ -> ""
-
-  (BTExp (Can.Canonical _ (Can.Assignment n _)) : BTInstance inst : ex) ->
-    "The implementation of the following " <> underlineWhen (not json) "method" <> " is not correct:\n"
-
-  (BTConstructor ctor) : _ -> "Error in the following type " <> underlineWhen (not json) "constructor" <> ":\n"
-
-  _                        -> if length exps > 1 then analyzeBacktrace json err (tail exps) else ""
 
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
@@ -201,7 +180,7 @@ formatTypeError json err = case err of
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
-  AmbiguousType (TV n _, IsIn cls _ _ : _) ->
+  AmbiguousType (TV _ _, IsIn cls _ _ : _) ->
     "An ambiguity could not be resolved! I am\n"
       <> "looking for an instance of '"
       <> cls
@@ -284,7 +263,7 @@ formatTypeError json err = case err of
       <> "'!\n\n"
       <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
 
-  RecursiveVarAccess name ->
+  RecursiveVarAccess _ ->
     "You are using a variable that is recursively accessing itself and is thus not yet initialized.\n"
       <> "This is not allowed and can only work if there exists a function in between, let me show you\n"
       <> "some examples that should make this clearer:\n"
@@ -433,7 +412,7 @@ schemeToStr (Forall _ (ps :=> t)) =
 
 
 predsToStr :: Bool -> (M.Map String Int, M.Map String Int) -> [Pred] -> (M.Map String Int, M.Map String Int, String)
-predsToStr rewrite (vars, hkVars) [] = (vars, hkVars, "")
+predsToStr _ (vars, hkVars) [] = (vars, hkVars, "")
 predsToStr rewrite (vars, hkVars) [p] = predToStr rewrite (vars, hkVars) p
 predsToStr rewrite (vars, hkVars) (p:ps)  =
   let (vars', hkVars', predStr) = predToStr rewrite (vars, hkVars) p
@@ -451,7 +430,7 @@ predToStr rewrite (vars, hkVars) p@(IsIn cls _ _) =
   in  (vars', hkVars', cls <> " " <> predStr)
 
 predToStr' :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
-predToStr' rewrite (vars, hkVars) (IsIn cls [] _) = (vars, hkVars, "")
+predToStr' _ (vars, hkVars) (IsIn _ [] _) = (vars, hkVars, "")
 predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts) _) =
   let (vars', hkVars', typeStr) = typeToParenWrappedStr rewrite (vars, hkVars) t
   in
@@ -470,7 +449,7 @@ typeToParenWrappedStr rewrite (vars, hkVars) t =
 
 
 prettyPrintQualType :: Bool -> Qual Type -> String
-prettyPrintQualType rewrite qt = schemeToStr (Forall [] qt)
+prettyPrintQualType _ qt = schemeToStr (Forall [] qt)
 
 
 prettyPrintType :: Bool -> Type -> String
@@ -507,7 +486,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
-        (varsRightRightRight, hkVarsRightRightRight, rightRightRight) =
+        (_, _, rightRightRight) =
             prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
     in  ( varsRightRight
         , hkVarsRightRight
@@ -553,7 +532,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
               $ M.toList fields
         compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
         formattedBase   = case base of
-          Just b  -> "...base, "
+          Just _  -> "...base, "
           Nothing -> ""
         compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
     in  (finalVars, finalHkVars, compiled)

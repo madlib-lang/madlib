@@ -87,6 +87,15 @@ _exe-defs: &exe-defaults
     - -optc-ffast-math
     - -funfolding-use-threshold=16
 
+    # warnings
+    # - -Wunused-do-bind
+    - -Wunused-binds
+    - -Wunused-local-binds
+    - -Wunused-matches
+    - -Wunused-pattern-binds
+    - -Wunused-top-binds
+    - -Wunused-type-patterns
+
 executables:
   madlib:
     <<: *exe-defaults

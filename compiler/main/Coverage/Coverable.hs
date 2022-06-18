@@ -24,7 +24,7 @@ class Collectable a where
 
 instance Collectable Exp where
   collect (Untyped _ _) = []
-  collect (Typed (ps :=> t) (Area (Loc _ l _) _) exp) = case exp of
+  collect (Typed (_ :=> t) (Area (Loc _ l _) _) exp) = case exp of
     Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
@@ -91,7 +91,7 @@ instance Collectable Exp where
     JSExp _ ->
       []
 
-    Var n _ ->
+    Var _ _ ->
       [Line { line = l }]
 
     Record fields ->
@@ -112,7 +112,7 @@ instance Collectable Is where
   collect _ = []
 
 instance Collectable Field where
-  collect (Typed _ _ (Field (name, exp))) = collect exp
+  collect (Typed _ _ (Field (_, exp))) = collect exp
   collect (Typed _ _ (FieldSpread exp))   = collect exp
   collect _                                = []
 
