@@ -205,16 +205,6 @@ getArea a = case a of
 extractExp :: Exp -> Exp_
 extractExp (Typed _ (Area _ _) e) = e
 
-getListItemExp :: ListItem -> Exp
-getListItemExp li = case li of
-  Typed _ _ (ListItem exp) ->
-    exp
-
-  Typed _ _ (ListSpread exp) ->
-    exp
-
-  _ ->
-    undefined
 
 getDefaultImportNames :: AST -> [String]
 getDefaultImportNames ast =

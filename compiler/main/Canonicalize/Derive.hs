@@ -113,7 +113,7 @@ buildFieldConditions =
 
 deriveEqInstance :: InstanceToDerive -> Maybe Instance
 deriveEqInstance toDerive = case toDerive of
-  TypeDeclToDerive (Canonical _ ADT { adtname, adtparams, adtconstructors, adtType }) ->
+  TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
         instPreds  =
@@ -197,7 +197,7 @@ buildConstructorIsForInspect ctor = case ctor of
 
 deriveInspectInstance :: InstanceToDerive -> Maybe Instance
 deriveInspectInstance toDerive = case toDerive of
-  TypeDeclToDerive (Canonical _ ADT { adtname, adtparams, adtconstructors, adtType }) ->
+  TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
         instPreds   = (\varInType -> IsIn "Inspect" [varInType] Nothing) <$> varsInType

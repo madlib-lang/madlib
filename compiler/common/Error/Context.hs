@@ -1,19 +1,27 @@
 module Error.Context where
 
 import           Explain.Location
-import           Error.Backtrace
+
 
 data Context
   = NoContext
-  | Context { ctxAstPath :: FilePath, ctxArea :: Area, ctxBacktrace :: Backtrace }
+  | Context { ctxAstPath :: FilePath, ctxArea :: Area }
   deriving(Eq, Show)
+
 
 getCtxArea :: Context -> Maybe Area
 getCtxArea ctx = case ctx of
-  NoContext        -> Nothing
-  Context _ area _ -> Just area
+  NoContext        ->
+    Nothing
+
+  Context _ area ->
+    Just area
+
 
 getCtxPath :: Context -> Maybe FilePath
 getCtxPath ctx = case ctx of
-  NoContext        -> Nothing
-  Context path _ _ -> Just path
+  NoContext        ->
+    Nothing
+
+  Context path _ ->
+    Just path

@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7108171d09da81204969b6f0f194c679a06b636c3d68765dd03aa4248b550a67
+-- hash: 1649bdfa60ceef61f17eff423f1691422b5aa9f9186d3d9a824b87815b969dc6
 
 name:           madlib
 version:        0.12.2
@@ -49,7 +49,6 @@ library
       Generate.Documentation
       Generate.Javascript
       Generate.JSInternals
-      Generate.Json
       Generate.LLVM.ClosureConvert
       Generate.LLVM.LLVM
       Generate.LLVM.Rename
@@ -115,7 +114,7 @@ library
       Paths_madlib
   hs-source-dirs:
       compiler/main
-  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -184,7 +183,6 @@ library common
       Canonicalize.Env
       Canonicalize.InstanceToDerive
       Driver.Query
-      Error.Backtrace
       Error.Context
       Error.Error
       Error.Warning
@@ -199,7 +197,7 @@ library common
       Paths_madlib
   hs-source-dirs:
       compiler/common
-  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -262,7 +260,7 @@ executable madlib
       Paths_madlib
   hs-source-dirs:
       compiler/app
-  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16
+  ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -325,6 +323,7 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Blackbox.RunnerSpec
       Generate.JavascriptSpec
       Generate.JSInternalsSpec
       Infer.SolveSpec

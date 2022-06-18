@@ -4,7 +4,6 @@ module Error.Error where
 
 import           Infer.Type
 import           Error.Context
-import           Error.Backtrace
 import           Explain.Location
 
 
@@ -60,11 +59,11 @@ limitContextArea maxLines err = case err of
   CompilationError _ NoContext ->
     err
 
-  CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')) bt) ->
+  CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c'))) ->
     if l' > l + 1 then
-      CompilationError e (Context fp (Area (Loc a l c) (Loc a' (l + 2) 1)) bt)
+      CompilationError e (Context fp (Area (Loc a l c) (Loc a' (l + 2) 1)))
     else
-      CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')) bt)
+      CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')))
 
 
 getContext :: CompilationError -> Context
@@ -75,5 +74,5 @@ getContext err = case err of
 
 getPath :: CompilationError -> FilePath
 getPath err = case err of
-  CompilationError _ (Context path _ _) ->
+  CompilationError _ (Context path _) ->
     path

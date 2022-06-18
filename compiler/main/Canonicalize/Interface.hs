@@ -59,7 +59,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     let tvs' = (\(TVar tv) -> tv) <$> tvs
 
     env' <- if null tvs'
-      then throwError $ CompilationError FatalError (Context (envCurrentPath env) area mempty)
+      then throwError $ CompilationError FatalError (Context (envCurrentPath env) area)
       else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
 
     canMs <- mapM canonicalizeTyping ms
@@ -103,7 +103,7 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
         return found
       
       Nothing ->
-        throwError $ CompilationError (InterfaceNotExisting name) (Context (envCurrentPath env) emptyArea [])
+        throwError $ CompilationError (InterfaceNotExisting name) (Context (envCurrentPath env) emptyArea)
 
 
 lookupInterface' :: Rock.MonadFetch Query.Query m => Env -> String -> m (Maybe Interface)

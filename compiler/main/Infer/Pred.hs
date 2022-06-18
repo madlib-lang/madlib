@@ -77,7 +77,7 @@ findInst env p@(IsIn interface t _) = do
   tryInsts []          =
     case p of
         IsIn _ _ (Just area) ->
-          throwError $ CompilationError (NoInstanceFound interface t) (Context (envCurrentPath env) area (envBacktrace env))
+          throwError $ CompilationError (NoInstanceFound interface t) (Context (envCurrentPath env) area)
         _ ->
           throwError $ CompilationError (NoInstanceFound interface t) NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
@@ -143,7 +143,7 @@ byInst env p@(IsIn interface ts maybeArea) = tryInsts (insts env interface)
     if all isConcrete $ predTypes p then
       case maybeArea of
         Just area ->
-          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area (envBacktrace env))
+          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area)
         _ ->
           throwError $ CompilationError (NoInstanceFound interface ts) NoContext
     else

@@ -1,0 +1,142 @@
+import type { Maybe } from "Maybe"
+import type { Wish } from "Wish"
+import File from "File"
+import String from "String"
+import IO from "IO"
+import { bad, fulfill, mapRej } from "Wish"
+import { Just, Nothing } from "Maybe"
+import { Left, Right } from "Either"
+import J from "JsonParser"
+import { always } from "Function"
+
+
+
+export type Version = Version(Integer, Integer, Integer)
+
+export alias Dependency = {
+  description :: Maybe String,
+  maxVersion :: Maybe Version,
+  minVersion :: Maybe Version,
+  url :: String,
+}
+
+export alias MadlibDotJson = { bin :: Maybe String, dependencies :: Maybe (List Dependency), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version, }
+
+
+parseVersion :: String -> Maybe Version
+export parseVersion = pipe(
+  String.split("."),
+  map(scan),
+  where {
+    [Just(major), Just(minor), Just(patch),] =>
+      Just(Version(major, minor, patch))
+
+    _ =>
+      Nothing
+  }
+)
+
+
+dependencyParser :: J.Parser (List Dependency)
+export dependencyParser =
+  J.field(
+    "dependencies",
+    J.list(
+      J.map4(
+        (url, description, maybeMinVersion, maybeMaxVersion) => ({
+          url,
+          description,
+          minVersion: maybeMinVersion,
+          maxVersion: maybeMaxVersion,
+        }),
+        J.field("url", J.string),
+        J.maybe(J.field("description", J.string)),
+        J.map1(chain(parseVersion), J.maybe(J.field("minVersion", J.string))),
+        J.map1(chain(parseVersion), J.maybe(J.field("maxVersion", J.string)))
+      )
+    )
+  )
+
+
+parseDependencies :: String -> Wish String (List Dependency)
+parseDependencies = pipe(
+  J.parse(dependencyParser),
+  where {
+    Left(_) =>
+      of([])
+
+    Right(a) =>
+      of(a)
+  }
+)
+
+
+makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
+makeMadlibDotJson = (
+  name,
+  version,
+  madlibVersion,
+  dependencies,
+  main,
+  bin,
+  importAliases
+) => where (parseVersion(version)) {
+  Just(v) =>
+    J.succeed({
+      name,
+      version: v,
+      madlibVersion,
+      dependencies,
+      main,
+      bin,
+      importAliases,
+    })
+
+  Nothing =>
+    J.fail(
+      `The version in the madlib.json file is not valid, you provided '', but it should have the form x.y.z where x, y and z are numbers.`
+    )
+}
+
+
+parser :: J.Parser MadlibDotJson
+parser = J
+  .chain7(
+    makeMadlibDotJson,
+    J.field("name", J.string),
+    J.field("version", J.string),
+    J.maybe(J.field("madlibVersion", J.string)),
+    J.maybe(dependencyParser),
+    J.field("main", J.string),
+    J.maybe(J.field("bin", J.string)),
+    J.maybe(J.field("importAliases", J.dict(J.string)))
+  )
+
+
+parse :: String -> Wish String MadlibDotJson
+export parse = pipe(
+  J.parse(parser),
+  where {
+    Left(e) =>
+      bad(e)
+
+    Right(a) =>
+      of(a)
+  }
+)
+
+
+load :: String -> Wish String MadlibDotJson
+export load = (path) => pipe(
+  File.read,
+  mapRej(always(`madlib.json file not found at path ''`)),
+  chain(parse),
+  mapRej((e) => `madlib.json file at path '' is malformed Error: ${inspect(e)}`)
+)(path)
+
+
+fulfill(
+  IO.log,
+  IO.log,
+  load("./compiler/test/Blackbox/test-cases/parse-madlib-dot-json/madlib.json")
+)

@@ -74,7 +74,7 @@ validateImport originAstPath imp = do
   unless
     (null allNotExported)
     (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
-                                   (Context originAstPath (Src.getArea $ head allNotExported) [])
+                                   (Context originAstPath (Src.getArea $ head allNotExported))
     )
 
 
@@ -142,23 +142,23 @@ checkUnusedImports env imports = do
       return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
-      pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))
+      pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
     )
     (withJSCheck ++ unusedTypes)
 
 
 findDictionaryFromListName :: FilePath -> [Src.Import] -> String
 findDictionaryFromListName dictionaryModulePath imports = case imports of
-  ((Src.Source area target (Src.NamedImport names _ path)) : next) | path == dictionaryModulePath ->
+  ((Src.Source _ _ (Src.NamedImport names _ path)) : next) | path == dictionaryModulePath ->
     if "fromList" `elem` (Src.getSourceContent <$> names) then
       "fromList"
     else
       findDictionaryFromListName dictionaryModulePath next
 
-  ((Src.Source _ _ (Src.DefaultImport (Src.Source _ _ namespace) _ path)) : next) | path == dictionaryModulePath ->
+  ((Src.Source _ _ (Src.DefaultImport (Src.Source _ _ namespace) _ path)) : _) | path == dictionaryModulePath ->
     namespace <> ".fromList"
 
-  (imp : next) ->
+  (_ : next) ->
     findDictionaryFromListName dictionaryModulePath next
 
   _ ->
@@ -243,7 +243,7 @@ canonicalizeAST _ _ _ _ =
 performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]
 performExportCheck env area exportedNames name = do
   if name `elem` exportedNames
-    then throwError $ CompilationError (NameAlreadyExported name) (Context (envCurrentPath env) area [])
+    then throwError $ CompilationError (NameAlreadyExported name) (Context (envCurrentPath env) area)
     else return $ name : exportedNames
 
 verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]

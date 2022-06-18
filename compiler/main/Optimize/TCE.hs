@@ -144,10 +144,10 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
 
 combineRecursionKinds :: [Maybe RecursionKind] -> Maybe RecursionKind
 combineRecursionKinds kinds = case kinds of
-  (Just (ListRecursion side) : more) ->
+  (Just (ListRecursion side) : _) ->
     Just (ListRecursion side)
 
-  (Just (ConstructorRecursion _) : more) ->
+  (Just (ConstructorRecursion _) : _) ->
     Just (ConstructorRecursion Nothing)
 
   (Just PlainRecursion : more) ->
@@ -197,7 +197,7 @@ findRecursionKind fnType fnName params exps = case exps of
     Nothing
 
   [lastExp] -> case lastExp of
-    Typed _ _ _ (Call (Typed _ _ _ (Var constructorName True)) args) ->
+    Typed _ _ _ (Call (Typed _ _ _ (Var _ True)) args) ->
       if any (containsRecursion True fnType fnName) args then
         Just (ConstructorRecursion Nothing)
       else
@@ -206,13 +206,13 @@ findRecursionKind fnType fnName params exps = case exps of
     Typed _ _ _ (Call (Typed (_ :=> t) _ _ _) _) | t == fnType && containsRecursion True fnType fnName lastExp ->
       Just PlainRecursion
 
-    Typed _ _ _ (If cond truthy falsy) ->
+    Typed _ _ _ (If _ truthy falsy) ->
        combineRecursionKinds
           [ findRecursionKind fnType fnName params [truthy]
           , findRecursionKind fnType fnName params [falsy]
           ]
 
-    Typed _ _ _ (Where exp iss) ->
+    Typed _ _ _ (Where _ iss) ->
       findRecursionKindInIss fnType fnName params iss
 
     Typed _ _ _ (ListConstructor [Typed _ _ _ (ListItem li), Typed _ _ _ (ListSpread spread)]) ->
@@ -224,9 +224,8 @@ findRecursionKind fnType fnName params exps = case exps of
     _ ->
       Nothing
 
-  (exp : next) ->
+  _ ->
     Nothing
-    -- findRecursionKind fnName params next
 
 
 containsRecursion :: Bool -> Type -> String  -> Exp -> Bool

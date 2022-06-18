@@ -215,7 +215,7 @@ isMacroExp exp = case exp of
 
 getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
-  Source _ _ (NamedImport names _ n) ->
+  Source _ _ (NamedImport names _ _) ->
     names
 
   Source _ _ DefaultImport{}         ->
@@ -227,7 +227,7 @@ getImportNames imp = case imp of
 
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
-  Source _ _ (NamedImport names _ _) ->
+  Source _ _ (NamedImport _ _ _) ->
     []
 
   Source _ _ (TypeImport  names _ _) ->

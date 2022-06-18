@@ -141,12 +141,12 @@ runBuildPackage rebuild = do
       versionLock             <- VersionLock.loadCurrentVersionLock
       projectHash             <- generatePackageHash currentDirectoryPath
       let hashedVersion = hash $ BLChar8.pack version
-      (typeChecked, warnings) <- typeCheckMain canonicalMain
+      (typeChecked, _) <- typeCheckMain canonicalMain
 
       let parsedVersion = MadlibVersion.parse version
 
       case typeChecked of
-        Left errors ->
+        Left _ ->
           putStrLn "Compilation errors, please fix them before building the package"
 
         Right solvedTable -> do
@@ -165,6 +165,8 @@ runBuildPackage rebuild = do
 
 runPackage :: PackageSubCommand -> Bool -> IO ()
 runPackage subCommand rebuild = case subCommand of
-  NoPackageSubCommand -> runBuildPackage rebuild
+  NoPackageSubCommand ->
+    runBuildPackage rebuild
 
-  GenerateHash input  -> runGeneratePackageHash input
+  GenerateHash input  ->
+    runGeneratePackageHash input

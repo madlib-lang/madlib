@@ -93,13 +93,13 @@ buildAST options path code = case parse code of
                   unlines (tail . tail $ split)
     case (line, col) of
       (Just line', Just col') ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))) [])
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
 
       (Just line', Nothing) ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)) [])
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
 
       _ ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 100000 1)) [])
+        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 100000 1)))
 
 
 setPath :: AST -> FilePath -> AST
@@ -131,7 +131,7 @@ computeAbsoluteImportPaths pathUtils astPath rootPath imps = case imps of
           $ Left
           $ CompilationError
               (ImportNotFound $ snd $ getImportPath imp)
-              (Context astPath (getArea imp) [])
+              (Context astPath (getArea imp))
 
       Just good -> do
         next' <- computeAbsoluteImportPaths pathUtils astPath rootPath next

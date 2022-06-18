@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Utils.Path
   ( computeRootPath
   , resolveAbsoluteSrcPath
@@ -69,11 +70,14 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
     FileSystemPath -> do
       let ext = if takeExtension path == ".json" then ".json" else ".mad"
       path' <- case path of
-        '@' : rest -> do
+        '@' : _ -> do
           let pathParts = splitPath path
           let alias = case dropTrailingPathSeparator . head $ pathParts of
-                "@"         -> "."
-                '@' : after -> after
+                "@" ->
+                  "."
+
+                '@' : after ->
+                  after
           let afterAlias = joinPath . tail $ pathParts
           (madlibDotJsonFile, dir) <- retrieveMadlibDotJson pathUtils rootPath
           let aliasPath = case madlibDotJsonFile of

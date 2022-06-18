@@ -101,12 +101,12 @@ instance Unify Type where
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
 
-  unify (TCon a@(TC tNameA _) fpa) t2@(TApp (TCon b@(TC tNameB k) fpb) _)
+  unify (TCon (TC tNameA _) _) t2@(TApp (TCon (TC tNameB k) fpb) _)
     | tNameA == "String" && tNameB == "Element" = do
         tv <- newTVar Star
         unify (TApp (TCon (TC "Element" k) fpb) tv) t2
 
-  unify t1@(TApp (TCon b@(TC tNameB k) fpb) _) (TCon a@(TC tNameA _) fpa)
+  unify t1@(TApp (TCon (TC tNameB k) fpb) _) (TCon (TC tNameA _) _)
     | tNameB == "Element" && tNameA == "String" = do
         tv <- newTVar Star
         unify (TApp (TCon (TC "Element" k) fpb) tv) t1
@@ -122,7 +122,7 @@ instance (Unify t, Show t, Substitutable t) => Unify [t] where
     s2 <- unify (apply s1 xs) (apply s1 ys)
     return (s2 <> s1)
   unify [] [] = return nullSubst
-  unify a  b  = throwError $ CompilationError Error NoContext
+  unify _  _  = throwError $ CompilationError Error NoContext
 
 
 unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
@@ -139,8 +139,8 @@ unifyVars' s _ _  = return s
 
 
 unifyElems :: Env -> [Type] -> Infer Substitution
-unifyElems env []      = return M.empty
-unifyElems env (h : r) = unifyElems' h r
+unifyElems _ []      = return M.empty
+unifyElems _ (h : r) = unifyElems' h r
 
 unifyElems' :: Type -> [Type] -> Infer Substitution
 unifyElems' _ []        = return M.empty
@@ -196,7 +196,7 @@ contextualUnify env exp t1 t2 = catchError
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution
-contextualUnifyElems env []      = return M.empty
+contextualUnifyElems _ []      = return M.empty
 contextualUnifyElems env (h : r) = contextualUnifyElems' env h r
 
 contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Type)] -> Infer Substitution
@@ -213,5 +213,5 @@ flipUnificationError e@(CompilationError err x) = case err of
 
 
 addContext :: Env -> Can.Canonical a -> CompilationError -> Infer b
-addContext env can@(Can.Canonical area e) (CompilationError err _) =
-  throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
+addContext env (Can.Canonical area _) (CompilationError err _) =
+  throwError $ CompilationError err (Context (envCurrentPath env) area)

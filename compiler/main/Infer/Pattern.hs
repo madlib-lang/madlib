@@ -45,8 +45,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
     return (Slv.Typed ([] :=> tChar) area (Slv.PChar s), [], M.empty, tChar)
 
   Can.PVar  i -> do
-    v    <- newTVar Star
-    env' <- safeExtendVars env (i, toScheme v)
+    v <- newTVar Star
     return (Slv.Typed ([] :=> v) area (Slv.PVar i), [], M.singleton i (toScheme v), v)
 
   Can.PAny -> do
@@ -123,7 +122,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
     tv                    <- newTVar Star
     sc                    <- catchError
       (lookupVar env n)
-      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area)
       )
     (ps' :=> t) <- instantiate sc
     s           <- unify t (foldr fn tv ts)

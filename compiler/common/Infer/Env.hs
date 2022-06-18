@@ -5,7 +5,6 @@ module Infer.Env where
 import qualified Data.Set               as Set
 import qualified Data.Map               as Map
 import           Infer.Type
-import           Error.Backtrace
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
 
@@ -46,7 +45,6 @@ data Env
     , envConstructors :: Set.Set String
     , envMethods      :: Methods
     , envCurrentPath  :: FilePath
-    , envBacktrace    :: Backtrace
     -- TODO: remove and use envImportInfo instead
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]

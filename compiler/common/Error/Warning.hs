@@ -1,9 +1,10 @@
 module Error.Warning where
 
 import           Error.Context
-import           Error.Backtrace
+
 
 data CompilationWarning = CompilationWarning WarningKind Context deriving(Eq, Show)
+
 
 data WarningKind
   = UnusedImport String FilePath
@@ -21,7 +22,7 @@ getContext warning = case warning of
 
 getPath :: CompilationWarning -> FilePath
 getPath err = case err of
-  CompilationWarning _ (Context path _ _) ->
+  CompilationWarning _ (Context path _) ->
     path
 
 
