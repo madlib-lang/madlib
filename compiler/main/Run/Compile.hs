@@ -127,7 +127,6 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
     rootPath            <- canonicalizePath "./"
-    -- rootPath            <- canonicalizePath $ computeRootPath entrypoint
 
     let options =
           Options

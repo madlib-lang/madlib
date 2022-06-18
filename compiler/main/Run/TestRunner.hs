@@ -117,7 +117,7 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
       putStrLn $ List.intercalate "\n\n\n" formattedWarnings
 
     if null errors then do
-      let jsExePath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) (optEntrypoint options)
+      let jsExePath = computeTargetPath (optOutputPath options) (optRootPath options) (optEntrypoint options)
       testOutput <- case DistributionSystem.buildOS of
         DistributionSystem.Windows ->
           if optTarget options == TLLVM then

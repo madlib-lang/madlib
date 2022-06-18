@@ -229,6 +229,7 @@ getDefaultImportNames ast =
         )
         imports
 
+
 getADTConstructors :: TypeDecl -> Maybe [Constructor]
 getADTConstructors td = case td of
   Untyped _ ADT { adtconstructors } ->
@@ -237,8 +238,18 @@ getADTConstructors td = case td of
   _ ->
     Nothing
 
+
 getConstructorName :: Constructor -> String
 getConstructorName (Untyped _ (Constructor name _ _)) = name
+
+
+getConstructorTypings :: Constructor -> [Typing]
+getConstructorTypings (Untyped _ (Constructor _ typings _)) = typings
+
+
+getConstructorType :: Constructor -> Ty.Type
+getConstructorType (Untyped _ (Constructor _ _ t)) = t
+
 
 isADTExported :: TypeDecl -> Bool
 isADTExported adt = case adt of
