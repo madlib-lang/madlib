@@ -48,10 +48,10 @@ buildExpandedBody argInfo exp =
         Typed qt area metadata (Var name isConstructor) ->
           Typed (ps :=> returnType) area [] (Call (Typed qt area metadata (Var name isConstructor)) args)
 
-        Typed qt area metadata (Placeholder ref@(MethodRef{}, _) _) ->
+        Typed _ area _ (Placeholder (MethodRef{}, _) _) ->
           Typed (ps :=> returnType) area [] (Call exp args)
 
-        Typed qt area metadata (Call fn args') ->
+        Typed _ area metadata (Call fn args') ->
           Typed (ps :=> returnType) area metadata (Call fn (args' ++ args))
 
         Typed qt area metadata (Placeholder ref@(ClassRef{}, _) wrapped) ->
@@ -95,7 +95,7 @@ expand exp = case exp of
   Typed qt area metadata (Export e) ->
     Typed qt area metadata (Export (expand e))
 
-  Typed qt area metadata (Var name isConstructor) ->
+  Typed qt area _ (Var _ _) ->
     if not (isFunctionType (getQualified qt)) then
       exp
     else

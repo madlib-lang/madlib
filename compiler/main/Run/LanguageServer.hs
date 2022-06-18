@@ -775,19 +775,19 @@ generateDiagnostics invalidatePath state uri fileUpdates = do
 
 uriOfError :: CompilationError -> Uri
 uriOfError err = case Error.getContext err of
-  Context path _ _ ->
+  Context path _ ->
     Uri $ T.pack ("file://" <> path)
 
 
 uriOfWarning :: CompilationWarning -> Uri
 uriOfWarning warning = case Warning.getContext warning of
-  Context path _ _ ->
+  Context path _ ->
     Uri $ T.pack ("file://" <> path)
 
 
 areErrorsFromSameModule :: CompilationError -> CompilationError -> Bool
 areErrorsFromSameModule a b = case (a, b) of
-  (CompilationError _ (Context pathA _ _), CompilationError _ (Context pathB _ _)) ->
+  (CompilationError _ (Context pathA _), CompilationError _ (Context pathB _)) ->
     pathA == pathB
 
   _ ->
@@ -796,7 +796,7 @@ areErrorsFromSameModule a b = case (a, b) of
 
 isErrorFromModule :: FilePath -> CompilationError -> Bool
 isErrorFromModule path err = case err of
-  CompilationError _ (Context ctxPath _ _) ->
+  CompilationError _ (Context ctxPath _) ->
     ctxPath == path
 
   _ ->
@@ -810,7 +810,7 @@ errorsForModule errs path =
 
 areWarningsFromSameModule :: CompilationWarning -> CompilationWarning -> Bool
 areWarningsFromSameModule a b = case (a, b) of
-  (CompilationWarning _ (Context pathA _ _), CompilationWarning _ (Context pathB _ _)) ->
+  (CompilationWarning _ (Context pathA _), CompilationWarning _ (Context pathB _)) ->
     pathA == pathB
 
   _ ->
@@ -819,7 +819,7 @@ areWarningsFromSameModule a b = case (a, b) of
 
 isWarningFromModule :: FilePath -> CompilationWarning -> Bool
 isWarningFromModule path err = case err of
-  CompilationWarning _ (Context ctxPath _ _) ->
+  CompilationWarning _ (Context ctxPath _) ->
     ctxPath == path
 
   _ ->
@@ -848,7 +848,7 @@ warningToDiagnostic :: CompilationWarning -> IO Diagnostic
 warningToDiagnostic warning = do
   formattedWarning <- Explain.formatWarning readFile True warning
   case warning of
-    CompilationWarning _ (Context astPath area _) ->
+    CompilationWarning _ (Context astPath area) ->
       return $ Diagnostic
         (areaToRange area)        -- _range
         (Just DsWarning)            -- _severity
@@ -873,7 +873,7 @@ errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
   formattedError <- Explain.format readFile True err
   case err of
-    CompilationError _ (Context astPath area _) ->
+    CompilationError _ (Context astPath area) ->
       return $ Diagnostic
         (areaToRange area)        -- _range
         (Just DsError)            -- _severity

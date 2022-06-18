@@ -9,7 +9,6 @@ import           Infer.Type
 import           Infer.Infer
 import           Infer.Instantiate
 import           Error.Error
-import           Error.Backtrace
 import           Error.Context
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
@@ -33,6 +32,7 @@ isNameInImport name ImportInfo { iiType, iiName }
   | iiType == NamespaceImport && iiName == takeWhile (/= '.') name = True
   | otherwise = False
 
+
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env name = do
   maybeType <- case List.find (isNameInImport name) $ envImportInfo env of
@@ -55,15 +55,6 @@ lookupVar env name = do
 
     Nothing ->
       throwError $ CompilationError (UnboundVariable name) NoContext
-
-
--- lookupVar :: Env -> String -> Infer Scheme
--- lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
---   Just x  ->
---     return x
-
---   Nothing ->
---     throwError $ CompilationError (UnboundVariable x) NoContext
 
 
 extendVars :: Env -> (String, Scheme) -> Env
@@ -119,7 +110,6 @@ mergeEnv initial env = Env { envVars              = envVars initial <> envVars e
                            , envMethods           = envMethods initial <> envMethods env
                            , envInterfaces        = envInterfaces initial <> envInterfaces env
                            , envConstructors      = envConstructors initial <> envConstructors env
-                           , envBacktrace         = mempty
                            , envCurrentPath       = envCurrentPath env
                            , envNamespacesInScope = envNamespacesInScope initial <> envNamespacesInScope env
                            }
@@ -410,16 +400,6 @@ initialEnv = Env
       , (">>>"          , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       ]
   , envCurrentPath = ""
-  , envBacktrace   = mempty
   , envNamespacesInScope = mempty
   , envImportInfo = mempty
   }
-
-pushExpToBT :: Env -> Can.Exp -> Env
-pushExpToBT env exp = env { envBacktrace = BTExp exp : envBacktrace env }
-
-resetBT :: Env -> Env
-resetBT env = env { envBacktrace = [] }
-
-pushInstanceToBT :: Env -> Can.Instance -> Env
-pushInstanceToBT env inst = env { envBacktrace = BTInstance inst : envBacktrace env }

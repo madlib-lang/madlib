@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Utils where
 
 import           System.FilePath                ( takeDirectory
@@ -42,7 +43,7 @@ getDefaultExecutableName = case DistributionSystem.buildOS of
 
 
 sanitizeOutputPath :: Command -> Either String FilePath
-sanitizeOutputPath Compile { compileOutput, compileBundle, compileTarget = TLLVM } =
+sanitizeOutputPath Compile { compileOutput, compileTarget = TLLVM } =
   if hasTrailingPathSeparator compileOutput then
     Right $ joinPath [compileOutput, getDefaultExecutableName]
   else

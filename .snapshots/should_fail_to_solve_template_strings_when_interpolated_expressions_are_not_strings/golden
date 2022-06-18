@@ -12,25 +12,6 @@
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 5 1 6) (Loc 6 1 7)
-        , ctxBacktrace =
-            [ BTExp
-                (Canonical
-                   (Area (Loc 0 1 1) (Loc 11 1 12))
-                   (TemplateString
-                      [ Canonical
-                          (Area (Loc 3 1 4) (Loc 8 1 9))
-                          (App
-                             (Canonical
-                                (Area (Loc 3 1 4) (Loc 8 1 9))
-                                (App
-                                   (Canonical (Area (Loc 5 1 6) (Loc 6 1 7)) (Var "+"))
-                                   (Canonical (Area (Loc 3 1 4) (Loc 4 1 5)) (LNum "4"))
-                                   False))
-                             (Canonical (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "3"))
-                             True)
-                      , Canonical (Area (Loc 10 1 11) (Loc 11 1 12)) (LStr "\"!\"")
-                      ]))
-            ]
         }
   ]
 )

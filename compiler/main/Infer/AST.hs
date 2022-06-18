@@ -21,7 +21,6 @@ import           Infer.Exp
 import           Error.Error
 import           Error.Warning
 import           Error.Context
-import           Error.Backtrace
 import           Data.Maybe
 import           Data.List
 import           Control.Monad.State
@@ -92,7 +91,7 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
   nextEnv' <- catchError
     nextEnv
     (\(CompilationError err _) ->
-      throwError $ CompilationError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+      throwError $ CompilationError err (Context (envCurrentPath env) (Can.getArea exp))
     )
 
   populateTopLevelTypings nextEnv' es
@@ -107,7 +106,7 @@ buildDefaultImportNames alreadyFound env imports = case imports of
     case Can.getImportNamespace imp of
       Just n ->
         if n `elem` alreadyFound then
-          throwError $ CompilationError (NameAlreadyDefined n) (Context (envCurrentPath env) (Can.getArea imp) [])
+          throwError $ CompilationError (NameAlreadyDefined n) (Context (envCurrentPath env) (Can.getArea imp))
         else
           buildDefaultImportNames (n : alreadyFound) env next
 
@@ -150,11 +149,11 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
 addConstructors env ctors = do
   foldM
-    (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc _)) -> do
+    (\env'' (Can.Canonical area (Can.Constructor name _ sc _)) -> do
       env''' <- catchError
         (safeExtendVars env'' (name, sc))
         (\(CompilationError e _) ->
-          throwError $ CompilationError e (Context (envCurrentPath env'') area [BTConstructor ctor])
+          throwError $ CompilationError e (Context (envCurrentPath env'') area)
         )
 
       return env''' { envConstructors = Set.insert name (envConstructors env''') }
@@ -349,11 +348,10 @@ chars = (:"") <$> ['a'..]
 -- TODO: Move to Infer.Derive
 buildEnvForDerivedInstance :: Env -> InstanceToDerive -> Env
 buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case instanceToDerive of
-  TypeDeclToDerive (Can.Canonical _ Can.ADT { Can.adtname, Can.adtparams, Can.adtconstructors, Can.adtType }) ->
+  TypeDeclToDerive (Can.Canonical _ Can.ADT { Can.adtparams, Can.adtconstructors, Can.adtType }) ->
         -- Env
     let constructorTypes = Can.getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
-        tvsInType = ftv varsInType
         instPreds interfaceName =
           (\varInType ->
               IsIn interfaceName [varInType] Nothing
@@ -375,17 +373,13 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
                           _ ->
                             undefined
         updatedInterfaces = M.insert "Inspect" newInspectInterface $ M.insert "Eq" newEqInterface envInterfaces
-
-        eqTupleType = tTuple2Of adtType adtType
     in  env { envInterfaces = updatedInterfaces }
 
   RecordToDerive fieldNames ->
     let fieldNamesWithVars = zip (Set.toList fieldNames) chars
         fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
-        varsInType         = TVar . (`TV` Star) . snd <$> fieldNamesWithVars
         recordType         = TRecord fields Nothing
         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
-        eqInstPreds = instPreds "Eq"
         inspectInstPreds = instPreds "Inspect"
         eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
         inspectInstanceForEnv = Instance (inspectInstPreds :=> IsIn "Inspect" [recordType] Nothing) mempty
@@ -419,7 +413,7 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
   envWithImports                      <- solveImports envWithImportInfo aimports
   initialEnv                          <- buildInitialEnv envWithImports ast
   fullEnv                             <- populateTopLevelTypings initialEnv (Can.aexps ast)
-  (inferredExps, env'             )   <- inferExps options fullEnv { envBacktrace = [] } aexps
+  (inferredExps, env'             )   <- inferExps options fullEnv aexps
   (env''        , inferredInstances)  <- resolveInstances options env' ainstances
   let updatedInterfaces = updateInterface <$> ainterfaces
   updatedADTs <- mapM updateADT atypedecls

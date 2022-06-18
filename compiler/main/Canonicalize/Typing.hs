@@ -115,7 +115,7 @@ constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
     (\case
       Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
 
-      fullTyping@(Src.Source _ _ (Src.TRComp n typings')) -> do
+      fullTyping@(Src.Source _ _ (Src.TRComp _ _)) -> do
         apply s <$> typingToType env (KindRequired Star) fullTyping
 
       _ -> undefined
@@ -146,12 +146,12 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
     pushTypeAccess t
     h <- catchError
       (lookupADT env t)
-      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area))
 
     parsedType <- case h of
-      (TAlias _ id vars t) ->
+      (TAlias _ id vars _) ->
         if not (null vars) then
-          throwError $ CompilationError (WrongAliasArgCount id (length vars) 0) (Context (envCurrentPath env) area [])
+          throwError $ CompilationError (WrongAliasArgCount id (length vars) 0) (Context (envCurrentPath env) area)
         else
           updateAliasVars (getConstructorCon h) []
 
@@ -165,7 +165,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
         if k == kind parsedType then
           return parsedType
         else
-          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area [])
+          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area)
 
 
 
@@ -177,7 +177,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
     pushTypeAccess t
     h <- catchError
       (lookupADT env t)
-      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area))
 
     let (Forall ks (_ :=> rr)) = quantify (ftv h) ([] :=> h)
 
@@ -198,9 +198,9 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
       (zip ts kargs)
 
     parsedType <- case h of
-      TAlias _ id tvs t ->
+      TAlias _ id tvs _ ->
         if length tvs /= length ts then
-          throwError $ CompilationError (WrongAliasArgCount id (length tvs) (length ts)) (Context (envCurrentPath env) area [])
+          throwError $ CompilationError (WrongAliasArgCount id (length tvs) (length ts)) (Context (envCurrentPath env) area)
         else
           updateAliasVars (getConstructorCon h) params
 
@@ -215,7 +215,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
         if k == kind parsedType && length kargs >= length ts then
           return parsedType
         else
-          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area [])
+          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area)
 
 
 typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
@@ -258,7 +258,7 @@ updateAliasVars t args = do
             TVar tv -> case M.lookup tv instArgs of
               Just x  -> return x
               Nothing -> case tv of
-                TV n k -> return $ TVar (TV "p" k)
+                TV _ k -> return $ TVar (TV "p" k)
 
             TApp l r -> do
               l' <- update l

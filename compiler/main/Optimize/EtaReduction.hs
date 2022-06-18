@@ -120,7 +120,7 @@ reduce blacklist exp = case exp of
 
   Typed qt area metadata (Definition params body) ->
     case body of
-      [Typed callQt callArea callMetadata (Call fn args)] | not (isInBlacklist blacklist fn) ->
+      [Typed _ _ _ (Call fn args)] | not (isInBlacklist blacklist fn) ->
         let (paramsLeft, argsLeft) = reduceDefinitionParams fn params args
         in  if null paramsLeft && null argsLeft then
               updateQualType qt fn

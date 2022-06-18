@@ -191,7 +191,7 @@ instance Canonicalizable Src.Exp Can.Exp where
         [Src.Source emptyArea sourceTarget "__x__"]
         [Src.Source area sourceTarget (Src.Where (Src.Source emptyArea sourceTarget (Src.Var "__x__")) iss)]
 
-    Src.JsxTag name props children -> do
+    Src.JsxTag{} -> do
       canonicalizeJsxTag env target (Src.Source area sourceTarget e)
 
     Src.JsxAutoClosedTag name props -> do
@@ -294,7 +294,7 @@ buildApp env target area f args = do
 
 
 buildApp' :: Env.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
-buildApp' env target total nth area f@(Src.Source _ _ f') args = case args of
+buildApp' env target total nth area f@Src.Source{} args = case args of
   [arg] -> do
     arg' <- canonicalize env target arg
     f'   <- canonicalize env target f
@@ -312,7 +312,7 @@ canonicalizeJsxTag env target exp = case exp of
   Src.Source area _ (Src.JsxTag name props children) -> do
     pushNameAccess name
     pushNameAccess "text" -- fix for now
-    let Area (Loc _ l c) (Loc _ l' c') = area
+    let Area (Loc _ l c) (Loc _ _ _) = area
     let tagFnArea = Area (Loc 0 l c) (Loc 0 l (c + length name + 2))
     let tagFnVar = Can.Canonical tagFnArea (Can.Var name)
 
@@ -320,7 +320,7 @@ canonicalizeJsxTag env target exp = case exp of
     propFns <- mapM
       (\(Src.Source a _ (Src.JsxProp name' exp)) -> do
         pushNameAccess name'
-        let Area (Loc _ l c) (Loc _ l' c') = a
+        let Area (Loc _ l c) (Loc _ _ _) = a
         arg <- canonicalize env target exp
         return $ Can.Canonical
           a
@@ -457,7 +457,7 @@ extractPatternFields pats = case pats of
 
 
 instance Canonicalizable Src.Import Can.Import where
-  canonicalize env target (Src.Source area _ imp) = case imp of
+  canonicalize _ _ (Src.Source area _ imp) = case imp of
     Src.NamedImport names relPath absPath ->
       return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
 

@@ -358,47 +358,17 @@ mergeRecords t1 t2 = case (t1, t2) of
 
   _ -> t2
 
+
 isFunctionType :: Type -> Bool
 isFunctionType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
   _ -> False
 
 
-isListType :: Type -> Bool
-isListType t = case t of
-  TApp (TCon (TC "List" _) "prelude") _ ->
-    True
-
-  _ ->
-    False
-
-isDictionaryType :: Type -> Bool
-isDictionaryType t = case t of
-  TApp (TApp (TCon (TC "Dictionary" _) "prelude") _) _ ->
-    True
-
-  _ ->
-    False
-
 isPlaceholderDict :: Qual Type -> Bool
 isPlaceholderDict qt =
   qt == [] :=> TVar (TV "dict" Star)
 
-isArrayType :: Type -> Bool
-isArrayType t = case t of
-  TApp (TCon (TC "Array" _) "prelude") _ ->
-    True
-
-  _ ->
-    False
-
-isByteArrayType :: Type -> Bool
-isByteArrayType t = case t of
-  TCon (TC "ByteArray" _) "prelude" ->
-    True
-
-  _ ->
-    False
 
 isTCon :: Type -> Bool
 isTCon t = case t of
@@ -440,11 +410,6 @@ getReturnType t = case t of
 
   or ->
     or
-
-getParamType :: Type -> Type
-getParamType t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) p) _ ->
-    p
 
 
 getParamTypes :: Type -> [Type]

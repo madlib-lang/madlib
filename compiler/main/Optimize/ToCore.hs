@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 -- {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Optimize.ToCore where
 
@@ -14,7 +15,7 @@ import qualified AST.Core                      as Core
 import           Infer.Type
 import           Explain.Location
 import qualified Utils.Types                   as Types
-import Text.Show.Pretty
+import           Text.Show.Pretty
 
 
 data State
@@ -104,9 +105,9 @@ buildApp f args =
   buildApp' (length args) (length args) f args
 
 buildApp' :: Int -> Int -> Slv.Exp -> [Slv.Exp] -> Slv.Exp
-buildApp' total nth f@(Slv.Typed (ps :=> t) area f') [arg] =
+buildApp' total nth f@(Slv.Typed (ps :=> t) area _) [arg] =
   Slv.Typed (ps :=> dropFirstParamType t) area (Slv.App f arg (total == nth))
-buildApp' total nth f@(Slv.Typed (ps :=> t) _ f') xs =
+buildApp' total nth f@(Slv.Typed (ps :=> t) _ _) xs =
   let arg@(Slv.Typed _ area _) = last xs
       subApp                    = buildApp' total (nth - 1) f (init xs)
   in  Slv.Typed (ps :=> dropNFirstParamTypes nth t) area (Slv.App subApp arg (total == nth))
@@ -153,7 +154,7 @@ class Processable a b where
 
 
 instance Processable Slv.Exp Core.Exp where
-  toCore enabled fullExp@(Slv.Untyped area e)  = error $ "not implemented: " <> ppShow e
+  toCore _ (Slv.Untyped _ e)  = error $ "not implemented: " <> ppShow e
   toCore enabled fullExp@(Slv.Typed qt area e) = case e of
     Slv.LNum  x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LNum x)
 
@@ -173,18 +174,18 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.JSExp js         -> return $ Core.Typed qt area [] (Core.JSExp js)
 
-    Slv.App fn arg close -> do
+    Slv.App{} -> do
       let (fn', args) = collectAppArgs True fullExp
       fn''  <- toCore enabled fn'
       args' <- mapM (toCore enabled) args
       return $ Core.Typed qt area [] (Core.Call fn'' args')
 
-    Slv.Access rec field@(Slv.Typed fieldQt fieldArea (Slv.Var ('.':fieldName) isConstructor)) -> do
+    Slv.Access rec (Slv.Typed fieldQt fieldArea (Slv.Var ('.':fieldName) isConstructor)) -> do
       rec' <- toCore enabled rec
       let field' = Core.Typed fieldQt fieldArea [] (Core.Var ('.':fieldName) isConstructor)
       return $ Core.Typed qt area [] (Core.Access rec' field')
 
-    Slv.Abs (Slv.Typed _ _ param) body -> do
+    Slv.Abs Slv.Typed{} _ -> do
       let (params, body') = collectAbsParams fullExp
           ps = preds qt
           paramTypes = getParamTypes (getQualified qt)
@@ -394,7 +395,7 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
                                                  }
    where
     optimizeConstructors :: Slv.Constructor -> PostProcess Core.Constructor
-    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings t)) = do
+    optimizeConstructors (Slv.Untyped _ (Slv.Constructor name typings t)) = do
       typings' <- mapM (toCore enabled) typings
       return $ Core.Untyped area [] $ Core.Constructor name typings' t
 

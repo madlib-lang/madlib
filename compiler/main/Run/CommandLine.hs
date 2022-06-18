@@ -20,7 +20,6 @@ data Command
       , compileBundle :: Bool
       , compileOptimize :: Bool
       , compileTarget :: Target
-      , compileJson :: Bool
       , compileTestFilesOnly :: Bool
       , compileWatch :: Bool
       }
@@ -73,9 +72,6 @@ parseBundle = switch (long "bundle" <> short 'b' <> help "Bundle the compile js 
 
 parseOptimize :: Parser Bool
 parseOptimize = switch (long "optimize" <> help "Optimize the output to generate smaller js files" <> showDefault)
-
-parseJson :: Parser Bool
-parseJson = switch (long "json" <> help "compiles to a JSON ast with types" <> showDefault)
 
 parseTestFilesOnly :: Parser Bool
 parseTestFilesOnly =
@@ -145,7 +141,6 @@ parseCompile =
     <*> parseBundle
     <*> parseOptimize
     <*> parseTarget
-    <*> parseJson
     <*> parseTestFilesOnly
     <*> parseWatch
 

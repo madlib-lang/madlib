@@ -16,7 +16,6 @@ import           Infer.AST
 import           Infer.Infer
 import           Infer.EnvUtils
 import qualified Infer.Env                     as SlvEnv
-import           Error.Error (CompilationError(CompilationError))
 import           Data.IORef
 import           Parse.Madlib.AST
 import           Control.Monad.IO.Class
@@ -87,27 +86,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Nothing ->
         return (False, (mempty, mempty))
 
-  -- DetectImportCycle importChain path -> nonInput $ do
-  --   Src.AST { Src.aimports, Src.apath } <- Rock.fetch $ ParsedAST path
-
-  --   case apath of
-  --     Just path ->
-  --       foldM
-  --         (\(alreadyErrored, errorsAndWarnings) imp ->
-  --           if alreadyErrored then
-  --             return (alreadyErrored, errorsAndWarnings)
-  --           else do
-  --             let importPath = Src.getImportAbsolutePath imp
-  --             let importArea = Src.getArea imp
-  --             if importPath `elem` importChain then
-  --               return (True, ([], [CompilationError (ImportCycle $ importChain ++ [path, importPath]) (Context path importArea [])]))
-  --             else do
-  --               res <- Rock.fetch $ DetectImportCycle (importChain ++ [path]) importPath
-  --               return (res, (mempty, mempty))
-  --         )
-  --         (False, ([], []))
-  --         aimports
-
   File path -> input $ do
     liftIO $ (PathUtils.readFile $ optPathUtils options) path
 
@@ -151,7 +129,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (found, (mempty, mempty))
 
   ForeignADTType modulePath typeName -> nonInput $ do
-    (canAst, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
       Just found ->
         return (Just found, (mempty, mempty))
@@ -198,22 +176,22 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         [] ->
           (Nothing, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.Assignment n _)) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.Assignment n _)) : _) | n == name ->
           (Just e, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) : _) | n == name ->
           (Just e, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n _)) _ _)) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n _)) _ _)) : _) | n == name ->
           (Just e, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) _ _)) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) _ _)) : _) | n == name ->
           (Just e, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Extern _ n _)))) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Extern _ n _)))) : _) | n == name ->
           (Just e, (mempty, mempty))
 
-        (e@(Slv.Typed _ _ (Slv.Extern _ n _)) : next) | n == name ->
+        (e@(Slv.Typed _ _ (Slv.Extern _ n _)) : _) | n == name ->
           (Just e, (mempty, mempty))
 
         (_ : next) ->
@@ -435,14 +413,14 @@ generateTestAssignment index exp = case exp of
     (TApp
       (TCon (TC "List" (Kfun Star Star)) "prelude")
       (TApp
-        (TApp (TCon (TC "Wish" wishKind) wishPath) (TCon (TC "String" _) _))
+        (TApp (TCon (TC "Wish" _) _) (TCon (TC "String" _) _))
         (TCon (TC "String" _) _))))
     area
     _ ->
       let assignmentName = "__t" <> show index <> "__"
       in (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (BatchTest assignmentName))
 
-  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" wishKind) wishPath) (TCon (TC "String" _) _)) (TCon (TC "String" _) _)) area _ ->
+  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _) (TCon (TC "String" _) _)) (TCon (TC "String" _) _)) area _ ->
     let assignmentName = "__t" <> show index <> "__"
     in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
 

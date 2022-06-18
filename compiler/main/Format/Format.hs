@@ -133,7 +133,7 @@ fieldsToDoc comments fields = case fields of
   (Source area _ (Field (name, exp)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         name'                    = Pretty.pretty name
-        (value, comments'')      = expToDoc comments' exp
+        (value, _)      = expToDoc comments' exp
         line  =
           if null more then
             Pretty.emptyDoc
@@ -176,7 +176,7 @@ fieldsToDoc comments fields = case fields of
 
 dictItemsToDoc :: [Comment] -> [DictItem] -> (Pretty.Doc ann, [Comment])
 dictItemsToDoc comments fields = case fields of
-  (Source area _ (DictItem key value) : more) ->
+  (Source _ _ (DictItem key value) : more) ->
     let (key', comments')    = expToDoc comments key
         (value', comments'') = expToDoc comments' value
         (more', comments''') = dictItemsToDoc comments'' more
@@ -198,7 +198,7 @@ jsxPropsToDoc comments fields = case fields of
   (Source area _ (JsxProp key value) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         key'                     = Pretty.pretty key
-        (value', comments'')     = expToDoc comments' value
+        (value', _)     = expToDoc comments' value
         value'' = case value of
           Source _ _ (LStr _) ->
             value'
@@ -1087,7 +1087,7 @@ methodsToDoc comments methods = case methods of
 instanceToDoc :: [Comment] -> Instance -> (Pretty.Doc ann, [Comment])
 instanceToDoc comments inst = case inst of
   Source _ _ (Instance constraints name typings methods) ->
-    let (constraints', comments') = typingListToDoc comments constraints
+    let (constraints', _) = typingListToDoc comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc
           | length constraints > 1 = Pretty.lparen <> constraints' <> Pretty.rparen <> Pretty.pretty " => "
@@ -1115,16 +1115,16 @@ commentToDoc topLevel comment = case comment of
 
 isInlineComment :: Comment -> Bool
 isInlineComment comment = case comment of
-  Comment _ c ->
+  Comment _ _ ->
     True
 
-  MultilineComment _ c ->
+  MultilineComment _ _ ->
     False
 
 
 insertComments :: Bool -> Area -> [Comment] -> (Pretty.Doc ann, [Comment])
 insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case comments of
-  (comment : more) ->
+  (comment : _) ->
     let commentArea@(Area _ (Loc _ commentEndLine _)) = getCommentArea comment
         after                                         = area `isAfter` commentArea
         afterOrSameLine                               = after || isSameLine area commentArea && isInlineComment comment
@@ -1148,7 +1148,7 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
 
 insertRemainingComments :: [Comment] -> (Pretty.Doc ann, [Comment])
 insertRemainingComments comments = case comments of
-  (comment : more) ->
+  (comment : _) ->
     let (next, comments') = insertRemainingComments (tail comments)
         comment'          = commentToDoc True comment
     in  (comment' <> next, comments')

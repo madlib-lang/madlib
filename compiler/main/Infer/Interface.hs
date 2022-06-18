@@ -130,7 +130,7 @@ resolveInstance options env inst@(Can.Canonical area (Can.Instance name constrai
   let psTypes       = concat $ predTypes <$> constraintPreds
   let subst'        = foldr (\t s -> s `compose` buildVarSubsts t) mempty psTypes
   inferredMethods <- mapM
-    (inferMethod options (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
+    (inferMethod options env (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
   let dict'    = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
   let methods' = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
@@ -140,7 +140,7 @@ resolveInstance options env inst@(Can.Canonical area (Can.Instance name constrai
 
 inferMethod :: Options -> Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
 inferMethod options env instancePreds constraintPreds (mn, m) =
-  upgradeContext (pushExpToBT env m) (Can.getArea m) (inferMethod' options env instancePreds constraintPreds (mn, m))
+  upgradeContext env (Can.getArea m) (inferMethod' options env instancePreds constraintPreds (mn, m))
 
 
 inferMethod' :: Options -> Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
@@ -170,10 +170,10 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   if sc /= sc'
     then throwError $ CompilationError (SignatureTooGeneral sc sc')
-                                       (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+                                       (Context (envCurrentPath env) (Can.getArea m))
     else if not (null rs)
       then throwError
-        $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+        $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) (Can.getArea m))
       else do
         let e' = updateQualType e (qs :=> t'')
         e''  <- insertClassPlaceholders options env (Slv.Typed (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)

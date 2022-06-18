@@ -1,0 +1,15 @@
+import IO from "IO"
+
+
+fib :: Integer -> Integer
+fib = (n) => {
+  helper :: Integer -> Integer -> Integer -> Integer
+  helper = (a, b, counter) =>
+    counter > 0
+      ? helper(b, a + b, counter - 1)
+      : a
+
+  return helper(0, 1, n)
+}
+
+IO.log(fib(30))

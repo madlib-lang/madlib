@@ -63,13 +63,8 @@ generateLiftedName env originalName = do
 
 resetTopLevelExps :: Convert ()
 resetTopLevelExps = do
-  s@(State _ topLevel) <- MonadState.get
+  s@(State _ _) <- MonadState.get
   MonadState.put s { topLevel = [] }
-
-resetState :: Convert ()
-resetState = do
-  s@(State _ topLevel) <- MonadState.get
-  MonadState.put s { count = 0, topLevel = [] }
 
 addTopLevelExp :: Exp -> Convert ()
 addTopLevelExp exp = do
@@ -218,7 +213,7 @@ findFreeVars env exp = do
       return $ expVars ++ [(n, Typed qt area [] (Var n False))]
 
     -- TODO: Check that we still need this
-    Typed (_ :=> t) area metadata (Literal (LNum x)) -> case t of
+    Typed (_ :=> t) area _ (Literal (LNum _)) -> case t of
       TVar _ -> do
         let dictName = "$Number$" <> Types.buildTypeStrForPlaceholder [t]
         if dictName `notElem` freeVars env then
@@ -231,7 +226,7 @@ findFreeVars env exp = do
 
     Typed _ area _ (Placeholder ph exp) -> do
       (placeholderVars, excludeVars) <- case ph of
-        (ClassRef interface crpNodes True False, ts) -> do
+        (ClassRef _ crpNodes True False, _) -> do
           let crpDictNames = S.toList $ S.fromList $ collectCRPFreeVars crpNodes
               crpFvs = (\dictName -> (dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))) <$> crpDictNames
           return (crpFvs, [])
@@ -242,7 +237,7 @@ findFreeVars env exp = do
               crpFvs = (\dictName -> (dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))) <$> crpDictNames
           return (crpFvs, [])
 
-        (ClassRef interface crpNodes _ True, ts) -> do
+        (ClassRef interface _ _ True, ts) -> do
           let dictName = "$" <> interface <> "$" <> ts
           return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))], [])
 
@@ -392,33 +387,9 @@ findMutationsInBody params body = case body of
     []
 
 
-findMutationsInScope :: [String] -> [Exp] -> [String]
-findMutationsInScope params exps = case exps of
-  (Typed _ _ _ (Assignment n _) : next) | n `elem` params ->
-    n : findMutationsInScope params next
-
-  (_ : next) ->
-    findMutationsInScope params next
-
-  [] ->
-    []
-
-
-findAssignmentsInScope :: [Exp] -> [String]
-findAssignmentsInScope exps = case exps of
-  (Typed _ _ _ (Assignment n _) : next) ->
-    n : findAssignmentsInScope next
-
-  (_ : next) ->
-    findAssignmentsInScope next
-
-  [] ->
-    []
-
-
 findAllMutationsInExp :: [String] -> Exp -> [String]
 findAllMutationsInExp params exp = case exp of
-  Typed _ _ _ (Assignment n e) | n `elem` params ->
+  Typed _ _ _ (Assignment n _) | n `elem` params ->
     [n]
 
   Typed _ _ _ (Assignment _ e) ->
@@ -495,18 +466,18 @@ convertBody exclusionVars env body = case body of
     return []
 
   (exp : es) -> case exp of
-    Typed qt@(_ :=> t) _ _ (Assignment name abs@(Typed _ _ _ (Definition params body))) -> do
+    Typed _ _ _ (Assignment name abs@(Typed _ _ _ (Definition _ _))) -> do
       exp' <- convertDefinition (addVarExclusions exclusionVars env) name [] abs
       next <- convertBody (name : exclusionVars) env es
       -- next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    abs@(Typed _ _ _ (Definition params body)) -> do
+    abs@(Typed _ _ _ (Definition _ _)) -> do
       exp' <- convert (addVarExclusions exclusionVars env) abs
       next <- convertBody exclusionVars env es
       return $ exp' : next
 
-    Typed _ _ _ (Assignment name e) -> do
+    Typed _ _ _ (Assignment name _) -> do
       e'   <- convert env exp
       let (e'', env') =
             if name `elem` mutationsInScope env && name `notElem` allocatedMutations env then
@@ -539,7 +510,6 @@ convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metad
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let mutations = findMutationsInBody (getValue <$> params) body
-    -- let assignmentsInScope = findAssignmentsInScope body
     let allMutations = findAllMutationsInExps (getValue <$> params) body
     body'' <- convertBody [] env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations } body
 
@@ -603,7 +573,7 @@ dedupeCallFn :: Exp -> Exp
 dedupeCallFn exp = case exp of
   Typed qt area metadata (Call fn args) ->
     case fn of
-      Typed qt' area' _ (Call fn' args') ->
+      Typed _ _ _ (Call fn' args') ->
         dedupeCallFn $ Typed qt area metadata (Call fn' (args' ++ args))
 
       _ ->
@@ -682,7 +652,7 @@ instance Convertable Exp Exp where
               ) <$> fvVarNodes
         in  return $ Typed qt area [] (Call functionNode fvVarNodes')
 
-    Assignment functionName ph@(Typed _ _ _ (Placeholder (placeholderRef@(ClassRef interfaceName _ False _), ts) exp)) -> do
+    Assignment functionName ph@(Typed _ _ _ (Placeholder (ClassRef _ _ False _, _) exp)) -> do
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
         let (params, innerExp)   = collectPlaceholderParams ph
@@ -712,7 +682,7 @@ instance Convertable Exp Exp where
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (getType . snd <$> fvs))
         case innerExp of
-          Typed _ _ _ (Definition params body) -> do
+          Typed _ _ _ (Definition _ _) -> do
             convertDefinition env functionName paramsWithFreeVars innerExp
 
           _ -> do
@@ -836,7 +806,7 @@ instance Convertable Typing Typing where
       return $ Untyped area metadata $ TRConstrained constraints' typing'
 
 instance Convertable ListItem ListItem where
-  convert env (Typed qt@(_ :=> t) area metadata item) = case item of
+  convert env (Typed qt area metadata item) = case item of
     ListItem exp -> do
       exp' <- convert env exp
       return $ Typed qt area metadata $ ListItem exp'
@@ -846,7 +816,7 @@ instance Convertable ListItem ListItem where
       return $ Typed qt area metadata $ ListSpread exp'
 
 instance Convertable Field Field where
-  convert env (Typed qt@(_ :=> t) area metadata item) = case item of
+  convert env (Typed qt area metadata item) = case item of
     Field (name, exp) -> do
       exp' <- convert env exp
       return $ Typed qt area metadata $ Field (name, exp')
@@ -856,13 +826,13 @@ instance Convertable Field Field where
       return $ Typed qt area metadata $ FieldSpread exp'
 
 instance Convertable Is Is where
-  convert env (Typed qt@(_ :=> t) area metadata (Is pat exp)) = do
+  convert env (Typed qt area metadata (Is pat exp)) = do
     pat' <- convert env pat
     exp' <- convert env exp
     return $ Typed qt area metadata (Is pat' exp')
 
 instance Convertable Pattern Pattern where
-  convert env (Typed qt@(_ :=> t) area metadata pat) = case pat of
+  convert env (Typed qt area metadata pat) = case pat of
     PVar name ->
       return $ Typed qt area metadata $ PVar name
 
@@ -991,7 +961,7 @@ addHashToName hash name =
 
 
 instance Convertable AST AST where
-  convert env ast@AST{ apath = Nothing } = return ast
+  convert _ ast@AST{ apath = Nothing } = return ast
   convert env ast@AST{ apath = Just path } = do
     let globalVars         = mapMaybe getExpName (aexps ast) ++ defaultGlobals
         globalMethods      = concatMap getMethodNames $ ainterfaces ast
@@ -1007,7 +977,6 @@ instance Convertable AST AST where
     instances  <- mapM (convert env') $ ainstances ast
 
     defs <- getTopLevelExps
-    resetState
 
     return AST { aimports    = imports
                , aexps       = defs ++ exps
@@ -1029,12 +998,3 @@ convertAST ast =
             , moduleHash = ""
             }
   in MonadState.evalState (convert env ast) initialOptimizationState
-
--- I think at some point we might want to follow imports in the optimization
--- process in order to correctly reduce dictionaries in the right order and have
--- an env for optimization to keep track of what dictionaries have been removed.
-convertTable :: Table -> Table
-convertTable table =
-  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, allocatedMutations = [], mutationsInScope = [], moduleHash = "" }
-      converted = mapM (convert env) table
-  in  MonadState.evalState converted initialOptimizationState

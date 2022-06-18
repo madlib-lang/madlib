@@ -2,17 +2,29 @@
 
 if [ "$1" == "watch" ]
 then
-  stack test --file-watch --fast;
+  stack build --test --fast --no-run-tests;
+  # this is needed as the runtime must be located next to the madlib executable
+  cp -R runtime "$(stack path --dist-dir)/build/madlib-test/"
+
+  stack build --test --file-watch --fast;
 elif [ "$1" == "coverage" ]
 then
-  stack test --coverage --fast && stack hpc report .;
+  stack build --test --coverage --fast --no-run-tests
+  # this is needed as the runtime must be located next to the madlib executable
+  cp -R runtime "$(stack path --dist-dir)/build/madlib-test/"
+
+  stack build --test --coverage --fast && stack hpc report .;
 elif [ "$1" == "integration" ]
 then
   madlib test -i integration-tests
   madlib test --target llvm -i integration-tests
 elif [ -z "$1" ]
 then
-  stack test;
+  stack build --test --fast --no-run-tests;
+  # this is needed as the runtime must be located next to the madlib executable
+  cp -R runtime "$(stack path --dist-dir)/build/madlib-test/"
+
+  stack build --fast --test;
 else
   echo "'$1' is not a valid option.\nvalid options:\n  * watch\n  * coverage"
 fi

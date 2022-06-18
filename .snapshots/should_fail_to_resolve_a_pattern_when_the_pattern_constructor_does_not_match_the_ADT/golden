@@ -16,48 +16,6 @@
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 98 5 14) (Loc 99 5 15)
-        , ctxBacktrace =
-            [ BTExp
-                (Canonical
-                   (Area (Loc 68 4 1) (Loc 116 7 2))
-                   (Where
-                      (Canonical (Area (Loc 74 4 7) (Loc 81 4 14)) (Var "perhaps"))
-                      [ Canonical
-                          (Area (Loc 87 5 3) (Loc 99 5 15))
-                          (Is
-                             (Canonical
-                                (Area (Loc 87 5 3) (Loc 94 5 10))
-                                (PCon
-                                   "Just"
-                                   [ Canonical (Area (Loc 92 5 8) (Loc 93 5 9)) (PVar "a") ]))
-                             (Canonical (Area (Loc 98 5 14) (Loc 99 5 15)) (Var "a")))
-                      , Canonical
-                          (Area (Loc 102 6 3) (Loc 114 6 15))
-                          (Is
-                             (Canonical (Area (Loc 102 6 3) (Loc 109 6 10)) (PCon "Nothing" []))
-                             (Canonical (Area (Loc 113 6 14) (Loc 114 6 15)) (LNum "0")))
-                      ]))
-            , BTExp
-                (Canonical
-                   (Area (Loc 68 4 1) (Loc 116 7 2))
-                   (Where
-                      (Canonical (Area (Loc 74 4 7) (Loc 81 4 14)) (Var "perhaps"))
-                      [ Canonical
-                          (Area (Loc 87 5 3) (Loc 99 5 15))
-                          (Is
-                             (Canonical
-                                (Area (Loc 87 5 3) (Loc 94 5 10))
-                                (PCon
-                                   "Just"
-                                   [ Canonical (Area (Loc 92 5 8) (Loc 93 5 9)) (PVar "a") ]))
-                             (Canonical (Area (Loc 98 5 14) (Loc 99 5 15)) (Var "a")))
-                      , Canonical
-                          (Area (Loc 102 6 3) (Loc 114 6 15))
-                          (Is
-                             (Canonical (Area (Loc 102 6 3) (Loc 109 6 10)) (PCon "Nothing" []))
-                             (Canonical (Area (Loc 113 6 14) (Loc 114 6 15)) (LNum "0")))
-                      ]))
-            ]
         }
   ]
 )

@@ -45,7 +45,6 @@ import Run.Options
 infer :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer options env lexp = do
   let (Can.Canonical area exp) = lexp
-      env'                     = pushExpToBT env lexp
   case exp of
     Can.LNum  _               -> do
       t <- newTVar Star
@@ -57,23 +56,23 @@ infer options env lexp = do
     Can.LChar  _              -> return (M.empty, [], tChar, applyLitSolve lexp ([] :=> tChar))
     Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp ([] :=> tBool))
     Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp ([] :=> tUnit))
-    Can.TemplateString _      -> inferTemplateString options env' lexp
+    Can.TemplateString _      -> inferTemplateString options env lexp
 
-    Can.Var            _      -> inferVar options env' lexp
-    Can.Abs _ _               -> inferAbs options env' lexp
-    Can.App{}                 -> inferApp options env' lexp
-    Can.Assignment _ _        -> inferAssignment options env' lexp
-    Can.Do _                  -> inferDo options env' lexp
-    Can.Where      _ _        -> inferWhere options env' lexp
-    Can.Record _              -> inferRecord options env' lexp
-    Can.Access   _ _          -> inferAccess options env' lexp
-    Can.TypedExp{}            -> inferTypedExp options env' lexp
-    Can.ListConstructor  _    -> inferListConstructor options env' lexp
-    Can.TupleConstructor _    -> inferTupleConstructor options env' lexp
-    Can.Export           _    -> inferExport options env' lexp
-    Can.NameExport       name -> inferNameExport env' lexp
-    Can.If{}                  -> inferIf options env' lexp
-    Can.Extern{}              -> inferExtern env' lexp
+    Can.Var            _      -> inferVar options env lexp
+    Can.Abs _ _               -> inferAbs options env lexp
+    Can.App{}                 -> inferApp options env lexp
+    Can.Assignment _ _        -> inferAssignment options env lexp
+    Can.Do _                  -> inferDo options env lexp
+    Can.Where      _ _        -> inferWhere options env lexp
+    Can.Record _              -> inferRecord options env lexp
+    Can.Access   _ _          -> inferAccess options env lexp
+    Can.TypedExp{}            -> inferTypedExp options env lexp
+    Can.ListConstructor  _    -> inferListConstructor options env lexp
+    Can.TupleConstructor _    -> inferTupleConstructor options env lexp
+    Can.Export           _    -> inferExport options env lexp
+    Can.NameExport       name -> inferNameExport env lexp
+    Can.If{}                  -> inferIf options env lexp
+    Can.Extern{}              -> inferExtern env lexp
     Can.JSExp c               -> do
       t <- newTVar Star
       return (M.empty, [], t, Slv.Typed ([] :=> t) area (Slv.JSExp c))
@@ -161,7 +160,7 @@ inferVar options env exp@(Can.Canonical area (Can.Var n)) = case n of
 
 enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
 enhanceVarError env exp area (CompilationError e _) =
-  throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+  throwError $ CompilationError e (Context (envCurrentPath env) area)
 
 
 -- INFER NAME EXPORT
@@ -465,7 +464,7 @@ inferRecordField options env (Can.Canonical area field) = case field of
       _ ->
         throwError $ CompilationError
           (WrongSpreadType $ show t)
-          (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+          (Context (envCurrentPath env) (Can.getArea exp))
 
 
 
@@ -531,8 +530,8 @@ inferIf options env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
   (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s1 `compose` s2) env) falsy
 
-  s4                          <- contextualUnify (pushExpToBT env cond) cond tcond tBool
-  s5                          <- contextualUnify (pushExpToBT env falsy) falsy tfalsy ttruthy
+  s4                          <- contextualUnify env cond tcond tBool
+  s5                          <- contextualUnify env falsy tfalsy ttruthy
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
@@ -662,7 +661,7 @@ split mustCheck env fs gs ps = do
     if not (null as') then
       case head as of
         (_, IsIn c ts (Just area):_) ->
-          throwError $ CompilationError (AmbiguousType (head as)) (Context (envCurrentPath env) area (envBacktrace env))
+          throwError $ CompilationError (AmbiguousType (head as)) (Context (envCurrentPath env) area)
 
         _ ->
           throwError $ CompilationError (AmbiguousType (head as)) NoContext
@@ -789,7 +788,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     (split False env'' fs vs ps')
     (\case
       (CompilationError e NoContext) ->
-        throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+        throwError $ CompilationError e (Context (envCurrentPath env) area)
 
       (CompilationError e c) ->
         throwError $ CompilationError e c
@@ -805,7 +804,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
       CM.unless (null rs'') $ throwError $ CompilationError
         (AmbiguousType (TV "-" Star, rs'))
-        (Context (envCurrentPath env) area (envBacktrace env))
+        (Context (envCurrentPath env) area)
       return ([], sDef' `compose` sDef)
     else do
       (sDef, rs')   <- tryDefaults env'' rs
@@ -860,7 +859,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
     (split True env' fs gs ps')
     (\case
       (CompilationError e NoContext) ->
-        throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+        throwError $ CompilationError e (Context (envCurrentPath env) area)
 
       (CompilationError e c) ->
         throwError $ CompilationError e c
@@ -870,9 +869,9 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
   let scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   if sc /= scCheck then
-    throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area (envBacktrace env))
+    throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
   else if not (null rs) then
-    throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area (envBacktrace env))
+    throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
   else do
     let e'   = updateQualType e (ds :=> t''')
 
@@ -917,7 +916,7 @@ inferExplicitlyTyped _ _ _ _ = undefined
 --     (split True env' fs gs ps')
 --     (\case
 --       (CompilationError e NoContext) ->
---         throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+--         throwError $ CompilationError e (Context (envCurrentPath env) area)
 
 --       (CompilationError e c) ->
 --         throwError $ CompilationError e c
@@ -930,9 +929,9 @@ inferExplicitlyTyped _ _ _ _ = undefined
 --   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (trace ("T1: "<>ppShow (ps :=> t)<>"\ndefaultS: "<>ppShow substDefaultResolution<>"\nQT: "<>ppShow (qs :=> t')) t'''))
 --   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> apply s' t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (apply s' t'''))
 --   if sc /= scCheck then
---     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area (envBacktrace env))
+--     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
 --   else if not (null rs) then
---     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area (envBacktrace env))
+--     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
 --   else do
 --     let e'   = updateQualType e (ds :=> t''')
 
@@ -953,8 +952,8 @@ inferExps :: Options -> Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)
 inferExps _ env []       = return ([], env)
 
 inferExps options env (e : es) = do
-  (e' , env'   ) <- catchError (inferExp options (pushExpToBT env e) e) (recordError env e)
-  (es', nextEnv) <- inferExps options (resetBT env') es
+  (e' , env'   ) <- catchError (inferExp options env e) (recordError env e)
+  (es', nextEnv) <- inferExps options env' es
 
   case e' of
     Just e'' -> return (e'' : es', nextEnv)
@@ -987,11 +986,11 @@ recordError env e err = do
   pushError err
   case Can.getExportNameAndScheme e of
     (Just name, Just sc) -> do
-      (_ :=> t) <- instantiate sc
+      -- (_ :=> t) <- instantiate sc
       return (Just $ toSolved e, env)
 
     (Just name, Nothing) -> do
-      tv <- newTVar Star
+      -- tv <- newTVar Star
       return (Just $ toSolved e, env)
 
     _ -> return (Just $ toSolved e, env)
@@ -1004,5 +1003,5 @@ upgradeContext env area a = catchError a (throwError . upgradeContext' env area)
 
 upgradeContext' :: Env -> Area -> CompilationError -> CompilationError
 upgradeContext' env area err = case err of
-  (CompilationError e NoContext) -> CompilationError e $ Context (envCurrentPath env) area (envBacktrace env)
+  (CompilationError e NoContext) -> CompilationError e $ Context (envCurrentPath env) area
   (CompilationError e r        ) -> CompilationError e r

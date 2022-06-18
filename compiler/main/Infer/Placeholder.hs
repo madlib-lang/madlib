@@ -168,7 +168,7 @@ updateMethodPlaceholder options env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Pla
             catchError
               (match mtdT (apply s t))
               (\(CompilationError e _) ->
-                throwError $ CompilationError e (Context (envCurrentPath env) a (envBacktrace env))
+                throwError $ CompilationError e (Context (envCurrentPath env) a)
               )
           Nothing -> return mempty
         Nothing -> return mempty
