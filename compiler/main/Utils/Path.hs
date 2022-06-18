@@ -6,6 +6,7 @@ module Utils.Path
   , makeRelativeEx
   , cleanRelativePath
   , convertWindowsSeparators
+  , takeDirectoryIfFile
   )
 where
 
@@ -17,7 +18,7 @@ import           System.FilePath                ( dropFileName
                                                 , joinPath
                                                 , splitFileName
                                                 , normalise
-                                                , takeExtension, pathSeparator
+                                                , takeExtension, pathSeparator, hasExtension
                                                 )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           Data.List                      ( isInfixOf
@@ -195,9 +196,17 @@ buildLocalPath outputPath rootPath path =
   in  cleanRelativePath . joinPath $ [outputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
 
 
+takeDirectoryIfFile :: FilePath -> FilePath
+takeDirectoryIfFile path =
+  if hasExtension path then
+    takeDirectory path
+  else
+    path
+
+
 computeTargetPath :: FilePath -> FilePath -> FilePath -> FilePath
 computeTargetPath outputPath rootPath path =
-  let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
+  let cleanOutputPath = dropTrailingPathSeparator $ normalise (takeDirectoryIfFile outputPath)
   in  case isPackage path of
         FileSystemPath ->
           buildLocalPath cleanOutputPath rootPath path
@@ -215,8 +224,6 @@ computeTargetPath outputPath rootPath path =
               let split                 = dropTrailingPathSeparator <$> splitPath path
                   fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
                   complete              = [cleanOutputPath, "madlib_modules"] <> fromMadlibModules
-                  -- complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
-                  -- madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
               in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
 
 
@@ -242,22 +249,22 @@ computeLLVMTargetPath :: FilePath -> FilePath -> FilePath -> FilePath
 computeLLVMTargetPath outputPath rootPath path =
   let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
   in  case isPackage path of
-        FileSystemPath -> buildLLVMLocalPath cleanOutputPath rootPath path
+        FileSystemPath ->
+          buildLLVMLocalPath cleanOutputPath rootPath path
 
-        PackagePath    -> if isPreludePath path
-          then
+        PackagePath    ->
+          if isPreludePath path then
             let split        = dropTrailingPathSeparator <$> splitPath path
                 fromInternal = tail $ dropWhile (/= "__internal__") split
                 complete     = [cleanOutputPath, ".prelude"] <> fromInternal
             in  cleanRelativePath $ replaceExtension (joinPath complete) ".o"
-          else if rootPath `isPrefixOf` path
-            then buildLLVMLocalPath cleanOutputPath rootPath path
-            else
-              let split                 = dropTrailingPathSeparator <$> splitPath path
-                  fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
-                  complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
-                  madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
-              in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".o"
+          else if rootPath `isPrefixOf` path then
+            buildLLVMLocalPath cleanOutputPath rootPath path
+          else
+            let split                 = dropTrailingPathSeparator <$> splitPath path
+                fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
+                complete              = [cleanOutputPath, "madlib_modules"] <> fromMadlibModules
+            in  cleanRelativePath $ replaceExtension (joinPath complete) ".o"
 
 
 isPreludePath :: FilePath -> Bool

@@ -210,6 +210,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         (e@(Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n _)))) _ _)) : next) | n == name ->
           (Just e, (mempty, mempty))
 
+        (e@(Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Extern _ n _)))) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
+        (e@(Slv.Typed _ _ (Slv.Extern _ n _)) : next) | n == name ->
+          (Just e, (mempty, mempty))
+
         (_ : next) ->
           findExpByName name next
 
@@ -273,10 +279,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   BuiltJSModule path -> nonInput $ do
     jsModule <- Rock.fetch $ GeneratedJSModule path
-    let computedOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) path
+    let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
 
     liftIO $ do
-      createDirectoryIfMissing True $ takeDirectory computedOutputPath
+      createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
       writeFile computedOutputPath jsModule
     return (jsModule, (mempty, mempty))
 
