@@ -43,6 +43,10 @@ jobs:
 
       - run: ./scripts/coverage
 
+      - run: |
+          cd .github/workflows
+          node update-cov.mjs
+
       - uses: codecov/codecov-action@v2
         with:
           files: ./coverage/codecov.json
