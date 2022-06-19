@@ -41,7 +41,6 @@ import qualified Explain.Format as Explain
 import qualified Data.List as List
 import Control.Monad.Writer
 import Utils.List
--- import Parse.Madlib.ImportCycle (detectCycle)
 import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
@@ -59,6 +58,9 @@ import Parse.Madlib.ImportCycle (detectCycle)
 import AST.Canonical (AST(atypedecls))
 import Explain.Location (emptyArea)
 import Infer.Type
+import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
+import MadlibDotJson.MadlibVersion
+import Paths_madlib (version)
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
@@ -265,6 +267,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (jsModule, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do
+    globalWarnings <- liftIO globalChecks
     paths <- Rock.fetch $ ModulePathsToBuild path
 
     if optTarget options == TLLVM then do
@@ -272,10 +275,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       let moduleEnvs = (\(_, env, _) -> env) <$> moduleResults
 
       if any (null . LLVMEnv.envASTPath) moduleEnvs then
-        return ((), (mempty, mempty))
+        return ((), (globalWarnings, mempty))
       else do
         LLVM.buildTarget options path
-        return ((), (mempty, mempty))
+        return ((), (globalWarnings, mempty))
 
     else do
       forM_ paths $ Rock.fetch . BuiltJSModule
@@ -296,7 +299,20 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
         return ()
 
-      return ((), (mempty, mempty))
+      return ((), (globalWarnings, mempty))
+
+
+globalChecks :: IO [CompilationWarning]
+globalChecks = do
+  parsedMadlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
+
+  case parsedMadlibDotJson of
+    Left _ -> return []
+    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName }
+      -> case checkVersion pkgName madlibVersion version of
+        Just warning -> return [warning]
+        Nothing      -> return []
+    _ -> return []
 
 
 -- TODO: Move to AST.Source module

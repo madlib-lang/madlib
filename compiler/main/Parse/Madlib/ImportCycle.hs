@@ -30,7 +30,7 @@ processImport originAstPath importChain err imp = do
   case err of
     Nothing ->
       if importPath `elem` importChain then
-        return $ Just $ CompilationError (ImportCycle $ importChain ++ [importPath]) (Context originAstPath importArea)
+        return $ Just $ CompilationError (ImportCycle importChain) (Context originAstPath importArea)
       else
         detectCycle importChain importPath
 
