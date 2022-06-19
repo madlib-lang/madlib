@@ -63,8 +63,8 @@ runTask options ioRef task =
   Rock.runTask (Rock.memoise ioRef (Driver.ignoreTaskKind (Rock.writer (\_ _ -> return ()) $ Rules.rules options))) task
 
 
-generateDocDataTask :: FilePath -> [FilePath] -> IO [(Slv.AST, Slv.AST, String, [DocString.DocString])]
-generateDocDataTask rootFolder paths = do
+generateDocData :: FilePath -> [FilePath] -> IO [(Slv.AST, Slv.AST, String, [DocString.DocString])]
+generateDocData rootFolder paths = do
   let jsOptions =
         Options
           { optPathUtils = defaultPathUtils
@@ -112,5 +112,5 @@ runDocumentationGenerator fp = do
         _          -> fp
 
   canonicalRootPath <- canonicalizePath rootPath
-  docInfos          <- generateDocDataTask canonicalRootPath filepaths
+  docInfos          <- generateDocData canonicalRootPath filepaths
   putStrLn $ generateASTsDoc docInfos

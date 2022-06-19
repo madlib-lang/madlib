@@ -1,19 +1,27 @@
-\ESC[41mError\ESC[0m in module 'compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad' at line 1:\n1|true && \"Hello\"
+1|true && \"Hello\"
           ^^^^^^^
 \ESC[90m2|\ESC[0m
 \ESC[90m3|f = (x) => {\ESC[0m
 \ESC[90m4|  a = x + 1\ESC[0m
-\nType error, expected:
-    \ESC[32mBoolean\ESC[0m\nBut found:
+
+Type error, expected:
+    \ESC[32mBoolean\ESC[0m
+But found:
     \ESC[31mString\ESC[0m
 
 
-\ESC[41mError\ESC[0m in module 'compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad' at line 3:
+
 \ESC[90m1|true && \"Hello\"\ESC[0m
-\ESC[90m2|\ESC[0m\n3|f = (x) => {
+\ESC[90m2|\ESC[0m
+3|f = (x) => {
   ^
 \ESC[90m4|  a = x + 1\ESC[0m
 \ESC[90m5|  return a + \"\"\ESC[0m
 \ESC[90m6|}\ESC[0m
-\nI could not find any instance for 'Number String'. Verify that you imported the module\nwhere the Number instance for 'String' is defined.
-\nNB: remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly.
+
+I could not find any instance for 'Number String'. Verify that you imported the module
+where the Number instance for 'String' is defined.
+
+NB: remember that instance methods are automatically imported when the module
+is imported, directly, or indirectly.
+

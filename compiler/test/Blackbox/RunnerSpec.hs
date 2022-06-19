@@ -72,6 +72,15 @@ compileAndRun casePath = do
     return (expected, errorsAndWarnings)
 
 
+-- sanitizeCtxPath :: Context -> Context
+-- sanitizeCtxPath ctx = case ctx of
+--   NoContext ->
+--     NoContext
+
+--   Context path area ->
+--     Context (takeFileName path) area
+
+
 sanitizeError :: CompilationError -> CompilationError
 sanitizeError err = case err of
   CompilationError (ImportCycle paths) ctx ->
@@ -147,10 +156,12 @@ compile state options invalidatedPaths = do
           List.intercalate "\n\n\n" formattedWarnings <> "\n"
 
   formattedErrors   <- mapM (Explain.format readFile False) (sanitizeError <$> errors)
+  -- We drop the first line for now as it contains paths that are system-dependent
+  let formattedErrors' = unlines . drop 1 . lines <$> formattedErrors
   let ppErrors =
         if null errors then
           ""
         else
-          List.intercalate "\n\n\n" formattedErrors <> "\n"
+          List.intercalate "\n\n\n" formattedErrors' <> "\n"
 
   return $ ppWarnings ++ ppErrors
