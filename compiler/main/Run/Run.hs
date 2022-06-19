@@ -50,7 +50,6 @@ runRunPackage package args =
                                 , compileBundle        = False
                                 , compileOptimize      = False
                                 , compileTarget        = TNode
-                                , compileTestFilesOnly = False
                                 , compileWatch         = False
                                 }
 
@@ -73,7 +72,6 @@ runSingleModule input args = do
           , compileBundle        = False
           , compileOptimize      = False
           , compileTarget        = TNode
-          , compileTestFilesOnly = False
           , compileWatch         = False
           }
 

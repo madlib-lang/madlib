@@ -4,10 +4,9 @@
 
 I found an import cycle:
 
-compiler/test/Blackbox/test-cases/import-cycle/Entrypoint.mad
-  -> /Users/arnaudboeglin/Code/madlib/compiler/test/Blackbox/test-cases/import-cycle/Import.mad
-    -> /Users/arnaudboeglin/Code/madlib/compiler/test/Blackbox/test-cases/import-cycle/Entrypoint.mad
-      -> /Users/arnaudboeglin/Code/madlib/compiler/test/Blackbox/test-cases/import-cycle/Import.mad
+Entrypoint.mad
+  -> Import.mad
+    -> Entrypoint.mad
 
 Hint: Import cycles are not allowed and usually show a design issue. Consider splitting things in more
 modules in order to have both modules import a common dependency instead of having them being co-dependent.

@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns   #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Parse.Madlib.AST where
 
 import qualified Data.Map                         as M
@@ -58,7 +59,7 @@ escapeJSONString s = case s of
 
 
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
-generateJsonAssignments pathUtils [] = return []
+generateJsonAssignments _ [] = return []
 generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Source _ _ name) _ absPath)):imps) = do
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath

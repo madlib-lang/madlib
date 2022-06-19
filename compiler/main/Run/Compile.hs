@@ -72,57 +72,9 @@ import System.Console.ANSI
 import Rock (Cyclic)
 
 
-shouldBeCovered :: FilePath -> FilePath -> Bool
-shouldBeCovered rootPath path | rootPath `List.isPrefixOf` path && not (".spec.mad" `List.isSuffixOf` path) = True
-                              | otherwise = False
-
-
-runCoverageInitialization :: FilePath -> Slv.Table -> IO ()
-runCoverageInitialization rootPath table = do
-  let filteredTable      = Map.filterWithKey (\path _ -> shouldBeCovered rootPath path) table
-  let coverableFunctions = Map.map collectFromAST filteredTable
-  let generated          = Map.mapWithKey generateLCovInfoForAST coverableFunctions
-  let lcovInfoContent    = rstrip $ unlines $ Map.elems generated
-
-  createDirectoryIfMissing True ".coverage"
-  writeFile ".coverage/lcov.info" lcovInfoContent
-
-
-generateLCovInfoForAST :: FilePath -> [Coverable] -> String
-generateLCovInfoForAST astPath coverables =
-  let functions   = filter isFunction coverables
-      lines       = filter isLine coverables
-      tn          = "TN:"
-      sf          = "SF:" <> astPath
-      fns         = rstrip $ unlines $ (\Function { line, name } -> "FN:" <> show line <> "," <> name) <$> functions
-      fndas       = rstrip $ unlines $ (\Function { name } -> "FNDA:0" <> "," <> name) <$> functions
-      fnf         = "FNF:" <> show (length functions)
-      fnh         = "FNH:0"
-      das         = rstrip $ unlines $ (\Line { line } -> "DA:" <> show line <> ",0") <$> lines
-      lf          = "LF:" <> show (length lines)
-      lh          = "LH:0"
-      endOfRecord = "end_of_record"
-  in  rstrip $ unlines [tn, sf, fns, fndas, fnf, fnh, das, lf, lh, endOfRecord]
-
-
--- TODO: Just make it print straight?
-globalChecks :: IO [CompilationWarning]
-globalChecks = do
-  parsedMadlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
-
-  case parsedMadlibDotJson of
-    Left _ -> return []
-    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName }
-      -> case checkVersion pkgName madlibVersion version of
-        Just warning -> return [warning]
-        Nothing      -> return []
-    _ -> return []
-
-
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target testsOnly watchMode) coverage
+runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode) coverage
   = do
-    extraWarnings       <- globalChecks
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
     rootPath            <- canonicalizePath "./"

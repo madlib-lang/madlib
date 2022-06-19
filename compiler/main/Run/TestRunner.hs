@@ -49,8 +49,8 @@ import Error.Error
 
 
 
-runTests :: String -> Bool -> Target -> Bool -> IO ()
-runTests entrypoint coverage target watchMode = do
+runTests :: String -> Target -> Bool -> IO ()
+runTests entrypoint target watchMode = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
