@@ -114,9 +114,6 @@ runIncrementalTask ::
   Task Query a ->
   IO (a, [CompilationWarning], [CompilationError])
 runIncrementalTask state options changedFiles fileUpdates prune task = handleException $ do
-  -- atomicWriteIORef (_errorsVar state) mempty
-  -- atomicWriteIORef (_warningsVar state) mempty
-
   reverseDependencies <- readIORef $ _reverseDependenciesVar state
   started             <- readIORef $ _startedVar state
   hashes              <- readIORef $ _hashesVar state
@@ -243,20 +240,6 @@ ignoreTaskKind :: Rock.GenRules (Rock.Writer Rock.TaskKind f) f -> Rock.Rules f
 ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
 
 
-printErrors :: Options -> ([CompilationWarning], [CompilationError]) -> Rock.Task Query ()
-printErrors options ([], []) = return ()
-printErrors options errorsAndWarnings = do
-  -- TODO: make Explain.format fetch the file from the store directly
-  formattedWarnings <- liftIO $ mapM (Explain.formatWarning readFile False) (fst errorsAndWarnings)
-  let ppWarnings = List.intercalate "\n\n\n" formattedWarnings
-
-  formattedErrors   <- liftIO $ mapM (Explain.format readFile False) (snd errorsAndWarnings)
-  let ppErrors = List.intercalate "\n\n\n" formattedErrors
-
-  liftIO $ putStrLn ppWarnings
-  liftIO $ putStrLn ppErrors
-
-
 typeCheckFileTask :: FilePath -> Rock.Task Query.Query ()
 typeCheckFileTask path = do
   Rock.fetch $ Query.SolvedASTWithEnv path
@@ -332,40 +315,3 @@ watch root action = do
 
     -- sleep forever (until interrupted)
     forever $ threadDelay 1000000
-
-
-
--- compile :: Options -> FilePath -> IO ()
--- compile options path = do
---   threadDepsVar <- newIORef mempty
---   memoVar       <- newIORef mempty
---   result        <- try $ Rock.runTask
---     (Rock.memoiseWithCycleDetection memoVar threadDepsVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options)))
---     (typeCheckFileTask path)
---     :: IO (Either (Cyclic Query) ())
---   case result of
---     Left _ -> do
---       Rock.runTask
---         (Rock.memoiseWithCycleDetection memoVar threadDepsVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options)))
---         (detectCyleTask path)
-
---     Right (_, _, []) ->
---       return ()
-
-
--- compile :: Options -> FilePath -> IO ()
--- compile options path = do
---   threadDepsVar <- newIORef mempty
---   memoVar       <- newIORef mempty
---   result        <- try $ Rock.runTask
---     (Rock.memoiseWithCycleDetection memoVar threadDepsVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options)))
---     (compilationTask path)
---     :: IO (Either (Cyclic Query) ())
---   case result of
---     Left _ -> do
---       Rock.runTask
---         (Rock.memoiseWithCycleDetection memoVar threadDepsVar (ignoreTaskKind (Rock.writer (\_ errs -> printErrors options errs) $ rules options)))
---         (detectCyleTask path)
-
---     _ ->
---       return ()

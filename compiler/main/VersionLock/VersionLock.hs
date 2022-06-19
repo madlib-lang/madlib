@@ -3,7 +3,6 @@ module VersionLock.VersionLock where
 
 import           Data.Aeson
 import           Data.Aeson.Encode.Pretty
-import           Data.Either
 import           Data.Bifunctor
 import           GHC.Generics                   ( Generic )
 import qualified Data.Map                       as M
@@ -19,11 +18,13 @@ import           Utils.PathUtils
 import           VersionLock.PublicAPI
 
 data VersionLock
-  = VersionLock { versionHash :: String
-                , buildHash   :: String
-                , api         :: PublicAPI
-                }
-                deriving (Show, Generic)
+  = VersionLock
+  { versionHash :: String
+  , buildHash :: String
+  , jsApi :: PublicAPI
+  , llvmApi :: PublicAPI
+  }
+  deriving (Show, Generic)
 
 instance FromJSON VersionLock
 instance ToJSON VersionLock

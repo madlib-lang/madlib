@@ -7,7 +7,7 @@ import           Test.Hspec                     ( describe
 import           System.Directory
 import           GHC.IO                         (unsafePerformIO)
 import           Control.Monad
-import           System.FilePath (joinPath)
+import           System.FilePath (joinPath, takeFileName)
 import           Run.Options
 import qualified Utils.PathUtils as Path
 import Run.Target
@@ -20,7 +20,7 @@ import Text.Show.Pretty (ppShow)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
 import Error.Warning (CompilationWarning)
-import Error.Error (CompilationError)
+import Error.Error (CompilationError (CompilationError), TypeError (ImportCycle))
 import Driver.Query (Query)
 import Rock (Cyclic)
 import Driver (Prune(..))
@@ -31,17 +31,6 @@ printInfo = do
   dir <- getCurrentDirectory
   putStrLn $ "DIR: " <> dir
 
-
--- sanitizeExpected :: String -> String
--- sanitizeExpected s = case s of
---   '\\' : '\\' : more ->
---     '\\' : sanitizeExpected more
-
---   a : more ->
---     a : sanitizeExpected more
-
---   "" ->
---     ""
 
 sanitizeExpected :: String -> String
 sanitizeExpected s = read $ "\"" <> s <> "\""
@@ -81,6 +70,18 @@ compileAndRun casePath = do
           return (ppShow e, "")
   else
     return (expected, errorsAndWarnings)
+
+
+sanitizeError :: CompilationError -> CompilationError
+sanitizeError err = case err of
+  CompilationError (ImportCycle paths) ctx ->
+    let updatedPaths = takeFileName <$> paths
+    in  CompilationError (ImportCycle updatedPaths) ctx
+
+  or ->
+    or
+
+
 spec :: Spec
 spec = do
   let cases =
@@ -91,7 +92,8 @@ spec = do
         , "compiler/test/Blackbox/test-cases/mtl"
         , "compiler/test/Blackbox/test-cases/trmc-constructor"
         , "compiler/test/Blackbox/test-cases/unused-imports"
-        -- , "compiler/test/Blackbox/test-cases/import-cycle"
+        , "compiler/test/Blackbox/test-cases/import-cycle"
+        , "compiler/test/Blackbox/test-cases/operators"
         ]
   forM_ cases $ \casePath -> do
     before (compileAndRun casePath) $ describe "" $ do
@@ -144,7 +146,7 @@ compile state options invalidatedPaths = do
         else
           List.intercalate "\n\n\n" formattedWarnings <> "\n"
 
-  formattedErrors   <- mapM (Explain.format readFile False) errors
+  formattedErrors   <- mapM (Explain.format readFile False) (sanitizeError <$> errors)
   let ppErrors =
         if null errors then
           ""
@@ -152,40 +154,3 @@ compile state options invalidatedPaths = do
           List.intercalate "\n\n\n" formattedErrors <> "\n"
 
   return $ ppWarnings ++ ppErrors
-
--- spec :: Spec
--- spec = do
---   beforeAll_ printInfo $ describe "blackbox tests" $ do
---     let _ = unsafePerformIO $ do
---             dir <- getCurrentDirectory
---             putStrLn $ "DIR: " <> dir
---     -- let cases = unsafePerformIO $ getDirectoryContents "compiler/test/Blackbox/test-cases"
---     let cases = ["compiler/test/Blackbox/test-cases/hello-world"]
---     forM_ cases $ \casePath -> do
---       it ("case: " <> casePath) $ do
---         let expected = unsafePerformIO $ readFile (joinPath [casePath, "expected"])
---         let entrypoint = joinPath [casePath, "Entrypoint.mad"]
---         let outputPath = joinPath [casePath, ".tests/run"]
---         let options = Options
---                 { optPathUtils = Path.defaultPathUtils
---                 , optEntrypoint = entrypoint
---                 , optRootPath = "./"
---                 , optOutputPath = ".tests/blackboxed"
---                 , optTarget = TLLVM
---                 , optOptimized = False
---                 , optBundle = False
---                 , optCoverage = False
---                 , optGenerateDerivedInstances = True
---                 , optInsertInstancePlaholders = True
---                 }
---         let _ = unsafePerformIO $ do
---               state <- Driver.initialState
---               runCompilationTask state options [entrypoint]
-
---         let runResult = unsafePerformIO $ try $ readProcessWithExitCode outputPath [] ""
---         case (runResult :: Either IOError (ExitCode, String, String)) of
---             Right (_, result, _) ->
---               result `shouldBe` expected
-
---             Left _ ->
---               undefined

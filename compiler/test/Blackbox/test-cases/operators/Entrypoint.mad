@@ -1,0 +1,87 @@
+import IO from "IO"
+
+
+xor = (a, b) => a ^ b
+and = (a, b) => a & b
+or = (a, b) => a | b
+complement = (a) => ~a
+left = (a, b) => a << b
+right = (a, b) => a >> b
+rightRight = (a, b) => a >>> b
+
+mod = (a, b) => a % b
+div = (a, b) => a / b
+
+invert = (a) => -a
+
+IO.log(xor(3, (20 :: Byte)))
+IO.log(3 ^ (20 :: Byte))
+IO.log(xor(3, 20))
+IO.log(3 ^ 20)
+
+IO.log(and(3, (20 :: Byte)))
+IO.log(3 & (20 :: Byte))
+IO.log(and(3, 20))
+IO.log(3 & 20)
+
+IO.log(or(3, (20 :: Byte)))
+IO.log(3 | (20 :: Byte))
+IO.log(or(3, 20))
+IO.log(3 | 20)
+
+IO.log(complement((3 :: Byte)))
+IO.log(~(3 :: Byte))
+IO.log(complement(3))
+IO.log(~3)
+
+IO.log(left(3, (1 :: Byte)))
+IO.log(3 << (1 :: Byte))
+IO.log(left(3, 1))
+IO.log(3 << 1)
+
+IO.log(right(3, (1 :: Byte)))
+IO.log(3 >> (1 :: Byte))
+IO.log(right(3, 1))
+IO.log(3 >> 1)
+
+IO.log(rightRight(3, (1 :: Byte)))
+IO.log(3 >>> (1 :: Byte))
+IO.log(rightRight(3, 1))
+IO.log(3 >>> 1)
+
+
+IO.log(5 + (3 :: Byte))
+IO.log(5 + 3.3)
+
+IO.log(5 - (3 :: Byte))
+IO.log(5 - 3.3)
+
+IO.log(5 * (3 :: Byte))
+IO.log(5 * 3.3)
+
+IO.log(-(1 :: Byte))
+IO.log(-3.3)
+
+IO.log(5 > (3 :: Byte))
+IO.log(5 > 3.3)
+
+IO.log(5 < (3 :: Byte))
+IO.log(5 < 3.3)
+
+IO.log(5 >= (3 :: Byte))
+IO.log(5 >= 3.3)
+
+IO.log(5 <= (3 :: Byte))
+IO.log(5 <= 3.3)
+
+IO.log(mod(5, 3))
+IO.log(5 % 3)
+
+IO.log(div(5, 3))
+IO.log(5 / 3)
+
+IO.log(5 != 3.3)
+IO.log(5 != (3 :: Byte))
+IO.log(true != false)
+IO.log({} != {})
+IO.log("yes" != "no")

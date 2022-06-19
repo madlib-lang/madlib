@@ -20,10 +20,9 @@ data Command
       , compileBundle :: Bool
       , compileOptimize :: Bool
       , compileTarget :: Target
-      , compileTestFilesOnly :: Bool
       , compileWatch :: Bool
       }
-  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target, testWatch :: Bool }
+  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -72,10 +71,6 @@ parseBundle = switch (long "bundle" <> short 'b' <> help "Bundle the compile js 
 
 parseOptimize :: Parser Bool
 parseOptimize = switch (long "optimize" <> help "Optimize the output to generate smaller js files" <> showDefault)
-
-parseTestFilesOnly :: Parser Bool
-parseTestFilesOnly =
-  switch (long "test-files-only" <> help "compiles only test files when compiling a path" <> showDefault)
 
 parseWatch :: Parser Bool
 parseWatch =
@@ -141,23 +136,14 @@ parseCompile =
     <*> parseBundle
     <*> parseOptimize
     <*> parseTarget
-    <*> parseTestFilesOnly
     <*> parseWatch
-
-parseCoverage :: Parser Bool
-parseCoverage = switch
-  (  long "coverage"
-  <> short 'c'
-  <> help "Runs tests with coverage report and saves the report in .coverage/lcov.info"
-  <> showDefault
-  )
 
 parseTestInput :: Parser FilePath
 parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget <*> parseWatch
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch
 
 
 parseRunInput :: Parser FilePath

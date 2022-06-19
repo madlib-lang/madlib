@@ -349,10 +349,6 @@ stringType :: Type.Type
 stringType =
   Type.PointerType Type.i8 (AddrSpace 1)
 
-charType :: Type.Type
-charType =
-  Type.i32
-
 papType :: Type.Type
 papType =
   Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
@@ -922,8 +918,9 @@ generateExp env symbolTable exp = case exp of
       _ ->
         error $ "method with name '" <> methodName' <> "' not found!"
 
-  Core.Typed _ _ _ (Core.Export e) -> do
-    generateExp env { isLast = False } symbolTable e
+  -- TODO: Export nodes are stripped from closure convertion currently, we'll need this back soon.
+  -- Core.Typed _ _ _ (Core.Export e) -> do
+  --   generateExp env { isLast = False } symbolTable e
 
   Core.Typed _ _ metadata (Core.Assignment name e) -> do
     (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
@@ -2178,6 +2175,9 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
     return symbolTable
 
 
+-- TODO: for now closure convertion strips exports but at some point we want these back
+-- in order to generate minimal symboltables with only exported stuff.
+-- At that point we'll have to process the commented Export expressions.
 addTopLevelFnToSymbolTable :: Env -> SymbolTable -> Core.Exp -> SymbolTable
 addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))) ->
@@ -2186,11 +2186,11 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))))) ->
-    let arity  = List.length params
-        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
+  -- Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))))) ->
+  --   let arity  = List.length params
+  --       fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+  --       fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+  --   in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _) ->
     let arity  = List.length $ IT.getParamTypes t
@@ -2198,11 +2198,11 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _))) ->
-    let arity  = List.length $ IT.getParamTypes t
-        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
+  -- Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _))) ->
+  --   let arity  = List.length $ IT.getParamTypes t
+  --       fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+  --       fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+  --   in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _) ->
     if IT.isFunctionType t then
@@ -2214,15 +2214,15 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
-  Core.Typed _ _ _ (Core.Export (Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _))) ->
-    if IT.isFunctionType t then
-      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-      in  Map.insert name (topLevelSymbol globalRef) symbolTable
-    else
-      let expType   = buildLLVMType env symbolTable qt
-          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+  -- Core.Typed _ _ _ (Core.Export (Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _))) ->
+  --   if IT.isFunctionType t then
+  --     let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+  --         globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+  --     in  Map.insert name (topLevelSymbol globalRef) symbolTable
+  --   else
+  --     let expType   = buildLLVMType env symbolTable qt
+  --         globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+  --     in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
   _ ->
     symbolTable
@@ -2389,12 +2389,10 @@ generateMethod env symbolTable methodName exp = case exp of
 
 generateInstance :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Instance -> m SymbolTable
 generateInstance env symbolTable inst = case inst of
-  Core.Untyped _ _ (Core.Instance interface preds typingStr methods) -> do
-    let dictType = Type.StructureType False (List.replicate (Map.size methods) papType)
-        instanceName = "$" <> interface <> "$" <> typingStr
-        prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
+  Core.Untyped _ _ (Core.Instance interface _ typingStr methods) -> do
+    let instanceName     = "$" <> interface <> "$" <> typingStr
+        prefixedMethods  = Map.mapKeys ((instanceName <> "$") <>) methods
         prefixedMethods' = (\(name, method) -> (name, method)) <$> Map.toList prefixedMethods
-        prefixedMethodNames = fst <$> prefixedMethods'
         -- for recursive types we need to have the current dict in the symbol table
     let methodConstants = buildDictValues env symbolTable (Map.toList (fst <$> prefixedMethods))
     dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
@@ -2422,7 +2420,7 @@ addMethodToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  ([(functionName, fnRef)], Map.insert functionName (methodSymbol arity fnRef) symbolTable)
 
-  Core.Typed (_ IT.:=> t) _ _ (Core.Assignment name exp) ->
+  Core.Typed (_ IT.:=> t) _ _ (Core.Assignment name _) ->
     let paramTypes  = IT.getParamTypes t
         arity       = List.length paramTypes
         paramTypes' = boxType <$ paramTypes
