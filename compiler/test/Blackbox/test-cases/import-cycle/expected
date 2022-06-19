@@ -1,4 +1,3 @@
-\ESC[41mError\ESC[0m in module '/Users/arnaudboeglin/Code/madlib/compiler/test/Blackbox/test-cases/import-cycle/Entrypoint.mad' at line 1:
 1|import {} from \"./Import\"
   ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -12,3 +11,4 @@ Hint: Import cycles are not allowed and usually show a design issue. Consider sp
 modules in order to have both modules import a common dependency instead of having them being co-dependent.
 Another solution would be to move things that depend on the other module from the cycle into the other in
 order to collocate things that depend on each other.
+
