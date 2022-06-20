@@ -1,6 +1,23 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 33 6 2))
+            (If
+               (Typed
+                  ([] :=> TCon (TC "Boolean" Star) "prelude")
+                  (Area (Loc 4 1 5) (Loc 8 1 9))
+                  (LBool "true"))
+               (Typed
+                  ([] :=> TCon (TC "String" Star) "prelude")
+                  (Area (Loc 14 2 3) (Loc 18 2 7))
+                  (LStr "\"OK\""))
+               (Typed
+                  ([] :=> TVar (TV "a" Star))
+                  (Area (Loc 30 5 3) (Loc 31 5 4))
+                  (LNum "1")))
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

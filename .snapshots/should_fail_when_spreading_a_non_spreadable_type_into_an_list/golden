@@ -1,6 +1,28 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 9 1 10))
+            (ListConstructor
+               [ Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 1 1 2) (Loc 2 1 3))
+                   (ListItem
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 1 1 2) (Loc 2 1 3))
+                         (LNum "1")))
+               , Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 4 1 5) (Loc 8 1 9))
+                   (ListSpread
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 7 1 8) (Loc 8 1 9))
+                         (LNum "3")))
+               ])
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

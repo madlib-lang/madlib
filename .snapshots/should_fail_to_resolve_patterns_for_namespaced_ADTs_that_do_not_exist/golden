@@ -1,6 +1,46 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 45 3 2))
+            (Assignment
+               "might"
+               (Typed
+                  ([] :=> TVar (TV "-" Star))
+                  (Area (Loc 8 1 9) (Loc 45 3 2))
+                  (Abs
+                     (Typed
+                        ([] :=> TVar (TV "-" Star)) (Area (Loc 9 1 10) (Loc 10 1 11)) "x")
+                     [ Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 15 1 16) (Loc 45 3 2))
+                         (Where
+                            (Typed
+                               ([] :=> TVar (TV "-" Star))
+                               (Area (Loc 21 1 22) (Loc 22 1 23))
+                               (Var "x" False))
+                            [ Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 28 2 3) (Loc 43 2 18))
+                                (Is
+                                   (Typed
+                                      ([] :=> TVar (TV "-" Star))
+                                      (Area (Loc 28 2 3) (Loc 38 2 13))
+                                      (PCon
+                                         "M.Maybe"
+                                         [ Typed
+                                             ([] :=> TVar (TV "-" Star))
+                                             (Area (Loc 36 2 11) (Loc 37 2 12))
+                                             (PVar "a")
+                                         ]))
+                                   (Typed
+                                      ([] :=> TVar (TV "-" Star))
+                                      (Area (Loc 42 2 17) (Loc 43 2 18))
+                                      (Var "a" False)))
+                            ])
+                     ])))
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

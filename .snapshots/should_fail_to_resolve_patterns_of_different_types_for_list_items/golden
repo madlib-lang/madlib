@@ -1,6 +1,103 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 59 4 2))
+            (Where
+               (Typed
+                  ([] :=> TVar (TV "-" Star))
+                  (Area (Loc 6 1 7) (Loc 21 1 22))
+                  (ListConstructor
+                     [ Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 7 1 8) (Loc 8 1 9))
+                         (ListItem
+                            (Typed
+                               ([] :=> TVar (TV "a" Star))
+                               (Area (Loc 7 1 8) (Loc 8 1 9))
+                               (LNum "1")))
+                     , Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 10 1 11) (Loc 11 1 12))
+                         (ListItem
+                            (Typed
+                               ([] :=> TVar (TV "a" Star))
+                               (Area (Loc 10 1 11) (Loc 11 1 12))
+                               (LNum "2")))
+                     , Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 13 1 14) (Loc 14 1 15))
+                         (ListItem
+                            (Typed
+                               ([] :=> TVar (TV "a" Star))
+                               (Area (Loc 13 1 14) (Loc 14 1 15))
+                               (LNum "3")))
+                     , Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 16 1 17) (Loc 17 1 18))
+                         (ListItem
+                            (Typed
+                               ([] :=> TVar (TV "a" Star))
+                               (Area (Loc 16 1 17) (Loc 17 1 18))
+                               (LNum "5")))
+                     , Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 19 1 20) (Loc 20 1 21))
+                         (ListItem
+                            (Typed
+                               ([] :=> TVar (TV "a" Star))
+                               (Area (Loc 19 1 20) (Loc 20 1 21))
+                               (LNum "8")))
+                     ]))
+               [ Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 27 2 3) (Loc 41 2 17))
+                   (Is
+                      (Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 27 2 3) (Loc 36 2 12))
+                         (PList
+                            [ Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 28 2 4) (Loc 29 2 5))
+                                (PNum "1")
+                            , Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 31 2 7) (Loc 32 2 8))
+                                (PNum "2")
+                            , Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 34 2 10) (Loc 35 2 11))
+                                (PNum "3")
+                            ]))
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 40 2 16) (Loc 41 2 17))
+                         (LNum "1")))
+               , Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 44 3 3) (Loc 57 3 16))
+                   (Is
+                      (Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 44 3 3) (Loc 52 3 11))
+                         (PList
+                            [ Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 45 3 4) (Loc 48 3 7))
+                                (PStr "\"1\"")
+                            , Typed
+                                ([] :=> TVar (TV "-" Star))
+                                (Area (Loc 50 3 9) (Loc 51 3 10))
+                                (PVar "n")
+                            ]))
+                      (Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 56 3 15) (Loc 57 3 16))
+                         (Var "n" False)))
+               ])
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
