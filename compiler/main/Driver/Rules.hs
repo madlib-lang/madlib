@@ -148,8 +148,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
         return ((updateTestExports wishModulePath listModulePath ast, env), (mempty, mempty))
 
-      Right (_, InferState _ errors) ->
-        return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, errors))
+      Right ((ast, env), InferState _ errors) ->
+        return ((ast { Slv.apath = Just path }, env), (mempty, errors))
 
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))

@@ -70,7 +70,7 @@ infer options env lexp = do
     Can.ListConstructor  _    -> inferListConstructor options env lexp
     Can.TupleConstructor _    -> inferTupleConstructor options env lexp
     Can.Export           _    -> inferExport options env lexp
-    Can.NameExport       name -> inferNameExport env lexp
+    Can.NameExport       _    -> inferNameExport env lexp
     Can.If{}                  -> inferIf options env lexp
     Can.Extern{}              -> inferExtern env lexp
     Can.JSExp c               -> do
@@ -956,12 +956,15 @@ inferExps options env (e : es) = do
   (es', nextEnv) <- inferExps options env' es
 
   case e' of
-    Just e'' -> return (e'' : es', nextEnv)
-    Nothing  -> return (es', nextEnv)
+    Just e'' ->
+      return (e'' : es', nextEnv)
+
+    Nothing  ->
+      return (es', nextEnv)
 
 
 inferExp :: Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
-inferExp _ env (Can.Canonical area (Can.TypeExport name)) =
+inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
   -- TODO: Should this return Nothing?
   return (Nothing, env) -- return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
 inferExp options env e = do
@@ -972,7 +975,7 @@ inferExp options env e = do
     _ -> do
       -- NB: Currently handles Extern nodes as well
       (_, _, env', _) <- inferImplicitlyTyped options False env e
-      (s, (ds, ps), env'', e') <- inferImplicitlyTyped options False env' e
+      (s, (_, ps), env'', e') <- inferImplicitlyTyped options False env' e
       return (s, ps, env'', e')
 
   e''  <- insertClassPlaceholders options env' e' ps
@@ -984,17 +987,7 @@ inferExp options env e = do
 recordError :: Env -> Can.Exp -> CompilationError -> Infer (Maybe Slv.Exp, Env)
 recordError env e err = do
   pushError err
-  case Can.getExportNameAndScheme e of
-    (Just name, Just sc) -> do
-      -- (_ :=> t) <- instantiate sc
-      return (Just $ toSolved e, env)
-
-    (Just name, Nothing) -> do
-      -- tv <- newTVar Star
-      return (Just $ toSolved e, env)
-
-    _ -> return (Just $ toSolved e, env)
-
+  return (Just $ toSolved e, env)
 
 
 upgradeContext :: Env -> Area -> Infer a -> Infer a

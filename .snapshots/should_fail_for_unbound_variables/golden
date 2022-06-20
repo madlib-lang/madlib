@@ -1,6 +1,11 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Var "x" False)
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

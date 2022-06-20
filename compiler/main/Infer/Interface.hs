@@ -37,13 +37,16 @@ import Run.Options
 
 addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
 addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
-  Just x  -> throwError $ CompilationError (InterfaceAlreadyDefined id) NoContext
-  Nothing -> return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
+  Just _  ->
+    throwError $ CompilationError (InterfaceAlreadyDefined id) NoContext
+
+  Nothing ->
+    return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
 
 
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
 verifyInstancePredicates env p' p@(IsIn cls ts _) = do
-  (Interface tvs ps' is) <- lookupInterface env cls
+  (Interface tvs _ _) <- lookupInterface env cls
   let tvs' = (\(TV n k) -> TV ("_" <> n) k) <$> tvs
   catchError
     (unify (TVar <$> tvs') ts >> return True)
@@ -57,7 +60,6 @@ addInstance env ps p@(IsIn cls ts _) = do
   mapM_ (verifyInstancePredicates env p) ps
 
   let ts'    = TVar <$> tvs
-  let zipped = zip ts' ts
   s <- match ts' ts
   catchError (mapM_ (isInstanceDefined env s) ps')
               (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
@@ -65,24 +67,22 @@ addInstance env ps p@(IsIn cls ts _) = do
               }
 
 addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
-addInstanceMethod env ps p@(IsIn cls ts _) (methodName, methodScheme) = do
+addInstanceMethod env _ p@(IsIn cls _ _) (methodName, methodScheme) = do
   (Interface tvs ps' is) <- lookupInterface env cls
 
   maybeInstance <- findInst env p
   case maybeInstance of
-    Just inst@(Instance qp methods) -> do
-      let withoutInst = filter (/= inst) is
+    Just (Instance qp methods) -> do
       let methods'    = M.insert methodName methodScheme methods
       return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
 
 setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
-setInstanceMethods env p@(IsIn cls ts _) methods = do
+setInstanceMethods env p@(IsIn cls _ _) methods = do
   (Interface tvs ps' is) <- lookupInterface env cls
 
   maybeInstance <- findInst env p
   case maybeInstance of
-    Just inst@(Instance qp _) -> do
-      let withoutInst = filter (/= inst) is
+    Just (Instance qp _) -> do
       return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods : is)) (envInterfaces env) }
 
 
@@ -133,7 +133,7 @@ resolveInstance options env inst@(Can.Canonical area (Can.Instance name constrai
     (inferMethod options env (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
   let dict'    = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
-  let methods' = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
+  let methods' = M.fromList $ (\(a, _, c) -> (a, c)) <$> inferredMethods
   envWithMethods <- setInstanceMethods env pred methods'
   return (envWithMethods, Slv.Untyped area $ Slv.Instance name constraintPreds pred dict')
 
@@ -144,14 +144,14 @@ inferMethod options env instancePreds constraintPreds (mn, m) =
 
 
 inferMethod' :: Options -> Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
-inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assignment n' m)) = do
-  sc'             <- lookupVar env mn
-  qt@(mps :=> mt) <- instantiate sc'
-  s1              <- specialMatchMany mps instancePreds
-  let (mps' :=> mt')  = apply s1 qt
-  let qt'@(qs :=> t') = constraintPreds :=> mt'
+inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assignment _ m)) = do
+  sc'            <- lookupVar env mn
+  qt@(mps :=> _) <- instantiate sc'
+  s1             <- specialMatchMany mps instancePreds
+  let (_ :=> mt') = apply s1 qt
+  let qt'         = constraintPreds :=> mt'
 
-  let sc              = quantify (ftv qt') qt'
+  let sc          = quantify (ftv qt') qt'
 
   (s, ps, t, e) <- infer options env m
   (qs :=> t')   <- instantiate sc
