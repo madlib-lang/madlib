@@ -124,7 +124,7 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
                   priorEnv
                   ainterfaces
     env'' <- foldM
-      (\env inst@(Can.Canonical _ (Can.Instance id preds p _)) ->
+      (\env inst@(Can.Canonical _ (Can.Instance _ preds p _)) ->
         catchError (addInstance env preds p) (addContext env' inst)
       )
       env'
@@ -263,7 +263,7 @@ updateADT (Can.Canonical area alias@Can.Alias{}) = return $ Slv.Untyped
 
 updateADTConstructor :: Can.Constructor -> Infer Slv.Constructor
 updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme _)) = do
-  (ps :=> t) <- instantiate scheme
+  (_ :=> t) <- instantiate scheme
   return $ Slv.Untyped area $ Slv.Constructor cname (updateTyping <$> cparams) t
 
 
@@ -279,7 +279,7 @@ updateImport allImports i = case i of
 
   -- If a TypeImport does not have a corresponding normal import we need to carry it in order
   -- to generate the constructor types for the LLVM backend.
-  Can.Canonical area (Can.TypeImport ns p fp) ->
+  Can.Canonical area (Can.TypeImport _ p fp) ->
     if hasModuleNormalImport allImports fp then
       Nothing
     else
@@ -427,7 +427,7 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
               (
                 (
                   (\case
-                    i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
+                    (Slv.Untyped area (Slv.NamedImport names fp afp)) ->
                       Slv.Untyped area $ Slv.NamedImport
                         (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars fullEnv) >> Just (Slv.Untyped area n)) names)
                         fp
