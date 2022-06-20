@@ -48,7 +48,6 @@ import           Run.Options
 import           Control.Concurrent.MVar
 import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
-import Run.Options (Options(optGenerateDerivedInstances))
 import qualified Driver
 
 
@@ -104,13 +103,18 @@ generateDocData rootFolder paths = do
 
 runDocumentationGenerator :: FilePath -> IO ()
 runDocumentationGenerator fp = do
-  let ext = takeExtension fp
-  filepaths <- getFilesForDoc fp
-  let rootPath = case ext of
-        ".mad"     -> takeDirectory fp
-        '.' : rest -> ""
-        _          -> fp
+  let ext      = takeExtension fp
+      rootPath = case ext of
+        ".mad" ->
+          takeDirectory fp
 
+        '.' : _ ->
+          ""
+
+        _ ->
+          fp
+
+  filepaths         <- getFilesForDoc fp
   canonicalRootPath <- canonicalizePath rootPath
   docInfos          <- generateDocData canonicalRootPath filepaths
   putStrLn $ generateASTsDoc docInfos

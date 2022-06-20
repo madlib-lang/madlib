@@ -27,8 +27,6 @@ instantiate (Forall ks qt) = do
   ts <- mapM newTVar ks
   return (inst ts qt)
 
--- instantiateOne :: Scheme -> Qual Type
--- instantiateOne sc = unsafeRun $ instantiate sc
 
 class Instantiate t where
   inst  :: [Type] -> t -> t
