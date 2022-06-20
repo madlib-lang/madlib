@@ -159,7 +159,7 @@ inferVar options env exp@(Can.Canonical area (Can.Var n)) = case n of
     return (M.empty, ps'', t, e')
 
 enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
-enhanceVarError env exp area (CompilationError e _) =
+enhanceVarError env _ area (CompilationError e _) =
   throwError $ CompilationError e (Context (envCurrentPath env) area)
 
 
@@ -241,7 +241,7 @@ updateBodyEnv s e =
 -- INFER APP
 
 inferApp :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp options env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
+inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
   tv                  <- newTVar Star
   (s1, ps1, t1, eabs) <- infer options env abs
   (s2, ps2, t2, earg) <- infer options (apply s1 env) arg
@@ -265,7 +265,7 @@ inferApp options env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea
 -- INFER TEMPLATE STRINGS
 
 inferTemplateString :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferTemplateString options env e@(Can.Canonical area (Can.TemplateString exps)) = do
+inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) = do
   inferred <- mapM (infer options env) exps
 
   let elemSubsts = (\(s, _, _, _) -> s) <$> inferred
@@ -358,7 +358,7 @@ inferListConstructor options env (Can.Canonical area (Can.ListConstructor elems)
 
 
 inferListItem :: Options -> Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
-inferListItem options env ty (Can.Canonical area li) = case li of
+inferListItem options env _ (Can.Canonical area li) = case li of
   Can.ListItem exp -> do
     (s1, ps, t, e) <- infer options env exp
     return (s1, ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
@@ -471,7 +471,7 @@ inferRecordField options env (Can.Canonical area field) = case field of
 -- INFER ACCESS
 
 inferAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAccess options env e@(Can.Canonical area (Can.Access ns field)) =
+inferAccess options env e@(Can.Canonical _ (Can.Access ns _)) =
   case ns of
     Can.Canonical _ (Can.Var ns') ->
       if ns' `Set.member` envNamespacesInScope env then
@@ -505,7 +505,7 @@ inferNamespaceAccess _ _ _ = throwError $ CompilationError FatalError NoContext
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re) abs@(Can.Canonical _ (Can.Var ('.' : name)))))
+inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs@(Can.Canonical _ (Can.Var ('.' : _)))))
   = do
     tv                  <- newTVar Star
     (s1, _  , t1, eabs) <- infer options env abs
@@ -525,7 +525,7 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
 -- INFER IF
 
 inferIf :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferIf options env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
+inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   (s1, ps1, tcond  , econd  ) <- infer options env cond
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
   (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s1 `compose` s2) env) falsy
@@ -587,7 +587,6 @@ inferBranch options env tv t (Can.Canonical area (Can.Is pat exp)) = do
     ( subst
     , allPreds
     , Slv.Typed (allPreds :=> apply subst (t' `fn` tv)) area
-      -- $ Slv.Is pat' (updateQualType e' (ps' :=> apply subst t''))
       $ Slv.Is (updatePatternTypes subst (apply s <$> vars) pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
@@ -624,7 +623,7 @@ updatePatternTypes s vars pat = case pat of
 
 inferTypedExp :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTypedExp options env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
-  (ps :=> t)        <- instantiate sc
+  (_ :=> t)        <- instantiate sc
 
   (s1, ps1, t1, e1) <- infer options env exp
   s2                <- contextualUnify env e t t1
@@ -635,7 +634,7 @@ inferTypedExp options env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = 
 
 
 inferExtern :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferExtern env (Can.Canonical area (Can.Extern scheme name originalName)) = do
+inferExtern _ (Can.Canonical area (Can.Extern scheme name originalName)) = do
   qt@(ps :=> t) <- instantiate scheme
   return (mempty, ps, t, Slv.Typed qt area (Slv.Extern qt name originalName))
 
@@ -660,7 +659,7 @@ split mustCheck env fs gs ps = do
     let as' = ambiguities (fs ++ gs) rs'''
     if not (null as') then
       case head as of
-        (_, IsIn c ts (Just area):_) ->
+        (_, IsIn _ _ (Just area):_) ->
           throwError $ CompilationError (AmbiguousType (head as)) (Context (envCurrentPath env) area)
 
         _ ->
@@ -783,7 +782,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       t'  = apply s'' tv
       fs  = ftv (apply s'' env'')
       vs  = ftv t'
-      gs  = vs \\ fs
+      -- gs  = vs \\ fs
   (ds, rs, _) <- catchError
     (split False env'' fs vs ps')
     (\case

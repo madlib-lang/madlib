@@ -39,7 +39,7 @@ lookupVar env name = do
     Just (ImportInfo path NameImport name) ->
       Rock.fetch $ Query.ForeignScheme path name
 
-    Just (ImportInfo path NamespaceImport ns) ->
+    Just (ImportInfo path NamespaceImport _) ->
       let afterNamespace = dropWhile (/= '.') name
       in  if not (null afterNamespace) then
             Rock.fetch $ Query.ForeignScheme path (tail afterNamespace)
@@ -112,6 +112,7 @@ mergeEnv initial env = Env { envVars              = envVars initial <> envVars e
                            , envConstructors      = envConstructors initial <> envConstructors env
                            , envCurrentPath       = envCurrentPath env
                            , envNamespacesInScope = envNamespacesInScope initial <> envNamespacesInScope env
+                           , envImportInfo        = envImportInfo initial
                            }
 
 

@@ -608,11 +608,5 @@ isTuple t = case t of
   _ -> False
 
 
-prettyPrintKind :: Kind -> String
-prettyPrintKind k = case k of
-  Star       -> "*"
-  Kfun k1 k2 -> prettyPrintKind k1 <> " -> " <> prettyPrintKind k2
-
-
 slice :: Int -> Int -> [a] -> [a]
 slice from to xs = take (to - from + 1) (drop from xs)
