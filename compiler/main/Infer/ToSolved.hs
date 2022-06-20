@@ -23,10 +23,13 @@ toSolved (Can.Canonical area exp) = case exp of
 
   Can.App f arg closed -> Slv.Typed ([] :=> tSubst) area (Slv.App (toSolved f) (toSolved arg) closed)
 
-  Can.Abs (Can.Canonical area param) body ->
-    Slv.Typed ([] :=> tSubst) area (Slv.Abs (Slv.Typed ([] :=> tSubst) area param) (toSolved <$> body))
+  Can.Abs (Can.Canonical paramArea param) body ->
+    Slv.Typed ([] :=> tSubst) area (Slv.Abs (Slv.Typed ([] :=> tSubst) paramArea param) (toSolved <$> body))
 
   Can.TemplateString exps    -> Slv.Typed ([] :=> tSubst) area (Slv.TemplateString (toSolved <$> exps))
+
+  Can.Access     (Can.Canonical _ (Can.Var namespace))  (Can.Canonical _ (Can.Var fieldName))  ->
+    Slv.Typed ([] :=> tSubst) area (Slv.Var (namespace <> fieldName) False)
 
   Can.Access     rec  field  -> Slv.Typed ([] :=> tSubst) area (Slv.Access (toSolved rec) (toSolved field))
 
@@ -84,6 +87,8 @@ patternToSolved (Can.Canonical area pat) = case pat of
   Can.PCon name pats  -> Slv.Typed ([] :=> tSubst) area (Slv.PCon name (patternToSolved <$> pats))
 
   Can.PNum    v       -> Slv.Typed ([] :=> tSubst) area (Slv.PNum v)
+
+  Can.PChar    v      -> Slv.Typed ([] :=> tSubst) area (Slv.PChar v)
 
   Can.PStr    v       -> Slv.Typed ([] :=> tSubst) area (Slv.PStr v)
 

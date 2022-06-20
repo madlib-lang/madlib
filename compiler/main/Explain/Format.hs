@@ -187,7 +187,8 @@ formatTypeError json err = case err of
       <> "' but could not resolve it. You\n"
       <> "might want to add a type annotation to make it resolvable."
 
-  AmbiguousType (TV n _, []) -> "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
+  AmbiguousType (TV n _, []) ->
+    "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
 
   InterfaceNotExisting cls ->
     "The interface '"

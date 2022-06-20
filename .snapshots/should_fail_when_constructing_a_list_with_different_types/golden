@@ -1,6 +1,44 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 16 1 17))
+            (ListConstructor
+               [ Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 1 1 2) (Loc 2 1 3))
+                   (ListItem
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 1 1 2) (Loc 2 1 3))
+                         (LNum "1")))
+               , Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 4 1 5) (Loc 9 1 10))
+                   (ListItem
+                      (Typed
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
+                         (Area (Loc 4 1 5) (Loc 9 1 10))
+                         (LBool "false")))
+               , Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 11 1 12) (Loc 12 1 13))
+                   (ListItem
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 11 1 12) (Loc 12 1 13))
+                         (LNum "3")))
+               , Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 14 1 15) (Loc 15 1 16))
+                   (ListItem
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 14 1 15) (Loc 15 1 16))
+                         (LNum "4")))
+               ])
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

@@ -1,9 +1,99 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 113 9 1) (Loc 122 9 10))
+            (App
+               (Typed
+                  ([] :=> TVar (TV "-" Star))
+                  (Area (Loc 113 9 1) (Loc 117 9 5))
+                  (Var "read" False))
+               (Typed
+                  ([] :=> TCon (TC "String" Star) "prelude")
+                  (Area (Loc 118 9 6) (Loc 121 9 9))
+                  (LStr "\"3\""))
+               True)
+        ]
     , atypedecls = []
-    , ainterfaces = []
-    , ainstances = []
+    , ainterfaces =
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 42 3 2))
+            (Interface
+               "Read"
+               []
+               [ TV "a" Star ]
+               (fromList
+                  [ ( "read"
+                    , Forall
+                        [ Star ]
+                        ([ IsIn "Read" [ TGen 0 ] Nothing ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TGen 0))
+                    )
+                  ])
+               (fromList
+                  [ ( "read"
+                    , Untyped
+                        (Area (Loc 29 2 11) (Loc 40 2 22))
+                        (TRArr
+                           (Untyped (Area (Loc 29 2 11) (Loc 35 2 17)) (TRSingle "String"))
+                           (Untyped (Area (Loc 39 2 21) (Loc 40 2 22)) (TRSingle "a")))
+                    )
+                  ]))
+        ]
+    , ainstances =
+        [ Untyped
+            (Area (Loc 44 5 1) (Loc 111 7 2))
+            (Instance
+               "Read"
+               []
+               (IsIn "Read" [ TCon (TC "Integer" Star) "prelude" ] Nothing)
+               (fromList
+                  [ ( "read"
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TCon (TC "Integer" Star) "prelude"))
+                          (Area (Loc 70 6 3) (Loc 109 6 42))
+                          (Assignment
+                             "read"
+                             (Typed
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "String" Star) "prelude"))
+                                     (TCon (TC "Integer" Star) "prelude"))
+                                (Area (Loc 77 6 10) (Loc 109 6 42))
+                                (Abs
+                                   (Typed
+                                      ([] :=> TCon (TC "String" Star) "prelude")
+                                      (Area (Loc 78 6 11) (Loc 79 6 12))
+                                      "s")
+                                   [ Typed
+                                       ([] :=> TCon (TC "Integer" Star) "prelude")
+                                       (Area (Loc 85 6 18) (Loc 108 6 41))
+                                       (JSExp " parseFloat(s, 10) ")
+                                   ])))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TCon (TC "Integer" Star) "prelude"))
+                      )
+                    )
+                  ]))
+        ]
     , apath = Just "Module.mad"
     }
 , []

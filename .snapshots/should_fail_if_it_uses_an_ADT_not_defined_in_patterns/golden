@@ -1,6 +1,28 @@
 ( AST
     { aimports = []
-    , aexps = []
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV "-" Star))
+            (Area (Loc 0 1 1) (Loc 31 3 2))
+            (Where
+               (Typed
+                  ([] :=> TVar (TV "a" Star))
+                  (Area (Loc 6 1 7) (Loc 7 1 8))
+                  (LNum "3"))
+               [ Typed
+                   ([] :=> TVar (TV "-" Star))
+                   (Area (Loc 13 2 3) (Loc 29 2 19))
+                   (Is
+                      (Typed
+                         ([] :=> TVar (TV "-" Star))
+                         (Area (Loc 13 2 3) (Loc 24 2 14))
+                         (PCon "NotExisting" []))
+                      (Typed
+                         ([] :=> TVar (TV "a" Star))
+                         (Area (Loc 28 2 18) (Loc 29 2 19))
+                         (LNum "5")))
+               ])
+        ]
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []

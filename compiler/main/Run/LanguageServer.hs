@@ -80,7 +80,7 @@ handlers state = mconcat
 
         Nothing ->
           return ()
-  , requestHandler STextDocumentDefinition $ \req@(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
+  , requestHandler STextDocumentDefinition $ \(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
       recordAndPrintDuration "definition" $ do
         links <- getDefinitionLinks state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
         case links of
@@ -146,11 +146,10 @@ isInRange (Loc _ l c) (Area (Loc _ lstart cstart) (Loc _ lend cend)) =
 
 
 prettyQt :: Bool -> Qual Type -> String
-prettyQt topLevel qt@(_ :=> t) =
-  if topLevel then
-    prettyPrintQualType True qt
-  else
-    prettyPrintType True t
+prettyQt topLevel qt@(_ :=> t)
+  | qt == failedQt = "_"
+  | topLevel       = prettyPrintQualType True qt
+  | otherwise      = prettyPrintType True t
 
 
 data Node
@@ -234,12 +233,12 @@ findNodeAtLocInField loc field = case field of
 
 
 findNodeAtLocInPattern :: Loc -> Slv.Pattern -> Maybe Node
-findNodeAtLocInPattern loc input@(Slv.Untyped _ _) = Nothing
-findNodeAtLocInPattern loc input@(Slv.Typed qt area pat) =
+findNodeAtLocInPattern _ (Slv.Untyped _ _) = Nothing
+findNodeAtLocInPattern loc input@(Slv.Typed _ area pat) =
   if isInRange loc area then
     let deeper =
           case pat of
-            Slv.PCon name pats ->
+            Slv.PCon _ pats ->
               foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
 
             Slv.PList pats ->
@@ -267,7 +266,7 @@ findNodeAtLocInPattern loc input@(Slv.Typed qt area pat) =
 
 
 findNodeAtLocInIs :: Loc -> Slv.Is -> Maybe Node
-findNodeAtLocInIs loc (Slv.Untyped _ _) = Nothing
+findNodeAtLocInIs _ (Slv.Untyped _ _) = Nothing
 findNodeAtLocInIs loc (Slv.Typed _ _ (Slv.Is pat exp)) =
   findNodeAtLocInPattern loc pat <|> findNodeAtLoc False loc exp
 
@@ -325,7 +324,7 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             Slv.Do body ->
               foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> body
 
-            Slv.Assignment name exp ->
+            Slv.Assignment _ exp ->
               findNodeAtLoc False loc exp
 
             Slv.Placeholder _ exp' ->
@@ -378,7 +377,7 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             deeper
   else
     Nothing
-findNodeAtLoc topLevel loc (Slv.Untyped _ _) =
+findNodeAtLoc _ _ (Slv.Untyped _ _) =
   Nothing
 
 
@@ -400,16 +399,16 @@ findNodeInImport :: Loc -> Src.Import -> Maybe Node
 findNodeInImport loc imp =
   if isInRange loc $ Src.getArea imp then
     case imp of
-      Src.Source area _ (Src.DefaultImport _ _ filepath) ->
+      Src.Source _ _ (Src.DefaultImport _ _ filepath) ->
         Just $ DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath
 
       -- TODO: check names and return a node for the named import if area match
-      Src.Source area _ (Src.NamedImport names _ filepath) ->
+      Src.Source _ _ (Src.NamedImport names _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath NamedImportNode <$> names)
         <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
 
       -- TODO: check type names and return a node for the named type import if area match
-      Src.Source area _ (Src.TypeImport typeNames _ filepath) ->
+      Src.Source _ _ (Src.TypeImport typeNames _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath TypeImportNode <$> typeNames)
         <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
   else
@@ -494,21 +493,37 @@ retrieveKind t = case t of
     kind t
 
 
+failedQt :: Qual Type
+failedQt = [] :=> TVar (TV "-" Star)
+
+
+sanitizeName :: String -> String
+sanitizeName s = case s of
+  "_P_" ->
+    "pipe"
+
+  '_':'_':'$':'P':'H':_ ->
+    "$"
+
+  or ->
+    or
+
+
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
   (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
   nodeInfo <- case node of
     ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
-      return $ name <> " :: " <> prettyQt topLevel qt
+      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
 
     ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
-      return $ name <> " :: " <> prettyQt topLevel qt
+      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
 
     ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
-      return $ name <> " :: " <> prettyQt topLevel qt
+      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
 
     NameNode topLevel (Slv.Typed qt _ name) ->
-      return $ name <> " :: " <> prettyQt topLevel qt
+      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
 
     ExpNode topLevel (Slv.Typed qt _ _) ->
       return $ prettyQt topLevel qt
@@ -619,7 +634,7 @@ nodeToHoverInfo modulePath node = do
         Nothing ->
           return name
 
-    TypeImportNode _ name filepath -> do
+    TypeImportNode _ name _ -> do
       maybeType <- CanEnv.lookupADT' canEnv name
       case maybeType of
         Just t ->
@@ -759,7 +774,6 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
 
 generateDiagnostics :: Bool -> State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics invalidatePath state uri fileUpdates = do
-  options <- buildOptions TNode
   let path = uriToPath uri
   (jsWarnings, jsErrors) <- runTypeCheck invalidatePath state TNode path fileUpdates
 
@@ -848,7 +862,7 @@ warningToDiagnostic :: CompilationWarning -> IO Diagnostic
 warningToDiagnostic warning = do
   formattedWarning <- Explain.formatWarning readFile True warning
   case warning of
-    CompilationWarning _ (Context astPath area) ->
+    CompilationWarning _ (Context _ area) ->
       return $ Diagnostic
         (areaToRange area)        -- _range
         (Just DsWarning)            -- _severity
@@ -873,7 +887,7 @@ errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
   formattedError <- Explain.format readFile True err
   case err of
-    CompilationError _ (Context astPath area) ->
+    CompilationError _ (Context _ area) ->
       return $ Diagnostic
         (areaToRange area)        -- _range
         (Just DsError)            -- _severity
