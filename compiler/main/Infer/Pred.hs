@@ -71,8 +71,8 @@ findInst :: Env -> Pred -> Infer (Maybe Instance)
 findInst env p@(IsIn interface t _) = do
   catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
  where
-  tryInst i@(Instance (ps :=> h) _) = do
-    u <- isInstanceOf h p
+  tryInst i@(Instance (_ :=> h) _) = do
+    isInstanceOf h p
     return i
   tryInsts []          =
     case p of
@@ -80,7 +80,7 @@ findInst env p@(IsIn interface t _) = do
           throwError $ CompilationError (NoInstanceFound interface t) (Context (envCurrentPath env) area)
         _ ->
           throwError $ CompilationError (NoInstanceFound interface t) NoContext
-  tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
+  tryInsts (inst : is) = catchError (tryInst inst) (\_ -> tryInsts is)
 
 gatherInstPreds :: Env -> Pred -> Infer [Pred]
 gatherInstPreds env p =
@@ -88,14 +88,14 @@ gatherInstPreds env p =
 
 
 removeInstanceVars :: Pred -> Pred -> (Pred, Pred)
-removeInstanceVars ip@(IsIn cls ts maybeArea) p@(IsIn cls' ts' maybeArea') =
+removeInstanceVars (IsIn cls ts maybeArea) (IsIn cls' ts' maybeArea') =
   let groupped = zip ts ts'
       filtered = filter (not . isTVar . fst) groupped
   in  (IsIn cls (fst <$> filtered) maybeArea, IsIn cls' (snd <$> filtered) maybeArea')
 
 
 specialMatch :: Pred -> Pred -> Infer Substitution
-specialMatch p@(IsIn cls ts _) p'@(IsIn cls' ts' _) = do
+specialMatch (IsIn cls ts _) (IsIn cls' ts' _) = do
   if cls == cls'
     then do
       let zipped = zip ts ts'
@@ -108,19 +108,28 @@ specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) me
 
 isConcrete :: Type -> Bool
 isConcrete t = case t of
-  TVar _      -> False
-  TCon    _ _ -> True
-  TApp    l r -> isConcrete l
-  TRecord _ _ -> True
+  TCon _ _ ->
+    True
+
+  TApp l _ ->
+    isConcrete l
+
+  TRecord _ _ ->
+    True
+
+  _ ->
+    False
+
 
 
 isInstanceOf :: Pred -> Pred -> Infer Substitution
-isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
+isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
   if interface == interface'
     then do
       let r  = zip ts ts'
       match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
     else throwError $ CompilationError FatalError NoContext
+
 -- isInstanceOf :: Pred -> Pred -> Infer Substitution
 -- isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
 --   if interface == interface'

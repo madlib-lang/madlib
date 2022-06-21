@@ -191,8 +191,10 @@ getAllExpsFromGlobalScope ast =
 getType :: Solved a -> Ty.Type
 getType (Typed (_ Ty.:=> t) _ _) = t
 
+
 getQualType :: Solved a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _) = t
+
 
 getArea :: Solved a -> Area
 getArea a = case a of
@@ -201,6 +203,7 @@ getArea a = case a of
 
   Untyped area _ ->
     area
+
 
 extractExp :: Exp -> Exp_
 extractExp (Typed _ (Area _ _) e) = e
@@ -318,6 +321,7 @@ isExtern a = case a of
   _ ->
     False
 
+
 getTypeExportName :: Exp -> Name
 getTypeExportName a = case a of
   Untyped _ (TypeExport name) ->
@@ -326,8 +330,10 @@ getTypeExportName a = case a of
   _ ->
     undefined
 
+
 isTypeOrNameExport :: Exp -> Bool
 isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
+
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
@@ -403,10 +409,12 @@ getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
 
+
 getInstanceName :: Instance -> String
 getInstanceName inst = case inst of
   Untyped _ (Instance name _ _ _) ->
     name
+
 
 extractExportedADTs :: AST -> [TypeDecl]
 extractExportedADTs ast =
@@ -415,6 +423,7 @@ extractExportedADTs ast =
     (\td@(Untyped _ adt) -> isADT td && (isADTExported td || adtname adt `elem` typeExports))
     $ atypedecls ast
 
+
 extractExportedAliases :: AST -> [TypeDecl]
 extractExportedAliases ast =
   let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)
@@ -422,13 +431,15 @@ extractExportedAliases ast =
     (\td@(Untyped _ alias) -> isAlias td && (isAliasExported td || aliasname alias `elem` typeExports))
     $ atypedecls ast
 
+
 extractExportedExps :: AST -> M.Map Name Exp
 extractExportedExps AST { aexps, apath } = case apath of
-  Just p ->
+  Just _ ->
     M.fromList $ bundleExports <$> filter isExport aexps
 
   Nothing ->
     mempty
+
 
 bundleExports :: Exp -> (Name, Exp)
 bundleExports e'@(Typed _ _ exp) = case exp of
@@ -444,6 +455,7 @@ bundleExports e'@(Typed _ _ exp) = case exp of
   NameExport n ->
     (n, e')
 
+
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Untyped _ (NamedImport   _ _ n) ->
@@ -451,6 +463,7 @@ getImportAbsolutePath imp = case imp of
 
   Untyped _ (DefaultImport _ _ n) ->
     n
+
 
 isPlaceholderExp :: Exp -> Bool
 isPlaceholderExp exp = case exp of

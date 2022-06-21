@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Canonicalize.JSExp where
 
 import           Run.Target
@@ -25,11 +26,15 @@ removeOtherTargets :: Target -> String -> String
 removeOtherTargets TAny code   = code
 removeOtherTargets TLLVM code  = code
 removeOtherTargets target code =
-  let (startRegex, endRegex) = case target of
-        TNode    -> (browserStartRegex, browserEndRegex)
-        TBrowser -> (nodeStartRegex, nodeEndRegex)
+  let (startRegex, endRegex) =
+        case target of
+          TNode ->
+            (browserStartRegex, browserEndRegex)
+
+          TBrowser ->
+            (nodeStartRegex, nodeEndRegex)
+
       (before, matched, after) = match startRegex code :: (String, String, String)
-      withoutStart             = before <> after
       (_, matched', after')    = match endRegex after :: (String, String, String)
       oneLess                  = before <> after'
       found                    = not (null $ matched <> matched')

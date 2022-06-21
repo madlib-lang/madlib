@@ -644,4 +644,4 @@ formatType (Slv.Typed qt _ exp) = case exp of
   --   prettyPrintConstructorTyping' False typing
 
   _ ->
-    prettyPrintQualType True qt
+    prettyPrintQualType qt

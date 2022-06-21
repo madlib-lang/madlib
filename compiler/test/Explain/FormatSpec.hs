@@ -17,6 +17,7 @@ import Explain.Location
 import GHC.IO (unsafePerformIO)
 import Infer.Type
 import Error.Context
+import qualified Data.Map as Map
 
 
 makeReadFile :: String -> (FilePath -> IO String)
@@ -250,4 +251,17 @@ spec = do
               , "Another solution would be to move things that depend on the other module from the cycle into the other in"
               , "order to collocate things that depend on each other."
               ]
+      actual `shouldBe` expected
+
+  describe "prettyPrintQualType" $ do
+    it "should pretty print a qualified type with multiple constraints" $ do
+      let qt   = ([IsIn "Monad" [TVar $ TV "m" (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV "rec" Star] Nothing] :=> (TVar (TV "m" (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV "rec" Star)) `fn` tTuple2Of tBool tStr))
+          actual   = prettyPrintQualType qt
+          expected = "(Monad m, Monoid a) => m -> { ...base, x :: Integer } -> #[Boolean, String]"
+      actual `shouldBe` expected
+
+    it "should pretty print a qualified type with one constraint" $ do
+      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV "m" (Kfun Star Star)] Nothing] :=> (TVar (TV "m" (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV "rec" Star)) `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (TCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
+          actual   = schemeToStr scheme
+          expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
       actual `shouldBe` expected

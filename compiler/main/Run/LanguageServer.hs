@@ -148,7 +148,7 @@ isInRange (Loc _ l c) (Area (Loc _ lstart cstart) (Loc _ lend cend)) =
 prettyQt :: Bool -> Qual Type -> String
 prettyQt topLevel qt@(_ :=> t)
   | qt == failedQt = "_"
-  | topLevel       = prettyPrintQualType True qt
+  | topLevel       = prettyPrintQualType qt
   | otherwise      = prettyPrintType True t
 
 
@@ -509,6 +509,11 @@ sanitizeName s = case s of
     or
 
 
+internalNames :: [String]
+internalNames =
+  [ "_P_" ]
+
+
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
   (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -522,8 +527,13 @@ nodeToHoverInfo modulePath node = do
     ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
       return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
 
-    NameNode topLevel (Slv.Typed qt _ name) ->
-      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
+    NameNode topLevel (Slv.Typed qt _ name) -> do
+      let prefix =
+            if name `elem` internalNames then
+              ""
+            else
+              sanitizeName name <> " :: "
+      return $ prefix <> prettyQt topLevel qt
 
     ExpNode topLevel (Slv.Typed qt _ _) ->
       return $ prettyQt topLevel qt

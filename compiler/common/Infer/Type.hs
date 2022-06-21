@@ -52,84 +52,118 @@ getTV t = case t of
 tVar :: String -> Type
 tVar v = TVar (TV v Star)
 
+
 tNumber :: Type
 tNumber = TVar (TV "a" Star)
+
 
 qtNumber :: Qual Type
 qtNumber = [IsIn "Number" [tNumber] Nothing] :=> tNumber
 
+
 tFloat :: Type
 tFloat = TCon (TC "Float" Star) "prelude"
+
 
 tInteger :: Type
 tInteger = TCon (TC "Integer" Star) "prelude"
 
+
 tByte :: Type
 tByte = TCon (TC "Byte" Star) "prelude"
+
 
 qNumber :: Qual Type
 qNumber = [IsIn "Number" [TVar (TV "a" Star)] Nothing] :=> TVar (TV "a" Star)
 
+
 tBool :: Type
 tBool = TCon (TC "Boolean" Star) "prelude"
+
 
 tStr :: Type
 tStr = TCon (TC "String" Star) "prelude"
 
+
 tChar :: Type
 tChar = TCon (TC "Char" Star) "prelude"
+
 
 tUnit :: Type
 tUnit = TCon (TC "{}" Star) "prelude"
 
+
 tList :: Type
 tList = tListOf (TVar (TV "a" Star))
+
 
 tListOf :: Type -> Type
 tListOf = TApp (TCon (TC "List" (Kfun Star Star)) "prelude")
 
+
 tDictionary :: Type
 tDictionary = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") (TVar (TV "a" Star))) (TVar (TV "b" Star))
+
 
 tArrayOf :: Type -> Type
 tArrayOf = TApp (TCon (TC "Array" (Kfun Star Star)) "prelude")
 
+
 tArray :: Type
 tArray = tArrayOf (TVar (TV "a" Star))
+
 
 tByteArray :: Type
 tByteArray = TCon (TC "ByteArray" Star) "prelude"
 
+
 tDictionaryOf :: Type -> Type -> Type
 tDictionaryOf keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") keyType)
 
-tTuple2 :: Type
-tTuple2 = TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude"
 
 tTuple2Of :: Type -> Type -> Type
 tTuple2Of tKey tValue = TApp (TApp tTuple2 tKey) tValue
 
+
+tTuple3Of :: Type -> Type -> Type -> Type
+tTuple3Of t1 t2 t3 = TApp (TApp (TApp tTuple3 t1) t2) t3
+
+
+tTuple4Of :: Type -> Type -> Type -> Type -> Type
+tTuple4Of t1 t2 t3 t4 = TApp (TApp (TApp (TApp tTuple4 t1) t2) t3) t4
+
+
+tTuple2 :: Type
+tTuple2 = TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude"
+
+
 tTuple3 :: Type
 tTuple3 = TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude"
+
 
 tTuple4 :: Type
 tTuple4 = TCon (TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))) "prelude"
 
+
 tTuple5 :: Type
 tTuple5 = TCon (TC "(,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))) "prelude"
 
+
 tTuple6 :: Type
 tTuple6 = TCon (TC "(,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))) "prelude"
+
 
 tTuple7 :: Type
 tTuple7 = TCon
   (TC "(,,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))))
   "prelude"
 
+
 tTuple8 :: Type
 tTuple8 = TCon
   (TC "(,,,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))))
   "prelude"
+
 
 tTuple9 :: Type
 tTuple9 = TCon
@@ -137,6 +171,7 @@ tTuple9 = TCon
       (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))))
   )
   "prelude"
+
 
 tTuple10 :: Type
 tTuple10 = TCon
@@ -148,6 +183,7 @@ tTuple10 = TCon
     )
   )
   "prelude"
+
 
 tTuple11 :: Type
 tTuple11 = TCon
@@ -162,6 +198,7 @@ tTuple11 = TCon
     )
   )
   "prelude"
+
 
 tTuple12 :: Type
 tTuple12 = TCon
@@ -182,23 +219,49 @@ tTuple12 = TCon
   )
   "prelude"
 
+
 tArrow :: Type
 tArrow = TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude"
 
+
 getTupleCtor :: Int -> Type
 getTupleCtor n = case n of
-  2  -> tTuple2
-  3  -> tTuple3
-  4  -> tTuple4
-  5  -> tTuple5
-  6  -> tTuple6
-  7  -> tTuple7
-  8  -> tTuple8
-  9  -> tTuple9
-  10 -> tTuple10
-  11 -> tTuple11
-  12 -> tTuple12
-  _ -> undefined
+  2  ->
+    tTuple2
+
+  3  ->
+    tTuple3
+
+  4  ->
+    tTuple4
+
+  5  ->
+    tTuple5
+
+  6  ->
+    tTuple6
+
+  7  ->
+    tTuple7
+
+  8  ->
+    tTuple8
+
+  9  ->
+    tTuple9
+
+  10 ->
+    tTuple10
+
+  11 ->
+    tTuple11
+
+  12 ->
+    tTuple12
+
+  _ ->
+    undefined
+
 
 infixr      4 `fn`
 fn :: Type -> Type -> Type
@@ -345,14 +408,22 @@ collectPredVars (IsIn _ ts _) = nub $ concat $ collectVars <$> ts
 
 getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
-  TCon    _ _ -> t
-  TApp    l r -> getConstructorCon l
-  TRecord _ _ -> t
-  _           -> t
+  TCon _ _ ->
+    t
+
+  TApp l _ ->
+    getConstructorCon l
+
+  TRecord _ _ ->
+    t
+
+  _ ->
+    t
+
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
+  (TRecord fields1 base1, TRecord fields2 _) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 
@@ -375,7 +446,7 @@ isTCon t = case t of
   TCon _ _ ->
     True
 
-  TApp l r ->
+  TApp l _ ->
     isTCon l
 
   _ ->
@@ -386,7 +457,7 @@ getTConName t = case t of
   TCon (TC n _) _ ->
     n
 
-  TApp l r ->
+  TApp l _ ->
     getTConName l
 
   _ ->
@@ -397,7 +468,7 @@ getTConPath t = case t of
   TCon (TC _ _) path ->
     path
 
-  TApp l r ->
+  TApp l _ ->
     getTConPath l
 
   _ ->
@@ -423,7 +494,7 @@ getParamTypes t = case t of
 
 dropFirstParamType :: Type -> Type
 dropFirstParamType t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) p) n ->
+  TApp (TApp (TCon (TC "(->)" _) _) _) n ->
     n
 
   t' ->
@@ -432,7 +503,7 @@ dropFirstParamType t = case t of
 
 dropNFirstParamTypes :: Int -> Type -> Type
 dropNFirstParamTypes n t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) from) to ->
+  TApp (TApp (TCon (TC "(->)" _) _) _) to ->
     if n > 0 then
       dropNFirstParamTypes (n - 1) to
     else
