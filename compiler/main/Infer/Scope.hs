@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Scope where
 
 import           Infer.Env
@@ -155,7 +156,7 @@ verifyScope' env globals verified globalScope dependencies originExp@(Typed _ or
     else if nameToVerify `S.member` globalScope then
       case M.lookup nameToVerify dependencies of
         Just names ->
-          case List.find (\(n, e) -> n == nameToVerify) globals of
+          case List.find (\(n, _) -> n == nameToVerify) globals of
             Just (_, Typed foreignQt _ _) -> do
               sameType <- catchError (unify (getQualified foreignQt) (getQualified qt) >> return True) (\_ -> return False)
               when
@@ -202,7 +203,7 @@ extendDependencies globalAccesses dependencies exp = case getExpName exp of
 
 
 isMethod :: Env -> Exp -> Bool
-isMethod env (Untyped _ _)  = False
+isMethod _ (Untyped _ _)  = False
 isMethod env (Typed _ _ e) = case e of
   Var n _ ->
     Just True == (M.lookup n (envMethods env) >> return True)
@@ -276,7 +277,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                                         arg
       return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
-    (Typed _ _ (Abs (Typed t _ name) body)) -> do
+    (Typed _ _ (Abs (Typed _ _ name) body)) -> do
       let (nameToFind', foundNames') = case nameToFind of
             Just "_" ->
               (Nothing, foundNames)

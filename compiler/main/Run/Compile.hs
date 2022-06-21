@@ -2,45 +2,15 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Compile where
 
-import           GHC.IO                         ( )
-import           Control.Monad.Except           ( runExcept )
-import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory
-                                                , joinPath
-                                                , splitDirectories, pathSeparator
-                                                )
-import           System.Directory               ( canonicalizePath
-                                                , createDirectoryIfMissing
-                                                , getCurrentDirectory
-                                                )
-import           System.Exit
-import           System.Process
-import           Control.Exception              ( try
-                                                , SomeException
-                                                )
+import           System.Directory               ( canonicalizePath )
+import           Control.Exception              ( try )
 import           System.Environment             ( getEnv )
 import           Control.Monad                  ( forever
                                                 , when
                                                 , unless
                                                 )
-import qualified Data.Map                      as Map
 import           Data.List                     as List
-import           Data.String.Utils
-import           Text.Show.Pretty
 
-import           Parse.Madlib.AST
-import qualified Canonicalize.AST              as Can
-import qualified Canonicalize.Env              as Can
-import           Infer.AST
-import           Infer.Infer
-import           Generate.Javascript           as GenerateJS
-import           Generate.JSInternals
-import qualified Generate.LLVM.LLVM            as LLVM
-import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
-import qualified Generate.LLVM.Rename          as Rename
-import qualified AST.Solved                    as Slv
-import qualified AST.Core                      as Core
-import qualified Optimize.TCE                  as TCE
 import qualified Explain.Format                as Explain
 import           Error.Warning
 import           Coverage.Coverable             ( collectFromAST
@@ -48,20 +18,8 @@ import           Coverage.Coverable             ( collectFromAST
                                                 , isLine
                                                 , Coverable(..)
                                                 )
-import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
-import           MadlibDotJson.MadlibVersion
-import           Utils.Path
 import qualified Utils.PathUtils               as PathUtils
-import           Paths_madlib                   ( version )
-import           Run.Utils
 import           Run.CommandLine
-import           Run.Target
-import           Optimize.StripNonJSInterfaces
-import           Optimize.ToCore
-import qualified Optimize.EtaExpansion as EtaExpansion
-import qualified Optimize.EtaReduction as EtaReduction
-import           System.FilePath.Posix (dropFileName)
-import qualified System.FilePath       as FP
 import           Run.Options
 import qualified Driver
 import qualified Rock

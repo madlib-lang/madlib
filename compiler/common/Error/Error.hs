@@ -55,7 +55,7 @@ data TypeError
 
 
 limitContextArea :: Int -> CompilationError -> CompilationError
-limitContextArea maxLines err = case err of
+limitContextArea _ err = case err of
   CompilationError _ NoContext ->
     err
 

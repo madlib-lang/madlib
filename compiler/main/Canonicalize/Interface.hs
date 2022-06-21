@@ -67,7 +67,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
 
 
 findTypeVar :: [Type] -> String -> Maybe Type
-findTypeVar []       n = Nothing
+findTypeVar []       _ = Nothing
 findTypeVar (t : ts) n = case t of
   TVar (TV n' _) -> if n == n' then Just t else findTypeVar ts n
   _              -> findTypeVar ts n
@@ -78,7 +78,6 @@ addConstraints n tvs t =
   let tvs'  = (`searchVarInType` t) <$> tvs
       tvs'' = catMaybes tvs'
       ps    = [IsIn n tvs'' Nothing]
-      vars  = collectVars t
   in  ps :=> t
 
 
@@ -126,7 +125,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
     ps <-
       apply subst
         <$> mapM
-              (\(Src.Source area _ (Src.TRComp interface' args)) -> do
+              (\(Src.Source _ _ (Src.TRComp interface' args)) -> do
                 (Interface tvs _) <- lookupInterface env interface'
                 vars <- mapM
                     (\case

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module VersionLock.PublicAPI where
 
 import           Data.Aeson
@@ -124,7 +125,7 @@ buildAPI ast table =
       packageInstances  = filter ((\name -> name /= "Eq" && name /= "Inspect") . Slv.getInstanceName) $ Map.elems packageASTs >>= Slv.ainstances
 
       apiWithNames      = PublicAPI
-        { apiNames      = prettyPrintQualType True . Slv.getQualType <$> exports
+        { apiNames      = prettyPrintQualType . Slv.getQualType <$> exports
         , apiInterfaces = mempty
         , apiInstances  = mempty
         , apiTypes      = mempty

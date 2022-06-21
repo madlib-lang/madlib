@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Explain.Format where
 
 import           Error.Error
@@ -233,9 +234,11 @@ formatTypeError json err = case err of
           next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
       in  prefix <> paths !! current <> "\n" <> next
 
-  GrammarError _ text -> text
+  GrammarError _ text ->
+    text
 
-  UnknownType t       -> "Type Error, the type '" <> t <> "' is not found.\n\nHint: Verify that you imported it!"
+  UnknownType t       ->
+    "Type Error, the type '" <> t <> "' is not found.\n\nHint: Verify that you imported it!"
 
   NameAlreadyDefined name ->
     "Illegal shadowing, the variable '"
@@ -378,17 +381,9 @@ showAreaInSource json start end code =
   in  unlines $ before ++ expContent ++ [formattedArea] ++ after
 
 
-
-nthEnding :: Int -> String
-nthEnding n = case n of
-  1 -> "st"
-  2 -> "nd"
-  3 -> "rd"
-  _ -> "th"
-
-
 letters :: [Char]
 letters = ['a' ..]
+
 
 hkLetters :: [Char]
 hkLetters = ['m' ..]
@@ -396,8 +391,11 @@ hkLetters = ['m' ..]
 
 kindToStr :: Kind -> String
 kindToStr k = case k of
-  Star     -> "*"
-  Kfun l r -> kindToStr l <> " -> " <> kindToStr r
+  Star     ->
+    "*"
+
+  Kfun l r ->
+    kindToStr l <> " -> " <> kindToStr r
 
 
 schemeToStr :: Scheme -> String
@@ -449,28 +447,33 @@ typeToParenWrappedStr rewrite (vars, hkVars) t =
     _        -> (vars', hkVars', typeStr)
 
 
-prettyPrintQualType :: Bool -> Qual Type -> String
-prettyPrintQualType _ qt = schemeToStr (Forall [] qt)
+prettyPrintQualType :: Qual Type -> String
+prettyPrintQualType qt =
+  schemeToStr (Forall [] qt)
 
 
 prettyPrintType :: Bool -> Type -> String
-prettyPrintType rewrite = lst . prettyPrintType' rewrite (mempty, mempty)
+prettyPrintType rewrite =
+  lst . prettyPrintType' rewrite (mempty, mempty)
 
 
 prettyPrintType' :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
 prettyPrintType' rewrite (vars, hkVars) t = case t of
-  TCon (TC n _) _ -> (vars, hkVars, n)
+  TCon (TC n _) _ ->
+    (vars, hkVars, n)
 
-  TVar (TV n k)   -> if not rewrite
-    then (vars, hkVars, n)
-    else case k of
-      Star -> case M.lookup n vars of
-        Just x  -> (vars, hkVars, [letters !! x])
-        Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, [letters !! newIndex])
+  TVar (TV n k)   ->
+    if not rewrite then
+      (vars, hkVars, n)
+    else
+      case k of
+        Star -> case M.lookup n vars of
+          Just x  -> (vars, hkVars, [letters !! x])
+          Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, [letters !! newIndex])
 
-      Kfun _ _ -> case M.lookup n hkVars of
-        Just x  -> (vars, hkVars, [hkLetters !! x])
-        Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
+        Kfun _ _ -> case M.lookup n hkVars of
+          Just x  -> (vars, hkVars, [hkLetters !! x])
+          Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
 
   TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
@@ -551,17 +554,25 @@ removeNamespace name =
     name
 
 
-
 prettyPrintConstructorTyping :: Slv.Typing -> String
 prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
   Slv.TRComp _ ts ->
-    if not (null ts) then "(" <> prettyPrintConstructorTyping' False t <> ")" else prettyPrintConstructorTyping' False t
-  Slv.TRArr _ _ -> "(" <> prettyPrintConstructorTyping' False t <> ")"
-  _             -> prettyPrintConstructorTyping' True t
+    if not (null ts) then
+      "(" <> prettyPrintConstructorTyping' False t <> ")"
+    else
+      prettyPrintConstructorTyping' False t
+
+  Slv.TRArr _ _ ->
+    "(" <> prettyPrintConstructorTyping' False t <> ")"
+
+  _ -> prettyPrintConstructorTyping' True t
+
 
 prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
 prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
-  Slv.TRSingle n -> removeNamespace n
+  Slv.TRSingle n ->
+    removeNamespace n
+
   Slv.TRComp n typing' ->
     let space = if not (null typing') then " " else ""
     in  if paren then
@@ -574,6 +585,7 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
       removeNamespace n
       <> space
       <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+
   Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
     "("
       <> prettyPrintConstructorTyping' False l
@@ -581,22 +593,33 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
       <> prettyPrintConstructorTyping' False r
       <> ") -> "
       <> prettyPrintConstructorTyping' False r'
-  Slv.TRArr l r -> if paren
-    then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
-    else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
-  Slv.TRTuple ts -> "#[" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> "]"
+
+  Slv.TRArr l r ->
+    if paren then
+      "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
+    else
+      prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
+
+  Slv.TRTuple ts ->
+    "#[" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> "]"
+
   Slv.TRRecord ts _ ->
     let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) (snd <$> ts)
         fields  = M.elems mapped
         fields' = intercalate ", " fields
     in  "{ " <> fields' <> " }"
-  _ -> ""
+
 
 isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
 isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
-  Slv.TRArr  _ _  -> True
-  Slv.TRComp _ ts -> not (null ts)
-  _               -> False
+  Slv.TRArr  _ _  ->
+    True
+
+  Slv.TRComp _ ts ->
+    not (null ts)
+
+  _               ->
+    False
 
 
 isTuple :: Type -> Bool
