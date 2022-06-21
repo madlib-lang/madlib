@@ -91,7 +91,7 @@ insertClassPlaceholders options env exp (p : ps) =
                   (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
         in  insertClassPlaceholders options env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Assignment n e)) typing sc) ->
+      Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n e)) typing sc) ->
         let exp' = Slv.Typed a t (Slv.TypedExp 
                       (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)))
                       typing
@@ -111,7 +111,7 @@ insertClassPlaceholders options env exp (p : ps) =
               )
         in  insertClassPlaceholders options env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed a' t' (Slv.Export (Slv.Typed a'' t'' (Slv.Assignment n e)))) typing sc) ->
+      Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n e)))) typing sc) ->
         let exp' = Slv.Typed a t (Slv.TypedExp
                       (Slv.Typed a t (Slv.Export
                         (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e))
@@ -142,7 +142,7 @@ shouldInsert env p = do
 
 
 getCanonicalPlaceholderTypes :: Env -> Pred -> Infer [Type]
-getCanonicalPlaceholderTypes env p@(IsIn cls ts _) = do
+getCanonicalPlaceholderTypes env p@(IsIn _ ts _) = do
   inst <- findInst env p
   return $ case inst of
     Just (Instance (_ :=> (IsIn _ ts'' _)) _) -> ts''
@@ -150,7 +150,7 @@ getCanonicalPlaceholderTypes env p@(IsIn cls ts _) = do
 
 
 updateMethodPlaceholder :: Options -> Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateMethodPlaceholder options env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Typed qt' a' exp))) =
+updateMethodPlaceholder options env _ s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method _, instanceTypes) (Slv.Typed qt' a' exp))) =
   if optInsertInstancePlaholders options then do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes' Nothing)
@@ -159,7 +159,8 @@ updateMethodPlaceholder options env push s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Pla
     -- The following block serves to check that the inferred type for a method
     -- which was unified in type check with the class' scheme, is actually a
     -- type that is correct, given the actual instance's specific type.
-    ss    <- do
+    -- ss    <- do
+    do
       maybeInst <- findInst env (IsIn cls instanceTypes' Nothing)
       case maybeInst of
         Just (Instance _ methods) -> case M.lookup method methods of
@@ -233,10 +234,10 @@ isNameInScope maybeName cleanUpEnv = case maybeName of
 
 
 updateClassPlaceholder :: Options -> Env -> CleanUpEnv -> Maybe String ->  Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateClassPlaceholder options env cleanUpEnv maybeWrapperAssignmentName push s ph =
+updateClassPlaceholder options env cleanUpEnv _ push s ph =
   if optInsertInstancePlaholders options then
     case ph of
-      Slv.Typed qt a (Slv.Placeholder (Slv.ClassRef cls crps call var, instanceTypes) exp) -> do
+      Slv.Typed qt a (Slv.Placeholder (Slv.ClassRef cls _ call var, instanceTypes) exp) -> do
         let instanceTypes' = apply s instanceTypes
         types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
         var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
@@ -350,13 +351,13 @@ addName name env =
 updatePlaceholdersForExpList :: Options -> Env -> CleanUpEnv -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
 updatePlaceholdersForExpList options env cleanUpEnv push s exps = case exps of
   (e : es) -> case e of
-    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed qt area (Slv.Assignment name exp)) _ _) -> do
+    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) -> do
       let cleanUpEnv' = addName name cleanUpEnv
       next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
       e' <- updatePlaceholders options env cleanUpEnv' push s e
       return (e' : next)
 
-    Slv.Typed qt area (Slv.Assignment name exp) -> do
+    Slv.Typed _ _ (Slv.Assignment name _) -> do
       let cleanUpEnv' = addName name cleanUpEnv
       next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
       e' <- updatePlaceholders options env cleanUpEnv' push s e
@@ -374,7 +375,7 @@ updatePlaceholdersForExpList options env cleanUpEnv push s exps = case exps of
 updatePlaceholders :: Options -> Env -> CleanUpEnv -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
 updatePlaceholders _ _ _ _ _ fullExp@(Slv.Untyped _ _)   = return fullExp
 updatePlaceholders options env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
-  Slv.Placeholder (ref, t) exp -> case ref of
+  Slv.Placeholder (ref, _) _ -> case ref of
     Slv.MethodRef{} ->
       updateMethodPlaceholder options env push s fullExp
 
@@ -502,7 +503,7 @@ getPredClassNames ps =
   in  S.fromList clsNames
 
 isMethod :: Env -> Slv.Exp -> [Pred] -> Bool
-isMethod env (Slv.Untyped _ _) _  = False
+isMethod _ (Slv.Untyped _ _) _  = False
 isMethod env (Slv.Typed _ _ e) ps = case e of
   Slv.Var n _ ->
     case M.lookup n (envMethods env) of
