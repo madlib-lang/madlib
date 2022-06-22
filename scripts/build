@@ -1,7 +1,7 @@
 #!/bin/bash
 
-"$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/test-runner/src/Main.mad -o ./tools/test-runner/dist/test-runner.js --bundle\
-&& "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle;
+# "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/test-runner/src/Main.mad -o ./tools/test-runner/dist/test-runner.js --bundle\
+"$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle;
 
 if [ $? -eq 0 ]
 then

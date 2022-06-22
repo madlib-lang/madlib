@@ -2,7 +2,6 @@
 
 import type { Maybe } from "Maybe"
 
-
 #endif
 
 import { Just } from "Maybe"
@@ -45,30 +44,6 @@ export exec = (command) => Wish.Wish((bad, good) => #- {
     })
   }
 -#)
-
-// spawn :: String -> Wish.Wish CommandError Integer
-// export spawn = (command) => Wish.Wish((bad, good) => #- {
-//     const split = command.split(" ")
-//     const spawned = spawnJs(split[0], split.slice(1));
-
-//     spawned.stdout.on('data', (data) => {
-//       process.stdout.write(data.toString());
-//     });
-
-//     spawned.stderr.on('data', (data) => {
-//       process.stderr.write(data.toString());
-//     });
-
-//     spawned.on('close', (code) => {
-//       if (code === 0) {
-//         good(0);
-//       }
-//       else {
-//         bad(code)
-//       }
-//     })
-//   }
-// -#)
 
 
 Argv :: List String

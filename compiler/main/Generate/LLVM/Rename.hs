@@ -100,7 +100,7 @@ renameExp env what = case what of
 
   Typed t area metadata (Var name isConstructor) -> case break (== '.') name of
     -- A normal name
-    (n, []) ->
+    (_, []) ->
       let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
       in  (Typed t area metadata (Var renamed isConstructor), env)
 
@@ -171,7 +171,7 @@ renameBranches env branches = case branches of
 renameBranch :: Env -> Is -> (Is, Env)
 renameBranch env is = case is of
   Typed t area metadata (Is pat exp) ->
-    let (renamedPattern, env') = renamePattern env pat
+    let (renamedPattern, _) = renamePattern env pat
         (renamedExp, env'')    = renameExp env exp
     in  (Typed t area metadata (Is renamedPattern renamedExp), env'')
 
@@ -291,7 +291,7 @@ renameTopLevelAssignment env assignment = case assignment of
 renameTopLevelExps :: Env -> [Exp] -> ([Exp], Env)
 renameTopLevelExps env exps = case exps of
   (exp : es) -> case exp of
-    Typed t area metadata (Assignment _ _) ->
+    Typed _ _ _ (Assignment _ _) ->
       let (renamedExp, env')  = renameTopLevelAssignment env exp
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (renamedExp : nextExps, nextEnv)
@@ -366,7 +366,7 @@ renameInstance env inst = case inst of
   Untyped area metadata (Instance name ps p methods) ->
     let (renamedMethods, env') =
           Map.foldrWithKey
-            (\methodName (method, sc) (renamedMethods, env') ->
+            (\methodName (method, sc) (renamedMethods, _) ->
               let (renamedMethod, env'') = renameExp env method
               in  ((methodName, (renamedMethod, sc)) : renamedMethods, env'')
             )
@@ -457,7 +457,7 @@ populateInitialEnv exps env = case exps of
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ _ (Extern qt name _) ->
+    Typed _ _ _ (Extern _ name _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
@@ -471,7 +471,7 @@ populateInitialEnv exps env = case exps of
 
 findAlreadyImportedNamesFromModuleWithPath :: [Import] -> FilePath -> [String]
 findAlreadyImportedNamesFromModuleWithPath imports path = case imports of
-  (Untyped area metadata (NamedImport names relPath absPath) : next) ->
+  (Untyped _ _ (NamedImport names _ absPath) : next) ->
     let current =
           if absPath == path then
             getValue <$> names

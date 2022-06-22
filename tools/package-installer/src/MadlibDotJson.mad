@@ -48,11 +48,11 @@ parser = J.chain7(
   makeMadlibDotJson,
   J.field("name", J.string),
   J.field("version", J.string),
-  J.field("madlibVersion", J.maybe(J.string)),
+  J.maybe(J.field("madlibVersion", J.string)),
   J.maybe(Dependency.dependencyParser),
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
-  J.field("importAliases", J.maybe(J.dict(J.string)))
+  J.maybe(J.field("importAliases", J.dict(J.string)))
 )
 
 

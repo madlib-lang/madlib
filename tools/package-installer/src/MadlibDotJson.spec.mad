@@ -46,34 +46,34 @@ test("parse - wrong version", (_) => pipe(
   )
 )(MADLIB_DOT_JSON_WRONG_VERSION))
 
-test("load - success", (_) => {
-  config = {
-    readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
-    writeFile: (path, data) => good("OK"),
-    readDir: always(good([])),
-    exists: always(good("OK")),
-    exec: always(good("OK")),
-    get: always(good(Response({
-      data: BinaryData(ByteArray),
-      status: OK
-    })))
-  }
+// test("load - success", (_) => {
+//   config = {
+//     readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
+//     writeFile: (path, data) => good("OK"),
+//     readDir: always(good([])),
+//     exists: always(good("OK")),
+//     exec: always(good("OK")),
+//     get: always(good(Response({
+//       data: BinaryData(ByteArray),
+//       status: OK
+//     })))
+//   }
 
-  expected = {
-    name: "SamplePackage",
-    version: Version(0, 1, 7),
-    main: "src/Main.mad",
-    bin: Nothing,
-    importAliases: Nothing,
-    madlibVersion: Nothing,
-    dependencies: Nothing
-  }
+//   expected = {
+//     name: "SamplePackage",
+//     version: Version(0, 1, 7),
+//     main: "src/Main.mad",
+//     bin: Nothing,
+//     importAliases: Nothing,
+//     madlibVersion: Nothing,
+//     dependencies: Nothing
+//   }
 
-  return pipe(
-    load(config),
-    bichain(
-      always(bad(ErrorWithMessage("Parsing should be success!"))),
-      assertEquals($, expected)
-    )
-  )("madlib.json")
-})
+//   return pipe(
+//     load(config),
+//     bichain(
+//       always(bad(ErrorWithMessage("Parsing should be success!"))),
+//       assertEquals($, expected)
+//     )
+//   )("madlib.json")
+// })
