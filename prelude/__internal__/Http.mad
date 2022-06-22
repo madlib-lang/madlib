@@ -38,12 +38,6 @@ export type TransferEncoding
 
 export type Header = Header(String, String)
 
-instance Show Header {
-  show = (header) => where(header) {
-    Header(key, value) =>
-      `Header(${key}, ${value})`
-  }
-}
 
 export type Method
   = CONNECT
@@ -117,13 +111,6 @@ export type Error a
   = BadResponse(Response a)
   | ClientError(ClientError)
 
-instance Inspect a => Show (Error a) {
-  show = inspect
-}
-
-instance Inspect a => Show (Response a) {
-  show = inspect
-}
 
 export alias Request a = {
   method :: Method,

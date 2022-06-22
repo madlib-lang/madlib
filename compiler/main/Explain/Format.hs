@@ -259,9 +259,7 @@ formatTypeError json err = case err of
     "You are trying to import '"
       <> name
       <> "' from the module located here:\n"
-      <> "'"
-      <> path
-      <> "'\n"
+      <> "'" <> path <> "'\n"
       <> "Unfortunately, that module does not export '"
       <> name
       <> "'!\n\n"
