@@ -92,6 +92,8 @@ handlers state = mconcat
 
           locs ->
             responder $ Right (InR $ InL $ List locs)
+  -- , requestHandler STextDocumentCompletion $ \(RequestMessage _ _ _ completionParams) responder -> do
+  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow completionParams)
 
   -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)

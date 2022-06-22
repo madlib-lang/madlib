@@ -1,17 +1,14 @@
+{-# OPTIONS_GHC -Wno-deprecations #-}
 module Format.Format where
 
 import           Data.List
-import qualified Data.Map as Map
-import qualified Data.Text as Text
-import           Data.Maybe
-import           Text.Show.Pretty
-import           Debug.Trace
-import           Data.Text.Prettyprint.Doc as Pretty
+import qualified Data.Map                                as Map
+import           Data.Text.Prettyprint.Doc               as Pretty
 import           Data.Text.Prettyprint.Doc.Render.String as Pretty
 
-import AST.Source as Src
-import Explain.Location
-import Parse.Comments.Lexer
+import           AST.Source as Src
+import           Explain.Location
+import           Parse.Comments.Lexer
 
 
 
@@ -268,6 +265,12 @@ patternToDoc (Source _ _ pat) = case pat of
 
   PNum n ->
     Pretty.pretty n
+
+  PFloat n ->
+    Pretty.pretty n
+
+  PChar c ->
+    Pretty.pretty $ '\'':c:'\'':""
 
   PStr s ->
     Pretty.pretty s
@@ -798,6 +801,9 @@ expToDoc comments exp =
         Source _ _ (LFloat n) ->
           (Pretty.pretty n, comments')
 
+        Source _ _ (LChar c) ->
+          (Pretty.pretty $ '\'':c:'\'':"", comments')
+
         Source _ _ (LStr s) ->
           (Pretty.pretty s, comments')
 
@@ -862,7 +868,6 @@ expToDoc comments exp =
 
         Source _ _ (JSExp js) ->
           let lines' = lines js
-              -- js' = Pretty.vcat (Pretty.pretty . Text.unpack . Text.strip . Text.pack <$> lines')
               js' = Pretty.pretty js
           in
             if length lines' > 1 then
