@@ -81,3 +81,6 @@ length :: ByteArray -> Integer
 export length = (byteArray) => #- byteArray.length -#
 
 #endif
+
+empty :: ByteArray
+export empty = fromList([])

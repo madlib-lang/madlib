@@ -24,7 +24,6 @@ export alias VersionDotLock = {
 }
 
 
-
 apiParser :: J.Parser PublicAPI
 apiParser = J.map5(
   (apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces) =>
