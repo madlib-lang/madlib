@@ -7,6 +7,7 @@
 {-# HLINT ignore "Use forM_" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# HLINT ignore "Use list comprehension" #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
@@ -36,7 +37,6 @@ import qualified AST.Solved as Slv
 import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintConstructorTyping, prettyPrintConstructorTyping')
 import           Control.Applicative ((<|>))
 import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified)
-import           Error.Warning
 import qualified Error.Warning as Warning
 import           Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
@@ -948,7 +948,7 @@ textDocumentSyncOptions =
     (Just $ InL True) -- _save
 
 
-runLanguageServer :: IO Int
+runLanguageServer :: IO ()
 runLanguageServer = do
   jsDriverState <- Driver.initialState
   llvmDriverState <- Driver.initialState
@@ -962,6 +962,7 @@ runLanguageServer = do
     , interpretHandler = \env -> Iso (runLspT env) liftIO
     , options = defaultOptions { textDocumentSync = Just textDocumentSyncOptions }
     }
+  return ()
 
 
 hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)

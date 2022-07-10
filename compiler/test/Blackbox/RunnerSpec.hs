@@ -72,15 +72,6 @@ compileAndRun casePath = do
     return (expected, errorsAndWarnings)
 
 
--- sanitizeCtxPath :: Context -> Context
--- sanitizeCtxPath ctx = case ctx of
---   NoContext ->
---     NoContext
-
---   Context path area ->
---     Context (takeFileName path) area
-
-
 sanitizeError :: CompilationError -> CompilationError
 sanitizeError err = case err of
   CompilationError (ImportCycle paths) ctx ->

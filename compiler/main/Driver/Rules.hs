@@ -3,6 +3,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE LambdaCase #-}
 module Driver.Rules where
 
 import qualified Rock
@@ -45,15 +47,14 @@ import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
-import System.FilePath (takeDirectory, joinPath, takeExtension)
-import Utils.Path (computeTargetPath, resolveAbsoluteSrcPath)
+import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
+import Utils.Path
 import qualified Parse.DocString.Grammar as DocString
 import qualified Data.Maybe as Maybe
 import qualified Data.ByteString as ByteString
 import System.Directory
 import qualified Utils.Path                    as Path
 import           Error.Error
-import           Error.Context
 import Parse.Madlib.ImportCycle (detectCycle)
 import AST.Canonical (AST(atypedecls))
 import Explain.Location (emptyArea)
@@ -277,7 +278,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       if any (null . LLVMEnv.envASTPath) moduleEnvs then
         return ((), (globalWarnings, mempty))
       else do
-        LLVM.buildTarget options path
+        staticLibPaths <- Rock.fetch $ StaticLibPathsToLink path
+        LLVM.buildTarget options staticLibPaths path
         return ((), (globalWarnings, mempty))
 
     else do
@@ -301,17 +303,39 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       return ((), (globalWarnings, mempty))
 
+  StaticLibPathsToLink path -> nonInput $ do
+    madlibModulesExist <- liftIO $ doesFileExist "madlib_modules"
+    modulePaths <-
+      if madlibModulesExist then
+        liftIO $ listDirectory "madlib_modules"
+      else
+        return []
+    let allMadlibDotJsonPaths = "madlib.json" : ((\p -> joinPath [p, "madlib.json"]) <$> modulePaths)
+    staticLibPaths <- liftIO $ concat <$>
+      mapM
+        (\p -> do
+          let basePath = dropFileName p
+          relPaths <- MadlibDotJson.getStaticLibPaths (optPathUtils options) p
+          return $ joinPath . (basePath:) . (:[]) <$> relPaths
+        )
+        allMadlibDotJsonPaths
+
+    return (staticLibPaths, (mempty, mempty))
+
 
 globalChecks :: IO [CompilationWarning]
 globalChecks = do
   parsedMadlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
 
   case parsedMadlibDotJson of
-    Left _ -> return []
-    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName }
-      -> case checkVersion pkgName madlibVersion version of
-        Just warning -> return [warning]
-        Nothing      -> return []
+    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName } ->
+      case checkVersion pkgName madlibVersion version of
+        Just warning ->
+          return [warning]
+
+        Nothing      ->
+          return []
+
     _ -> return []
 
 

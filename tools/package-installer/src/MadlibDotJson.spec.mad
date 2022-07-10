@@ -3,6 +3,7 @@ import { bichain, bad, good } from "Wish"
 import { always } from "Function"
 import { Nothing } from "Maybe"
 import { OK } from "Http"
+import ByteArray from "ByteArray"
 
 import { Version } from "./Version"
 import { load, parse } from "./MadlibDotJson"
@@ -38,7 +39,7 @@ test("parse", (_) => pipe(
   )
 )(MADLIB_DOT_JSON_MINIMAL))
 
-test("parse - wrong version", (_) => pipe(
+test("parse    - wrong version", (_) => pipe(
   parse,
   bichain(
     assertEquals($, "The version in the madlib.json file is not valid, you provided '0.1.a', but it should have the form x.y.z where x, y and z are numbers."),
@@ -46,34 +47,38 @@ test("parse - wrong version", (_) => pipe(
   )
 )(MADLIB_DOT_JSON_WRONG_VERSION))
 
-// test("load - success", (_) => {
-//   config = {
-//     readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
-//     writeFile: (path, data) => good("OK"),
-//     readDir: always(good([])),
-//     exists: always(good("OK")),
-//     exec: always(good("OK")),
-//     get: always(good(Response({
-//       data: BinaryData(ByteArray),
-//       status: OK
-//     })))
-//   }
+test("load     - success", (_) => {
+  config = {
+    readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
+    writeFile: (path, data) => good({}),
+    writeBytes: (path, data) => good({}),
+    readDir: always(good([])),
+    exists: always(good(true)),
+    exec: always(good({ exitCode: 0, stdout: "OK", stderr: "" })),
+    getBytes: always(
+      good({
+        body: ByteArray.empty,
+        headers: [],
+        status: OK
+      })
+    )
+  }
 
-//   expected = {
-//     name: "SamplePackage",
-//     version: Version(0, 1, 7),
-//     main: "src/Main.mad",
-//     bin: Nothing,
-//     importAliases: Nothing,
-//     madlibVersion: Nothing,
-//     dependencies: Nothing
-//   }
+  expected = {
+    name: "SamplePackage",
+    version: Version(0, 1, 7),
+    main: "src/Main.mad",
+    bin: Nothing,
+    importAliases: Nothing,
+    madlibVersion: Nothing,
+    dependencies: Nothing
+  }
 
-//   return pipe(
-//     load(config),
-//     bichain(
-//       always(bad(ErrorWithMessage("Parsing should be success!"))),
-//       assertEquals($, expected)
-//     )
-//   )("madlib.json")
-// })
+  return pipe(
+    load(config),
+    bichain(
+      always(bad(ErrorWithMessage("Parsing should be success!"))),
+      assertEquals($, expected)
+    )
+  )("madlib.json")
+})

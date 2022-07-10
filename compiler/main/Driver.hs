@@ -36,21 +36,21 @@ import           Run.Options
 import           Error.Warning                    (CompilationWarning(CompilationWarning))
 import           GHC.IO.Handle.FD (stderr)
 import           Control.Arrow (first)
-import qualified Data.Set as Set
-import qualified Data.List as List
+import qualified Data.Set                             as Set
+import qualified Data.List                            as List
 import           Text.Show.Pretty (ppShow)
-import qualified Data.Map as Map
-import           Run.Target (Target(TNode, TLLVM))
-import           Utils.PathUtils (defaultPathUtils)
-import qualified Utils.PathUtils as PathUtils
-import Control.Concurrent (MVar)
-import qualified Explain.Format as Explain
-import Control.Monad.IO.Class (liftIO)
-import Driver.Rules (rules)
-import           Control.Concurrent (threadDelay, forkIO, ThreadId)
-import qualified Control.FoldDebounce as Debounce
+import qualified Data.Map                             as Map
+import           Run.Target                           (Target(TNode, TLLVM))
+import           Utils.PathUtils                      (defaultPathUtils)
+import qualified Utils.PathUtils                      as PathUtils
+import           Control.Concurrent                   (MVar)
+import qualified Explain.Format                       as Explain
+import           Control.Monad.IO.Class               (liftIO)
+import           Driver.Rules                         (rules)
+import           Control.Concurrent                   (threadDelay, forkIO, ThreadId)
+import qualified Control.FoldDebounce                 as Debounce
 import           System.FSNotify
-import Data.Time.Clock
+import           Data.Time.Clock
 
 
 

@@ -1,15 +1,5 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Utils.Path
-  ( computeRootPath
-  , resolveAbsoluteSrcPath
-  , computeTargetPath
-  , computeLLVMTargetPath
-  , makeRelativeEx
-  , cleanRelativePath
-  , convertWindowsSeparators
-  , takeDirectoryIfFile
-  )
-where
+module Utils.Path where
 
 import           System.FilePath                ( dropFileName
                                                 , replaceExtension
@@ -28,7 +18,6 @@ import           Data.List                      ( isInfixOf
                                                 , (\\)
                                                 )
 import           Utils.PathUtils
-import           Data.Maybe
 import qualified Data.Map                      as M
 import qualified Utils.URL                     as URL
 
@@ -36,6 +25,7 @@ import qualified Utils.URL                     as URL
 data ModulePath
   = PackagePath
   | FileSystemPath
+  deriving(Eq, Show)
 
 
 convertWindowsSeparators :: String -> String

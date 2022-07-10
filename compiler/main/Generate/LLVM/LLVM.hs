@@ -4433,8 +4433,8 @@ makeExecutablePath output = case output of
     or
 
 
-buildTarget :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> FilePath -> m ()
-buildTarget options entrypoint = do
+buildTarget :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> [String] -> FilePath -> m ()
+buildTarget options staticLibs entrypoint = do
   let outputFolder = takeDirectory (optOutputPath options)
   modulePaths <- Rock.fetch $ Query.ModulePathsToBuild entrypoint
 
@@ -4448,7 +4448,7 @@ buildTarget options entrypoint = do
 
   let objectFilePaths = Path.computeLLVMTargetPath outputFolder (optRootPath options) <$> (defaultInstancesModulePath : modulePaths)
 
-  compilerPath <- liftIO $ getExecutablePath
+  compilerPath <- liftIO getExecutablePath
   let executablePath = makeExecutablePath (optOutputPath options)
 
   let objectFilePathsForCli = List.unwords objectFilePaths
@@ -4464,6 +4464,7 @@ buildTarget options entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
+        <> " " <> List.unwords staticLibs
         <> " -lruntime -lgc -luv -lpcre2-8"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
         <>" -o " <> executablePath
@@ -4474,6 +4475,7 @@ buildTarget options entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
+        <> " " <> List.unwords staticLibs
         <> " -lruntime -lmman -lgc -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
 
     _ ->
@@ -4482,4 +4484,5 @@ buildTarget options entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
+        <> " " <> List.unwords staticLibs
         <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath

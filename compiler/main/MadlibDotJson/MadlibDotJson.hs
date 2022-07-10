@@ -32,6 +32,7 @@ data MadlibDotJson
                   , version       :: Maybe String
                   , name          :: Maybe String
                   , madlibVersion :: Maybe String
+                  , staticLibs   :: Maybe [String]
                   }
                   deriving (Show, Generic)
 
@@ -45,12 +46,28 @@ instance ToJSON Dependency where
   toJSON = genericToJSON defaultOptions
     { omitNothingFields = True }
 
+
 load :: PathUtils -> FilePath -> IO (Either String MadlibDotJson)
 load pathUtils file = do
   content <- try $ byteStringReadFile pathUtils file :: IO (Either SomeException B.ByteString)
   case content of
-    Right c -> return $ eitherDecode c :: IO (Either String MadlibDotJson)
-    Left  _ -> return $ Left "File not found"
+    Right c ->
+      return $ eitherDecode c :: IO (Either String MadlibDotJson)
+
+    Left  _ ->
+      return $ Left "File not found"
+
+
+getStaticLibPaths :: PathUtils -> FilePath -> IO [String]
+getStaticLibPaths pathUtils path = do
+  madlibDotJson <- load pathUtils path
+
+  case madlibDotJson of
+    Right MadlibDotJson{ staticLibs = Just flags } ->
+      return flags
+
+    _ ->
+      return []
 
 
 prettyPrint :: MadlibDotJson -> B.ByteString
