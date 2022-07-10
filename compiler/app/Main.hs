@@ -6,7 +6,6 @@ module Main where
 
 import           GHC.IO.Encoding
 import           Run.Run
-import           Run.Target
 import           Run.GenerateDocumentation
 import           Run.Utils
 import           Run.GeneratePackage
@@ -15,9 +14,9 @@ import           Run.CommandLine
 import           Run.PackageInstaller
 import           Run.TestRunner
 import           Run.Package
-import           Run.PackageHash
 import           Run.Format
 import           Run.LanguageServer
+import           Run.Config
 
 
 main :: IO ()
@@ -62,4 +61,6 @@ run cmd = do
 
     LanguageServer -> do
       runLanguageServer
-      return ()
+
+    Config configCommand ->
+      runConfigurationCommand configCommand

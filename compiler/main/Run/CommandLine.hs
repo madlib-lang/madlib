@@ -10,6 +10,12 @@ import           Run.Target
 import Run.Target (Target(TLLVM))
 
 
+data ConfigCommand
+  = RuntimeHeadersPath
+  | RuntimeLibHeadersPath
+  | InstallDir
+  deriving(Eq, Show)
+
 data Command
   = Compile
       { compileInput :: FilePath
@@ -30,6 +36,7 @@ data Command
   | Run { runInput :: FilePath, runArgs :: [String] }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
+  | Config { configCommand :: ConfigCommand }
   deriving (Eq, Show)
 
 data PackageSubCommand
@@ -49,8 +56,8 @@ madlibAscii = unlines [h1, h2, h3, h4]
 withInfo :: Parser a -> String -> ParserInfo a
 withInfo opts desc = info (helper <*> opts) $ progDesc desc
 
-parseConfig :: Parser FilePath
-parseConfig = strOption
+parseConfigFile :: Parser FilePath
+parseConfigFile = strOption
   (long "config" <> short 'c' <> metavar "CONFIG" <> help "What config to use" <> showDefault <> value "madlib.json")
 
 parseInput :: Parser FilePath
@@ -130,7 +137,7 @@ parseCompile =
   Compile
     <$> parseInput
     <*> parseOutput
-    <*> parseConfig
+    <*> parseConfigFile
     <*> parseVerbose
     <*> parseDebug
     <*> parseBundle
@@ -214,6 +221,16 @@ parseFormat = Format <$> parseFormatInput <*> parseFormatTextInput <*> parseFix 
 parseLanguageServer :: Parser Command
 parseLanguageServer = pure LanguageServer
 
+
+parseConfig :: Parser Command
+parseConfig =
+  Config <$> (
+    subparser (command "runtime-headers-path" (pure RuntimeHeadersPath `withInfo` "path of runtime headers"))
+    <|> subparser (command "runtime-lib-headers-path" (pure RuntimeLibHeadersPath `withInfo` "path of headers from runtime libraries such as libuv or libgc"))
+    <|> subparser (command "install-dir" (pure InstallDir `withInfo` "path madlib installation"))
+  )
+
+
 parseCommand :: Parser Command
 parseCommand =
   subparser
@@ -226,6 +243,7 @@ parseCommand =
     <> command "doc"     (parseDoc `withInfo` "generate documentation")
     <> command "format"  (parseFormat `withInfo` "format code")
     <> command "lsp"     (parseLanguageServer `withInfo` "start language server")
+    <> command "config"  (parseConfig `withInfo` "read informations about the current installation")
 
 parseTransform :: Parser Command
 parseTransform = parseCommand

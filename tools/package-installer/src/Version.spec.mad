@@ -29,13 +29,13 @@ test("compare   - LESS", (_) => pipe(
   assertEquals($, LESS)
 )(Version(0, 7, 2)))
 
-test("read      - good", (_) => pipe(
-  read,
+test("scan      - good", (_) => pipe(
+  scan,
   assertEquals($, Just(Version(2, 0, 0)))
 )("2.0.0"))
 
-test("read      - missing last number", (_) => pipe(
-  read,
+test("scan      - missing last number", (_) => pipe(
+  scan,
   assertEquals($, (Nothing :: Maybe Version))
 )("2.0."))
 

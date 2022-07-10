@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Compile where
 
@@ -88,14 +87,14 @@ runCompilationTask state options invalidatedPaths = do
 
     (warnings, errors) <- case result of
       Right (_, warnings, []) -> do
-        Driver.runIncrementalTask
+        (_, extraWarnings, _) <- Driver.runIncrementalTask
           state
           options
           invalidatedPaths
           mempty
           Don'tPrune
           (Driver.compilationTask $ optEntrypoint options)
-        return (warnings, [])
+        return (extraWarnings ++ warnings, [])
 
       Right (_, warnings, errors) ->
         return (warnings, errors)

@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module Run.TestRunner where
 
 import           GHC.IO                         ( )
@@ -46,6 +45,7 @@ import Run.Options
 import Utils.PathUtils (defaultPathUtils)
 import qualified AST.Source as Src
 import Error.Error
+import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 
 
 

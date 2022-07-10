@@ -68,6 +68,9 @@ data Query a where
 
   BuiltTarget :: FilePath -> Query ()
 
+  -- Misc
+  StaticLibPathsToLink :: FilePath -> Query [FilePath]
+
 deriveGEq ''Query
 deriveGCompare ''Query
 deriveGShow ''Query
@@ -140,6 +143,9 @@ instance Hashable (Query a) where
 
     BuiltTarget path ->
       hashWithSalt salt (path, 21 :: Int)
+
+    StaticLibPathsToLink path ->
+      hashWithSalt salt (path, 22 :: Int)
 
 
 instance Hashable (Some Query) where
