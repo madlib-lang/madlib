@@ -35,9 +35,11 @@ unzip "v${LIBGC_VERSION}.zip" -d libgc
 cd "libgc/bdwgc-${LIBGC_VERSION}"
 sed -i -e 's/scan_size = 2/scan_size = 8/g' alloc.c
 git clone https://github.com/ivmai/libatomic_ops.git
+make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING" c++
 make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING"
 cd ../..
 cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
+cp "libgc/bdwgc-${LIBGC_VERSION}/gccpp.a" ../runtime/lib/libgccpp.a
 cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
 
 

@@ -4465,7 +4465,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lgc -luv -lpcre2-8"
+        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
         <>" -o " <> executablePath
 
@@ -4476,7 +4476,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lmman -lgc -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
+        <> " -lruntime -lmman -lgc -lgccpp -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
 
     _ ->
       liftIO $ callCommand $
@@ -4485,4 +4485,4 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lgc -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath

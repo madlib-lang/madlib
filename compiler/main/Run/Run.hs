@@ -26,7 +26,7 @@ runRun input args = do
   if ".mad" `isSuffixOf` input then runSingleModule input args else runRunPackage input args
 
 runFolder :: FilePath
-runFolder = ".run/"
+runFolder = "build/"
 
 runRunPackage :: FilePath -> [String] -> IO ()
 runRunPackage package args =
@@ -84,7 +84,3 @@ runSingleModule input args = do
 
   let target = joinPath [runFolder, fromRoot, (takeBaseName . takeFileName $ input) <> ".mjs"]
   callCommand $ "node " <> target <> " " <> unwords args
-
-
-
-
