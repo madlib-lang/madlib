@@ -61,19 +61,20 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
     if watchMode then
       when watchMode $ do
         state <- Driver.initialState
-        runCompilationTask state options [canonicalEntrypoint]
+        runCompilationTask False state options [canonicalEntrypoint]
         putStrLn "\nWatching... (press ctrl-C to quit)"
-        Driver.watch rootPath (runCompilationTask state options)
+        Driver.watch rootPath (runCompilationTask True state options)
         return ()
     else do
       state <- Driver.initialState
-      runCompilationTask state options [canonicalEntrypoint]
+      runCompilationTask False state options [canonicalEntrypoint]
 
 
-runCompilationTask :: Driver.State CompilationError -> Options -> [FilePath] -> IO ()
-runCompilationTask state options invalidatedPaths = do
-  clearScreen
-  setCursorPosition 0 0
+runCompilationTask :: Bool -> Driver.State CompilationError -> Options -> [FilePath] -> IO ()
+runCompilationTask resetScreen state options invalidatedPaths = do
+  when resetScreen $ do
+    clearScreen
+    setCursorPosition 0 0
   Driver.recordAndPrintDuration "Built in " $ do
     result <-
       try $ Driver.runIncrementalTask

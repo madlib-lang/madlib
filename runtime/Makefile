@@ -12,6 +12,7 @@ OBJS :=\
   $(BUILDDIR)/tuple.o\
   $(BUILDDIR)/array.o\
   $(BUILDDIR)/bytearray.o\
+  $(BUILDDIR)/date.o\
   $(BUILDDIR)/dictionary.o\
   $(BUILDDIR)/record.o\
   $(BUILDDIR)/number.o\
