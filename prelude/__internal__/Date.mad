@@ -1,0 +1,141 @@
+export type DateTime = DateTime(Integer)
+export type LocalDateTime = LocalDateTime(Integer)
+export alias DateInfo = {
+  milliseconds :: Integer,
+  seconds :: Integer,
+  minutes :: Integer,
+  hours :: Integer,
+  day :: Integer,
+  month :: Integer,
+  year :: Integer,
+}
+
+export type TimeUnit
+  = Millisecond
+  | Second
+  | Minute
+  | Hour
+  | Day
+  | Month
+  | Year
+
+#iftarget llvm
+
+nowFFI :: {} -> Integer
+nowFFI = extern "madlib__date__now"
+
+toISOStringFFI :: Integer -> String
+toISOStringFFI = extern "madlib__date__toISOString"
+
+toDateInfoFFI :: Integer -> DateInfo
+toDateInfoFFI = extern "madlib__date__toDateInfo"
+
+fromDateInfoFFI :: DateInfo -> Integer
+fromDateInfoFFI = extern "madlib__date__fromDateInfo"
+
+#elseif js
+
+nowFFI :: {} -> Integer
+nowFFI = extern "Date.now"
+
+getMonth :: DateTime -> Integer
+getMonth = (date) => #-
+  new Date(date).getMonth() + 1
+-#
+
+toISOStringFFI :: Integer -> String
+toISOStringFFI = (date) => #-
+  new Date(date).toISOString()
+-#
+
+toDateInfoFFI :: Integer -> DateInfo
+toDateInfoFFI = (date) => #- {
+  const d = new Date(date)
+  return {
+    milliseconds: d.getUTCMilliseconds(),
+    seconds: d.getUTCSeconds(),
+    minutes: d.getUTCMinutes(),
+    hours: d.getUTCHours(),
+    day: d.getUTCDate(),
+    month: d.getUTCMonth() + 1,
+    year: d.getUTCFullYear(),
+  }
+} -#
+
+fromDateInfoFFI :: DateInfo -> Integer
+fromDateInfoFFI = (dateInfo) => #-
+  Date.UTC(
+    dateInfo.year,
+    dateInfo.month - 1,
+    dateInfo.day,
+    dateInfo.hours,
+    dateInfo.minutes,
+    dateInfo.seconds,
+    dateInfo.milliseconds
+  )
+-#
+
+#endif
+
+now :: {} -> DateTime
+export now = pipe(nowFFI, DateTime)
+
+toISOString :: DateTime -> String
+export toISOString = (date) => pipe(
+  getTimestamp,
+  toISOStringFFI
+)(date)
+
+getTimestamp :: DateTime -> Integer
+export getTimestamp = (date) => where(date) {
+  DateTime(t) =>
+    t
+}
+
+toDateInfo :: DateTime -> DateInfo
+export toDateInfo = (date) => pipe(
+  getTimestamp,
+  toDateInfoFFI
+)(date)
+
+fromDateInfo :: DateInfo -> DateTime
+export fromDateInfo = (dateInfo) => pipe(
+  fromDateInfoFFI,
+  DateTime
+)(dateInfo)
+
+add :: Integer -> TimeUnit -> DateTime -> DateTime
+export add  = (x, unit, date) => where(unit) {
+  Millisecond =>
+    DateTime(getTimestamp(date) + x)
+
+  Second =>
+    DateTime(getTimestamp(date) + x * 1000)
+
+  Minute =>
+    DateTime(getTimestamp(date) + x * 60 * 1000)
+
+  Hour =>
+    DateTime(getTimestamp(date) + x * 60 * 60 * 1000)
+
+  Day =>
+    DateTime(getTimestamp(date) + x * 24 * 60 * 60 * 1000)
+
+  Month =>
+    pipe(
+      toDateInfo,
+      (di) => ({ ...di, month: di.month + x }),
+      fromDateInfo
+    )(date)
+
+  Year =>
+    pipe(
+      toDateInfo,
+      (di) => ({ ...di, year: di.year + x }),
+      fromDateInfo
+    )(date)
+}
+
+addDays :: Integer -> DateTime -> DateTime
+export addDays = (days, date) =>
+  add(days, Day, date)

@@ -1,6 +1,5 @@
 module Run.TestRunner where
 
-import           GHC.IO                         ( )
 import           System.FilePath
 import           Control.Monad                  ( when )
 import           System.Process
@@ -13,7 +12,6 @@ import           Run.Target
 import           Run.Utils
 import           System.Directory
 import           Text.Show.Pretty
-import           Parse.Madlib.AST
 import           AST.Source
 import qualified AST.Solved                    as Slv
 import qualified Canonicalize.AST              as Can
@@ -21,8 +19,6 @@ import qualified Canonicalize.Env              as Can
 import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.Rename          as Rename
-import           Infer.AST
-import           Infer.Infer
 import qualified Utils.PathUtils                as PathUtils
 import qualified Utils.Path                     as PathUtils
 import           Explain.Location
@@ -30,15 +26,12 @@ import qualified Data.Map                       as Map
 import qualified Data.List                      as List
 import qualified Data.Maybe                     as Maybe
 import           Control.Monad.State
-import           Control.Monad.Except
 import qualified Distribution.System as DistributionSystem
 import qualified Explain.Format as Explain
 import qualified System.Exit as Exit
-import           Optimize.ToCore
 import qualified Optimize.TCE as TCE
 import qualified Optimize.EtaReduction as EtaReduction
 import Utils.Path
-import Infer.Type
 import qualified Driver
 import qualified Driver.Query as Query
 import Run.Options
