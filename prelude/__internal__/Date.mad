@@ -136,6 +136,23 @@ export add  = (x, unit, date) => where(unit) {
     )(date)
 }
 
+addMilliseconds :: Integer -> DateTime -> DateTime
+export addMilliseconds = add($, Millisecond)
+
+addSeconds :: Integer -> DateTime -> DateTime
+export addSeconds = add($, Second)
+
+addMinutes :: Integer -> DateTime -> DateTime
+export addMinutes = add($, Minute)
+
+addHours :: Integer -> DateTime -> DateTime
+export addHours = add($, Hour)
+
 addDays :: Integer -> DateTime -> DateTime
-export addDays = (days, date) =>
-  add(days, Day, date)
+export addDays = add($, Day)
+
+addMonths :: Integer -> DateTime -> DateTime
+export addMonths = add($, Month)
+
+addYears :: Integer -> DateTime -> DateTime
+export addYears = add($, Year)

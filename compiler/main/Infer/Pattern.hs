@@ -31,7 +31,7 @@ inferPatterns env pats = do
   return (pats, ps, as, ts)
 
 inferPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
-inferPattern env (Can.Canonical area pat) = case pat of
+inferPattern env p@(Can.Canonical area pat) = case pat of
   Can.PNum  n ->
     return (Slv.Typed qtNumber area (Slv.PNum n), [], M.empty, tNumber)
 
@@ -69,9 +69,9 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
     (pats, ps, vars, t) <- foldlM
       (\(pats, ps, vars, t) pat -> do
-        (pat, ps', vars', t') <- inferPListItem env t pat
-        s                     <- unify t t'
-        return (pats ++ [pat], ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
+        (pat', ps', vars', t') <- inferPListItem env t pat
+        s                      <- contextualUnify env pat t t'
+        return (pats ++ [pat'], ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], [], mempty, tv)
       pats
@@ -125,7 +125,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area)
       )
     (ps' :=> t) <- instantiate sc
-    s           <- unify t (foldr fn tv ts)
+    s           <- contextualUnify env p t (foldr fn tv ts)
 
     let t = apply s tv
 

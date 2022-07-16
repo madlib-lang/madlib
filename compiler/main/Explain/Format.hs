@@ -17,7 +17,7 @@ import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
-import Debug.Trace
+
 
 data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
 
