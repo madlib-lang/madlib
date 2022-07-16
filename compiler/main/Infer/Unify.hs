@@ -182,7 +182,6 @@ contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    e@(CompilationError TypesHaveDifferentOrigin{} _) -> addContext env exp e
     (CompilationError (UnificationError _ _) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
@@ -191,7 +190,9 @@ contextualUnify env exp t1 t2 = catchError
           t1'' = if hasNotChanged then t1 else t1'
       (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
       addContext env exp (CompilationError (UnificationError t2''' t1''') ctx)
-    e -> addContext env exp e
+
+    e ->
+      addContext env exp e
   )
 
 
