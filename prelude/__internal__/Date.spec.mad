@@ -1,0 +1,17 @@
+import { test, assertEquals } from "Test"
+import Date from "Date"
+
+test("fromDateInfo", (_) =>
+  assertEquals(
+    Date.fromDateInfo({
+      year: 2022,
+      month: 7,
+      day: 15,
+      hours: 19,
+      minutes: 25,
+      seconds: 22,
+      milliseconds: 363,
+    }),
+    Date.DateTime(1657913122363)
+  )
+)

@@ -322,7 +322,7 @@ inferExport options env (Can.Canonical area (Can.Export exp)) = do
 -- INFER LISTCONSTRUCTOR
 
 inferListConstructor :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferListConstructor options env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
+inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructor elems)) = case elems of
   [] -> do
     tv <- newTVar Star
     let t = tListOf tv
@@ -349,7 +349,7 @@ inferListConstructor options env (Can.Canonical area (Can.ListConstructor elems)
 
     let (Just t'') = t'
 
-    s'' <- unify tv t''
+    s'' <- contextualUnify env listExp tv t''
     let s''' = s' `compose` s''
 
     let t = tListOf (apply s''' tv)
@@ -366,7 +366,7 @@ inferListItem options env _ (Can.Canonical area li) = case li of
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer options env exp
     tv <- newTVar Star
-    s2 <- unify (tListOf tv) t
+    s2 <- contextualUnify env exp (tListOf tv) t
 
     let s = s1 `compose` s2
 
@@ -430,11 +430,11 @@ inferRecord options env exp = do
       Just tBase -> do
         case tBase of
           TRecord fields base -> do
-            s <- unify (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
+            s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
             return (s, fields, base)
 
           _                   -> do
-            s <- unify tBase (TRecord (M.fromList fieldTypes') base)
+            s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
             return (s, mempty, base)
 
       Nothing ->
