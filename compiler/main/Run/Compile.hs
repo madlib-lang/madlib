@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Compile where
 
-import           System.Directory               ( canonicalizePath )
+import           System.Directory               ( canonicalizePath, doesFileExist )
 import           Control.Exception              ( try )
 import           System.Environment             ( getEnv )
 import           Control.Monad                  ( forever
@@ -27,6 +27,7 @@ import Error.Error
 import Driver (Prune(Don'tPrune))
 import System.Console.ANSI
 import Rock (Cyclic)
+import System.Exit (exitFailure)
 
 
 runCompilation :: Command -> Bool -> IO ()
@@ -35,6 +36,12 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
     rootPath            <- canonicalizePath "./"
+
+    entrypointFound <- doesFileExist canonicalEntrypoint
+
+    unless entrypointFound $ do
+      putStrLn $ "'" <> entrypoint <> "' not found, exiting"
+      exitFailure
 
     let options =
           Options
