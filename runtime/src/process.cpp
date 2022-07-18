@@ -37,6 +37,7 @@ static char **ARGV = NULL;
 
 void __main__init__(int argc, char **argv) {
   GC_set_dont_precollect(1);
+  // TODO: make min alloc and initial heap size available to compilation options
   size_t minAlloc = 50 * 1024 * 1024; // 50MB
   GC_set_min_bytes_allocd(minAlloc);
   GC_expand_hp(64 * 1024 * 1024); // 64MB

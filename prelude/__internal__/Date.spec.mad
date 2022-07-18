@@ -1,17 +1,77 @@
 import { test, assertEquals } from "Test"
 import Date from "Date"
 
+
+BASE_DATE_INFO = {
+  year: 2022,
+  month: 7,
+  day: 15,
+  hours: 19,
+  minutes: 25,
+  seconds: 22,
+  milliseconds: 363,
+}
+
 test("fromDateInfo", (_) =>
   assertEquals(
-    Date.fromDateInfo({
-      year: 2022,
-      month: 7,
-      day: 15,
-      hours: 19,
-      minutes: 25,
-      seconds: 22,
-      milliseconds: 363,
-    }),
+    Date.fromDateInfo(BASE_DATE_INFO),
     Date.DateTime(1657913122363)
+  )
+)
+
+test("toDateInfo", (_) =>
+  assertEquals(
+    Date.toDateInfo(Date.DateTime(1657913122363)),
+    BASE_DATE_INFO
+  )
+)
+
+test("addMilliseconds", (_) =>
+  assertEquals(
+    pipe(
+      Date.DateTime,
+      Date.addMilliseconds(360)
+    )(1658085922000),
+    Date.DateTime(1658085922360)
+  )
+)
+
+test("addSeconds", (_) =>
+  assertEquals(
+    pipe(
+      Date.DateTime,
+      Date.addSeconds(360)
+    )(1658085922000),
+    Date.DateTime(1658086282000)
+  )
+)
+
+test("addMinutes", (_) =>
+  assertEquals(
+    pipe(
+      Date.fromDateInfo,
+      Date.addMinutes(2880)
+    )(BASE_DATE_INFO),
+    Date.DateTime(1658085922363)
+  )
+)
+
+test("addHours", (_) =>
+  assertEquals(
+    pipe(
+      Date.fromDateInfo,
+      Date.addHours(48)
+    )(BASE_DATE_INFO),
+    Date.DateTime(1658085922363)
+  )
+)
+
+test("addDays", (_) =>
+  assertEquals(
+    pipe(
+      Date.fromDateInfo,
+      Date.addDays(2)
+    )(BASE_DATE_INFO),
+    Date.DateTime(1658085922363)
   )
 )
