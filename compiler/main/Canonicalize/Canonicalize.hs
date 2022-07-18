@@ -243,6 +243,10 @@ instance Canonicalizable Src.Exp Can.Exp where
 
 
 buildAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
+buildAbs env target area@(Area _ (Loc a l c)) [] body = do
+  body' <- mapM (canonicalize env target) body
+  let param = Can.Canonical (Area (Loc (a - 1) l (c - 1)) (Loc (a - 1) l (c - 1))) "_"
+  return $ Can.Canonical area (Can.Abs param body')
 buildAbs env target area [Src.Source area' _ param] body = do
   body' <- mapM (canonicalize env target) body
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) body')
@@ -269,6 +273,10 @@ placeholderArgCheck args = case args of
 
 
 buildApp :: Env.Env -> Target -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
+buildApp env target area@(Area _ (Loc a l c)) f [] = do
+  f' <- canonicalize env target f
+  let arg' = Can.Canonical (Area (Loc (a - 1) l (c - 1)) (Loc (a - 1) l (c - 1))) Can.LUnit
+  return $ Can.Canonical area (Can.App f' arg' True)
 buildApp env target area f args = do
   (args', wrapperPlaceholderParams) <- placeholderArgCheck args
   let (droppable, _) =

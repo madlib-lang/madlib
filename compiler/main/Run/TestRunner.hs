@@ -39,6 +39,8 @@ import Utils.PathUtils (defaultPathUtils)
 import qualified AST.Source as Src
 import Error.Error
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
+import Rock (Cyclic)
+import Error.Warning
 
 
 
@@ -91,13 +93,40 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
 
     Driver.setQueryResult (Driver._startedVar state) (Query.ParsedAST (optEntrypoint options)) testMainAST
 
-    (_, warnings, errors) <- Driver.runIncrementalTask
-      state
-      options
-      invalidatedPaths
-      mempty
-      Driver.Don'tPrune
-      (Driver.compilationTask (optEntrypoint options))
+    result <-
+      try $ Driver.runIncrementalTask
+        state
+        options
+        invalidatedPaths
+        mempty
+        Driver.Don'tPrune
+        (Driver.typeCheckFileTask $ optEntrypoint options)
+        :: IO (Either (Cyclic Query.Query) ((), [CompilationWarning], [CompilationError]))
+
+    (warnings, errors) <- case result of
+      Right (_, warnings, []) -> do
+        (_, extraWarnings, _) <- Driver.runIncrementalTask
+          state
+          options
+          invalidatedPaths
+          mempty
+          Driver.Don'tPrune
+          (Driver.compilationTask $ optEntrypoint options)
+        return (extraWarnings ++ warnings, [])
+
+      Right (_, warnings, errors) ->
+        return (warnings, errors)
+
+      Left _ -> do
+        (_, warnings, errors) <- Driver.runIncrementalTask
+          state
+          options
+          invalidatedPaths
+          mempty
+          Driver.Don'tPrune
+          (Driver.detectCyleTask (optEntrypoint options))
+
+        return (warnings, errors)
 
     let rf p =
           if "__TestMain__.mad" `List.isSuffixOf` p then
