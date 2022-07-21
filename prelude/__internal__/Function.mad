@@ -134,6 +134,18 @@ export all = (predicate, list) => where(list) {
       : all(predicate, xs)
 }
 
+/**
+ * Functional "or"
+ */
+either :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export either = (predA, predB, x) => predA(x) || predB(x)
+
+/**
+ * Functional "and"
+ */
+both :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export both = (predA, predB, x) => predA(x) && predB(x)
+
 #iftarget js
 
 #-
