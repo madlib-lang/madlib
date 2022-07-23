@@ -1,5 +1,6 @@
 import { assertEquals, test } from "./Test"
 import {} from "List"
+import {lt} from "Compare"
 
 #iftarget js
 
@@ -143,6 +144,16 @@ test("either - true", (_) => assertEquals(
 
 test("either - false", (_) => assertEquals(
   either(equals("A"), equals("B"))("C"),
+  false
+))
+
+test("both - true", (_) => assertEquals(
+  both(lt(50), equals(60))(70),
+  true
+))
+
+test("both - false", (_) => assertEquals(
+  both(lt(50), equals(60))(55),
   false
 ))
 
