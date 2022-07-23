@@ -8,6 +8,7 @@ import {
   always,
   any,
   complement,
+  either,
   equals,
   flip,
   identity,
@@ -25,6 +26,7 @@ import {
   always,
   any,
   complement,
+  either,
   equals,
   flip,
   identity,
@@ -131,6 +133,16 @@ test("all - true", (_) => assertEquals(
 
 test("all - false", (_) => assertEquals(
   all((x) => x > 4, [1, 2, 10]),
+  false
+))
+
+test("either - true", (_) => assertEquals(
+  either(equals("A"), equals("B"))("B"),
+  true
+))
+
+test("either - false", (_) => assertEquals(
+  either(equals("A"), equals("B"))("C"),
   false
 ))
 

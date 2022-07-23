@@ -135,13 +135,27 @@ export all = (predicate, list) => where(list) {
 }
 
 /**
- * Functional "or"
+ * Functional "or", given two predicates and a value, return true if either predicate is true.
+ *
+ * @since 0.13.0
+ * @example
+ *
+ * either(equals("A"), equals("B"))("B") // true
+ * either(equals("A"), equals("B"))("C") // false
  */
 either :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
 export either = (predA, predB, x) => predA(x) || predB(x)
 
 /**
- * Functional "and"
+ * Functional "and", given two predicates and a value, return true if both predicates are true.
+ *
+ * @since 0.13.0
+ * @example
+ *
+ * import {lt} from "Compare"
+ * // as `lt` applies arguments backwards, 70 is greater than both 50 and 60
+ * both(lt(50), lt(60))(70) // true
+ * both(lt(50), lt(60))(55) // false
  */
 both :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
 export both = (predA, predB, x) => predA(x) && predB(x)
