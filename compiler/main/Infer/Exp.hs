@@ -4,6 +4,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -644,9 +646,34 @@ type Ambiguity = (TVar, [Pred])
 ambiguities :: [TVar] -> [Pred] -> [Ambiguity]
 ambiguities vs ps = [ (v, filter (elem v . ftv) ps) | v <- ftv ps \\ vs ]
 
+
+
+hasPredForType :: String -> Type -> [Pred] -> Bool
+hasPredForType cls t ps =
+  any (\(IsIn cls' ts _) -> t `elem` ts && cls == cls') ps
+
+updateRecordUpdatePreds :: [Pred] -> [Pred]
+updateRecordUpdatePreds ps = updateRecordUpdatePreds' ps ps
+
+-- Preds for record with a base should be resolved by the base directly
+updateRecordUpdatePreds' :: [Pred] -> [Pred] -> [Pred]
+updateRecordUpdatePreds' allPreds ps = case ps of
+  IsIn cls [tRec@(TRecord _ (Just base@(TVar _)))] maybeArea : next
+    | not (hasPredForType "Number" tRec allPreds)
+    && not (hasPredForType "Bits" tRec allPreds)
+    && not (hasPredForType "Number" base allPreds)
+    && not (hasPredForType "Bits" base allPreds) ->
+      IsIn cls [base] maybeArea : updateRecordUpdatePreds next
+
+  or : next ->
+    or : updateRecordUpdatePreds next
+
+  _ ->
+    []
+
 split :: Bool -> Env -> [TVar] -> [TVar] -> [Pred] -> Infer ([Pred], [Pred], Substitution)
 split mustCheck env fs gs ps = do
-  ps' <- reduce env ps
+  ps' <- reduce env (updateRecordUpdatePreds ps)
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
   let as = ambiguities (fs ++ gs) rs
   if mustCheck && not (null as) then do

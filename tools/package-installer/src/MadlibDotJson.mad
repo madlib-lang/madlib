@@ -14,18 +14,19 @@ import Dependency from "./Dependency"
 
 
 export alias MadlibDotJson = {
-  name          :: String,
-  version       :: Version.Version,
-  dependencies  :: Maybe (List Dependency.Dependency),
+  name :: String,
+  version :: Version.Version,
+  dependencies :: Maybe (List Dependency.Dependency),
   madlibVersion :: Maybe String,
-  main          :: String,
-  bin           :: Maybe String,
-  importAliases :: Maybe (Dictionary String String)
+  main :: String,
+  bin :: Maybe String,
+  importAliases :: Maybe (Dictionary String String),
+  hooks :: Maybe (Dictionary String String),
 }
 
 
-makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency.Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
-makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, importAliases) =>
+makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency.Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
+makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, importAliases, hooks) =>
   where(Version.parse(version)) {
     Just(v) =>
       J.succeed({
@@ -35,7 +36,8 @@ makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, impo
         dependencies,
         main,
         bin,
-        importAliases
+        importAliases,
+        hooks,
       })
 
     Nothing =>
@@ -44,7 +46,7 @@ makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, impo
 
 
 parser :: J.Parser MadlibDotJson
-parser = J.chain7(
+parser = J.chain8(
   makeMadlibDotJson,
   J.field("name", J.string),
   J.field("version", J.string),
@@ -52,7 +54,8 @@ parser = J.chain7(
   J.maybe(Dependency.dependencyParser),
   J.field("main", J.string),
   J.maybe(J.field("bin", J.string)),
-  J.maybe(J.field("importAliases", J.dict(J.string)))
+  J.maybe(J.field("importAliases", J.dict(J.string))),
+  J.maybe(J.field("hooks", J.dict(J.string)))
 )
 
 

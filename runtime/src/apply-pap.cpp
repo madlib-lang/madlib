@@ -3,7 +3,6 @@
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
-
 // Partial application
 
 #ifdef __cplusplus
@@ -477,6 +476,96 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
             result = fn(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             break;
           }
+          case 1: {
+            PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
+            void *arg1 = va_arg(argv, void *);
+            void *arg2 = va_arg(argv, void *);
+            void *arg3 = va_arg(argv, void *);
+            void *arg4 = va_arg(argv, void *);
+            void *arg5 = va_arg(argv, void *);
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 2: {
+            PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
+            void *arg2 = va_arg(argv, void *);
+            void *arg3 = va_arg(argv, void *);
+            void *arg4 = va_arg(argv, void *);
+            void *arg5 = va_arg(argv, void *);
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 3: {
+            PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
+            void *arg3 = va_arg(argv, void *);
+            void *arg4 = va_arg(argv, void *);
+            void *arg5 = va_arg(argv, void *);
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 4: {
+            PAPEnv_4_t *env = (PAPEnv_4_t *)unwrappedPAP->env;
+            void *arg4 = va_arg(argv, void *);
+            void *arg5 = va_arg(argv, void *);
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 5: {
+            PAPEnv_5_t *env = (PAPEnv_5_t *)unwrappedPAP->env;
+            void *arg5 = va_arg(argv, void *);
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 6: {
+            PAPEnv_6_t *env = (PAPEnv_6_t *)unwrappedPAP->env;
+            void *arg6 = va_arg(argv, void *);
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 7: {
+            PAPEnv_7_t *env = (PAPEnv_7_t *)unwrappedPAP->env;
+            void *arg7 = va_arg(argv, void *);
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, arg7, arg8, arg9);
+            break;
+          }
+          case 8: {
+            PAPEnv_8_t *env = (PAPEnv_8_t *)unwrappedPAP->env;
+            void *arg8 = va_arg(argv, void *);
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, env->arg7, arg8, arg9);
+            break;
+          }
+          case 9: {
+            PAPEnv_9_t *env = (PAPEnv_9_t *)unwrappedPAP->env;
+            void *arg9 = va_arg(argv, void *);
+            result = fn(env->arg0, env->arg1, env->arg2, env->arg3, env->arg4, env->arg5, env->arg6, env->arg7, env->arg8, arg9);
+            break;
+          }
         }
         break;
       }
@@ -684,6 +773,11 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         }
       }
     }
+
+    // if (!result) {
+    //   printf("fn ptr: %d, arity: %d, argc: %d, args left: %d\n", unwrappedPAP->fn, ARITY, argc, ARITY - ENV_SIZE);
+    //   printf("%d", result); 
+    // }
 
     va_end(argv);
     return result;

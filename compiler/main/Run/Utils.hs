@@ -70,8 +70,12 @@ compilationBlackList = ["madlib_modules", "node_modules"]
 
 getFilesToCompile :: Bool -> FilePath -> IO [FilePath]
 getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
-  ".mad"     -> return [entrypoint]
-  '.' : rest -> putStrLn ("Invalid file extension '" <> ('.' : rest) <> "'") >> return []
+  ".mad"     ->
+    return [entrypoint]
+
+  '.' : _ ->
+    return []
+
   _          -> do
     paths <- getDirectoryContents entrypoint
     let fullPaths =
