@@ -14,6 +14,7 @@ import { always, identity, ifElse, not } from "Function"
 import { andDo } from "Monad"
 import { gt } from "Compare"
 import { liftA3 } from "Applicative"
+import Dictionary from "Dictionary"
 
 
 import type { Context } from "./Context"
@@ -242,14 +243,34 @@ tryRecovery = (validation) => where(validation) {
 }
 
 
-postProcess :: #[Context, List Dependency] -> Dependency -> Validate ValidationOutput -> #[Context, List Dependency]
+runPostInstallHook :: Boolean -> MadlibDotJson -> a -> Wish {} a
+runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
+  .hooks,
+  chain(Dictionary.get("postInstall")),
+  where {
+    Just(script) =>
+      do {
+        _ <- Process.exec(script)
+        IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
+        return of({})
+      }
+
+    _ =>
+      of({})
+  },
+  mapRej(always({})),
+  andDo(of(passThrough))
+)(madlibDotJson)
+
+
+postProcess :: #[Context, List Dependency] -> Dependency -> Validate ValidationOutput -> Wish {} #[Context, List Dependency]
 postProcess = (previousContextAndDeps, processedDependency, validation) => where(validation) {
   ValidationError(_, _, _) =>
-    previousContextAndDeps
+    of(previousContextAndDeps)
 
-  v =>
-    pipe(
-      unsafeGetValidationValue,
+  v => do {
+    result = unsafeGetValidationValue(v)
+    return pipe(
       (validationResult) => ({
         ...validationResult,
         context: addInstalledPackage(processedDependency.sanitizedUrl, validationResult.context)
@@ -262,8 +283,10 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
               fromMaybe([], validationResult.madlibDotJson.dependencies)
             )
           ]
-        : #[validationResult.context, Tuple.snd(previousContextAndDeps)]
-    )(v)
+        : #[validationResult.context, Tuple.snd(previousContextAndDeps)],
+      runPostInstallHook(false, result.madlibDotJson)
+    )(result)
+  }
 }
 
 
@@ -275,11 +298,11 @@ processDependency = (config, contextAndNextDeps, dependency) => pipe(
   map(
     pipe(
       displayResult,
-      tryRecovery,
-      postProcess(contextAndNextDeps, dependency),
-      IO.newLine
+      tryRecovery
     )
-  )
+  ),
+  chain(postProcess(contextAndNextDeps, dependency)),
+  map(IO.newLine)
 )(dependency)
 
 
@@ -303,13 +326,13 @@ processDependencies = (config, context, dependencies) => pipe(
   map(
     pipe(
       List.filter(where {
-        DownloadError(err) => IO.putLineAndPass(IO.red(`${err}\n`), false)
+        DownloadError(err) =>
+          IO.putLineAndPass(IO.red(`${err}\n`), false)
 
-        Downloaded(_) => true
+        Downloaded(_) =>
+          true
       }),
-      map(where {
-        Downloaded(a) => a
-      })
+      map(where { Downloaded(a) => a })
     )
   ),
   chain(List.reduceM(processDependency(config), #[context, []])),
@@ -338,25 +361,22 @@ installPackages = (config, context, madlibDotJsonPath) => pipe(
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(config, Constants.MADLIB_MODULES_PATH)),
   discardError(identity),
-  chain(pipe(
-    getDependencies,
-    chain(
-      where {
-        Either.Right(dependencies) =>
-          pipe(
-            processDependencies(config, context),
-            andDo(installedDependencyFolders(config)),
-            chain(pipe(map(installNodeModules(config)), parallel))
-          )(dependencies)
-
-        Either.Left(e) =>
-          pipe(
-            IO.putLine,
-            always(of([]))
-          )(e)
-      }
+  chain(
+    pipe(
+      MadlibDotJson.parse,
+      bichain(
+        pipe(IO.putLine, always(of([]))),
+        (madlibDotJson) => pipe(
+          .dependencies,
+          fromMaybe([]),
+          processDependencies(config, context),
+          andDo(installedDependencyFolders(config)),
+          chain(pipe(map(installNodeModules(config)), parallel)),
+          chain(runPostInstallHook(true, madlibDotJson))
+        )(madlibDotJson)
+      )
     )
-  ))
+  )
 )(madlibDotJsonPath)
 
 
