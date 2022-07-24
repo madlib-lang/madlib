@@ -24,7 +24,6 @@ madlib__record__Field_t *retrieveField(char *name, madlib__record__Record_t *rec
 
 /**
  * low level function for { name: value }
- * TODO: need to also handle update eg. { ...base, updatedField: newValue }
  */
 madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCount, madlib__record__Record_t *base, ...) {
   va_list fieldArgs;

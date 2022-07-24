@@ -32,6 +32,22 @@ instance Functor List {
 }
 
 
+mapMaybe :: (a -> Maybe b) -> List a -> List b
+export mapMaybe = (f, list) => where(list) {
+  [a, ...xs] =>
+    where(f(a)) {
+      Just(mapped) =>
+        [mapped, ...mapMaybe(f, xs)]
+
+      Nothing =>
+        mapMaybe(f, xs)
+    }
+
+  [] =>
+    []
+}
+
+
 repeat :: a -> Integer -> List a
 export repeat = (a, count) =>
   count <= 0

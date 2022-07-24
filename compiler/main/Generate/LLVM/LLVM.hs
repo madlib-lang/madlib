@@ -358,7 +358,7 @@ recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
 tConExclude :: [String]
-tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,,)"]
+tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,)"]
 
 
 retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
@@ -2663,7 +2663,7 @@ buildTupleNEqInstance n =
       preds              = (\var -> IT.IsIn "Eq" [var] Nothing) <$> tvars
       tupleName          = getTupleName n
       tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ (List.take 2 tvars)))
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ List.take 2 tvars))
       tupleHeadType      = IT.getTupleCtor n
       tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
       whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
@@ -2782,7 +2782,7 @@ buildTupleNInspectInstance n =
       preds              = (\var -> IT.IsIn "Inspect" [var] Nothing) <$> tvars
       tupleName          = getTupleName n
       tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ (List.take 1 tvars)))
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ List.take 1 tvars))
       tupleHeadType      = IT.getTupleCtor n
       tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
       whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
@@ -4165,7 +4165,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
               )
           )
 
-      tupleEqInstances = buildTupleNEqInstance <$> [2..8]
+      tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
   generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" [Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] "$Eq$eqVar", Core.Typed eqVarQualType emptyArea [] "a", Core.Typed eqVarQualType emptyArea [] "b"] [
       Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "!" False)) [

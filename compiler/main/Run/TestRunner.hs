@@ -91,6 +91,10 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
     let testSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
         testMainAST    = generateTestMainAST (optEntrypoint options) (listModulePath, testModulePath) testSuitePaths
 
+    when (null testSuitePaths) $ do
+      putStrLn "No test found, exiting."
+      Exit.exitSuccess
+
     Driver.setQueryResult (Driver._startedVar state) (Query.ParsedAST (optEntrypoint options)) testMainAST
 
     result <-

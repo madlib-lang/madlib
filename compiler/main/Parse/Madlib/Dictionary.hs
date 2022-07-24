@@ -120,6 +120,9 @@ expUsesDictionaryConstructor exp = case exp of
   Source _ _ (Do exps) ->
     any expUsesDictionaryConstructor exps
 
+  Source _ _ (Assignment _ exp) ->
+    expUsesDictionaryConstructor exp
+
   Source _ _ (DoAssignment _ exp) ->
     expUsesDictionaryConstructor exp
 

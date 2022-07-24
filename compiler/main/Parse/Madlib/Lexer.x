@@ -107,7 +107,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "false"                             { mapToken (\_ -> (TokenBool "false")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*"=="                          { mapToken (\_ -> TokenDoubleEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*"!="                          { mapToken (\_ -> TokenExclamationMarkEq) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\.\.\.                        { mapToken (\_ -> TokenSpreadOperator) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\.\.\.        { mapToken (\_ -> TokenSpreadOperator) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\.            { mapToken (\_ -> TokenDot) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\,($tail|\ )* { mapToken (\_ -> TokenComma) }
   <0> \{\{$tail*                                                                              { mapToken (\_ -> TokenLeftDoubleCurly) }
@@ -194,7 +194,7 @@ constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
 
 -- Use for instance headers, the initial opening curly is already consumed
 recordTypeRegex :: Regex
-recordTypeRegex = toRegex "\\`[ \n\t]*[a-zA-Z0-9_]*[ \n\t]*::"
+recordTypeRegex = toRegex "\\`[ \n\t]*(\\.\\.\\.[a-zA-Z0-9_]*(,)?|[a-zA-Z0-9_]*[ \n\t]*::)"
 
 isTokenExport :: Regex
 isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+[ \n]*="
