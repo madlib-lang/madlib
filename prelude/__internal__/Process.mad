@@ -45,9 +45,23 @@ export exec = (command) => Wish.Wish((bad, good) => #- {
   }
 -#)
 
+#-
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.v + " " + start.n.n.v
+  }
+}
+-#
+
 
 Argv :: List String
-export Argv = #- process.argv.slice(2) -#
+export Argv = #- makeArgs() -#
 
 
 getEnv :: String -> Maybe String
