@@ -118,6 +118,162 @@ typedef struct PAPEnv_12 {
   void *arg11;
 } PAPEnv_12_t;
 
+typedef struct PAPEnv_13 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+} PAPEnv_13_t;
+
+typedef struct PAPEnv_14 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+} PAPEnv_14_t;
+
+typedef struct PAPEnv_15 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+} PAPEnv_15_t;
+
+typedef struct PAPEnv_16 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+  void *arg15;
+} PAPEnv_16_t;
+
+typedef struct PAPEnv_17 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+  void *arg15;
+  void *arg16;
+} PAPEnv_17_t;
+
+typedef struct PAPEnv_18 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+  void *arg15;
+  void *arg16;
+  void *arg17;
+} PAPEnv_18_t;
+
+typedef struct PAPEnv_19 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+  void *arg15;
+  void *arg16;
+  void *arg17;
+  void *arg18;
+} PAPEnv_19_t;
+
+typedef struct PAPEnv_20 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+  void *arg12;
+  void *arg13;
+  void *arg14;
+  void *arg15;
+  void *arg16;
+  void *arg17;
+  void *arg18;
+  void *arg19;
+} PAPEnv_20_t;
+
 typedef struct PAP {
   void *fn;
   int32_t arity;
