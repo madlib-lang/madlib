@@ -48,7 +48,7 @@ aliasMathGlobal target =
 
 
 inspectStaticInstances :: Target -> Bool -> String
-inspectStaticInstances target optimized = unlines
+inspectStaticInstances target _ = unlines
   [ getGlobalForTarget target <> ".Inspect = {};"
   , ""
   , "Inspect['Integer_"<>preludeHash<>"'] = {};"

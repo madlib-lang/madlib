@@ -1,0 +1,305 @@
+import type { Maybe } from "Maybe"
+
+import IO from "IO"
+import List from "List"
+import String from "String"
+import Process from "Process"
+import { Just, Nothing } from "Maybe"
+// import Date from "Date"
+
+
+FILE_HEADER =
+`#include <gc.h>
+#include "apply-pap.hpp"
+#include <cstdarg>
+#include <iostream>
+
+
+// Partial application
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+`
+
+FILE_FOOTER =
+`#ifdef __cplusplus
+}
+#endif
+`
+
+FUNCTION_START =
+`void *__applyPAP__(void *pap, int32_t argc, ...) {
+  va_list argv;
+  va_start(argv, argc);
+
+  PAP_t *unwrappedPAP = (PAP_t *)pap;
+  int32_t ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
+  int32_t ARITY = unwrappedPAP->arity;
+`
+
+FUNCTION_END =
+`  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\\n", argc, ENV_SIZE, ARITY);
+
+  return NULL;
+}
+
+`
+
+KNOWN_CALL_START =
+`
+  if (argc >= unwrappedPAP->missingArgCount) {
+    void *result = (void *)NULL;
+`
+
+KNOWN_CALL_END =
+`    va_end(argv);
+    return result; 
+  } `
+
+OVERLOAD_START =
+`    if (argc > unwrappedPAP->missingArgCount) {
+      int argsLeft = argc - unwrappedPAP->missingArgCount;
+`
+
+OVERLOAD_END = "    } "
+
+UNDERLOAD_START =
+`else {
+    // We push the args to a newly allocated PAP
+    int32_t NEXT_ENV_SIZE = argc + ENV_SIZE;
+    PAP_t *newPAP = (PAP_t *)GC_MALLOC(sizeof(PAP_t));
+    newPAP->fn = unwrappedPAP->fn;
+    newPAP->arity = unwrappedPAP->arity;
+    newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
+`
+
+UNDERLOAD_END = "  }\n"
+
+generateFnAssignment :: Integer -> String
+generateFnAssignment = (arity) => {
+  params = pipe(
+    List.repeat("void *"),
+    String.join(", ")
+  )(arity)
+
+  return `void *(*fn)(${params}) = (void*(*)(${params}))unwrappedPAP->fn;`
+}
+
+
+makeIndentation :: Integer -> String
+makeIndentation = (indent) => String.repeat(' ', indent)
+
+
+makeArgNamesWithStart :: Integer -> Integer -> List String
+makeArgNamesWithStart = (start, count) => pipe(
+    List.range(start),
+    map((argIndex) => `arg${inspect(argIndex)}`)
+  )(count)
+
+
+makeArgNames :: Integer -> List String
+makeArgNames = makeArgNamesWithStart(1)
+
+
+makeArgAssignments :: Integer -> List String -> String
+makeArgAssignments = (indent, argNames) => pipe(
+    map((n) => `${makeIndentation(indent)}void *${n} = va_arg(argv, void*);\n`),
+    List.reduce(mconcat, "")
+  )(argNames)
+
+
+makeFunctionCall :: String -> List String -> String
+makeFunctionCall = (functionName, argNames) => pipe(
+  String.join(", "),
+  (args) => `${functionName}(${args})`
+)(argNames)
+
+
+generateEnvSizeCase :: Integer -> Integer -> String
+generateEnvSizeCase = (arity, envSize) => {
+  argNames = makeArgNames(arity - envSize + 1)
+  argsFromEnv = pipe(
+    List.range(0),
+    map((index) => `env->arg${inspect(index)}`)
+  )(envSize)
+
+  envAssignment = envSize > 0
+    ? `            PAPEnv_${inspect(envSize)}_t *env = (PAPEnv_${inspect(envSize)}_t *)unwrappedPAP->env;\n`
+    : ""
+
+  argAssignments = makeArgAssignments(12, argNames)
+  allArgs = mconcat(argsFromEnv, argNames)
+  fnCall = `           result = ${makeFunctionCall("fn", allArgs)};\n`
+  return `          case ${inspect(envSize)}: {\n${envAssignment}${argAssignments} ${fnCall}            break;\n          }\n`
+}
+
+
+generateEnvSizeCases :: Integer -> String
+generateEnvSizeCases = (arity) =>
+  if (arity == 1) {
+    `          default: {
+            void *arg1 = va_arg(argv, void *);
+            result = fn(arg1);
+            break;
+          }
+`
+  } else {
+    pipe(
+      List.range(0),
+      map(generateEnvSizeCase(arity)),
+      List.reduce(mconcat, "")
+    )(arity)
+  }
+
+
+generateKnownCallCase :: Integer -> String
+generateKnownCallCase = (arity) => {
+  caseStart = `      case ${inspect(arity)}: {\n`
+  fnAssignment = `        ${generateFnAssignment(arity)}\n`
+  switchEnvSize = `        switch (ENV_SIZE) {\n${generateEnvSizeCases(arity)}        }\n`
+  caseEnd = `        break;\n      }\n`
+
+  return caseStart ++ fnAssignment ++ switchEnvSize ++ caseEnd
+}
+
+generateKnownCallCases :: Integer -> String
+generateKnownCallCases = (maxArity) => {
+  cases = pipe(
+    List.range(1),
+    map(generateKnownCallCase),
+    List.reduce(mconcat, "")
+  )(maxArity + 1)
+
+  return `    switch (ARITY) {\n${cases}    }\n`
+}
+
+
+generateOverloadCase :: Integer -> String
+generateOverloadCase = (argsLeft) => {
+  argNames = makeArgNames(argsLeft + 1)
+  argAssignments = makeArgAssignments(10, argNames)
+  allArgs = ["result", "argsLeft", ...argNames]
+  fnCall = makeFunctionCall("__applyPAP__", allArgs)
+
+  return `        case ${inspect(argsLeft)}: {\n${argAssignments}          result = ${fnCall};\n          break;\n        }\n`
+}
+
+
+generateOverloadCases :: Integer -> String
+generateOverloadCases = (maxArity) => {
+  cases = pipe(
+    List.range(1),
+    map(generateOverloadCase),
+    List.reduce(mconcat, "")
+  )(maxArity + 1)
+
+  return `      switch (argsLeft) {\n${cases}      }\n`
+}
+
+
+generateNextEnvCase :: Integer -> Integer -> String
+generateNextEnvCase = (envSize, nextEnvSize) => {
+  papType = `PAPEnv_${inspect(nextEnvSize)}_t`
+  newEnv = `${makeIndentation(12)}${papType} *newEnv = (${papType} *)GC_MALLOC(sizeof(${papType}));\n`
+  returnNewPAP = `${makeIndentation(12)}va_end(argv);\n${makeIndentation(12)}newPAP->env = newEnv;\n${makeIndentation(12)}return newPAP;\n`
+
+  newArgNames = makeArgNamesWithStart(envSize, nextEnvSize)
+  newArgAssignments = makeArgAssignments(12, newArgNames)
+  oldArgNames = pipe(
+    List.range(0),
+    map((n) => `env->arg${inspect(n)}`)
+  )(envSize)
+
+  newEnvAssignments = pipe(
+    List.mapWithIndex((n, i) => `${makeIndentation(12)}newEnv->arg${inspect(i)} = ${n};\n`),
+    List.reduce(mconcat, "")
+  )(mconcat(oldArgNames, newArgNames))
+
+  return `          case ${inspect(nextEnvSize)}: {\n${newEnv}${newArgAssignments}${newEnvAssignments}${returnNewPAP}          }\n`
+}
+
+
+generateNextEnvSwitch :: Integer -> Integer -> String
+generateNextEnvSwitch = (maxEnvSize, envSize) => {
+  cases = pipe(
+    List.range($, maxEnvSize + 2),
+    map(generateNextEnvCase(envSize)),
+    List.reduce(mconcat, "")
+  )(envSize + 1)
+
+  papType = `PAPEnv_${inspect(envSize)}_t`
+  envAssignment = envSize > 0
+    ? `${makeIndentation(8)}${papType} *env = (${papType} *)unwrappedPAP->env;\n`
+    : ""
+
+  return `${envAssignment}        switch (NEXT_ENV_SIZE) {\n${cases}        }\n`
+}
+
+
+generateUnderloadCase :: Integer -> Integer -> String
+generateUnderloadCase = (maxEnvSize, envSize) => {
+  nextEnvSwitch = generateNextEnvSwitch(maxEnvSize, envSize)
+  return `      case ${inspect(envSize)}: {\n${nextEnvSwitch}      }\n`
+}
+
+
+generateUnderloadCases :: Integer -> String
+generateUnderloadCases = (maxArity) => {
+  cases = pipe(
+    List.range(0),
+    map(generateUnderloadCase(maxArity)),
+    List.reduce(mconcat, "")
+  )(maxArity + 1)
+
+  return `    switch (ENV_SIZE) {\n${cases}    }\n`
+}
+
+
+generateApplyPAP :: Integer -> {}
+generateApplyPAP = (maxArity) => {
+  IO.put(FILE_HEADER)
+  IO.put(FUNCTION_START)
+  IO.put(KNOWN_CALL_START)
+  IO.put(generateKnownCallCases(maxArity))
+  IO.put(OVERLOAD_START)
+  IO.put(generateOverloadCases(maxArity))
+  IO.put(OVERLOAD_END)
+  IO.put(KNOWN_CALL_END)
+  IO.put(UNDERLOAD_START)
+  IO.put(generateUnderloadCases(maxArity))
+  IO.put(UNDERLOAD_END)
+  IO.put(FUNCTION_END)
+  IO.put(FILE_FOOTER)
+
+  return {}
+}
+
+where (Process.Argv) {
+  [_, arityStr, "CPP"] =>
+    where (scan(arityStr)) {
+      Just(arity) =>
+        generateApplyPAP(arity)
+
+      Nothing =>
+        IO.putLine("ARITY needs to be an integer")
+    }
+
+  [_, arityStr, "HPP"] =>
+    where ((scan(arityStr) :: Maybe Integer)) {
+      Just(arity) =>
+        IO.putLine("Not implemented")
+
+      Nothing =>
+        IO.putLine("ARITY needs to be an integer")
+    }
+
+  _ => do {
+    IO.putLine("You must pass two args, the kind of file and the max arity!")
+    IO.putLine("Usage:")
+    IO.putLine("GenApplyPap ARITY FILE_TYPE")
+    return {}
+  }
+}
+
+

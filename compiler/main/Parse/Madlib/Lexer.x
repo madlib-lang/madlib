@@ -368,10 +368,15 @@ endStringTemplate i@(posn, prevChar, pending, input) len = do
 escapedStringTemplateContent :: AlexInput -> Int -> Alex Token
 escapedStringTemplateContent i@(posn, prevChar, pending, input) len = do
   case take len input of
-    "\\`" -> appendStringToTemplate "`"
-    "\\n" -> appendStringToTemplate ('\n':"")
-    "\\t" -> appendStringToTemplate ('\t':"")
-  
+    "\\`" ->
+      appendStringToTemplate "`"
+
+    or ->
+      appendStringToTemplate or
+    -- "\\"  -> appendStringToTemplate ('\\':'\\':"")
+    -- "\\n" -> appendStringToTemplate ('\n':"")
+    -- "\\t" -> appendStringToTemplate ('\t':"")
+
   skip i len
 
 pushStringToTemplate :: AlexInput -> Int -> Alex Token
