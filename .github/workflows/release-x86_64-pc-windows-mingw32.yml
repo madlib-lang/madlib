@@ -80,7 +80,6 @@ jobs:
         run: |
           export PATH="/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
           export ROLLUP_PATH="/c/npm/prefix/rollup.cmd"
-          "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/test-runner/src/Main.mad -o ./tools/test-runner/dist/test-runner.js --bundle
           "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
 
       - name: Override LLVM path
@@ -102,7 +101,6 @@ jobs:
           cp -R runtime ./madlib-x86_64-pc-windows-mingw32/
           cp -R prelude ./madlib-x86_64-pc-windows-mingw32/
           cp ./tools/package-installer/dist/package-installer.js ./madlib-x86_64-pc-windows-mingw32/
-          cp ./tools/test-runner/dist/test-runner.js ./madlib-x86_64-pc-windows-mingw32/
           tar -czvf madlib-x86_64-pc-windows-mingw32.tar.gz madlib-x86_64-pc-windows-mingw32
 
       - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1

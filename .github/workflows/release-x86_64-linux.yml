@@ -33,7 +33,6 @@ jobs:
           cp -R runtime ./madlib-x86_64-unknown-linux-gnu/
           cp -R prelude ./madlib-x86_64-unknown-linux-gnu/
           cp ./package-installer.js ./madlib-x86_64-unknown-linux-gnu/
-          cp ./test-runner.js ./madlib-x86_64-unknown-linux-gnu/
           tar -czvf madlib-x86_64-unknown-linux-gnu.tar.gz madlib-x86_64-unknown-linux-gnu
 
       - name: Bundle alpine archive
@@ -44,7 +43,6 @@ jobs:
           mv ./madlib-x86_64-alpine-linux-musl/runtime-musl ./madlib-x86_64-alpine-linux-musl/runtime
           cp -R prelude ./madlib-x86_64-alpine-linux-musl/
           cp ./package-installer.js ./madlib-x86_64-alpine-linux-musl/
-          cp ./test-runner.js ./madlib-x86_64-alpine-linux-musl/
           tar -czvf madlib-x86_64-alpine-linux-musl.tar.gz madlib-x86_64-alpine-linux-musl
 
       - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1

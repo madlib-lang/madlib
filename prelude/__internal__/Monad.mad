@@ -17,7 +17,7 @@ interface Applicative m => Monad m {
  * chain2((a, b) => of(a + b), Just(1), Just(3)) // Just(4)
  */
 chain2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
-chain2 = (f, ma, mb) => chain(
+export chain2 = (f, ma, mb) => chain(
   (a) => chain(
     (b) => f(a, b),
     mb

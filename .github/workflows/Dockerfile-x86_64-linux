@@ -66,5 +66,4 @@ FROM scratch AS export-stage
 COPY --from=build-stage ./madlib /
 COPY --from=build-stage ./runtime /runtime
 COPY --from=build-stage ./tools/package-installer/dist/package-installer.js /package-installer.js
-COPY --from=build-stage ./tools/test-runner/dist/test-runner.js /test-runner.js
 COPY --from=build-musl-runtime ./runtime /runtime-musl
