@@ -42,7 +42,7 @@ ec = Canonical emptyArea
 
 
 chars :: [String]
-chars = (:"") <$> ['a'..]
+chars = ("f_"++) . show <$> [0..]
 
 
 generateCtorParamPatternNames :: Char -> [Typing] -> [String]

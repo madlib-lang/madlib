@@ -2186,23 +2186,11 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  -- Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))))) ->
-  --   let arity  = List.length params
-  --       fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-  --       fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-  --   in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
-
   Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _) ->
     let arity  = List.length $ IT.getParamTypes t
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
-
-  -- Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _))) ->
-  --   let arity  = List.length $ IT.getParamTypes t
-  --       fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-  --       fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-  --   in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _) ->
     if IT.isFunctionType t then
@@ -2213,16 +2201,6 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
       let expType   = buildLLVMType env symbolTable qt
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
-
-  -- Core.Typed _ _ _ (Core.Export (Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _))) ->
-  --   if IT.isFunctionType t then
-  --     let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-  --         globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-  --     in  Map.insert name (topLevelSymbol globalRef) symbolTable
-  --   else
-  --     let expType   = buildLLVMType env symbolTable qt
-  --         globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-  --     in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
   _ ->
     symbolTable

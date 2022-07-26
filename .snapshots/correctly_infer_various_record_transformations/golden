@@ -1175,14 +1175,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Eq" [ TVar (TV "b" Star) ] Nothing
+               [ IsIn "Eq" [ TVar (TV "f_0" Star) ] Nothing
+               , IsIn "Eq" [ TVar (TV "f_1" Star) ] Nothing
                ]
                (IsIn
                   "Eq"
                   [ TRecord
                       (fromList
-                         [ ( "p" , TVar (TV "a" Star) ) , ( "z" , TVar (TV "b" Star) ) ])
+                         [ ( "p" , TVar (TV "f_0" Star) )
+                         , ( "z" , TVar (TV "f_1" Star) )
+                         ])
                       Nothing
                   ]
                   Nothing)
@@ -2325,14 +2327,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Eq" [ TVar (TV "b" Star) ] Nothing
+               [ IsIn "Eq" [ TVar (TV "f_0" Star) ] Nothing
+               , IsIn "Eq" [ TVar (TV "f_1" Star) ] Nothing
                ]
                (IsIn
                   "Eq"
                   [ TRecord
                       (fromList
-                         [ ( "g" , TVar (TV "a" Star) ) , ( "p" , TVar (TV "b" Star) ) ])
+                         [ ( "g" , TVar (TV "f_0" Star) )
+                         , ( "p" , TVar (TV "f_1" Star) )
+                         ])
                       Nothing
                   ]
                   Nothing)
@@ -3475,14 +3479,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Inspect" [ TVar (TV "b" Star) ] Nothing
+               [ IsIn "Inspect" [ TVar (TV "f_0" Star) ] Nothing
+               , IsIn "Inspect" [ TVar (TV "f_1" Star) ] Nothing
                ]
                (IsIn
                   "Inspect"
                   [ TRecord
                       (fromList
-                         [ ( "p" , TVar (TV "a" Star) ) , ( "z" , TVar (TV "b" Star) ) ])
+                         [ ( "p" , TVar (TV "f_0" Star) )
+                         , ( "z" , TVar (TV "f_1" Star) )
+                         ])
                       Nothing
                   ]
                   Nothing)
@@ -4060,14 +4066,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Inspect" [ TVar (TV "b" Star) ] Nothing
+               [ IsIn "Inspect" [ TVar (TV "f_0" Star) ] Nothing
+               , IsIn "Inspect" [ TVar (TV "f_1" Star) ] Nothing
                ]
                (IsIn
                   "Inspect"
                   [ TRecord
                       (fromList
-                         [ ( "g" , TVar (TV "a" Star) ) , ( "p" , TVar (TV "b" Star) ) ])
+                         [ ( "g" , TVar (TV "f_0" Star) )
+                         , ( "p" , TVar (TV "f_1" Star) )
+                         ])
                       Nothing
                   ]
                   Nothing)

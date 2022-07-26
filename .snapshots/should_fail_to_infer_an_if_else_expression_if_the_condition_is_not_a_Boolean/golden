@@ -26,8 +26,8 @@
 , []
 , [ CompilationError
       (UnificationError
-         (TCon (TC "Boolean" Star) "prelude")
-         (TCon (TC "String" Star) "prelude"))
+         (TCon (TC "String" Star) "prelude")
+         (TCon (TC "Boolean" Star) "prelude"))
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 4 1 5) (Loc 10 1 11)
