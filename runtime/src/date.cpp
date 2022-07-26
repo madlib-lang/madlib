@@ -7,6 +7,11 @@
 #include <stdio.h>
 
 
+#ifdef __MINGW32__
+  #define timegm _mkgmtime
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
