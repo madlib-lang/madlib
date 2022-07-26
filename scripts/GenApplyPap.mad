@@ -60,11 +60,12 @@ KNOWN_CALL_START =
 `
   if (argc >= unwrappedPAP->missingArgCount) {
     void *result = (void *)NULL;
+    void **env = (void **)unwrappedPAP->env;
 `
 
 KNOWN_CALL_END =
 `    va_end(argv);
-    return result; 
+    return result;
   } `
 
 OVERLOAD_START =
@@ -74,17 +75,31 @@ OVERLOAD_START =
 
 OVERLOAD_END = "    }\n"
 
-UNDERLOAD_START =
+UNDERLOAD =
 `else {
     // We push the args to a newly allocated PAP
-    int32_t NEXT_ENV_SIZE = argc + ENV_SIZE;
+    int NEXT_ENV_SIZE = argc + ENV_SIZE;
     PAP_t *newPAP = (PAP_t *)GC_MALLOC(sizeof(PAP_t));
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
-`
 
-UNDERLOAD_END = "  }\n"
+    void **env = (void **)unwrappedPAP->env;
+    void **newEnv = (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
+    int i = 0;
+    for (i = 0; i<ENV_SIZE; i++) {
+      newEnv[i] = env[i];
+    }
+    for (; i<NEXT_ENV_SIZE; i++) {
+      void *arg = va_arg(argv, void*);
+      newEnv[i] = arg;
+    }
+
+    va_end(argv);
+    newPAP->env = newEnv;
+    return newPAP;
+  }
+`
 
 
 HPP_FILE_TOP =
@@ -165,51 +180,20 @@ makeFunctionCall = (functionName, argNames) => pipe(
 )(argNames)
 
 
-generateEnvSizeCase :: Integer -> Integer -> String
-generateEnvSizeCase = (arity, envSize) => {
-  argNames = makeArgNames(arity - envSize + 1)
-  argsFromEnv = pipe(
-    List.range(0),
-    map((index) => `env->arg${inspect(index)}`)
-  )(envSize)
-
-  envAssignment = envSize > 0
-    ? `            PAPEnv_${inspect(envSize)}_t *env = (PAPEnv_${inspect(envSize)}_t *)unwrappedPAP->env;\n`
-    : ""
-
-  argAssignments = makeArgAssignments(12, argNames)
-  allArgs = mconcat(argsFromEnv, argNames)
-  fnCall = `           result = ${makeFunctionCall("fn", allArgs)};\n`
-  return `          case ${inspect(envSize)}: {\n${envAssignment}${argAssignments} ${fnCall}            break;\n          }\n`
-}
-
-
-generateEnvSizeCases :: Integer -> String
-generateEnvSizeCases = (arity) =>
-  if (arity == 1) {
-    `          default: {
-            void *arg1 = va_arg(argv, void *);
-            result = fn(arg1);
-            break;
-          }
-`
-  } else {
-    pipe(
-      List.range(0),
-      map(generateEnvSizeCase(arity)),
-      List.reduce(mconcat, "")
-    )(arity)
-  }
-
-
 generateKnownCallCase :: Integer -> String
 generateKnownCallCase = (arity) => {
   caseStart = `      case ${inspect(arity)}: {\n`
   fnAssignment = `        ${generateFnAssignment(arity)}\n`
-  switchEnvSize = `        switch (ENV_SIZE) {\n${generateEnvSizeCases(arity)}        }\n`
+  allArgs = makeIndexedArgNames(arity)
+  case = `        void **args = (void**) GC_MALLOC(sizeof(void*) * (${inspect(arity)}));
+        int i = 0;
+        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
+        result = ${makeFunctionCall("fn", allArgs)};
+        break;\n`
   caseEnd = `        break;\n      }\n`
 
-  return caseStart ++ fnAssignment ++ switchEnvSize ++ caseEnd
+  return caseStart ++ fnAssignment ++ case ++ caseEnd
 }
 
 generateKnownCallCases :: Integer -> String
@@ -224,14 +208,23 @@ generateKnownCallCases = (maxArity) => {
 }
 
 
+makeIndexedArgNames :: Integer -> List String
+makeIndexedArgNames = (count) => pipe(
+  List.range(0),
+  map((index) => `args[${inspect(index)}]`)
+)(count)
+
+
 generateOverloadCase :: Integer -> String
 generateOverloadCase = (argsLeft) => {
-  argNames = makeArgNames(argsLeft + 1)
-  argAssignments = makeArgAssignments(10, argNames)
+  argNames = makeIndexedArgNames(argsLeft)
   allArgs = ["result", "argsLeft", ...argNames]
+  argsRead = `          void **args = (void**) GC_MALLOC(sizeof(void*) * ${inspect(argsLeft)});
+          for (int i = 0; i < ${inspect(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }\n`
   fnCall = makeFunctionCall("__applyPAP__", allArgs)
 
-  return `        case ${inspect(argsLeft)}: {\n${argAssignments}          result = ${fnCall};\n          break;\n        }\n`
+
+  return `        case ${inspect(argsLeft)}: {\n${argsRead}          result = ${fnCall};\n          break;\n        }\n`
 }
 
 
@@ -269,42 +262,6 @@ generateNextEnvCase = (envSize, nextEnvSize) => {
 }
 
 
-generateNextEnvSwitch :: Integer -> Integer -> String
-generateNextEnvSwitch = (maxEnvSize, envSize) => {
-  cases = pipe(
-    List.range($, maxEnvSize + 2),
-    map(generateNextEnvCase(envSize)),
-    List.reduce(mconcat, "")
-  )(envSize + 1)
-
-  papType = `PAPEnv_${inspect(envSize)}_t`
-  envAssignment = envSize > 0
-    ? `${makeIndentation(8)}${papType} *env = (${papType} *)unwrappedPAP->env;\n`
-    : ""
-
-  return `${envAssignment}        switch (NEXT_ENV_SIZE) {\n${cases}        }\n`
-}
-
-
-generateUnderloadCase :: Integer -> Integer -> String
-generateUnderloadCase = (maxEnvSize, envSize) => {
-  nextEnvSwitch = generateNextEnvSwitch(maxEnvSize, envSize)
-  return `      case ${inspect(envSize)}: {\n${nextEnvSwitch}      }\n`
-}
-
-
-generateUnderloadCases :: Integer -> String
-generateUnderloadCases = (maxArity) => {
-  cases = pipe(
-    List.range(0),
-    map(generateUnderloadCase(maxArity)),
-    List.reduce(mconcat, "")
-  )(maxArity + 1)
-
-  return `    switch (ENV_SIZE) {\n${cases}    }\n`
-}
-
-
 generateCppFile :: Integer -> {}
 generateCppFile = (maxArity) => {
   IO.put(CPP_FILE_HEADER)
@@ -315,9 +272,7 @@ generateCppFile = (maxArity) => {
   IO.put(generateOverloadCases(maxArity))
   IO.put(OVERLOAD_END)
   IO.put(KNOWN_CALL_END)
-  IO.put(UNDERLOAD_START)
-  IO.put(generateUnderloadCases(maxArity))
-  IO.put(UNDERLOAD_END)
+  IO.put(UNDERLOAD)
   IO.put(FUNCTION_END)
   IO.put(CPP_FILE_FOOTER)
 

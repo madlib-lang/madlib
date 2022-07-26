@@ -340,10 +340,11 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing ]
+               [ IsIn "Eq" [ TVar (TV "f_0" Star) ] Nothing ]
                (IsIn
                   "Eq"
-                  [ TRecord (fromList [ ( "value" , TVar (TV "a" Star) ) ]) Nothing ]
+                  [ TRecord (fromList [ ( "value" , TVar (TV "f_0" Star) ) ]) Nothing
+                  ]
                   Nothing)
                (fromList
                   [ ( "=="
@@ -822,10 +823,11 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing ]
+               [ IsIn "Eq" [ TVar (TV "f_0" Star) ] Nothing ]
                (IsIn
                   "Eq"
-                  [ TRecord (fromList [ ( "message" , TVar (TV "a" Star) ) ]) Nothing
+                  [ TRecord
+                      (fromList [ ( "message" , TVar (TV "f_0" Star) ) ]) Nothing
                   ]
                   Nothing)
                (fromList
@@ -1953,7 +1955,7 @@
                                                                                                      [ ( "value"
                                                                                                        , TVar
                                                                                                            (TV
-                                                                                                              "a"
+                                                                                                              "f_0"
                                                                                                               Star)
                                                                                                        )
                                                                                                      ])
@@ -2624,7 +2626,7 @@
                                                                                                      [ ( "message"
                                                                                                        , TVar
                                                                                                            (TV
-                                                                                                              "a"
+                                                                                                              "f_0"
                                                                                                               Star)
                                                                                                        )
                                                                                                      ])
@@ -2883,10 +2885,11 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing ]
+               [ IsIn "Inspect" [ TVar (TV "f_0" Star) ] Nothing ]
                (IsIn
                   "Inspect"
-                  [ TRecord (fromList [ ( "value" , TVar (TV "a" Star) ) ]) Nothing ]
+                  [ TRecord (fromList [ ( "value" , TVar (TV "f_0" Star) ) ]) Nothing
+                  ]
                   Nothing)
                (fromList
                   [ ( "inspect"
@@ -3144,10 +3147,11 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing ]
+               [ IsIn "Inspect" [ TVar (TV "f_0" Star) ] Nothing ]
                (IsIn
                   "Inspect"
-                  [ TRecord (fromList [ ( "message" , TVar (TV "a" Star) ) ]) Nothing
+                  [ TRecord
+                      (fromList [ ( "message" , TVar (TV "f_0" Star) ) ]) Nothing
                   ]
                   Nothing)
                (fromList
@@ -3681,7 +3685,7 @@
                                                                                    [ ( "value"
                                                                                      , TVar
                                                                                          (TV
-                                                                                            "a"
+                                                                                            "f_0"
                                                                                             Star)
                                                                                      )
                                                                                    ])
@@ -3973,7 +3977,7 @@
                                                                                    [ ( "message"
                                                                                      , TVar
                                                                                          (TV
-                                                                                            "a"
+                                                                                            "f_0"
                                                                                             Star)
                                                                                      )
                                                                                    ])

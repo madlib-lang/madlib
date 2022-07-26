@@ -4,15 +4,15 @@ import IOError from "IOError"
 
 import { mapWithIndex } from "List"
 import { equals, when } from "Function"
-import { split, join } from "String"
+import { split, join, isEmpty } from "String"
 
 END_COLOR = "\x1b[0m"
 
 colorize :: String -> String -> String
-export colorize = (color, v) => color ++ v ++ END_COLOR
+colorize = (color, v) => color ++ v ++ END_COLOR
 
 uncolorize :: String -> String
-export uncolorize = (v) => END_COLOR ++ v
+uncolorize = (v) => END_COLOR ++ v
 
 // via https://en.wikipedia.org/wiki/ANSI_escape_code
 
@@ -111,9 +111,10 @@ export light = {
   white: ansiColor([ansi.FGBrightWhite, ansi.BGWhite]),
 }
 
+
 prettyCase :: (String -> String) -> String -> String
 prettyCase = (color, str) => pipe(
-  (x) => x ? x : "",
+  (x) => isEmpty(x) ? x : "",
   split(" "),
   mapWithIndex((x, i) => when(
     (_) => equals(i, 0),
@@ -123,13 +124,13 @@ prettyCase = (color, str) => pipe(
   (x) => x ++ "\n\t"
 )(str)
 
+
 colortrace :: Inspect a => (String -> String) -> String -> a -> a
-export colortrace = (fn, v, a) => {
-  return IO.trace(
-    prettyCase(fn, v),
-    a
-  )
-}
+export colortrace = (fn, v, a) => trace(
+  prettyCase(fn, v),
+  a
+)
+
 
 export red = text.red
 export green = text.green
