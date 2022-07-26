@@ -50,8 +50,15 @@ computeRootPath path =
 
 cleanRelativePath :: FilePath -> FilePath
 cleanRelativePath path = case normalise path of
-  '/' : xs -> '/' : xs
-  or       -> "./" <> or
+  '/' : xs ->
+    '/' : xs
+
+  -- Windows absolute path
+  l : ':' : '\\' : xs ->
+    l : ':' : '\\' : xs
+
+  or       ->
+    "./" <> or
 
 
 resolveAbsoluteSrcPath :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
