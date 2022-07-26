@@ -1,10 +1,21 @@
 import {} from "Applicative"
 
+/**
+ * @since 0.0.8
+ */
 interface Applicative m => Monad m {
   of :: a -> m a
   chain :: (a -> m b) -> m a -> m b
 }
 
+
+/**
+ * chains two monads
+ *
+ * @since 0.0.8
+ * @example
+ * chain2((a, b) => of(a + b), Just(1), Just(3)) // Just(4)
+ */
 chain2 :: Monad m => (a -> b -> m c) -> m a -> m b -> m c
 chain2 = (f, ma, mb) => chain(
   (a) => chain(
@@ -14,5 +25,13 @@ chain2 = (f, ma, mb) => chain(
   ma
 )
 
+/**
+ * chains two monads and returns the first one, discarding the
+ * value from the second one.
+ *
+ * @since 0.0.8
+ * @example
+ * andDo(Just(3), Just(4)) // Just(3)
+ */
 andDo :: Monad m => m b -> m a -> m b
 export andDo = (b, a) => chain((_) => b, a)

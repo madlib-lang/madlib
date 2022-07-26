@@ -243,6 +243,12 @@ tryRecovery = (validation) => where(validation) {
 }
 
 
+doWhen :: Monad m => Boolean -> m b -> m {}
+doWhen = (cond, m) => cond
+  ? of({})
+  : andDo(of({}), m)
+
+
 runPostInstallHook :: Boolean -> MadlibDotJson -> a -> Wish {} a
 runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
   .hooks,
@@ -250,7 +256,9 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
   where {
     Just(script) =>
       do {
+        _ <- doWhen(!isMainPackage, Process.exec(`cd madlib_modules/${madlibDotJson.name}`))
         _ <- Process.exec(script)
+        _ <- doWhen(!isMainPackage, Process.exec("cd ../.."))
         IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
         return of({})
       }

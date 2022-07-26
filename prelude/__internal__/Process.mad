@@ -1,10 +1,4 @@
-#iftarget js
-
 import type { Maybe } from "Maybe"
-
-#endif
-
-import { Just } from "Maybe"
 import Wish from "Wish"
 import Dictionary from "Dictionary"
 import String from "String"
@@ -12,7 +6,6 @@ import List from "List"
 
 
 // exit code, stdout, stderr
-// export type CommandResult = CommandResult(Integer, String, String)
 export alias CommandResult = {
   exitCode :: Integer,
   stdout :: String,
@@ -27,8 +20,6 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
 })
 
 #iftarget js
-
-import { Nothing } from "Maybe"
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
@@ -64,14 +55,6 @@ Argv :: List String
 export Argv = #- makeArgs() -#
 
 
-getEnv :: String -> Maybe String
-export getEnv = (name) => (#- {
-  const envVar = process.env[name];
-  return envVar === undefined ? Nothing : Just(envVar)
-} -#)
-
-
-
 #-
 const buildEnvImpl = (dict) => {
   let list = {}
@@ -83,11 +66,11 @@ const buildEnvImpl = (dict) => {
 }
 -#
 
-buildEnv :: Comparable a => Dictionary a String
-buildEnv = extern "buildEnvImpl"
+envFFI :: Comparable a => Dictionary a String
+envFFI = extern "buildEnvImpl"
 
 Env :: Dictionary String String
-Env = buildEnv
+export Env = envFFI
 
 
 getCurrentPath :: Wish.Wish String String
@@ -98,6 +81,7 @@ getExecutablePath :: Wish.Wish String String
 export getExecutablePath = of(#- process.argv[1] -#)
 
 #elseif llvm
+import { Just } from "Maybe"
 
 getArgsFFI :: {} -> List String
 getArgsFFI = extern "madlib__process__internal__getArgs"
@@ -138,3 +122,6 @@ export exec = (command) => Wish.Wish((bad, good) => {
 })
 
 #endif
+
+getEnv :: String -> Maybe String
+export getEnv = (name) => Dictionary.get(name, Env)

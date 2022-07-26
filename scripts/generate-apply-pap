@@ -1,0 +1,6 @@
+madlib compile --target llvm -i ./scripts/GenApplyPap.mad -o ./build/gen-apply-pap
+
+MAX_ARITY=30
+
+./build/gen-apply-pap $MAX_ARITY CPP > runtime/src/apply-pap.cpp
+./build/gen-apply-pap $MAX_ARITY HPP > runtime/src/apply-pap.hpp

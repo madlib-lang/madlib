@@ -5,11 +5,21 @@ import List from "List"
 import String from "String"
 import Process from "Process"
 import { Just, Nothing } from "Maybe"
-// import Date from "Date"
+import Date from "Date"
+import { fst, snd } from "Tuple"
 
 
-FILE_HEADER =
-`#include <gc.h>
+dateComment :: String
+dateComment = pipe(
+  Date.toISOString,
+  (dateString) => #[String.slice(0, 10, dateString), String.slice(11, 19, dateString)],
+  (timeInfo) => `// generated automatically on the ${fst(timeInfo)} at ${snd(timeInfo)} UTC`
+)(Date.now())
+
+
+CPP_FILE_HEADER =
+`${dateComment}
+#include <gc.h>
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
@@ -22,7 +32,7 @@ extern "C" {
 #endif
 `
 
-FILE_FOOTER =
+CPP_FILE_FOOTER =
 `#ifdef __cplusplus
 }
 #endif
@@ -62,7 +72,7 @@ OVERLOAD_START =
       int argsLeft = argc - unwrappedPAP->missingArgCount;
 `
 
-OVERLOAD_END = "    } "
+OVERLOAD_END = "    }\n"
 
 UNDERLOAD_START =
 `else {
@@ -76,10 +86,49 @@ UNDERLOAD_START =
 
 UNDERLOAD_END = "  }\n"
 
+
+HPP_FILE_TOP =
+`${dateComment}
+#ifndef APPLY_PAP_H
+#define APPLY_PAP_H
+
+#include <math.h>
+#include <stdint.h>
+
+`
+
+HPP_FILE_BOTTOM =
+`
+typedef struct PAP {
+  void *fn;
+  int32_t arity;
+  int32_t missingArgCount;
+  void *env;
+} PAP_t;
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void *__applyPAP__(void *pap, int32_t argc, ...);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // APPLY_PAP_H
+`
+
+
 generateFnAssignment :: Integer -> String
 generateFnAssignment = (arity) => {
   params = pipe(
+
+    // 
     List.repeat("void *"),
+
+
     String.join(", ")
   )(arity)
 
@@ -93,9 +142,9 @@ makeIndentation = (indent) => String.repeat(' ', indent)
 
 makeArgNamesWithStart :: Integer -> Integer -> List String
 makeArgNamesWithStart = (start, count) => pipe(
-    List.range(start),
-    map((argIndex) => `arg${inspect(argIndex)}`)
-  )(count)
+  List.range(start),
+  map((argIndex) => `arg${inspect(argIndex)}`)
+)(count)
 
 
 makeArgNames :: Integer -> List String
@@ -104,9 +153,9 @@ makeArgNames = makeArgNamesWithStart(1)
 
 makeArgAssignments :: Integer -> List String -> String
 makeArgAssignments = (indent, argNames) => pipe(
-    map((n) => `${makeIndentation(indent)}void *${n} = va_arg(argv, void*);\n`),
-    List.reduce(mconcat, "")
-  )(argNames)
+  map((n) => `${makeIndentation(indent)}void *${n} = va_arg(argv, void*);\n`),
+  List.reduce(mconcat, "")
+)(argNames)
 
 
 makeFunctionCall :: String -> List String -> String
@@ -256,9 +305,9 @@ generateUnderloadCases = (maxArity) => {
 }
 
 
-generateApplyPAP :: Integer -> {}
-generateApplyPAP = (maxArity) => {
-  IO.put(FILE_HEADER)
+generateCppFile :: Integer -> {}
+generateCppFile = (maxArity) => {
+  IO.put(CPP_FILE_HEADER)
   IO.put(FUNCTION_START)
   IO.put(KNOWN_CALL_START)
   IO.put(generateKnownCallCases(maxArity))
@@ -270,16 +319,44 @@ generateApplyPAP = (maxArity) => {
   IO.put(generateUnderloadCases(maxArity))
   IO.put(UNDERLOAD_END)
   IO.put(FUNCTION_END)
-  IO.put(FILE_FOOTER)
+  IO.put(CPP_FILE_FOOTER)
 
   return {}
 }
+
+
+generatePAPTypeDefinition :: Integer -> String
+generatePAPTypeDefinition = (arity) => pipe(
+  makeArgNamesWithStart(0),
+  map((argName) => `  void *${argName};\n`),
+  List.reduce(mconcat, ""),
+  (fields) => `typedef struct PAPEnv_${inspect(arity)} {\n${fields}} PAPEnv_${inspect(arity)}_t;\n\n`
+)(arity)
+
+
+generatePAPTypeDefinitions :: Integer -> String
+generatePAPTypeDefinitions = (maxArity) => pipe(
+  List.range(1),
+  map(generatePAPTypeDefinition),
+  List.reduce(mconcat, "")
+)(maxArity + 1)
+
+
+generateHppFile :: Integer -> {}
+generateHppFile = (maxArity) => {
+  IO.put(HPP_FILE_TOP)
+  IO.put(generatePAPTypeDefinitions(maxArity + 1))
+  IO.put(HPP_FILE_BOTTOM)
+
+  return {}
+}
+
 
 where (Process.Argv) {
   [_, arityStr, "CPP"] =>
     where (scan(arityStr)) {
       Just(arity) =>
-        generateApplyPAP(arity)
+        generateCppFile(arity)
 
       Nothing =>
         IO.putLine("ARITY needs to be an integer")
@@ -288,7 +365,7 @@ where (Process.Argv) {
   [_, arityStr, "HPP"] =>
     where ((scan(arityStr) :: Maybe Integer)) {
       Just(arity) =>
-        IO.putLine("Not implemented")
+        generateHppFile(arity)
 
       Nothing =>
         IO.putLine("ARITY needs to be an integer")
@@ -298,6 +375,8 @@ where (Process.Argv) {
     IO.putLine("You must pass two args, the kind of file and the max arity!")
     IO.putLine("Usage:")
     IO.putLine("GenApplyPap ARITY FILE_TYPE")
+    IO.putLine("ARITY - must be an integer")
+    IO.putLine("FILE_TYPE - must be 'CPP' or 'HPP'")
     return {}
   }
 }
