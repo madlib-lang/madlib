@@ -139,11 +139,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...);
 generateFnAssignment :: Integer -> String
 generateFnAssignment = (arity) => {
   params = pipe(
-
-    // 
     List.repeat("void *"),
-
-
     String.join(", ")
   )(arity)
 
@@ -335,5 +331,3 @@ where (Process.Argv) {
     return {}
   }
 }
-
-
