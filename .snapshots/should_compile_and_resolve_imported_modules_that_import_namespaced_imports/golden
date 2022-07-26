@@ -98,13 +98,13 @@ Inspect['Body_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => (
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodya'] = {};
-Inspect['Record_bodya']['inspect'] = () => (Inspect_y76) => (__$a__ => `{ ` + `body: ` + Inspect_y76.inspect()(__$a__.body) + ` }`);
+Inspect['Record_bodyf_0'] = {};
+Inspect['Record_bodyf_0']['inspect'] = () => (Inspect_y76) => (__$a__ => `{ ` + `body: ` + Inspect_y76.inspect()(__$a__.body) + ` }`);
 Inspect['Response_d206b5c3b3648903ef6233d5061d1089'] = {};
 Inspect['Response_d206b5c3b3648903ef6233d5061d1089']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Response" && true) {
     let a0 = __x__.__args[0];
-    return `Response(` + Inspect.Record_bodya.inspect()(Inspect.Body_d206b5c3b3648903ef6233d5061d1089)(a0) + `)`;
+    return `Response(` + Inspect.Record_bodyf_0.inspect()(Inspect.Body_d206b5c3b3648903ef6233d5061d1089)(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;

@@ -532,8 +532,8 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
   (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s1 `compose` s2) env) falsy
 
-  s4                          <- contextualUnify env cond tcond tBool
-  s5                          <- contextualUnify env falsy tfalsy ttruthy
+  s4                          <- contextualUnify env falsy tfalsy ttruthy
+  s5                          <- contextualUnify env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
