@@ -64,8 +64,8 @@ buildOptions entrypoint pathUtils optimized coverage =
   Options
     { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = ("./"++) . normalise }
     , optEntrypoint = entrypoint
-    , optRootPath = "./"
-    , optOutputPath = "./build"
+    , optRootPath = "/"
+    , optOutputPath = "/build"
     , optTarget = TNode
     , optOptimized = optimized
     , optBundle = False

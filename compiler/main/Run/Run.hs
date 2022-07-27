@@ -19,6 +19,7 @@ import qualified Utils.PathUtils               as PathUtils
 import           Run.Target
 import           Run.Compile
 import           Run.CommandLine
+import           Utils.Path (computeTargetPath)
 
 
 runRun :: FilePath -> [String] -> IO ()
@@ -54,7 +55,10 @@ runRunPackage package args =
                                 }
 
                   runCompilation compileCommand False
-                  let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
+                  entrypoint <- canonicalizePath exePath
+                  rootPath <- canonicalizePath "./"
+                  outputPath <- canonicalizePath baseRunFolder
+                  let target = computeTargetPath outputPath rootPath entrypoint
                   callCommand $ "node " <> target <> " " <> unwords args
 
           _ -> putStrLn "That package doesn't have any executable!"

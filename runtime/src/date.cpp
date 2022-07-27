@@ -116,29 +116,3 @@ int64_t madlib__date__fromDateInfo(madlib__record__Record_t *dateInfo) {
 #ifdef __cplusplus
 }
 #endif
-
-
-// madlib__record__Record_t *madlib__date__now() {
-//   struct timeval currentTime{};
-//   gettimeofday(&currentTime, nullptr);
-//   time_t epochMilliseconds = (currentTime.tv_sec * 1000) + (currentTime.tv_usec / 1000);
-//   time_t epochSeconds = currentTime.tv_sec;
-//   struct tm timeInfo = *gmtime(&epochSeconds);
-
-//   int64_t milliseconds = epochMilliseconds - epochSeconds * 1000;
-//   int64_t seconds = timeInfo.tm_sec;
-//   int64_t minutes = timeInfo.tm_min;
-//   int64_t hours = timeInfo.tm_hour;
-//   int64_t day = timeInfo.tm_mday;
-//   int64_t month = timeInfo.tm_mon + 1;
-//   int64_t year = timeInfo.tm_year;
-
-//   madlib__record__Record_t *result = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
-
-//   madlib__record__Field_t *millisecondField = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-//   millisecondField->name = (char*) "ms";
-//   millisecondField->value = (int64_t*) milliseconds;
-
-
-//   return result;
-// }

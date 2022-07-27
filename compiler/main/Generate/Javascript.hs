@@ -1133,12 +1133,16 @@ generateInternalsModule options = do
 computeInternalsPath :: FilePath -> FilePath -> FilePath
 computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
   Just s ->
-    let dirs = splitDirectories (takeDirectory s)
+    let dirDepth = case s :: String of
+                first : next | first == '/' || first == '\\' ->
+                  length $ splitDirectories (takeDirectory ('/' : next))
+                or ->
+                  1 + length (splitDirectories (takeDirectory or))
         minus
           | joinPath ["prelude", "__internal__"] `isInfixOf` astPath = if joinPath ["prelude", "__internal__"] `isInfixOf` rootPath then 0 else 2
           | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
           | otherwise = 1
-        dirLength = length dirs - minus
+        dirLength = dirDepth - minus
     in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
 
   Nothing ->

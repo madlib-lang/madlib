@@ -8,10 +8,10 @@
 {-# HLINT ignore "Use guards" #-}
 {-# HLINT ignore "Use let" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# HLINT ignore "Eta reduce" #-}
 module Generate.LLVM.LLVM where
 
 
-import           Data.ByteString              as ByteString
 import           Data.ByteString.Short        as ShortByteString
 import qualified Data.Map                     as Map
 import qualified Data.Set                     as Set

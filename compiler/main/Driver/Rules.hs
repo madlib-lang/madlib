@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# LANGUAGE LambdaCase #-}
 module Driver.Rules where
 
 import qualified Rock
@@ -303,14 +302,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       return ((), (globalWarnings, mempty))
 
-  StaticLibPathsToLink path -> nonInput $ do
-    madlibModulesExist <- liftIO $ doesFileExist "madlib_modules"
+  StaticLibPathsToLink _ -> nonInput $ do
+    madlibModulesExist <- liftIO $ doesPathExist "madlib_modules"
     modulePaths <-
       if madlibModulesExist then
         liftIO $ listDirectory "madlib_modules"
       else
         return []
-    let allMadlibDotJsonPaths = "madlib.json" : ((\p -> joinPath [p, "madlib.json"]) <$> modulePaths)
+    let allMadlibDotJsonPaths = "madlib.json" : ((\p -> joinPath ["madlib_modules", p, "madlib.json"]) <$> modulePaths)
     staticLibPaths <- liftIO $ concat <$>
       mapM
         (\p -> do
