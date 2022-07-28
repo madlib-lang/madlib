@@ -42,6 +42,13 @@ data Core a
   | Untyped Area [Metadata] a
   deriving(Eq, Show, Ord, Generic, Hashable)
 
+-- instance Show a => Show (Core a) where
+--   show x = case x of
+--     Typed _ _ _ a ->
+--       show a
+--     Untyped _ _ a ->
+--       show a
+
 data AST =
   AST
     { aimports    :: [Import]

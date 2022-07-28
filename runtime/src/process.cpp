@@ -8,6 +8,8 @@
 #include "event-loop.hpp"
 #include "string.hpp"
 #include "tuple.hpp"
+#include <unistd.h>
+#include <limits.h>
 
 #ifndef __MINGW32__
   #include <glob.h>
@@ -101,6 +103,17 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
   return envItems;
 }
 
+char *madlib__process__internal__getCurrentPath() {
+  char cwd[PATH_MAX];
+
+  if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    char *res = (char*) GC_MALLOC(strlen(cwd) + 1);
+    memcpy(res, cwd, strlen(cwd));
+    return res;
+  } else {
+    return (char*)"";
+  }
+}
 
 
 // exec

@@ -93,7 +93,7 @@ export test = (description, testImpl) => pipe(
   (run) => run(description),
   map((_) => IO.green(`${CHAR_CHECK} ${description}\n`)),
   Wish.mapRej(
-    where{
+    where {
       AssertionError(expected, actual) => 
         IO.red(`${CHAR_CROSS} ${description}`)
         ++ "\n  expected:\n    "
@@ -101,6 +101,15 @@ export test = (description, testImpl) => pipe(
         ++ "\n  actual:\n    "
         ++ IO.red(inspect(actual))
         ++ "\n"
+
+      ErrorWithMessage(message) =>
+        IO.red(`${CHAR_CROSS} ${message}\n`)
+
+      Error(err) =>
+        IO.red(`${CHAR_CROSS} ${inspect(err)}`)
+
+      NotImplemented =>
+        IO.red(`${CHAR_CROSS} not implemented`)
     }
   )
 )(testImpl)

@@ -286,7 +286,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       liftIO $ Javascript.generateInternalsModule options
 
       when (optBundle options) $ do
-        let mainOutputPath = computeTargetPath (takeDirectory (optOutputPath options)) (optRootPath options) (optEntrypoint options)
+        let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
         result <- liftIO $ Javascript.runBundle mainOutputPath
         case result of
           Left err ->

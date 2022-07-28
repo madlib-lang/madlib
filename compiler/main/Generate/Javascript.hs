@@ -1069,7 +1069,7 @@ rollupNotFoundMessage = unlines
 
 runBundle :: FilePath -> IO (Either String (String, String))
 runBundle entrypointCompiledPath = do
-  putStrLn "Bundling.."
+  putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
   rollupPath        <- try $ getEnv "ROLLUP_PATH"
   rollupPathChecked <- case (rollupPath :: Either IOError String) of
     Left _ -> do

@@ -12,6 +12,7 @@ export alias CommandResult = {
   stderr :: String  
 }
 
+
 makeCommandResult :: Integer -> String -> String -> CommandResult
 makeCommandResult = (exitCode, stdout, stderr) => ({
   exitCode,
@@ -21,20 +22,35 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
 
 #iftarget js
 
-#- import { exec as execJs, spawn as spawnJs } from "child_process" -#
+#- import { spawn as spawnJs } from "child_process" -#
 
+// TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
+// to match the api from libuv and node
 exec :: String -> Wish.Wish CommandResult CommandResult
 export exec = (command) => Wish.Wish((bad, good) => #- {
-    execJs(command, (err, stdout, stderr) => {
-      if (err) {
-        bad(makeCommandResult(err.code)(stdout)(stderr))
-      }
-      else {
-        good(makeCommandResult(0)(stdout)(stderr))
-      }
-    })
-  }
--#)
+  let stdoutChunks = []
+  let stderrChunks = []
+  const proc = spawnJs(command, [], { shell: true })
+
+  proc.stdout.on("data", (chunk) => {
+    stdoutChunks.push(Buffer.from(chunk, 'binary'));
+  })
+
+  proc.stderr.on("data", (chunk) => {
+    stderrChunks.push(Buffer.from(chunk, 'binary'));
+  })
+
+  proc.on('close', (code) => {
+    const stdoutBuffer = Buffer.concat(stdoutChunks)
+    const stderrBuffer = Buffer.concat(stderrChunks)
+
+    if (code === 0) {
+      good(makeCommandResult(0)(stdoutBuffer.toString())(stderrBuffer.toString()))
+    } else {
+      bad(makeCommandResult(code)(stdoutBuffer.toString())(stderrBuffer.toString()))
+    }
+  });
+} -#)
 
 #-
 const makeArgs = () => {
@@ -73,7 +89,7 @@ Env :: Dictionary String String
 export Env = envFFI
 
 
-getCurrentPath :: Wish.Wish String String
+getCurrentPath :: Wish.Wish a String
 export getCurrentPath = of(#- process.cwd() -#)
 
 
@@ -82,6 +98,7 @@ export getExecutablePath = of(#- process.argv[1] -#)
 
 #elseif llvm
 import { Just } from "Maybe"
+import { Wish } from "Wish"
 
 getArgsFFI :: {} -> List String
 getArgsFFI = extern "madlib__process__internal__getArgs"
@@ -99,10 +116,19 @@ Env :: Dictionary String String
 export Env = Dictionary.fromList(getEnvFFI({}))
 
 
+getCurrentPathFFI :: {} -> String
+getCurrentPathFFI = extern "madlib__process__internal__getCurrentPath"
+
+getCurrentPath :: Wish a String
+export getCurrentPath = Wish((_, good) => good(getCurrentPathFFI()))
+
+
 execFFI :: String -> List String -> (Integer -> String -> String -> {}) -> {}
 execFFI = extern "madlib__process__exec"
 
 
+// TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
+// to match the api from libuv and node
 exec :: String -> Wish.Wish CommandResult CommandResult
 export exec = (command) => Wish.Wish((bad, good) => {
   commandSplit = String.words(command)

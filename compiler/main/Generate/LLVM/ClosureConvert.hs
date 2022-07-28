@@ -149,40 +149,14 @@ findFreeVars env exp = do
     Typed _ _ _ (Definition params body) -> do
       vars <- findFreeVarsInBody env body
       return $ filter (\(varName, _) -> varName `notElem` (getValue <$> params)) vars
-      where
-        findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
-        findFreeVarsInBody env exps = case exps of
-          (e : es) -> case e of
-            Typed qt area _ (Assignment name exp) -> do
-              fvs <-
-                if isFunctionType (getQualified qt) then
-                  findFreeVars (addGlobalFreeVar name env) exp
-                else
-                  findFreeVars env exp
-              -- fvs     <- findFreeVars (addGlobalFreeVar name env) exp
-              -- nextFVs <- findFreeVarsInBody env es
-              nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
-              if name `elem` freeVarExclusion env then
-                return $ fvs ++ nextFVs ++ [(name, Typed qt area [] (Var name False))]
-              else
-                return $ fvs ++ nextFVs
-
-            _ -> do
-              fvs     <- findFreeVars env e
-              nextFVs <- findFreeVarsInBody env es
-              return $ fvs ++ nextFVs
-
-          [] ->
-            return []
 
     Typed _ _ _ (Call f args) -> do
       fFreeVars   <- findFreeVars env f
       argFreeVars <- concat <$> mapM (findFreeVars env) args
       return $ fFreeVars ++ argFreeVars
 
-    Typed _ _ _ (Do exps) -> do
-      vars <- mapM (findFreeVars env) exps
-      return $ concat vars
+    Typed _ _ _ (Do exps) ->
+      findFreeVarsInBody env exps
 
     Typed _ _ _ (If cond truthy falsy) -> do
       condFreeVars   <- findFreeVars env cond
@@ -286,6 +260,33 @@ findFreeVars env exp = do
   let fvs' = M.toList $ M.fromList fvs
 
   return $ filter (\(varName, _) -> varName `notElem` globalVars || varName `elem` freeVarExclusion env) fvs'
+
+
+findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
+findFreeVarsInBody env exps = case exps of
+  (e : es) -> case e of
+    Typed qt area _ (Assignment name exp) -> do
+      fvs <-
+        if isFunctionType (getQualified qt) then
+          findFreeVars (addGlobalFreeVar name env) exp
+        else
+          findFreeVars env exp
+      -- fvs     <- findFreeVars (addGlobalFreeVar name env) exp
+      -- nextFVs <- findFreeVarsInBody env es
+      nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
+      if name `elem` freeVarExclusion env then
+        return $ fvs ++ nextFVs ++ [(name, Typed qt area [] (Var name False))]
+      else
+        return $ fvs ++ nextFVs
+
+    _ -> do
+      fvs     <- findFreeVars env e
+      nextFVs <- findFreeVarsInBody env es
+      return $ fvs ++ nextFVs
+
+  [] ->
+    return []
+
 
 findFreeVarsInBranches :: Env -> [Is] -> Convert [(String, Exp)]
 findFreeVarsInBranches env iss = case iss of

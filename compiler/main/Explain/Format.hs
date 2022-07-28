@@ -339,6 +339,10 @@ formatTypeError json err = case err of
               "add the missing '" <> show (expected - actual) <> "' argument(s)"
          )
 
+  ImportNotFound importName ->
+    "You tried to import the module '" <> importName <> "', but it could not be found\n\n"
+    <> "Hint: verify that you don't have a typo."
+
   _ -> ppShow err
 
 

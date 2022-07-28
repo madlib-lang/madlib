@@ -22,20 +22,12 @@ import           System.Directory               ( canonicalizePath
                                                 , getCurrentDirectory
                                                 )
 import           Data.List                      ( isSuffixOf )
-import           Text.Show.Pretty
-
-import           Error.Error
-import           Error.Context
 import qualified Parse.DocString.Grammar       as DocString
 import qualified Parse.DocString.DocString     as DocString
-import           Parse.Madlib.AST
 import qualified Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
-import           Infer.Infer
-import           Infer.AST
 import qualified AST.Solved                    as Slv
 import           Generate.Documentation
-import           Utils.Path
 import           Run.Target
 import           Run.Utils
 import qualified Utils.PathUtils as PathUtils
@@ -64,11 +56,13 @@ runTask options ioRef task =
 
 generateDocData :: FilePath -> [FilePath] -> IO [(Slv.AST, Slv.AST, String, [DocString.DocString])]
 generateDocData rootFolder paths = do
+  rootPath <- canonicalizePath "./"
+
   let jsOptions =
         Options
           { optPathUtils = defaultPathUtils
           , optEntrypoint = ""
-          , optRootPath = "./"
+          , optRootPath = rootPath
           , optOutputPath = "./"
           , optTarget = TNode
           , optOptimized = False
@@ -81,7 +75,7 @@ generateDocData rootFolder paths = do
         Options
           { optPathUtils = defaultPathUtils
           , optEntrypoint = ""
-          , optRootPath = "./"
+          , optRootPath = rootPath
           , optOutputPath = "./"
           , optTarget = TLLVM
           , optOptimized = False
@@ -90,13 +84,17 @@ generateDocData rootFolder paths = do
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
           }
-  memoVar <- newIORef mempty
+  jsMemoVar <- newIORef mempty
+  llvmMemoVar <- newIORef mempty
 
   forM paths $ \path -> do
     canonicalEntrypoint <- canonicalizePath path
-    (jsAst, _)          <- runTask jsOptions memoVar (Rock.fetch $ Query.SolvedASTWithEnv path)
-    (llvmAst, _)        <- runTask llvmOptions memoVar (Rock.fetch $ Query.SolvedASTWithEnv path)
-    docStrings          <- runTask llvmOptions memoVar (Rock.fetch $ Query.DocStrings path)
+    let jsOptions' = jsOptions { optEntrypoint = canonicalEntrypoint }
+    let llvmOptions' = llvmOptions { optEntrypoint = canonicalEntrypoint }
+
+    (jsAst, _)          <- runTask jsOptions' jsMemoVar (Rock.fetch $ Query.SolvedASTWithEnv canonicalEntrypoint)
+    (llvmAst, _)        <- runTask llvmOptions' llvmMemoVar (Rock.fetch $ Query.SolvedASTWithEnv canonicalEntrypoint)
+    docStrings          <- runTask llvmOptions' llvmMemoVar (Rock.fetch $ Query.DocStrings canonicalEntrypoint)
     let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint 
     return (jsAst, llvmAst, moduleName, docStrings)
 

@@ -20,6 +20,13 @@ data Solved a
   | Untyped Area a
   deriving(Eq, Show, Ord, Generic, Hashable)
 
+-- instance Show a => Show (Solved a) where
+--   show x = case x of
+--     Typed _ _ a ->
+--       show a
+--     Untyped _ a ->
+--       show a
+
 
 data AST =
   AST
