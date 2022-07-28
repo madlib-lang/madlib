@@ -131,6 +131,51 @@ a {
   font-style: italic;
 }
 
+.target-selector {
+  display: inline-block;
+  position: absolute;
+  right: 60px;
+  top: 20%;
+  height: 60%;
+}
+
+.target-selector__button {
+  height: 100%;
+  border: 0;
+  padding: 0 10px;
+  color: #939393;
+  background: #cfcfcf;
+  transition-timing-function: ease-in-out;
+  transition: background 0.6s, color 0.6s;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+.target-selector__button:nth-child(1) {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+.target-selector__button:nth-child(2) {
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.target-selector__button:not(.target-selector__button--selected):hover {
+  transition: background 0.3s, color 0.3s;
+  color: white;
+  background: #5fbee4;
+  box-shadow: inset 0px 0px 5px 1px rgba(255, 255, 255, 0.41);
+}
+.target-selector__button--selected {
+  color: #0c96cc;
+  background: white;
+  box-shadow: inset 0px 0px 5px 0px rgba(0, 0, 0, 0.4);
+  cursor: initial;
+}
+
 .definition {
   font-size: 16px;
   margin: 0 0 30px 0;
@@ -143,7 +188,12 @@ a {
   position: relative;
 }
 
+.definition--greyed-out .definition__etiquette {
+  background: #cfcfcf;
+}
+
 .definition__etiquette {
+  transition: background 0.3s, color 0.3s;
   position: absolute;
   left: -2px;
   top: -2px;
@@ -156,14 +206,44 @@ a {
   font-size: 14px;
 }
 
+.definition--greyed-out .definition__title {
+  color: #808080;
+}
+
+.definition__target-tag {
+  transition: background 0.3s, color 0.3s;
+  color: #0c96cc;
+  background-color: #bce5f5;
+  font-size: 12px;
+  margin-right: 10px;
+  padding: 5px;
+  border-radius: 5px;
+  vertical-align: middle;
+}
+.definition__target-tag--warning {
+  background-color: #ffeded;
+  color: #ee6969;
+}
+
 .definition__title {
+  transition: background 0.3s, color 0.3s;
   font-size: 30px;
   font-weight: 700;
   margin-top: 0;
   margin-bottom: 10px;
 }
 
+.definition__title-span {
+  margin-right: 15px;
+}
+
+.definition--greyed-out .definition__module {
+  color: #c5c5c5;
+  background: #f0f0f0;
+}
+
 .definition__module {
+  transition: background 0.3s, color 0.3s;
   display: inline;
   padding: 0.2em 0.6em 0.3em;
   font-size: 75%;
@@ -268,6 +348,7 @@ a {
 }
 
 .breadcrumbs__separator {
+  display: inline-block;
   margin: 0 10px;
 }
 
