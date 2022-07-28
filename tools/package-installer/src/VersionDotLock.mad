@@ -20,7 +20,8 @@ export alias PublicAPI = {
 export alias VersionDotLock = {
   buildHash :: String,
   versionHash :: String,
-  api :: PublicAPI
+  jsApi :: PublicAPI,
+  llvmApi :: PublicAPI
 }
 
 
@@ -37,11 +38,12 @@ apiParser = J.map5(
 
 
 parser :: J.Parser VersionDotLock
-parser = J.map3(
-  (buildHash, versionHash, api) => ({ buildHash, versionHash, api }),
+parser = J.map4(
+  (buildHash, versionHash, jsApi, llvmApi) => ({ buildHash, versionHash, jsApi, llvmApi }),
   J.field("buildHash", J.string),
   J.field("versionHash", J.string),
-  J.field("api", apiParser)
+  J.field("jsApi", apiParser),
+  J.field("llvmApi", apiParser)
 )
 
 

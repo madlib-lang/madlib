@@ -22,9 +22,15 @@ jobs:
           cd .github/workflows
           madlib install
 
+      # TODO: fix maddoc cli and revert this
+      # - run: |
+      #     cd .github/workflows
+      #     madlib run MadDocCli ../../prelude/__internal__
+
       - run: |
           cd .github/workflows
-          madlib run MadDocCli ../../prelude/__internal__
+          madlib compile --bundle -i madlib_modules/MadDocCli/src/Main.mad -o build/src/maddoc-cli.js
+          node build/src/maddoc-cli.js ../../prelude/__internal__
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@4.1.1
