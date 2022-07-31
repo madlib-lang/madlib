@@ -166,6 +166,7 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
     else do
       formattedErrors <- mapM (Explain.format rf False) errors
       putStrLn $ List.intercalate "\n\n\n" formattedErrors
+      Exit.exitFailure
 
 
 generateTestSuiteName :: Int -> String

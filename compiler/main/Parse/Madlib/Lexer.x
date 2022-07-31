@@ -181,10 +181,10 @@ toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = True, newSyntax = True } defaultExecOpt
 
 jsxTagOpen :: Regex
-jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{(.|\n|\t)*}))*[ \n\t]*>"
+jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{(.|\n|\t)*}))?)*[ \n\t]*>"
 
 jsxTagSingle :: Regex
-jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{(.|\n|\t)*}))*[ \n\t]*\\/>"
+jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{([^>]|\n|\t)*}))?)*[ \n\t]*\\/>"
 
 jsxTagClose :: Regex
 jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+[ \n\t]*>"

@@ -2,14 +2,17 @@
 
 # copy binary
 # deleting first is needed as overwriting weirdly copies a corrupted executable at times ( at least on arm64 macos )
-rm ./pkg/node_modules/binary-install/bin/madlib
-cp "$(stack path --dist-dir)/build/madlib/madlib" ./pkg/node_modules/binary-install/bin/madlib
+rm ./pkg/node_modules/binary-install/node_modules/.bin/madlib
+cp "$(stack path --dist-dir)/build/madlib/madlib" ./pkg/node_modules/binary-install/node_modules/.bin/madlib
 
 # copy runtime
-cp -R ./runtime ./pkg/node_modules/binary-install/bin/
+cp -R ./runtime ./pkg/node_modules/binary-install/node_modules/.bin/
 
 # clean Prelude
 rm -r pkg/node_modules/binary-install/bin/prelude/__internal__ 2> /dev/null
 
 # copy tools
-cp tools/package-installer/dist/package-installer.js pkg/node_modules/binary-install/bin
+cp tools/package-installer/dist/package-installer.js pkg/node_modules/binary-install/node_modules/.bin/
+
+# copy prelude
+cp -R prelude ./pkg/node_modules/binary-install/node_modules/.bin/

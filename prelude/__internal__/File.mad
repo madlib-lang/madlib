@@ -43,7 +43,7 @@ export writeBytes = (path, bytes) =>
 
 read :: String -> Wish IOError String
 export read = (path) => Wish((bad, good) => #- {
-  fs.readFile(path, "binary", (err, d) => {
+  fs.readFile(path, "utf8", (err, d) => {
     if (err) {
       bad(IOError.UnknownError);
     }

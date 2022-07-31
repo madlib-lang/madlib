@@ -138,6 +138,7 @@ void madlib__file__read(char *filepath, PAP_t *callback) {
   ((ReadData_t *)readReq->data)->readRequest = readReq;
   ((ReadData_t *)readReq->data)->openRequest = openReq;
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
+  ((ReadData_t *)readReq->data)->fileContent = (char*)"";
   ((ReadData_t *)readReq->data)->currentSize = 0;
   ((ReadData_t *)readReq->data)->readBytes = false;
 
