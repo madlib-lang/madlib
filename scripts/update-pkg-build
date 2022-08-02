@@ -9,7 +9,7 @@ cp "$(stack path --dist-dir)/build/madlib/madlib" ./pkg/node_modules/binary-inst
 cp -R ./runtime ./pkg/node_modules/binary-install/node_modules/.bin/
 
 # clean Prelude
-rm -r pkg/node_modules/binary-install/bin/prelude/__internal__ 2> /dev/null
+rm -r ./pkg/node_modules/binary-install/node_modules/.bin/prelude/__internal__ 2> /dev/null
 
 # copy tools
 cp tools/package-installer/dist/package-installer.js pkg/node_modules/binary-install/node_modules/.bin/

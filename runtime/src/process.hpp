@@ -10,7 +10,7 @@ extern "C" {
 
 void __main__init__(int argc, char **argv);
 
-void madlib__process__internal__registerArgs();
+void madlib__process__internal__initExtra();
 
 madlib__list__Node_t *madlib__process__internal__getArgs();
 

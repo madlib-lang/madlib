@@ -16,6 +16,8 @@ double madlib__math__sqrt(double x);
 
 double madlib__math__pow(double a, double b);
 
+double madlib__math__random();
+
 #ifdef __cplusplus
 }
 #endif

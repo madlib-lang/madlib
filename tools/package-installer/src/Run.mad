@@ -253,6 +253,7 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
         scriptPrefix = isMainPackage
           ? ""
           : `cd madlib_modules/${madlibDotJson.name} && `
+        IO.putLine(`Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`)
         _ <- Process.exec(`${scriptPrefix}${script}`)
         IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
         return of({})

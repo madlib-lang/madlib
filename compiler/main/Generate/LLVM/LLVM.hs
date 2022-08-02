@@ -169,9 +169,9 @@ mainInit :: Operand
 mainInit =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "__main__init__"))
 
-initArgs :: Operand
-initArgs =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__registerArgs"))
+initExtra :: Operand
+initExtra =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__initExtra"))
 
 initEventLoop :: Operand
 initEventLoop =
@@ -4254,7 +4254,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do
-    extern (AST.mkName "madlib__process__internal__registerArgs") [] Type.void
+    extern (AST.mkName "madlib__process__internal__initExtra") [] Type.void
     extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
     extern (AST.mkName "__initEventLoop__")                       [] Type.void
     extern (AST.mkName "__startEventLoop__")                      [] Type.void
@@ -4265,7 +4265,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
       -- this function starts the runtime with a fresh stack etc
       function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"
-        call initArgs []
+        call initExtra []
         call initEventLoop []
 
         callModuleFunctions currentModulePaths

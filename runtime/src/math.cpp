@@ -26,6 +26,10 @@ double madlib__math__pow(double a, double b) {
   return pow(a, b);
 }
 
+double madlib__math__random() {
+  return (double)rand() / RAND_MAX;
+}
+
 
 #ifdef __cplusplus
 }

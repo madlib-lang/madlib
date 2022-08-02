@@ -448,6 +448,7 @@ void __initEventLoop__() {
   curl_global_init_mem(CURL_GLOBAL_ALL, GC_mallocWrap, GC_freeWrap,
                        GC_reallocWrap, GC_strdupWrap, GC_callocWrap);
   uv_replace_allocator(GC_mallocWrap, GC_reallocWrap, GC_callocWrap, GC_freeWrap);
+
   loop = (uv_loop_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }

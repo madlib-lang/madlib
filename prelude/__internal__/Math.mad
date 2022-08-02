@@ -62,6 +62,9 @@ export floor = (n) => #- Math.floor(n) -#
 pow :: Float -> Float -> Float
 export pow = (a, b) => #- Math.pow(a, b) -#
 
+random :: a -> Float
+export random = #- Math.random -#
+
 #elseif llvm
 
 sqrt :: Float -> Float
@@ -78,6 +81,9 @@ export floor = extern "madlib__math__floor"
 
 pow :: Float -> Float -> Float
 export pow = extern "madlib__math__pow"
+
+random :: a -> Float
+export random = extern "madlib__math__random"
 
 #endif
 

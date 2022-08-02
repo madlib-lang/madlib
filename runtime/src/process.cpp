@@ -10,6 +10,7 @@
 #include "tuple.hpp"
 #include <unistd.h>
 #include <limits.h>
+#include <time.h>
 
 #ifndef __MINGW32__
   #include <glob.h>
@@ -60,9 +61,11 @@ void __main__init__(int argc, char **argv) {
   madlib__stack__init(stackBottom, __main__start__);
 }
 
-void madlib__process__internal__registerArgs() {
+void madlib__process__internal__initExtra() {
   GC_INIT();
   args = madlib__list__empty();
+
+  srand(time(NULL));
 
   for (int i = ARGC - 1; i >= 0; i--) {
     args = madlib__list__push(ARGV[i], args);
@@ -72,8 +75,8 @@ void madlib__process__internal__registerArgs() {
 madlib__list__Node_t *madlib__process__internal__getArgs() { return args; }
 
 madlib__list__Node_t *madlib__process__internal__getEnv() {
-  GC_INIT();
   madlib__list__Node_t *envItems = madlib__list__empty();
+
   char **env = environ;
   for (; *env != NULL; env++) {
     // *env has shape ENV_VAR=VALUE

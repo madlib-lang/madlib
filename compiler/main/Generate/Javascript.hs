@@ -28,6 +28,7 @@ import           Utils.Path                     ( cleanRelativePath
 import           System.FilePath                ( replaceExtension
                                                 , dropFileName
                                                 , joinPath, splitDirectories, takeDirectory, pathSeparator
+                                                , splitPath, takeFileName
                                                 )
 import           Explain.Location
 import           Infer.Type
@@ -60,7 +61,7 @@ initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty, recursionData = Nothing, varsRewritten = M.empty }
 
 allowedJSNames :: [String]
-allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break"]
+allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break", "null"]
 
 generateSafeName :: String -> String
 generateSafeName n =
@@ -1124,33 +1125,22 @@ runBundle entrypointCompiledPath = do
       return $ Left e
 
 
+makeInternalsModuleTargetPath :: FilePath -> FilePath
+makeInternalsModuleTargetPath outputPath =
+  takeDirectoryIfFile outputPath <> (pathSeparator : "__internals__.mjs")
+
+
 generateInternalsModule :: Options -> IO ()
 generateInternalsModule options = do
-  writeFile (takeDirectoryIfFile (optOutputPath options) <> (pathSeparator : "__internals__.mjs"))
+  writeFile (makeInternalsModuleTargetPath (optOutputPath options))
     $ generateInternalsModuleContent (optTarget options) (optOptimized options) (optCoverage options)
 
 
-computeInternalsPath :: FilePath -> FilePath -> FilePath
-computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
-  Just s ->
-    let dirDepth = case s :: String of
-                first : next | first == '/' || first == '\\' ->
-                  length $ splitDirectories (takeDirectory ('/' : next))
-                or ->
-                  1 + length (splitDirectories (takeDirectory or))
-        minus
-          | joinPath ["prelude", "__internal__"] `isInfixOf` astPath = if joinPath ["prelude", "__internal__"] `isInfixOf` rootPath then 0 else 2
-          | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
-          | otherwise = 1
-        dirLength = dirDepth - minus
-    in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
-
-  Nothing ->
-    if joinPath ["prelude", "__internal__"] `isInfixOf` astPath then
-      let dirLength = length $ dropWhile (/= "__internal__") $ splitDirectories (takeDirectory astPath)
-      in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
-    else
-      "./__internals__.mjs"
+computeInternalsRelativePath :: FilePath -> FilePath -> FilePath
+computeInternalsRelativePath outputPath astTargetPath =
+  let internalsPath = makeInternalsModuleTargetPath outputPath
+      parts = splitPath $ fromMaybe "" $ stripPrefix (dropFileName internalsPath) (dropFileName astTargetPath)
+  in  joinPath $ "./" : (".." <$ parts) ++ [takeFileName internalsPath]
 
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
@@ -1158,9 +1148,9 @@ generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ""
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
     let rootPath           = optRootPath options
-        internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
-        entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
         computedOutputPath = computeTargetPath (optOutputPath options) rootPath path
+        internalsPath      = convertWindowsSeparators $ computeInternalsRelativePath (optOutputPath options) computedOutputPath
+        entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
 
     let moduleContent = compile
           initialEnv

@@ -78,8 +78,8 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
 
 
 runCompilationTask :: Bool -> Driver.State CompilationError -> Options -> [FilePath] -> IO ()
-runCompilationTask resetScreen state options invalidatedPaths = do
-  when resetScreen $ do
+runCompilationTask watchMode state options invalidatedPaths = do
+  when watchMode $ do
     clearScreen
     setCursorPosition 0 0
   Driver.recordAndPrintDuration "Built in " $ do
@@ -134,4 +134,7 @@ runCompilationTask resetScreen state options invalidatedPaths = do
 
     putStr ppWarnings
     putStr ppErrors
+    unless (null errors || watchMode) $ do
+      exitFailure
+
   return ()
