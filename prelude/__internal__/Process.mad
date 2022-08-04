@@ -1,15 +1,22 @@
 import type { Maybe } from "Maybe"
-import Wish from "Wish"
+import type { Wish } from "Wish"
+
+import { Wish } from "Wish"
 import Dictionary from "Dictionary"
 import String from "String"
 import List from "List"
+import { fromMaybe } from "Maybe"
 
 
-// exit code, stdout, stderr
 export alias CommandResult = {
   exitCode :: Integer,
   stdout :: String,
   stderr :: String  
+}
+
+export alias CommandOptions = {
+  cwd :: String,
+  env :: Dictionary String String
 }
 
 
@@ -26,11 +33,23 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
 
 // TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
 // to match the api from libuv and node
-exec :: String -> Wish.Wish CommandResult CommandResult
-export exec = (command) => Wish.Wish((bad, good) => #- {
+exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
+export exec = (command, args, options) => Wish((bad, good) => #- {
   let stdoutChunks = []
   let stderrChunks = []
-  const proc = spawnJs(command, [], { shell: true })
+
+  const env = {};
+  const envItems = __listToJSArray__(options.env.__args[0]);
+  envItems.forEach(([key, value]) => { env[key] = value; })
+
+  const proc = spawnJs(
+    command,
+    __listToJSArray__(args),
+    {
+      cwd: options.cwd,
+      env: envItems.length > 0 ? env : process.env,
+    }
+  )
 
   proc.stdout.on("data", (chunk) => {
     stdoutChunks.push(Buffer.from(chunk, 'binary'));
@@ -61,7 +80,7 @@ const makeArgs = () => {
   }, {})
   return {
     n: start.n.n.n,
-    v: start.n.v + " " + start.n.n.v
+    v: start.n.n.v
   }
 }
 -#
@@ -89,23 +108,37 @@ Env :: Dictionary String String
 export Env = envFFI
 
 
-getCurrentPath :: Wish.Wish a String
-export getCurrentPath = of(#- process.cwd() -#)
+
+getCurrentWorkingDirectory :: a -> String
+export getCurrentWorkingDirectory = () => #- process.cwd() -#
 
 
-getExecutablePath :: Wish.Wish String String
-export getExecutablePath = of(#- process.argv[1] -#)
+exit :: Integer -> {}
+export exit = #- process.exit -#
 
 #elseif llvm
-import { Just } from "Maybe"
-import { Wish } from "Wish"
+import { canonicalizePath, joinPath } from "FilePath/Posix"
+
+
+getCurrentPathFFI :: {} -> String
+getCurrentPathFFI = extern "madlib__process__internal__getCurrentPath"
+
+
+getCurrentWorkingDirectory :: a -> String
+export getCurrentWorkingDirectory = () => getCurrentPathFFI()
+
 
 getArgsFFI :: {} -> List String
 getArgsFFI = extern "madlib__process__internal__getArgs"
 
 
 Argv :: List String
-export Argv = getArgsFFI({})
+export Argv = where (getArgsFFI()) {
+  [exePath, ...args] =>
+    String.take(2, exePath) == "./"
+      ? [canonicalizePath(joinPath([getCurrentWorkingDirectory(), exePath])), ...args]
+      : [exePath, ...args]
+}
 
 
 getEnvFFI :: {} -> List #[String, String]
@@ -116,38 +149,38 @@ Env :: Dictionary String String
 export Env = Dictionary.fromList(getEnvFFI({}))
 
 
-getCurrentPathFFI :: {} -> String
-getCurrentPathFFI = extern "madlib__process__internal__getCurrentPath"
-
-getCurrentPath :: Wish a String
-export getCurrentPath = Wish((_, good) => good(getCurrentPathFFI()))
-
-
-execFFI :: String -> List String -> (Integer -> String -> String -> {}) -> {}
+execFFI :: String -> List String -> CommandOptions -> (Integer -> String -> String -> {}) -> {}
 execFFI = extern "madlib__process__exec"
 
 
 // TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
 // to match the api from libuv and node
-exec :: String -> Wish.Wish CommandResult CommandResult
-export exec = (command) => Wish.Wish((bad, good) => {
-  commandSplit = String.words(command)
-  argv = List.drop(1, commandSplit)
+exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
+export exec = (command, args, options) => Wish((bad, good) =>
+  execFFI(
+    command,
+    args,
+    options,
+    (exitCode, stdout, stderr) =>
+      exitCode != 0
+        ? bad(makeCommandResult(exitCode, stdout, stderr))
+        : good(makeCommandResult(exitCode, stdout, stderr))
+  )
+)
 
-  return where(List.nth(0, commandSplit)) {
-    Just(cmd) =>
-      execFFI(
-        cmd,
-        argv,
-        (exitCode, stdout, stderr) =>
-          exitCode != 0
-            ? bad(makeCommandResult(exitCode, stdout, stderr))
-            : good(makeCommandResult(exitCode, stdout, stderr))
-      )
-  }
-})
+exit :: Integer -> {}
+export exit = extern "exit"
 
 #endif
 
+getExecutablePath :: a -> String
+export getExecutablePath = () => fromMaybe("", List.nth(0, Argv))
+
 getEnv :: String -> Maybe String
 export getEnv = (name) => Dictionary.get(name, Env)
+
+DEFAULT_COMMAND_OPTIONS :: CommandOptions
+export DEFAULT_COMMAND_OPTIONS = {
+  cwd: "./",
+  env: {{}},
+}

@@ -242,9 +242,18 @@ typingToType _ _ (Src.Source _ _ (Src.TRConstrained _ _)) = undefined
 
 getConstructorArgs :: Type -> [Type]
 getConstructorArgs t = case t of
-  TApp l r -> getConstructorArgs l <> [r]
-  TCon _ _ -> []
-  _        -> [t]
+  TApp l r ->
+    getConstructorArgs l <> [r]
+
+  TCon _ _ ->
+    []
+
+  TAlias _ _ tvars _ ->
+    TVar <$> tvars
+
+  _ ->
+    [t]
+
 
 
 updateAliasVars :: Type -> [Type] -> CanonicalM Type

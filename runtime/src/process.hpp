@@ -3,6 +3,7 @@
 
 #include "list.hpp"
 #include "dictionary.hpp"
+#include "record.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +19,7 @@ madlib__list__Node_t *madlib__process__internal__getEnv();
 
 char *madlib__process__internal__getCurrentPath();
 
-void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *callback);
+void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *options, PAP_t *callback);
 
 #ifdef __cplusplus
 }

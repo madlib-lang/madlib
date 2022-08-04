@@ -1,4 +1,5 @@
 import type { Wish } from "Wish"
+import Process from "Process"
 
 import { bad, discardError, mapRej } from "Wish"
 import { always } from "Function"
@@ -21,8 +22,8 @@ export type DownloadResult
 
 cleanUp :: Config -> String -> Wish DownloadFailure String
 cleanUp = (config, sanitizedUrl) => pipe(
-  (url) => `rm -r ${Constants.TEMPORARY_MODULES_PATH}${url}.zip ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
-  config.exec,
+  (url) => ["-r", `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`, `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`],
+  config.exec("rm", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
@@ -30,8 +31,8 @@ cleanUp = (config, sanitizedUrl) => pipe(
 
 copyPackageToTmpRoot :: Config -> String -> Wish DownloadFailure String
 copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
-  (url) => `cp -R ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${Constants.TEMPORARY_MODULES_PATH}`,
-  config.exec,
+  (url) => ["-R", `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`, Constants.TEMPORARY_MODULES_PATH],
+  config.exec("cp", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
@@ -39,8 +40,8 @@ copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
 
 unzipPkg :: Config -> String -> Wish DownloadFailure String
 unzipPkg = (config, sanitizedUrl) => pipe(
-  (url) => `unzip -o -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
-  config.exec,
+  (url) => ["-o", "-d", `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`, `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`],
+  config.exec("unzip", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)
@@ -48,8 +49,8 @@ unzipPkg = (config, sanitizedUrl) => pipe(
 
 renameInnerFolder :: Config -> String -> Wish DownloadFailure String
 renameInnerFolder = (config, sanitizedUrl) => pipe(
-  (url) => `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
-  config.exec,
+  (url) => ["-c", `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`],
+  config.exec("sh", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
   mapRej(always(DownloadFailure))
 )(sanitizedUrl)

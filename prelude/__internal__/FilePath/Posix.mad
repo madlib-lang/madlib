@@ -78,10 +78,17 @@ canonicalizePath :: FilePath -> FilePath
 export canonicalizePath = pipe(
   splitPath,
   map(
-    ifElse(
-      pipe(String.lastChar, equals(Just('/'))),
-      String.replace("([^/]+)/*", "$1/"),
-      identity
+    pipe(
+      ifElse(
+        pipe(String.take(2), equals("./")),
+        String.drop(2),
+        identity
+      ),
+      ifElse(
+        pipe(String.lastChar, equals(Just('/'))),
+        String.replace("([^/]+)/*", "$1/"),
+        identity
+      )
     )
   ),
   joinPath

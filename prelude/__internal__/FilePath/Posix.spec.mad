@@ -112,6 +112,11 @@ test("canonicalizePath      - '/root/path//child/'", (_) => pipe(
   assertEquals($, "/root/path/child")
 )("/root/path//child/"))
 
+test("canonicalizePath      - '/root/path/./child/'", (_) => pipe(
+  canonicalizePath,
+  assertEquals($, "/root/path/child")
+)("/root/path/./child/"))
+
 
 test("dropPathSegments      - '/root/path/child/'", (_) => pipe(
   dropPathSegments(2),

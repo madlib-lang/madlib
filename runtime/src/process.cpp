@@ -210,7 +210,7 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
   }
 }
 
-void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *callback) {
+void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback) {
   uv_process_t *childReq = (uv_process_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_process_t));
   uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_process_options_t));
   uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_pipe_t));
@@ -278,12 +278,33 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, PAP_t *
   child_stdio[2].data.stream = (uv_stream_t *)stderrPipe;
   options->stdio = child_stdio;
 
+  madlib__dictionary__Dictionary_t *envFromOptions = (madlib__dictionary__Dictionary_t *) madlib__record__internal__selectField((char*)"env", commandOptions);
+  madlib__list__Node_t *envItems = envFromOptions->items;
+  int itemCount = madlib__list__length(envItems);
+  char **env = (char**)GC_MALLOC_ATOMIC(sizeof(char*) * (itemCount + 1));
+  int index = 0;
+  while (envItems->next != NULL) {
+    char *key = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->first;
+    size_t keyLength = strlen(key);
+    char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
+    size_t valueLength = strlen(value);
+
+    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength +valueLength + 2);
+    memcpy(env[index], key, keyLength);
+    env[index][keyLength] = '=';
+    memcpy(env[index] + keyLength + 1, value, valueLength);
+    env[index][keyLength + 1 + valueLength] = '\0';
+    envItems = envItems->next;
+  }
+  env[itemCount] = 0; // must be null terminated from libuv docs
+
+
   options->exit_cb = onChildExit;
   options->file = command;
   options->args = args;
-  options->env = NULL;
+  options->env = itemCount == 0 ? NULL : env;
   options->flags = 0;
-  options->cwd = NULL;
+  options->cwd = (const char*) madlib__record__internal__selectField((char*)"cwd", commandOptions);
 
   int spawnResult = uv_spawn(getLoop(), childReq, options);
 

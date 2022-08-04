@@ -53,8 +53,7 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
     destination: `${Constants.MADLIB_MODULES_PATH}${fromMaybe("", d.name)}`,
     source: `${Constants.TEMPORARY_MODULES_PATH}${d.sanitizedUrl}/`
   }),
-  (paths) => `cp -R ${paths.source} ${paths.destination}`,
-  config.exec
+  (paths) => config.exec("cp", ["-R", paths.source, paths.destination], Process.DEFAULT_COMMAND_OPTIONS)
 )(dependency)
 
 
@@ -82,8 +81,8 @@ installNodeModules = (config, pkgName) => pipe(
   (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
   mapRej(always("")),
-  map(mconcat("npm install ")),
-  chain(pipe(config.exec, mapRej(.stderr))),
+  map((path) => ["install", path]),
+  chain(pipe(config.exec("npm", $, Process.DEFAULT_COMMAND_OPTIONS), mapRej(.stderr))),
   map(.stdout),
   map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
   discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`))
@@ -92,7 +91,7 @@ installNodeModules = (config, pkgName) => pipe(
 
 initMadlibModulesFolder :: Config -> String -> a -> Wish String a
 initMadlibModulesFolder = (config, path, a) => pipe(
-  (p) => config.exec(`mkdir -p ${p}`),
+  (p) => config.exec("mkdir",  ["-p", p], Process.DEFAULT_COMMAND_OPTIONS),
   mapRej(.stderr),
   andDo(of(a))
 )(path)
@@ -121,9 +120,7 @@ readVersionDotLock = (config, dependency) => pipe(
 
 computeBuildHash :: Config -> Dependency -> Wish {} (Validate String)
 computeBuildHash = (config, dependency) => pipe(
-  (d) => config.exec(
-    `madlib package generate-hash -i ${projectBaseUrl(d)}`
-  ),
+  (d) => config.exec("madlib", ["package", "generate-hash", "-i", projectBaseUrl(d)], Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
   map(Valid),
   discardError(always(NotValid([BuildHashCouldNotBeGenerated], "")))
@@ -250,11 +247,11 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
   where {
     Just(script) =>
       do {
-        scriptPrefix = isMainPackage
-          ? ""
-          : `cd madlib_modules/${madlibDotJson.name} && `
+        cwd = isMainPackage
+          ? "./"
+          : `madlib_modules/${madlibDotJson.name}`
         IO.putLine(`Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`)
-        _ <- Process.exec(`${scriptPrefix}${script}`)
+        _ <- Process.exec("sh", ["-c", script], { ...Process.DEFAULT_COMMAND_OPTIONS, cwd })
         IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
         return of({})
       }
@@ -391,15 +388,15 @@ installPackages = (config, context, madlibDotJsonPath) => pipe(
  */
 prepare :: Config -> String -> Wish String String
 prepare = (config, packageDotJsonPath) => pipe(
-  always(config.exec(`mkdir -p ${Constants.TEMPORARY_MODULES_PATH}`)),
+  always(config.exec("mkdir",  ["-p", Constants.TEMPORARY_MODULES_PATH], Process.DEFAULT_COMMAND_OPTIONS)),
   andDo(of(packageDotJsonPath)),
   mapRej(.stderr),
   chain(pipe(config.exists, mapRej(always("")), map(always(packageDotJsonPath)))),
   chain((path) => pipe(
-    config.exec,
+    config.exec($, ["i"], Process.DEFAULT_COMMAND_OPTIONS),
     mapRej(.stderr),
     andDo(of(path))
-  )("npm i")),
+  )("npm")),
   chain(pipe(config.readFile, mapRej(always(""))))
 )(packageDotJsonPath)
 
