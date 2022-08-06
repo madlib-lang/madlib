@@ -4463,4 +4463,4 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -Wl,--allow-multiple-definition -o " <> executablePath

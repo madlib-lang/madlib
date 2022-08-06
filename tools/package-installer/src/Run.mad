@@ -259,7 +259,11 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
     _ =>
       of({})
   },
-  mapRej(always({})),
+  mapRej((result) => {
+    IO.putLine(result.stdout)
+    IO.putLine(result.stderr)
+    return {}
+  }),
   andDo(of(passThrough))
 )(madlibDotJson)
 
