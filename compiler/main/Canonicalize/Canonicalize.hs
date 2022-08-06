@@ -23,6 +23,8 @@ import           Error.Context
 import qualified Data.Maybe as Maybe
 import           Text.Show.Pretty
 import qualified Canonicalize.EnvUtils as EnvUtils
+import qualified Rock
+import qualified Driver.Query as Query
 
 
 
@@ -112,6 +114,15 @@ instance Canonicalizable Src.Exp Can.Exp where
       pushTypeAccess name
       EnvUtils.lookupADT env name
       return $ Can.Canonical area (Can.TypeExport name)
+
+    Src.Var ('#' : name) -> do
+      maybeFromEnv <- Rock.fetch $ Query.EnvVar name
+      case maybeFromEnv of
+        Just found ->
+          return $ Can.Canonical area (Can.LStr found)
+
+        Nothing ->
+          return $ Can.Canonical area (Can.LStr "")
 
     Src.Var name -> do
       pushNameAccess name

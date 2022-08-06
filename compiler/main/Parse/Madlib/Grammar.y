@@ -32,6 +32,7 @@ import Text.Show.Pretty
   nameC       { Token _ _ (TokenConstraintName _) }
   js          { Token _ _ (TokenJSBlock _) }
   'ret'       { Token _ _ TokenReturn }
+  '#'         { Token _ _ TokenSharpSign }
   '='         { Token _ _ TokenEq }
   '+'         { Token _ _ TokenPlus }
   '++'        { Token _ _ TokenDoublePlus }
@@ -333,6 +334,7 @@ exp :: { Src.Exp }
   | extern                                                   %shift { $1 }
   | typedExp                                                 %shift { $1 }
   | js                                                       %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.JSExp (strV $1)) }
+  | '#' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $2) (Src.Var $ '#' : strV $2) }
   | name                                                     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }
   | '.' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' maybeRet args ')' '(' argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.App (buildPipe (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) $4) $7) }

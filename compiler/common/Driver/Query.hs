@@ -70,6 +70,7 @@ data Query a where
 
   -- Misc
   StaticLibPathsToLink :: FilePath -> Query [FilePath]
+  EnvVar :: String -> Query (Maybe String)
 
 deriveGEq ''Query
 deriveGCompare ''Query
@@ -146,6 +147,9 @@ instance Hashable (Query a) where
 
     StaticLibPathsToLink path ->
       hashWithSalt salt (path, 22 :: Int)
+
+    EnvVar name ->
+      hashWithSalt salt (name, 23 :: Int)
 
 
 instance Hashable (Some Query) where

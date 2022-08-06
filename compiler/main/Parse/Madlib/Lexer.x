@@ -87,6 +87,7 @@ tokens :-
   <0> \#elseif[\ ]*llvm                                                                       { processElseIfTarget TargetLLVM }
   <0> \#elseif[\ ]*js                                                                         { processElseIfTarget TargetJS }
   <0> \#endif                                                                                 { processEndIfTarget }
+  <0, stringTemplateMadlib> \#                                                                { mapToken (\_ -> TokenSharpSign) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                  { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                  { mapToken (\_ -> TokenIf) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                                { mapToken (\_ -> TokenElse) }
@@ -533,7 +534,15 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
         pushStartCode 0
         return TokenLeftCurly
 
-    tok -> return tok
+    TokenLeftDoubleCurly ->
+      if sc /= instanceHeader then do
+        pushStartCode 0
+        return TokenLeftDoubleCurly
+      else
+        return TokenLeftDoubleCurly
+
+    tok ->
+      return tok
 
 
   case token of
@@ -671,6 +680,7 @@ data TokenClass
  | TokenExtern
  | TokenSemiColon
  | TokenReturn
+ | TokenSharpSign
  | TokenDoubleAmpersand
  | TokenDoublePipe
  | TokenRightChevron

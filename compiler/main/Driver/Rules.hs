@@ -61,6 +61,9 @@ import Infer.Type
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 import MadlibDotJson.MadlibVersion
 import Paths_madlib (version)
+import System.Environment
+
+
 
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
@@ -320,6 +323,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         allMadlibDotJsonPaths
 
     return (staticLibPaths, (mempty, mempty))
+
+  EnvVar name -> nonInput $ do
+    value <- liftIO $ lookupEnv name
+    return (value, (mempty, mempty))
 
 
 globalChecks :: IO [CompilationWarning]

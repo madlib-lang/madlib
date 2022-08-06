@@ -87,10 +87,18 @@ const makeArgs = () => {
 
 
 Argv :: List String
-export Argv = #- makeArgs() -#
+export Argv = #-
+{Node}
+  makeArgs()
+{/Node}
+{Browser}
+  { v: null, n: null }
+{/Browser}
+-#
 
 
 #-
+{Node}
 const buildEnvImpl = (dict) => {
   let list = {}
   let start = list
@@ -99,6 +107,12 @@ const buildEnvImpl = (dict) => {
   }, {})
   return Dictionary.fromList(dict)(start.n)
 }
+{/Node}
+{Browser}
+const buildEnvImpl = (dict) => {
+  Dictionary.fromList(dict)(null)
+}
+{/Browser}
 -#
 
 envFFI :: Comparable a => Dictionary a String
@@ -114,7 +128,11 @@ export getCurrentWorkingDirectory = () => #- process.cwd() -#
 
 
 exit :: Integer -> {}
-export exit = #- process.exit -#
+export exit = (code) => #- {
+{Node}
+process.exit(code)
+{/Node}
+} -#
 
 #elseif llvm
 import { canonicalizePath, joinPath } from "FilePath/Posix"
