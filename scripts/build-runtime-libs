@@ -54,6 +54,22 @@ cp libz.a ../../runtime/lib/
 cd ..
 
 
+# build openssl
+if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ]
+then
+    # build openssl
+  wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.5.zip
+  unzip openssl-3.0.5.zip
+  cd openssl-openssl-3.0.5
+  ./Configure
+  make
+  cp -R include/* ../../runtime/include/
+  cp libssl.a ../../runtime/lib/
+  cp libcrypto.a ../../runtime/lib/
+  cd ..
+fi
+
+
 # install libcurl
 if [ "$TARGET" = "WIN_X64" ]
 then
@@ -79,8 +95,8 @@ then
 
   cd ..
 
-  cp /usr/lib/x86_64-linux-gnu/libcrypto.a ../runtime/lib/
-  cp /usr/lib/x86_64-linux-gnu/libssl.a ../runtime/lib/
+  # cp /usr/lib/x86_64-linux-gnu/libcrypto.a ../runtime/lib/
+  # cp /usr/lib/x86_64-linux-gnu/libssl.a ../runtime/lib/
   cp -R curl-7.81.0/build/* ../runtime/
 elif [ "$TARGET" = "MUSL_X64" ]
 then
@@ -94,8 +110,8 @@ then
 
   cd ..
 
-  cp /usr/lib/libcrypto.a ../runtime/lib/
-  cp /usr/lib/libssl.a ../runtime/lib/
+  # cp /usr/lib/libcrypto.a ../runtime/lib/
+  # cp /usr/lib/libssl.a ../runtime/lib/
   cp -R curl-7.81.0/build/* ../runtime/
 elif [ "$TARGET" = "MACOS_X64" ]
 then
