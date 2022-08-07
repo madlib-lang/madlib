@@ -63,6 +63,7 @@ then
   cd openssl-openssl-3.0.5
   ./Configure
   make
+  make install
   cp -R include/* ../../runtime/include/
   cp libssl.a ../../runtime/lib/
   cp libcrypto.a ../../runtime/lib/
@@ -77,6 +78,7 @@ then
   unzip curl-7.81.0.zip
   cd curl-7.81.0
 
+  # TODO: should also build openssl from above
   CURL_CC=gcc OPENSSL_PATH=/mingw64/ ZLIB_PATH=/mingw64/ make mingw32 CFG="-ssl-zlib"
 
   cd ..

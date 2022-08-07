@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ee247368eb06603f86a9238d1c8ff7b1296c2179ab2b3875720394c36479246f
+-- hash: 02d44b5f085cdd81030219fbad481bc0e46b30e9b3bacf36f042b7be726abfdb
 
 name:           madlib
 version:        0.13.3
@@ -162,6 +162,7 @@ library
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
     , some ==1.*
@@ -242,6 +243,7 @@ library common
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
     , some ==1.*
@@ -305,6 +307,7 @@ executable madlib
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
     , some ==1.*
@@ -378,6 +381,7 @@ test-suite madlib-test
     , prettyprinter >=1.6.2
     , process >=1.6.9.0
     , process-extras
+    , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
     , some ==1.*
