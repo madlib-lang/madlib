@@ -51,7 +51,7 @@ addRandom :: String -> String
 addRandom initial =
   unsafePerformIO $ do
     rand <- (randomIO :: IO Integer)
-    return $ initial ++ show rand
+    return $ initial ++ take 6 (show (abs rand))
 
 
 generateCtorParamPatternNames :: Char -> [Typing] -> [String]
