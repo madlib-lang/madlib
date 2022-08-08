@@ -57,7 +57,7 @@ cd "zlib-$LIBZ_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
   PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
-  make install -fwin32/Makefile.gcc
+  BINARY_PATH="bin" INCLUDE_PATH="include" and LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
   cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
   cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
 else
