@@ -4444,7 +4444,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
         <> " -lruntime -lgc -lgccpp -luv -lpcre2-8"
-        <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
+        <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -lssl -lcrypto -lz"
         <>" -o " <> executablePath
 
     DistributionSystem.Windows ->

@@ -49,7 +49,7 @@ jobs:
         run: install_name_tool -change /usr/local/opt/llvm-9/lib/llvm-9/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
 
       - name: Install automake
-        run: brew install autoconf automake nasm libtool
+        run: brew install autoconf automake nasm libtool perl
 
       - name: Build runtime
         run: |

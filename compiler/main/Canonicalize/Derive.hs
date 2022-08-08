@@ -11,8 +11,8 @@ import qualified Data.Set                               as Set
 import           Data.Maybe (mapMaybe)
 import           Data.ByteString.Char8 (intersperse)
 import qualified Data.List                              as List
-import System.Random
-import GHC.IO (unsafePerformIO)
+import qualified Canonicalize.Env as Can
+import Utils.Hash
 
 
 searchTypeInConstructor :: Id -> Type -> Maybe Type
@@ -45,13 +45,6 @@ ec = Canonical emptyArea
 
 chars :: [String]
 chars = ("f_"++) . show <$> [0..]
-
--- TODO: replace this hack at some point in order to simply avoid duplication in a first place
-addRandom :: String -> String
-addRandom initial =
-  unsafePerformIO $ do
-    rand <- (randomIO :: IO Integer)
-    return $ initial ++ take 6 (show (abs rand))
 
 
 generateCtorParamPatternNames :: Char -> [Typing] -> [String]
@@ -120,8 +113,8 @@ buildFieldConditions =
     (ec $ LBool "true")
 
 
-deriveEqInstance :: InstanceToDerive -> Maybe Instance
-deriveEqInstance toDerive = case toDerive of
+deriveEqInstance :: Can.Env -> InstanceToDerive -> Maybe Instance
+deriveEqInstance env toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
@@ -155,8 +148,9 @@ deriveEqInstance toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) . addRandom <$> Map.fromList fieldNamesWithVars
+    let moduleHash = generateHashFromPath (Can.envCurrentPath env)
+        fieldNamesWithVars = zip (Set.toList fieldNames) chars
+        fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing
         instPreds          = (\var -> IsIn "Eq" [var] Nothing) <$> Map.elems fields
     in  Just $ ec (Instance "Eq" instPreds (IsIn "Eq" [recordType] Nothing) (
@@ -204,8 +198,8 @@ buildConstructorIsForInspect ctor = case ctor of
       ec $ Is (ec $ PCon name (ec . PVar <$> vars)) inspected
 
 
-deriveInspectInstance :: InstanceToDerive -> Maybe Instance
-deriveInspectInstance toDerive = case toDerive of
+deriveInspectInstance :: Can.Env -> InstanceToDerive -> Maybe Instance
+deriveInspectInstance env toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
@@ -236,8 +230,9 @@ deriveInspectInstance toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) . addRandom <$> Map.fromList fieldNamesWithVars
+    let moduleHash = generateHashFromPath (Can.envCurrentPath env)
+        fieldNamesWithVars = zip (Set.toList fieldNames) chars
+        fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing
         instPreds          = (\var -> IsIn "Inspect" [var] Nothing) <$> Map.elems fields
     in  Just $ ec (Instance "Inspect" instPreds (IsIn "Inspect" [recordType] Nothing) (

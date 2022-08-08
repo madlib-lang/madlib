@@ -3,7 +3,7 @@ mkdir -p .buildlibs
 mkdir -p runtime/lib
 cd .buildlibs
 
-# install libuv
+# build libuv
 if [ "$TARGET" = "WIN_X64" ]
 then
   # For windows we need to pull a commit that includes a fix related to how mingw changed headers recently
@@ -28,149 +28,147 @@ else
 fi
 
 
+# build libgc
 LIBGC_VERSION="8.2.0"
-# install libgc
+
 wget "https://github.com/ivmai/bdwgc/archive/refs/tags/v${LIBGC_VERSION}.zip"
 unzip "v${LIBGC_VERSION}.zip" -d libgc
 cd "libgc/bdwgc-${LIBGC_VERSION}"
 sed -i -e 's/scan_size = 2/scan_size = 8/g' alloc.c
 git clone https://github.com/ivmai/libatomic_ops.git
-make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING" c++
-make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING"
+make -j -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING" c++
+make -j -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING"
 cd ../..
 cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
 cp "libgc/bdwgc-${LIBGC_VERSION}/gccpp.a" ../runtime/lib/libgccpp.a
 cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
 
 
-# install libz
-wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.zip
-unzip v1.2.11.zip
-cd zlib-1.2.11
-./configure
-make
+# build libz
+LIBZ_VERSION="1.2.11"
+LIBZ_FOLDER="$(pwd)/zlib-$LIBZ_VERSION"
+LIBZ_PREFIX="$LIBZ_FOLDER/build"
+
+wget "https://github.com/madler/zlib/archive/refs/tags/v$LIBZ_VERSION.zip"
+unzip "v$LIBZ_VERSION.zip"
+cd "zlib-$LIBZ_VERSION"
+./configure --prefix=$LIBZ_PREFIX
+make -j
 make install
-cp libz.a ../../runtime/lib/
+cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
+cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
 cd ..
 
 
 # build openssl
-if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ]
+OPENSSL_VERSION="3.0.5"
+OPENSSL_FOLDER="$(pwd)/openssl-openssl-$OPENSSL_VERSION"
+OPENSSL_PREFIX="$OPENSSL_FOLDER/build"
+
+wget "https://github.com/openssl/openssl/archive/refs/tags/openssl-$OPENSSL_VERSION.zip"
+unzip "openssl-$OPENSSL_VERSION.zip"
+cd "openssl-openssl-$OPENSSL_VERSION"
+if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ] || [ "$TARGET" = "MACOS_X64" ] || [ "$TARGET" = "MACOS_ARM64" ]
 then
-    # build openssl
-  wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.5.zip
-  unzip openssl-3.0.5.zip
-  cd openssl-openssl-3.0.5
-  ./Configure
-  make
+  ./Configure --prefix=$OPENSSL_PREFIX
+  make -j
   make install
   cp -R include/* ../../runtime/include/
-  cp libssl.a ../../runtime/lib/
-  cp libcrypto.a ../../runtime/lib/
+  cp build/lib/libssl.a ../../runtime/lib/
+  cp build/lib/libcrypto.a ../../runtime/lib/
+  cd ..
+elif [ "$TARGET" = "WIN_X64" ]
+then
+  ./Configure mingw --prefix=$OPENSSL_PREFIX
+  make -j
+  make install
+  cp -R include/* ../../runtime/include/
+  cp build/lib/libssl.a ../../runtime/lib/
+  cp build/lib/libcrypto.a ../../runtime/lib/
   cd ..
 fi
 
 
 # install libcurl
+LIBCURL_VERSION="7.81.0"
+LIBCURL_VERSION_ALT="7_81_0"
+
+wget "https://github.com/curl/curl/releases/download/curl-$LIBCURL_VERSION_ALT/curl-$LIBCURL_VERSION.zip"
+unzip "curl-$LIBCURL_VERSION.zip"
+cd "curl-$LIBCURL_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
-  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
-  unzip curl-7.81.0.zip
-  cd curl-7.81.0
-
   # TODO: should also build openssl from above
-  CURL_CC=gcc OPENSSL_PATH=/mingw64/ ZLIB_PATH=/mingw64/ make mingw32 CFG="-ssl-zlib"
+  CURL_CC=gcc OPENSSL_PATH=$OPENSSL_PREFIX ZLIB_PATH=$LIBZ_PREFIX make mingw32 CFG="-ssl-zlib"
 
   cd ..
-  cp curl-7.81.0/lib/libcurl.a ../runtime/lib/
+  cp "curl-$LIBCURL_VERSION/lib/libcurl.a" ../runtime/lib/
   cp /mingw64/lib/libssl.a ../runtime/lib/
   cp /mingw64/lib/libcrypto.a ../runtime/lib/
 elif [ "$TARGET" = "LINUX_X64" ]
 then
-  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
-  unzip curl-7.81.0.zip
-  cd curl-7.81.0
-
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make -j10
   make install
 
   cd ..
-
-  # cp /usr/lib/x86_64-linux-gnu/libcrypto.a ../runtime/lib/
-  # cp /usr/lib/x86_64-linux-gnu/libssl.a ../runtime/lib/
-  cp -R curl-7.81.0/build/* ../runtime/
+  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MUSL_X64" ]
 then
-  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
-  unzip curl-7.81.0.zip
-  cd curl-7.81.0
-
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl --without-libidn2 --without-nghttp2 --with-zlib="$(pwd)/../zlib-1.2.11"
-  make -j10
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  make -j
   make install
 
   cd ..
-
-  # cp /usr/lib/libcrypto.a ../runtime/lib/
-  # cp /usr/lib/libssl.a ../runtime/lib/
-  cp -R curl-7.81.0/build/* ../runtime/
+  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MACOS_X64" ]
 then
-  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
-  unzip curl-7.81.0.zip
-  cd curl-7.81.0
-
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
-  make -j10
+  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  make -j
   make install
 
   cd ..
-
-  cp -R curl-7.81.0/build/* ../runtime/
+  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MACOS_ARM64" ]
 then
-  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
-  unzip curl-7.81.0.zip
-  cd curl-7.81.0
-
   export ARCH=arm64
   export SDK=macosx
   export DEPLOYMENT_TARGET=11.0
 
   export CFLAGS="-arch $ARCH -isysroot $(xcrun -sdk $SDK --show-sdk-path) -m$SDK-version-min=$DEPLOYMENT_TARGET"
-  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-secure-transport --without-libidn2 --without-nghttp2
-  make -j10
+  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  make -j
   make install
+
   cd ..
-  cp -R curl-7.81.0/build/* ../runtime/
+  ls -l "curl-$LIBCURL_VERSION/build/"
+  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 fi
 
 
-# install libpcre2
+# build libpcre2
 wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
 unzip pcre2-10.39.zip
 cd pcre2-10.39
 ./configure
-make
+make -j
 cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
 cd ..
 
 
-#install mman for win64
+# build mman for win64
 if [ "$TARGET" = "WIN_X64" ]
 then
   wget https://github.com/alitrack/mman-win32/archive/refs/heads/master.zip
   unzip master.zip
   cd mman-win32-master
   ./configure
-  make
+  make -j
   cp libmman.a ../../runtime/lib/
   mkdir -p ../../runtime/include/sys
   cp mman.h ../../runtime/include/sys/
 fi
-
 
 cd ..
 rm -rf .buildlibs

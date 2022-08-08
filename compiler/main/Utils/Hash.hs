@@ -11,3 +11,7 @@ hash input =
   let hashed  = hashlazy input
       hexHash = toLazyByteString . byteStringHex $ hashed
   in  BLChar8.unpack hexHash
+
+generateHashFromPath :: FilePath -> String
+generateHashFromPath =
+  hash . BLChar8.pack
