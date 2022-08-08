@@ -14,10 +14,9 @@ RUN TARGET="MUSL_X64" CXX="g++" ./scripts/build-runtime
 FROM ubuntu:20.04 as build-stage
 
 # install common dependencies
-RUN apt-get update --fix-missing
+RUN apt update --fix-missing
 # DEBIAN_FRONTEND=noninteractive is necessary to skip geographical questions asked when installing cmake
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip cmake git nasm perl
-RUN apt-get install -y build-essential curl libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+RUN DEBIAN_FRONTEND=noninteractive apt install --fix-missing -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip cmake git nasm perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
 
 RUN echo "Setup Haskell"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh

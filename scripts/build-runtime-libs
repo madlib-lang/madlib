@@ -54,19 +54,19 @@ wget "https://github.com/madler/zlib/archive/refs/tags/v$LIBZ_VERSION.zip"
 unzip "v$LIBZ_VERSION.zip"
 cd "zlib-$LIBZ_VERSION"
 
-# if [ "$TARGET" = "WIN_X64" ]
-# then
-#   PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
-#   BINARY_PATH="bin" INCLUDE_PATH="include" and LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
-#   cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
-#   cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
-# else
-./configure --prefix=$LIBZ_PREFIX
-make
-make install
-cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
-cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
-# fi
+if [ "$TARGET" = "WIN_X64" ]
+then
+  PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
+  BINARY_PATH="bin" INCLUDE_PATH="include" LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
+  cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
+  cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
+else
+  ./configure --prefix=$LIBZ_PREFIX
+  make
+  make install
+  cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
+  cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
+fi
 cd ..
 
 
@@ -79,7 +79,16 @@ OPENSSL_PREFIX="$OPENSSL_FOLDER/build"
 wget "https://github.com/openssl/openssl/archive/refs/tags/openssl-$OPENSSL_VERSION.zip"
 unzip "openssl-$OPENSSL_VERSION.zip"
 cd "openssl-openssl-$OPENSSL_VERSION"
-if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ] || [ "$TARGET" = "MACOS_X64" ] || [ "$TARGET" = "MACOS_ARM64" ]
+if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ]
+then
+  ./Configure --prefix=$OPENSSL_PREFIX
+  make
+  make install
+  cp -R include/* ../../runtime/include/
+  cp build/lib64/libssl.a ../../runtime/lib/
+  cp build/lib64/libcrypto.a ../../runtime/lib/
+  cd ..
+elif [ "$TARGET" = "MACOS_X64" ] || [ "$TARGET" = "MACOS_ARM64" ]
 then
   ./Configure --prefix=$OPENSSL_PREFIX
   make
@@ -94,8 +103,8 @@ then
   make
   make install
   cp -R include/* ../../runtime/include/
-  cp build/lib/libssl.a ../../runtime/lib/
-  cp build/lib/libcrypto.a ../../runtime/lib/
+  cp build/lib64/libssl.a ../../runtime/lib/
+  cp build/lib64/libcrypto.a ../../runtime/lib/
   cd ..
 fi
 
@@ -110,24 +119,22 @@ cd "curl-$LIBCURL_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
   # TODO: should also build openssl from above
-  CURL_CC=gcc PREFIX=$OPENSSL_PREFIX ZLIB_PATH=$LIBZ_PREFIX make mingw32 CFG="-ssl-zlib"
+  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" CURL_CC=gcc OPENSSL_PATH=$OPENSSL_PREFIX ZLIB_PATH=$LIBZ_PREFIX make mingw32 CFG="-ssl-zlib"
 
   cd ..
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
-  # cp "curl-$LIBCURL_VERSION/lib/libcurl.a" ../runtime/lib/
-  # cp /mingw64/lib/libssl.a ../runtime/lib/
-  # cp /mingw64/lib/libcrypto.a ../runtime/lib/
 elif [ "$TARGET" = "LINUX_X64" ]
 then
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
   cd ..
-  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
+  cp -R "curl-$LIBCURL_VERSION/include/"* ../runtime/include/
+  cp "curl-$LIBCURL_VERSION/libcurl.a" ../runtime/lib/
 elif [ "$TARGET" = "MUSL_X64" ]
 then
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
@@ -135,7 +142,7 @@ then
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MACOS_X64" ]
 then
-  ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  FLAGS="-L$OPENSSL_PREFIX/lib -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
@@ -148,7 +155,7 @@ then
   export DEPLOYMENT_TARGET=11.0
 
   export CFLAGS="-arch $ARCH -isysroot $(xcrun -sdk $SDK --show-sdk-path) -m$SDK-version-min=$DEPLOYMENT_TARGET"
-  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
