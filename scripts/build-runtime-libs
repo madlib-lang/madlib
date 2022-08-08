@@ -36,8 +36,8 @@ unzip "v${LIBGC_VERSION}.zip" -d libgc
 cd "libgc/bdwgc-${LIBGC_VERSION}"
 sed -i -e 's/scan_size = 2/scan_size = 8/g' alloc.c
 git clone https://github.com/ivmai/libatomic_ops.git
-make -j -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING" c++
-make -j -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING"
+make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING" c++
+make -f Makefile.direct CFLAGS_EXTRA="-DDONT_ADD_BYTE_AT_END -DNO_DEBUGGING"
 cd ../..
 cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
 cp "libgc/bdwgc-${LIBGC_VERSION}/gccpp.a" ../runtime/lib/libgccpp.a
@@ -54,19 +54,19 @@ wget "https://github.com/madler/zlib/archive/refs/tags/v$LIBZ_VERSION.zip"
 unzip "v$LIBZ_VERSION.zip"
 cd "zlib-$LIBZ_VERSION"
 
-if [ "$TARGET" = "WIN_X64" ]
-then
-  PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
-  BINARY_PATH="bin" INCLUDE_PATH="include" and LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
-  cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
-  cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
-else
-  ./configure --prefix=$LIBZ_PREFIX
-  make -j
-  make install
-  cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
-  cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
-fi
+# if [ "$TARGET" = "WIN_X64" ]
+# then
+#   PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
+#   BINARY_PATH="bin" INCLUDE_PATH="include" and LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
+#   cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
+#   cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
+# else
+./configure --prefix=$LIBZ_PREFIX
+make
+make install
+cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
+cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
+# fi
 cd ..
 
 
@@ -82,7 +82,7 @@ cd "openssl-openssl-$OPENSSL_VERSION"
 if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ] || [ "$TARGET" = "MACOS_X64" ] || [ "$TARGET" = "MACOS_ARM64" ]
 then
   ./Configure --prefix=$OPENSSL_PREFIX
-  make -j
+  make
   make install
   cp -R include/* ../../runtime/include/
   cp build/lib/libssl.a ../../runtime/lib/
@@ -90,8 +90,8 @@ then
   cd ..
 elif [ "$TARGET" = "WIN_X64" ]
 then
-  ./Configure mingw --prefix=$OPENSSL_PREFIX
-  make -j
+  ./Configure mingw64 --prefix=$OPENSSL_PREFIX
+  make
   make install
   cp -R include/* ../../runtime/include/
   cp build/lib/libssl.a ../../runtime/lib/
@@ -120,7 +120,7 @@ then
 elif [ "$TARGET" = "LINUX_X64" ]
 then
   ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
-  make -j10
+  make
   make install
 
   cd ..
@@ -128,7 +128,7 @@ then
 elif [ "$TARGET" = "MUSL_X64" ]
 then
   ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
-  make -j
+  make
   make install
 
   cd ..
@@ -136,7 +136,7 @@ then
 elif [ "$TARGET" = "MACOS_X64" ]
 then
   ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
-  make -j
+  make
   make install
 
   cd ..
@@ -149,7 +149,7 @@ then
 
   export CFLAGS="-arch $ARCH -isysroot $(xcrun -sdk $SDK --show-sdk-path) -m$SDK-version-min=$DEPLOYMENT_TARGET"
   ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-openssl=$OPENSSL_PREFIX --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
-  make -j
+  make
   make install
 
   cd ..
@@ -163,7 +163,7 @@ wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10
 unzip pcre2-10.39.zip
 cd pcre2-10.39
 ./configure
-make -j
+make
 cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
 cd ..
@@ -176,7 +176,7 @@ then
   unzip master.zip
   cd mman-win32-master
   ./configure
-  make -j
+  make
   cp libmman.a ../../runtime/lib/
   mkdir -p ../../runtime/include/sys
   cp mman.h ../../runtime/include/sys/
