@@ -57,7 +57,7 @@ cd "zlib-$LIBZ_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
   PREFIX=$LIBZ_PREFIX make -fwin32/Makefile.gcc
-  BINARY_PATH="bin" INCLUDE_PATH="include" LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
+  DESTDIR="$LIBZ_PREFIX/" BINARY_PATH="bin" INCLUDE_PATH="include" LIBRARY_PATH="lib" make install -fwin32/Makefile.gcc
   cp "$LIBZ_PREFIX/lib/libz.a" ../../runtime/lib/
   cp -R "$LIBZ_PREFIX/include/"* ../../runtime/include/
 else
@@ -109,6 +109,7 @@ then
 fi
 
 
+
 # install libcurl
 LIBCURL_VERSION="7.81.0"
 LIBCURL_VERSION_ALT="7_81_0"
@@ -118,14 +119,15 @@ unzip "curl-$LIBCURL_VERSION.zip"
 cd "curl-$LIBCURL_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
-  # TODO: should also build openssl from above
-  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" CURL_CC=gcc OPENSSL_PATH=$OPENSSL_FOLDER ZLIB_PATH=$LIBZ_PREFIX make mingw32 CFG="-ssl-zlib"
+  CURL_LDFLAG_EXTRAS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CURL_CFLAG_EXTRAS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" CURL_CC=gcc OPENSSL_PATH=$OPENSSL_FOLDER ZLIB_PATH=$LIBZ_PREFIX make libcurl.a -C lib -f Makefile.m32 CFG="-ssl-zlib"
+  cd ..
+  cp -R "curl-$LIBCURL_VERSION/include/"* ../runtime/include/
+  cp "curl-$LIBCURL_VERSION/lib/libcurl.a" ../runtime/lib/
 
   cd ..
-  cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "LINUX_X64" ]
 then
-  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  LDFLAGS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
@@ -133,7 +135,7 @@ then
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MUSL_X64" ]
 then
-  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  LDFLAGS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
@@ -141,7 +143,7 @@ then
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 elif [ "$TARGET" = "MACOS_X64" ]
 then
-  FLAGS="-L$OPENSSL_PREFIX/lib -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  LDFLAGS="-L$OPENSSL_PREFIX/lib -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
   make
   make install
 
@@ -164,6 +166,7 @@ then
 fi
 
 
+
 # build libpcre2
 wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
 unzip pcre2-10.39.zip
@@ -173,6 +176,7 @@ make
 cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
 cd ..
+
 
 
 # build mman for win64
