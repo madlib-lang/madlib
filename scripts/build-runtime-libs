@@ -3,6 +3,19 @@ mkdir -p .buildlibs
 mkdir -p runtime/lib
 cd .buildlibs
 
+
+# build libpcre2
+wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
+unzip pcre2-10.39.zip
+cd pcre2-10.39
+./configure
+make
+cp .libs/libpcre2-8.a ../../runtime/lib/
+cp src/pcre2.h ../../runtime/include/
+cd ..
+
+
+
 # build libuv
 if [ "$TARGET" = "WIN_X64" ]
 then
@@ -161,21 +174,8 @@ then
   make install
 
   cd ..
-  ls -l "curl-$LIBCURL_VERSION/build/"
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 fi
-
-
-
-# build libpcre2
-wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
-unzip pcre2-10.39.zip
-cd pcre2-10.39
-./configure
-make
-cp .libs/libpcre2-8.a ../../runtime/lib/
-cp src/pcre2.h ../../runtime/include/
-cd ..
 
 
 
