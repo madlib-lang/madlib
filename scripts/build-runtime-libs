@@ -8,7 +8,7 @@ cd .buildlibs
 wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
 unzip pcre2-10.39.zip
 cd pcre2-10.39
-./configure
+./configure --disable-shared
 make
 cp .libs/libpcre2-8.a ../../runtime/lib/
 cp src/pcre2.h ../../runtime/include/
