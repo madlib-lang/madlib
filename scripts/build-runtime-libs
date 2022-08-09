@@ -119,7 +119,7 @@ cd "curl-$LIBCURL_VERSION"
 if [ "$TARGET" = "WIN_X64" ]
 then
   # TODO: should also build openssl from above
-  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" CURL_CC=gcc OPENSSL_PATH=$OPENSSL_PREFIX ZLIB_PATH=$LIBZ_PREFIX make mingw32 CFG="-ssl-zlib"
+  CFLAGS="-L$OPENSSL_PREFIX/lib64 -I$OPENSSL_PREFIX/include -L$LIBZ_PREFIX/lib -I$LIBZ_PREFIX/include" CURL_CC=gcc OPENSSL_PATH=$OPENSSL_PREFIX ZLIB_PATH=$LIBZ_PREFIX make mingw32 --disable-shared --enable-static CFG="-ssl-zlib"
 
   cd ..
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
