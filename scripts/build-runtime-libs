@@ -5,17 +5,6 @@ mkdir -p runtime/include
 cd .buildlibs
 
 
-# build libpcre2
-wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
-unzip pcre2-10.39.zip
-cd pcre2-10.39
-./configure --disable-shared
-make
-cp .libs/libpcre2-8.a ../../runtime/lib/
-cp src/pcre2.h ../../runtime/include/
-cd ..
-
-
 
 # build libuv
 if [ "$TARGET" = "WIN_X64" ]
@@ -137,8 +126,6 @@ then
   cd ..
   cp -R "curl-$LIBCURL_VERSION/include/"* ../runtime/include/
   cp "curl-$LIBCURL_VERSION/lib/libcurl.a" ../runtime/lib/
-
-  cd ..
 elif [ "$TARGET" = "LINUX_X64" ]
 then
   LDFLAGS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
@@ -177,6 +164,18 @@ then
   cd ..
   cp -R "curl-$LIBCURL_VERSION/build/"* ../runtime/
 fi
+
+
+
+# build libpcre2
+wget https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.zip
+unzip pcre2-10.39.zip
+cd pcre2-10.39
+./configure --disable-shared
+make
+cp .libs/libpcre2-8.a ../../runtime/lib/
+cp src/pcre2.h ../../runtime/include/
+cd ..
 
 
 
