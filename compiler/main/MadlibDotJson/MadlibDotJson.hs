@@ -33,6 +33,7 @@ data MadlibDotJson
                   , name          :: Maybe String
                   , madlibVersion :: Maybe String
                   , staticLibs   :: Maybe [String]
+                  , hooks :: Maybe (M.Map String String)
                   }
                   deriving (Show, Generic)
 
