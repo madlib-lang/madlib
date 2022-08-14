@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/bin/prelude/__internal__/Wish.mad
+// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Wish.mad
 import {} from "./../__internals__.mjs"
 import {  } from "./Monad.mjs";
 import {  } from "./Bifunctor.mjs";
@@ -7,8 +7,8 @@ import Tuple from "./Tuple.mjs";
 import {  } from "./Number.mjs";
 
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
-Inspect['Wish_f76eea3ecc45547ab1e69e479c05b8d2'] = {};
-Inspect['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['inspect'] = () => (Inspect_m350) => (Inspect_o352) => (__$a__ => ((__x__) => {
+Inspect['Wish_48091bbb4c188d584814a4a3f8207f71'] = {};
+Inspect['Wish_48091bbb4c188d584814a4a3f8207f71']['inspect'] = () => (Inspect_m350) => (Inspect_o352) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -22,8 +22,8 @@ Inspect['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['inspect'] = () => (Inspect_m35
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Functor['Wish_f76eea3ecc45547ab1e69e479c05b8d2'] = {};
-Functor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['map'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
+Functor['Wish_48091bbb4c188d584814a4a3f8207f71'] = {};
+Functor['Wish_48091bbb4c188d584814a4a3f8207f71']['map'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run(badCB)((x => goodCB(f(x))));
@@ -34,8 +34,8 @@ Functor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['map'] = () => (f => m => Wish(
     throw 'non exhaustive patterns!';
   }
 })(m))));
-Applicative['Wish_f76eea3ecc45547ab1e69e479c05b8d2'] = {};
-Applicative['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['ap'] = () => (mf => m => Wish((badCB => goodCB => ((__x__) => {
+Applicative['Wish_48091bbb4c188d584814a4a3f8207f71'] = {};
+Applicative['Wish_48091bbb4c188d584814a4a3f8207f71']['ap'] = () => (mf => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     let [{ __args: [runMF]},{ __args: [runM]}] = __x__;
     return runM(badCB)((x => runMF(badCB)((f => goodCB(f(x))))));
@@ -46,9 +46,9 @@ Applicative['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['ap'] = () => (mf => m => W
     throw 'non exhaustive patterns!';
   }
 })(([mf, m])))));
-Applicative['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['pure'] = () => (a => Wish((_ => goodCB => goodCB(a))));
-Monad['Wish_f76eea3ecc45547ab1e69e479c05b8d2'] = {};
-Monad['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['chain'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
+Applicative['Wish_48091bbb4c188d584814a4a3f8207f71']['pure'] = () => (a => Wish((_ => goodCB => goodCB(a))));
+Monad['Wish_48091bbb4c188d584814a4a3f8207f71'] = {};
+Monad['Wish_48091bbb4c188d584814a4a3f8207f71']['chain'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run(badCB)((x => ((__x__) => {
@@ -69,9 +69,9 @@ Monad['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['chain'] = () => (f => m => Wish(
     throw 'non exhaustive patterns!';
   }
 })(m))));
-Monad['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['of'] = () => Applicative.Wish_f76eea3ecc45547ab1e69e479c05b8d2.pure();
-Bifunctor['Wish_f76eea3ecc45547ab1e69e479c05b8d2'] = {};
-Bifunctor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['bimap'] = () => (leftF => rightF => m => Wish((badCB => goodCB => ((__x__) => {
+Monad['Wish_48091bbb4c188d584814a4a3f8207f71']['of'] = () => Applicative.Wish_48091bbb4c188d584814a4a3f8207f71.pure();
+Bifunctor['Wish_48091bbb4c188d584814a4a3f8207f71'] = {};
+Bifunctor['Wish_48091bbb4c188d584814a4a3f8207f71']['bimap'] = () => (leftF => rightF => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run((_P_ => badCB(leftF(_P_))))((_P_ => goodCB(rightF(_P_))));
@@ -82,8 +82,8 @@ Bifunctor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['bimap'] = () => (leftF => ri
     throw 'non exhaustive patterns!';
   }
 })(m))));
-Bifunctor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['mapFirst'] = () => mapRej;
-Bifunctor['Wish_f76eea3ecc45547ab1e69e479c05b8d2']['mapSecond'] = () => Functor.Wish_f76eea3ecc45547ab1e69e479c05b8d2.map();
+Bifunctor['Wish_48091bbb4c188d584814a4a3f8207f71']['mapFirst'] = () => mapRej;
+Bifunctor['Wish_48091bbb4c188d584814a4a3f8207f71']['mapSecond'] = () => Functor.Wish_48091bbb4c188d584814a4a3f8207f71.map();
 export let mapRej = (f => m => Wish((badCB => goodCB => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];

@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/bin/prelude/__internal__/FilePath/Posix.mad
+// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/FilePath/Posix.mad
 import {} from "./../../__internals__.mjs"
 import String from "./../String.mjs";
 import {  } from "./../Char.mjs";
@@ -42,7 +42,7 @@ let performSplitPath = (buffer => foundSlash => path => {
 });
 export let splitPath = performSplitPath(``)(false);
 export let joinPath = (_P_ => ifElse((_P_ => equals(Just(`/`))(first(_P_))))((_P_ => Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(`/`)(String.join(`/`)(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()(dropTrailingPathSeparator)(drop(1)(_P_))))))((_P_ => String.join(`/`)(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()(dropTrailingPathSeparator)(_P_))))(filter(complement(String.isEmpty))(_P_)));
-export let canonicalizePath = (_P_ => joinPath(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()(ifElse((_P_ => equals(Just(__String.fromCharCode(47)))(String.lastChar(_P_))))(String.replace(`([^/]+)/*`)(`$1/`))(identity))(splitPath(_P_))));
+export let canonicalizePath = (_P_ => joinPath(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((_P_ => ifElse((_P_ => equals(Just(__String.fromCharCode(47)))(String.lastChar(_P_))))(String.replace(`([^/]+)/*`)(`$1/`))(identity)(ifElse((_P_ => equals(`./`)(String.take(2)(_P_))))(String.drop(2))(identity)(_P_))))(splitPath(_P_))));
 export let dropPathSegments = (howMany => _P_ => joinPath(drop(howMany)(splitPath(_P_))));
 export let parentPath = (_P_ => joinPath(dropLast(1)(splitPath(_P_))));
 export let isRootPathOf = (root => path => {
@@ -66,5 +66,5 @@ export let takeFileName = (_P_ => (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__))(last(splitPath(_P_))));
-export let takeExtension = (_P_ => fromMaybe(``)(Functor.Maybe_88ee2bbfb9fb271939df78a4e07d651c.map()(ifElse(String.isEmpty)(identity)(Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(`.`)))(last(String.split(`.`)(takeFileName(_P_))))));
+export let takeExtension = (_P_ => fromMaybe(``)(Functor.Maybe_17998c1898470349f86806803a2b29f2.map()(ifElse(String.isEmpty)(identity)(Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(`.`)))(last(String.split(`.`)(takeFileName(_P_))))));
 export default { dropTrailingPathSeparator, splitPath, joinPath, canonicalizePath, dropPathSegments, parentPath, isRootPathOf, takeFileName, takeExtension };

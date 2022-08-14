@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/bin/prelude/__internal__/Http.mad
+// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Http.mad
 import {} from "./../__internals__.mjs"
 import { fulfill } from "./Wish.mjs";
 import { isJust } from "./Maybe.mjs";
@@ -44,8 +44,8 @@ export let UnresolvedProxy = ({ __constructor: "UnresolvedProxy", __args: [  ] }
 export let UnsupportedProtocol = ({ __constructor: "UnsupportedProtocol", __args: [  ] });
 export let BadResponse = (a => ({ __constructor: "BadResponse", __args: [ a ] }));
 export let ClientError = (a => ({ __constructor: "ClientError", __args: [ a ] }));
-Inspect['TransferEncoding_6a95b62bda9126c5a49dc9882714c897'] = {};
-Inspect['TransferEncoding_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['TransferEncoding_796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['TransferEncoding_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Chunked") {
     return `Chunked`;
   }
@@ -67,8 +67,8 @@ Inspect['TransferEncoding_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => 
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Header_6a95b62bda9126c5a49dc9882714c897'] = {};
-Inspect['Header_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Header_796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['Header_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Header" && true && true) {
     let a0 = __x__.__args[0];
     let a1 = __x__.__args[1];
@@ -83,8 +83,8 @@ Inspect['Header_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Method_6a95b62bda9126c5a49dc9882714c897'] = {};
-Inspect['Method_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Method_796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['Method_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "CONNECT") {
     return `CONNECT`;
   }
@@ -121,10 +121,10 @@ Inspect['Method_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0_headersf_1_statusf_2'] = {};
-Inspect['Record_bodyf_0_headersf_1_statusf_2']['inspect'] = () => (Inspect_d445) => (Inspect_w438) => (Inspect_p431) => (__$a__ => `{ ` + `body: ` + Inspect_p431.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_w438.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_d445.inspect()(__$a__.status) + ` }`);
-Inspect['ClientError_6a95b62bda9126c5a49dc9882714c897'] = {};
-Inspect['ClientError_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_d445) => (Inspect_w438) => (Inspect_p431) => (__$a__ => `{ ` + `body: ` + Inspect_p431.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_w438.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_d445.inspect()(__$a__.status) + ` }`);
+Inspect['ClientError_796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['ClientError_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "AccessDenied") {
     return `AccessDenied`;
   }
@@ -189,15 +189,15 @@ Inspect['ClientError_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (__$a
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Error_6a95b62bda9126c5a49dc9882714c897'] = {};
-Inspect['Error_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (Inspect_n481) => (__$a__ => ((__x__) => {
+Inspect['Error_796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['Error_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_n481) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "BadResponse" && true) {
     let a0 = __x__.__args[0];
-    return `BadResponse(` + Inspect.Record_bodyf_0_headersf_1_statusf_2.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_6a95b62bda9126c5a49dc9882714c897]))(Inspect_n481)(a0) + `)`;
+    return `BadResponse(` + Inspect.Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_796b81c0e00da04bf7bbfe5795b16551]))(Inspect_n481)(a0) + `)`;
   }
   else if (__x__.__constructor === "ClientError" && true) {
     let a0 = __x__.__args[0];
-    return `ClientError(` + Inspect.ClientError_6a95b62bda9126c5a49dc9882714c897.inspect()(a0) + `)`;
+    return `ClientError(` + Inspect.ClientError_796b81c0e00da04bf7bbfe5795b16551.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -208,8 +208,8 @@ Inspect['Error_6a95b62bda9126c5a49dc9882714c897']['inspect'] = () => (Inspect_n4
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0_headersf_1_methodf_2_urlf_3'] = {};
-Inspect['Record_bodyf_0_headersf_1_methodf_2_urlf_3']['inspect'] = () => (Inspect_b521) => (Inspect_u514) => (Inspect_n507) => (Inspect_g500) => (__$a__ => `{ ` + `body: ` + Inspect_g500.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_n507.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_u514.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_b521.inspect()(__$a__.url) + ` }`);
+Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_methodf_2796b81c0e00da04bf7bbfe5795b16551_urlf_3796b81c0e00da04bf7bbfe5795b16551'] = {};
+Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_methodf_2796b81c0e00da04bf7bbfe5795b16551_urlf_3796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_b521) => (Inspect_u514) => (Inspect_n507) => (Inspect_g500) => (__$a__ => `{ ` + `body: ` + Inspect_g500.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_n507.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_u514.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_b521.inspect()(__$a__.url) + ` }`);
 
 
 ;

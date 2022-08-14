@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/bin/prelude/__internal__/ByteArray.mad
+// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/ByteArray.mad
 import {} from "./../__internals__.mjs"
 export let toString = (byteArray =>  new TextDecoder().decode(byteArray) );
 export let fromString = (str =>  new TextEncoder().encode(str) );

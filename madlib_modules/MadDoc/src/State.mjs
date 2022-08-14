@@ -21,6 +21,6 @@ Inspect['Target_80f4a43bf97979d3e4a8a496cd64fec2']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_modulesf_0_pathf_1_searchf_2_targetf_3'] = {};
-Inspect['Record_modulesf_0_pathf_1_searchf_2_targetf_3']['inspect'] = () => (Inspect_p93) => (Inspect_i86) => (Inspect_b79) => (Inspect_u72) => (__$a__ => `{ ` + `modules: ` + Inspect_u72.inspect()(__$a__.modules) + `, ` + `path: ` + Inspect_b79.inspect()(__$a__.path) + `, ` + `search: ` + Inspect_i86.inspect()(__$a__.search) + `, ` + `target: ` + Inspect_p93.inspect()(__$a__.target) + ` }`);
+Inspect['Record_modulesf_080f4a43bf97979d3e4a8a496cd64fec2_pathf_180f4a43bf97979d3e4a8a496cd64fec2_searchf_280f4a43bf97979d3e4a8a496cd64fec2_targetf_380f4a43bf97979d3e4a8a496cd64fec2'] = {};
+Inspect['Record_modulesf_080f4a43bf97979d3e4a8a496cd64fec2_pathf_180f4a43bf97979d3e4a8a496cd64fec2_searchf_280f4a43bf97979d3e4a8a496cd64fec2_targetf_380f4a43bf97979d3e4a8a496cd64fec2']['inspect'] = () => (Inspect_p93) => (Inspect_i86) => (Inspect_b79) => (Inspect_u72) => (__$a__ => `{ ` + `modules: ` + Inspect_u72.inspect()(__$a__.modules) + `, ` + `path: ` + Inspect_b79.inspect()(__$a__.path) + `, ` + `search: ` + Inspect_i86.inspect()(__$a__.search) + `, ` + `target: ` + Inspect_p93.inspect()(__$a__.target) + ` }`);
 export default { LLVM, JS };

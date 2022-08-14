@@ -9,8 +9,8 @@ import { Description } from "./Description.mjs";
 import { Example } from "./Example.mjs";
 import {  } from "./../Parser/Documentation.mjs";
 
-Inspect['Record_hasJSf_0_hasLLVMf_1_isAvailablef_2'] = {};
-Inspect['Record_hasJSf_0_hasLLVMf_1_isAvailablef_2']['inspect'] = () => (Inspect_n143) => (Inspect_g136) => (Inspect_z129) => (__$a__ => `{ ` + `hasJS: ` + Inspect_z129.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_g136.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_n143.inspect()(__$a__.isAvailable) + ` }`);
+Inspect['Record_hasJSf_0e18b622886cb39510dabf7debf8c29eb_hasLLVMf_1e18b622886cb39510dabf7debf8c29eb_isAvailablef_2e18b622886cb39510dabf7debf8c29eb'] = {};
+Inspect['Record_hasJSf_0e18b622886cb39510dabf7debf8c29eb_hasLLVMf_1e18b622886cb39510dabf7debf8c29eb_isAvailablef_2e18b622886cb39510dabf7debf8c29eb']['inspect'] = () => (Inspect_n143) => (Inspect_g136) => (Inspect_z129) => (__$a__ => `{ ` + `hasJS: ` + Inspect_z129.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_g136.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_n143.inspect()(__$a__.isAvailable) + ` }`);
 export let Instance = (moduleName => instanceDef => {
     let constraints = instanceDef.constraints;
     let constraintElements = (!__eq__(constraints, ``) ? ({ v: span((null))(({ v: constraints, n: null })), n: { v: span(({ v: className(`highlight`), n: null }))(({ v: ` => `, n: null })), n: null } }) : (null));

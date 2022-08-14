@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/bin/prelude/__internal__/Parse.mad
+// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Parse.mad
 import {} from "./../__internals__.mjs"
 import { andDo } from "./Monad.mjs";
 import {  } from "./Alternative.mjs";
@@ -15,8 +15,8 @@ import { maybeLoop, _$_while_$_ } from "./Control.mjs";
 export let Loc = (a => b => c => ({ __constructor: "Loc", __args: [ a, b, c ] }));
 export let Parser = (a => ({ __constructor: "Parser", __args: [ a ] }));
 export let Error = (a => ({ __constructor: "Error", __args: [ a ] }));
-Inspect['Location_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Inspect['Location_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Location_a91f6bfcb96b14c62290a677a2570798'] = {};
+Inspect['Location_a91f6bfcb96b14c62290a677a2570798']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Loc" && true && true && true) {
     let a0 = __x__.__args[0];
     let a1 = __x__.__args[1];
@@ -32,8 +32,8 @@ Inspect['Location_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (__$a__ 
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Parser_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Inspect['Parser_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (Inspect_d549) => (__$a__ => ((__x__) => {
+Inspect['Parser_a91f6bfcb96b14c62290a677a2570798'] = {};
+Inspect['Parser_a91f6bfcb96b14c62290a677a2570798']['inspect'] = () => (Inspect_d549) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Parser" && true) {
     let a0 = __x__.__args[0];
     return `Parser(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -47,11 +47,11 @@ Inspect['Parser_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (Inspect_d
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Error_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Inspect['Error_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Error_a91f6bfcb96b14c62290a677a2570798'] = {};
+Inspect['Error_a91f6bfcb96b14c62290a677a2570798']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Error" && true) {
     let a0 = __x__.__args[0];
-    return `Error(` + Inspect.Location_4ace3135073247c65fa2846bd5b7b62d.inspect()(a0) + `)`;
+    return `Error(` + Inspect.Location_a91f6bfcb96b14c62290a677a2570798.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -62,8 +62,8 @@ Inspect['Error_4ace3135073247c65fa2846bd5b7b62d']['inspect'] = () => (__$a__ => 
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Functor['Parser_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Functor['Parser_4ace3135073247c65fa2846bd5b7b62d']['map'] = () => (f => m => Parser((s => l => ((__x__) => {
+Functor['Parser_a91f6bfcb96b14c62290a677a2570798'] = {};
+Functor['Parser_a91f6bfcb96b14c62290a677a2570798']['map'] = () => (f => m => Parser((s => l => ((__x__) => {
   if (__x__.length === 2 && __x__[0] !== null && __x__[0].v.length === 2 && true && true && __x__[0].n === null && true) {
     let [{ v: [a, b] },loc] = __x__;
     return ([({ v: ([f(a), b]), n: null }), loc]);
@@ -78,8 +78,8 @@ Functor['Parser_4ace3135073247c65fa2846bd5b7b62d']['map'] = () => (f => m => Par
     throw 'non exhaustive patterns!';
   }
 })(parse(m)(s)(l)))));
-Applicative['Parser_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Applicative['Parser_4ace3135073247c65fa2846bd5b7b62d']['ap'] = () => (parserA => parserB => Parser((s => l => ((__x__) => {
+Applicative['Parser_a91f6bfcb96b14c62290a677a2570798'] = {};
+Applicative['Parser_a91f6bfcb96b14c62290a677a2570798']['ap'] = () => (parserA => parserB => Parser((s => l => ((__x__) => {
   if (__x__.length === 2 && __x__[0] === null && true) {
     let [,l1] = __x__;
     return ([(null), l1]);
@@ -108,9 +108,9 @@ Applicative['Parser_4ace3135073247c65fa2846bd5b7b62d']['ap'] = () => (parserA =>
     throw 'non exhaustive patterns!';
   }
 })(parse(parserA)(s)(l)))));
-Applicative['Parser_4ace3135073247c65fa2846bd5b7b62d']['pure'] = () => (a => Parser((s => l => ([({ v: ([a, s]), n: null }), l]))));
-Monad['Parser_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Monad['Parser_4ace3135073247c65fa2846bd5b7b62d']['chain'] = () => (f => m => Parser((s => l => ((__x__) => {
+Applicative['Parser_a91f6bfcb96b14c62290a677a2570798']['pure'] = () => (a => Parser((s => l => ([({ v: ([a, s]), n: null }), l]))));
+Monad['Parser_a91f6bfcb96b14c62290a677a2570798'] = {};
+Monad['Parser_a91f6bfcb96b14c62290a677a2570798']['chain'] = () => (f => m => Parser((s => l => ((__x__) => {
   if (__x__.length === 2 && __x__[0] === null && true) {
     let [,ll] = __x__;
     return ([(null), ll]);
@@ -125,10 +125,10 @@ Monad['Parser_4ace3135073247c65fa2846bd5b7b62d']['chain'] = () => (f => m => Par
     throw 'non exhaustive patterns!';
   }
 })(parse(m)(s)(l)))));
-Monad['Parser_4ace3135073247c65fa2846bd5b7b62d']['of'] = () => Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d.pure();
-Alternative['Parser_4ace3135073247c65fa2846bd5b7b62d'] = {};
-Alternative['Parser_4ace3135073247c65fa2846bd5b7b62d']['aempty'] = () => Parser((_ => l => ([(null), l])));
-Alternative['Parser_4ace3135073247c65fa2846bd5b7b62d']['alt'] = () => (ma => mb => Parser((s => l => ((__x__) => {
+Monad['Parser_a91f6bfcb96b14c62290a677a2570798']['of'] = () => Applicative.Parser_a91f6bfcb96b14c62290a677a2570798.pure();
+Alternative['Parser_a91f6bfcb96b14c62290a677a2570798'] = {};
+Alternative['Parser_a91f6bfcb96b14c62290a677a2570798']['aempty'] = () => Parser((_ => l => ([(null), l])));
+Alternative['Parser_a91f6bfcb96b14c62290a677a2570798']['alt'] = () => (ma => mb => Parser((s => l => ((__x__) => {
   if (__x__.length === 2 && __x__[0] === null && true) {
     let [,] = __x__;
     return parse(mb)(s)(l);
@@ -186,7 +186,7 @@ export let runParser = (m => s => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(parse(m)(s)(Loc(0)(0)(0))));
-export let fail = Alternative.Parser_4ace3135073247c65fa2846bd5b7b62d.aempty();
+export let fail = Alternative.Parser_a91f6bfcb96b14c62290a677a2570798.aempty();
 export let anyChar = Parser((s => l => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let c = __x__.__args[0];
@@ -204,7 +204,7 @@ export let anyChar = Parser((s => l => ((__x__) => {
 export let location = Parser((s => l => ([({ v: ([l, s]), n: null }), l])));
 export let oneOf = (cs => satisfy((__$PH1__ => List.includes(__$PH1__)(cs))));
 export let notOneOf = (cs => satisfy(complement((__$PH2__ => List.includes(__$PH2__)(cs)))));
-export let choice = (ps => List.reduce(Alternative.Parser_4ace3135073247c65fa2846bd5b7b62d.alt())(fail)(ps));
+export let choice = (ps => List.reduce(Alternative.Parser_a91f6bfcb96b14c62290a677a2570798.alt())(fail)(ps));
 export let many = (p => Parser((s => l => {
     let rest = s;
     let loc = l;
@@ -230,7 +230,7 @@ export let many = (p => Parser((s => l => {
 })(parse(p)(rest)(loc))));
     return ([({ v: ([List.reverse(acc), rest]), n: null }), loc]);
 })));
-export let some = (p => Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.chain()((first => Functor.Parser_4ace3135073247c65fa2846bd5b7b62d.map()((rest => ({ v: first, n: rest })))(many(p))))(p));
+export let some = (p => Monad.Parser_a91f6bfcb96b14c62290a677a2570798.chain()((first => Functor.Parser_a91f6bfcb96b14c62290a677a2570798.map()((rest => ({ v: first, n: rest })))(many(p))))(p));
 export let manyTill = (p => end => Parser((s => l => {
     let result = maybeLoop(([s, l, (null)]))((state => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
@@ -281,7 +281,7 @@ export let manyTill = (p => end => Parser((s => l => {
   }
 })(result);
 })));
-export let someTill = (p => end => Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.chain()((first => Functor.Parser_4ace3135073247c65fa2846bd5b7b62d.map()((rest => Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(({ v: first, n: null }))(rest)))(manyTill(p)(end))))(p));
+export let someTill = (p => end => Monad.Parser_a91f6bfcb96b14c62290a677a2570798.chain()((first => Functor.Parser_a91f6bfcb96b14c62290a677a2570798.map()((rest => Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(({ v: first, n: null }))(rest)))(manyTill(p)(end))))(p));
 export let lookAhead = (p => Parser((s => l => ((__x__) => {
   if (__x__.length === 2 && __x__[0] !== null && __x__[0].v.length === 2 && true && true && __x__[0].n === null && true) {
     let [{ v: [a, ] },] = __x__;
@@ -333,11 +333,11 @@ export let takeWhile = (pred => Parser((s => l => {
   }
 })(result);
 })));
-export let sepBy = (parser => separator => Alternative.Parser_4ace3135073247c65fa2846bd5b7b62d.alt()((() => {
+export let sepBy = (parser => separator => Alternative.Parser_a91f6bfcb96b14c62290a677a2570798.alt()((() => {
   
-  return Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.chain()((first => Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.chain()((rest => Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.of()(({ v: first, n: rest }))))(many(andDo(Functor.Parser_4ace3135073247c65fa2846bd5b7b62d)(Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d)(Monad.Parser_4ace3135073247c65fa2846bd5b7b62d)(parser)(separator)))))(parser)
+  return Monad.Parser_a91f6bfcb96b14c62290a677a2570798.chain()((first => Monad.Parser_a91f6bfcb96b14c62290a677a2570798.chain()((rest => Monad.Parser_a91f6bfcb96b14c62290a677a2570798.of()(({ v: first, n: rest }))))(many(andDo(Functor.Parser_a91f6bfcb96b14c62290a677a2570798)(Applicative.Parser_a91f6bfcb96b14c62290a677a2570798)(Monad.Parser_a91f6bfcb96b14c62290a677a2570798)(parser)(separator)))))(parser)
 })())(fail));
-export let satisfy = (pred => Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.chain()(ifElse(pred)(Monad.Parser_4ace3135073247c65fa2846bd5b7b62d.of())(always(fail)))(anyChar));
+export let satisfy = (pred => Monad.Parser_a91f6bfcb96b14c62290a677a2570798.chain()(ifElse(pred)(Monad.Parser_a91f6bfcb96b14c62290a677a2570798.of())(always(fail)))(anyChar));
 export let char = (_P_ => satisfy(equals(_P_)));
 export let notChar = (_P_ => satisfy(notEquals(_P_)));
 export let eof = Parser((s => l => ((__x__) => {
@@ -357,10 +357,10 @@ export let eof = Parser((s => l => ((__x__) => {
 export let string = (s => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let c = __x__.__args[0];
-    return (_P_ => (__$PH3__ => Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d.ap()(__$PH3__)(string(String.drop(1)(s))))(Functor.Parser_4ace3135073247c65fa2846bd5b7b62d.map()((a => b => String.pushChar(a)(b)))(_P_)))(char(c));
+    return (_P_ => (__$PH3__ => Applicative.Parser_a91f6bfcb96b14c62290a677a2570798.ap()(__$PH3__)(string(String.drop(1)(s))))(Functor.Parser_a91f6bfcb96b14c62290a677a2570798.map()((a => b => String.pushChar(a)(b)))(_P_)))(char(c));
   }
   else if (__x__.__constructor === "Nothing") {
-    return Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d.pure()(``);
+    return Applicative.Parser_a91f6bfcb96b14c62290a677a2570798.pure()(``);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -369,7 +369,7 @@ export let string = (s => ((__x__) => {
   }
 })(String.firstChar(s)));
 export let spaces = (_P_ => some(oneOf(_P_)))(({ v: __String.fromCharCode(32), n: { v: __String.fromCharCode(10), n: { v: __String.fromCharCode(13), n: { v: __String.fromCharCode(9), n: null } } } }));
-export let token = (__$PH4__ => apL(Functor.Parser_4ace3135073247c65fa2846bd5b7b62d)(Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d)(__$PH4__)(Alternative.Parser_4ace3135073247c65fa2846bd5b7b62d.alt()(spaces)(Applicative.Parser_4ace3135073247c65fa2846bd5b7b62d.pure()((null)))));
+export let token = (__$PH4__ => apL(Functor.Parser_a91f6bfcb96b14c62290a677a2570798)(Applicative.Parser_a91f6bfcb96b14c62290a677a2570798)(__$PH4__)(Alternative.Parser_a91f6bfcb96b14c62290a677a2570798.alt()(spaces)(Applicative.Parser_a91f6bfcb96b14c62290a677a2570798.pure()((null)))));
 export let symbol = (_P_ => token(string(_P_)));
 export let digit = satisfy(Char.isDigit);
 export let letter = satisfy(Char.isLetter);
