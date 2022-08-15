@@ -30,6 +30,8 @@ generateInternalsModuleContent target optimized coverage =
     <> "\n"
     <> listToJSArray target
     <> "\n"
+    <> jsArrayToList target
+    <> "\n"
     <> listConstructorSpreadFn target
     <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
@@ -263,6 +265,21 @@ listToJSArray target =
     , "  while (list) {"
     , "    res.push(list.v)"
     , "    list = list.n"
+    , "  }"
+    , ""
+    , "  return res"
+    , "}"
+    ]
+
+jsArrayToList :: Target -> String
+jsArrayToList target =
+  unlines
+    [ getGlobalForTarget target <> "." <> "__jsArrayToList__ = (arr) => {"
+    , "  let res = null"
+    , ""
+    , "  for (let i = arr.length - 1; i >= 0; i--) {"
+    , "    let head = { v: arr[i], n: res }"
+    , "    res = head"
     , "  }"
     , ""
     , "  return res"

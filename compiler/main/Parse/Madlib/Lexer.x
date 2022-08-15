@@ -537,6 +537,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
     TokenLeftDoubleCurly ->
       if sc /= instanceHeader then do
         pushStartCode 0
+        pushStartCode 0
         return TokenLeftDoubleCurly
       else
         return TokenLeftDoubleCurly
