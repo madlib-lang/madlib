@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <uv.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "event-loop.hpp"
 
@@ -297,7 +298,7 @@ void madlib__file__exists(char *filepath, PAP_t *callback) {
   accessReq->data = GC_MALLOC_UNCOLLECTABLE(sizeof(FileExistData_t));
   ((FileExistData_t *)accessReq->data)->callback = callback;
 
-  uv_fs_access(getLoop(), accessReq, filepath, UV_FS_O_NOATIME, onFileExists);
+  uv_fs_access(getLoop(), accessReq, filepath, F_OK, onFileExists);
 }
 
 #ifdef __cplusplus
