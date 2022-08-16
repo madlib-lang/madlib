@@ -1,3 +1,12 @@
+
+/**
+ * A bifunctor is a type constructor that takes two type arguments and is a functor in both
+ * arguments. That is, unlike with Functor, a type constructor such as Either does not need
+ * to be partially applied for a Bifunctor instance, and the methods in this class permit
+ * mapping functions over the Left value or the Right value, or both at the same time.
+ *
+ * @since 0.11.0
+ */
 interface Bifunctor f {
   bimap     :: (a -> b) -> (c -> d) -> f a c -> f b d
   mapFirst  :: (a -> b) -> f a c -> f b c

@@ -32,6 +32,12 @@ apL :: Applicative m => m a -> m b -> m a
 export apL = (a, b) => ap(map(always, a), b)
 
 
+/**
+ * Maps two Applicative inputs
+ * @since 0.11.0
+ * @example
+ * liftA2((a, b) => a + b, Just(2), Just(3)) // Just(5)
+ */
 liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
 export liftA2 = (f, x1, x2) => pipe(
   map(f),
@@ -39,6 +45,12 @@ export liftA2 = (f, x1, x2) => pipe(
 )(x1)
 
 
+/**
+ * Maps three Applicative inputs
+ * @since 0.11.0
+ * @example
+ * liftA2((a, b, c) => a + b + c, Just(2), Just(1), Just(2)) // Just(5)
+ */
 liftA3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 export liftA3 = (f, x1, x2, x3) => pipe(
   map(f),

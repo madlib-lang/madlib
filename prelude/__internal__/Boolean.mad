@@ -1,6 +1,16 @@
 import { EQUAL, LESS, MORE } from "Compare"
 
 
+/**
+ * Comparable implementation for booleans
+ *
+ * @since 0.11.0
+ * @example
+ * compare(true, false) // MORE
+ * compare(false, true) // LESS
+ * compare(true, true) // EQUAL
+ * compare(false, false) // EQUAL
+ */
 instance Comparable Boolean {
   compare = (a, b) => where(#[a, b]) {
     #[true, false] =>

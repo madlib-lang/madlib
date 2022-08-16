@@ -1,34 +1,94 @@
 import {} from "Monad"
 
+/**
+ * Array serves a similar purpose as List but is composed of one memory block.
+ * This means that most operations that add or remove elements might need to reallocate the
+ * whole array whether adding an item at the front of a List has a very small memory footprint.
+ */
+
 // TODO: add filter, ap, chain
 
 #iftarget llvm
 
+/**
+ * Creates an array from a List
+ *
+ * @since 0.11.0
+ * @example
+ * fromList([1, 2, 3]) // Array([1, 2, 3])
+ */
 fromList :: List a -> Array a
 export fromList = extern "madlib__array__fromList"
 
+
+/**
+ * Converts an array to a List
+ *
+ * @since 0.11.0
+ * @example
+ * toList(fromList([1, 2, 3])) // [1, 2, 3]
+ */
 toList :: Array a -> List a
 export toList = extern "madlib__array__toList"
 
+
+/**
+ * Returns the length of the given array
+ *
+ * @since 0.11.0
+ * @example
+ * length(fromList([1, 2, 3])) // 3
+ */
 length :: Array a -> Integer
 export length = extern "madlib__array__length"
+
 
 mapFFI :: (a -> b) -> Array a -> Array b
 mapFFI = extern "madlib__array__map"
 
+
+/**
+ * Reduces an array to a value, given a reducer function, an initial value, and an array.
+ *
+ * @since 0.11.0
+ * @example
+ * reduce(add, 0, fromList([1, 2, 3])) // 6
+ */
 reduce :: (a -> b -> a) -> a -> Array b -> a
 export reduce = extern "madlib__array__reduce"
 
+
+/**
+ * Concatenates two arrays
+ *
+ * @since 0.11.0
+ * @example
+ * concat(fromList([1, 2, 3]), fromList([4, 5, 6])) // fromList([1, 2, 3, 4, 5, 6])
+ */
 concat :: Array a -> Array a -> Array a
 export concat = extern "madlib__array__concat"
 
 
+/**
+ * Maps over an array, applying the given function to each element.
+ *
+ * @since 0.11.0
+ * @example
+ * map(add(1), fromList([1, 2, 3])) // fromList([2, 3, 4])
+ */
 instance Functor Array {
   map = mapFFI
 }
 
 #elseif js
 
+/**
+ * Creates an array from a list
+ *
+ * @since 0.11.0
+ * @example
+ * fromList([1, 2, 3]) // Array([1, 2, 3])
+ */
 fromList :: List a -> Array a
 export fromList = (list) => #- {
   let array = []
@@ -39,6 +99,14 @@ export fromList = (list) => #- {
   return array
 } -#
 
+
+/**
+ * Converts an array to a list
+ *
+ * @since 0.11.0
+ * @example
+ * toList(fromList([1, 2, 3])) // [1, 2, 3]
+ */
 toList :: Array a -> List a
 export toList = (array) => #- {
   let list = {}
@@ -51,15 +119,47 @@ export toList = (array) => #- {
   return start.n
 } -#
 
+
+/**
+ * Returns the length of the given array
+ *
+ * @since 0.11.0
+ * @example
+ * length(fromList([1, 2, 3])) // 3
+ */
 length :: Array a -> Integer
 export length = (array) => #- array.length -#
 
+
+/**
+ * Reduces an array to a value, given a reducer function, an initial value, and an array.
+ *
+ * @since 0.11.0
+ * @example
+ * reduce(add, 0, fromList([1, 2, 3])) // 6
+ */
 reduce :: (a -> b -> a) -> a -> Array b -> a
 export reduce = (f, start, array) => #- array.reduce((a, b) => f(a)(b), start) -#
 
+
+/**
+ * Concatenates two arrays
+ *
+ * @since 0.11.0
+ * @example
+ * concat(fromList([1, 2, 3]), fromList([4, 5, 6])) // fromList([1, 2, 3, 4, 5, 6])
+ */
 concat :: Array a -> Array a -> Array a
 export concat = (array1, array2) => #- array1.concat(array2) -#
 
+
+/**
+ * Maps over an array, applying the given function to each element.
+ *
+ * @since 0.11.0
+ * @example
+ * map(add(1), fromList([1, 2, 3])) // fromList([2, 3, 4])
+ */
 instance Functor Array {
   map = (f, array) => #- array.map(f) -#
 }

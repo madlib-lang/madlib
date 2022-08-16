@@ -1,9 +1,11 @@
 import {} from "Show"
 import String from "String"
 
+
 #iftarget js
 
 import { MORE, LESS, EQUAL } from "Compare"
+
 
 instance Comparable Char {
   compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
@@ -14,8 +16,10 @@ instance Comparable Char {
 import type { ComparisonResult } from "Compare"
 import {} from "Compare"
 
+
 charCompare :: Char -> Char -> ComparisonResult
 charCompare = extern "madlib__char__compare"
+
 
 instance Comparable Char {
   compare = charCompare
@@ -33,6 +37,7 @@ instance Show Char {
 
 showChar :: Char -> String
 showChar = extern "madlib__char__internal__show"
+
 
 instance Show Char {
   show = showChar
@@ -73,6 +78,7 @@ export isLetter = (c) => pipe(
 toLower :: Char -> Char
 export toLower = (c) => #- c.toLowerCase() -#
 
+
 toUpper :: Char -> Char
 export toUpper = (c) => #- c.toUpperCase() -#
 
@@ -80,6 +86,7 @@ export toUpper = (c) => #- c.toUpperCase() -#
 
 toLower :: Char -> Char
 export toLower = extern "madlib__char__toLower"
+
 
 toUpper :: Char -> Char
 export toUpper = extern "madlib__char__toUpper"

@@ -1,17 +1,45 @@
 #iftarget js
 #- import { createHash } from "crypto" -#
 
+/**
+ * Hash the input String with md5 algorithm
+ *
+ * @since 0.13.0
+ * @example
+ * md5("rabbit") // "a51e47f646375ab6bf5dd2c42d3e6181"
+ */
 md5 :: String -> String
 export md5 = (input) => #- createHash("md5").update(input).digest("hex") -#
 
+/**
+ * Hash the input String with sha256 algorithm
+ *
+ * @since 0.13.0
+ * @example
+ * md5("rabbit") // "d37d96b42ad43384915e4513505c30c0b1c4e7c765b5577eda25b5dbd7f26d89"
+ */
 sha256 :: String -> String
 export sha256 = (input) => #- createHash("sha256").update(input).digest("hex") -#
 
 #elseif llvm
 
+/**
+ * Hash the input String with md5 algorithm
+ *
+ * @since 0.13.0
+ * @example
+ * md5("rabbit") // "a51e47f646375ab6bf5dd2c42d3e6181"
+ */
 md5 :: String -> String
 export md5 = extern "madlib__crypto__md5"
 
+/**
+ * Hash the input String with sha256 algorithm
+ *
+ * @since 0.13.0
+ * @example
+ * md5("rabbit") // "d37d96b42ad43384915e4513505c30c0b1c4e7c765b5577eda25b5dbd7f26d89"
+ */
 sha256 :: String -> String
 export sha256 = extern "madlib__crypto__sha256"
 

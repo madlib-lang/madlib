@@ -1,39 +1,136 @@
 // TODO: Add filter, ap and chain
 
+/**
+ * ByteArray is a specialized array type that only contains bytes. It has a
+ * fast path to convert to and from string which makes it practical when
+ * dealing with raw bytes representing text data.
+ *
+ * Note: Most IO apis such as File or Http provide both functions that work with
+ * String and functions that work with ByteArray.
+ *
+ * @since 0.11.0
+ */
+
 #iftarget llvm
 
+/**
+ * Creates a byte array from a list of bytes.
+ *
+ * @since 0.11.0
+ * @example
+ * fromList([90, 91, 92])
+ */
 fromList :: List Byte -> ByteArray
 export fromList = extern "madlib__bytearray__fromList"
 
+
+/**
+ * Converts a byte array to a list of bytes.
+ *
+ * @since 0.11.0
+ * @example
+ * toList(fromString("abc"))
+ */
 toList :: ByteArray -> List Byte
 export toList = extern "madlib__bytearray__toList"
 
+
+/**
+ * Creates a byte array from a string.
+ *
+ * @since 0.11.0
+ * @example
+ * fromString("abc")
+ */
 fromString :: String -> ByteArray
 export fromString = extern "madlib__bytearray__fromString"
 
+
+/**
+ * Converts a byte array to a string
+ *
+ * @since 0.11.0
+ * @example
+ * toString(fromList([90, 91, 92]))
+ */
 toString :: ByteArray -> String
 export toString = extern "madlib__bytearray__toString"
 
+
+/**
+ * Returns the length of a ByteArray.
+ *
+ * @since 0.7.0
+ * @example
+ * length(fromString("abc")) // 3
+ */
 length :: ByteArray -> Integer
 export length = extern "madlib__bytearray__length"
 
+
+/**
+ * Concatenates two byte arrays
+ *
+ * @since 0.11.0
+ * @example
+ * concat(fromString("123"), fromString("456")) // fromString("123456")
+ */
 concat :: ByteArray -> ByteArray -> ByteArray
 export concat = extern "madlib__bytearray__concat"
 
+
+/**
+ * Maps the bytes of a byte array, applying the given function to each byte.
+ *
+ * @since 0.11.0
+ * @example
+ * mapBytes(substract(10), fromString("pqr"))
+ */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = extern "madlib__bytearray__map"
 
+
+/**
+ * Reduces a byte array to a value, given a reducer function, an initial value, and a byte array.
+ *
+ * @since 0.11.0
+ * @example
+ * reduce(add, 0, fromList([1, 2, 3])) // 6
+ */
 reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
 export reduce = extern "madlib__bytearray__reduce"
 
 #elseif js
 
+/**
+ * Converts a byte array to a string
+ *
+ * @since 0.11.0
+ * @example
+ * toString(fromList([90, 91, 92]))
+ */
 toString :: ByteArray -> String
 export toString = (byteArray) => #- new TextDecoder().decode(byteArray) -#
 
+
+/**
+ * Creates a byte array from a string.
+ *
+ * @since 0.11.0
+ * @example
+ * fromString("abc")
+ */
 fromString :: String -> ByteArray
 export fromString = (str) => #- new TextEncoder().encode(str) -#
 
+
+/**
+ * Converts a byte array to a list of bytes.
+ *
+ * @since 0.11.0
+ * @example
+ * toList(fromString("abc"))
+ */
 toList :: ByteArray -> List Byte
 export toList = (byteArray) => #- {
   if (byteArray.length === 0) {
@@ -48,6 +145,14 @@ export toList = (byteArray) => #- {
   return result.n
 } -#
 
+
+/**
+ * Creates a byte array from a list of bytes.
+ *
+ * @since 0.11.0
+ * @example
+ * fromList([90, 91, 92])
+ */
 fromList :: List Byte -> ByteArray
 export fromList = (bytes) => #- {
   let bytesArray = []
@@ -58,6 +163,14 @@ export fromList = (bytes) => #- {
   return Uint8Array.from(bytesArray)
 } -#
 
+
+/**
+ * Concatenates two byte arrays
+ *
+ * @since 0.11.0
+ * @example
+ * concat(fromString("123"), fromString("456")) // fromString("123456")
+ */
 concat :: ByteArray -> ByteArray -> ByteArray
 export concat = (byteArray1, byteArray2) => #- {
   const result = new Uint8Array(byteArray1.length + byteArray2.length);
@@ -66,21 +179,48 @@ export concat = (byteArray1, byteArray2) => #- {
   return result;
 } -#
 
+
+/**
+ * Maps the bytes of a byte array, applying the given function to each byte.
+ *
+ * @since 0.11.0
+ * @example
+ * mapBytes(substract(10), fromString("pqr"))
+ */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = (f, byteArray) => #- byteArray.map(f) -#
 
+
+/**
+ * Reduces a byte array to a value, given a reducer function, an initial value, and a byte array.
+ *
+ * @since 0.11.0
+ * @example
+ * reduce(add, 0, fromList([1, 2, 3])) // 6
+ */
 reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
 export reduce = (f, initialValue, byteArray) => #- byteArray.reduce((a, b) => f(a)(b), initialValue) -#
+
 
 /**
  * Returns the length of a ByteArray.
  *
  * @since 0.7.0
+ * @example
+ * length(fromString("abc")) // 3
  */
 length :: ByteArray -> Integer
 export length = (byteArray) => #- byteArray.length -#
 
 #endif
 
+
+/**
+ * The empty byte array
+ *
+ * @since 0.11.0
+ * @example
+ * empty == empty // true
+ */
 empty :: ByteArray
 export empty = fromList([])
