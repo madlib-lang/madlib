@@ -185,6 +185,17 @@ window.__listToJSArray__ = (list) => {
   return res
 }
 
+window.__jsArrayToList__ = (arr) => {
+  let res = null
+
+  for (let i = arr.length - 1; i >= 0; i--) {
+    let head = { v: arr[i], n: res }
+    res = head
+  }
+
+  return res
+}
+
 window.__listCtorSpread__ = (_spread, _next) => {
   if (_spread === null) {
     return _next;
