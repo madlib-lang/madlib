@@ -1143,6 +1143,30 @@ computeInternalsRelativePath outputPath astTargetPath =
   in  joinPath $ "./" : (".." <$ parts) ++ [takeFileName internalsPath]
 
 
+generateMainCall :: Options -> String -> String
+generateMainCall options astPath =
+  if astPath == optEntrypoint options then
+    if optTarget options == TNode then
+      unlines
+        [ "const makeArgs = () => {"
+        , "  let list = {}"
+        , "  let start = list"
+        , "  Object.keys(process.argv.slice(0)).forEach((key) => {"
+        , "    list = list.n = { v: process.argv[key], n: null }"
+        , "  }, {})"
+        , "  return {"
+        , "    n: start.n.n.n,"
+        , "    v: start.n.n.v"
+        , "  }"
+        , "}"
+        , "main(makeArgs())"
+        ]
+    else
+      "\nmain(null)\n"
+  else
+    ""
+
+
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
 generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ""
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
@@ -1166,6 +1190,7 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
               internalsPath
           )
           ast
+    let moduleContent' = moduleContent <> generateMainCall options path
 
     let rest = List.dropWhile (/= path) pathsToBuild
     let total = List.length pathsToBuild
@@ -1173,4 +1198,4 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
     let currStr = if curr < 10 then " " <> show curr else show curr
     Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
 
-    return moduleContent
+    return moduleContent'

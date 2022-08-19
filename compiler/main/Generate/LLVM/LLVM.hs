@@ -35,11 +35,9 @@ import           Data.ByteString.Char8        as Char8
 import           System.Process
 import           System.Environment.Executable
 
-import           LLVM.Pretty
 import           LLVM.Target
 import           LLVM.Module
 import           LLVM.AST                        as AST hiding (function)
-import           LLVM.Analysis
 import           LLVM.AST.Type                   as Type
 import           LLVM.AST.AddrSpace              as AddrSpace
 import           LLVM.AST.ParameterAttribute     as ParameterAttribute
@@ -68,18 +66,14 @@ import qualified Utils.Path                    as Path
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
-import           Utils.List
 import qualified Data.Tuple                    as Tuple
 import           Explain.Location
 import           System.FilePath (takeDirectory, takeExtension, makeRelative, joinPath, splitPath, takeFileName, dropExtension, dropFileName)
 import qualified LLVM.AST.Linkage              as Linkage
-import           System.Directory
 import qualified Distribution.System           as DistributionSystem
 import qualified Data.Text.Lazy.IO             as Text
 import           Debug.Trace
 import qualified Data.Functor.Constant         as Operand
-import GHC.IO.Handle
-import GHC.IO.Handle.FD
 import qualified Utils.IO                      as IOUtils
 import Control.Monad.IO.Class
 
@@ -4221,11 +4215,12 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
       symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
 
+  let moduleHash = hashModulePath ast
   let moduleFunctionName =
         if isMain then
           "main"
         else
-          "__" <> hashModulePath ast <> "__moduleFunction"
+          "__" <> moduleHash <> "__moduleFunction"
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
@@ -4254,14 +4249,17 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do
-    extern (AST.mkName "madlib__process__internal__initExtra") [] Type.void
+    extern (AST.mkName "madlib__process__internal__initExtra")    [] Type.void
     extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
     extern (AST.mkName "__initEventLoop__")                       [] Type.void
     extern (AST.mkName "__startEventLoop__")                      [] Type.void
+    extern (AST.mkName "madlib__process__internal__getArgs")      [] listType
     generateModuleFunctionExternals currentModulePaths
 
   moduleFunction <-
     if isMain then do
+      let getArgs     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [] False) "madlib__process__internal__getArgs")
+      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("__" <> moduleHash <> "__main") symbolTable'
       -- this function starts the runtime with a fresh stack etc
       function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"
@@ -4271,9 +4269,12 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
         callModuleFunctions currentModulePaths
 
         generateExps env symbolTable' (expsForMain $ aexps ast)
+        -- call user main that should be named like main_moduleHash
+        mainArgs <- call getArgs []
+        mainArgs' <- safeBitcast mainArgs boxType
+        call mainFunction [(mainArgs', [])]
         call startEventLoop []
         retVoid
-        return ()
 
       let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
           argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")

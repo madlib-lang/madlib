@@ -403,6 +403,39 @@ buildEnvForDerivedInstances env instancesToDerive =
   foldr (flip buildEnvForDerivedInstance) env instancesToDerive
 
 
+verifyTopLevelExp :: FilePath -> Slv.Exp -> Infer ()
+verifyTopLevelExp astPath exp = case exp of
+  Slv.Typed _ _ (Slv.Assignment _ _) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment _ _))) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment _ _)))) _ _) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment _ _)) _ _) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.JSExp _) ->
+    return ()
+
+  Slv.Typed _ _ Slv.Extern{} ->
+    return ()
+
+  Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ Slv.Extern{})) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.NameExport _) ->
+    return ()
+
+  Slv.Typed _ _ (Slv.TypeExport _) ->
+    return ()
+
+  _ ->
+    throwError $ CompilationError NotADefinition (Context astPath (Slv.getArea exp))
+
+
 inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
 inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
   let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive

@@ -33,7 +33,7 @@ extern char **environ;
 extern void __main__start__();
 extern void madlib__stack__init(void *, void (*)());
 
-static madlib__list__Node_t *args;
+static madlib__list__Node_t *__args__;
 
 static int ARGC = 0;
 static char **ARGV = NULL;
@@ -63,16 +63,16 @@ void __main__init__(int argc, char **argv) {
 
 void madlib__process__internal__initExtra() {
   GC_INIT();
-  args = madlib__list__empty();
+  __args__ = madlib__list__empty();
 
   srand(time(NULL));
 
   for (int i = ARGC - 1; i >= 0; i--) {
-    args = madlib__list__push(ARGV[i], args);
+    __args__ = madlib__list__push(ARGV[i], __args__);
   }
 }
 
-madlib__list__Node_t *madlib__process__internal__getArgs() { return args; }
+madlib__list__Node_t *madlib__process__internal__getArgs() { return __args__; }
 
 madlib__list__Node_t *madlib__process__internal__getEnv() {
   madlib__list__Node_t *envItems = madlib__list__empty();

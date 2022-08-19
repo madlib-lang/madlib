@@ -1,35 +1,10 @@
-// import type { Maybe } from "Maybe"
-// import { Just, Nothing } from "Maybe"
 import IO from "IO"
 
-// mapMaybe :: (a -> Maybe b) -> List a -> List b
-// mapMaybe = (f, list) => where(list) {
-//   [] =>
-//     []
-
-//   [x, ...xs] =>
-//     where(f(x)) {
-//       Just(a) =>
-//         [a, ...mapMaybe(f, xs)]
-
-//       Nothing =>
-//         mapMaybe(f, xs)
-//     }
-// }
-
-
-// pipe(
-//   mapMaybe(
-//     (x) => x % 2 == 0
-//       ? Just(x + 1)
-//       : Nothing
-//   ),
-//   IO.log
-// )([1, 2, 3])
 
 type Cons a
   = Empty
   | Cons(a, Cons a)
+
 
 mapCons :: (a -> b) -> Cons a -> Cons b
 mapCons = (f, tree) => where(tree) {
@@ -40,7 +15,10 @@ mapCons = (f, tree) => where(tree) {
     Cons(f(a), mapCons(f, n))
 }
 
-pipe(
-  mapCons((x) => x + 1),
-  IO.log
-)(Cons(1, Cons(2, Cons(3, Empty))))
+
+main = () => {
+  pipe(
+    mapCons((x) => x + 1),
+    IO.log
+  )(Cons(1, Cons(2, Cons(3, Empty))))
+}

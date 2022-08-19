@@ -20,7 +20,7 @@ export alias Dependency = {
   url :: String,
 }
 
-export alias MadlibDotJson = { bin :: Maybe String, dependencies :: Maybe (List Dependency), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, main :: String, name :: String, version :: Version, }
+export alias MadlibDotJson = { bin :: Maybe String, dependencies :: Maybe (List Dependency), importAliases :: Maybe (Dictionary String String), madlibVersion :: Maybe String, mainField :: String, name :: String, version :: Version, }
 
 
 parseVersion :: String -> Maybe Version
@@ -77,7 +77,7 @@ makeMadlibDotJson = (
   version,
   madlibVersion,
   dependencies,
-  main,
+  mainField,
   bin,
   importAliases
 ) => where (parseVersion(version)) {
@@ -87,7 +87,7 @@ makeMadlibDotJson = (
       version: v,
       madlibVersion,
       dependencies,
-      main,
+      mainField,
       bin,
       importAliases,
     })
@@ -135,8 +135,10 @@ export load = (path) => pipe(
 )(path)
 
 
-fulfill(
-  IO.log,
-  IO.log,
-  load("./compiler/test/Blackbox/test-cases/parse-madlib-dot-json/madlib.json")
-)
+main = () => {
+  fulfill(
+    IO.log,
+    IO.log,
+    load("./compiler/test/Blackbox/test-cases/parse-madlib-dot-json/madlib.json")
+  )
+}

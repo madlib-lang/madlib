@@ -1153,7 +1153,7 @@ spec = do
     it "should parse functions as args for adts in typings correctly" $ do
       let code = unlines
             [ "map :: (a -> b) -> List a -> List b"
-            , "map = (f, xs) => (#- some JS -#)"
+            , "map = (f, xs) => #- some JS -#"
             , "concat :: List a -> List a -> List a"
             , "export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
             , "reduce :: (a -> b -> a) -> a -> List b -> a"
@@ -1168,6 +1168,8 @@ spec = do
             , "  [],"
             , "  fns"
             , ")"
+            , ""
+            , "main = () => {}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should parse functions as args for adts in typings correctly" actual
@@ -1179,12 +1181,12 @@ spec = do
     -- Recursion:
 
     it "should resolve recursive functions" $ do
-      let code   = "fn = (x) => (x + fn(x))"
+      let code   = unlines ["fn = (x) => x + fn(x)", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve recursive functions" actual
 
     it "should resolve fibonacci recursive function" $ do
-      let code   = "fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2) })"
+      let code   = unlines ["fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve fibonacci recursive function" actual
 
@@ -1197,46 +1199,48 @@ spec = do
     it "should resolve template strings" $ do
       let code = unlines
             [ "x = if(true) { \"it is true\" } else { \"it is false\" }"
-            , "`probably ${x}!`"
             , ""
-            , "`3 + 7 is ${if(3 + 7 > 10) { \"more than 10\" } else { \"less than 10\" } }`" -- With some more complex interpolated things
+            , "main = () => {"
+            , "  `probably ${x}!`"
+            , "  `3 + 7 is ${if(3 + 7 > 10) { \"more than 10\" } else { \"less than 10\" } }`" -- With some more complex interpolated things
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve template strings" actual
 
     it "should fail to solve template strings when interpolated expressions are not strings" $ do
-      let code   = "`${4 + 3}!`"
+      let code   = "main = () => { `${4 + 3}!` }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to solve template strings when interpolated expressions are not strings" actual
 
     -- Scope
 
     it "should figure out illegal recursive accesses" $ do
-      let code   = unlines ["x = x + 1"]
+      let code   = unlines ["x = x + 1", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should figure out illegal recursive accesses" actual
 
     it "should figure out illegal recursive accesses within function bodies" $ do
-      let code   = unlines ["g = (x) => {", "  p = p + 1", "", "  return p", "}"]
+      let code   = unlines ["g = (x) => {", "  p = p + 1", "", "  return p", "}", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should figure out illegal recursive accesses within function bodies" actual
 
     it "should fail when accessing a function without typing that is defined after" $ do
-      let code   = unlines ["f = (x) => definedAfter(x)", "definedAfter = (x) => x + 1"]
+      let code   = unlines ["f = (x) => definedAfter(x)", "definedAfter = (x) => x + 1", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when accessing a function without typing that is defined after" actual
 
     it "should fail when accessing a executing an expression declared later" $ do
-      let code   = unlines ["definedAfter(3)", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1"]
+      let code   = unlines ["a = definedAfter(3)", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when accessing a executing an expression declared later" actual
 
     it "should fail when shadowing a name even if it's defined after the function" $ do
-      let code   = unlines ["g = (x) => {", "  a = 2", "  return a", "}", "a = 4"]
+      let code   = unlines ["g = (x) => {", "  a = 2", "  return a", "}", "a = 4", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when shadowing a name even if it's defined after the function" actual
 
     it "should fail when exporting a name not defined yet" $ do
-      let code   = unlines ["export definedAfter", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1"]
+      let code   = unlines ["export definedAfter", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when exporting a name not defined yet" actual

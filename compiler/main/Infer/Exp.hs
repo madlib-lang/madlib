@@ -191,6 +191,7 @@ extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
     (safeExtendVars env (param, Forall [] ([] :=> tv)))
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
+
 inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
@@ -211,7 +212,7 @@ inferBody options env [e] = do
   return (s, ps, t, [e'])
 
 inferBody options env (e : es) = do
-  (s, ps, env', e') <- case e of
+  (s, ps, env', e') <- case  e of
     Can.Canonical _ Can.TypedExp{} ->
       inferExplicitlyTyped options True env e
 
@@ -219,11 +220,12 @@ inferBody options env (e : es) = do
       (s, (_, ps), env, e') <- inferImplicitlyTyped options True env e
       return (s, ps, env, e')
 
+  let tVarsFromEnvFunctions = ftv $ M.elems $ M.filter (\(Forall _ (_ :=> t)) -> isFunctionType t) (envVars env')
+
   e''               <- insertClassPlaceholders options env' e' (dedupePreds ps)
-  -- e'''              <- updatePlaceholders env' (CleanUpEnv False [] [] []) True s e''
   (sb, ps', tb, eb) <- inferBody options (updateBodyEnv s env') es
 
-  let finalS = s `compose` sb
+  let finalS = M.filterWithKey (\k _ -> k `notElem` tVarsFromEnvFunctions) $ s `compose` sb
 
   return (finalS, apply finalS $ ps ++ ps', tb, e'' : eb)
   -- return (finalS, apply finalS $ ps ++ ps', tb, e''' : eb)

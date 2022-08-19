@@ -10,6 +10,7 @@ import qualified Data.Map                      as M
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
 
+
 data Canonical a
   = Canonical Area a
   deriving(Eq, Show, Ord, Generic, Hashable)
@@ -328,6 +329,14 @@ isNamedAbs exp = case exp of
     True
 
   Canonical _ (Export (Canonical _ (Assignment _ (Canonical _ (Abs _ _))))) ->
+    True
+
+  _ ->
+    False
+
+isAbs :: Exp -> Bool
+isAbs exp = case exp of
+  Canonical _ (Abs _ _) ->
     True
 
   _ ->
