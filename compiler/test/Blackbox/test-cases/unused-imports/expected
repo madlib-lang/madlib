@@ -3,6 +3,8 @@
 \ESC[90m2|import type { Either } from \"Either\"\ESC[0m
 3|import { fulfill } from \"Wish\"
            ^^^^^^^
+\ESC[90m4|\ESC[0m
+\ESC[90m5|main = () => {}\ESC[0m
 
 You imported 'fulfill' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
 but it seems that you never use it.
@@ -13,6 +15,7 @@ but it seems that you never use it.
          ^^^^^
 \ESC[90m2|import type { Either } from \"Either\"\ESC[0m
 \ESC[90m3|import { fulfill } from \"Wish\"\ESC[0m
+\ESC[90m4|\ESC[0m
 
 You imported 'Maybe' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
 but it seems that you never use it.
@@ -23,6 +26,8 @@ but it seems that you never use it.
 2|import type { Either } from \"Either\"
                 ^^^^^^
 \ESC[90m3|import { fulfill } from \"Wish\"\ESC[0m
+\ESC[90m4|\ESC[0m
+\ESC[90m5|main = () => {}\ESC[0m
 
 You imported 'Either' from the module located at 'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
 but it seems that you never use it.

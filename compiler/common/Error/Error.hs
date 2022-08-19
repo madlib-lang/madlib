@@ -51,6 +51,8 @@ data TypeError
   | ASTHasNoPath
   | Error
   | ImportCycle [FilePath]
+  | NoMain
+  | NotADefinition
   deriving (Show, Eq, Ord)
 
 

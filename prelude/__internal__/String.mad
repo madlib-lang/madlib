@@ -134,6 +134,10 @@ export unwords = join(" ")
 
 toList :: String -> List Char
 export toList = (str) => #- {
+  if (str.length === 0) {
+    return null
+  }
+
   let result = { v: null, n: null }
   let current = result
   str.split('').forEach(c => {

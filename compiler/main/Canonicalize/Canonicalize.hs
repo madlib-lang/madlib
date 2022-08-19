@@ -18,22 +18,57 @@ import qualified Data.List                     as List
 import           AST.Canonical
 import           Explain.Location
 import           Control.Monad.Except
-import           Error.Error
-import           Error.Context
 import qualified Data.Maybe as Maybe
 import           Text.Show.Pretty
 import qualified Canonicalize.EnvUtils as EnvUtils
 import qualified Rock
 import qualified Driver.Query as Query
-
+import qualified Infer.Type as Ty
+import Debug.Trace
+import qualified Text.Show.Pretty as PP
 
 
 class Canonicalizable a b where
   canonicalize :: Env.Env -> Target -> a -> CanonicalM b
 
 
+mainTyping :: Src.Typing
+mainTyping = Src.Source emptyArea Src.TargetAll (Src.TRArr (Src.Source emptyArea Src.TargetAll (Src.TRComp "List" [Src.Source emptyArea Src.TargetAll (Src.TRSingle "String")])) (Src.Source emptyArea Src.TargetAll (Src.TRSingle "{}")))
+
+updateMainFunction :: Env.Env -> Target -> Area -> Src.Exp -> Src.Typing -> CanonicalM Can.Exp
+updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assignment mainName main)) typing = do
+  sc        <- typingToScheme env typing
+  canTyping <- canonicalizeTyping typing
+  main'     <- canonicalize env target main
+  if Src.isAbs main then
+    return $ Can.Canonical initialArea (Can.TypedExp (Can.Canonical assignmentArea (Can.Assignment mainName main')) canTyping sc)
+  else
+    return $ Can.Canonical initialArea (Can.TypedExp (Can.Canonical assignmentArea 
+      (Can.Assignment
+        mainName
+        (Can.Canonical assignmentArea (Can.Abs (Can.Canonical emptyArea "__args__") [Can.Canonical assignmentArea (Can.App main' (Can.Canonical emptyArea (Can.Var "__args__")) True)]))
+    )) canTyping sc)
+
 instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
+    Src.NamedTypedExp _ (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing ->
+      updateMainFunction env target area mainAssignment typing
+
+    Src.NamedTypedExp _ mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing ->
+      updateMainFunction env target area mainAssignment typing
+
+    Src.TypedExp (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing ->
+      updateMainFunction env target area mainAssignment typing
+
+    Src.TypedExp mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing -> do
+      updateMainFunction env target area mainAssignment typing
+
+    Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) ->
+      updateMainFunction env target area mainAssignment mainTyping
+
+    Src.Assignment "main" _ ->
+      updateMainFunction env target area fullExp mainTyping
+
     Src.LNum  x ->
       return $ Can.Canonical area (Can.LNum x)
 

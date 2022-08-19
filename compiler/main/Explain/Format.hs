@@ -127,6 +127,12 @@ format rf json (CompilationError err ctx) = do
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
 formatTypeError :: Bool -> TypeError -> String
 formatTypeError json err = case err of
+  NoMain ->
+    "You forgot to define a 'main' function in your main module."
+
+  NotADefinition ->
+    "This is not a definition and is not allowed. You might want to assign it to a variable or put it in a function."
+
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)

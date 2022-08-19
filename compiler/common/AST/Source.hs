@@ -282,3 +282,14 @@ getInstanceConstraintTypings :: Instance -> [Typing]
 getInstanceConstraintTypings inst = case inst of
   Source _ _ (Instance constraints _ _ _) ->
     constraints
+
+isAbs :: Exp -> Bool
+isAbs exp = case exp of
+  Source _ _ (Abs _ _) ->
+    True
+
+  Source _ _ (AbsWithMultilineBody _ _) ->
+    True
+
+  _ ->
+    False

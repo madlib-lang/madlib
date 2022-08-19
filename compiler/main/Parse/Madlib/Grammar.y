@@ -441,7 +441,8 @@ app :: { Src.Exp }
   | exp '.' name '(' ')'                     %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $5)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) []) }
 
 multiExpBody :: { [Src.Exp] }
-  : 'return' exp          { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
+  : 'return' exp              { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
+  | {- empty -}               { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
   | bodyExp rets multiExpBody { $1:$3 }
 
 typedExp :: { Src.Exp }

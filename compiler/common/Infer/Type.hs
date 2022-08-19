@@ -432,8 +432,11 @@ mergeRecords t1 t2 = case (t1, t2) of
 
 isFunctionType :: Type -> Bool
 isFunctionType t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
-  _ -> False
+  TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+    True
+
+  _ ->
+    False
 
 
 isPlaceholderDict :: Qual Type -> Bool

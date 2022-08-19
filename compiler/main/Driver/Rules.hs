@@ -144,18 +144,26 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   SolvedASTWithEnv path -> nonInput $ do
     (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
-    res <- runInfer $ inferAST options initialEnv instancesToDerive canAst
+    res <- runInfer $ do
+      (ast', env) <- inferAST options initialEnv instancesToDerive canAst
+
+      wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
+      listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
+      let ast'' = updateTestExports wishModulePath listModulePath ast'
+      forM_ (Slv.aexps ast'') $ \e -> catchError (verifyTopLevelExp path e) (\err -> pushError err >> return ())
+
+      return (ast'', env)
+
     case res of
-      Right ((ast, env), InferState _ []) -> do
-        wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
-        listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
-        return ((updateTestExports wishModulePath listModulePath ast, env), (mempty, mempty))
+      Right (astAndEnv, InferState _ []) -> do
+        return (astAndEnv, (mempty, mempty))
 
       Right ((ast, env), InferState _ errors) ->
         return ((ast { Slv.apath = Just path }, env), (mempty, errors))
 
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
+
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -469,10 +477,6 @@ generateTestAssignment index exp = case exp of
   Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _) (TCon (TC "String" _) _)) (TCon (TC "String" _) _)) area _ ->
     let assignmentName = "__t" <> show index <> "__"
     in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
-
-  -- Slv.Typed qt area (Slv.App (Slv.Typed _ _ (Slv.App (Slv.Typed _ _ (Slv.Var "test" _)) _ _)) _ _) ->
-  --   let assignmentName = "__t" <> show index <> "__"
-  --   in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
 
   _ ->
     (exp, Nothing)
