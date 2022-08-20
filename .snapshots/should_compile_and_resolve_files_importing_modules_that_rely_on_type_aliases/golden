@@ -143,5 +143,20 @@ export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 import {} from "./../__internals__.mjs"
 import W from "./../.prelude/Wish.mjs";
 
-W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(x * 3)))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
+let main = (_ => {
+    W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(x * 3)))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
+    return ({ __constructor: "Unit", __args: [] });
+});
 export default {};
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.n.v
+  }
+}
+main(makeArgs())

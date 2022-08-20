@@ -3,47 +3,52 @@
     , aexps =
         [ Typed
             ([] :=> TCon (TC "String" Star) "prelude")
-            (Area (Loc 0 1 1) (Loc 50 4 2))
-            (Where
+            (Area (Loc 0 1 1) (Loc 54 4 2))
+            (Assignment
+               "x"
                (Typed
-                  ([] :=> TCon (TC "Boolean" Star) "prelude")
-                  (Area (Loc 6 1 7) (Loc 10 1 11))
-                  (LBool "true"))
-               [ Typed
-                   ([] :=>
-                      TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TCon (TC "Boolean" Star) "prelude"))
-                        (TCon (TC "String" Star) "prelude"))
-                   (Area (Loc 16 2 3) (Loc 28 2 15))
-                   (Is
-                      (Typed
-                         ([] :=> TCon (TC "Boolean" Star) "prelude")
-                         (Area (Loc 16 2 3) (Loc 20 2 7))
-                         (PBool "true"))
-                      (Typed
-                         ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 24 2 11) (Loc 28 2 15))
-                         (LStr "\"OK\"")))
-               , Typed
-                   ([] :=>
-                      TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TCon (TC "Boolean" Star) "prelude"))
-                        (TCon (TC "String" Star) "prelude"))
-                   (Area (Loc 31 3 3) (Loc 48 3 20))
-                   (Is
-                      (Typed
-                         ([] :=> TCon (TC "Boolean" Star) "prelude")
-                         (Area (Loc 31 3 3) (Loc 36 3 8))
-                         (PBool "false"))
-                      (Typed
-                         ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 40 3 12) (Loc 48 3 20))
-                         (LStr "\"NOT OK\"")))
-               ])
+                  ([] :=> TCon (TC "String" Star) "prelude")
+                  (Area (Loc 4 1 5) (Loc 54 4 2))
+                  (Where
+                     (Typed
+                        ([] :=> TCon (TC "Boolean" Star) "prelude")
+                        (Area (Loc 10 1 11) (Loc 14 1 15))
+                        (LBool "true"))
+                     [ Typed
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Boolean" Star) "prelude"))
+                              (TCon (TC "String" Star) "prelude"))
+                         (Area (Loc 20 2 3) (Loc 32 2 15))
+                         (Is
+                            (Typed
+                               ([] :=> TCon (TC "Boolean" Star) "prelude")
+                               (Area (Loc 20 2 3) (Loc 24 2 7))
+                               (PBool "true"))
+                            (Typed
+                               ([] :=> TCon (TC "String" Star) "prelude")
+                               (Area (Loc 28 2 11) (Loc 32 2 15))
+                               (LStr "\"OK\"")))
+                     , Typed
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Boolean" Star) "prelude"))
+                              (TCon (TC "String" Star) "prelude"))
+                         (Area (Loc 35 3 3) (Loc 52 3 20))
+                         (Is
+                            (Typed
+                               ([] :=> TCon (TC "Boolean" Star) "prelude")
+                               (Area (Loc 35 3 3) (Loc 40 3 8))
+                               (PBool "false"))
+                            (Typed
+                               ([] :=> TCon (TC "String" Star) "prelude")
+                               (Area (Loc 44 3 12) (Loc 52 3 20))
+                               (LStr "\"NOT OK\"")))
+                     ])))
         ]
     , atypedecls = []
     , ainterfaces = []

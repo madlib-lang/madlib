@@ -871,45 +871,120 @@
                              (TCon (TC "Float" Star) "prelude"))
                           (TCon (TC "Boolean" Star) "prelude")))))
         , Typed
-            ([] :=> TCon (TC "Boolean" Star) "prelude")
-            (Area (Loc 162 8 1) (Loc 169 8 8))
-            (App
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 163 9 1) (Loc 188 9 26))
+            (TypedExp
                (Typed
-                  ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
+                  ([] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TCon (TC "Float" Star) "prelude"))
-                       (TCon (TC "Boolean" Star) "prelude"))
-                  (Area (Loc 162 8 1) (Loc 170 8 9))
-                  (App
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 163 9 1) (Loc 188 9 26))
+                  (Assignment
+                     "main"
                      (Typed
                         ([] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "Float" Star) "prelude"))
-                             (TApp
                                 (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TCon (TC "Float" Star) "prelude"))
-                                (TCon (TC "Boolean" Star) "prelude")))
-                        (Area (Loc 162 8 1) (Loc 164 8 3))
-                        (Var "fn" False))
-                     (Typed
-                        ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
-                           TCon (TC "Float" Star) "prelude")
-                        (Area (Loc 165 8 4) (Loc 166 8 5))
-                        (LNum "3"))
-                     False))
-               (Typed
-                  ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                   ] :=>
-                     TCon (TC "Float" Star) "prelude")
-                  (Area (Loc 168 8 7) (Loc 169 8 8))
-                  (LNum "4"))
-               True)
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 170 9 8) (Loc 188 9 26))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 187 9 25) (Loc 187 9 25))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "Boolean" Star) "prelude")
+                               (Area (Loc 178 9 16) (Loc 185 9 23))
+                               (App
+                                  (Typed
+                                     ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TCon (TC "Float" Star) "prelude"))
+                                          (TCon (TC "Boolean" Star) "prelude"))
+                                     (Area (Loc 178 9 16) (Loc 186 9 24))
+                                     (App
+                                        (Typed
+                                           ([] :=>
+                                              TApp
+                                                (TApp
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
+                                                   (TCon (TC "Float" Star) "prelude"))
+                                                (TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Float" Star) "prelude"))
+                                                   (TCon (TC "Boolean" Star) "prelude")))
+                                           (Area (Loc 178 9 16) (Loc 180 9 18))
+                                           (Var "fn" False))
+                                        (Typed
+                                           ([ IsIn
+                                                "Number"
+                                                [ TCon (TC "Float" Star) "prelude" ]
+                                                Nothing
+                                            ] :=>
+                                              TCon (TC "Float" Star) "prelude")
+                                           (Area (Loc 181 9 19) (Loc 182 9 20))
+                                           (LNum "3"))
+                                        False))
+                                  (Typed
+                                     ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TCon (TC "Float" Star) "prelude")
+                                     (Area (Loc 184 9 22) (Loc 185 9 23))
+                                     (LNum "4"))
+                                  True)
+                           , Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []

@@ -3,58 +3,97 @@
     , aexps =
         [ Typed
             ([] :=> TVar (TV "-" Star))
-            (Area (Loc 0 1 1) (Loc 34 1 35))
-            (App
+            (Area (Loc 0 1 1) (Loc 51 1 52))
+            (TypedExp
                (Typed
                   ([] :=> TVar (TV "-" Star))
-                  (Area (Loc 0 1 1) (Loc 34 1 35))
-                  (App
+                  (Area (Loc 0 1 1) (Loc 51 1 52))
+                  (Assignment
+                     "main"
                      (Typed
                         ([] :=> TVar (TV "-" Star))
-                        (Area (Loc 15 1 16) (Loc 17 1 18))
-                        (Var "==" False))
-                     (Typed
-                        ([] :=> TVar (TV "-" Star))
-                        (Area (Loc 0 1 1) (Loc 14 1 15))
-                        (Record
+                        (Area (Loc 7 1 8) (Loc 51 1 52))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV "-" Star)) (Area (Loc 50 1 51) (Loc 50 1 51)) "_")
                            [ Typed
                                ([] :=> TVar (TV "-" Star))
-                               (Area (Loc 2 1 3) (Loc 6 1 7))
-                               (Field
-                                  ( "x"
-                                  , Typed
-                                      ([] :=> TVar (TV "a" Star))
-                                      (Area (Loc 5 1 6) (Loc 6 1 7))
-                                      (LNum "3")
-                                  ))
+                               (Area (Loc 15 1 16) (Loc 49 1 50))
+                               (App
+                                  (Typed
+                                     ([] :=> TVar (TV "-" Star))
+                                     (Area (Loc 15 1 16) (Loc 49 1 50))
+                                     (App
+                                        (Typed
+                                           ([] :=> TVar (TV "-" Star))
+                                           (Area (Loc 30 1 31) (Loc 32 1 33))
+                                           (Var "==" False))
+                                        (Typed
+                                           ([] :=> TVar (TV "-" Star))
+                                           (Area (Loc 15 1 16) (Loc 29 1 30))
+                                           (Record
+                                              [ Typed
+                                                  ([] :=> TVar (TV "-" Star))
+                                                  (Area (Loc 17 1 18) (Loc 21 1 22))
+                                                  (Field
+                                                     ( "x"
+                                                     , Typed
+                                                         ([] :=> TVar (TV "a" Star))
+                                                         (Area (Loc 20 1 21) (Loc 21 1 22))
+                                                         (LNum "3")
+                                                     ))
+                                              , Typed
+                                                  ([] :=> TVar (TV "-" Star))
+                                                  (Area (Loc 23 1 24) (Loc 27 1 28))
+                                                  (Field
+                                                     ( "y"
+                                                     , Typed
+                                                         ([] :=> TVar (TV "a" Star))
+                                                         (Area (Loc 26 1 27) (Loc 27 1 28))
+                                                         (LNum "5")
+                                                     ))
+                                              ]))
+                                        False))
+                                  (Typed
+                                     ([] :=> TVar (TV "-" Star))
+                                     (Area (Loc 33 1 34) (Loc 49 1 50))
+                                     (Record
+                                        [ Typed
+                                            ([] :=> TVar (TV "-" Star))
+                                            (Area (Loc 35 1 36) (Loc 47 1 48))
+                                            (Field
+                                               ( "name"
+                                               , Typed
+                                                   ([] :=> TCon (TC "String" Star) "prelude")
+                                                   (Area (Loc 41 1 42) (Loc 47 1 48))
+                                                   (LStr "\"John\"")
+                                               ))
+                                        ]))
+                                  True)
                            , Typed
-                               ([] :=> TVar (TV "-" Star))
-                               (Area (Loc 8 1 9) (Loc 12 1 13))
-                               (Field
-                                  ( "y"
-                                  , Typed
-                                      ([] :=> TVar (TV "a" Star))
-                                      (Area (Loc 11 1 12) (Loc 12 1 13))
-                                      (LNum "5")
-                                  ))
-                           ]))
-                     False))
-               (Typed
-                  ([] :=> TVar (TV "-" Star))
-                  (Area (Loc 18 1 19) (Loc 34 1 35))
-                  (Record
-                     [ Typed
-                         ([] :=> TVar (TV "-" Star))
-                         (Area (Loc 20 1 21) (Loc 32 1 33))
-                         (Field
-                            ( "name"
-                            , Typed
-                                ([] :=> TCon (TC "String" Star) "prelude")
-                                (Area (Loc 26 1 27) (Loc 32 1 33))
-                                (LStr "\"John\"")
-                            ))
-                     ]))
-               True)
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []
@@ -2573,11 +2612,11 @@
             Nothing)
          (TRecord
             (fromList
-               [ ( "x" , TVar (TV "e4" Star) ) , ( "y" , TVar (TV "f5" Star) ) ])
+               [ ( "x" , TVar (TV "f5" Star) ) , ( "y" , TVar (TV "g6" Star) ) ])
             Nothing))
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 18 1 19) (Loc 34 1 35)
+        , ctxArea = Area (Loc 33 1 34) (Loc 49 1 50)
         }
   ]
 )
