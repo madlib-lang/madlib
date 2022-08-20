@@ -54,6 +54,7 @@ compileAndRun casePath = do
           , optCoverage = False
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
+          , optMustHaveMain = True
           }
 
   state <- Driver.initialState

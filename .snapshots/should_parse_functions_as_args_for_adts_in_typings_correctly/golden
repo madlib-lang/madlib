@@ -20,7 +20,7 @@
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV "k10" Star)))))
-            (Area (Loc 0 1 1) (Loc 68 2 33))
+            (Area (Loc 0 1 1) (Loc 66 2 31))
             (TypedExp
                (Typed
                   ([] :=>
@@ -41,7 +41,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV "k10" Star)))))
-                  (Area (Loc 36 2 1) (Loc 68 2 33))
+                  (Area (Loc 36 2 1) (Loc 66 2 31))
                   (Assignment
                      "map"
                      (Typed
@@ -63,7 +63,7 @@
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV "k10" Star)))))
-                        (Area (Loc 42 2 7) (Loc 68 2 33))
+                        (Area (Loc 42 2 7) (Loc 66 2 31))
                         (Abs
                            (Typed
                               ([] :=>
@@ -85,7 +85,7 @@
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                        (TVar (TV "k10" Star))))
-                               (Area (Loc 42 2 7) (Loc 68 2 33))
+                               (Area (Loc 42 2 7) (Loc 66 2 31))
                                (Abs
                                   (Typed
                                      ([] :=>
@@ -99,7 +99,7 @@
                                          TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
                                            (TVar (TV "k10" Star)))
-                                      (Area (Loc 54 2 19) (Loc 67 2 32))
+                                      (Area (Loc 53 2 18) (Loc 66 2 31))
                                       (JSExp " some JS ")
                                   ])
                            ]))))
@@ -156,7 +156,7 @@
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV "p15" Star)))))
-            (Area (Loc 69 3 1) (Loc 159 4 54))
+            (Area (Loc 67 3 1) (Loc 157 4 54))
             (TypedExp
                (Typed
                   ([] :=>
@@ -175,7 +175,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV "p15" Star)))))
-                  (Area (Loc 106 4 1) (Loc 159 4 54))
+                  (Area (Loc 104 4 1) (Loc 157 4 54))
                   (Export
                      (Typed
                         ([] :=>
@@ -194,7 +194,7 @@
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV "p15" Star)))))
-                        (Area (Loc 113 4 8) (Loc 159 4 54))
+                        (Area (Loc 111 4 8) (Loc 157 4 54))
                         (Assignment
                            "concat"
                            (Typed
@@ -214,14 +214,14 @@
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV "p15" Star)))))
-                              (Area (Loc 122 4 17) (Loc 159 4 54))
+                              (Area (Loc 120 4 17) (Loc 157 4 54))
                               (Abs
                                  (Typed
                                     ([] :=>
                                        TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV "p15" Star)))
-                                    (Area (Loc 123 4 18) (Loc 126 4 21))
+                                    (Area (Loc 121 4 18) (Loc 124 4 21))
                                     "xs1")
                                  [ Typed
                                      ([] :=>
@@ -235,45 +235,45 @@
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TVar (TV "p15" Star))))
-                                     (Area (Loc 122 4 17) (Loc 159 4 54))
+                                     (Area (Loc 120 4 17) (Loc 157 4 54))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TVar (TV "p15" Star)))
-                                           (Area (Loc 128 4 23) (Loc 131 4 26))
+                                           (Area (Loc 126 4 23) (Loc 129 4 26))
                                            "xs2")
                                         [ Typed
                                             ([] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                  (TVar (TV "p15" Star)))
-                                            (Area (Loc 137 4 32) (Loc 158 4 53))
+                                            (Area (Loc 135 4 32) (Loc 156 4 53))
                                             (JSExp " xs1.concat(xs2) ")
                                         ])
                                  ]))))))
                (Untyped
-                  (Area (Loc 79 3 11) (Loc 105 3 37))
+                  (Area (Loc 77 3 11) (Loc 103 3 37))
                   (TRArr
                      (Untyped
-                        (Area (Loc 79 3 11) (Loc 85 3 17))
+                        (Area (Loc 77 3 11) (Loc 83 3 17))
                         (TRComp
                            "List"
-                           [ Untyped (Area (Loc 84 3 16) (Loc 85 3 17)) (TRSingle "a") ]))
+                           [ Untyped (Area (Loc 82 3 16) (Loc 83 3 17)) (TRSingle "a") ]))
                      (Untyped
-                        (Area (Loc 89 3 21) (Loc 105 3 37))
+                        (Area (Loc 87 3 21) (Loc 103 3 37))
                         (TRArr
                            (Untyped
-                              (Area (Loc 89 3 21) (Loc 95 3 27))
+                              (Area (Loc 87 3 21) (Loc 93 3 27))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 94 3 26) (Loc 95 3 27)) (TRSingle "a") ]))
+                                 [ Untyped (Area (Loc 92 3 26) (Loc 93 3 27)) (TRSingle "a") ]))
                            (Untyped
-                              (Area (Loc 99 3 31) (Loc 105 3 37))
+                              (Area (Loc 97 3 31) (Loc 103 3 37))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 104 3 36) (Loc 105 3 37)) (TRSingle "a")
+                                 [ Untyped (Area (Loc 102 3 36) (Loc 103 3 37)) (TRSingle "a")
                                  ]))))))
                (Forall
                   [ Star ]
@@ -312,7 +312,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV "w22" Star))))
                        (TVar (TV "a26" Star)))))
-            (Area (Loc 160 5 1) (Loc 269 6 66))
+            (Area (Loc 158 5 1) (Loc 267 6 66))
             (TypedExp
                (Typed
                   ([] :=>
@@ -339,7 +339,7 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV "w22" Star))))
                              (TVar (TV "a26" Star)))))
-                  (Area (Loc 204 6 1) (Loc 269 6 66))
+                  (Area (Loc 202 6 1) (Loc 267 6 66))
                   (Export
                      (Typed
                         ([] :=>
@@ -366,7 +366,7 @@
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV "w22" Star))))
                                    (TVar (TV "a26" Star)))))
-                        (Area (Loc 211 6 8) (Loc 269 6 66))
+                        (Area (Loc 209 6 8) (Loc 267 6 66))
                         (Assignment
                            "reduce"
                            (Typed
@@ -398,7 +398,7 @@
                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                (TVar (TV "w22" Star))))
                                          (TVar (TV "a26" Star)))))
-                              (Area (Loc 220 6 17) (Loc 269 6 66))
+                              (Area (Loc 218 6 17) (Loc 267 6 66))
                               (Abs
                                  (Typed
                                     ([] :=>
@@ -414,7 +414,7 @@
                                                   "prelude")
                                                (TVar (TV "w22" Star)))
                                             (TVar (TV "a26" Star))))
-                                    (Area (Loc 221 6 18) (Loc 222 6 19))
+                                    (Area (Loc 219 6 18) (Loc 220 6 19))
                                     "f")
                                  [ Typed
                                      ([] :=>
@@ -432,11 +432,11 @@
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TVar (TV "w22" Star))))
                                              (TVar (TV "a26" Star))))
-                                     (Area (Loc 220 6 17) (Loc 269 6 66))
+                                     (Area (Loc 218 6 17) (Loc 267 6 66))
                                      (Abs
                                         (Typed
                                            ([] :=> TVar (TV "a26" Star))
-                                           (Area (Loc 224 6 21) (Loc 231 6 28))
+                                           (Area (Loc 222 6 21) (Loc 229 6 28))
                                            "initial")
                                         [ Typed
                                             ([] :=>
@@ -449,48 +449,48 @@
                                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                        (TVar (TV "w22" Star))))
                                                  (TVar (TV "a26" Star)))
-                                            (Area (Loc 220 6 17) (Loc 269 6 66))
+                                            (Area (Loc 218 6 17) (Loc 267 6 66))
                                             (Abs
                                                (Typed
                                                   ([] :=>
                                                      TApp
                                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                        (TVar (TV "w22" Star)))
-                                                  (Area (Loc 233 6 30) (Loc 235 6 32))
+                                                  (Area (Loc 231 6 30) (Loc 233 6 32))
                                                   "xs")
                                                [ Typed
                                                    ([] :=> TVar (TV "a26" Star))
-                                                   (Area (Loc 241 6 38) (Loc 268 6 65))
+                                                   (Area (Loc 239 6 38) (Loc 266 6 65))
                                                    (JSExp " xs.reduce(f, initial) ")
                                                ])
                                         ])
                                  ]))))))
                (Untyped
-                  (Area (Loc 171 5 12) (Loc 203 5 44))
+                  (Area (Loc 169 5 12) (Loc 201 5 44))
                   (TRArr
                      (Untyped
-                        (Area (Loc 171 5 12) (Loc 182 5 23))
+                        (Area (Loc 169 5 12) (Loc 180 5 23))
                         (TRArr
-                           (Untyped (Area (Loc 171 5 12) (Loc 172 5 13)) (TRSingle "a"))
+                           (Untyped (Area (Loc 169 5 12) (Loc 170 5 13)) (TRSingle "a"))
                            (Untyped
-                              (Area (Loc 176 5 17) (Loc 182 5 23))
+                              (Area (Loc 174 5 17) (Loc 180 5 23))
                               (TRArr
-                                 (Untyped (Area (Loc 176 5 17) (Loc 177 5 18)) (TRSingle "b"))
-                                 (Untyped (Area (Loc 181 5 22) (Loc 182 5 23)) (TRSingle "a"))))))
+                                 (Untyped (Area (Loc 174 5 17) (Loc 175 5 18)) (TRSingle "b"))
+                                 (Untyped (Area (Loc 179 5 22) (Loc 180 5 23)) (TRSingle "a"))))))
                      (Untyped
-                        (Area (Loc 187 5 28) (Loc 203 5 44))
+                        (Area (Loc 185 5 28) (Loc 201 5 44))
                         (TRArr
-                           (Untyped (Area (Loc 187 5 28) (Loc 188 5 29)) (TRSingle "a"))
+                           (Untyped (Area (Loc 185 5 28) (Loc 186 5 29)) (TRSingle "a"))
                            (Untyped
-                              (Area (Loc 192 5 33) (Loc 203 5 44))
+                              (Area (Loc 190 5 33) (Loc 201 5 44))
                               (TRArr
                                  (Untyped
-                                    (Area (Loc 192 5 33) (Loc 198 5 39))
+                                    (Area (Loc 190 5 33) (Loc 196 5 39))
                                     (TRComp
                                        "List"
-                                       [ Untyped (Area (Loc 197 5 38) (Loc 198 5 39)) (TRSingle "b")
+                                       [ Untyped (Area (Loc 195 5 38) (Loc 196 5 39)) (TRSingle "b")
                                        ]))
-                                 (Untyped (Area (Loc 202 5 43) (Loc 203 5 44)) (TRSingle "a"))))))))
+                                 (Untyped (Area (Loc 200 5 43) (Loc 201 5 44)) (TRSingle "a"))))))))
                (Forall
                   [ Star , Star ]
                   ([] :=>
@@ -534,7 +534,7 @@
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV "x49" Star)))))
-            (Area (Loc 271 8 1) (Loc 416 16 2))
+            (Area (Loc 269 8 1) (Loc 414 16 2))
             (TypedExp
                (Typed
                   ([] :=>
@@ -557,7 +557,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV "x49" Star)))))
-                  (Area (Loc 311 9 1) (Loc 416 16 2))
+                  (Area (Loc 309 9 1) (Loc 414 16 2))
                   (Export
                      (Typed
                         ([] :=>
@@ -580,7 +580,7 @@
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV "x49" Star)))))
-                        (Area (Loc 318 9 8) (Loc 416 16 2))
+                        (Area (Loc 316 9 8) (Loc 414 16 2))
                         (Assignment
                            "ap"
                            (Typed
@@ -606,7 +606,7 @@
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV "x49" Star)))))
-                              (Area (Loc 323 9 13) (Loc 416 16 2))
+                              (Area (Loc 321 9 13) (Loc 414 16 2))
                               (Abs
                                  (Typed
                                     ([] :=>
@@ -619,7 +619,7 @@
                                                   "prelude")
                                                (TVar (TV "v47" Star)))
                                             (TVar (TV "x49" Star))))
-                                    (Area (Loc 324 9 14) (Loc 327 9 17))
+                                    (Area (Loc 322 9 14) (Loc 325 9 17))
                                     "fns")
                                  [ Typed
                                      ([] :=>
@@ -633,21 +633,21 @@
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TVar (TV "x49" Star))))
-                                     (Area (Loc 323 9 13) (Loc 416 16 2))
+                                     (Area (Loc 321 9 13) (Loc 414 16 2))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TVar (TV "v47" Star)))
-                                           (Area (Loc 329 9 19) (Loc 331 9 21))
+                                           (Area (Loc 327 9 19) (Loc 329 9 21))
                                            "xs")
                                         [ Typed
                                             ([] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                  (TVar (TV "x49" Star)))
-                                            (Area (Loc 336 9 26) (Loc 414 15 6))
+                                            (Area (Loc 334 9 26) (Loc 412 15 6))
                                             (App
                                                (Typed
                                                   ([] :=>
@@ -675,7 +675,7 @@
                                                           (TCon
                                                              (TC "List" (Kfun Star Star)) "prelude")
                                                           (TVar (TV "x49" Star))))
-                                                  (Area (Loc 336 9 26) (Loc 407 14 5))
+                                                  (Area (Loc 334 9 26) (Loc 405 14 5))
                                                   (App
                                                      (Typed
                                                         ([] :=>
@@ -721,7 +721,7 @@
                                                                       (TC "List" (Kfun Star Star))
                                                                       "prelude")
                                                                    (TVar (TV "x49" Star)))))
-                                                        (Area (Loc 336 9 26) (Loc 416 16 2))
+                                                        (Area (Loc 334 9 26) (Loc 414 16 2))
                                                         (App
                                                            (Typed
                                                               ([] :=>
@@ -854,7 +854,7 @@
                                                                                "prelude")
                                                                             (TVar
                                                                                (TV "x49" Star))))))
-                                                              (Area (Loc 336 9 26) (Loc 342 9 32))
+                                                              (Area (Loc 334 9 26) (Loc 340 9 32))
                                                               (Var "reduce" False))
                                                            (Typed
                                                               ([] :=>
@@ -904,7 +904,7 @@
                                                                                (Kfun Star Star))
                                                                             "prelude")
                                                                          (TVar (TV "x49" Star)))))
-                                                              (Area (Loc 346 10 3) (Loc 401 13 8))
+                                                              (Area (Loc 344 10 3) (Loc 399 13 8))
                                                               (Abs
                                                                  (Typed
                                                                     ([] :=>
@@ -916,8 +916,8 @@
                                                                             "prelude")
                                                                          (TVar (TV "x49" Star)))
                                                                     (Area
-                                                                       (Loc 347 10 4)
-                                                                       (Loc 350 10 7))
+                                                                       (Loc 345 10 4)
+                                                                       (Loc 348 10 7))
                                                                     "agg")
                                                                  [ Typed
                                                                      ([] :=>
@@ -959,8 +959,8 @@
                                                                              (TVar
                                                                                 (TV "x49" Star))))
                                                                      (Area
-                                                                        (Loc 346 10 3)
-                                                                        (Loc 401 13 8))
+                                                                        (Loc 344 10 3)
+                                                                        (Loc 399 13 8))
                                                                      (Abs
                                                                         (Typed
                                                                            ([] :=>
@@ -982,8 +982,8 @@
                                                                                 (TVar
                                                                                    (TV "x49" Star)))
                                                                            (Area
-                                                                              (Loc 352 10 9)
-                                                                              (Loc 354 10 11))
+                                                                              (Loc 350 10 9)
+                                                                              (Loc 352 10 11))
                                                                            "fn")
                                                                         [ Typed
                                                                             ([] :=>
@@ -999,8 +999,8 @@
                                                                                     (TV
                                                                                        "x49" Star)))
                                                                             (Area
-                                                                               (Loc 359 10 16)
-                                                                               (Loc 401 13 8))
+                                                                               (Loc 357 10 16)
+                                                                               (Loc 399 13 8))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -1040,8 +1040,8 @@
                                                                                                 "x49"
                                                                                                 Star))))
                                                                                   (Area
-                                                                                     (Loc 359 10 16)
-                                                                                     (Loc 397 13 4))
+                                                                                     (Loc 357 10 16)
+                                                                                     (Loc 395 13 4))
                                                                                   (Abs
                                                                                      (Typed
                                                                                         ([] :=>
@@ -1059,11 +1059,11 @@
                                                                                                    Star)))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              359
+                                                                                              357
                                                                                               10
                                                                                               16)
                                                                                            (Loc
-                                                                                              362
+                                                                                              360
                                                                                               10
                                                                                               19))
                                                                                         "_P_")
@@ -1083,11 +1083,11 @@
                                                                                                     Star)))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               359
+                                                                                               357
                                                                                                10
                                                                                                16)
                                                                                             (Loc
-                                                                                               393
+                                                                                               391
                                                                                                12
                                                                                                16))
                                                                                          (App
@@ -1130,11 +1130,11 @@
                                                                                                              Star))))
                                                                                                (Area
                                                                                                   (Loc
-                                                                                                     382
+                                                                                                     380
                                                                                                      12
                                                                                                      5)
                                                                                                   (Loc
-                                                                                                     393
+                                                                                                     391
                                                                                                      12
                                                                                                      16))
                                                                                                (App
@@ -1200,11 +1200,11 @@
                                                                                                                       Star)))))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           382
+                                                                                                           380
                                                                                                            12
                                                                                                            5)
                                                                                                         (Loc
-                                                                                                           388
+                                                                                                           386
                                                                                                            12
                                                                                                            11))
                                                                                                      (Var
@@ -1226,11 +1226,11 @@
                                                                                                                 Star)))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           389
+                                                                                                           387
                                                                                                            12
                                                                                                            12)
                                                                                                         (Loc
-                                                                                                           392
+                                                                                                           390
                                                                                                            12
                                                                                                            15))
                                                                                                      (Var
@@ -1253,11 +1253,11 @@
                                                                                                           Star)))
                                                                                                (Area
                                                                                                   (Loc
-                                                                                                     359
+                                                                                                     357
                                                                                                      10
                                                                                                      16)
                                                                                                   (Loc
-                                                                                                     376
+                                                                                                     374
                                                                                                      11
                                                                                                      12))
                                                                                                (App
@@ -1300,11 +1300,11 @@
                                                                                                                    Star))))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           369
+                                                                                                           367
                                                                                                            11
                                                                                                            5)
                                                                                                         (Loc
-                                                                                                           376
+                                                                                                           374
                                                                                                            11
                                                                                                            12))
                                                                                                      (App
@@ -1377,11 +1377,11 @@
                                                                                                                             Star)))))
                                                                                                            (Area
                                                                                                               (Loc
-                                                                                                                 369
+                                                                                                                 367
                                                                                                                  11
                                                                                                                  5)
                                                                                                               (Loc
-                                                                                                                 372
+                                                                                                                 370
                                                                                                                  11
                                                                                                                  8))
                                                                                                            (Var
@@ -1410,11 +1410,11 @@
                                                                                                                       Star)))
                                                                                                            (Area
                                                                                                               (Loc
-                                                                                                                 373
+                                                                                                                 371
                                                                                                                  11
                                                                                                                  9)
                                                                                                               (Loc
-                                                                                                                 375
+                                                                                                                 373
                                                                                                                  11
                                                                                                                  11))
                                                                                                            (Var
@@ -1437,11 +1437,11 @@
                                                                                                                 Star)))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           359
+                                                                                                           357
                                                                                                            10
                                                                                                            16)
                                                                                                         (Loc
-                                                                                                           362
+                                                                                                           360
                                                                                                            10
                                                                                                            19))
                                                                                                      (Var
@@ -1465,8 +1465,8 @@
                                                                                              "v47"
                                                                                              Star)))
                                                                                   (Area
-                                                                                     (Loc 398 13 5)
-                                                                                     (Loc 400 13 7))
+                                                                                     (Loc 396 13 5)
+                                                                                     (Loc 398 13 7))
                                                                                   (Var "xs" False))
                                                                                True)
                                                                         ])
@@ -1479,7 +1479,7 @@
                                                                 (TC "List" (Kfun Star Star))
                                                                 "prelude")
                                                              (TVar (TV "x49" Star)))
-                                                        (Area (Loc 405 14 3) (Loc 407 14 5))
+                                                        (Area (Loc 403 14 3) (Loc 405 14 5))
                                                         (ListConstructor []))
                                                      False))
                                                (Typed
@@ -1495,37 +1495,37 @@
                                                                 "prelude")
                                                              (TVar (TV "v47" Star)))
                                                           (TVar (TV "x49" Star))))
-                                                  (Area (Loc 411 15 3) (Loc 414 15 6))
+                                                  (Area (Loc 409 15 3) (Loc 412 15 6))
                                                   (Var "fns" False))
                                                True)
                                         ])
                                  ]))))))
                (Untyped
-                  (Area (Loc 277 8 7) (Loc 310 8 40))
+                  (Area (Loc 275 8 7) (Loc 308 8 40))
                   (TRArr
                      (Untyped
-                        (Area (Loc 277 8 7) (Loc 290 8 20))
+                        (Area (Loc 275 8 7) (Loc 288 8 20))
                         (TRComp
                            "List"
                            [ Untyped
-                               (Area (Loc 282 8 12) (Loc 290 8 20))
+                               (Area (Loc 280 8 12) (Loc 288 8 20))
                                (TRArr
-                                  (Untyped (Area (Loc 283 8 13) (Loc 284 8 14)) (TRSingle "a"))
-                                  (Untyped (Area (Loc 288 8 18) (Loc 289 8 19)) (TRSingle "b")))
+                                  (Untyped (Area (Loc 281 8 13) (Loc 282 8 14)) (TRSingle "a"))
+                                  (Untyped (Area (Loc 286 8 18) (Loc 287 8 19)) (TRSingle "b")))
                            ]))
                      (Untyped
-                        (Area (Loc 294 8 24) (Loc 310 8 40))
+                        (Area (Loc 292 8 24) (Loc 308 8 40))
                         (TRArr
                            (Untyped
-                              (Area (Loc 294 8 24) (Loc 300 8 30))
+                              (Area (Loc 292 8 24) (Loc 298 8 30))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 299 8 29) (Loc 300 8 30)) (TRSingle "a") ]))
+                                 [ Untyped (Area (Loc 297 8 29) (Loc 298 8 30)) (TRSingle "a") ]))
                            (Untyped
-                              (Area (Loc 304 8 34) (Loc 310 8 40))
+                              (Area (Loc 302 8 34) (Loc 308 8 40))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 309 8 39) (Loc 310 8 40)) (TRSingle "b")
+                                 [ Untyped (Area (Loc 307 8 39) (Loc 308 8 40)) (TRSingle "b")
                                  ]))))))
                (Forall
                   [ Star , Star ]
@@ -1545,6 +1545,71 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
                           (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 1))))))
+        , Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 416 18 1) (Loc 431 18 16))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 416 18 1) (Loc 431 18 16))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 423 18 8) (Loc 431 18 16))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 430 18 15) (Loc 430 18 15))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []

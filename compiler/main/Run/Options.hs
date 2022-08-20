@@ -16,4 +16,5 @@ data Options
     , optCoverage :: Bool
     , optGenerateDerivedInstances :: Bool
     , optInsertInstancePlaholders :: Bool
+    , optMustHaveMain :: Bool
     }

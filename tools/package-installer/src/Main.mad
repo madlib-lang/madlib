@@ -5,7 +5,9 @@ import IO from "IO"
 import { run } from "./Run"
 import { defaultConfig } from "./Config"
 
-pipe(
-  run,
-  fulfill(IO.trace("error"), identity)
-)(defaultConfig)
+main = () => {
+  pipe(
+    run,
+    fulfill(IO.trace("error"), identity)
+  )(defaultConfig)
+}

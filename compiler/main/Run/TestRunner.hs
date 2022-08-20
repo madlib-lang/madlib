@@ -74,6 +74,7 @@ runTests entrypoint target watchMode = do
           , optCoverage = False
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
+          , optMustHaveMain = True
           }
 
   runTestTask state options canonicalEntrypoint []

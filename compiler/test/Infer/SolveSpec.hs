@@ -69,6 +69,7 @@ buildOptions entrypoint pathUtils =
     , optCoverage = False
     , optGenerateDerivedInstances = True
     , optInsertInstancePlaholders = True
+    , optMustHaveMain = True
     }
 
 
@@ -87,10 +88,44 @@ inferModule code = do
 
   return (ast, warnings, errors)
 
+inferModuleWithoutMain :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
+inferModuleWithoutMain code = do
+  let modulePath = "Module.mad"
+  let options = (buildOptions modulePath defaultPathUtils) { optMustHaveMain = False }
+  initialState <- Driver.initialState
+  ((ast, _), warnings, errors) <- Driver.runIncrementalTask
+    initialState
+    options
+    [modulePath]
+    (M.singleton modulePath code)
+    Don'tPrune
+    (Rock.fetch $ Query.SolvedASTWithEnv modulePath)
+
+  return (ast, warnings, errors)
+
 
 inferManyModules :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModules entrypoint modules = do
   let options = buildOptions entrypoint defaultPathUtils
+  initialState <- Driver.initialState
+  let task = do
+        solved <- forM (M.keys modules) $ \path -> do
+          (solvedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+          return (path, solvedAst)
+        return $ M.fromList solved
+
+  (solvedModules, warnings, errors) <- Driver.runIncrementalTask
+    initialState
+    options
+    [entrypoint]
+    modules
+    Don'tPrune
+    task
+  return (solvedModules, warnings, errors)
+
+inferManyModulesWithoutMain :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
+inferManyModulesWithoutMain entrypoint modules = do
+  let options = (buildOptions entrypoint defaultPathUtils) { optMustHaveMain = False }
   initialState <- Driver.initialState
   let task = do
         solved <- forM (M.keys modules) $ \path -> do
@@ -968,63 +1003,64 @@ spec = do
 
     it "should resolve basic patterns for lists" $ do
       let code = unlines
-            [ "where([1, 2, 3, 5, 8]) {"
+            [ "x = where([1, 2, 3, 5, 8]) {"
             , "  [1, 2, 3] => 1"
             , "  [1, 2, n] => n"
             , "  [n, 3] => n"
             , "  [x, y, z] => x + y + z"
             , "}"
             ]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve basic patterns for lists" actual
 
     it "should fail to resolve patterns of different types for list items" $ do
-      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  [1, 2, 3] => 1", "  [\"1\", n] => n", "}"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["x = where([1, 2, 3, 5, 8]) {", "  [1, 2, 3] => 1", "  [\"1\", n] => n", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to resolve patterns of different types for list items" actual
 
     it "should allow deconstruction of lists" $ do
-      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  [1, 2, ...rest] => rest", "}"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["x = where([1, 2, 3, 5, 8]) {", "  [1, 2, ...rest] => rest", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should allow deconstruction of lists" actual
 
     it "should correctly infer types of record pattern when the input has a variable type" $ do
-      let code   = unlines ["fn2 = (a) => (where(a) {", "  { z: z } => z", "  { x: x } => x", "})"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["fn2 = (a) => where(a) {", "  { z: z } => z", "  { x: x } => x", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should correctly infer types of record pattern when the input has a variable type" actual
 
     it "should correctly infer constructor patterns given a var" $ do
       let code = unlines
             [ "type Maybe a = Just(a) | Nothing"
-            , "fn = (b) => ("
+            , ""
+            , "fn = (b) =>"
             , "  where(b) {"
             , "    Just(x) => x"
             , "  }"
-            , ")"
-            , "fn(Just(3))"
+            , ""
+            , "main = () => { fn(Just(3)) }"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should correctly infer constructor patterns given a var" actual
 
     it "should correctly infer shorthand syntax for record property matching" $ do
       let code   = unlines ["fn = (r) => (", "  where(r) {", "    { x, y } => x + y", "  }", ")"]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should correctly infer shorthand syntax for record property matching" actual
 
     it "should resolve ADTs with 3 parameters in is" $ do
-      let code   = unlines ["export type Wish e a c = Wish(e, a, c)", "where(Wish(1, 2, 3)) {", "  Wish(_, _, c) => c", "}"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["export type Wish e a c = Wish(e, a, c)", "content = where(Wish(1, 2, 3)) {", "  Wish(_, _, c) => c", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve ADTs with 3 parameters in is" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist" $ do
       let code   = unlines ["might = (x) => where(x) {", "  M.Maybe(a) => a", "}"]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" $ do
       let codeA  = ""
           codeB  = unlines ["import M from \"./ModuleA\"", "", "might = (x) => where(x) {", "  M.Maybe(a) => a", "}"]
-          actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
+          actual = unsafePerformIO $ inferManyModulesWithoutMain "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists"
                    actual
 
@@ -1035,30 +1071,30 @@ spec = do
 
     it "should resolve names from imported modules" $ do
       let codeA  = unlines ["export inc = (a) => (a + 1)", "", "add = (a, b) => (a + b)", "addThree = add(3)"]
-          codeB  = unlines ["import { inc } from \"./ModuleA\"", "inc(3)"]
+          codeB  = unlines ["import { inc } from \"./ModuleA\"", "main = () => { inc(3) }"]
           actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should resolve names from imported modules" actual
 
     it "should resolve namespaced imports" $ do
       let codeA  = "export singleton = (a) => ([a])"
-          codeB  = unlines ["import L from \"./ModuleA\"", "L.singleton(3)"]
+          codeB  = unlines ["import L from \"./ModuleA\"", "main = () => { L.singleton(3) }"]
           actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should resolve namespaced imports" actual
 
     it "should resolve usage of exported names" $ do
-      let code   = unlines ["export inc = (a) => a + 1", "inc(3)"]
+      let code   = unlines ["export inc = (a) => a + 1", "main = () => { inc(3) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve usage of exported names" actual
 
     it "should resolve usage of exported typed names" $ do
-      let code   = unlines ["inc :: Integer -> Integer", "export inc = (a) => (a + 1)", "inc(3)"]
+      let code   = unlines ["inc :: Integer -> Integer", "export inc = (a) => (a + 1)", "main = () => { inc(3) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve usage of exported typed names" actual
 
     it "should resolve ADT typings without vars" $ do
       let codeA  = "export type Something = Something"
           codeB  = unlines ["import S from \"./ModuleA\"", "fn :: S.Something -> S.Something", "export fn = (x) => x"]
-      let actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
+      let actual = unsafePerformIO $ inferManyModulesWithoutMain "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should resolve ADT typings without vars" actual
 
     ---------------------------------------------------------------------------
@@ -1067,7 +1103,7 @@ spec = do
     -- Pipe operator:
 
     it "should resolve the pipe operator" $ do
-      let code   = unlines ["inc = (a) => (a + 1)", "3 |> inc"]
+      let code   = unlines ["inc = (a) => (a + 1)", "main = () => { 3 |> inc }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the pipe operator" actual
 
@@ -1077,42 +1113,42 @@ spec = do
     -- Boolean operators:
 
     it "should resolve the and operator" $ do
-      let code   = "true && false"
+      let code   = "main = () => { true && false }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the and operator" actual
 
     it "should resolve the or operator" $ do
-      let code   = "true || false"
+      let code   = "main = () => { true || false }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the or operator" actual
 
     it "should resolve the combination of and and or operators" $ do
-      let code   = "true || false && true"
+      let code   = "main = () => { true || false && true }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the combination of and and or operators" actual
 
     it "should resolve the gt operator" $ do
-      let code   = "1 > 3"
+      let code   = "main = () => { 1 > 3 }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the gt operator" actual
 
     it "should resolve the lt operator" $ do
-      let code   = "1 < 3"
+      let code   = "main = () => { 1 < 3 }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the lt operator" actual
 
     it "should resolve the gte operator" $ do
-      let code   = "1 >= 3"
+      let code   = "main = () => { 1 >= 3 }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the gte operator" actual
 
     it "should resolve the lte operator" $ do
-      let code   = "1 <= 3"
+      let code   = "main = () => { 1 <= 3 }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the lte operator" actual
 
     it "should resolve the negation operator" $ do
-      let code   = "!false"
+      let code   = "main = () => { !false }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve the negation operator" actual
 
@@ -1125,12 +1161,16 @@ spec = do
       let code = unlines
             [ "inc :: Integer -> Integer"
             , "inc = (a) => (a + 1)"
-            , "(3 :: Integer)"
+            , ""
             , "type Maybe a = Just(a) | Nothing"
-            , "(Nothing :: Maybe a)"
+            , ""
+            , "main = () => {"
+            , "  (3 :: Integer)"
+            , "  (Nothing :: Maybe a)"
             -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
             -- We need to split the production and reconnect it when building the canonical AST.
-            , "(Just(3) :: Maybe Integer)"
+            , "  (Just(3) :: Maybe Integer)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should validate correct type annotations" actual
@@ -1139,14 +1179,17 @@ spec = do
       let code = unlines
             [ "map :: (a -> b) -> List a -> List b"
             , "map = (f, xs) => (#- some JS -#)"
-            , "[[1, 2], [3, 4]]"
-            , "  |> map(map((x) => (x * 2)))"
+            , ""
+            , "main = () => {"
+            , "  [[1, 2], [3, 4]]"
+            , "    |> map(map((x) => (x * 2)))"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should validate type annotations and instantiate their variables" actual
 
     it "should validate type annotations for ADTs that have no param" $ do
-      let code   = unlines ["type X = X", "x = (X :: X)"]
+      let code   = unlines ["type X = X", "main = () => { x = (X :: X) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should validate type annotations for ADTs that have no param" actual
 
