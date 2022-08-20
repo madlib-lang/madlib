@@ -72,26 +72,65 @@
                           (TCon (TC "Boolean" Star) "prelude")))))
         , Typed
             ([] :=> TVar (TV "-" Star))
-            (Area (Loc 59 3 1) (Loc 66 3 8))
-            (App
+            (Area (Loc 59 3 1) (Loc 84 3 26))
+            (TypedExp
                (Typed
                   ([] :=> TVar (TV "-" Star))
-                  (Area (Loc 59 3 1) (Loc 67 3 9))
-                  (App
+                  (Area (Loc 59 3 1) (Loc 84 3 26))
+                  (Assignment
+                     "main"
                      (Typed
                         ([] :=> TVar (TV "-" Star))
-                        (Area (Loc 59 3 1) (Loc 61 3 3))
-                        (Var "fn" False))
-                     (Typed
-                        ([] :=> TVar (TV "a" Star))
-                        (Area (Loc 62 3 4) (Loc 63 3 5))
-                        (LNum "3"))
-                     False))
-               (Typed
-                  ([] :=> TVar (TV "a" Star))
-                  (Area (Loc 65 3 7) (Loc 66 3 8))
-                  (LNum "4"))
-               True)
+                        (Area (Loc 66 3 8) (Loc 84 3 26))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV "-" Star)) (Area (Loc 83 3 25) (Loc 83 3 25)) "_")
+                           [ Typed
+                               ([] :=> TVar (TV "-" Star))
+                               (Area (Loc 74 3 16) (Loc 81 3 23))
+                               (App
+                                  (Typed
+                                     ([] :=> TVar (TV "-" Star))
+                                     (Area (Loc 74 3 16) (Loc 82 3 24))
+                                     (App
+                                        (Typed
+                                           ([] :=> TVar (TV "-" Star))
+                                           (Area (Loc 74 3 16) (Loc 76 3 18))
+                                           (Var "fn" False))
+                                        (Typed
+                                           ([] :=> TVar (TV "a" Star))
+                                           (Area (Loc 77 3 19) (Loc 78 3 20))
+                                           (LNum "3"))
+                                        False))
+                                  (Typed
+                                     ([] :=> TVar (TV "a" Star))
+                                     (Area (Loc 80 3 22) (Loc 81 3 23))
+                                     (LNum "4"))
+                                  True)
+                           , Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []
@@ -127,7 +166,7 @@
       (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 59 3 1) (Loc 66 3 8)
+        , ctxArea = Area (Loc 74 3 16) (Loc 81 3 23)
         }
   ]
 )

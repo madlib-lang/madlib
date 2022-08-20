@@ -3,25 +3,64 @@
     , aexps =
         [ Typed
             ([] :=> TVar (TV "-" Star))
-            (Area (Loc 0 1 1) (Loc 31 3 2))
-            (Where
+            (Area (Loc 0 1 1) (Loc 54 5 2))
+            (TypedExp
                (Typed
-                  ([] :=> TVar (TV "a" Star))
-                  (Area (Loc 6 1 7) (Loc 7 1 8))
-                  (LNum "3"))
-               [ Typed
-                   ([] :=> TVar (TV "-" Star))
-                   (Area (Loc 13 2 3) (Loc 29 2 19))
-                   (Is
-                      (Typed
-                         ([] :=> TVar (TV "-" Star))
-                         (Area (Loc 13 2 3) (Loc 24 2 14))
-                         (PCon "NotExisting" []))
-                      (Typed
-                         ([] :=> TVar (TV "a" Star))
-                         (Area (Loc 28 2 18) (Loc 29 2 19))
-                         (LNum "5")))
-               ])
+                  ([] :=> TVar (TV "-" Star))
+                  (Area (Loc 0 1 1) (Loc 54 5 2))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=> TVar (TV "-" Star))
+                        (Area (Loc 7 1 8) (Loc 54 5 2))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV "-" Star)) (Area (Loc 53 5 1) (Loc 53 5 1)) "_")
+                           [ Typed
+                               ([] :=> TVar (TV "-" Star))
+                               (Area (Loc 17 2 3) (Loc 52 4 4))
+                               (Where
+                                  (Typed
+                                     ([] :=> TVar (TV "a" Star))
+                                     (Area (Loc 23 2 9) (Loc 24 2 10))
+                                     (LNum "3"))
+                                  [ Typed
+                                      ([] :=> TVar (TV "-" Star))
+                                      (Area (Loc 32 3 5) (Loc 48 3 21))
+                                      (Is
+                                         (Typed
+                                            ([] :=> TVar (TV "-" Star))
+                                            (Area (Loc 32 3 5) (Loc 43 3 16))
+                                            (PCon "NotExisting" []))
+                                         (Typed
+                                            ([] :=> TVar (TV "a" Star))
+                                            (Area (Loc 47 3 20) (Loc 48 3 21))
+                                            (LNum "5")))
+                                  ])
+                           , Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []
@@ -33,7 +72,7 @@
       (UnboundVariable "NotExisting")
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 13 2 3) (Loc 24 2 14)
+        , ctxArea = Area (Loc 32 3 5) (Loc 43 3 16)
         }
   ]
 )

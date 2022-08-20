@@ -4,14 +4,14 @@ let Right = (a => ({ __constructor: "Right", __args: [ a ] }));
 let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Show = {};
 Inspect['Either_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Either_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_f83) => (Inspect_c80) => (__$a__ => ((__x__) => {
+Inspect['Either_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_m64) => (Inspect_j61) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(` + Inspect_c80.inspect()(a0) + `)`;
+    return `Right(` + Inspect_j61.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(` + Inspect_f83.inspect()(a0) + `)`;
+    return `Left(` + Inspect_m64.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -27,10 +27,10 @@ Show['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (b => (b ? `Tru
 Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
 Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (n =>  new Integer(n).toString() );
 Show['Tuple_2'] = {};
-Show['Tuple_2']['show'] = () => (Show_a104) => (Show_z103) => (__x__ => ((__x__) => {
+Show['Tuple_2']['show'] = () => (Show_h85) => (Show_g84) => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return `#[` + Show_z103.show()(a) + `, ` + Show_a104.show()(b) + `]`;
+    return `#[` + Show_g84.show()(a) + `, ` + Show_h85.show()(b) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -39,10 +39,10 @@ Show['Tuple_2']['show'] = () => (Show_a104) => (Show_z103) => (__x__ => ((__x__)
   }
 })(__x__));
 Show['Tuple_3'] = {};
-Show['Tuple_3']['show'] = () => (Show_u124) => (Show_t123) => (Show_s122) => (__x__ => ((__x__) => {
+Show['Tuple_3']['show'] = () => (Show_b105) => (Show_a104) => (Show_z103) => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return `#[` + Show_s122.show()(a) + `, ` + Show_t123.show()(b) + `, ` + Show_u124.show()(c) + `]`;
+    return `#[` + Show_z103.show()(a) + `, ` + Show_a104.show()(b) + `, ` + Show_b105.show()(c) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -51,14 +51,14 @@ Show['Tuple_3']['show'] = () => (Show_u124) => (Show_t123) => (Show_s122) => (__
   }
 })(__x__));
 Show['Either_568c75136c0c369c440814a7af59434a'] = {};
-Show['Either_568c75136c0c369c440814a7af59434a']['show'] = () => (Show_t149) => (Show_w152) => (__x__ => ((__x__) => {
+Show['Either_568c75136c0c369c440814a7af59434a']['show'] = () => (Show_a130) => (Show_d133) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
-    return `Right ` + Show_t149.show()(a);
+    return `Right ` + Show_a130.show()(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
-    return `Left ` + Show_w152.show()(e);
+    return `Left ` + Show_d133.show()(e);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -66,9 +66,24 @@ Show['Either_568c75136c0c369c440814a7af59434a']['show'] = () => (Show_t149) => (
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Show.Tuple_2.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, false]));
-Show.Either_568c75136c0c369c440814a7af59434a.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Right(3));
-let fnWithConstraint = (Show_z25) => Show_z25.show();
-Show.Tuple_2.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, 1]));
-Show.Tuple_3.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([false, 42, true]));
+let fnWithConstraint = (Show_d3) => Show_d3.show();
+let main = (_ => {
+    Show.Tuple_2.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, false]));
+    Show.Either_568c75136c0c369c440814a7af59434a.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Right(3));
+    Show.Tuple_2.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, 1]));
+    Show.Tuple_3.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([false, 42, true]));
+    return ({ __constructor: "Unit", __args: [] });
+});
 export default {};
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.n.v
+  }
+}
+main(makeArgs())

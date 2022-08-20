@@ -3,10 +3,10 @@ import {} from "./__internals__.mjs"
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_s798) => (__$a__ => ((__x__) => {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_y284) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_s798.inspect()(a0) + `)`;
+    return `Just(` + Inspect_y284.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -21,18 +21,19 @@ Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_s7
   }
 })(__$a__));
 Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_h813) => (__$a__ => `{ ` + `cars: ` + Inspect_h813.inspect()(__$a__.cars) + ` }`);
+Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_n299) => (__$a__ => `{ ` + `cars: ` + Inspect_n299.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_y830) => (Inspect_r823) => (__$a__ => `{ ` + `name: ` + Inspect_r823.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_y830.inspect()(__$a__.x) + ` }`);
+Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e316) => (Inspect_x309) => (__$a__ => `{ ` + `name: ` + Inspect_x309.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_e316.inspect()(__$a__.x) + ` }`);
 export let fn = (b => c => b + c);
 let inc = (x => x + 1);
 let dec = (x => x - 1);
 let double = (x => x * 2);
 let half = (x => x / 2);
-double(half(3));
-__eq__(3, 5);
-let carResponse = ({ cars: (null) });
-((__x__) => {
+let main = ( => {
+    double(half(3));
+    __eq__(3, 5);
+    let carResponse = ({ cars: (null) });
+    ((__x__) => {
   if (true) {
     let { cars: cs } = __x__;
     return cs;
@@ -46,7 +47,7 @@ let carResponse = ({ cars: (null) });
     throw 'non exhaustive patterns!';
   }
 })(carResponse);
-((__x__) => {
+    ((__x__) => {
   if (__x__ === 3) {
     return 3;
   }
@@ -56,7 +57,7 @@ let carResponse = ({ cars: (null) });
     throw 'non exhaustive patterns!';
   }
 })(3);
-((__x__) => {
+    ((__x__) => {
   if (__x__ === "3") {
     return 3;
   }
@@ -66,7 +67,7 @@ let carResponse = ({ cars: (null) });
     throw 'non exhaustive patterns!';
   }
 })(`3`);
-((__x__) => {
+    ((__x__) => {
   if (__x__ === true) {
     return 3;
   }
@@ -76,24 +77,9 @@ let carResponse = ({ cars: (null) });
     throw 'non exhaustive patterns!';
   }
 })(true);
-let log = (a =>  { console.log(a); return a; } );
-(true ? `OK` : `NOT OK`);
-let mapMaybe = (f => m => ((__x__) => {
-  if (__x__.__constructor === "Just" && true) {
-    let a = __x__.__args[0];
-    return Just(f(a));
-  }
-  else if (__x__.__constructor === "Nothing") {
-    return Nothing;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m));
-let might = Just(3);
-let q = ((__x__) => {
+    (true ? `OK` : `NOT OK`);
+    let might = Just(3);
+    let q = ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
     return a;
@@ -107,22 +93,22 @@ let q = ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(might);
-true && false;
-false || true;
-false || true && false;
-1 > 3;
-1 < 3;
-1 > 3 && 3 < 1 || true;
-1 >= 3;
-1 <= 3;
-1 >= 3 && 3 <= 1 || true;
-!(false);
-!(true);
-!(false) && !(true);
-!(false) || !(true);
-let arr = ({ v: 1, n: { v: 2, n: { v: 3, n: null } } });
-let all = ({ v: 4, n: { v: 5, n: { v: 6, n: arr } } });
-((__x__) => {
+    true && false;
+    false || true;
+    false || true && false;
+    1 > 3;
+    1 < 3;
+    1 > 3 && 3 < 1 || true;
+    1 >= 3;
+    1 <= 3;
+    1 >= 3 && 3 <= 1 || true;
+    !(false);
+    !(true);
+    !(false) && !(true);
+    !(false) || !(true);
+    let arr = ({ v: 1, n: { v: 2, n: { v: 3, n: null } } });
+    let all = ({ v: 4, n: { v: 5, n: { v: 6, n: arr } } });
+    ((__x__) => {
   if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
     return 1;
   }
@@ -147,6 +133,94 @@ let all = ({ v: 4, n: { v: 5, n: { v: 6, n: arr } } });
     throw 'non exhaustive patterns!';
   }
 })(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 5, n: { v: 8, n: null } } } } }));
+    ( => x)(( => (__eq__(x, `ok`) ? 1 : 10))(( => x)((true ? `ok` : `not ok`)((__eq__(1, 2) ? `ok` : `not ok`)))));
+    (__eq__(1, 2) ? `ok` : `not ok`);
+    ((__x__) => {
+  if (__x__ === 3) {
+    return 48;
+  }
+  else if (true) {
+    let n = __x__;
+    return ( => x + 1)(1);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(3);
+    ( => x + 1)(((__x__) => {
+  if (__x__ === "3") {
+    return 48;
+  }
+  else if (true) {
+    let n = __x__;
+    return 1;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(`3`));
+    ( => x)(((__x__) => {
+  if (__x__ !== null && __x__.v === 2 && true) {
+    let { n: rest } = __x__;
+    return rest;
+  }
+  else if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
+    let { n: { n: { n: rest } } } = __x__;
+    return rest;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 4, n: { v: 5, n: null } } } } })));
+    ((__x__) => {
+  if (__x__.name === "Bob") {
+    let {  } = __x__;
+    return `Bob`;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(({ x: 4, name: `John` }));
+    let tup = ([1, 2, 3]);
+    __eq__(([1, 2, 3]), ([1, 2, 3]));
+    ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,b] = __x__;
+    return a + b;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(([1, 2]));
+    fst(([1, 2]));
+    snd(([1, 2]));
+    return ({ __constructor: "Unit", __args: [] });
+});
+let log = (a =>  { console.log(a); return a; } );
+let mapMaybe = (f => m => ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    let a = __x__.__args[0];
+    return Just(f(a));
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return Nothing;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(m));
 export let map = (f => xs => {
     let $_result_;
     let $_continue_ = true;
@@ -185,63 +259,6 @@ export let map = (f => xs => {
     }
     return $_result_;
 });
-(true ? `ok` : `not ok`);
-(x => x)((x => (__eq__(x, `ok`) ? 1 : 10))((x => x)((__eq__(1, 2) ? `ok` : `not ok`))));
-(__eq__(1, 2) ? `ok` : `not ok`);
-((__x__) => {
-  if (__x__ === 3) {
-    return 48;
-  }
-  else if (true) {
-    let n = __x__;
-    return (x => x + 1)(1);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(3);
-(x => x + 1)(((__x__) => {
-  if (__x__ === "3") {
-    return 48;
-  }
-  else if (true) {
-    let n = __x__;
-    return 1;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(`3`));
-(x => x)(((__x__) => {
-  if (__x__ !== null && __x__.v === 2 && true) {
-    let { n: rest } = __x__;
-    return rest;
-  }
-  else if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
-    let { n: { n: { n: rest } } } = __x__;
-    return rest;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 4, n: { v: 5, n: null } } } } })));
-((__x__) => {
-  if (__x__.name === "Bob") {
-    let {  } = __x__;
-    return `Bob`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(({ x: 4, name: `John` }));
 let addXAndY = (r => ((__x__) => {
   if (true && true) {
     let { y: y, x: x1 } = __x__;
@@ -254,19 +271,6 @@ let addXAndY = (r => ((__x__) => {
   }
 })(r));
 let fnTCHOU = (x => x.a.b.c.d.e);
-let tup = ([1, 2, 3]);
-__eq__(([1, 2, 3]), ([1, 2, 3]));
-((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,b] = __x__;
-    return a + b;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(([1, 2]));
 let fn2 = (a => ([a, a]));
 let fst = (tuple => ((__x__) => {
   if (__x__.length === 2 && true && true) {
@@ -293,8 +297,6 @@ let snd = (tuple => {
 })(tuple);
     return b;
 });
-fst(([1, 2]));
-snd(([1, 2]));
 ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
     let [{ __args: [n]},{ __args: [m]}] = __x__;
@@ -307,3 +309,15 @@ snd(([1, 2]));
   }
 })(([Just(3), Just(4)]));
 export default { fn, map };
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.n.v
+  }
+}
+main(makeArgs())

@@ -147,47 +147,47 @@ spec :: Spec
 spec = do
   describe "infer" $ do
     it "should infer abstractions" $ do
-      let code   = "(b, c) => (b + c)"
-          actual = unsafePerformIO $ inferModule code
+      let code   = "add = (b, c) => b + c"
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer abstractions" actual
 
     it "should infer assignments" $ do
-      let code   = unlines ["fn = (b, c) => (b + c)", "fn(2, 3)"]
+      let code   = unlines ["fn = (b, c) => (b + c)", "main = () => { fn(2, 3) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer assignments" actual
 
     it "should infer minus operator" $ do
-      let code   = "(b, c) => (b - c)"
-          actual = unsafePerformIO $ inferModule code
+      let code   = "substract = (b, c) => (b - c)"
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer minus operator" actual
 
     it "should infer multiplication operator" $ do
-      let code   = "(b, c) => (b * c)"
-          actual = unsafePerformIO $ inferModule code
+      let code   = "multiply = (b, c) => (b * c)"
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer multiplication operator" actual
 
     it "should infer division operator" $ do
-      let code   = "(b, c) => (b / c)"
-          actual = unsafePerformIO $ inferModule code
+      let code   = "divide = (b, c) => (b / c)"
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer division operator" actual
 
     it "should infer equality operator" $ do
-      let code   = "1 == 3"
+      let code   = "main = () => { 1 == 3 }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer equality operator" actual
 
     it "should infer wrapped douleEq operator" $ do
-      let code   = "((a, b) => (a == b))(1, 3)"
-          actual = unsafePerformIO $ inferModule code
+      let code   = "x = ((a, b) => (a == b))(1, 3)"
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer wrapped douleEq operator" actual
 
     it "should infer an empty source" $ do
       let code   = ""
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer an empty source" actual
 
     it "should fail for unbound variables" $ do
-      let code   = "x"
+      let code   = "main = () => { x }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail for unbound variables" actual
 
@@ -197,21 +197,35 @@ spec = do
     -- ADTs:
 
     it "should infer adts" $ do
-      let code   = unlines ["type Result = Success(String) | Error", "result = Success(\"response\")"]
+      let code   = unlines
+                    [ "type Result = Success(String) | Error"
+                    , "main = () => {"
+                    , "  result = Success(\"response\")"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer adts" actual
 
     it "should infer adts with type parameters" $ do
-      let code   = unlines ["type Result a", "  = Success(a)", "  | Error", "result = Success(true)"]
+      let code   = unlines
+                    [ "type Result a"
+                    , "  = Success(a)"
+                    , "  | Error"
+                    , "main = () => {"
+                    , "  result = Success(true)"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer adts with type parameters" actual
 
     it "should infer application of adts" $ do
       let code = unlines
             [ "type Result = Success(String) | Error"
-            , "result1 = Success(\"response\")"
-            , "result2 = Error"
-            , "((a, b) => (a == b))(result1, result2)"
+            , "main = () => {"
+            , "  result1 = Success(\"response\")"
+            , "  result2 = Error"
+            , "  ((a, b) => (a == b))(result1, result2)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer application of adts" actual
@@ -219,36 +233,45 @@ spec = do
     it "should infer adt return for abstractions" $ do
       let code = unlines
             [ "type Result a = Success(a) | Error"
-            , "result1 = Success(\"response\")"
-            , "result2 = Error"
-            , "((a, b) => (a == b))(result1, result2)"
+            , "main = () => {"
+            , "  result1 = Success(\"response\")"
+            , "  result2 = Error"
+            , "  ((a, b) => (a == b))(result1, result2)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer adt return for abstractions" actual
 
     it "should return an error when an ADT defines a type already existing" $ do
       let code   = unlines ["type Result a = Success a | Error", "type Result a = Success a | Error"]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should return an error when an ADT defines a type already existing" actual
 
     it "should fail to infer ADTs with constructors that have free vars" $ do
-      let code   = unlines ["type Result = Success(b)", ""]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["type Result = Success(b)"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to infer ADTs with constructors that have free vars" actual
 
     it "should infer adts with record constructors" $ do
       let code = unlines
             [ "type Result = Success({ value :: String }) | Error({ message :: String })"
-            , "result1 = Success({ value: `42` })"
-            , "result2 = Error({ message: \"Err\" })"
-            , "((a, b) => (a == b))(result1, result2)"
+            , "main = () => {"
+            , "  result1 = Success({ value: `42` })"
+            , "  result2 = Error({ message: \"Err\" })"
+            , "  ((a, b) => (a == b))(result1, result2)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer adts with record constructors" actual
 
     it "should infer params for adts" $ do
-      let code =
-            unlines ["type Result = Success({ value :: String })", "r = Success({ value: \"42\" })", "((a) => a)(r)"]
+      let code = unlines
+                  [ "type Result = Success({ value :: String })"
+                  , "main = () => {"
+                  , "  r = Success({ value: \"42\" })"
+                  , "  ((a) => a)(r)"
+                  , "}"
+                  ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer params for adts" actual
 
@@ -257,18 +280,31 @@ spec = do
             unlines
               [ "addNegativeTen :: Maybe Integer -> Integer"
               , "export addNegativeTen = (a) => (a + -10)"
-              , "addNegativeTen(3)"
+              , "main = () => {"
+              , "  addNegativeTen(3)"
+              , "}"
               ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail if it uses an ADT not defined" actual
 
     it "should fail if it uses an ADT not defined in patterns" $ do
-      let code   = unlines ["where(3) {", "  NotExisting => 5", "}"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  where(3) {"
+                    , "    NotExisting => 5"
+                    , "  }"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail if it uses an ADT not defined in patterns" actual
 
     it "should resolve ADTs with function parameters" $ do
-      let code   = unlines ["export type Wish e a = Wish ((e -> m) -> (a -> m) -> m)", "Wish((bad, good) => (good(3)))"]
+      let code   = unlines
+                    [ "export type Wish e a = Wish ((e -> m) -> (a -> m) -> m)"
+                    , "main = () => {"
+                    , "  Wish((bad, good) => (good(3)))"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve ADTs with function parameters" actual
 
@@ -284,7 +320,7 @@ spec = do
             , "  }"
             , ")"
             ]
-          actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
+          actual = unsafePerformIO $ inferManyModulesWithoutMain "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should resolve namespaced ADTs in patterns" actual
 
     it "should resolve namespaced ADTs in other ADTs" $ do
@@ -293,7 +329,9 @@ spec = do
         codeB = unlines
             ["import M from \"./ModuleA\""
             , "type MyType = MyType(M.Maybe String)"
-            , "x = MyType(M.Just(\"3\"))"
+            , "main = () => {"
+            , "  x = MyType(M.Just(\"3\"))"
+            , "}"
             ]
         actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should resolve namespaced ADTs in other ADTs" actual
@@ -302,7 +340,14 @@ spec = do
       let
         codeA = "export type Point = Point(#[Integer, Integer])"
         codeB = unlines
-          ["import P from \"./ModuleA\"", "p = P.Point(#[2, 4])", "where(p) {", "  P.Point(#[a, b]) => a + b", "}"]
+          [ "import P from \"./ModuleA\""
+          , "main = () => {"
+          , "p = P.Point(#[2, 4])"
+          , "  where(p) {"
+          , "    P.Point(#[a, b]) => a + b"
+          , "  }"
+          , "}"
+          ]
         actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should allow ADT constructors to have record parameters" actual
 
@@ -440,10 +485,12 @@ spec = do
             , "double :: Functor f => f Integer -> f Integer"
             , "double = map((x) => x * 2)"
             , ""
-            , "of(3)"
-            , "  |> map((x) => (x + 3))"
-            , "  |> chain((x) => (of(x * 3)))"
-            , "  |> W.fulfill((a) => ({}), (a) => ({}))"
+            , "main = () => {"
+            , "  of(3)"
+            , "    |> map((x) => (x + 3))"
+            , "    |> chain((x) => (of(x * 3)))"
+            , "    |> W.fulfill((a) => ({}), (a) => ({}))"
+            , "}"
             ]
           actual = unsafePerformIO $ inferManyModules "./ModuleB.mad" (M.fromList [("./ModuleB.mad", codeB), ("./ModuleA.mad", codeA)])
       snapshotTest "should allow aliasing of types" actual
@@ -464,7 +511,9 @@ spec = do
             , "  read = (s) => (#- parseFloat(s, 10) -#)"
             , "}"
             , ""
-            , "read(\"3\")"
+            , "main = () => {"
+            , "  read(\"3\")"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when the type is ambiguous" actual
@@ -479,7 +528,9 @@ spec = do
             , "  read = (s) => (#- parseFloat(s, 10) -#)"
             , "}"
             , ""
-            , "(read(\"3\") :: Integer)"
+            , "main = () => {"
+            , "  (read(\"3\") :: Integer)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve ambiguity with type annotations" actual
@@ -502,7 +553,9 @@ spec = do
             , "  show = where { #[a, b] => \"#[\" ++ show(a) ++ \", \" ++ show(b) ++ \"]\" }"
             , "}"
             , ""
-            , "show(#[1, false])"
+            , "main = () => {"
+            , "  show(#[1, false])"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve constrained instances" actual
@@ -525,7 +578,9 @@ spec = do
             , "  show = where { #[a, b] => \"#[\" ++ show(a) ++ \", \" ++ show(b) ++ \"]\" }"
             , "}"
             , ""
-            , "show(#[1, false])"
+            , "main = () => {"
+            , "  show(#[1, false])"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail for instances missing constrains" actual
@@ -544,7 +599,9 @@ spec = do
             , "  show = where { #[a, b] => \"#[\" ++ show(a) ++ \", \" ++ show(b) ++ \"]\" }"
             , "}"
             , ""
-            , "show(3)"
+            , "main = () => {"
+            , "  show(3)"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when no instance is found" actual
@@ -558,62 +615,75 @@ spec = do
     -- Records:
 
     it "should infer a record field access" $ do
-      let code   = unlines ["a = { x: 3.1415, y: -500 }", "a.x"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  a = { x: 3.1415, y: -500 }"
+                    , "  a.x"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer a record field access" actual
 
     it "should infer an App with a record" $ do
-      let code   = unlines ["a = { x: 3, y: 5 }", "xPlusY = (r) => (r.x + r.y)", "xPlusY(a)"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  a = { x: 3, y: 5 }"
+                    , "  xPlusY = (r) => (r.x + r.y)"
+                    , "  xPlusY(a)"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer an App with a record" actual
 
     it "should fail to infer record if their fields do not match" $ do
-      let code   = "{ x: 3, y: 5 } == { name: \"John\" }"
+      let code   = "main = () => { { x: 3, y: 5 } == { name: \"John\" } }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to infer record if their fields do not match" actual
 
     it "should infer a record with a type annotation" $ do
-      let code   = "({ x: 3, y: 7 } :: { x :: Integer, y :: Integer })"
+      let code   = "main = () => { ({ x: 3, y: 7 } :: { x :: Integer, y :: Integer }) }"
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer a record with a type annotation" actual
 
     it "should infer abstraction param that is a deep record" $ do
       let code   = "f = (x) => (x.a.b.c.d.e)"
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer abstraction param that is a deep record" actual
 
     it "should infer abstraction param that have a record exp as body" $ do
       let code   = "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer abstraction param that have a record exp as body" actual
 
     it "should fail when spreading a non spreadable type into a record" $ do
-      let code   = unlines ["{ ...3, x: 1 }"]
+      let code   = unlines ["main = () => { { ...3, x: 1 } }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when spreading a non spreadable type into a record" actual
 
     it "correctly infer various record transformations" $ do
       let code = unlines
-            [ "ff = (record) => (["
-            , "  record.x,"
-            , "  record.z,"
-            , "  ...record.y"
-            , "])"
-            , ""
-            , ""
-            , "fr1 = (x) => ({ ...x, p: 3 })"
-            , ""
-            , "fr2 = (r, x) => ({ ...r, p: x })"
-            , ""
-            , "r0 = fr1({ z: 9, p: 3 })"
-            , "r1 = { ...fr1({ z: 9, p: 3 }), y: 5 }"
-            , "r2 = fr2({ p: '4', g: 5 }, '5')"
-            , ""
-            , "fxy = (s, e) => ({"
-            , "  ...e,"
-            , "  c: s.x + 1,"
-            , "  b: '3'"
-            , "})"
+            [ "main = () => {"
+            , "  ff = (record) => (["
+            , "    record.x,"
+            , "    record.z,"
+            , "    ...record.y"
+            , "  ])"
+            , "  "
+            , "  "
+            , "  fr1 = (x) => ({ ...x, p: 3 })"
+            , "  "
+            , "  fr2 = (r, x) => ({ ...r, p: x })"
+            , "  "
+            , "  r0 = fr1({ z: 9, p: 3 })"
+            , "  r1 = { ...fr1({ z: 9, p: 3 }), y: 5 }"
+            , "  r2 = fr2({ p: '4', g: 5 }, '5')"
+            , "  "
+            , "  fxy = (s, e) => ({"
+            , "    ...e,"
+            , "    c: s.x + 1,"
+            , "    b: '3'"
+            , "  })"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "correctly infer various record transformations" actual
@@ -665,7 +735,7 @@ spec = do
             , "  map(FunctionLink)"
             , ")"
             ]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer complex where expressions with records" actual
 
     it "should infer record params that are partially used in abstractions" $ do
@@ -733,7 +803,7 @@ spec = do
             , "  sales :: List ShopDiscount"
             , "}"
             ]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer record params that are partially used in abstractions" actual
 
     ---------------------------------------------------------------------------
@@ -742,34 +812,45 @@ spec = do
     -- Lists:
 
     it "should infer list constructors" $ do
-      let code   = unlines ["[]", "[1, 2, 3]", "[\"one\", \"two\", \"three\"]"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  []"
+                    , "  [1, 2, 3]"
+                    , "  [\"one\", \"two\", \"three\"]"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer list constructors" actual
 
     it "should infer list spread" $ do
-      let code   = unlines ["[ 1, ...[1, 2]]"]
+      let code   = unlines ["main = () => { [ 1, ...[1, 2]] }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer list spread" actual
 
     it "should fail when spreading an list of a different type" $ do
-      let code   = unlines ["[ 1, ...[\"1\", \"2\"]]"]
+      let code   = unlines ["main = () => { [ 1, ...[\"1\", \"2\"]] }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when spreading an list of a different type" actual
 
     it "should fail when spreading a non spreadable type into an list" $ do
-      let code   = unlines ["[1, ...3]"]
+      let code   = unlines ["main = () => { [1, ...3] }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when spreading a non spreadable type into an list" actual
 
     it "should fail when constructing a list with different types" $ do
-      let code   = unlines ["[1, false, 3, 4]"]
+      let code   = unlines ["main = () => { [1, false, 3, 4] }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when constructing a list with different types" actual
 
     -- Tuples
 
     it "should infer tuple constructors" $ do
-      let code   = unlines ["#[1, 2, 3]", "#[true, \"John\", 33]"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  #[1, 2, 3]"
+                    , "  #[true, \"John\", 33]"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer tuple constructors" actual
 
@@ -780,7 +861,7 @@ spec = do
     -- Applications:
 
     it "should fail for applications with a wrong argument type" $ do
-      let code   = unlines ["fn = (a, b) => (a == b)", "fn(\"3\", 4)"]
+      let code   = unlines ["fn = (a, b) => (a == b)", "main = () => { fn(\"3\", 4) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail for applications with a wrong argument type" actual
 
@@ -806,12 +887,15 @@ spec = do
             , "log = (a) => (#- { console.log(a); return a; } -#)"
             , "mash :: String -> String -> String"
             , "mash = (a, b) => (a ++ b)"
-            , "mash(\">>\", \"shit\") |> log"
-            , "nth(2, names) |> log"
-            , "flip(mash)(\">>\", \"shit\") |> log"
-            , "thn = flip(nth)"
-            , "thn(names, 2) |> log"
-            , "flip(nth)(names, 2) |> log"
+            , ""
+            , "main = () => {"
+            , "  mash(\">>\", \"shit\") |> log"
+            , "  nth(2, names) |> log"
+            , "  flip(mash)(\">>\", \"shit\") |> log"
+            , "  thn = flip(nth)"
+            , "  thn(names, 2) |> log"
+            , "  flip(nth)(names, 2) |> log"
+            , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer applications where the abstraction results from an application" actual
@@ -842,7 +926,7 @@ spec = do
             , "type Todo = Todo(String, Boolean)"
             , "alias State = { input :: String, todos :: List Todo }"
             , ""
-            , "pipe("
+            , "res = pipe("
             , "  (x) => x + 1,"
             , "  (x) => x - 1"
             , ")(3)"
@@ -861,7 +945,7 @@ spec = do
             , "  )(state))"
             , "]"
             ]
-          actual = unsafePerformIO $ inferModule code
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to infer applications when a variable is used with different types" actual
 
 
@@ -875,12 +959,12 @@ spec = do
 --     -- TODO: Write tests where implementation and definition don't match to force
 --     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
-      let code   = unlines ["fn :: Integer -> Integer -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
+      let code   = unlines ["fn :: Integer -> Integer -> Boolean", "fn = (a, b) => (a == b)", "main = () => { fn(3, 4) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve abstractions with a type definition" actual
 
     it "should fail for abstractions with a wrong type definition" $ do
-      let code   = unlines ["fn :: String -> Integer -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
+      let code   = unlines ["fn :: String -> Integer -> Boolean", "fn = (a, b) => (a == b)", "main = () => { fn(3, 4) }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail for abstractions with a wrong type definition" actual
 
@@ -893,7 +977,8 @@ spec = do
             , "  computed = moreThanTen ? sum * 2 : sum / 2"
             , "  return computed / 2 == 0"
             , "}"
-            , "fn(3, 4)"
+            , ""
+            , "main = () => { fn(3, 4) }"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve abstractions with many expressions" actual
@@ -904,22 +989,49 @@ spec = do
     -- If/Else:
 
     it "should infer a simple if else expression" $ do
-      let code   = unlines ["if (true) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  if (true) {"
+                    , "    \"OK\""
+                    , "  }"
+                    , "  else {"
+                    , "    \"NOT OK\""
+                    , "  }"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer a simple if else expression" actual
 
     it "should fail to infer an if else expression if the condition is not a Boolean" $ do
-      let code   = unlines ["if (\"true\") {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+      let code   = unlines
+                    [ "main = () => {"
+                    , "  if (\"true\") {"
+                    , "    \"OK\""
+                    , "  }"
+                    , "  else {"
+                    , "    \"NOT OK\""
+                    , "  }"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to infer an if else expression if the condition is not a Boolean" actual
 
     it "should fail to infer an if else expression if the type of if and else cases does not match" $ do
-      let code   = unlines ["if (true) {", "  \"OK\"", "}", "else {", "  1", "}"]
+      let code   = unlines
+                    [ "main = () => {" 
+                    , "  if (true) {"
+                    , "    \"OK\""
+                    , "  }"
+                    , "  else {"
+                    , "    1"
+                    , "  }"
+                    , "}"
+                    ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to infer an if else expression if the type of if and else cases does not match" actual
 
     it "should infer a ternary expression" $ do
-      let code   = unlines ["true ? \"OK\" : \"NOT OK\""]
+      let code   = unlines ["main = () => { true ? \"OK\" : \"NOT OK\" }"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer a ternary expression" actual
 
@@ -929,30 +1041,33 @@ spec = do
     -- Pattern matching:
 
     it "should resolve where with a Boolean literal" $ do
-      let code   = unlines ["where(true) {", "  true => \"OK\"", "  false => \"NOT OK\"", "}"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["x = where(true) {", "  true => \"OK\"", "  false => \"NOT OK\"", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve where with a Boolean literal" actual
 
     it "should resolve where with a Integer input" $ do
       let
         code = unlines
-          ["where(42) {", "  1 => \"NOPE\"", "  3 => \"NOPE\"", "  33 => \"NOPE\"", "  42 => \"YEAH\"", "}"]
-        actual = unsafePerformIO $ inferModule code
+          ["x = where(42) {", "  1 => \"NOPE\"", "  3 => \"NOPE\"", "  33 => \"NOPE\"", "  42 => \"YEAH\"", "}"]
+        actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve where with a Integer input" actual
 
     it "should resolve where with a string input" $ do
       let code =
-            unlines ["where(\"42\") {", "  \"1\" => 1", "  \"3\" => 3", "  \"33\" => 33", "  \"42\" => 42", "}"]
-          actual = unsafePerformIO $ inferModule code
+            unlines ["x = where(\"42\") {", "  \"1\" => 1", "  \"3\" => 3", "  \"33\" => 33", "  \"42\" => 42", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve where with a string input" actual
 
     it "should resolve where with an ADT that has unary constructors" $ do
       let code = unlines
             [ "type Maybe a = Just(a) | Nothing"
-            , "perhaps = Just(4)"
-            , "where(perhaps) {"
-            , "  Just(a) => a"
-            , "  Nothing => 0"
+            , ""
+            , "main = () => {"
+            , "  perhaps = Just(4)"
+            , "  where(perhaps) {"
+            , "    Just(a) => a"
+            , "    Nothing => 0"
+            , "  }"
             , "}"
             ]
           actual = unsafePerformIO $ inferModule code
@@ -962,10 +1077,13 @@ spec = do
       let code = unlines
             [ "type Maybe a = Just(a) | Nothing"
             , "type Failure = Nope"
-            , "perhaps = Nope"
-            , "where(perhaps) {"
-            , "  Just(a) => a"
-            , "  Nothing => 0"
+            , ""
+            , "main = () => {"
+            , "  perhaps = Nope"
+            , "  where(perhaps) {"
+            , "    Just(a) => a"
+            , "    Nothing => 0"
+            , "  }"
             , "}"
             ]
           actual = unsafePerformIO $ inferModule code
@@ -974,9 +1092,12 @@ spec = do
     it "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types" $ do
       let code = unlines
             [ "type User = LoggedIn(String, Integer)"
-            , "u = LoggedIn(\"John\", 33)"
-            , "where(u) {"
-            , "  LoggedIn(Integer, x) => x"
+            , ""
+            , "main = () => {"
+            , "  u = LoggedIn(\"John\", 33)"
+            , "  where(u) {"
+            , "    LoggedIn(Integer, x) => x"
+            , "  }"
             , "}"
             ]
           actual = unsafePerformIO $ inferModule code
@@ -987,23 +1108,26 @@ spec = do
     it "should fail to resolve a constructor pattern with different type variables applied" $ do
       let code = unlines
             [ "type User a = LoggedIn(a, Integer)"
-            , "u = LoggedIn(\"John\", 33)"
-            , "where(u) {"
-            , "  LoggedIn(Integer, x) => x"
-            , "  LoggedIn(String, x) => x"
+            , ""
+            , "main = () => {"
+            , "  u = LoggedIn(\"John\", 33)"
+            , "  where(u) {"
+            , "    LoggedIn(Integer, x) => x"
+            , "    LoggedIn(String, x) => x"
+            , "  }"
             , "}"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to resolve a constructor pattern with different type variables applied" actual
 
     it "should fail to resolve if the given constructor does not exist" $ do
-      let code   = unlines ["where(3) {", "  LoggedIn(Integer, x) => x", "  LoggedIn(String, x) => x", "}"]
-          actual = unsafePerformIO $ inferModule code
+      let code   = unlines ["x = where(3) {", "  LoggedIn(Integer, x) => x", "  LoggedIn(String, x) => x", "}"]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to resolve if the given constructor does not exist" actual
 
     it "should resolve basic patterns for lists" $ do
       let code = unlines
-            [ "x = where([1, 2, 3, 5, 8]) {"
+            [ "a = where([1, 2, 3, 5, 8]) {"
             , "  [1, 2, 3] => 1"
             , "  [1, 2, n] => n"
             , "  [n, 3] => n"

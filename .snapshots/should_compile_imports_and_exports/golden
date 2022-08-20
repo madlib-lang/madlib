@@ -7,5 +7,20 @@ import {} from "./__internals__.mjs"
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";
 
-L.singleton(3);
+let main = (_ => {
+    L.singleton(3);
+    return ({ __constructor: "Unit", __args: [] });
+});
 export default {};
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.n.v
+  }
+}
+main(makeArgs())

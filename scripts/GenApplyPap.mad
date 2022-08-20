@@ -3,7 +3,6 @@ import type { Maybe } from "Maybe"
 import IO from "IO"
 import List from "List"
 import String from "String"
-import Process from "Process"
 import { Just, Nothing } from "Maybe"
 import Date from "Date"
 import { fst, snd } from "Tuple"
@@ -303,31 +302,35 @@ generateHppFile = (maxArity) => {
 }
 
 
-where (Process.Argv) {
-  [_, arityStr, "CPP"] =>
-    where (scan(arityStr)) {
-      Just(arity) =>
-        generateCppFile(arity)
-
-      Nothing =>
-        IO.putLine("ARITY needs to be an integer")
+main :: List String -> {}
+main = (args) => {
+  where (args) {
+    [_, arityStr, "CPP"] =>
+      where (scan(arityStr)) {
+        Just(arity) =>
+          generateCppFile(arity)
+  
+        Nothing =>
+          IO.putLine("ARITY needs to be an integer")
+      }
+  
+    [_, arityStr, "HPP"] =>
+      where ((scan(arityStr) :: Maybe Integer)) {
+        Just(arity) =>
+          generateHppFile(arity)
+  
+        Nothing =>
+          IO.putLine("ARITY needs to be an integer")
+      }
+  
+    _ => do {
+      IO.putLine("You must pass two args, the kind of file and the max arity!")
+      IO.putLine("Usage:")
+      IO.putLine("GenApplyPap ARITY FILE_TYPE")
+      IO.putLine("ARITY - must be an integer")
+      IO.putLine("FILE_TYPE - must be 'CPP' or 'HPP'")
+      return {}
     }
-
-  [_, arityStr, "HPP"] =>
-    where ((scan(arityStr) :: Maybe Integer)) {
-      Just(arity) =>
-        generateHppFile(arity)
-
-      Nothing =>
-        IO.putLine("ARITY needs to be an integer")
-    }
-
-  _ => do {
-    IO.putLine("You must pass two args, the kind of file and the max arity!")
-    IO.putLine("Usage:")
-    IO.putLine("GenApplyPap ARITY FILE_TYPE")
-    IO.putLine("ARITY - must be an integer")
-    IO.putLine("FILE_TYPE - must be 'CPP' or 'HPP'")
-    return {}
   }
 }
+

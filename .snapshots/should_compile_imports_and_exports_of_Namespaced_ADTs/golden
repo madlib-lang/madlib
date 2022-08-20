@@ -45,8 +45,11 @@ export default { Just, Nothing };
 import {} from "./__internals__.mjs"
 import ADTs from "./ADTs.mjs";
 
-ADTs.Just(3);
-ADTs.Nothing;
+let main = (_ => {
+    ADTs.Just(3);
+    ADTs.Nothing;
+    return ({ __constructor: "Unit", __args: [] });
+});
 export let fn = (m => m);
 export let fn2 = (m => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0].__constructor === "Just" && true) {
@@ -60,3 +63,15 @@ export let fn2 = (m => ((__x__) => {
   }
 })(m));
 export default { fn, fn2 };
+const makeArgs = () => {
+  let list = {}
+  let start = list
+  Object.keys(process.argv.slice(0)).forEach((key) => {
+    list = list.n = { v: process.argv[key], n: null }
+  }, {})
+  return {
+    n: start.n.n.n,
+    v: start.n.n.v
+  }
+}
+main(makeArgs())
