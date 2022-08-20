@@ -51,22 +51,22 @@ updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assi
 
 instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
-    Src.NamedTypedExp _ (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing ->
+    Src.NamedTypedExp _ (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing | Env.envIsMainModule env ->
       updateMainFunction env target area mainAssignment typing
 
-    Src.NamedTypedExp _ mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing ->
+    Src.NamedTypedExp _ mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing | Env.envIsMainModule env ->
       updateMainFunction env target area mainAssignment typing
 
-    Src.TypedExp (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing ->
+    Src.TypedExp (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing | Env.envIsMainModule env ->
       updateMainFunction env target area mainAssignment typing
 
-    Src.TypedExp mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing -> do
+    Src.TypedExp mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) typing | Env.envIsMainModule env -> do
       updateMainFunction env target area mainAssignment typing
 
-    Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) ->
+    Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)) | Env.envIsMainModule env ->
       updateMainFunction env target area mainAssignment mainTyping
 
-    Src.Assignment "main" _ ->
+    Src.Assignment "main" _ | Env.envIsMainModule env ->
       updateMainFunction env target area fullExp mainTyping
 
     Src.LNum  x ->

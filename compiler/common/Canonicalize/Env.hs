@@ -44,6 +44,7 @@ data Env
     , envInterfaces  :: Interfaces
     , envCurrentPath :: FilePath
     , envFromDictionaryListName :: String
+    , envIsMainModule :: Bool
     }
     deriving(Eq, Show, Generic, Hashable)
 
@@ -54,7 +55,5 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tD
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""
                  , envImportInfo = []
+                 , envIsMainModule = False
                  }
-
-initialWithPath :: FilePath -> Env
-initialWithPath astPath = initialEnv { envCurrentPath = astPath }
