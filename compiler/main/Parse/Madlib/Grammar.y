@@ -378,6 +378,7 @@ do :: { Src.Exp }
 
 doExps :: { [Src.Exp] }
   : 'return' exp              %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
+  | {- empty -}             %shift { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
   | name '<-' exp rets doExps %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $3)) (tokenTarget $1) (Src.DoAssignment (strV $1) $3)] <> $5 }
   | bodyExp rets doExps       %shift { [$1] <> $3 }
 

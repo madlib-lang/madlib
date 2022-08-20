@@ -126,6 +126,7 @@ buildOptions target = do
       , Options.optCoverage = False
       , Options.optGenerateDerivedInstances = False
       , Options.optInsertInstancePlaholders = False
+      , Options.optMustHaveMain = False
       }
 
 

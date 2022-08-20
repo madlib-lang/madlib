@@ -55,6 +55,7 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
             , optCoverage = coverage
             , optGenerateDerivedInstances = True
             , optInsertInstancePlaholders = True
+            , optMustHaveMain = True
             }
 
     when verbose $ do

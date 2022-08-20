@@ -70,6 +70,7 @@ generateDocData rootFolder paths = do
           , optCoverage = False
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
+          , optMustHaveMain = False
           }
   let llvmOptions =
         Options
@@ -83,6 +84,7 @@ generateDocData rootFolder paths = do
           , optCoverage = False
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
+          , optMustHaveMain = False
           }
   jsMemoVar <- newIORef mempty
   llvmMemoVar <- newIORef mempty

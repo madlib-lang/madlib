@@ -202,7 +202,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
   instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
 
-  when (astPath == optEntrypoint options) $ do
+  when (optMustHaveMain options && astPath == optEntrypoint options) $ do
     if any ((== Just "main") . Can.getExpName) exps then
       return ()
     else

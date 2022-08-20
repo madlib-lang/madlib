@@ -171,6 +171,71 @@
                                      (LNum "1"))
                                   True)
                            ])))))
+        , Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 55 3 1) (Loc 70 3 16))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 55 3 1) (Loc 70 3 16))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 62 3 8) (Loc 70 3 16))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 69 3 15) (Loc 69 3 15))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
         ]
     , atypedecls = []
     , ainterfaces = []

@@ -72,6 +72,7 @@ buildOptions entrypoint pathUtils optimized coverage =
     , optCoverage = coverage
     , optGenerateDerivedInstances = True
     , optInsertInstancePlaholders = True
+    , optMustHaveMain = True
     }
 
 compileModule :: Bool -> Bool -> String -> IO String
