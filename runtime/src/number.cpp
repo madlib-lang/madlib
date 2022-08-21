@@ -49,6 +49,11 @@ unsigned char madlib__number__internal__multiplyBytes(unsigned char a,
   return a * b;
 }
 
+double *madlib__number__internal__divideBytes(unsigned char a,
+                                                       unsigned char b) {
+  return boxDouble(madlib__number__byteToFloat(a) / madlib__number__byteToFloat(b));
+}
+
 bool madlib__number__internal__gtBytes(unsigned char a, unsigned char b) {
   return a > b;
 }
@@ -164,6 +169,10 @@ double *madlib__number__internal__multiplyFloats(double *a, double *b) {
   return boxDouble(unboxDouble(a) * unboxDouble(b));
 }
 
+double *madlib__number__internal__divideFloats(double *a, double *b) {
+  return boxDouble(unboxDouble(a) / unboxDouble(b));
+}
+
 bool madlib__number__internal__gtFloats(double *a, double *b) {
   return unboxDouble(a) > unboxDouble(b);
 }
@@ -234,6 +243,10 @@ int64_t madlib__number__internal__substractIntegers(int64_t a, int64_t b) {
 
 int64_t madlib__number__internal__multiplyIntegers(int64_t a, int64_t b) {
   return a * b;
+}
+
+double *madlib__number__internal__divideIntegers(int64_t a, int64_t b) {
+  return boxDouble(madlib__number__intToFloat(a) / madlib__number__intToFloat(b));
 }
 
 int64_t madlib__number__internal__andIntegers(int64_t a, int64_t b) {
