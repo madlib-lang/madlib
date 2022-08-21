@@ -953,12 +953,6 @@ generateExp env symbolTable exp = case exp of
     result           <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
     return (symbolTable, result, Nothing)
 
-  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "/" _)) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
-    result                <- fdiv leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
-
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
@@ -1240,6 +1234,32 @@ generateExp env symbolTable exp = case exp of
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fmul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "/" -> case typingStrWithoutHash typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          leftOperand''         <- sitofp leftOperand' Type.double
+          rightOperand''        <- sitofp rightOperand' Type.double
+          result                <- fdiv leftOperand'' rightOperand''
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          leftOperand''         <- uitofp leftOperand' Type.double
+          rightOperand''        <- uitofp rightOperand' Type.double
+          result                <- fdiv leftOperand'' rightOperand''
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fdiv leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
         _ ->
@@ -2855,6 +2875,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__addIntegers")       [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__substractIntegers") [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__multiplyIntegers")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__divideIntegers")    [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gtIntegers")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__ltIntegers")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gteIntegers")       [boxType, boxType] boxType
@@ -2874,6 +2895,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__addBytes")       [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__substractBytes") [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__multiplyBytes")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__divideBytes")    [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gtBytes")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__ltBytes")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gteBytes")       [boxType, boxType] boxType
@@ -2893,6 +2915,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__addFloats")       [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__substractFloats") [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__multiplyFloats")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__divideFloats")    [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gtFloats")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__ltFloats")        [boxType, boxType] boxType
   extern (AST.mkName "madlib__number__internal__gteFloats")       [boxType, boxType] boxType
@@ -2916,6 +2939,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
   let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addIntegers")
       substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractIntegers")
       multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyIntegers")
+      divideIntegers    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideIntegers")
       gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtIntegers")
       ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltIntegers")
       gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteIntegers")
@@ -2935,6 +2959,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
       addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addBytes")
       substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractBytes")
       multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyBytes")
+      divideBytes       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideBytes")
       gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtBytes")
       ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltBytes")
       gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteBytes")
@@ -2954,6 +2979,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
       addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addFloats")
       substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractFloats")
       multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyFloats")
+      divideFloats      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideFloats")
       gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtFloats")
       ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltFloats")
       gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteFloats")
@@ -3047,6 +3073,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
         $ Map.insert "madlib__number__internal__addFloats" (fnSymbol 2 addFloats)
         $ Map.insert "madlib__number__internal__substractFloats" (fnSymbol 2 substractFloats)
         $ Map.insert "madlib__number__internal__multiplyFloats" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "madlib__number__internal__divideFloats" (fnSymbol 2 divideFloats)
         $ Map.insert "madlib__number__internal__gtFloats" (fnSymbol 2 gtFloats)
         $ Map.insert "madlib__number__internal__ltFloats" (fnSymbol 2 ltFloats)
         $ Map.insert "madlib__number__internal__gteFloats" (fnSymbol 2 gteFloats)
@@ -3058,6 +3085,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
         $ Map.insert "madlib__number__internal__addBytes" (fnSymbol 2 addBytes)
         $ Map.insert "madlib__number__internal__substractBytes" (fnSymbol 2 substractBytes)
         $ Map.insert "madlib__number__internal__multiplyBytes" (fnSymbol 2 multiplyBytes)
+        $ Map.insert "madlib__number__internal__divideBytes" (fnSymbol 2 divideBytes)
         $ Map.insert "madlib__number__internal__gtBytes" (fnSymbol 2 gtBytes)
         $ Map.insert "madlib__number__internal__ltBytes" (fnSymbol 2 ltBytes)
         $ Map.insert "madlib__number__internal__gteBytes" (fnSymbol 2 gteBytes)
@@ -3078,6 +3106,7 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
         $ Map.insert "madlib__number__internal__addIntegers" (fnSymbol 2 addIntegers)
         $ Map.insert "madlib__number__internal__substractIntegers" (fnSymbol 2 substractIntegers)
         $ Map.insert "madlib__number__internal__multiplyIntegers" (fnSymbol 2 multiplyIntegers)
+        $ Map.insert "madlib__number__internal__divideIntegers" (fnSymbol 2 divideIntegers)
         $ Map.insert "madlib__number__internal__gtIntegers" (fnSymbol 2 gtIntegers)
         $ Map.insert "madlib__number__internal__ltIntegers" (fnSymbol 2 ltIntegers)
         $ Map.insert "madlib__number__internal__gteIntegers" (fnSymbol 2 gteIntegers)
@@ -3144,6 +3173,18 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "*" (
                         Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyIntegers" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "/"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "*" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideIntegers" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
                           ])
@@ -3357,6 +3398,18 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
                     , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
+                , ( "/"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideBytes" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
                 , ( ">"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
                         Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
@@ -3555,6 +3608,18 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
                         Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
                           Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyFloats" False)) [
+                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
+                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
+                          ])
+                        ])
+                      ))
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+                    )
+                  )
+                , ( "/"
+                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
+                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
+                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideFloats" False)) [
                             Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
                             Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
                           ])
@@ -4293,7 +4358,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
 
 defaultDictionaryIndices =
   Map.fromList
-    [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1)), ("unary-minus", (8, 1))])
+    [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("/", (3, 2)), ("<", (4, 2)), ("<=", (5, 2)), (">", (6, 2)), (">=", (7, 2)), ("__coerceNumber__", (8, 1)), ("unary-minus", (9, 1))])
     , ("Bits", Map.fromList [("&", (0, 2)), ("<<", (1, 2)), (">>", (2, 2)), (">>>", (3, 2)), ("^", (4, 2)), ("|", (5, 2)), ("~", (6, 1))])
     , ("Eq", Map.fromList [("==", (0, 2))])
     , ("Inspect", Map.fromList [("inspect", (0, 1))])

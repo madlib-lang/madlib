@@ -3,10 +3,10 @@ import {} from "./__internals__.mjs"
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_y284) => (__$a__ => ((__x__) => {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_z285) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_y284.inspect()(a0) + `)`;
+    return `Just(` + Inspect_z285.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -21,9 +21,9 @@ Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_y2
   }
 })(__$a__));
 Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_n299) => (__$a__ => `{ ` + `cars: ` + Inspect_n299.inspect()(__$a__.cars) + ` }`);
+Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_o300) => (__$a__ => `{ ` + `cars: ` + Inspect_o300.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e316) => (Inspect_x309) => (__$a__ => `{ ` + `name: ` + Inspect_x309.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_e316.inspect()(__$a__.x) + ` }`);
+Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_f317) => (Inspect_y310) => (__$a__ => `{ ` + `name: ` + Inspect_y310.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_f317.inspect()(__$a__.x) + ` }`);
 export let fn = (b => c => b + c);
 let inc = (x => x + 1);
 let dec = (x => x - 1);
