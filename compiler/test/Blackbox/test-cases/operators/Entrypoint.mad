@@ -1,19 +1,20 @@
 import IO from "IO"
 
 
+xor = (a, b) => a ^ b
+and = (a, b) => a & b
+or = (a, b) => a | b
+complement = (a) => ~a
+left = (a, b) => a << b
+right = (a, b) => a >> b
+rightRight = (a, b) => a >>> b
+
+mod = (a, b) => a % b
+div = (a, b) => a / b
+
+invert = (a) => -a
+
 main = () => {
-  xor = (a, b) => a ^ b
-  and = (a, b) => a & b
-  or = (a, b) => a | b
-  complement = (a) => ~a
-  left = (a, b) => a << b
-  right = (a, b) => a >> b
-  rightRight = (a, b) => a >>> b
-
-  mod = (a, b) => a % b
-  div = (a, b) => a / b
-
-  invert = (a) => -a
 
   IO.log(xor(3, (20 :: Byte)))
   IO.log(3 ^ (20 :: Byte))
@@ -86,5 +87,4 @@ main = () => {
   IO.log(true != false)
   IO.log({} != {})
   IO.log("yes" != "no")
-  return {}
 }

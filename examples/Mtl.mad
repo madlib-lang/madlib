@@ -176,16 +176,17 @@ runStack = (x, s) => pipe(
 
 state = StateT((s) => WriterT(Identity(#[#[31, s], []])))
 
-
-pipe(
-  chain((x) => of(29 * x)),
-  map((x) => x * 17),
-  chain((_) => hep(["HOP"])),
-  chain((_) => tell(["HIP"])),
-  chain((_) => put(157)),
-  chain((_) => tell(["HAP"])),
-  andDo(of(5)),
-  chain((x) => sumAndLog(x)),
-  (m) => runStack(37, m),
-  IO.log
-)(state)
+main = () => {
+  pipe(
+    chain((x) => of(29 * x)),
+    map((x) => x * 17),
+    chain((_) => hep(["HOP"])),
+    chain((_) => tell(["HIP"])),
+    chain((_) => put(157)),
+    chain((_) => tell(["HAP"])),
+    andDo(of(5)),
+    chain((x) => sumAndLog(x)),
+    (m) => runStack(37, m),
+    IO.log
+  )(state)
+}
