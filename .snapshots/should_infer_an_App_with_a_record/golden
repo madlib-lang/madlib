@@ -322,6 +322,12 @@
                                                                                      "Integer" Star)
                                                                                   "prelude"
                                                                               )
+                                                                            , ( "y"
+                                                                              , TCon
+                                                                                  (TC
+                                                                                     "Integer" Star)
+                                                                                  "prelude"
+                                                                              )
                                                                             ])
                                                                          (Just
                                                                             (TVar
@@ -346,6 +352,10 @@
                                                            TRecord
                                                              (fromList
                                                                 [ ( "x"
+                                                                  , TCon
+                                                                      (TC "Integer" Star) "prelude"
+                                                                  )
+                                                                , ( "y"
                                                                   , TCon
                                                                       (TC "Integer" Star) "prelude"
                                                                   )

@@ -174,6 +174,24 @@
                                                                                , TVar
                                                                                    (TV "n13" Star)
                                                                                )
+                                                                             , ( "y"
+                                                                               , TApp
+                                                                                   (TCon
+                                                                                      (TC
+                                                                                         "List"
+                                                                                         (Kfun
+                                                                                            Star
+                                                                                            Star))
+                                                                                      "prelude")
+                                                                                   (TVar
+                                                                                      (TV
+                                                                                         "n13"
+                                                                                         Star))
+                                                                               )
+                                                                             , ( "z"
+                                                                               , TVar
+                                                                                   (TV "n13" Star)
+                                                                               )
                                                                              ])
                                                                           (Just
                                                                              (TVar
@@ -194,6 +212,18 @@
                                                                   TRecord
                                                                     (fromList
                                                                        [ ( "x"
+                                                                         , TVar (TV "n13" Star)
+                                                                         )
+                                                                       , ( "y"
+                                                                         , TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "List"
+                                                                                   (Kfun Star Star))
+                                                                                "prelude")
+                                                                             (TVar (TV "n13" Star))
+                                                                         )
+                                                                       , ( "z"
                                                                          , TVar (TV "n13" Star)
                                                                          )
                                                                        ])
@@ -266,6 +296,15 @@
                                                                        [ ( "x"
                                                                          , TVar (TV "n13" Star)
                                                                          )
+                                                                       , ( "y"
+                                                                         , TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "List"
+                                                                                   (Kfun Star Star))
+                                                                                "prelude")
+                                                                             (TVar (TV "n13" Star))
+                                                                         )
                                                                        , ( "z"
                                                                          , TVar (TV "n13" Star)
                                                                          )
@@ -331,10 +370,17 @@
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
                                           (fromList
-                                             [ ( "p" , TCon (TC "Integer" Star) "prelude" ) ])
+                                             [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                             , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                             , ( "z" , TCon (TC "Integer" Star) "prelude" )
+                                             ])
                                           (Just (TVar (TV "p15" Star)))))
                                     (TRecord
-                                       (fromList [ ( "p" , TCon (TC "Integer" Star) "prelude" ) ])
+                                       (fromList
+                                          [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                          , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                          , ( "z" , TCon (TC "Integer" Star) "prelude" )
+                                          ])
                                        (Just (TVar (TV "p15" Star)))))
                                (Area (Loc 94 9 3) (Loc 123 9 32))
                                (Assignment
@@ -348,11 +394,17 @@
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
                                                 (fromList
-                                                   [ ( "p" , TCon (TC "Integer" Star) "prelude" ) ])
+                                                   [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "z" , TCon (TC "Integer" Star) "prelude" )
+                                                   ])
                                                 (Just (TVar (TV "p15" Star)))))
                                           (TRecord
                                              (fromList
-                                                [ ( "p" , TCon (TC "Integer" Star) "prelude" ) ])
+                                                [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                                , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                                , ( "z" , TCon (TC "Integer" Star) "prelude" )
+                                                ])
                                              (Just (TVar (TV "p15" Star)))))
                                      (Area (Loc 100 9 9) (Loc 123 9 32))
                                      (Abs
@@ -364,7 +416,10 @@
                                             ] :=>
                                               TRecord
                                                 (fromList
-                                                   [ ( "p" , TCon (TC "Integer" Star) "prelude" ) ])
+                                                   [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "z" , TCon (TC "Integer" Star) "prelude" )
+                                                   ])
                                                 (Just (TVar (TV "p15" Star))))
                                            (Area (Loc 101 9 10) (Loc 102 9 11))
                                            "x")
@@ -377,6 +432,8 @@
                                                TRecord
                                                  (fromList
                                                     [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                                    , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                                    , ( "z" , TCon (TC "Integer" Star) "prelude" )
                                                     ])
                                                  (Just (TVar (TV "p15" Star))))
                                             (Area (Loc 108 9 17) (Loc 122 9 31))
@@ -386,7 +443,23 @@
                                                    (Area (Loc 110 9 19) (Loc 114 9 23))
                                                    (FieldSpread
                                                       (Typed
-                                                         ([] :=> TVar (TV "p15" Star))
+                                                         ([] :=>
+                                                            TRecord
+                                                              (fromList
+                                                                 [ ( "p"
+                                                                   , TCon
+                                                                       (TC "Integer" Star) "prelude"
+                                                                   )
+                                                                 , ( "y"
+                                                                   , TCon
+                                                                       (TC "Integer" Star) "prelude"
+                                                                   )
+                                                                 , ( "z"
+                                                                   , TCon
+                                                                       (TC "Integer" Star) "prelude"
+                                                                   )
+                                                                 ])
+                                                              (Just (TVar (TV "p15" Star))))
                                                          (Area (Loc 113 9 22) (Loc 114 9 23))
                                                          (Var "x" False)))
                                                , Typed
@@ -415,14 +488,20 @@
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                          (fromList
+                                             [ ( "g" , TCon (TC "Integer" Star) "prelude" )
+                                             , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                             ])
                                           (Just (TVar (TV "s18" Star)))))
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "t19" Star)))
+                                          (TCon (TC "Char" Star) "prelude"))
                                        (TRecord
-                                          (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                          (fromList
+                                             [ ( "g" , TCon (TC "Integer" Star) "prelude" )
+                                             , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                             ])
                                           (Just (TVar (TV "s18" Star))))))
                                (Area (Loc 129 11 3) (Loc 161 11 35))
                                (Assignment
@@ -434,23 +513,32 @@
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                (fromList
+                                                   [ ( "g" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                                   ])
                                                 (Just (TVar (TV "s18" Star)))))
                                           (TApp
                                              (TApp
                                                 (TCon
                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                    "prelude")
-                                                (TVar (TV "t19" Star)))
+                                                (TCon (TC "Char" Star) "prelude"))
                                              (TRecord
-                                                (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                (fromList
+                                                   [ ( "g" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                                   ])
                                                 (Just (TVar (TV "s18" Star))))))
                                      (Area (Loc 135 11 9) (Loc 161 11 35))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TRecord
-                                                (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                (fromList
+                                                   [ ( "g" , TCon (TC "Integer" Star) "prelude" )
+                                                   , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                                   ])
                                                 (Just (TVar (TV "s18" Star))))
                                            (Area (Loc 136 11 10) (Loc 137 11 11))
                                            "r")
@@ -461,21 +549,32 @@
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
-                                                    (TVar (TV "t19" Star)))
+                                                    (TCon (TC "Char" Star) "prelude"))
                                                  (TRecord
-                                                    (fromList [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                    (fromList
+                                                       [ ( "g"
+                                                         , TCon (TC "Integer" Star) "prelude"
+                                                         )
+                                                       , ( "p" , TCon (TC "Char" Star) "prelude" )
+                                                       ])
                                                     (Just (TVar (TV "s18" Star)))))
                                             (Area (Loc 135 11 9) (Loc 161 11 35))
                                             (Abs
                                                (Typed
-                                                  ([] :=> TVar (TV "t19" Star))
+                                                  ([] :=> TCon (TC "Char" Star) "prelude")
                                                   (Area (Loc 139 11 13) (Loc 140 11 14))
                                                   "x")
                                                [ Typed
                                                    ([] :=>
                                                       TRecord
                                                         (fromList
-                                                           [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                           [ ( "g"
+                                                             , TCon (TC "Integer" Star) "prelude"
+                                                             )
+                                                           , ( "p"
+                                                             , TCon (TC "Char" Star) "prelude"
+                                                             )
+                                                           ])
                                                         (Just (TVar (TV "s18" Star))))
                                                    (Area (Loc 146 11 20) (Loc 160 11 34))
                                                    (Record
@@ -484,7 +583,21 @@
                                                           (Area (Loc 148 11 22) (Loc 152 11 26))
                                                           (FieldSpread
                                                              (Typed
-                                                                ([] :=> TVar (TV "s18" Star))
+                                                                ([] :=>
+                                                                   TRecord
+                                                                     (fromList
+                                                                        [ ( "g"
+                                                                          , TCon
+                                                                              (TC "Integer" Star)
+                                                                              "prelude"
+                                                                          )
+                                                                        , ( "p"
+                                                                          , TCon
+                                                                              (TC "Char" Star)
+                                                                              "prelude"
+                                                                          )
+                                                                        ])
+                                                                     (Just (TVar (TV "s18" Star))))
                                                                 (Area
                                                                    (Loc 151 11 25) (Loc 152 11 26))
                                                                 (Var "r" False)))
@@ -494,7 +607,8 @@
                                                           (Field
                                                              ( "p"
                                                              , Typed
-                                                                 ([] :=> TVar (TV "t19" Star))
+                                                                 ([] :=>
+                                                                    TCon (TC "Char" Star) "prelude")
                                                                  (Area
                                                                     (Loc 157 11 31) (Loc 158 11 32))
                                                                  (Var "x" False)
@@ -509,6 +623,7 @@
                                   TRecord
                                     (fromList
                                        [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                       , ( "y" , TCon (TC "Integer" Star) "prelude" )
                                        , ( "z" , TCon (TC "Integer" Star) "prelude" )
                                        ])
                                     (Just (TVar (TV "p15" Star))))
@@ -526,6 +641,7 @@
                                         TRecord
                                           (fromList
                                              [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                             , ( "y" , TCon (TC "Integer" Star) "prelude" )
                                              , ( "z" , TCon (TC "Integer" Star) "prelude" )
                                              ])
                                           (Just (TVar (TV "p15" Star))))
@@ -547,11 +663,19 @@
                                                          [ ( "p"
                                                            , TCon (TC "Integer" Star) "prelude"
                                                            )
+                                                         , ( "y"
+                                                           , TCon (TC "Integer" Star) "prelude"
+                                                           )
+                                                         , ( "z"
+                                                           , TCon (TC "Integer" Star) "prelude"
+                                                           )
                                                          ])
                                                       (Just (TVar (TV "p15" Star)))))
                                                 (TRecord
                                                    (fromList
                                                       [ ( "p" , TCon (TC "Integer" Star) "prelude" )
+                                                      , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                                      , ( "z" , TCon (TC "Integer" Star) "prelude" )
                                                       ])
                                                    (Just (TVar (TV "p15" Star)))))
                                            (Area (Loc 172 13 8) (Loc 175 13 11))
@@ -650,7 +774,7 @@
                                         [ Typed
                                             ([ IsIn
                                                  "Number"
-                                                 [ TVar (TV "q16" Star) ]
+                                                 [ TVar (TV "x23" Star) ]
                                                  (Just (Area (Loc 204 14 13) (Loc 207 14 16)))
                                              , IsIn "Number" [ TVar (TV "a26" Star) ] Nothing
                                              , IsIn "Number" [ TVar (TV "b27" Star) ] Nothing
@@ -682,6 +806,9 @@
                                                           [ ( "p"
                                                             , TCon (TC "Integer" Star) "prelude"
                                                             )
+                                                          , ( "y"
+                                                            , TCon (TC "Integer" Star) "prelude"
+                                                            )
                                                           , ( "z"
                                                             , TCon (TC "Integer" Star) "prelude"
                                                             )
@@ -709,11 +836,31 @@
                                                                             (TC "Integer" Star)
                                                                             "prelude"
                                                                         )
+                                                                      , ( "y"
+                                                                        , TCon
+                                                                            (TC "Integer" Star)
+                                                                            "prelude"
+                                                                        )
+                                                                      , ( "z"
+                                                                        , TCon
+                                                                            (TC "Integer" Star)
+                                                                            "prelude"
+                                                                        )
                                                                       ])
                                                                    (Just (TVar (TV "p15" Star)))))
                                                              (TRecord
                                                                 (fromList
                                                                    [ ( "p"
+                                                                     , TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude"
+                                                                     )
+                                                                   , ( "y"
+                                                                     , TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude"
+                                                                     )
+                                                                   , ( "z"
                                                                      , TCon
                                                                          (TC "Integer" Star)
                                                                          "prelude"
@@ -879,7 +1026,14 @@
                                                             "prelude")
                                                          (TRecord
                                                             (fromList
-                                                               [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                               [ ( "g"
+                                                                 , TCon
+                                                                     (TC "Integer" Star) "prelude"
+                                                                 )
+                                                               , ( "p"
+                                                                 , TCon (TC "Char" Star) "prelude"
+                                                                 )
+                                                               ])
                                                             (Just (TVar (TV "s18" Star)))))
                                                       (TApp
                                                          (TApp
@@ -888,10 +1042,17 @@
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "t19" Star)))
+                                                            (TCon (TC "Char" Star) "prelude"))
                                                          (TRecord
                                                             (fromList
-                                                               [ ( "p" , TVar (TV "t19" Star) ) ])
+                                                               [ ( "g"
+                                                                 , TCon
+                                                                     (TC "Integer" Star) "prelude"
+                                                                 )
+                                                               , ( "p"
+                                                                 , TCon (TC "Char" Star) "prelude"
+                                                                 )
+                                                               ])
                                                             (Just (TVar (TV "s18" Star))))))
                                                  (Area (Loc 239 15 8) (Loc 242 15 11))
                                                  (Var "fr2" False))
@@ -1123,7 +1284,21 @@
                                                           (Area (Loc 294 18 5) (Loc 298 18 9))
                                                           (FieldSpread
                                                              (Typed
-                                                                ([] :=> TVar (TV "j35" Star))
+                                                                ([] :=>
+                                                                   TRecord
+                                                                     (fromList
+                                                                        [ ( "b"
+                                                                          , TCon
+                                                                              (TC "Char" Star)
+                                                                              "prelude"
+                                                                          )
+                                                                        , ( "c"
+                                                                          , TCon
+                                                                              (TC "Integer" Star)
+                                                                              "prelude"
+                                                                          )
+                                                                        ])
+                                                                     (Just (TVar (TV "j35" Star))))
                                                                 (Area (Loc 297 18 8) (Loc 298 18 9))
                                                                 (Var "e" False)))
                                                       , Typed

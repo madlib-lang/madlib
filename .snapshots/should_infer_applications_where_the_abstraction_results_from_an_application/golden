@@ -971,14 +971,14 @@
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "o66" Star))))
+                                          (TCon (TC "String" Star) "prelude")))
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                           (TCon (TC "Integer" Star) "prelude"))
                                        (TApp
                                           (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                          (TVar (TV "o66" Star)))))
+                                          (TCon (TC "String" Star) "prelude"))))
                                (Area (Loc 579 26 3) (Loc 594 26 18))
                                (Assignment
                                   "thn"
@@ -990,7 +990,7 @@
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                (TVar (TV "o66" Star))))
+                                                (TCon (TC "String" Star) "prelude")))
                                           (TApp
                                              (TApp
                                                 (TCon
@@ -999,7 +999,7 @@
                                                 (TCon (TC "Integer" Star) "prelude"))
                                              (TApp
                                                 (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                (TVar (TV "o66" Star)))))
+                                                (TCon (TC "String" Star) "prelude"))))
                                      (Area (Loc 585 26 9) (Loc 594 26 18))
                                      (App
                                         (Typed
@@ -1026,12 +1026,12 @@
                                                                (TCon
                                                                   (TC "List" (Kfun Star Star))
                                                                   "prelude")
-                                                               (TVar (TV "o66" Star))))
+                                                               (TCon (TC "String" Star) "prelude")))
                                                          (TApp
                                                             (TCon
                                                                (TC "Maybe" (Kfun Star Star))
                                                                "Module.mad")
-                                                            (TVar (TV "o66" Star))))))
+                                                            (TCon (TC "String" Star) "prelude")))))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -1040,7 +1040,7 @@
                                                       (TApp
                                                          (TCon
                                                             (TC "List" (Kfun Star Star)) "prelude")
-                                                         (TVar (TV "o66" Star))))
+                                                         (TCon (TC "String" Star) "prelude")))
                                                    (TApp
                                                       (TApp
                                                          (TCon
@@ -1051,7 +1051,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "o66" Star))))))
+                                                         (TCon (TC "String" Star) "prelude")))))
                                            (Area (Loc 585 26 9) (Loc 589 26 13))
                                            (Var "flip" False))
                                         (Typed
@@ -1070,11 +1070,11 @@
                                                       (TApp
                                                          (TCon
                                                             (TC "List" (Kfun Star Star)) "prelude")
-                                                         (TVar (TV "o66" Star))))
+                                                         (TCon (TC "String" Star) "prelude")))
                                                    (TApp
                                                       (TCon
                                                          (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                      (TVar (TV "o66" Star)))))
+                                                      (TCon (TC "String" Star) "prelude"))))
                                            (Area (Loc 590 26 14) (Loc 593 26 17))
                                            (Var "nth" False))
                                         True)))
@@ -1126,7 +1126,7 @@
                                                             (TCon
                                                                (TC "List" (Kfun Star Star))
                                                                "prelude")
-                                                            (TVar (TV "o66" Star))))
+                                                            (TCon (TC "String" Star) "prelude")))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -1139,7 +1139,7 @@
                                                             (TCon
                                                                (TC "Maybe" (Kfun Star Star))
                                                                "Module.mad")
-                                                            (TVar (TV "o66" Star)))))
+                                                            (TCon (TC "String" Star) "prelude"))))
                                                  (Area (Loc 597 27 3) (Loc 600 27 6))
                                                  (Var "thn" False))
                                               (Typed

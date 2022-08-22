@@ -220,15 +220,12 @@ inferBody options env (e : es) = do
       (s, (_, ps), env, e') <- inferImplicitlyTyped options True env e
       return (s, ps, env, e')
 
-  let tVarsFromEnvFunctions = ftv $ M.elems $ M.filter (\(Forall _ (_ :=> t)) -> isFunctionType t) (envVars env')
-
   e''               <- insertClassPlaceholders options env' e' (dedupePreds ps)
-  (sb, ps', tb, eb) <- inferBody options (updateBodyEnv s env') es
+  (sb, ps', tb, eb) <- inferBody options (apply s env') es
 
-  let finalS = M.filterWithKey (\k _ -> k `notElem` tVarsFromEnvFunctions) $ s `compose` sb
+  let finalS = s `compose` sb
 
   return (finalS, apply finalS $ ps ++ ps', tb, e'' : eb)
-  -- return (finalS, apply finalS $ ps ++ ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,
