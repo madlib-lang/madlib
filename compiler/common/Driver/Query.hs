@@ -12,7 +12,6 @@ import qualified AST.Source                 as Src
 import qualified AST.Canonical              as Can
 import qualified Canonicalize.Env           as CanEnv
 import           Canonicalize.InstanceToDerive
-import           Canonicalize.Coverable
 import qualified AST.Solved                 as Slv
 import qualified Infer.Env                  as SlvEnv
 import qualified AST.Core                   as Core
@@ -44,7 +43,7 @@ data Query a where
   DocStrings :: FilePath -> Query [DocString]
 
   -- Canonicalization
-  CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env, [InstanceToDerive], [Coverable])
+  CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env, [InstanceToDerive])
   CanonicalizedInterface :: FilePath -> String -> Query (Maybe CanEnv.Interface)
   ForeignADTType :: FilePath -> String -> Query (Maybe Type)
 

@@ -180,7 +180,7 @@ generateKnownCallCase = (arity) => {
   caseStart = `      case ${inspect(arity)}: {\n`
   fnAssignment = `        ${generateFnAssignment(arity)}\n`
   allArgs = makeIndexedArgNames(arity)
-  case = `        void **args = (void**) GC_MALLOC(sizeof(void*) * (${inspect(arity)}));
+  case = `        void* args[${inspect(arity)}];
         int i = 0;
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
@@ -214,7 +214,7 @@ generateOverloadCase :: Integer -> String
 generateOverloadCase = (argsLeft) => {
   argNames = makeIndexedArgNames(argsLeft)
   allArgs = ["result", "argsLeft", ...argNames]
-  argsRead = `          void **args = (void**) GC_MALLOC(sizeof(void*) * ${inspect(argsLeft)});
+  argsRead = `          void *args[${inspect(argsLeft)}];
           for (int i = 0; i < ${inspect(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }\n`
   fnCall = makeFunctionCall("__applyPAP__", allArgs)
 
@@ -232,28 +232,6 @@ generateOverloadCases = (maxArity) => {
   )(maxArity + 1)
 
   return `      switch (argsLeft) {\n${cases}      }\n`
-}
-
-
-generateNextEnvCase :: Integer -> Integer -> String
-generateNextEnvCase = (envSize, nextEnvSize) => {
-  papType = `PAPEnv_${inspect(nextEnvSize)}_t`
-  newEnv = `${makeIndentation(12)}${papType} *newEnv = (${papType} *)GC_MALLOC(sizeof(${papType}));\n`
-  returnNewPAP = `${makeIndentation(12)}va_end(argv);\n${makeIndentation(12)}newPAP->env = newEnv;\n${makeIndentation(12)}return newPAP;\n`
-
-  newArgNames = makeArgNamesWithStart(envSize, nextEnvSize)
-  newArgAssignments = makeArgAssignments(12, newArgNames)
-  oldArgNames = pipe(
-    List.range(0),
-    map((n) => `env->arg${inspect(n)}`)
-  )(envSize)
-
-  newEnvAssignments = pipe(
-    List.mapWithIndex((n, i) => `${makeIndentation(12)}newEnv->arg${inspect(i)} = ${n};\n`),
-    List.reduce(mconcat, "")
-  )(mconcat(oldArgNames, newArgNames))
-
-  return `          case ${inspect(nextEnvSize)}: {\n${newEnv}${newArgAssignments}${newEnvAssignments}${returnNewPAP}          }\n`
 }
 
 

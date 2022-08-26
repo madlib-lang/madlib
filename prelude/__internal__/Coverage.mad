@@ -4,8 +4,7 @@ import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
 import Tuple from "Tuple"
-import { Just, Nothing, fromMaybe } from "Maybe"
-import { add } from "Math"
+import { Just, Nothing } from "Maybe"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 
@@ -188,42 +187,42 @@ instance Comparable Coverable {
   }
 }
 
+type CounterCmd
+  = READ
+  | INCREMENT
 
-processModuleResult :: String -> List Coverable -> List HitPoint -> LcovSection
-processModuleResult = (modulePath, coverablePoints, hitPoints) => {
-  initial = pipe(
-    map((coverable) => #[coverable, 0]),
-    Dictionary.fromList
-  )(coverablePoints)
+alias HitCounter = CounterCmd -> Integer
 
-  r = pipe(
-    List.reduce(
-      (computed, hitPoint) => where(hitPoint) {
-        LineHit(l) =>
-          Dictionary.update(add(1), CoverableLine(l), computed)
-      },
-      initial
-    ),
-    Dictionary.toList
-  )(hitPoints)
+makeHitCounter :: Integer -> HitCounter
+makeHitCounter = (initial) => {
+  value = initial
 
-  lineResults = List.filter(
-    where {
-      #[c, _] =>
-        isCoverableLine(c)
-    },
-    r
-  )
+  return (cmd) => where(cmd) {
+    READ =>
+      value
+
+    INCREMENT =>
+      do {
+        value = value + 1
+        return value
+      }
+  }
+}
+
+
+processModuleResult :: String -> Dictionary Coverable HitCounter -> LcovSection
+processModuleResult = (modulePath, coverablePoints) => {
+  lineResults = Dictionary.toList(coverablePoints)
 
   return {
     ...emptySection,
     sf: SF(modulePath),
-    lf: LF(List.length(coverablePoints)),
-    lh: LH(List.length(List.filter(where { #[_, c] => c > 0 }, r))),
+    lf: LF(Dictionary.length(coverablePoints)),
+    lh: LH(List.length(List.filter(where { #[_, hitCounter] => hitCounter(READ) > 0 }, lineResults))),
     das: map(
       where {
-        #[CoverableLine(l), n] =>
-          DA(l, n)
+        #[CoverableLine(line), hitCounter] =>
+          DA(line, hitCounter(READ))
       },
       lineResults
     )
@@ -231,15 +230,14 @@ processModuleResult = (modulePath, coverablePoints, hitPoints) => {
 }
 
 
-generateLcov :: Dictionary String (List Coverable) -> Dictionary String (List HitPoint) -> String
-generateLcov = (coverablePoints, hitPoints) => pipe(
-  Dictionary.keys,
+generateLcov :: Dictionary String (Dictionary Coverable HitCounter) -> String
+generateLcov = (coverablePoints) => pipe(
+  Dictionary.toList,
   map(
-    (modulePath) => processModuleResult(
-      modulePath,
-      fromMaybe([], Dictionary.get(modulePath, coverablePoints)),
-      fromMaybe([], Dictionary.get(modulePath, hitPoints))
-    )
+    where {
+      #[modulePath, coverablePointsForModule] =>
+        processModuleResult(modulePath, coverablePointsForModule)
+    }
   ),
   stringify
 )(coverablePoints)
@@ -249,46 +247,29 @@ generateLcov = (coverablePoints, hitPoints) => pipe(
 // ---------- Coverage Reporter ------------
 
 makeCoverageReporter = () => {
-  hitPoints :: Dictionary String (List HitPoint)
-  hitPoints = {{}}
-
-  coverablePoints :: Dictionary String (List Coverable)
+  coverablePoints :: Dictionary String (Dictionary Coverable HitCounter)
   coverablePoints = {{}}
 
-  registerCoverableLine :: Integer -> String -> {}
-  registerCoverableLine = (line, astPath) => {
+  lineTracker :: String -> Integer -> a -> a
+  lineTracker = (astPath, line) => {
+    ref = makeHitCounter(0)
     coverablePoints = where(Dictionary.get(astPath, coverablePoints)) {
       Just(cps) =>
-        Dictionary.insert(astPath, [CoverableLine(line), ...cps], coverablePoints)
+        Dictionary.insert(astPath, Dictionary.insert(CoverableLine(line), ref, cps), coverablePoints)
 
       Nothing =>
-        Dictionary.insert(astPath, [CoverableLine(line)], coverablePoints)
-    }
-  }
-
-  lineTracker :: a -> String -> Integer -> a
-  lineTracker = (expResult, astPath, line) => {
-    hitPoints = where(Dictionary.get(astPath, hitPoints)) {
-      Just(hps) =>
-        Dictionary.insert(astPath, [LineHit(line), ...hps], hitPoints)
-
-      Nothing =>
-        Dictionary.insert(astPath, [LineHit(line)], hitPoints)
+        Dictionary.insert(astPath, {{ CoverableLine(line): ref }}, coverablePoints)
     }
 
-    return expResult
+    return (expResult) => {
+      ref(INCREMENT)
+      return expResult
+    }
   }
-
-//   functionTracker :: ...
-
-//   branchTracker :: ...
-
-  generateTextReport :: a -> String
-  generateTextReport = () => inspect(hitPoints)
 
   writeLcovFile :: a -> {}
   writeLcovFile = () => pipe(
-    generateLcov(coverablePoints),
+    generateLcov,
     (lcovStr) => do {
       _ <- mapRej(
         () => UnknownError,
@@ -297,16 +278,9 @@ makeCoverageReporter = () => {
       return File.write(".coverage/lcov.info", lcovStr)
     },
     fulfill(() => {}, () => {})
-  )(hitPoints)
+  )(coverablePoints)
 
-  return {
-    registerCoverableLine,
-    lineTracker,
-    // addFunctionTracker,
-    // addBranchTracker,
-    writeLcovFile,
-    generateTextReport,
-  }
+  return { lineTracker, writeLcovFile }
 }
 
 export Reporter = makeCoverageReporter()
