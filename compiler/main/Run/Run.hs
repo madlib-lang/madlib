@@ -52,9 +52,10 @@ runRunPackage package args =
                                 , compileOptimize      = False
                                 , compileTarget        = TNode
                                 , compileWatch         = False
+                                , compileCoverage      = False
                                 }
 
-                  runCompilation compileCommand False
+                  runCompilation compileCommand
                   entrypoint <- canonicalizePath exePath
                   rootPath <- canonicalizePath "./"
                   outputPath <- canonicalizePath baseRunFolder
@@ -77,9 +78,10 @@ runSingleModule input args = do
           , compileOptimize      = False
           , compileTarget        = TNode
           , compileWatch         = False
+          , compileCoverage      = False
           }
 
-  runCompilation compileCommand False
+  runCompilation compileCommand
 
   canEntrypoint    <- canonicalizePath input
   canCurrentFolder <- canonicalizePath "./"

@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0a4c6dcf41bcfc7105b1499adf3632be8c22b74c1b09814002ad8ebe65c268c7
+-- hash: 0aeee1f3a04424a5290d1b1a6cb4930473b81539b412e18d5721a80ec05de814
 
 name:           madlib
 version:        0.14.0
@@ -36,6 +36,7 @@ library
       Canonicalize.AST
       Canonicalize.Canonicalize
       Canonicalize.CanonicalM
+      Canonicalize.Coverage
       Canonicalize.Derive
       Canonicalize.EnvUtils
       Canonicalize.Interface
@@ -182,6 +183,7 @@ library common
       AST.Core
       AST.Solved
       AST.Source
+      Canonicalize.Coverable
       Canonicalize.Env
       Canonicalize.InstanceToDerive
       Driver.Query

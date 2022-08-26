@@ -26,12 +26,7 @@ import qualified Distribution.System            as DistributionSystem
 import           Run.CommandLine
 import Run.Target
 
-isCoverageEnabled :: IO Bool
-isCoverageEnabled = do
-  coverageEnv <- try $ getEnv "COVERAGE_MODE"
-  case coverageEnv :: Either IOError String of
-    Right "on" -> return True
-    _          -> return False
+
 
 getDefaultExecutableName :: FilePath
 getDefaultExecutableName = case DistributionSystem.buildOS of

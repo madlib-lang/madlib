@@ -463,8 +463,20 @@ void on_uv_walk(uv_handle_t *handle, void *arg) {
 }
 
 
+static PAP_t *__exitCB__ = NULL;
+
+
+void madlib__eventloop__onExit(PAP_t *cb) {
+  __exitCB__ = cb;
+}
+
+
 void __startEventLoop__() {
   uv_run(loop, UV_RUN_DEFAULT);
+  if (__exitCB__) {
+    __applyPAP__(__exitCB__, 1, NULL);
+    uv_run(loop, UV_RUN_DEFAULT);
+  }
   int r = uv_loop_close(loop);
 
   if (r != 0) {

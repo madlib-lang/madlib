@@ -16,6 +16,8 @@ int libuvErrorToMadlibIOError(int libuvError);
 void __initEventLoop__();
 void __startEventLoop__();
 
+void madlib__eventloop__onExit(PAP_t *pap);
+
 void __setTimeout__(PAP_t *pap, int64_t millis);
 
 #ifdef __cplusplus

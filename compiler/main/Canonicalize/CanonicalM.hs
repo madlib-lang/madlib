@@ -9,7 +9,7 @@ import           Error.Warning
 import qualified Data.Set                      as Set
 import           AST.Canonical
 import           Canonicalize.InstanceToDerive
-import Infer.Type
+import           Canonicalize.Coverable
 import qualified Data.List as List
 import qualified Driver.Query as Query
 import qualified Rock
@@ -35,6 +35,8 @@ data CanonicalState
       -- not redefine that instance later on if that record is present in another module.
       , derivedTypes :: Set.Set InstanceToDerive
       , placeholderIndex :: Int
+      , coverableInfo :: [Coverable]
+      , linesTracked :: [Int]
       }
 
 type CanonicalM a = forall m . (MonadIO m, Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
@@ -53,6 +55,16 @@ getAccessName :: Accessed -> String
 getAccessName a = case a of
   NameAccessed n -> n
   TypeAccessed n -> n
+
+pushCoverable :: Coverable -> CanonicalM ()
+pushCoverable cov = do
+  s <- get
+  put s { coverableInfo = cov : coverableInfo s }
+
+isLineTracked :: Int -> CanonicalM Bool
+isLineTracked line = do
+  tracked <- gets linesTracked
+  return $ line `elem` tracked
 
 pushWarning :: CompilationWarning -> CanonicalM ()
 pushWarning warning = do

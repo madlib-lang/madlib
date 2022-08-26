@@ -30,8 +30,8 @@ import Rock (Cyclic)
 import System.Exit (exitFailure)
 
 
-runCompilation :: Command -> Bool -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode) coverage
+runCompilation :: Command -> IO ()
+runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode coverage)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath

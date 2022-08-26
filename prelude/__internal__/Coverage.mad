@@ -1,0 +1,57 @@
+import File from "File"
+import { UnknownError } from "IOError"
+import { fulfill, mapRej } from "Wish"
+// needed as an import is generated in Canonicalize.Coverage
+import Process from "Process"
+
+
+type HitType
+  = Function(String)
+  | Line(Integer)
+  | Branch(Integer, Integer, Integer)
+
+type HitPoint = HitPoint(HitType, String)
+
+
+generateLcov :: List HitPoint -> String
+generateLcov = () => "cov file"
+
+makeCoverageReporter = () => {
+  hitPoints = []
+
+  lineTracker :: a -> String -> Integer -> a
+  lineTracker = (expResult, astPath, line) => {
+    hitPoints = [HitPoint(Line(line), astPath), ...hitPoints]
+    return expResult
+  }
+
+//   addFunctionTracker :: ...
+
+//   addBranchTracker :: ...
+
+  generateTextReport :: a -> String
+  generateTextReport = () => inspect(hitPoints)
+
+  writeLcovFile :: a -> {}
+  writeLcovFile = () => pipe(
+    generateLcov,
+    (lcovStr) => do {
+      _ <- mapRej(
+        () => UnknownError,
+        Process.exec("mkdir", ["-p", ".coverage"], Process.DEFAULT_COMMAND_OPTIONS)
+      )
+      return File.write(".coverage/lcov.info", lcovStr)
+    },
+    fulfill(() => {}, () => {})
+  )(hitPoints)
+
+  return {
+    lineTracker,
+    // addFunctionTracker,
+    // addBranchTracker,
+    writeLcovFile,
+    generateTextReport,
+  }
+}
+
+export Reporter = makeCoverageReporter()

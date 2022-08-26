@@ -43,7 +43,7 @@ import qualified Data.List as List
 import Control.Monad.Writer
 import Utils.List
 import Error.Warning
-import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings))
+import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings, coverableInfo))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
 import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
@@ -62,6 +62,7 @@ import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 import MadlibDotJson.MadlibVersion
 import Paths_madlib (version)
 import System.Environment
+import qualified Canonicalize.Coverage as Coverage
 
 
 
@@ -71,7 +72,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) moduleName
     return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
 
-
   DictionaryModuleAbsolutePath -> nonInput $ do
     dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
     return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
@@ -79,8 +79,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ModulePathsToBuild entrypoint -> input $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
     let importPaths = Src.getImportAbsolutePath <$> aimports
-    fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths
-    return $ removeDuplicates $ List.concat fromImports ++ importPaths ++ [entrypoint]
+    importPaths' <-
+          if optCoverage options && not ("prelude/__internal__" `List.isInfixOf` entrypoint) then do
+            coverageModulePath <- Rock.fetch $ AbsolutePreludePath "Coverage"
+            return $ coverageModulePath : importPaths
+          else
+            return importPaths
+    fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths'
+    return $ removeDuplicates $ List.concat fromImports ++ importPaths' ++ [entrypoint]
 
   DetectImportCycle _ path -> nonInput $ do
     r <- detectCycle [] path
@@ -118,13 +124,21 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     sourceAst      <- Rock.fetch $ ParsedAST path
     dictModulePath <- Rock.fetch DictionaryModuleAbsolutePath
 
-    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
+    (can, Can.CanonicalState { warnings, coverableInfo }) <- runCanonicalM $ do
+      (ast, env, instancesToDerive) <- Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
+      ast' <-
+        if optCoverage options then
+          Coverage.addTrackers options ast
+        else
+          return ast
+      return (ast', env, instancesToDerive)
+
     case can of
-      Right c ->
-        return (c, (warnings, mempty))
+      Right (ast, env, instancesToDerive) ->
+        return ((ast, env, instancesToDerive, coverableInfo), (warnings, mempty))
 
       Left err ->
-        return ((Can.emptyAST, CanEnv.initialEnv, mempty), (warnings, [err]))
+        return ((Can.emptyAST, CanEnv.initialEnv, mempty, coverableInfo), (warnings, [err]))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
@@ -134,7 +148,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (found, (mempty, mempty))
 
   ForeignADTType modulePath typeName -> nonInput $ do
-    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (_, canEnv, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
       Just found ->
         return (Just found, (mempty, mempty))
@@ -143,7 +157,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Nothing, (mempty, mempty))
 
   SolvedASTWithEnv path -> nonInput $ do
-    (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    (canAst, _, instancesToDerive, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
     res <- runInfer $ do
       (ast', env) <- inferAST options initialEnv instancesToDerive canAst
 
@@ -166,7 +180,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
 
   SolvedInterface modulePath name -> nonInput $ do
-    (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (Can.AST { Can.aimports }, _, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     let importedModulePaths = Can.getImportAbsolutePath <$> aimports
 
     interfac <- findSlvInterface name importedModulePaths
@@ -379,6 +393,8 @@ runCanonicalM a =
         , Can.typesToDerive = []
         , Can.derivedTypes = Set.empty
         , Can.placeholderIndex = 0
+        , Can.coverableInfo = []
+        , Can.linesTracked = []
         }
     )
 
@@ -389,7 +405,7 @@ findCanInterface name paths = case paths of
     return Nothing
 
   path : next -> do
-    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    (_, canEnv, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
     case Map.lookup name (CanEnv.envInterfaces canEnv) of
       Just found ->
         return $ Just found
@@ -401,7 +417,7 @@ findCanInterface name paths = case paths of
             return $ Just found
 
           Nothing -> do
-            (Can.AST { Can.aimports }, _, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
+            (Can.AST { Can.aimports }, _, _, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
             let importedModulePaths = Can.getImportAbsolutePath <$> aimports
             findCanInterface name importedModulePaths
 
