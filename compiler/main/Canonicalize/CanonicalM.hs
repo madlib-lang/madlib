@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 module Canonicalize.CanonicalM where
 
 import           Control.Monad.Except
@@ -59,7 +60,14 @@ getAccessName a = case a of
 pushCoverable :: Coverable -> CanonicalM ()
 pushCoverable cov = do
   s <- get
-  put s { coverableInfo = cov : coverableInfo s }
+  let linesTracked' =
+        case cov of
+          Line { cline } ->
+            cline : linesTracked s
+
+          _ ->
+            linesTracked s
+  put s { coverableInfo = cov : coverableInfo s, linesTracked = linesTracked' }
 
 isLineTracked :: Int -> CanonicalM Bool
 isLineTracked line = do
