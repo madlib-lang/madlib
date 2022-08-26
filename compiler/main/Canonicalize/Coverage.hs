@@ -72,7 +72,17 @@ addLineTracker astPath exp = do
   let area = getArea exp
   let line = getLineFromStart area
   isAlreadyTracked <- isLineTracked line
-  if isAlreadyTracked then
+  if isAlreadyTracked || line == 0 then
+    return exp
+  else do
+    pushCoverable (Line { cline = line, castpath = astPath })
+    return $ Canonical area (App (Canonical area (App (Canonical area (App lineTrackerRef exp False)) (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)
+
+addLineTrackerForLine :: FilePath -> Exp -> Int -> CanonicalM Exp
+addLineTrackerForLine astPath exp line = do
+  let area = getArea exp
+  isAlreadyTracked <- isLineTracked line
+  if isAlreadyTracked || line == 0 then
     return exp
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
@@ -99,10 +109,6 @@ injectMain options astPath exp = case exp of
     let coverableInfos = (\(_, _, _, covInfo) -> covInfo) <$> canResults
     coverageInfoForMain <- gets coverableInfo
     let allCoverableInfo = concat $ coverageInfoForMain : coverableInfos
-
-    liftIO $ putStrLn (ppShow allCoverableInfo)
-    liftIO $ putStrLn (ppShow pathsForCoverage)
-
     let registerCoverableExps = buildRegisterCoverableExps <$> allCoverableInfo
 
     return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : registerCoverableExps ++ body))))
@@ -132,9 +138,40 @@ addTrackersToExp options astPath exp = case exp of
   Canonical _ (LNum _) ->
     addLineTracker astPath exp
 
+  Canonical _ (LFloat _) ->
+    addLineTracker astPath exp
+
+  Canonical _ (LStr _) ->
+    addLineTracker astPath exp
+
+  Canonical _ (LBool _) ->
+    addLineTracker astPath exp
+
+  Canonical _ (LChar _) ->
+    addLineTracker astPath exp
+
+  Canonical _ LUnit ->
+    addLineTracker astPath exp
+
+  Canonical _ (Var _) ->
+    addLineTracker astPath exp
+
+  Canonical area (Record fields) -> do
+    fields' <- mapM (addTrackersToField options astPath) fields
+    return $ Canonical area (Record fields')
+
   Canonical area (Abs p body) -> do
     body' <- mapM (addTrackersToExp options astPath) body
     return $ Canonical area (Abs p body')
+
+  Canonical area (Do exps) -> do
+    exps' <- mapM (addTrackersToExp options astPath) exps
+    return $ Canonical area (Do exps')
+
+  Canonical area (App f arg final) -> do
+    arg' <- addTrackersToExp options astPath arg
+    f'   <- addTrackersToExp options astPath f
+    addLineTracker astPath $ Canonical area (App f' arg' final)
 
   Canonical area (TypedExp e ty sc) -> do
     e' <- addTrackersToExp options astPath e
@@ -144,5 +181,43 @@ addTrackersToExp options astPath exp = case exp of
     e' <- addTrackersToExp options astPath e
     return $ Canonical area (Assignment n e')
 
+  Canonical area (Export e) -> do
+    e' <- addTrackersToExp options astPath e
+    return $ Canonical area (Export e')
+
+  Canonical area (Where e iss) -> do
+    e'   <- addTrackersToExp options astPath e
+    iss' <- mapM (addTrackersToIs options astPath) iss
+    return $ Canonical area (Where e' iss')
+
+  Canonical area (If cond truthy falsy) -> do
+    cond'   <- addTrackersToExp options astPath cond
+    truthy' <- addTrackersToExp options astPath truthy
+    falsy'  <- addTrackersToExp options astPath falsy
+    return $ Canonical area (If cond' truthy' falsy')
+
+  Canonical area (Access record field) -> do
+    let fieldLine = getLineFromStart (getArea field)
+    record'  <- addTrackersToExp options astPath record
+    record'' <- addLineTrackerForLine astPath record' fieldLine
+    return $ Canonical area (Access record'' field)
+
   or ->
     return or
+
+
+addTrackersToField :: Options -> FilePath -> Field -> CanonicalM Field
+addTrackersToField options astPath field = case field of
+  Canonical area (Field (name, exp)) -> do
+    exp' <- addTrackersToExp options astPath exp
+    return $ Canonical area (Field (name, exp'))
+
+  Canonical area (FieldSpread exp) -> do
+    exp' <- addTrackersToExp options astPath exp
+    return $ Canonical area (FieldSpread exp')
+
+addTrackersToIs :: Options -> FilePath -> Is -> CanonicalM Is
+addTrackersToIs options astPath is = case is of
+  Canonical area (Is pat exp) -> do
+    exp' <- addTrackersToExp options astPath exp
+    return $ Canonical area (Is pat exp')

@@ -4,6 +4,8 @@ import           AST.Core
 import qualified Data.Maybe          as Maybe
 import qualified Data.Bifunctor as Bifunctor
 import Infer.Type
+import Debug.Trace
+import Text.Show.Pretty
 
 newtype Env
   = Env { envCurrentName :: Maybe String }
@@ -230,8 +232,8 @@ findRecursionKind fnType fnName params exps = case exps of
 
 containsRecursion :: Bool -> Type -> String  -> Exp -> Bool
 containsRecursion direct fnType fnName exp = case exp of
-  Typed (_ :=> t) _ _ Call {} ->
-    Just fnName == getAppName exp && t == getReturnType fnType
+  Typed (_ :=> t) _ _ (Call _ args) ->
+    Just fnName == getAppName exp && t == getReturnType fnType && (getType <$> args) == getParamTypes fnType
 
   Typed _ _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnType fnName rec || containsRecursion direct fnType fnName accessor)

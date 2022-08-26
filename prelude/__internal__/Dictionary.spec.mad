@@ -8,6 +8,7 @@ import {
   length,
   mapWithKey,
   merge,
+  update,
   values
 } from "./Dictionary"
 import { Just, Nothing } from "Maybe"
@@ -74,6 +75,13 @@ test("mapWithKey", (_) =>
       fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
     ),
     fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
+  )
+)
+
+test("update", (_) =>
+  assertEquals(
+    update((x) => x + 1, "key", {{ "key": 4 }}),
+    {{ "key": 5 }}
   )
 )
 

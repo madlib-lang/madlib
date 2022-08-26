@@ -3,7 +3,9 @@ import { UnknownError } from "IOError"
 import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
-import { Just, Nothing } from "Maybe"
+import Tuple from "Tuple"
+import { Just, Nothing, fromMaybe } from "Maybe"
+import { add } from "Math"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 
@@ -18,6 +20,24 @@ type Coverable
   | CoverableLine(Integer)
   | CoverableBranch
 
+
+isLineHit :: HitPoint -> Boolean
+isLineHit = (hp) => where(hp) {
+  LineHit(_) =>
+    true
+
+  _ =>
+    false
+}
+
+isCoverableLine :: Coverable -> Boolean
+isCoverableLine = (c) => where(c) {
+  CoverableLine(_) =>
+    true
+
+  _ =>
+    false
+}
 
 
 // ---------- LCOV ------------
@@ -63,7 +83,7 @@ alias LcovSection = {
   lh :: LcovLine,
   brf :: LcovLine,
   brh :: LcovLine,
-  brda :: List LcovLine,
+  brdas :: List LcovLine,
 }
 
 alias LcovInfo = List LcovSection
@@ -81,7 +101,7 @@ emptySection = {
   lh: LH(0),
   brf: BRF(0),
   brh: BRH(0),
-  brda: [],
+  brdas: [],
 }
 
 stringifyLine :: LcovLine -> String
@@ -134,14 +154,95 @@ stringifySection = (section) =>
  ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
  ++ stringifyLine(section.lf)
  ++ stringifyLine(section.lh)
+ ++ stringifyLine(section.brf)
+ ++ stringifyLine(section.brh)
+ ++ List.reduceLeft((brdas, line) => brdas ++ stringifyLine(line), "", section.brdas)
  ++ "end_of_record\n"
 
 stringify :: LcovInfo -> String
 export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
 
 
-generateLcov :: Dictionary String (List HitPoint) -> String
-generateLcov = () => "cov file"
+// currently not used, possibly we want to move this to List but because of
+// cyclical imports we need to find a solution for private / public modules
+// in prelude
+groupOn :: Comparable b => (a -> b) -> List a -> List (List a)
+groupOn = (f) => {
+  unpack = pipe(Dictionary.toList, map(Tuple.snd))
+  fld = (m, a) => where(Dictionary.get(f(a), m)) {
+    Nothing =>
+      Dictionary.insert(f(a), [a], m)
+
+    Just(as) =>
+      Dictionary.insert(f(a), [a, ...as], m)
+  }
+
+  return pipe(List.reduceLeft(fld, Dictionary.empty), unpack)
+}
+
+
+instance Comparable Coverable {
+  compare = (a, b) => where(#[a, b]) {
+    #[CoverableLine(la), CoverableLine(lb)] =>
+      compare(la, lb)
+  }
+}
+
+
+processModuleResult :: String -> List Coverable -> List HitPoint -> LcovSection
+processModuleResult = (modulePath, coverablePoints, hitPoints) => {
+  initial = pipe(
+    map((coverable) => #[coverable, 0]),
+    Dictionary.fromList
+  )(coverablePoints)
+
+  r = pipe(
+    List.reduce(
+      (computed, hitPoint) => where(hitPoint) {
+        LineHit(l) =>
+          Dictionary.update(add(1), CoverableLine(l), computed)
+      },
+      initial
+    ),
+    Dictionary.toList
+  )(hitPoints)
+
+  lineResults = List.filter(
+    where {
+      #[c, _] =>
+        isCoverableLine(c)
+    },
+    r
+  )
+
+  return {
+    ...emptySection,
+    sf: SF(modulePath),
+    lf: LF(List.length(coverablePoints)),
+    lh: LH(List.length(List.filter(where { #[_, c] => c > 0 }, r))),
+    das: map(
+      where {
+        #[CoverableLine(l), n] =>
+          DA(l, n)
+      },
+      lineResults
+    )
+  }
+}
+
+
+generateLcov :: Dictionary String (List Coverable) -> Dictionary String (List HitPoint) -> String
+generateLcov = (coverablePoints, hitPoints) => pipe(
+  Dictionary.keys,
+  map(
+    (modulePath) => processModuleResult(
+      modulePath,
+      fromMaybe([], Dictionary.get(modulePath, coverablePoints)),
+      fromMaybe([], Dictionary.get(modulePath, hitPoints))
+    )
+  ),
+  stringify
+)(coverablePoints)
 
 
 
@@ -187,7 +288,7 @@ makeCoverageReporter = () => {
 
   writeLcovFile :: a -> {}
   writeLcovFile = () => pipe(
-    generateLcov,
+    generateLcov(coverablePoints),
     (lcovStr) => do {
       _ <- mapRej(
         () => UnknownError,
