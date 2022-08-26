@@ -90,6 +90,29 @@ export insert = (key, value, dict) => {
 }
 
 
+update :: Comparable k => (v -> v) -> k -> Dictionary k v -> Dictionary k v
+export update = (fn, key, dict) => {
+  helper = (list) => where(list) {
+    [] =>
+      []
+
+    [#[k, v], ...xs] =>
+      if (eq(k, key)) {
+        [#[key, fn(v)], ...xs]
+      } else if (gt(k, key)) {
+        [#[k, v], ...xs]
+      } else {
+        [#[k, v], ...helper(xs)]
+      }
+  }
+
+  return where(dict) {
+    Dictionary(items) =>
+      Dictionary(helper(items))
+  }
+}
+
+
 /**
  * Get a value from a Dictionary given a key.
  *
