@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Canonicalize.Coverage where
 
 import Canonicalize.CanonicalM
@@ -13,6 +14,8 @@ import Data.List (isInfixOf)
 import Text.Show.Pretty
 import Run.Options
 import Canonicalize.Coverable
+import Control.Monad.State
+
 
 
 addTrackers :: Options -> AST -> CanonicalM AST
@@ -27,7 +30,9 @@ addTrackers options ast@AST{ apath = Just path } = do
     updatedImports  <- addImport coverageModuleName "Coverage" coverageModulePath $ aimports ast
     updatedImports' <- addImport processModuleName "Process" processModulePath updatedImports
     updatedExps     <- mapM (addTrackersToExp options path) $ aexps ast
-    return ast { aexps = updatedExps, aimports = updatedImports' }
+    -- TODO: only do this for main module
+    injectedMain    <- mapM (injectMain options path) updatedExps
+    return ast { aexps = injectedMain, aimports = updatedImports' }
   else
     return ast
 
@@ -55,6 +60,13 @@ lineTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (V
 writeLcovFileRef :: Exp
 writeLcovFileRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".writeLcovFile")))
 
+reportSetupRef :: Exp
+reportSetupRef =
+  Canonical emptyArea (App onExitRef (Canonical emptyArea (Abs (Canonical emptyArea "_") [Canonical emptyArea (App writeLcovFileRef (Canonical emptyArea LUnit) True)])) True)
+
+registerCoverableLineRef :: Exp
+registerCoverableLineRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".registerCoverableLine")))
+
 addLineTracker :: FilePath -> Exp -> CanonicalM Exp
 addLineTracker astPath exp = do
   let area = getArea exp
@@ -67,18 +79,56 @@ addLineTracker astPath exp = do
     return $ Canonical area (App (Canonical area (App (Canonical area (App lineTrackerRef exp False)) (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)
 
 
-reportSetupRef :: Exp
-reportSetupRef =
-  Canonical emptyArea (App onExitRef (Canonical emptyArea (Abs (Canonical emptyArea "_") [Canonical emptyArea (App writeLcovFileRef (Canonical emptyArea LUnit) True)])) True)
+buildRegisterCoverableExps :: Coverable -> Exp
+buildRegisterCoverableExps coverable = case coverable of
+  Line { cline, castpath } ->
+    Canonical emptyArea (App (Canonical emptyArea (App registerCoverableLineRef (Canonical emptyArea (LNum (show cline))) False)) (Canonical emptyArea (LStr castpath)) True)
+
+  _ ->
+    undefined
+
+
+injectMain :: Options -> FilePath -> Exp -> CanonicalM Exp
+injectMain options astPath exp = case exp of
+  Canonical area (Assignment "main" (Canonical absArea (Abs p body))) | optEntrypoint options == astPath -> do
+
+    -- TODO: move this to a separate step after adding trackers to the AST and gather info from the state for the coverableInfo
+    pathsToCompile <- Rock.fetch $ ModulePathsToBuild astPath
+    let pathsForCoverage = filter (\path -> not ("prelude/__internal__" `isInfixOf` path) && astPath /= path) pathsToCompile
+    canResults <- mapM (Rock.fetch . CanonicalizedASTWithEnv) pathsForCoverage
+    let coverableInfos = (\(_, _, _, covInfo) -> covInfo) <$> canResults
+    coverageInfoForMain <- gets coverableInfo
+    let allCoverableInfo = concat $ coverageInfoForMain : coverableInfos
+
+    liftIO $ putStrLn (ppShow allCoverableInfo)
+    liftIO $ putStrLn (ppShow pathsForCoverage)
+
+    let registerCoverableExps = buildRegisterCoverableExps <$> allCoverableInfo
+
+    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : registerCoverableExps ++ body))))
+
+  Canonical area (Abs p body) -> do
+    body' <- mapM (injectMain options astPath) body
+    return $ Canonical area (Abs p body')
+
+  Canonical area (TypedExp e ty sc) -> do
+    e' <- injectMain options astPath e
+    return $ Canonical area (TypedExp e' ty sc)
+
+  Canonical area (Assignment n e) -> do
+    e' <- injectMain options astPath e
+    return $ Canonical area (Assignment n e')
+
+  Canonical area (Export e) -> do
+    e' <- injectMain options astPath e
+    return $ Canonical area (Export e')
+
+  or ->
+    return or
 
 
 addTrackersToExp :: Options -> FilePath -> Exp -> CanonicalM Exp
 addTrackersToExp options astPath exp = case exp of
-  Canonical area (Assignment "main" (Canonical absArea (Abs p body))) | optEntrypoint options == astPath -> do
-    -- TODO: fetch all coverable info and generate Madlib exps for them
-    body' <- mapM (addTrackersToExp options astPath) body
-    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : body'))))
-
   Canonical _ (LNum _) ->
     addLineTracker astPath exp
 

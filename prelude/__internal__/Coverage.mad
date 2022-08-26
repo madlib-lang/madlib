@@ -1,33 +1,186 @@
 import File from "File"
 import { UnknownError } from "IOError"
 import { fulfill, mapRej } from "Wish"
+import Dictionary from "Dictionary"
+import List from "List"
+import { Just, Nothing } from "Maybe"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 
 
-type HitType
-  = Function(String)
-  | Line(Integer)
-  | Branch(Integer, Integer, Integer)
+type HitPoint
+  = FunctionHit(String)
+  | LineHit(Integer)
+  | BranchHit(Integer, Integer, Integer)
 
-type HitPoint = HitPoint(HitType, String)
+type Coverable
+  = CoverableFunction(Integer, String)
+  | CoverableLine(Integer)
+  | CoverableBranch
 
 
-generateLcov :: List HitPoint -> String
+
+// ---------- LCOV ------------
+
+// TN:<test name> usually empty
+// SF:<absolute path to the source file>
+// FN:<line number of function start>,<function name>
+// FNDA:<execution count>,<function name>
+// FNF:<number of functions found>
+// FNH:<number of function hit>
+// BRDA:<line number>,<block number>,<branch number>,<taken>
+// BRF:<number of branches found>
+// BRH:<number of branches hit>
+// DA:<line number>,<execution count>
+// LH:<number of lines with a non-zero execution count>
+// LF:<number of instrumented lines>
+// end_of_record
+
+type LcovLine
+  = TN(String)
+  | SF(String)
+  | FN(Integer, String)
+  | FNDA(Integer, String)
+  | FNF(Integer)
+  | FNH(Integer)
+  | DA(Integer, Integer)
+  | LF(Integer)
+  | LH(Integer)
+  | BRF(Integer)
+  | BRH(Integer)
+  | BRDA(Integer, Integer, Integer, Integer)
+
+
+alias LcovSection = {
+  tn :: LcovLine,
+  sf :: LcovLine,
+  fns :: List LcovLine,
+  fndas :: List LcovLine,
+  fnf :: LcovLine,
+  fnh :: LcovLine,
+  das :: List LcovLine,
+  lf :: LcovLine,
+  lh :: LcovLine,
+  brf :: LcovLine,
+  brh :: LcovLine,
+  brda :: List LcovLine,
+}
+
+alias LcovInfo = List LcovSection
+
+emptySection :: LcovSection
+emptySection = {
+  tn: TN(""),
+  sf: SF(""),
+  fns: [],
+  fndas: [],
+  fnf: FNF(0),
+  fnh: FNH(0),
+  das: [],
+  lf: LF(0),
+  lh: LH(0),
+  brf: BRF(0),
+  brh: BRH(0),
+  brda: [],
+}
+
+stringifyLine :: LcovLine -> String
+stringifyLine = (line) => where(line){
+  TN(arg) =>
+    "TN:" ++ arg ++ "\n"
+
+  SF(arg) =>
+    "SF:" ++ arg ++ "\n"
+
+  FN(l, name) =>
+    "FN:" ++ inspect(l) ++ "," ++ name ++ "\n"
+
+  FNDA(count, name) =>
+    "FNDA:" ++ inspect(count) ++ "," ++ name ++ "\n"
+
+  FNF(count) =>
+    "FNF:" ++ inspect(count) ++ "\n"
+
+  FNH(count) =>
+    "FNH:" ++ inspect(count) ++ "\n"
+
+  DA(l, count) =>
+    "DA:" ++ inspect(l) ++ "," ++ inspect(count) ++ "\n"
+
+  LF(count) =>
+    "LF:" ++ inspect(count) ++ "\n"
+
+ LH(count) =>
+    "LH:" ++ inspect(count) ++ "\n"
+
+  BRF(count) =>
+    "BRF:" ++ inspect(count) ++ "\n"
+
+  BRH(count) =>
+    "BRH:" ++ inspect(count) ++ "\n"
+
+  BRDA(l, blockNumber, branchNumber, count) =>
+    `BRDA:${inspect(l)},${inspect(blockNumber)},${inspect(branchNumber)},${inspect(count)}\n`
+}
+
+stringifySection :: LcovSection -> String
+stringifySection = (section) =>
+ stringifyLine(section.tn)
+ ++ stringifyLine(section.sf)
+ ++ List.reduceLeft((fns, line) => fns ++ stringifyLine(line), "", section.fns)
+ ++ List.reduceLeft((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
+ ++ stringifyLine(section.fnf)
+ ++ stringifyLine(section.fnh)
+ ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
+ ++ stringifyLine(section.lf)
+ ++ stringifyLine(section.lh)
+ ++ "end_of_record\n"
+
+stringify :: LcovInfo -> String
+export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
+
+
+generateLcov :: Dictionary String (List HitPoint) -> String
 generateLcov = () => "cov file"
 
+
+
+// ---------- Coverage Reporter ------------
+
 makeCoverageReporter = () => {
-  hitPoints = []
+  hitPoints :: Dictionary String (List HitPoint)
+  hitPoints = {{}}
+
+  coverablePoints :: Dictionary String (List Coverable)
+  coverablePoints = {{}}
+
+  registerCoverableLine :: Integer -> String -> {}
+  registerCoverableLine = (line, astPath) => {
+    coverablePoints = where(Dictionary.get(astPath, coverablePoints)) {
+      Just(cps) =>
+        Dictionary.insert(astPath, [CoverableLine(line), ...cps], coverablePoints)
+
+      Nothing =>
+        Dictionary.insert(astPath, [CoverableLine(line)], coverablePoints)
+    }
+  }
 
   lineTracker :: a -> String -> Integer -> a
   lineTracker = (expResult, astPath, line) => {
-    hitPoints = [HitPoint(Line(line), astPath), ...hitPoints]
+    hitPoints = where(Dictionary.get(astPath, hitPoints)) {
+      Just(hps) =>
+        Dictionary.insert(astPath, [LineHit(line), ...hps], hitPoints)
+
+      Nothing =>
+        Dictionary.insert(astPath, [LineHit(line)], hitPoints)
+    }
+
     return expResult
   }
 
-//   addFunctionTracker :: ...
+//   functionTracker :: ...
 
-//   addBranchTracker :: ...
+//   branchTracker :: ...
 
   generateTextReport :: a -> String
   generateTextReport = () => inspect(hitPoints)
@@ -46,6 +199,7 @@ makeCoverageReporter = () => {
   )(hitPoints)
 
   return {
+    registerCoverableLine,
     lineTracker,
     // addFunctionTracker,
     // addBranchTracker,
