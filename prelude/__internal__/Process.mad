@@ -130,7 +130,14 @@ export getCurrentWorkingDirectory = () => #- process.cwd() -#
 exit :: Integer -> {}
 export exit = (code) => #- {
 {Node}
-process.exit(code)
+  process.exit(code)
+{/Node}
+} -#
+
+onExit :: (a -> {}) -> {}
+export onExit = (cb) => #- {
+{Node}
+  process.once("beforeExit", cb)
 {/Node}
 } -#
 
@@ -188,6 +195,9 @@ export exec = (command, args, options) => Wish((bad, good) =>
 
 exit :: Integer -> {}
 export exit = extern "exit"
+
+onExit :: (a -> {}) -> {}
+export onExit = extern "madlib__eventloop__onExit"
 
 #endif
 

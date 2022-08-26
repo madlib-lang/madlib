@@ -519,7 +519,7 @@ internalNames =
 
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
-  (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+  (_, canEnv, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
   nodeInfo <- case node of
     ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
       return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
@@ -1022,9 +1022,9 @@ definitionLocationTask loc path = do
   if hasCycle then
     return Nothing
   else do
-    (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
-    (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
-    srcAst         <- Rock.fetch $ Query.ParsedAST path
+    (typedAst, _)     <- Rock.fetch $ Query.SolvedASTWithEnv path
+    (canAst, _, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+    srcAst            <- Rock.fetch $ Query.ParsedAST path
 
     let foundNode = findNodeInAst loc srcAst typedAst
     case findNameInNode foundNode of

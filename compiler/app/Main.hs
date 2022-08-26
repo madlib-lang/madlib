@@ -26,20 +26,18 @@ main = do
 
 run :: Command -> IO ()
 run cmd = do
-  coverage <- isCoverageEnabled
-
   case cmd of
     Compile{} ->
       let sanitizedOutput = sanitizeOutputPath cmd
       in  case sanitizedOutput of
             Right s ->
-              runCompilation cmd { compileOutput = s } coverage
+              runCompilation cmd { compileOutput = s }
 
             Left  e ->
               putStrLn e
 
-    Test entrypoint target watch ->
-      runTests entrypoint target watch
+    Test entrypoint target watch coverage ->
+      runTests entrypoint target watch coverage
 
     Install ->
       runPackageInstaller

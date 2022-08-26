@@ -44,8 +44,8 @@ import Error.Warning
 
 
 
-runTests :: String -> Target -> Bool -> IO ()
-runTests entrypoint target watchMode = do
+runTests :: String -> Target -> Bool -> Bool -> IO ()
+runTests entrypoint target watchMode coverage = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -71,7 +71,7 @@ runTests entrypoint target watchMode = do
           , optTarget = target
           , optOptimized = False
           , optBundle = False
-          , optCoverage = False
+          , optCoverage = coverage
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
           , optMustHaveMain = True

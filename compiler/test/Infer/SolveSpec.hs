@@ -18,19 +18,11 @@ import           Control.Monad.State            ( StateT(runStateT) )
 
 import qualified AST.Source                    as Src
 import qualified AST.Solved                    as Slv
-import           Infer.Exp
-import           Infer.Env
-import           Infer.Infer
 import           Canonicalize.CanonicalM
-import           Infer.AST
 import           Error.Error
-import           Parse.Madlib.AST
-import           Canonicalize.Canonicalize
 import           Run.Target
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
-import           Data.Maybe
-import Debug.Trace
 import Error.Warning
 import qualified Driver
 import Run.Options

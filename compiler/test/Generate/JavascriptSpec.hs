@@ -88,7 +88,10 @@ compileModule optimized coverage code = do
     Don'tPrune
     (Rock.fetch $ Query.GeneratedJSModule modulePath)
 
-  return jsCode
+  if null errors then
+    return jsCode
+  else
+    return $ ppShow errors
 
 
 compileManyModulesWithReadFile :: PathUtils -> FilePath -> FilePath -> M.Map FilePath String -> IO String
@@ -186,6 +189,7 @@ mainCompileFixture = unlines
   , "  true"
   , "    ? \"ok\""
   , "    : \"not ok\""
+  , ""
   , "  (1 == 2 ? \"ok\" : \"not ok\")"
   , "    |> ((x) => x)"
   , "    |> ((x) => x == \"ok\" ? 1 : 10)"
@@ -226,10 +230,10 @@ mainCompileFixture = unlines
   , "  Just(a) => Just(f(a))"
   , "  Nothing => Nothing"
   , "}"
-  , "map :: (a -> b) -> List a -> List b"
-  , "export map = (f, xs) => where(xs) {"
-  , "  [a, b, c] => [f(a), ...map(f, [b, c])]"
-  , "  [a, b]    => [f(a), ...map(f, [b])]"
+  , "mapList :: (a -> b) -> List a -> List b"
+  , "export mapList = (f, xs) => where(xs) {"
+  , "  [a, b, c] => [f(a), ...mapList(f, [b, c])]"
+  , "  [a, b]    => [f(a), ...mapList(f, [b])]"
   , "  [a]       => [f(a)]"
   , "  []        => []"
   , "}"
@@ -256,7 +260,7 @@ mainCompileFixture = unlines
   , "  return b"
   , "}"
   , ""
-  , " where(#[Just(3), Just(4)]) { #[Just(n), Just(m)] => n + m }"
+  -- , "where(#[Just(3), Just(4)]) { #[Just(n), Just(m)] => n + m }"
   ]
 
 
@@ -580,7 +584,7 @@ spec = do
       let actual = unsafePerformIO $ compileModule False False mainCompileFixture
       snapshotTest "should compile to JS" actual
 
-    it "should compile to JS with coverage trackers when COVERAGE_MODE is on" $ do
+    it "should compile to JS with coverage trackers" $ do
       let actual = unsafePerformIO $ compileModule False True mainCompileFixture
       snapshotTest "should compile to JS with coverage trackers when COVERAGE_MODE is on" actual
 

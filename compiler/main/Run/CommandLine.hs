@@ -27,8 +27,9 @@ data Command
       , compileOptimize :: Bool
       , compileTarget :: Target
       , compileWatch :: Bool
+      , compileCoverage :: Bool
       }
-  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool }
+  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool, testCoverage :: Bool }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -82,6 +83,10 @@ parseOptimize = switch (long "optimize" <> help "Optimize the output to generate
 parseWatch :: Parser Bool
 parseWatch =
   switch (long "watch" <> short 'w' <> help "watch file changes for fast rebuilds" <> showDefault)
+
+parseCoverage :: Parser Bool
+parseCoverage =
+  switch (long "coverage" <> help "compile with coverage enabled" <> showDefault)
 
 
 parseTargetOption :: ReadM Target
@@ -144,13 +149,14 @@ parseCompile =
     <*> parseOptimize
     <*> parseTarget
     <*> parseWatch
+    <*> parseCoverage
 
 parseTestInput :: Parser FilePath
 parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch <*> parseCoverage
 
 
 parseRunInput :: Parser FilePath

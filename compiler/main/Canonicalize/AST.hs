@@ -24,7 +24,6 @@ import qualified Data.Map                                 as M
 import qualified Data.Set                                 as S
 import qualified Utils.Tuple                              as T
 import           Control.Monad.Except
-import           Control.Monad.State
 import           Explain.Location
 import           Text.Regex.TDFA
 import           AST.Solved (Import_(NamedImport))
@@ -34,7 +33,6 @@ import           Utils.List
 import           AST.Canonical (Import_(TypeImport))
 import qualified Driver.Query as Query
 import qualified Rock
-import           Text.Show.Pretty
 import Run.Options
 
 
@@ -59,7 +57,7 @@ findAllExportedTypeNames ast =
 validateImport :: FilePath -> Src.Import -> CanonicalM ()
 validateImport originAstPath imp = do
   let path = Src.getImportAbsolutePath imp
-  (ast, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+  (ast, _, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
 
   let allExportNames   = findAllExportedNames ast
   let allImportNames   = Src.getImportNames imp
