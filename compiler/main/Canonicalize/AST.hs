@@ -57,7 +57,7 @@ findAllExportedTypeNames ast =
 validateImport :: FilePath -> Src.Import -> CanonicalM ()
 validateImport originAstPath imp = do
   let path = Src.getImportAbsolutePath imp
-  (ast, _, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+  (ast, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
 
   let allExportNames   = findAllExportedNames ast
   let allImportNames   = Src.getImportNames imp

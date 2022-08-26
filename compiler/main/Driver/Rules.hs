@@ -124,7 +124,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     sourceAst      <- Rock.fetch $ ParsedAST path
     dictModulePath <- Rock.fetch DictionaryModuleAbsolutePath
 
-    (can, Can.CanonicalState { warnings, coverableInfo }) <- runCanonicalM $ do
+    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ do
       (ast, env, instancesToDerive) <- Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
       ast' <-
         if optCoverage options then
@@ -135,10 +135,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     case can of
       Right (ast, env, instancesToDerive) ->
-        return ((ast, env, instancesToDerive, coverableInfo), (warnings, mempty))
+        return ((ast, env, instancesToDerive), (warnings, mempty))
 
       Left err ->
-        return ((Can.emptyAST, CanEnv.initialEnv, mempty, coverableInfo), (warnings, [err]))
+        return ((Can.emptyAST, CanEnv.initialEnv, mempty), (warnings, [err]))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
@@ -148,7 +148,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (found, (mempty, mempty))
 
   ForeignADTType modulePath typeName -> nonInput $ do
-    (_, canEnv, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
       Just found ->
         return (Just found, (mempty, mempty))
@@ -157,7 +157,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Nothing, (mempty, mempty))
 
   SolvedASTWithEnv path -> nonInput $ do
-    (canAst, _, instancesToDerive, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
     res <- runInfer $ do
       (ast', env) <- inferAST options initialEnv instancesToDerive canAst
 
@@ -180,7 +180,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
 
   SolvedInterface modulePath name -> nonInput $ do
-    (Can.AST { Can.aimports }, _, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     let importedModulePaths = Can.getImportAbsolutePath <$> aimports
 
     interfac <- findSlvInterface name importedModulePaths
@@ -405,7 +405,7 @@ findCanInterface name paths = case paths of
     return Nothing
 
   path : next -> do
-    (_, canEnv, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv path
     case Map.lookup name (CanEnv.envInterfaces canEnv) of
       Just found ->
         return $ Just found
@@ -417,7 +417,7 @@ findCanInterface name paths = case paths of
             return $ Just found
 
           Nothing -> do
-            (Can.AST { Can.aimports }, _, _, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
+            (Can.AST { Can.aimports }, _, _)<- Rock.fetch $ CanonicalizedASTWithEnv path
             let importedModulePaths = Can.getImportAbsolutePath <$> aimports
             findCanInterface name importedModulePaths
 
