@@ -187,26 +187,22 @@ instance Comparable Coverable {
   }
 }
 
-type CounterCmd
-  = READ
-  | INCREMENT
 
-alias HitCounter = CounterCmd -> Integer
+alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
 
 makeHitCounter :: Integer -> HitCounter
 makeHitCounter = (initial) => {
   value = initial
 
-  return (cmd) => where(cmd) {
-    READ =>
-      value
+  read :: {} -> Integer
+  read = () => value
 
-    INCREMENT =>
-      do {
-        value = value + 1
-        return value
-      }
+  increment :: {} -> {}
+  increment = () => {
+    value = value + 1
   }
+
+  return { increment, read }
 }
 
 
@@ -218,11 +214,11 @@ processModuleResult = (modulePath, coverablePoints) => {
     ...emptySection,
     sf: SF(modulePath),
     lf: LF(Dictionary.length(coverablePoints)),
-    lh: LH(List.length(List.filter(where { #[_, hitCounter] => hitCounter(READ) > 0 }, lineResults))),
+    lh: LH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults))),
     das: map(
       where {
         #[CoverableLine(line), hitCounter] =>
-          DA(line, hitCounter(READ))
+          DA(line, hitCounter.read())
       },
       lineResults
     )
@@ -252,17 +248,17 @@ makeCoverageReporter = () => {
 
   lineTracker :: String -> Integer -> a -> a
   lineTracker = (astPath, line) => {
-    ref = makeHitCounter(0)
+    hitCounter = makeHitCounter(0)
     coverablePoints = where(Dictionary.get(astPath, coverablePoints)) {
       Just(cps) =>
-        Dictionary.insert(astPath, Dictionary.insert(CoverableLine(line), ref, cps), coverablePoints)
+        Dictionary.insert(astPath, Dictionary.insert(CoverableLine(line), hitCounter, cps), coverablePoints)
 
       Nothing =>
-        Dictionary.insert(astPath, {{ CoverableLine(line): ref }}, coverablePoints)
+        Dictionary.insert(astPath, {{ CoverableLine(line): hitCounter }}, coverablePoints)
     }
 
     return (expResult) => {
-      ref(INCREMENT)
+      hitCounter.increment()
       return expResult
     }
   }

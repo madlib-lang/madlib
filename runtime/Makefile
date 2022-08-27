@@ -56,7 +56,7 @@ build/stack.o:
 	fi
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) -DCURL_STATICLIB -DPCRE2_STATIC -I$(INCLUDEDIR) -std=c++14 -O2 -fPIC $(CXXFLAGS) -c $< -o $@
+	$(CXX) -DCURL_STATICLIB -DPCRE2_STATIC -I$(INCLUDEDIR) -std=c++14 -O3 -fPIC $(CXXFLAGS) -c $< -o $@
 
 build/libruntime.a: $(OBJS)
 	$(AR) rc $@ $^

@@ -21,6 +21,7 @@ import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Data.Char                    as Char
 import qualified Data.Text                    as Text
 import qualified Data.Text.Encoding           as TextEncoding
+import qualified Data.Text.Lazy               as LazyText
 import qualified Control.Monad                as Monad
 import qualified Control.Monad.Fix            as MonadFix
 import qualified Control.Monad.Identity       as Identity
@@ -48,6 +49,7 @@ import qualified LLVM.AST.Operand                as Operand
 import qualified LLVM.AST.IntegerPredicate       as IntegerPredicate
 import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
 import qualified LLVM.AST.Global                 as Global
+import           LLVM.Pretty
 
 import           LLVM.IRBuilder.Module
 import           LLVM.IRBuilder.Constant         as C
@@ -1636,6 +1638,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Record fields) -> do
     let (base, fields') = List.partition isSpreadField fields
     let fieldCount = i32ConstOp (fromIntegral $ List.length fields')
+    let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
 
     base' <- case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
@@ -1646,7 +1649,7 @@ generateExp env symbolTable exp = case exp of
       _ ->
         return $ Operand.ConstantOperand (Constant.Null boxType)
 
-    fields'' <- mapM (generateField symbolTable) fields'
+    fields'' <- mapM (generateField symbolTable) sortedFields
 
     record <- call buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
     return (symbolTable, record, Nothing)
@@ -1668,10 +1671,24 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-  Core.Typed qt _ _ (Core.Access record (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
+  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> rType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
+    -- TRecord (M.Map Id Type) (Maybe Type)
     nameOperand           <- buildStr fieldName
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
-    value <- call selectField [(nameOperand, []), (recordOperand, [])]
+    value <- case rType of
+      IT.TRecord fields Nothing -> do
+        let fieldType = Type.StructureType False [stringType, boxType]
+        let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
+        fieldsOperand <- gep recordOperand [i32ConstOp 0, i32ConstOp 1] -- i8**
+        fieldsOperand' <- load fieldsOperand 0 -- i8*
+        fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
+        field <- gep fieldsOperand'' [i32ConstOp index]
+        field' <- load field 0
+        value <- gep field' [i32ConstOp 0, i32ConstOp 1]
+        load value 0
+
+      _ -> do
+        call selectField [(nameOperand, []), (recordOperand, [])]
 
     value' <- unbox env symbolTable qt value
     return (symbolTable, value', Just value)
@@ -4434,6 +4451,9 @@ compileModule _ Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, 
 compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   (astModule, table, env) <- generateModule options ast
 
+  -- let pretty = ppllvm astModule
+  -- liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
+
   objectContent <- liftIO $ buildObjectFile astModule
 
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
@@ -4454,8 +4474,8 @@ buildObjectFile astModule = do
           mod'' <-
             withPassManager
             defaultCuratedPassSetSpec
-              { optLevel                = Just 2
-              , useInlinerWithThreshold = Just 100
+              { optLevel                = Just 3
+              , useInlinerWithThreshold = Just 200
               }
             $ \pm -> do
               runPassManager pm mod'
