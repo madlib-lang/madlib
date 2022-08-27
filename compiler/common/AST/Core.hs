@@ -365,6 +365,15 @@ isSpreadField field = case field of
     False
 
 
+getFieldName :: Field -> Maybe String
+getFieldName field = case field of
+  Typed _ _ _ (Field (name, _)) ->
+    Just name
+
+  _ ->
+    Nothing
+
+
 getConstructorName :: Constructor -> String
 getConstructorName constructor = case constructor of
   Typed _ _ _ (Constructor name _ _) ->
