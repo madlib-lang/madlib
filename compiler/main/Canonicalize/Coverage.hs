@@ -140,6 +140,15 @@ addTrackerToBody astPath line name body = case body of
     tracker <- makeFunctionTracker astPath line name
     return $ tracker : body'
 
+updateBody :: [Exp] -> ([Exp] -> CanonicalM [Exp]) -> CanonicalM [Exp]
+updateBody body f = case body of
+  [Canonical area (Abs p body')] -> do
+    body'' <- updateBody body' f
+    return [Canonical area (Abs p body'')]
+
+  body' -> do
+    f body'
+
 
 
 addTrackersToExp :: Options -> FilePath -> Exp -> CanonicalM Exp
@@ -151,13 +160,13 @@ addTrackersToExp options astPath exp = case exp of
     return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (tracker : reportSetupRef : body'))))
 
   Canonical area (Assignment fnName (Canonical absArea (Abs p body))) -> do
-    let line = getLineFromStart (getArea exp)
-    body'  <- mapM (addTrackersToExp options astPath) body
-    body'' <-
+    body'' <- updateBody body $ \body' -> do
+      let line = getLineFromStart (getArea exp)
+      body''  <- mapM (addTrackersToExp options astPath) body'
       if line == 0 then
-        return body'
+        return body''
       else do
-        addTrackerToBody astPath line fnName body'
+        addTrackerToBody astPath line fnName body''
 
     return $ Canonical area (Assignment fnName (Canonical absArea (Abs p body'')))
 
