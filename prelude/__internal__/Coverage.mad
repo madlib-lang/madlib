@@ -5,6 +5,7 @@ import Dictionary from "Dictionary"
 import List from "List"
 import Tuple from "Tuple"
 import { Just, Nothing } from "Maybe"
+import { EQUAL } from "Compare"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 
@@ -186,7 +187,13 @@ instance Comparable CoverableLine {
 instance Comparable CoverableFunction {
   compare = (a, b) => where(#[a, b]) {
     #[CoverableFunction(la, na), CoverableFunction(lb, nb)] =>
-      compare(la, lb)
+      do {
+        lineComparison = compare(la, lb)
+
+        return lineComparison == EQUAL
+          ? compare(na, nb)
+          : lineComparison
+      }
   }
 }
 
