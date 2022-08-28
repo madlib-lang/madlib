@@ -246,7 +246,7 @@ makeCoverageReporter = () => {
   coverablePoints :: Dictionary String (Dictionary Coverable HitCounter)
   coverablePoints = {{}}
 
-  lineTracker :: String -> Integer -> a -> a
+  lineTracker :: String -> Integer -> HitCounter
   lineTracker = (astPath, line) => {
     hitCounter = makeHitCounter(0)
     coverablePoints = where(Dictionary.get(astPath, coverablePoints)) {
@@ -257,14 +257,11 @@ makeCoverageReporter = () => {
         Dictionary.insert(astPath, {{ CoverableLine(line): hitCounter }}, coverablePoints)
     }
 
-    return (expResult) => {
-      hitCounter.increment()
-      return expResult
-    }
+    return hitCounter
   }
 
-  writeLcovFile :: a -> {}
-  writeLcovFile = () => pipe(
+  generateReport :: a -> {}
+  generateReport = () => pipe(
     generateLcov,
     (lcovStr) => do {
       _ <- mapRej(
@@ -276,7 +273,7 @@ makeCoverageReporter = () => {
     fulfill(() => {}, () => {})
   )(coverablePoints)
 
-  return { lineTracker, writeLcovFile }
+  return { lineTracker, generateReport }
 }
 
 export Reporter = makeCoverageReporter()

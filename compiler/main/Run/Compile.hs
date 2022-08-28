@@ -12,11 +12,6 @@ import           Data.List                     as List
 
 import qualified Explain.Format                as Explain
 import           Error.Warning
-import           Coverage.Coverable             ( collectFromAST
-                                                , isFunction
-                                                , isLine
-                                                , Coverable(..)
-                                                )
 import qualified Utils.PathUtils               as PathUtils
 import           Run.CommandLine
 import           Run.Options
