@@ -9,33 +9,29 @@ import { Just, Nothing } from "Maybe"
 import Process from "Process"
 
 
-type HitPoint
-  = FunctionHit(String)
-  | LineHit(Integer)
-  | BranchHit(Integer, Integer, Integer)
+alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
 
-type Coverable
-  = CoverableFunction(Integer, String)
-  | CoverableLine(Integer)
-  | CoverableBranch
+makeHitCounter :: Integer -> HitCounter
+makeHitCounter = (initial) => {
+  value = initial
 
+  read :: {} -> Integer
+  read = () => value
 
-isLineHit :: HitPoint -> Boolean
-isLineHit = (hp) => where(hp) {
-  LineHit(_) =>
-    true
+  increment :: {} -> {}
+  increment = () => {
+    value = value + 1
+  }
 
-  _ =>
-    false
+  return { increment, read }
 }
 
-isCoverableLine :: Coverable -> Boolean
-isCoverableLine = (c) => where(c) {
-  CoverableLine(_) =>
-    true
+type CoverableLine = CoverableLine(Integer)
+type CoverableFunction = CoverableFunction(Integer, String)
 
-  _ =>
-    false
+alias CoverageData = {
+  coverableLines :: Dictionary CoverableLine HitCounter,
+  coverableFunctions :: Dictionary CoverableFunction HitCounter,
 }
 
 
@@ -180,40 +176,30 @@ groupOn = (f) => {
 }
 
 
-instance Comparable Coverable {
+instance Comparable CoverableLine {
   compare = (a, b) => where(#[a, b]) {
     #[CoverableLine(la), CoverableLine(lb)] =>
       compare(la, lb)
   }
 }
 
-
-alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
-
-makeHitCounter :: Integer -> HitCounter
-makeHitCounter = (initial) => {
-  value = initial
-
-  read :: {} -> Integer
-  read = () => value
-
-  increment :: {} -> {}
-  increment = () => {
-    value = value + 1
+instance Comparable CoverableFunction {
+  compare = (a, b) => where(#[a, b]) {
+    #[CoverableFunction(la, na), CoverableFunction(lb, nb)] =>
+      compare(la, lb)
   }
-
-  return { increment, read }
 }
 
 
-processModuleResult :: String -> Dictionary Coverable HitCounter -> LcovSection
-processModuleResult = (modulePath, coverablePoints) => {
-  lineResults = Dictionary.toList(coverablePoints)
+processModuleResult :: String -> CoverageData -> LcovSection
+processModuleResult = (modulePath, coverageData) => {
+  lineResults = Dictionary.toList(coverageData.coverableLines)
+  functionResults = Dictionary.toList(coverageData.coverableFunctions)
 
   return {
     ...emptySection,
     sf: SF(modulePath),
-    lf: LF(Dictionary.length(coverablePoints)),
+    lf: LF(List.length(lineResults)),
     lh: LH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults))),
     das: map(
       where {
@@ -221,18 +207,34 @@ processModuleResult = (modulePath, coverablePoints) => {
           DA(line, hitCounter.read())
       },
       lineResults
+    ),
+    fnf: FNF(List.length(functionResults)),
+    fnh: FNH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults))),
+    fns: map(
+      where {
+        #[CoverableFunction(line, name), _] =>
+          FN(line, name)
+      },
+      functionResults
+    ),
+    fndas: map(
+      where {
+        #[CoverableFunction(_, name), hitCounter] =>
+          FNDA(hitCounter.read(), name)
+      },
+      functionResults
     )
   }
 }
 
 
-generateLcov :: Dictionary String (Dictionary Coverable HitCounter) -> String
+generateLcov :: Dictionary String CoverageData -> String
 generateLcov = (coverablePoints) => pipe(
   Dictionary.toList,
   map(
     where {
-      #[modulePath, coverablePointsForModule] =>
-        processModuleResult(modulePath, coverablePointsForModule)
+      #[modulePath, coverageData] =>
+        processModuleResult(modulePath, coverageData)
     }
   ),
   stringify
@@ -243,18 +245,68 @@ generateLcov = (coverablePoints) => pipe(
 // ---------- Coverage Reporter ------------
 
 makeCoverageReporter = () => {
-  coverablePoints :: Dictionary String (Dictionary Coverable HitCounter)
-  coverablePoints = {{}}
+  coverableData :: Dictionary String CoverageData
+  coverableData = {{}}
 
   lineTracker :: String -> Integer -> HitCounter
   lineTracker = (astPath, line) => {
     hitCounter = makeHitCounter(0)
-    coverablePoints = where(Dictionary.get(astPath, coverablePoints)) {
-      Just(cps) =>
-        Dictionary.insert(astPath, Dictionary.insert(CoverableLine(line), hitCounter, cps), coverablePoints)
+    coverableData = where(Dictionary.get(astPath, coverableData)) {
+      Just(coverable) =>
+        Dictionary.insert(
+          astPath,
+          {
+            ...coverable,
+            coverableLines: Dictionary.insert(
+              CoverableLine(line),
+              hitCounter,
+              coverable.coverableLines
+            ),
+          },
+          coverableData
+        )
+        
+      Nothing =>
+        Dictionary.insert(
+          astPath,
+          {
+            coverableLines: {{ CoverableLine(line): hitCounter }},
+            coverableFunctions: {{}},
+          },
+          coverableData
+        )
+    }
+
+    return hitCounter
+  }
+
+  functionTracker :: String -> Integer -> String -> HitCounter
+  functionTracker = (astPath, line, functionName) => {
+    hitCounter = makeHitCounter(0)
+    coverableData = where(Dictionary.get(astPath, coverableData)) {
+      Just(coverable) =>
+        Dictionary.insert(
+          astPath,
+          {
+            ...coverable,
+            coverableFunctions: Dictionary.insert(
+              CoverableFunction(line, functionName),
+              hitCounter,
+              coverable.coverableFunctions
+            ),
+          },
+          coverableData
+        )
 
       Nothing =>
-        Dictionary.insert(astPath, {{ CoverableLine(line): hitCounter }}, coverablePoints)
+        Dictionary.insert(
+          astPath,
+          {
+            coverableFunctions: {{ CoverableFunction(line, functionName): hitCounter }},
+            coverableLines: {{}},
+          },
+          coverableData
+        )
     }
 
     return hitCounter
@@ -271,9 +323,9 @@ makeCoverageReporter = () => {
       return File.write(".coverage/lcov.info", lcovStr)
     },
     fulfill(() => {}, () => {})
-  )(coverablePoints)
+  )(coverableData)
 
-  return { lineTracker, generateReport }
+  return { functionTracker, lineTracker, generateReport }
 }
 
 export Reporter = makeCoverageReporter()

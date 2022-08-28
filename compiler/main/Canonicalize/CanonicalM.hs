@@ -38,6 +38,7 @@ data CanonicalState
       , placeholderIndex :: Int
       , coverableInfo :: [Coverable]
       , linesTracked :: [Int]
+      , anonymousFunctionIndex :: Int
       }
 
 type CanonicalM a = forall m . (MonadIO m, Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
@@ -56,6 +57,13 @@ getAccessName :: Accessed -> String
 getAccessName a = case a of
   NameAccessed n -> n
   TypeAccessed n -> n
+
+generateAnonymousFunctionName :: CanonicalM String
+generateAnonymousFunctionName = do
+  s <- get
+  let index = anonymousFunctionIndex s
+  put s { anonymousFunctionIndex = index + 1 }
+  return $ "Anonymous__" <> show index
 
 pushCoverable :: Coverable -> CanonicalM ()
 pushCoverable cov = do

@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 module Canonicalize.Coverage where
 
 import Canonicalize.CanonicalM
@@ -42,8 +42,16 @@ addTrackers options ast@AST{ apath = Just path } = do
 generateTrackerFunctions :: CanonicalM [Exp]
 generateTrackerFunctions = do
   coverableInfo <- gets coverableInfo
-  forM coverableInfo $ \(Line line astPath) -> do
-    return $ Canonical emptyArea (Assignment (makeLineTrackerFunctionName line) (Canonical emptyArea (App (Canonical emptyArea (App lineTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)))
+  forM coverableInfo $ \case
+    (Line line astPath) -> do
+      return $ Canonical emptyArea (Assignment (makeLineTrackerName line) (Canonical emptyArea (App (Canonical emptyArea (App lineTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)))
+
+    (Function line name astPath) -> do
+      return $ Canonical emptyArea (Assignment (makeFunctionTrackerName line name) (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App functionTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LStr name)) True)))
+
+    _ ->
+      -- Not implemented
+      undefined
 
 
 coverageModuleName :: String
@@ -70,6 +78,9 @@ onExitRef = Canonical emptyArea (Access (Canonical emptyArea (Var processModuleN
 lineTrackerRef :: Exp
 lineTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".lineTracker")))
 
+functionTrackerRef :: Exp
+functionTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".functionTracker")))
+
 
 generateReportRef :: Exp
 generateReportRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".generateReport")))
@@ -80,9 +91,20 @@ reportSetupRef =
   Canonical emptyArea (App onExitRef (Canonical emptyArea (Abs (Canonical emptyArea "_") [Canonical emptyArea (App generateReportRef (Canonical emptyArea LUnit) True)])) True)
 
 
-makeLineTrackerFunctionName :: Int -> String
-makeLineTrackerFunctionName line =
-  "__trackLine_" <> show line <> "__"
+makeLineTrackerName :: Int -> String
+makeLineTrackerName line =
+  "__lineTracker_" <> show line <> "__"
+
+
+makeFunctionTrackerName :: Int -> String -> String
+makeFunctionTrackerName line name =
+  "__functionTracker_" <> show line <> "_" <> name <> "__"
+
+
+makeFunctionTracker :: FilePath -> Int -> String -> CanonicalM Exp
+makeFunctionTracker astPath functionLine functionName = do
+  pushCoverable (Function { cname = functionName, cline = functionLine, castpath = astPath })
+  return $ Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeFunctionTrackerName functionLine functionName)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True)
 
 
 addLineTracker :: FilePath -> Exp -> CanonicalM Exp
@@ -94,7 +116,7 @@ addLineTracker astPath exp = do
     return exp
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerFunctionName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
 
 
 addLineTrackerForLine :: FilePath -> Int -> Exp -> CanonicalM Exp
@@ -105,14 +127,39 @@ addLineTrackerForLine astPath line exp = do
     return exp
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerFunctionName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+
+
+addTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
+addTrackerToBody astPath line name body = case body of
+  [Canonical area (Abs p body')] -> do
+    body'' <- addTrackerToBody astPath line name body'
+    return [Canonical area (Abs p body'')]
+
+  body' -> do
+    tracker <- makeFunctionTracker astPath line name
+    return $ tracker : body'
+
 
 
 addTrackersToExp :: Options -> FilePath -> Exp -> CanonicalM Exp
 addTrackersToExp options astPath exp = case exp of
   Canonical area (Assignment "main" (Canonical absArea (Abs p body))) | optEntrypoint options == astPath -> do
-    body' <- mapM (addTrackersToExp options astPath) body
-    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : body'))))
+    let line = getLineFromStart (getArea exp)
+    tracker <- makeFunctionTracker astPath line "main"
+    body'   <- mapM (addTrackersToExp options astPath) body
+    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (tracker : reportSetupRef : body'))))
+
+  Canonical area (Assignment fnName (Canonical absArea (Abs p body))) -> do
+    let line = getLineFromStart (getArea exp)
+    body'  <- mapM (addTrackersToExp options astPath) body
+    body'' <-
+      if line == 0 then
+        return body'
+      else do
+        addTrackerToBody astPath line fnName body'
+
+    return $ Canonical area (Assignment fnName (Canonical absArea (Abs p body'')))
 
   Canonical _ (LNum _) ->
     addLineTracker astPath exp
@@ -140,8 +187,11 @@ addTrackersToExp options astPath exp = case exp of
     return $ Canonical area (Record fields')
 
   Canonical area (Abs p body) -> do
-    body' <- mapM (addTrackersToExp options astPath) body
-    return $ Canonical area (Abs p body')
+    let line = getLineFromStart (getArea exp)
+    anonymousFunctionName <- generateAnonymousFunctionName
+    body'                 <- mapM (addTrackersToExp options astPath) body
+    body''                <- addTrackerToBody astPath line anonymousFunctionName body'
+    return $ Canonical area (Abs p body'')
 
   Canonical area (Do exps) -> do
     exps' <- mapM (addTrackersToExp options astPath) exps
@@ -177,8 +227,6 @@ addTrackersToExp options astPath exp = case exp of
 
   Canonical area (Access record field) -> do
     let fieldLine = getLineFromStart (getArea field)
-    -- record'  <- addTrackersToExp options astPath record
-    -- record'' <- addLineTrackerForLine astPath record' fieldLine
     addLineTrackerForLine astPath fieldLine $ Canonical area (Access record field)
 
   Canonical area (TemplateString exps) -> do
