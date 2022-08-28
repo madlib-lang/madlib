@@ -196,10 +196,14 @@ addTrackersToExp options astPath exp = case exp of
     return $ Canonical area (Record fields')
 
   Canonical area (Abs p body) -> do
-    let line = getLineFromStart (getArea exp)
-    anonymousFunctionName <- generateAnonymousFunctionName
-    body'                 <- mapM (addTrackersToExp options astPath) body
-    body''                <- addTrackerToBody astPath line anonymousFunctionName body'
+    body'' <- updateBody body $ \body' -> do
+      let line = getLineFromStart (getArea exp)
+      body''  <- mapM (addTrackersToExp options astPath) body'
+      if line == 0 then
+        return body''
+      else do
+        anonymousFunctionName <- generateAnonymousFunctionName
+        addTrackerToBody astPath line anonymousFunctionName body''
     return $ Canonical area (Abs p body'')
 
   Canonical area (Do exps) -> do
