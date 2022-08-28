@@ -57,7 +57,6 @@ alias RangeOutput = {
 }
 
 
-
 instance Functor Validate {
   map = (fn, m) => where(m) {
     Valid(a) =>
@@ -80,7 +79,7 @@ instance Applicative Validate {
       Valid(f(a))
 
     #[Valid(f), NotValid(warnings, a)] =>
-        NotValid(warnings, f(a))
+      NotValid(warnings, f(a))
 
     #[Valid(f), ValidationError(warnings, err, maybeA)] =>
       ValidationError(warnings, err, map(f, maybeA))
