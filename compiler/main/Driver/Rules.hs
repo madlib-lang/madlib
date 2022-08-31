@@ -396,6 +396,7 @@ runCanonicalM a =
         , Can.coverableInfo = []
         , Can.linesTracked = []
         , Can.anonymousFunctionIndex = 0
+        , Can.nextBlockIndex = 0
         }
     )
 

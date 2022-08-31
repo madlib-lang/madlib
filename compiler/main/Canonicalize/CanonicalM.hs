@@ -39,6 +39,7 @@ data CanonicalState
       , coverableInfo :: [Coverable]
       , linesTracked :: [Int]
       , anonymousFunctionIndex :: Int
+      , nextBlockIndex :: Int
       }
 
 type CanonicalM a = forall m . (MonadIO m, Rock.MonadFetch Query.Query m, MonadError CompilationError m, MonadState CanonicalState m) => m a
@@ -57,6 +58,14 @@ getAccessName :: Accessed -> String
 getAccessName a = case a of
   NameAccessed n -> n
   TypeAccessed n -> n
+
+newBlock :: CanonicalM Int
+newBlock = do
+  s <- get
+  let index = nextBlockIndex s
+  put s { nextBlockIndex = index + 1 }
+  return index
+
 
 generateAnonymousFunctionName :: CanonicalM String
 generateAnonymousFunctionName = do

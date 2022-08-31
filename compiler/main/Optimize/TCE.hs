@@ -228,6 +228,9 @@ findRecursionKind fnType fnName params exps = case exps of
 
   _ ->
     Nothing
+  -- _ : es ->
+  --   findRecursionKind fnType fnName params es
+
 
 
 containsRecursion :: Bool -> Type -> String  -> Exp -> Bool
