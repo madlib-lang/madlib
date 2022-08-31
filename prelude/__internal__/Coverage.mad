@@ -29,10 +29,12 @@ makeHitCounter = (initial) => {
 
 type CoverableLine = CoverableLine(Integer)
 type CoverableFunction = CoverableFunction(Integer, String)
+type CoverableBranch = CoverableBranch(Integer, Integer, Integer)
 
 alias CoverageData = {
   coverableLines :: Dictionary CoverableLine HitCounter,
   coverableFunctions :: Dictionary CoverableFunction HitCounter,
+  coverableBranches :: Dictionary CoverableBranch HitCounter,
 }
 
 
@@ -197,11 +199,44 @@ instance Comparable CoverableFunction {
   }
 }
 
+instance Comparable CoverableBranch {
+  compare = (a, b) => where(#[a, b]) {
+    #[CoverableBranch(la, blockA, branchA), CoverableBranch(lb, blockB, branchB)] =>
+      where(#[
+        compare(la, lb),
+        compare(blockA, blockB),
+        compare(branchA, branchB)
+      ]) {
+        #[-1, _, _] =>
+          -1
+
+        #[1, _, _] =>
+          1
+
+        #[_, -1, _] =>
+          -1
+
+        #[_, 1, _] =>
+          1
+
+        #[_, _, -1] =>
+          -1
+
+        #[_, _, 1] =>
+          1
+
+        _ =>
+          0
+      }
+  }
+}
+
 
 processModuleResult :: String -> CoverageData -> LcovSection
 processModuleResult = (modulePath, coverageData) => {
   lineResults = Dictionary.toList(coverageData.coverableLines)
   functionResults = Dictionary.toList(coverageData.coverableFunctions)
+  branchResults = Dictionary.toList(coverageData.coverableBranches)
 
   return {
     ...emptySection,
@@ -230,7 +265,16 @@ processModuleResult = (modulePath, coverageData) => {
           FNDA(hitCounter.read(), name)
       },
       functionResults
-    )
+    ),
+    brdas: map(
+      where {
+        #[CoverableBranch(line, blockIndex, branchIndex), hitCounter] =>
+          BRDA(line, blockIndex, branchIndex, hitCounter.read())
+      },
+      branchResults
+    ),
+    brf: BRF(List.length(branchResults)),
+    brh: BRF(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults))),
   }
 }
 
@@ -244,6 +288,7 @@ generateLcov = (coverablePoints) => pipe(
         processModuleResult(modulePath, coverageData)
     }
   ),
+  IO.trace("lcov"),
   stringify
 )(coverablePoints)
 
@@ -279,6 +324,7 @@ makeCoverageReporter = () => {
           {
             coverableLines: {{ CoverableLine(line): hitCounter }},
             coverableFunctions: {{}},
+            coverableBranches: {{}},
           },
           coverableData
         )
@@ -311,6 +357,40 @@ makeCoverageReporter = () => {
           {
             coverableFunctions: {{ CoverableFunction(line, functionName): hitCounter }},
             coverableLines: {{}},
+            coverableBranches: {{}},
+          },
+          coverableData
+        )
+    }
+
+    return hitCounter
+  }
+
+  branchTracker :: String -> Integer -> Integer -> Integer -> HitCounter
+  branchTracker = (astPath, line, blockNumber, branchNumber) => {
+    hitCounter = makeHitCounter(0)
+    coverableData = where(Dictionary.get(astPath, coverableData)) {
+      Just(coverable) =>
+        Dictionary.insert(
+          astPath,
+          {
+            ...coverable,
+            coverableBranches: Dictionary.insert(
+              CoverableBranch(line, blockNumber, branchNumber),
+              hitCounter,
+              coverable.coverableBranches
+            ),
+          },
+          coverableData
+        )
+
+      Nothing =>
+        Dictionary.insert(
+          astPath,
+          {
+            coverableBranches: {{ CoverableBranch(line, blockNumber, branchNumber): hitCounter }},
+            coverableLines: {{}},
+            coverableFunctions: {{}},
           },
           coverableData
         )
@@ -321,6 +401,7 @@ makeCoverageReporter = () => {
 
   generateReport :: a -> {}
   generateReport = () => pipe(
+    IO.trace("report"),
     generateLcov,
     (lcovStr) => do {
       _ <- mapRej(
@@ -332,7 +413,7 @@ makeCoverageReporter = () => {
     fulfill(() => {}, () => {})
   )(coverableData)
 
-  return { functionTracker, lineTracker, generateReport }
+  return { branchTracker, functionTracker, lineTracker, generateReport }
 }
-
+import IO from "IO"
 export Reporter = makeCoverageReporter()

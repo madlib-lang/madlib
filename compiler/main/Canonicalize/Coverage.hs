@@ -43,15 +43,14 @@ generateTrackerFunctions :: CanonicalM [Exp]
 generateTrackerFunctions = do
   coverableInfo <- gets coverableInfo
   forM coverableInfo $ \case
-    (Line line astPath) -> do
+    Line line astPath ->
       return $ Canonical emptyArea (Assignment (makeLineTrackerName line) (Canonical emptyArea (App (Canonical emptyArea (App lineTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)))
 
-    (Function line name astPath) -> do
+    Function line name astPath ->
       return $ Canonical emptyArea (Assignment (makeFunctionTrackerName line name) (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App functionTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LStr name)) True)))
 
-    _ ->
-      -- Not implemented
-      undefined
+    Branch line blockIndex branchIndex astPath ->
+      return $ Canonical emptyArea (Assignment (makeBranchTrackerName line blockIndex branchIndex) (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App branchTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LNum (show blockIndex))) False)) (Canonical emptyArea (LNum (show branchIndex))) True)))
 
 
 coverageModuleName :: String
@@ -78,8 +77,13 @@ onExitRef = Canonical emptyArea (Access (Canonical emptyArea (Var processModuleN
 lineTrackerRef :: Exp
 lineTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".lineTracker")))
 
+
 functionTrackerRef :: Exp
 functionTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".functionTracker")))
+
+
+branchTrackerRef :: Exp
+branchTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".branchTracker")))
 
 
 generateReportRef :: Exp
@@ -99,6 +103,11 @@ makeLineTrackerName line =
 makeFunctionTrackerName :: Int -> String -> String
 makeFunctionTrackerName line name =
   "__functionTracker_" <> show line <> "_" <> name <> "__"
+
+
+makeBranchTrackerName :: Int -> Int -> Int -> String
+makeBranchTrackerName line blockIndex branchIndex =
+  "__branchTracker_" <> show line <> "_" <> show blockIndex <> "_" <> show branchIndex <> "__"
 
 
 makeFunctionTracker :: FilePath -> Int -> String -> CanonicalM Exp
@@ -130,15 +139,22 @@ addLineTrackerForLine astPath line exp = do
     return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
 
 
-addTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
-addTrackerToBody astPath line name body = case body of
+addFunctionTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
+addFunctionTrackerToBody astPath line name body = case body of
   [Canonical area (Abs p body')] -> do
-    body'' <- addTrackerToBody astPath line name body'
+    body'' <- addFunctionTrackerToBody astPath line name body'
     return [Canonical area (Abs p body'')]
 
   body' -> do
     tracker <- makeFunctionTracker astPath line name
     return $ tracker : body'
+
+
+addBranchTracker :: FilePath -> Int -> Int -> Int -> Exp -> CanonicalM Exp
+addBranchTracker astPath line blockIndex branchIndex exp = do
+  pushCoverable Branch { cline = line, cblocknumber = blockIndex, cbranchnumber = branchIndex, castpath = astPath }
+  return $ Canonical (getArea exp) (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeBranchTrackerName line blockIndex branchIndex)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+
 
 updateBody :: [Exp] -> ([Exp] -> CanonicalM [Exp]) -> CanonicalM [Exp]
 updateBody body f = case body of
@@ -166,7 +182,7 @@ addTrackersToExp options astPath exp = case exp of
       if line == 0 then
         return body''
       else do
-        addTrackerToBody astPath line fnName body''
+        addFunctionTrackerToBody astPath line fnName body''
 
     return $ Canonical area (Assignment fnName (Canonical absArea (Abs p body'')))
 
@@ -203,7 +219,7 @@ addTrackersToExp options astPath exp = case exp of
         return body''
       else do
         anonymousFunctionName <- generateAnonymousFunctionName
-        addTrackerToBody astPath line anonymousFunctionName body''
+        addFunctionTrackerToBody astPath line anonymousFunctionName body''
     return $ Canonical area (Abs p body'')
 
   Canonical area (Do exps) -> do
@@ -236,7 +252,14 @@ addTrackersToExp options astPath exp = case exp of
     cond'   <- addTrackersToExp options astPath cond
     truthy' <- addTrackersToExp options astPath truthy
     falsy'  <- addTrackersToExp options astPath falsy
-    return $ Canonical area (If cond' truthy' falsy')
+    
+    blockIndex <- newBlock
+    let area = getArea exp
+    let line = getLineFromStart area
+    truthy'' <- addBranchTracker astPath line blockIndex 0 truthy'
+    falsy'' <- addBranchTracker astPath line blockIndex 1 falsy'
+
+    return $ Canonical area (If cond' truthy'' falsy'')
 
   Canonical area (Access record field) -> do
     let fieldLine = getLineFromStart (getArea field)

@@ -472,6 +472,8 @@ nonCompositePattern :: { Src.Pattern }
   : name             { nameToPattern (tokenArea $1) (tokenTarget $1) (strV $1) }
   | number           { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PNum $ strV $1) }
   | float            { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PFloat $ strV $1)}
+  | '-unary' number  { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PNum $ '-' : strV $2) }
+  | '-unary' float   { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PFloat $ '-' : strV $2)}
   | str              { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PStr $ strV $1) }
   | char             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PChar $ charData $1) }
   | true             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.PBool $ strV $1) }
