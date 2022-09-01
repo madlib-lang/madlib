@@ -291,7 +291,7 @@ instance Compilable Exp where
 
           compileBody :: Env -> [Exp] -> String
           compileBody env body = case body of
-            [exp] | isPlainRecursiveDefinition metadata ->
+            es | isPlainRecursiveDefinition metadata ->
               let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
@@ -304,12 +304,12 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        "<> compile env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        "<> compileBody' env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
 
-            [exp] | isRightListRecursiveDefinition metadata ->
+            es | isRightListRecursiveDefinition metadata ->
               let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
@@ -324,12 +324,12 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        " <> compileBody' env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
 
-            [exp] | isConstructorRecursiveDefinition metadata ->
+            es | isConstructorRecursiveDefinition metadata ->
               let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
                   updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
                   rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
@@ -346,7 +346,7 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        "<> compile env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "        "<> compileBody' env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
@@ -362,8 +362,14 @@ instance Compilable Exp where
 
           compileBody' :: Env -> [Exp] -> String
           compileBody' env [exp] = case exp of
-            (Typed _ _ _ (JSExp _)) -> compile env config exp
-            _                         -> "    return " <> compile env config exp <> ";\n"
+            (Typed _ _ _ (JSExp _)) ->
+              compile env config exp
+
+            _ | isPlainRecursiveDefinition metadata || isRightListRecursiveDefinition metadata || isConstructorRecursiveDefinition metadata ->
+              compile env config exp
+
+            _ ->
+              "    return " <> compile env config exp <> ";\n"
           compileBody' e (exp : es) = case exp of
             Core.Typed _ _ _ (Core.Assignment name _) ->
               let nextEnv = e { varsInScope = S.insert name (varsInScope e) }

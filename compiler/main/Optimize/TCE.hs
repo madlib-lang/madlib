@@ -2,14 +2,12 @@ module Optimize.TCE where
 
 import           AST.Core
 import qualified Data.Maybe          as Maybe
-import qualified Data.Bifunctor as Bifunctor
-import Infer.Type
-import Debug.Trace
-import Text.Show.Pretty
+import qualified Data.Bifunctor      as Bifunctor
+import           Infer.Type
+
 
 newtype Env
   = Env { envCurrentName :: Maybe String }
-
 
 
 getAppName :: Exp -> Maybe String
@@ -55,7 +53,9 @@ markDefinition env exp = case exp of
     let Just fnName = envCurrentName env
     in  case findRecursionKind fnType fnName (getValue <$> params) body of
           Just kind ->
-            Typed qt area (RecursiveDefinition kind : metadata) (Definition params (markTRCCalls kind fnType fnName . markDefinition env <$> body))
+            let body' = markDefinition env <$> body
+                body'' = init body' ++ [markTRCCalls kind fnType fnName (last body')]
+            in  Typed qt area (RecursiveDefinition kind : metadata) (Definition params body'')
           Nothing ->
             Typed qt area metadata (Definition params (markDefinition env { envCurrentName = Nothing } <$> body))
 
@@ -114,8 +114,8 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
     Typed qt area metadata (Where exp (markIs recursionKind fnType fnName <$> iss))
 
   -- TODO: Probably we need to either mark the whole thing, or just the last expression of it
-  -- Typed qt area metadata (Do exps) ->
-  --   Typed qt area metadata (Do (markTRCCalls markWith fnName <$> exps))
+  Typed qt area metadata (Do exps) ->
+    Typed qt area metadata (Do (init exps ++ [markTRCCalls recursionKind fnType fnName (last exps)]))
 
   Typed qt area metadata (Placeholder info exp) ->
     Typed qt area metadata (Placeholder info (markTRCCalls recursionKind fnType fnName exp))
@@ -135,10 +135,6 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
 
   Typed qt area metadata e ->
     Typed qt area (RecursionEnd recursionKind : metadata) e
-    -- if recursionKind /= PlainRecursion && recursionKind /= NotOptimizable then
-      -- Typed qt area (RecursionEnd recursionKind : metadata) e
-    -- else
-      -- Typed qt area metadata e
 
   _ ->
     exp
@@ -198,6 +194,9 @@ findRecursionKind fnType fnName params exps = case exps of
   [] ->
     Nothing
 
+  [Typed _ _ _ (Do exps)] ->
+    findRecursionKind fnType fnName params [last exps]
+
   [lastExp] -> case lastExp of
     Typed _ _ _ (Call (Typed _ _ _ (Var _ True)) args) ->
       if any (containsRecursion True fnType fnName) args then
@@ -226,10 +225,8 @@ findRecursionKind fnType fnName params exps = case exps of
     _ ->
       Nothing
 
-  _ ->
-    Nothing
-  -- _ : es ->
-  --   findRecursionKind fnType fnName params es
+  _ : es ->
+    findRecursionKind fnType fnName params es
 
 
 
@@ -265,7 +262,7 @@ containsRecursion direct fnType fnName exp = case exp of
       )
 
   Typed _ _ _ (Do exps) ->
-    not direct && any (containsRecursion direct fnType fnName) exps
+    not direct && containsRecursion direct fnType fnName (last exps)
 
   Typed _ _ _ (Where exp iss) ->
     not direct &&
