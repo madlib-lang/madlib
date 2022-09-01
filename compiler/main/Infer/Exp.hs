@@ -411,19 +411,14 @@ inferRecord :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, S
 inferRecord options env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
-  -- TODO: we need to use a fold in order tu apply the resulting subst to the env as we go
-  -- inferredFields <- mapM (inferRecordField options env) fields
   (subst, inferredFields) <- foldM (
         \(fieldSubst, result) field -> do
-          (s, ps, ts, es) <- inferRecordField options (apply fieldSubst env) field
-          return (s `compose` fieldSubst, (ps, ts, es) : result)
+          (s, ps, ts, e) <- inferRecordField options (apply fieldSubst env) field
+          return (fieldSubst `compose` s, result ++ [(ps, ts, e)])
       ) (mempty, []) fields
-
-  -- let fieldSubsts = (\(s, _, _, _) -> s) <$> inferredFields
+  let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
-  let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
-  -- let subst       = foldr compose M.empty fieldSubsts
 
   let fieldTypes' = filter (\(k, _) -> k /= "...") (concat fieldTypes)
   let spreads     = snd <$> filter (\(k, _) -> k == "...") (concat fieldTypes)
