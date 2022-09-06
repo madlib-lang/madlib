@@ -46,7 +46,9 @@ jobs:
         run: stack install alex happy
 
       - name: Build madlib executable
-        run: stack build
+        run: |
+          export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
+          stack build
 
       - name: Add rpath
         run: install_name_tool -change /usr/local/opt/llvm-9/lib/llvm-9/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
@@ -60,9 +62,7 @@ jobs:
           TARGET="MACOS_X64" AR="llvm-ar-9" ./scripts/build-runtime
 
       - name: Build tools
-        run: |
-          export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
-          ./scripts/build
+        run: ./scripts/build
 
       - name: Bundle archive
         run: |
