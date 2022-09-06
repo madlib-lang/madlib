@@ -39,6 +39,9 @@ jobs:
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
 
+      - name: Fix llvm install
+        run: cd /usr/local/Cellar/llvm-9/9.0.1/bin/ && ln -s llvm-config-9 llvm-config || cd /usr/local/Cellar/llvm-9/9.0.1.reinstall/bin/ && ln -s llvm-config-9 llvm-config
+
       - name: Install alex and happy
         run: stack install alex happy
 
