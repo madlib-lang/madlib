@@ -34,7 +34,7 @@ jobs:
         run: npm i -g rollup @rollup/plugin-node-resolve
 
       - name: Install LLVM 9
-        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install llvm-hs/llvm/llvm-9
+        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-9
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
