@@ -34,9 +34,10 @@ jobs:
         run: npm i -g rollup @rollup/plugin-node-resolve
 
       - name: Install LLVM 9
-        run: |
-          brew install llvm-hs/llvm/llvm-9
-          ls -l /usr/local/Cellar/llvm-9/9.0.1/bin/
+        run: brew install llvm-hs/llvm/llvm-9
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
