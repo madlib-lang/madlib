@@ -172,7 +172,13 @@ void madlib__stdio__get(PAP_t *callback) {
 void madlib__stdio__put(char *str) {
   fputs(str, stdout);
   fflush(stdout);
-} 
+}
+
+
+void madlib__stdio__putLine(char *str) {
+  puts(str);
+  fflush(stdout);
+}
 
 
 void madlib__stdio__err(char *str) {

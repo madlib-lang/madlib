@@ -60,7 +60,7 @@ inspectStaticInstances target _ = unlines
   , "Inspect['Byte_"<>preludeHash<>"']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };"
   , ""
   , "Inspect['Float_"<>preludeHash<>"'] = {};"
-  , "Inspect['Float_"<>preludeHash<>"']['inspect'] = () => x => x;"
+  , "Inspect['Float_"<>preludeHash<>"']['inspect'] = () => x => '' + x;"
   , ""
   , "Inspect['String_"<>preludeHash<>"'] = {};"
   -- , "Inspect['String']['inspect'] = () => x => `\"${x.split('').map(Inspect.Char.inspect()).join('')}\"`;"

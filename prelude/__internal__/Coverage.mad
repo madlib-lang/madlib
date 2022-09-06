@@ -3,12 +3,18 @@ import { UnknownError } from "IOError"
 import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
+import String from "String"
 import Tuple from "Tuple"
-import { Just, Nothing } from "Maybe"
+import Math from "Math"
+import { fromMaybe, Just, Nothing } from "Maybe"
 import { EQUAL } from "Compare"
+import { integerToFloat } from "Number"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
+import IO from "IO"
 
+
+COVERAGE_TEXT = "COVERAGE_TEXT"
 
 alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
 
@@ -279,42 +285,211 @@ processModuleResult = (modulePath, coverageData) => {
 }
 
 
+dropTestMainData :: List #[String, a] -> List #[String, a]
+dropTestMainData = List.filter(
+  where {
+    #[modulePath, _] =>
+      String.takeLast(16, modulePath) != "__TestMain__.mad"
+  }
+)
+
+
+keepTwoDecimals :: String -> String
+keepTwoDecimals = (input) => pipe(
+  String.split("."),
+  where {
+    [before, after] =>
+      if (String.length(after) == 1) {
+        before ++ "." ++ after ++ "0"
+      } else {
+        before ++ "." ++ String.take(2, after)
+      }
+
+    [before] =>
+      before ++ ".00"
+  }
+)(input)
+
+
+type ModuleResult = ModuleResult(String, Float, Float, Float, Float)
+
+buildModuleResult :: String -> CoverageData -> ModuleResult
+buildModuleResult = (modulePath, coverageData) => {
+  lineResults = Dictionary.toList(coverageData.coverableLines)
+  functionResults = Dictionary.toList(coverageData.coverableFunctions)
+  branchResults = Dictionary.toList(coverageData.coverableBranches)
+
+  linesFound = List.length(lineResults)
+  linesHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults))
+
+  functionsFound = List.length(functionResults)
+  functionsHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults))
+
+  branchesFound = List.length(branchResults)
+  branchesHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults))
+
+  lineCov = linesFound == 0 ? 100 : linesHit / linesFound * 100
+  functionCov = functionsFound == 0 ? 100 : functionsHit / functionsFound * 100
+  branchCov = branchesFound == 0 ? 100 : branchesHit / branchesFound * 100
+  total = (lineCov + functionCov + branchCov) / 3
+
+  return ModuleResult(modulePath, lineCov, functionCov, branchCov, total)
+}
+
+
+buildAllResults :: Dictionary String CoverageData -> List ModuleResult
+buildAllResults = (coverageData) => {
+  moduleResults = pipe(
+    Dictionary.toList,
+    dropTestMainData,
+    map(
+      where {
+        #[modulePath, data] =>
+          buildModuleResult(modulePath, data)
+      }
+    )
+  )(coverageData)
+
+  moduleCount = integerToFloat(List.length(moduleResults))
+
+  totalRow = pipe(
+    List.reduce(
+      (totalResult, moduleResult) => where(#[totalResult, moduleResult]) {
+        #[ModuleResult(n, l, f, b, t), ModuleResult(m, ml, mf, mb, mt)] =>
+          ModuleResult(n, l + ml, f + mf, b + mb, t + mt)
+      },
+      ModuleResult("Total", 0, 0, 0, 0)
+    ),
+    where {
+      ModuleResult(n, l, f, b, t) =>
+        ModuleResult(n, l / moduleCount, f / moduleCount, b / moduleCount, t / moduleCount)
+    }
+  )(moduleResults)
+
+  return [...moduleResults, totalRow]
+}
+
+
+printRows :: List (List String) -> {}
+printRows = (rows) => {
+  finalRows = pipe(
+    map(
+      where {
+        [module, line, fn, branch, total] =>
+          `${module} ${line} ${fn} ${branch} ${total}`
+      }
+    ),
+    where {
+      [header, ...moduleRows] =>
+        [header, String.repeat('-', String.length(header)), ...moduleRows]
+    },
+    String.join("\n")
+  )(rows)
+
+  IO.putLine("\nCoverage")
+  IO.putLine("--------\n")
+  IO.putLine(finalRows)
+  IO.putLine("")
+}
+
+formatRows :: List (List String) -> List (List String)
+formatRows = (rows) =>
+  if (List.isEmpty(rows)) {
+    []
+  } else {
+    do {
+      columnCount = pipe(List.nth(0), fromMaybe([]), List.length)(rows)
+      colMaxWidths = pipe(
+        map(
+          (columnIndex) =>
+            List.reduce(
+              (maxWidth, colContent) => pipe(
+                List.nth(columnIndex),
+                fromMaybe(""),
+                String.length,
+                Math.max(maxWidth)
+              )(colContent),
+              0,
+              rows
+            )
+        )
+      )(List.range(0, columnCount))
+
+      return map(
+        List.mapWithIndex((colContent, colIndex) => pipe(
+          List.nth($, colMaxWidths),
+          fromMaybe(0),
+          Math.substract($, String.length(colContent)),
+          List.repeat(' '),
+          String.fromList,
+          (spaces) => colContent ++ spaces
+        )(colIndex))
+      )(rows)
+    }
+  }
+
+
+displayCoverageResults :: Dictionary String CoverageData -> {}
+displayCoverageResults = (coverageData) => {
+  rows = pipe(
+    buildAllResults,
+    map(
+      where {
+        ModuleResult(astPath, line, fn, branch, total) =>
+          [
+            astPath,
+            `${keepTwoDecimals(inspect(line))}%`,
+            `${keepTwoDecimals(inspect(fn))}%`,
+            `${keepTwoDecimals(inspect(branch))}%`,
+            `${keepTwoDecimals(inspect(total))}%`,
+          ]
+      }
+    ),
+    (rs) => [["Module", "Lines", "Functions", "Branches", "Total"], ...rs],
+    formatRows,
+    printRows
+  )(coverageData)
+
+}
+
+
 generateLcov :: Dictionary String CoverageData -> String
-generateLcov = (coverablePoints) => pipe(
+generateLcov = (coverageData) => pipe(
   Dictionary.toList,
+  dropTestMainData,
   map(
     where {
-      #[modulePath, coverageData] =>
-        processModuleResult(modulePath, coverageData)
+      #[modulePath, data] =>
+        processModuleResult(modulePath, data)
     }
   ),
   stringify
-)(coverablePoints)
+)(coverageData)
 
 
 
 // ---------- Coverage Reporter ------------
 
 makeCoverageReporter = () => {
-  coverableData :: Dictionary String CoverageData
-  coverableData = {{}}
+  coverageData :: Dictionary String CoverageData
+  coverageData = {{}}
 
   lineTracker :: String -> Integer -> HitCounter
   lineTracker = (astPath, line) => {
     hitCounter = makeHitCounter(0)
-    coverableData = where(Dictionary.get(astPath, coverableData)) {
-      Just(coverable) =>
+    coverageData = where(Dictionary.get(astPath, coverageData)) {
+      Just(data) =>
         Dictionary.insert(
           astPath,
           {
-            ...coverable,
+            ...data,
             coverableLines: Dictionary.insert(
               CoverableLine(line),
               hitCounter,
-              coverable.coverableLines
+              data.coverableLines
             ),
           },
-          coverableData
+          coverageData
         )
         
       Nothing =>
@@ -325,7 +500,7 @@ makeCoverageReporter = () => {
             coverableFunctions: {{}},
             coverableBranches: {{}},
           },
-          coverableData
+          coverageData
         )
     }
 
@@ -335,19 +510,19 @@ makeCoverageReporter = () => {
   functionTracker :: String -> Integer -> String -> HitCounter
   functionTracker = (astPath, line, functionName) => {
     hitCounter = makeHitCounter(0)
-    coverableData = where(Dictionary.get(astPath, coverableData)) {
-      Just(coverable) =>
+    coverageData = where(Dictionary.get(astPath, coverageData)) {
+      Just(data) =>
         Dictionary.insert(
           astPath,
           {
-            ...coverable,
+            ...data,
             coverableFunctions: Dictionary.insert(
               CoverableFunction(line, functionName),
               hitCounter,
-              coverable.coverableFunctions
+              data.coverableFunctions
             ),
           },
-          coverableData
+          coverageData
         )
 
       Nothing =>
@@ -358,7 +533,7 @@ makeCoverageReporter = () => {
             coverableLines: {{}},
             coverableBranches: {{}},
           },
-          coverableData
+          coverageData
         )
     }
 
@@ -368,19 +543,19 @@ makeCoverageReporter = () => {
   branchTracker :: String -> Integer -> Integer -> Integer -> HitCounter
   branchTracker = (astPath, line, blockNumber, branchNumber) => {
     hitCounter = makeHitCounter(0)
-    coverableData = where(Dictionary.get(astPath, coverableData)) {
-      Just(coverable) =>
+    coverageData = where(Dictionary.get(astPath, coverageData)) {
+      Just(data) =>
         Dictionary.insert(
           astPath,
           {
-            ...coverable,
+            ...data,
             coverableBranches: Dictionary.insert(
               CoverableBranch(line, blockNumber, branchNumber),
               hitCounter,
-              coverable.coverableBranches
+              data.coverableBranches
             ),
           },
-          coverableData
+          coverageData
         )
 
       Nothing =>
@@ -391,7 +566,7 @@ makeCoverageReporter = () => {
             coverableLines: {{}},
             coverableFunctions: {{}},
           },
-          coverableData
+          coverageData
         )
     }
 
@@ -399,18 +574,23 @@ makeCoverageReporter = () => {
   }
 
   generateReport :: a -> {}
-  generateReport = () => pipe(
-    generateLcov,
-    (lcovStr) => do {
-      _ <- mapRej(
-        () => UnknownError,
-        Process.exec("mkdir", ["-p", ".coverage"], Process.DEFAULT_COMMAND_OPTIONS)
-      )
-      return File.write(".coverage/lcov.info", lcovStr)
-    },
-    fulfill(() => {}, () => {})
-  )(coverableData)
+  generateReport = () => {
+    pipe(
+      generateLcov,
+      (lcovStr) => do {
+        _ <- mapRej(
+          () => UnknownError,
+          Process.exec("mkdir", ["-p", ".coverage"], Process.DEFAULT_COMMAND_OPTIONS)
+        )
+        return File.write(".coverage/lcov.info", lcovStr)
+      },
+      fulfill(() => {}, () => {})
+    )(coverageData)
 
+    if (Process.getEnv(COVERAGE_TEXT) == Just("ON")) {
+      displayCoverageResults(coverageData)
+    } else { {} }
+  }
   return { branchTracker, functionTracker, lineTracker, generateReport }
 }
 

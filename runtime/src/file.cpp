@@ -30,7 +30,7 @@ typedef struct ReadData {
 } ReadData_t;
 
 void onReadError(uv_fs_t *req) {
-  char *result = (char*)"\0";
+  char *result = (char*)"";
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 

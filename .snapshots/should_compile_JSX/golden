@@ -101,7 +101,7 @@ export let p = (attrs => children =>  h("p", objectifyAttrs(attrs), children) );
 export let input = (attrs => children =>  h("input", objectifyAttrs(attrs), children) );
 export let button = (attrs => children =>  h("button", objectifyAttrs(attrs), children) );
 let initialState = 0;
-let MyApp = (count => div(({ v: id(`id`), n: { v: className(`class`), n: null } }))(({ v: div((null))(({ v: `Current count is ` + Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.show()(count), n: null })), n: { v: div((null))(({ v: button(({ v: onClick((state => event => ({ v: good((s => s + 1)), n: null }))), n: null }))(({ v: `increment`, n: null })), n: null })), n: null } })));
+let MyApp = (count => div(({ v: id(`id`), n: { v: className(`class`), n: null } }))(({ v: div((null))(({ v: `Current count is ` + Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.show()(count), n: null })), n: { v: div((null))(({ v: button(({ v: onClick((state => event => ({ v: good((s => (s + 1))), n: null }))), n: null }))(({ v: `increment`, n: null })), n: null })), n: null } })));
 let main = (_ => {
     div((null))(({ v: `Some text!`, n: null }));
     div((null))(({ v: div((null))(({ v: span((null))((null)), n: null })), n: { v: div((null))(({ v: span((null))((null)), n: null })), n: null } }));

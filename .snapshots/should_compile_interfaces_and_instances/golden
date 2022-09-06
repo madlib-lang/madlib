@@ -126,25 +126,25 @@ Monad['Either_568c75136c0c369c440814a7af59434a']['chain'] = () => (f => __x__ =>
   }
 })(__x__));
 Monad['Either_568c75136c0c369c440814a7af59434a']['of'] = () => (x => Right(x));
-let inc = (a => a + 1);
-let doIt = (Functor_v21) => (x => Functor_v21.map()((k => k + 1))(x));
+let inc = (a => (a + 1));
+let doIt = (Functor_v21) => (x => Functor_v21.map()((k => (k + 1)))(x));
 let fn = (Functor_g32) => Functor_g32.map()(inc);
 let hideCall = (x => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0] === 2) {
-    return Monad.Either_568c75136c0c369c440814a7af59434a.chain()((a => Right(a + 1)))(Right(2));
+    return Monad.Either_568c75136c0c369c440814a7af59434a.chain()((a => Right((a + 1))))(Right(2));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(Monad.Maybe_568c75136c0c369c440814a7af59434a.chain()((a => Just(a + 1)))(x)));
+})(Monad.Maybe_568c75136c0c369c440814a7af59434a.chain()((a => Just((a + 1))))(x)));
 let main = (_ => {
     Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()(inc)(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
     fn(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(({ v: 4, n: { v: 5, n: { v: 6, n: null } } }));
     fn(Functor.Maybe_568c75136c0c369c440814a7af59434a)(Just(3));
     doIt(Functor.Maybe_568c75136c0c369c440814a7af59434a)(Just(3));
-    Monad.Maybe_568c75136c0c369c440814a7af59434a.chain()((x => Just(x + 1)))(Just(3));
+    Monad.Maybe_568c75136c0c369c440814a7af59434a.chain()((x => Just((x + 1))))(Just(3));
     let p = 1;
     return ({ __constructor: "Unit", __args: [] });
 });

@@ -270,7 +270,7 @@ export get = Wish((bad, good) =>
 )
 
 putLine :: String -> {}
-export putLine = extern "puts"
+export putLine = extern "madlib__stdio__putLine"
 
 put :: String -> {}
 export put = extern "madlib__stdio__put"

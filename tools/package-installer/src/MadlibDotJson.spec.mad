@@ -34,7 +34,8 @@ test("parse", (_) => pipe(
       bin: Nothing,
       importAliases: Nothing,
       madlibVersion: Nothing,
-      dependencies: Nothing
+      dependencies: Nothing,
+      hooks: Nothing,
     })
   )
 )(MADLIB_DOT_JSON_MINIMAL))
@@ -54,7 +55,7 @@ test("load     - success", (_) => {
     writeBytes: (path, data) => good({}),
     readDir: always(good([])),
     exists: always(good(true)),
-    exec: always(good({ exitCode: 0, stdout: "OK", stderr: "" })),
+    exec: (_, _, _) => good({ exitCode: 0, stdout: "OK", stderr: "" }),
     getBytes: always(
       good({
         body: ByteArray.empty,
@@ -71,7 +72,8 @@ test("load     - success", (_) => {
     bin: Nothing,
     importAliases: Nothing,
     madlibVersion: Nothing,
-    dependencies: Nothing
+    dependencies: Nothing,
+    hooks: Nothing,
   }
 
   return pipe(

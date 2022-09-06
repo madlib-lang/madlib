@@ -17,6 +17,7 @@ void madlib__stdio__getLine(PAP_t *callback);
 void madlib__stdio__get(PAP_t *callback);
 
 void madlib__stdio__put(char *str);
+void madlib__stdio__putLine(char *str);
 void madlib__stdio__err(char *str);
 
 #ifdef __cplusplus
