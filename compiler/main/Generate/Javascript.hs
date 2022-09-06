@@ -174,16 +174,16 @@ instance Compilable Exp where
           "-" <> compile env config arg
 
         Call (Typed _ _ _ (Var "+" _)) [left, right] ->
-          compile env config left <> " + " <> compile env config right
+          "(" <> compile env config left <> " + " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "-" _)) [left, right] ->
-          compile env config left <> " - " <> compile env config right
+          "(" <> compile env config left <> " - " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "*" _)) [left, right] ->
-          compile env config left <> " * " <> compile env config right
+          "(" <> compile env config left <> " * " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "/" _)) [left, right] ->
-          compile env config left <> " / " <> compile env config right
+          "(" <> compile env config left <> " / " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "%" _)) [left, right] ->
           compile env config left <> " % " <> compile env config right

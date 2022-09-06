@@ -10,7 +10,7 @@ import qualified Rock
 import Driver.Query
 import Explain.Location
 import Control.Monad.IO.Class (liftIO)
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, isSuffixOf)
 import Run.Options
 import Canonicalize.Coverable
 import Control.Monad.State
@@ -18,15 +18,16 @@ import Control.Monad.State
 
 
 addTrackers :: Options -> AST -> CanonicalM AST
-addTrackers _ AST{ apath = Nothing } = undefined
+addTrackers _ ast@AST{ apath = Nothing } = return ast
 addTrackers options ast@AST{ apath = Just path } = do
   let isPrelude = "prelude/__internal__" `isInfixOf` path
   let isPackage = "madlib_modules" `isInfixOf` path
+  let isTest    = ".spec.mad" `isSuffixOf` path
   coverageModulePath <- Rock.fetch $ AbsolutePreludePath "Coverage"
   processModulePath  <- Rock.fetch $ AbsolutePreludePath "Process"
 
   -- We skip it for prelude and the coverage module itself
-  if coverageModulePath /= path && not isPrelude && not isPackage then do
+  if coverageModulePath /= path && not isPrelude && not isPackage && not isTest then do
     updatedImports   <- addImport coverageModuleName "Coverage" coverageModulePath $ aimports ast
     updatedImports'  <- addImport processModuleName "Process" processModulePath updatedImports
     updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
@@ -226,6 +227,13 @@ addTrackersToExp options astPath exp = case exp of
     exps' <- mapM (addTrackersToExp options astPath) exps
     return $ Canonical area (Do exps')
 
+  Canonical area (App (Canonical _ (App (Canonical _ (Var fnName)) _ _)) _ _)
+    | fnName == "&&" || fnName == "||" -> do
+      blockIndex <- newBlock
+      let line = getLineFromStart area
+      (_, exp') <- addTrackersToBooleanExpression options astPath line blockIndex 0 exp
+      return exp'
+
   Canonical area (App f arg final) -> do
     arg' <- addTrackersToExp options astPath arg
     f'   <- addTrackersToExp options astPath f
@@ -245,19 +253,22 @@ addTrackersToExp options astPath exp = case exp of
 
   Canonical area (Where e iss) -> do
     e'   <- addTrackersToExp options astPath e
-    iss' <- mapM (addTrackersToIs options astPath) iss
+
+    blockIndex <- newBlock
+    let line = getLineFromStart area
+
+    iss' <- mapM (\(is, branchIndex) -> addTrackersToIs options astPath line blockIndex branchIndex is) (zip iss [0..])
     return $ Canonical area (Where e' iss')
 
   Canonical area (If cond truthy falsy) -> do
     cond'   <- addTrackersToExp options astPath cond
     truthy' <- addTrackersToExp options astPath truthy
     falsy'  <- addTrackersToExp options astPath falsy
-    
+
     blockIndex <- newBlock
-    let area = getArea exp
     let line = getLineFromStart area
     truthy'' <- addBranchTracker astPath line blockIndex 0 truthy'
-    falsy'' <- addBranchTracker astPath line blockIndex 1 falsy'
+    falsy''  <- addBranchTracker astPath line blockIndex 1 falsy'
 
     return $ Canonical area (If cond' truthy'' falsy'')
 
@@ -284,6 +295,21 @@ addTrackersToExp options astPath exp = case exp of
     return or
 
 
+addTrackersToBooleanExpression :: Options -> FilePath -> Int -> Int -> Int -> Exp -> CanonicalM (Int, Exp)
+addTrackersToBooleanExpression options astPath line blockIndex branchIndex exp = case exp of
+  Canonical area (App (Canonical innerArea (App (Canonical varArea (Var fnName)) leftArg leftFinal)) rightArg rightFinal) | fnName == "&&" || fnName == "||" -> do
+    (lastBranchIndex, leftArg')   <- addTrackersToBooleanExpression options astPath line blockIndex branchIndex leftArg
+    (lastBranchIndex', rightArg') <- addTrackersToBooleanExpression options astPath line blockIndex (lastBranchIndex + 1) rightArg
+    leftArg'''                    <- addLineTracker astPath leftArg'
+    rightArg'''                   <- addLineTracker astPath rightArg'
+    return (lastBranchIndex', Canonical area (App (Canonical innerArea (App (Canonical varArea (Var fnName)) leftArg''' leftFinal)) rightArg''' rightFinal))
+
+  _ -> do
+    exp' <- addTrackersToExp options astPath exp
+    exp'' <- addBranchTracker astPath line blockIndex branchIndex exp'
+    return (branchIndex, exp'')
+
+
 addTrackersToField :: Options -> FilePath -> Field -> CanonicalM Field
 addTrackersToField options astPath field = case field of
   Canonical area (Field (name, exp)) -> do
@@ -306,10 +332,11 @@ addTrackersToListItem options astPath li = case li of
     return $ Canonical area (ListSpread exp')
 
 
-addTrackersToIs :: Options -> FilePath -> Is -> CanonicalM Is
-addTrackersToIs options astPath is = case is of
+addTrackersToIs :: Options -> FilePath -> Int -> Int -> Int -> Is -> CanonicalM Is
+addTrackersToIs options astPath line blockIndex branchIndex is = case is of
   Canonical area (Is pat exp) -> do
     let patLine = getLineFromStart (getArea pat)
-    exp' <- addTrackersToExp options astPath exp
-    exp'' <- addLineTrackerForLine astPath patLine exp'
-    return $ Canonical area (Is pat exp'')
+    exp'   <- addTrackersToExp options astPath exp
+    exp''  <- addLineTrackerForLine astPath patLine exp'
+    exp''' <- addBranchTracker astPath line blockIndex branchIndex exp''
+    return $ Canonical area (Is pat exp''')

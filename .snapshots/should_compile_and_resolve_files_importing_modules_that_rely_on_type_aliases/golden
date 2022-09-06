@@ -144,7 +144,7 @@ import {} from "./../__internals__.mjs"
 import W from "./../.prelude/Wish.mjs";
 
 let main = (_ => {
-    W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(x * 3)))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
+    W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()((x * 3))))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};

@@ -2,9 +2,7 @@ import { test, assertEquals, ErrorWithMessage } from "Test"
 import Dict from "Dictionary"
 import { bad, bichain, good } from "Wish"
 import { always } from "Function"
-import { OK, Response } from "Http"
-import { ByteArray } from "Binary"
-import { BinaryData } from "Data"
+import ByteArray from "ByteArray"
 
 import { load, parse } from "./VersionDotLock"
 
@@ -12,7 +10,19 @@ import { load, parse } from "./VersionDotLock"
 VERSION_DOT_LOCK = `{
   "buildHash": "754c55d6a844efcf4e706b9fa561eb6e",
   "versionHash": "25e64aa754c310d45c1e084d574c1bb0",
-  "api": {
+  "jsApi": {
+    "apiNames": {
+      "defaultConfig": "{ linkView :: String -> String -> Element }",
+      "setLinkView": "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }",
+      "renderMarkdownWithConfig": "{ linkView :: String -> String -> Element } -> String -> Element",
+      "renderMarkdown": "String -> Element"
+    },
+    "apiInstances": [],
+    "apiAliases": {},
+    "apiTypes": {},
+    "apiInterfaces": {}
+  },
+  "llvmApi": {
     "apiNames": {
       "defaultConfig": "{ linkView :: String -> String -> Element }",
       "setLinkView": "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }",
@@ -39,22 +49,45 @@ BAD_VERSION_DOT_LOCK = `{
 }
 `
 
+DEFAULT_CONFIG = {
+  readFile: always(good(VERSION_DOT_LOCK)),
+  writeFile: (_, _) => good({}),
+  writeBytes: (_, _) => good({}),
+  readDir: always(good([])),
+  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: always(good(true)),
+  getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty })),
+}
+
+
 test("parse - success", (_) => {
   expected = {
     buildHash: "754c55d6a844efcf4e706b9fa561eb6e",
     versionHash: "25e64aa754c310d45c1e084d574c1bb0",
-    api: {
+    jsApi: {
       apiNames: Dict.fromList([
-        <"defaultConfig", "{ linkView :: String -> String -> Element }">,
-        <"setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }">,
-        <"renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element">,
-        <"renderMarkdown", "String -> Element">
+        #["defaultConfig", "{ linkView :: String -> String -> Element }"],
+        #["setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }"],
+        #["renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element"],
+        #["renderMarkdown", "String -> Element"]
       ]),
       apiInstances: [],
       apiAliases: Dict.empty,
       apiTypes: Dict.empty,
       apiInterfaces: Dict.empty
-    }
+    },
+    llvmApi: {
+      apiNames: Dict.fromList([
+        #["defaultConfig", "{ linkView :: String -> String -> Element }"],
+        #["setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }"],
+        #["renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element"],
+        #["renderMarkdown", "String -> Element"]
+      ]),
+      apiInstances: [],
+      apiAliases: Dict.empty,
+      apiTypes: Dict.empty,
+      apiInterfaces: Dict.empty
+    },
   }
 
   return pipe(
@@ -79,37 +112,37 @@ test("parse - failure", (_) => {
 })
 
 test("load - success", (_) => {
-  config = {
-    readFile: always(good(VERSION_DOT_LOCK)),
-    writeFile: (path, data) => good("OK"),
-    readDir: always(good([])),
-    exists: always(good("OK")),
-    exec: always(good("OK")),
-    get: always(good(Response({
-      data: BinaryData(ByteArray),
-      status: OK
-    })))
-  }
-
   expected = {
     buildHash: "754c55d6a844efcf4e706b9fa561eb6e",
     versionHash: "25e64aa754c310d45c1e084d574c1bb0",
-    api: {
+    jsApi: {
       apiNames: Dict.fromList([
-        <"defaultConfig", "{ linkView :: String -> String -> Element }">,
-        <"setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }">,
-        <"renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element">,
-        <"renderMarkdown", "String -> Element">
+        #["defaultConfig", "{ linkView :: String -> String -> Element }"],
+        #["setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }"],
+        #["renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element"],
+        #["renderMarkdown", "String -> Element"]
       ]),
       apiInstances: [],
       apiAliases: Dict.empty,
       apiTypes: Dict.empty,
       apiInterfaces: Dict.empty
-    }
+    },
+    llvmApi: {
+      apiNames: Dict.fromList([
+        #["defaultConfig", "{ linkView :: String -> String -> Element }"],
+        #["setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }"],
+        #["renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element"],
+        #["renderMarkdown", "String -> Element"]
+      ]),
+      apiInstances: [],
+      apiAliases: Dict.empty,
+      apiTypes: Dict.empty,
+      apiInterfaces: Dict.empty
+    },
   }
 
   return pipe(
-    load(config),
+    load(DEFAULT_CONFIG),
     bichain(
       always(bad(ErrorWithMessage("Parse should be success"))),
       assertEquals($, expected)

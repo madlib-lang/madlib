@@ -24,11 +24,11 @@ Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
 Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d523) => (__$a__ => `{ ` + `cars: ` + Inspect_d523.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_u540) => (Inspect_n533) => (__$a__ => `{ ` + `name: ` + Inspect_n533.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_u540.inspect()(__$a__.x) + ` }`);
-export let fn = (b => c => b + c);
-let inc = (x => x + 1);
-let dec = (x => x - 1);
-let double = (x => x * 2);
-let half = (x => x / 2);
+export let fn = (b => c => (b + c));
+let inc = (x => (x + 1));
+let dec = (x => (x - 1));
+let double = (x => (x * 2));
+let half = (x => (x / 2));
 let main = (_ => {
     double(half(3));
     __eq__(3, 5);
@@ -122,7 +122,7 @@ let main = (_ => {
   }
   else if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
     let { v: x1, n: { v: y1, n: { v: z1 } } } = __x__;
-    return x1 + y1 + z1;
+    return ((x1 + y1) + z1);
   }
   else if (__x__ === null) {
     return 0;
@@ -142,7 +142,7 @@ let main = (_ => {
   }
   else if (true) {
     let n = __x__;
-    return (x => x + 1)(1);
+    return (x => (x + 1))(1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -150,7 +150,7 @@ let main = (_ => {
     throw 'non exhaustive patterns!';
   }
 })(3);
-    (x => x + 1)(((__x__) => {
+    (x => (x + 1))(((__x__) => {
   if (__x__ === "3") {
     return 48;
   }
@@ -195,7 +195,7 @@ let main = (_ => {
     ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return a + b;
+    return (a + b);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -263,7 +263,7 @@ export let mapList = (f => xs => {
 let addXAndY = (r => ((__x__) => {
   if (true && true) {
     let { y: y, x: x1 } = __x__;
-    return x1 + y;
+    return (x1 + y);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

@@ -65,7 +65,7 @@ Inspect['Byte_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
 Inspect['Byte_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };
 
 Inspect['Float_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
-Inspect['Float_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => x;
+Inspect['Float_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => '' + x;
 
 Inspect['String_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
 Inspect['String_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => {

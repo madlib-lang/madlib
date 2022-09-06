@@ -1,227 +1,823 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
+import __Process__ from "./.prelude/Process.mjs";
+import __Coverage__ from "./.prelude/Coverage.mjs";
+
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_z285) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => ((__x__) => {
-  if (__hp('Module.mad', 'line', 0, 0) || __x__.__constructor === "Just" && true) {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_a4654) => (__$a__ => ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `Just(`)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_z285.inspect())(__hpLineWrap('Module.mad', 0, a0)))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `)`));
+    return (() => {
+  __branchTracker_0_32_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return `Just(` + Inspect_a4654.inspect()(a0) + `)`
+})();
   }
-  else if (__hp('Module.mad', 'line', 0, 0) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('Module.mad', 0, `Nothing`);
+  else if (__x__.__constructor === "Nothing") {
+    return (() => {
+  __branchTracker_0_32_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return `Nothing`
+})();
   }
-  else if (__hp('Module.mad', 'line', 0, 0) || true) {
-    return __hpLineWrap('Module.mad', 0, `Unknown`);
+  else if (true) {
+    return (() => {
+  __branchTracker_0_32_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return `Unknown`
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 0, __$a__))));
+})(__$a__));
 Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_o300) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `{ `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `cars: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_o300.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).cars))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, ` }`))));
+Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e4684) => (__$a__ => `{ ` + `cars: ` + Inspect_e4684.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_f317) => (Inspect_y310) => __hpFnWrap('Module.mad', 0, 'inspect')((__$a__ => __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `{ `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `name: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_y310.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).name))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `, `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, `x: `)) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, Inspect_f317.inspect())(__hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, __$a__).x))))) + __hpLineWrap('Module.mad', 0, __hpLineWrap('Module.mad', 0, ` }`)))));
-export let fn = __hpFnWrap('Module.mad', 1, 'fn')((b => c => __hpLineWrap('Module.mad', 1, __hpLineWrap('Module.mad', 1, b)) + __hpLineWrap('Module.mad', 1, __hpLineWrap('Module.mad', 1, c))));
-let inc = __hpFnWrap('Module.mad', 3, 'inc')((x => __hpLineWrap('Module.mad', 3, __hpLineWrap('Module.mad', 3, x)) + __hpLineWrap('Module.mad', 3, __hpLineWrap('Module.mad', 3, 1))));
-let dec = __hpFnWrap('Module.mad', 5, 'dec')((x => __hpLineWrap('Module.mad', 5, __hpLineWrap('Module.mad', 5, x)) - __hpLineWrap('Module.mad', 5, __hpLineWrap('Module.mad', 5, 1))));
-let double = __hpFnWrap('Module.mad', 6, 'double')((x => __hpLineWrap('Module.mad', 7, __hpLineWrap('Module.mad', 7, x)) * __hpLineWrap('Module.mad', 7, __hpLineWrap('Module.mad', 7, 2))));
-let half = __hpFnWrap('Module.mad', 9, 'half')((x => __hpLineWrap('Module.mad', 9, __hpLineWrap('Module.mad', 9, x)) / __hpLineWrap('Module.mad', 9, __hpLineWrap('Module.mad', 9, 2))));
-let main = ( => {
-    __hpLineWrap('Module.mad', 12, double)(__hpLineWrap('Module.mad', 12, half)(__hpLineWrap('Module.mad', 12, 3)));
-    __eq__(__hpLineWrap('Module.mad', 13, __hpLineWrap('Module.mad', 13, 3)), __hpLineWrap('Module.mad', 13, __hpLineWrap('Module.mad', 13, 5)));
-    let carResponse = ({ cars: __hpLineWrap('Module.mad', 14, (null)) });
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 16, 16) || true) {
-    let { cars: cs } = __x__;
-    return __hpLineWrap('Module.mad', 16, cs);
-  }
-  else if (__hp('Module.mad', 'line', 17, 17) || true) {
-    return (null);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 15, carResponse));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 20, 20) || __x__ === 3) {
-    return __hpLineWrap('Module.mad', 20, 3);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 19, 3));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 23, 23) || __x__ === "3") {
-    return __hpLineWrap('Module.mad', 23, 3);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 22, `3`));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 26, 26) || __x__ === true) {
-    return __hpLineWrap('Module.mad', 26, 3);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 25, true));
-    (__hpLineWrap('Module.mad', 28, true) ? __hpLineWrap('Module.mad', 28, `OK`) : __hpLineWrap('Module.mad', 28, `NOT OK`));
-    let might = __hpLineWrap('Module.mad', 29, Just)(__hpLineWrap('Module.mad', 29, 3));
-    let q = ((__x__) => {
-  if (__hp('Module.mad', 'line', 31, 31) || __x__.__constructor === "Just" && true) {
-    let a = __x__.__args[0];
-    return __hpLineWrap('Module.mad', 31, a);
-  }
-  else if (__hp('Module.mad', 'line', 32, 32) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('Module.mad', 32, 1);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 30, might));
-    __hpLineWrap('Module.mad', 34, __hpLineWrap('Module.mad', 34, true)) && __hpLineWrap('Module.mad', 34, __hpLineWrap('Module.mad', 34, false));
-    __hpLineWrap('Module.mad', 35, __hpLineWrap('Module.mad', 35, false)) || __hpLineWrap('Module.mad', 35, __hpLineWrap('Module.mad', 35, true));
-    __hpLineWrap('Module.mad', 36, __hpLineWrap('Module.mad', 36, false)) || __hpLineWrap('Module.mad', 36, __hpLineWrap('Module.mad', 36, __hpLineWrap('Module.mad', 36, true)) && __hpLineWrap('Module.mad', 36, __hpLineWrap('Module.mad', 36, false)));
-    __hpLineWrap('Module.mad', 37, __hpLineWrap('Module.mad', 37, 1)) > __hpLineWrap('Module.mad', 37, __hpLineWrap('Module.mad', 37, 3));
-    __hpLineWrap('Module.mad', 38, __hpLineWrap('Module.mad', 38, 1)) < __hpLineWrap('Module.mad', 38, __hpLineWrap('Module.mad', 38, 3));
-    __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, 1)) > __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, 3))) && __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, 3)) < __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, 1)))) || __hpLineWrap('Module.mad', 39, __hpLineWrap('Module.mad', 39, true));
-    __hpLineWrap('Module.mad', 40, __hpLineWrap('Module.mad', 40, 1)) >= __hpLineWrap('Module.mad', 40, __hpLineWrap('Module.mad', 40, 3));
-    __hpLineWrap('Module.mad', 41, __hpLineWrap('Module.mad', 41, 1)) <= __hpLineWrap('Module.mad', 41, __hpLineWrap('Module.mad', 41, 3));
-    __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, 1)) >= __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, 3))) && __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, 3)) <= __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, 1)))) || __hpLineWrap('Module.mad', 42, __hpLineWrap('Module.mad', 42, true));
-    !(__hpLineWrap('Module.mad', 43, false));
-    !(__hpLineWrap('Module.mad', 44, true));
-    __hpLineWrap('Module.mad', 45, !(__hpLineWrap('Module.mad', 45, false))) && __hpLineWrap('Module.mad', 45, !(__hpLineWrap('Module.mad', 45, true)));
-    __hpLineWrap('Module.mad', 46, !(__hpLineWrap('Module.mad', 46, false))) || __hpLineWrap('Module.mad', 46, !(__hpLineWrap('Module.mad', 46, true)));
-    let arr = ({ v: __hpLineWrap('Module.mad', 47, 1), n: { v: __hpLineWrap('Module.mad', 47, 2), n: { v: __hpLineWrap('Module.mad', 47, 3), n: null } } });
-    let all = ({ v: __hpLineWrap('Module.mad', 48, 4), n: { v: __hpLineWrap('Module.mad', 48, 5), n: { v: __hpLineWrap('Module.mad', 48, 6), n: __hpLineWrap('Module.mad', 48, arr) } } });
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 50, 50) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
-    return __hpLineWrap('Module.mad', 50, 1);
-  }
-  else if (__hp('Module.mad', 'line', 51, 51) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && true && __x__.n.n.n === null) {
-    let { n: { n: { v: n } } } = __x__;
-    return __hpLineWrap('Module.mad', 51, n);
-  }
-  else if (__hp('Module.mad', 'line', 52, 52) || __x__ !== null && true && __x__.n !== null && __x__.n.v === 3 && __x__.n.n === null) {
-    let { v: n,  } = __x__;
-    return __hpLineWrap('Module.mad', 52, n);
-  }
-  else if (__hp('Module.mad', 'line', 53, 53) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
-    let { v: x1, n: { v: y1, n: { v: z1 } } } = __x__;
-    return __hpLineWrap('Module.mad', 53, __hpLineWrap('Module.mad', 53, __hpLineWrap('Module.mad', 53, x1)) + __hpLineWrap('Module.mad', 53, __hpLineWrap('Module.mad', 53, y1))) + __hpLineWrap('Module.mad', 53, __hpLineWrap('Module.mad', 53, z1));
-  }
-  else if (__hp('Module.mad', 'line', 54, 54) || __x__ === null) {
-    return __hpLineWrap('Module.mad', 54, 0);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(({ v: __hpLineWrap('Module.mad', 49, 1), n: { v: __hpLineWrap('Module.mad', 49, 2), n: { v: __hpLineWrap('Module.mad', 49, 3), n: { v: __hpLineWrap('Module.mad', 49, 5), n: { v: __hpLineWrap('Module.mad', 49, 8), n: null } } } } }));
-    ( => __hpLineWrap('Module.mad', 62, x))(( => (__eq__(__hpLineWrap('Module.mad', 61, __hpLineWrap('Module.mad', 61, x)), __hpLineWrap('Module.mad', 61, __hpLineWrap('Module.mad', 61, `ok`))) ? __hpLineWrap('Module.mad', 61, 1) : __hpLineWrap('Module.mad', 61, 10)))(( => __hpLineWrap('Module.mad', 60, x))((__hpLineWrap('Module.mad', 56, true) ? __hpLineWrap('Module.mad', 57, `ok`) : __hpLineWrap('Module.mad', 58, `not ok`))((__eq__(__hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, 1)), __hpLineWrap('Module.mad', 59, __hpLineWrap('Module.mad', 59, 2))) ? __hpLineWrap('Module.mad', 59, `ok`) : __hpLineWrap('Module.mad', 59, `not ok`))))));
-    (__eq__(__hpLineWrap('Module.mad', 63, __hpLineWrap('Module.mad', 63, 1)), __hpLineWrap('Module.mad', 63, __hpLineWrap('Module.mad', 63, 2))) ? __hpLineWrap('Module.mad', 63, `ok`) : __hpLineWrap('Module.mad', 63, `not ok`));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 65, 65) || __x__ === 3) {
-    return __hpLineWrap('Module.mad', 65, 48);
-  }
-  else if (__hp('Module.mad', 'line', 66, 66) || true) {
-    let n = __x__;
-    return ( => __hpLineWrap('Module.mad', 66, __hpLineWrap('Module.mad', 66, x)) + __hpLineWrap('Module.mad', 66, __hpLineWrap('Module.mad', 66, 1)))(__hpLineWrap('Module.mad', 66, 1));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 64, 3));
-    ( => __hpLineWrap('Module.mad', 71, __hpLineWrap('Module.mad', 71, x)) + __hpLineWrap('Module.mad', 71, __hpLineWrap('Module.mad', 71, 1)))(((__x__) => {
-  if (__hp('Module.mad', 'line', 69, 69) || __x__ === "3") {
-    return __hpLineWrap('Module.mad', 69, 48);
-  }
-  else if (__hp('Module.mad', 'line', 70, 70) || true) {
-    let n = __x__;
-    return __hpLineWrap('Module.mad', 70, 1);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__hpLineWrap('Module.mad', 68, `3`)));
-    ( => __hpLineWrap('Module.mad', 75, x))(((__x__) => {
-  if (__hp('Module.mad', 'line', 73, 73) || __x__ !== null && __x__.v === 2 && true) {
-    let { n: rest } = __x__;
-    return __hpLineWrap('Module.mad', 73, rest);
-  }
-  else if (__hp('Module.mad', 'line', 74, 74) || __x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
-    let { n: { n: { n: rest } } } = __x__;
-    return __hpLineWrap('Module.mad', 74, rest);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(({ v: __hpLineWrap('Module.mad', 72, 1), n: { v: __hpLineWrap('Module.mad', 72, 2), n: { v: __hpLineWrap('Module.mad', 72, 3), n: { v: __hpLineWrap('Module.mad', 72, 4), n: { v: __hpLineWrap('Module.mad', 72, 5), n: null } } } } })));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 77, 77) || __x__.name === "Bob") {
-    let {  } = __x__;
-    return __hpLineWrap('Module.mad', 77, `Bob`);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(({ x: __hpLineWrap('Module.mad', 76, __hpLineWrap('Module.mad', 76, 4)), name: __hpLineWrap('Module.mad', 76, __hpLineWrap('Module.mad', 76, `John`)) }));
-    let tup = ([__hpLineWrap('Module.mad', 79, 1), __hpLineWrap('Module.mad', 79, 2), __hpLineWrap('Module.mad', 79, 3)]);
-    __eq__(__hpLineWrap('Module.mad', 81, ([__hpLineWrap('Module.mad', 81, 1), __hpLineWrap('Module.mad', 81, 2), __hpLineWrap('Module.mad', 81, 3)])), __hpLineWrap('Module.mad', 81, ([__hpLineWrap('Module.mad', 81, 1), __hpLineWrap('Module.mad', 81, 2), __hpLineWrap('Module.mad', 81, 3)])));
-    ((__x__) => {
-  if (__hp('Module.mad', 'line', 84, 84) || __x__.length === 2 && true && true) {
-    let [a,b] = __x__;
-    return __hpLineWrap('Module.mad', 84, __hpLineWrap('Module.mad', 84, a)) + __hpLineWrap('Module.mad', 84, __hpLineWrap('Module.mad', 84, b));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(([__hpLineWrap('Module.mad', 83, 1), __hpLineWrap('Module.mad', 83, 2)]));
-    __hpLineWrap('Module.mad', 87, fst)(([__hpLineWrap('Module.mad', 87, 1), __hpLineWrap('Module.mad', 87, 2)]));
-    __hpLineWrap('Module.mad', 88, snd)(([__hpLineWrap('Module.mad', 88, 1), __hpLineWrap('Module.mad', 88, 2)]));
-    return __hpLineWrap('Module.mad', 0, ({ __constructor: "Unit", __args: [] }));
+Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v4701) => (Inspect_o4694) => (__$a__ => `{ ` + `name: ` + Inspect_o4694.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_v4701.inspect()(__$a__.x) + ` }`);
+let __branchTracker_0_32_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(2);
+let __branchTracker_0_32_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(1);
+let __branchTracker_0_32_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(0);
+let __branchTracker_0_31_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(2);
+let __branchTracker_0_31_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(1);
+let __branchTracker_0_31_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(0);
+let __branchTracker_0_30_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(30)(1);
+let __branchTracker_0_30_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(30)(0);
+let __branchTracker_0_28_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(2);
+let __branchTracker_0_28_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(1);
+let __branchTracker_0_28_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(0);
+let __branchTracker_0_29_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(29)(1);
+let __branchTracker_0_29_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(29)(0);
+let __functionTracker_123_snd__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(123)(`snd`);
+let __lineTracker_127__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(127);
+let __branchTracker_124_27_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(124)(27)(0);
+let __lineTracker_125__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(125);
+let __lineTracker_124__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(124);
+let __functionTracker_118_fst__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(118)(`fst`);
+let __branchTracker_118_26_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(118)(26)(0);
+let __lineTracker_119__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(119);
+let __lineTracker_118__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(118);
+let __functionTracker_115_fn2__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(115)(`fn2`);
+let __lineTracker_115__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(115);
+let __functionTracker_112_fnTCHOU__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(112)(`fnTCHOU`);
+let __lineTracker_112__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(112);
+let __functionTracker_107_addXAndY__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(107)(`addXAndY`);
+let __branchTracker_108_25_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(108)(25)(0);
+let __lineTracker_109__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(109);
+let __lineTracker_108__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(108);
+let __functionTracker_101_mapList__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(101)(`mapList`);
+let __branchTracker_101_24_3__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(101)(24)(3);
+let __lineTracker_105__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(105);
+let __branchTracker_101_24_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(101)(24)(2);
+let __lineTracker_104__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(104);
+let __branchTracker_101_24_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(101)(24)(1);
+let __lineTracker_103__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(103);
+let __branchTracker_101_24_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(101)(24)(0);
+let __lineTracker_102__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(102);
+let __lineTracker_101__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(101);
+let __functionTracker_96_mapMaybe__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(96)(`mapMaybe`);
+let __branchTracker_96_23_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(96)(23)(1);
+let __lineTracker_98__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(98);
+let __branchTracker_96_23_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(96)(23)(0);
+let __lineTracker_97__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(97);
+let __lineTracker_96__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(96);
+let __functionTracker_93_log__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(93)(`log`);
+let __lineTracker_93__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(93);
+let __lineTracker_89__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(89);
+let __lineTracker_88__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(88);
+let __branchTracker_84_22_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(84)(22)(0);
+let __lineTracker_85__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(85);
+let __lineTracker_84__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(84);
+let __lineTracker_82__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(82);
+let __lineTracker_80__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(80);
+let __branchTracker_77_21_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(77)(21)(0);
+let __lineTracker_78__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(78);
+let __lineTracker_77__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(77);
+let __functionTracker_76_Anonymous__5__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(76)(`Anonymous__5`);
+let __lineTracker_76__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(76);
+let __branchTracker_73_20_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(73)(20)(1);
+let __lineTracker_75__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(75);
+let __branchTracker_73_20_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(73)(20)(0);
+let __lineTracker_74__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(74);
+let __lineTracker_73__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(73);
+let __functionTracker_72_Anonymous__4__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(72)(`Anonymous__4`);
+let __lineTracker_72__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(72);
+let __branchTracker_69_19_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(69)(19)(1);
+let __lineTracker_71__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(71);
+let __branchTracker_69_19_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(69)(19)(0);
+let __lineTracker_70__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(70);
+let __lineTracker_69__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(69);
+let __branchTracker_65_18_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(65)(18)(1);
+let __functionTracker_67_Anonymous__3__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(67)(`Anonymous__3`);
+let __lineTracker_67__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(67);
+let __branchTracker_65_18_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(65)(18)(0);
+let __lineTracker_66__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(66);
+let __lineTracker_65__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(65);
+let __branchTracker_64_17_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(64)(17)(1);
+let __branchTracker_64_17_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(64)(17)(0);
+let __lineTracker_64__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(64);
+let __functionTracker_63_Anonymous__2__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(63)(`Anonymous__2`);
+let __lineTracker_63__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(63);
+let __functionTracker_62_Anonymous__1__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(62)(`Anonymous__1`);
+let __branchTracker_62_16_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(62)(16)(1);
+let __branchTracker_62_16_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(62)(16)(0);
+let __lineTracker_62__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(62);
+let __functionTracker_61_Anonymous__0__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(61)(`Anonymous__0`);
+let __lineTracker_61__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(61);
+let __branchTracker_60_15_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(60)(15)(1);
+let __branchTracker_60_15_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(60)(15)(0);
+let __lineTracker_60__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(60);
+let __branchTracker_56_14_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(56)(14)(1);
+let __branchTracker_56_14_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(56)(14)(0);
+let __lineTracker_58__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(58);
+let __lineTracker_57__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(57);
+let __lineTracker_56__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(56);
+let __branchTracker_49_13_4__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(49)(13)(4);
+let __lineTracker_54__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(54);
+let __branchTracker_49_13_3__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(49)(13)(3);
+let __lineTracker_53__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(53);
+let __branchTracker_49_13_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(49)(13)(2);
+let __lineTracker_52__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(52);
+let __branchTracker_49_13_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(49)(13)(1);
+let __lineTracker_51__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(51);
+let __branchTracker_49_13_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(49)(13)(0);
+let __lineTracker_50__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(50);
+let __lineTracker_49__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(49);
+let __lineTracker_48__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(48);
+let __lineTracker_47__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(47);
+let __branchTracker_46_12_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(46)(12)(1);
+let __branchTracker_46_12_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(46)(12)(0);
+let __lineTracker_46__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(46);
+let __branchTracker_45_11_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(45)(11)(1);
+let __branchTracker_45_11_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(45)(11)(0);
+let __lineTracker_45__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(45);
+let __lineTracker_44__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(44);
+let __lineTracker_43__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(43);
+let __branchTracker_42_10_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(42)(10)(2);
+let __branchTracker_42_10_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(42)(10)(1);
+let __branchTracker_42_10_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(42)(10)(0);
+let __lineTracker_42__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(42);
+let __lineTracker_41__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(41);
+let __lineTracker_40__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(40);
+let __branchTracker_39_9_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(39)(9)(2);
+let __branchTracker_39_9_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(39)(9)(1);
+let __branchTracker_39_9_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(39)(9)(0);
+let __lineTracker_39__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(39);
+let __lineTracker_38__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(38);
+let __lineTracker_37__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(37);
+let __branchTracker_36_8_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(36)(8)(2);
+let __branchTracker_36_8_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(36)(8)(1);
+let __branchTracker_36_8_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(36)(8)(0);
+let __lineTracker_36__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(36);
+let __branchTracker_35_7_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(35)(7)(1);
+let __branchTracker_35_7_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(35)(7)(0);
+let __lineTracker_35__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(35);
+let __branchTracker_34_6_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(34)(6)(1);
+let __branchTracker_34_6_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(34)(6)(0);
+let __lineTracker_34__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(34);
+let __branchTracker_30_5_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(30)(5)(1);
+let __lineTracker_32__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(32);
+let __branchTracker_30_5_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(30)(5)(0);
+let __lineTracker_31__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(31);
+let __lineTracker_30__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(30);
+let __lineTracker_29__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(29);
+let __branchTracker_28_4_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(28)(4)(1);
+let __branchTracker_28_4_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(28)(4)(0);
+let __lineTracker_28__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(28);
+let __branchTracker_25_3_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(25)(3)(0);
+let __lineTracker_26__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(26);
+let __lineTracker_25__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(25);
+let __branchTracker_22_2_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(22)(2)(0);
+let __lineTracker_23__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(23);
+let __lineTracker_22__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(22);
+let __branchTracker_19_1_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(19)(1)(0);
+let __lineTracker_20__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(20);
+let __lineTracker_19__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(19);
+let __branchTracker_15_0_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(15)(0)(1);
+let __lineTracker_17__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(17);
+let __branchTracker_15_0_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(15)(0)(0);
+let __lineTracker_16__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(16);
+let __lineTracker_15__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(15);
+let __lineTracker_13__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(13);
+let __lineTracker_12__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(12);
+let __functionTracker_11_main__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(11)(`main`);
+let __functionTracker_9_half__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(9)(`half`);
+let __lineTracker_9__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(9);
+let __functionTracker_7_double__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(7)(`double`);
+let __lineTracker_7__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(7);
+let __functionTracker_5_dec__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(5)(`dec`);
+let __lineTracker_5__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(5);
+let __functionTracker_3_inc__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(3)(`inc`);
+let __lineTracker_3__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(3);
+let __functionTracker_1_fn__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(1)(`fn`);
+let __lineTracker_1__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(1);
+export let fn = (b => c => {
+    __functionTracker_1_fn__.increment(({ __constructor: "Unit", __args: [] }));
+    return (b + (() => {
+  __lineTracker_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return c
+})());
 });
-let log = __hpFnWrap('Module.mad', 92, 'log')((a =>  { console.log(a); return a; } ));
-let mapMaybe = __hpFnWrap('Module.mad', 95, 'mapMaybe')((f => m => ((__x__) => {
-  if (__hp('Module.mad', 'line', 96, 96) || __x__.__constructor === "Just" && true) {
-    let a = __x__.__args[0];
-    return __hpLineWrap('Module.mad', 96, Just)(__hpLineWrap('Module.mad', 96, f)(__hpLineWrap('Module.mad', 96, a)));
+let inc = (x => {
+    __functionTracker_3_inc__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x + (() => {
+  __lineTracker_3__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})());
+});
+let dec = (x => {
+    __functionTracker_5_dec__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x - (() => {
+  __lineTracker_5__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})());
+});
+let double = (x => {
+    __functionTracker_7_double__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x * (() => {
+  __lineTracker_7__.increment(({ __constructor: "Unit", __args: [] }))
+  return 2
+})());
+});
+let half = (x => {
+    __functionTracker_9_half__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x / (() => {
+  __lineTracker_9__.increment(({ __constructor: "Unit", __args: [] }))
+  return 2
+})());
+});
+let main = (_ => {
+    __functionTracker_11_main__.increment(({ __constructor: "Unit", __args: [] }));
+    __Process__.onExit((_ => __Coverage__.Reporter.generateReport(({ __constructor: "Unit", __args: [] }))));
+    double(half((() => {
+  __lineTracker_12__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()));
+    __eq__(3, (() => {
+  __lineTracker_13__.increment(({ __constructor: "Unit", __args: [] }))
+  return 5
+})());
+    let carResponse = ({ cars: (null) });
+    ((__x__) => {
+  if (true) {
+    let { cars: cs } = __x__;
+    return (() => {
+  __branchTracker_15_0_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_16__.increment(({ __constructor: "Unit", __args: [] }))
+  return cs
+})()
+})();
   }
-  else if (__hp('Module.mad', 'line', 97, 97) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('Module.mad', 97, Nothing);
+  else if (true) {
+    return (() => {
+  __branchTracker_15_0_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_17__.increment(({ __constructor: "Unit", __args: [] }))
+  return (null)
+})()
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 95, m))));
-export let map = __hpFnWrap('Module.mad', 100, 'map')((f => xs => {
+})((() => {
+  __lineTracker_15__.increment(({ __constructor: "Unit", __args: [] }))
+  return carResponse
+})());
+    ((__x__) => {
+  if (__x__ === 3) {
+    return (() => {
+  __branchTracker_19_1_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_20__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_19__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})());
+    ((__x__) => {
+  if (__x__ === "3") {
+    return (() => {
+  __branchTracker_22_2_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_23__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_22__.increment(({ __constructor: "Unit", __args: [] }))
+  return `3`
+})());
+    ((__x__) => {
+  if (__x__ === true) {
+    return (() => {
+  __branchTracker_25_3_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_26__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_25__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})());
+    ((() => {
+  __lineTracker_28__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})() ? (() => {
+  __branchTracker_28_4_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return `OK`
+})() : (() => {
+  __branchTracker_28_4_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return `NOT OK`
+})());
+    let might = Just((() => {
+  __lineTracker_29__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})());
+    let q = ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    let a = __x__.__args[0];
+    return (() => {
+  __branchTracker_30_5_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_31__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()
+})();
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return (() => {
+  __branchTracker_30_5_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_32__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_30__.increment(({ __constructor: "Unit", __args: [] }))
+  return might
+})());
+    (() => {
+  __branchTracker_34_6_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_34__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})()
+})() && (() => {
+  __branchTracker_34_6_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})();
+    (() => {
+  __branchTracker_35_7_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_35__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})()
+})() || (() => {
+  __branchTracker_35_7_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})();
+    (() => {
+  __branchTracker_36_8_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_36__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})()
+})() || (() => {
+  __branchTracker_36_8_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})() && (() => {
+  __branchTracker_36_8_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})();
+    1 > (() => {
+  __lineTracker_37__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})();
+    1 < (() => {
+  __lineTracker_38__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})();
+    (() => {
+  __branchTracker_39_9_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1 > (() => {
+  __lineTracker_39__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()
+})() && (() => {
+  __branchTracker_39_9_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3 < 1
+})() || (() => {
+  __branchTracker_39_9_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})();
+    1 >= (() => {
+  __lineTracker_40__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})();
+    1 <= (() => {
+  __lineTracker_41__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})();
+    (() => {
+  __branchTracker_42_10_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1 >= (() => {
+  __lineTracker_42__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})()
+})() && (() => {
+  __branchTracker_42_10_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3 <= 1
+})() || (() => {
+  __branchTracker_42_10_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})();
+    !((() => {
+  __lineTracker_43__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})());
+    !((() => {
+  __lineTracker_44__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})());
+    (() => {
+  __branchTracker_45_11_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return !((() => {
+  __lineTracker_45__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})())
+})() && (() => {
+  __branchTracker_45_11_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return !(true)
+})();
+    (() => {
+  __branchTracker_46_12_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return !((() => {
+  __lineTracker_46__.increment(({ __constructor: "Unit", __args: [] }))
+  return false
+})())
+})() || (() => {
+  __branchTracker_46_12_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return !(true)
+})();
+    let arr = ({ v: (() => {
+  __lineTracker_47__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), n: { v: 2, n: { v: 3, n: null } } });
+    let all = ({ v: (() => {
+  __lineTracker_48__.increment(({ __constructor: "Unit", __args: [] }))
+  return 4
+})(), n: { v: 5, n: { v: 6, n: arr } } });
+    ((__x__) => {
+  if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
+    return (() => {
+  __branchTracker_49_13_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_50__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})()
+})();
+  }
+  else if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && true && __x__.n.n.n === null) {
+    let { n: { n: { v: n } } } = __x__;
+    return (() => {
+  __branchTracker_49_13_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_51__.increment(({ __constructor: "Unit", __args: [] }))
+  return n
+})()
+})();
+  }
+  else if (__x__ !== null && true && __x__.n !== null && __x__.n.v === 3 && __x__.n.n === null) {
+    let { v: n,  } = __x__;
+    return (() => {
+  __branchTracker_49_13_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_52__.increment(({ __constructor: "Unit", __args: [] }))
+  return n
+})()
+})();
+  }
+  else if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
+    let { v: x1, n: { v: y1, n: { v: z1 } } } = __x__;
+    return (() => {
+  __branchTracker_49_13_3__.increment(({ __constructor: "Unit", __args: [] }))
+  return ((x1 + y1) + (() => {
+  __lineTracker_53__.increment(({ __constructor: "Unit", __args: [] }))
+  return z1
+})())
+})();
+  }
+  else if (__x__ === null) {
+    return (() => {
+  __branchTracker_49_13_4__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_54__.increment(({ __constructor: "Unit", __args: [] }))
+  return 0
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(({ v: (() => {
+  __lineTracker_49__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), n: { v: 2, n: { v: 3, n: { v: 5, n: { v: 8, n: null } } } } }));
+    ((() => {
+  __lineTracker_56__.increment(({ __constructor: "Unit", __args: [] }))
+  return true
+})() ? (() => {
+  __branchTracker_56_14_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_57__.increment(({ __constructor: "Unit", __args: [] }))
+  return `ok`
+})()
+})() : (() => {
+  __branchTracker_56_14_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_58__.increment(({ __constructor: "Unit", __args: [] }))
+  return `not ok`
+})()
+})());
+    (x => {
+    __functionTracker_63_Anonymous__2__.increment(({ __constructor: "Unit", __args: [] }));
+    return (() => {
+  __lineTracker_63__.increment(({ __constructor: "Unit", __args: [] }))
+  return x
+})();
+})((x => {
+    __functionTracker_62_Anonymous__1__.increment(({ __constructor: "Unit", __args: [] }));
+    return (__eq__(x, (() => {
+  __lineTracker_62__.increment(({ __constructor: "Unit", __args: [] }))
+  return `ok`
+})()) ? (() => {
+  __branchTracker_62_16_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})() : (() => {
+  __branchTracker_62_16_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return 10
+})());
+})((x => {
+    __functionTracker_61_Anonymous__0__.increment(({ __constructor: "Unit", __args: [] }));
+    return (() => {
+  __lineTracker_61__.increment(({ __constructor: "Unit", __args: [] }))
+  return x
+})();
+})((__eq__(1, (() => {
+  __lineTracker_60__.increment(({ __constructor: "Unit", __args: [] }))
+  return 2
+})()) ? (() => {
+  __branchTracker_60_15_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return `ok`
+})() : (() => {
+  __branchTracker_60_15_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return `not ok`
+})()))));
+    (__eq__(1, (() => {
+  __lineTracker_64__.increment(({ __constructor: "Unit", __args: [] }))
+  return 2
+})()) ? (() => {
+  __branchTracker_64_17_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return `ok`
+})() : (() => {
+  __branchTracker_64_17_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return `not ok`
+})());
+    ((__x__) => {
+  if (__x__ === 3) {
+    return (() => {
+  __branchTracker_65_18_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_66__.increment(({ __constructor: "Unit", __args: [] }))
+  return 48
+})()
+})();
+  }
+  else if (true) {
+    let n = __x__;
+    return (() => {
+  __branchTracker_65_18_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (x => {
+    __functionTracker_67_Anonymous__3__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x + 1);
+})((() => {
+  __lineTracker_67__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})())
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_65__.increment(({ __constructor: "Unit", __args: [] }))
+  return 3
+})());
+    (x => {
+    __functionTracker_72_Anonymous__4__.increment(({ __constructor: "Unit", __args: [] }));
+    return (x + (() => {
+  __lineTracker_72__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})());
+})(((__x__) => {
+  if (__x__ === "3") {
+    return (() => {
+  __branchTracker_69_19_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_70__.increment(({ __constructor: "Unit", __args: [] }))
+  return 48
+})()
+})();
+  }
+  else if (true) {
+    let n = __x__;
+    return (() => {
+  __branchTracker_69_19_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_71__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_69__.increment(({ __constructor: "Unit", __args: [] }))
+  return `3`
+})()));
+    (x => {
+    __functionTracker_76_Anonymous__5__.increment(({ __constructor: "Unit", __args: [] }));
+    return (() => {
+  __lineTracker_76__.increment(({ __constructor: "Unit", __args: [] }))
+  return x
+})();
+})(((__x__) => {
+  if (__x__ !== null && __x__.v === 2 && true) {
+    let { n: rest } = __x__;
+    return (() => {
+  __branchTracker_73_20_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_74__.increment(({ __constructor: "Unit", __args: [] }))
+  return rest
+})()
+})();
+  }
+  else if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && true) {
+    let { n: { n: { n: rest } } } = __x__;
+    return (() => {
+  __branchTracker_73_20_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_75__.increment(({ __constructor: "Unit", __args: [] }))
+  return rest
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(({ v: (() => {
+  __lineTracker_73__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), n: { v: 2, n: { v: 3, n: { v: 4, n: { v: 5, n: null } } } } })));
+    ((__x__) => {
+  if (__x__.name === "Bob") {
+    let {  } = __x__;
+    return (() => {
+  __branchTracker_77_21_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_78__.increment(({ __constructor: "Unit", __args: [] }))
+  return `Bob`
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(({ x: (() => {
+  __lineTracker_77__.increment(({ __constructor: "Unit", __args: [] }))
+  return 4
+})(), name: `John` }));
+    let tup = ([(() => {
+  __lineTracker_80__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), 2, 3]);
+    __eq__(([1, 2, 3]), ([(() => {
+  __lineTracker_82__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), 2, 3]));
+    ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,b] = __x__;
+    return (() => {
+  __branchTracker_84_22_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (a + (() => {
+  __lineTracker_85__.increment(({ __constructor: "Unit", __args: [] }))
+  return b
+})())
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(([(() => {
+  __lineTracker_84__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), 2]));
+    fst(([(() => {
+  __lineTracker_88__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), 2]));
+    snd(([(() => {
+  __lineTracker_89__.increment(({ __constructor: "Unit", __args: [] }))
+  return 1
+})(), 2]));
+    return ({ __constructor: "Unit", __args: [] });
+});
+let log = (a => {
+    __functionTracker_93_log__.increment(({ __constructor: "Unit", __args: [] }));
+    return (() => {
+  __lineTracker_93__.increment(({ __constructor: "Unit", __args: [] }))
+  return  { console.log(a); return a; } 
+})();
+});
+let mapMaybe = (f => m => {
+    __functionTracker_96_mapMaybe__.increment(({ __constructor: "Unit", __args: [] }));
+    return ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    let a = __x__.__args[0];
+    return (() => {
+  __branchTracker_96_23_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return Just(f((() => {
+  __lineTracker_97__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()))
+})();
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return (() => {
+  __branchTracker_96_23_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_98__.increment(({ __constructor: "Unit", __args: [] }))
+  return Nothing
+})()
+})();
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})((() => {
+  __lineTracker_96__.increment(({ __constructor: "Unit", __args: [] }))
+  return m
+})());
+});
+export let mapList = (f => xs => {
     let $_result_;
     let $_continue_ = true;
     let $_start_ = {};
@@ -234,81 +830,147 @@ export let map = __hpFnWrap('Module.mad', 100, 'map')((f => xs => {
       let $xs = $$xs;
 
         $_continue_ = false;
-        ((__x__) => {
-  if (__hp('Module.mad', 'line', 101, 101) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
+            __functionTracker_101_mapList__.increment(({ __constructor: "Unit", __args: [] }));
+((__x__) => {
+  if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
     let { v: a, n: { v: b, n: { v: c } } } = __x__;
-    ($_end_ = $_end_.n = { v: __hpLineWrap('Module.mad', 101, $f)(__hpLineWrap('Module.mad', 101, a)) }, $$f = __hpLineWrap('Module.mad', 101, $f), $$xs = ({ v: __hpLineWrap('Module.mad', 101, b), n: { v: __hpLineWrap('Module.mad', 101, c), n: null } }), $_continue_ = true);
+    (() => {
+  __branchTracker_101_24_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return ($_end_ = $_end_.n = { v: $f((() => {
+  __lineTracker_102__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()) }, $$f = $f, $$xs = ({ v: b, n: { v: c, n: null } }), $_continue_ = true)
+})();
   }
-  else if (__hp('Module.mad', 'line', 102, 102) || __x__ !== null && true && __x__.n !== null && true && __x__.n.n === null) {
+  else if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n === null) {
     let { v: a, n: { v: b } } = __x__;
-    ($_end_ = $_end_.n = { v: __hpLineWrap('Module.mad', 102, $f)(__hpLineWrap('Module.mad', 102, a)) }, $$f = __hpLineWrap('Module.mad', 102, $f), $$xs = ({ v: __hpLineWrap('Module.mad', 102, b), n: null }), $_continue_ = true);
+    (() => {
+  __branchTracker_101_24_1__.increment(({ __constructor: "Unit", __args: [] }))
+  return ($_end_ = $_end_.n = { v: $f((() => {
+  __lineTracker_103__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()) }, $$f = $f, $$xs = ({ v: b, n: null }), $_continue_ = true)
+})();
   }
-  else if (__hp('Module.mad', 'line', 103, 103) || __x__ !== null && true && __x__.n === null) {
+  else if (__x__ !== null && true && __x__.n === null) {
     let { v: a } = __x__;
-    ($_end_.n = ({ v: __hpLineWrap('Module.mad', 103, $f)(__hpLineWrap('Module.mad', 103, a)), n: null }), $_result_ = $_start_.n);
+    (() => {
+  __branchTracker_101_24_2__.increment(({ __constructor: "Unit", __args: [] }))
+  return ($_end_.n = ({ v: $f((() => {
+  __lineTracker_104__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()), n: null }), $_result_ = $_start_.n)
+})();
   }
-  else if (__hp('Module.mad', 'line', 104, 104) || __x__ === null) {
-    ($_end_.n = (null), $_result_ = $_start_.n);
+  else if (__x__ === null) {
+    (() => {
+  __branchTracker_101_24_3__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_105__.increment(({ __constructor: "Unit", __args: [] }))
+  return ($_end_.n = (null), $_result_ = $_start_.n)
+})()
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 100, $xs))
+})((() => {
+  __lineTracker_101__.increment(({ __constructor: "Unit", __args: [] }))
+  return $xs
+})())
     }
     return $_result_;
-}));
-let addXAndY = __hpFnWrap('Module.mad', 106, 'addXAndY')((r => ((__x__) => {
-  if (__hp('Module.mad', 'line', 108, 108) || true && true) {
+});
+let addXAndY = (r => {
+    __functionTracker_107_addXAndY__.increment(({ __constructor: "Unit", __args: [] }));
+    return ((__x__) => {
+  if (true && true) {
     let { y: y, x: x1 } = __x__;
-    return __hpLineWrap('Module.mad', 108, __hpLineWrap('Module.mad', 108, x1)) + __hpLineWrap('Module.mad', 108, __hpLineWrap('Module.mad', 108, y));
+    return (() => {
+  __branchTracker_108_25_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (x1 + (() => {
+  __lineTracker_109__.increment(({ __constructor: "Unit", __args: [] }))
+  return y
+})())
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 107, r))));
-let fnTCHOU = __hpFnWrap('Module.mad', 111, 'fnTCHOU')((x => __hpLineWrap('Module.mad', 111, __hpLineWrap('Module.mad', 111, __hpLineWrap('Module.mad', 111, __hpLineWrap('Module.mad', 111, __hpLineWrap('Module.mad', 111, __hpLineWrap('Module.mad', 111, x).a).b).c).d).e)));
-let fn2 = __hpFnWrap('Module.mad', 114, 'fn2')((a => ([__hpLineWrap('Module.mad', 114, a), __hpLineWrap('Module.mad', 114, a)])));
-let fst = __hpFnWrap('Module.mad', 117, 'fst')((tuple => ((__x__) => {
-  if (__hp('Module.mad', 'line', 118, 118) || __x__.length === 2 && true && true) {
+})((() => {
+  __lineTracker_108__.increment(({ __constructor: "Unit", __args: [] }))
+  return r
+})());
+});
+let fnTCHOU = (x => {
+    __functionTracker_112_fnTCHOU__.increment(({ __constructor: "Unit", __args: [] }));
+    return (() => {
+  __lineTracker_112__.increment(({ __constructor: "Unit", __args: [] }))
+  return x.a.b.c.d.e
+})();
+});
+let fn2 = (a => {
+    __functionTracker_115_fn2__.increment(({ __constructor: "Unit", __args: [] }));
+    return ([(() => {
+  __lineTracker_115__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})(), a]);
+});
+let fst = (tuple => {
+    __functionTracker_118_fst__.increment(({ __constructor: "Unit", __args: [] }));
+    return ((__x__) => {
+  if (__x__.length === 2 && true && true) {
     let [a,] = __x__;
-    return __hpLineWrap('Module.mad', 118, a);
+    return (() => {
+  __branchTracker_118_26_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_119__.increment(({ __constructor: "Unit", __args: [] }))
+  return a
+})()
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 117, tuple))));
-let snd = __hpFnWrap('Module.mad', 122, 'snd')((tuple => {
+})((() => {
+  __lineTracker_118__.increment(({ __constructor: "Unit", __args: [] }))
+  return tuple
+})());
+});
+let snd = (tuple => {
+    __functionTracker_123_snd__.increment(({ __constructor: "Unit", __args: [] }));
     let b = ((__x__) => {
-  if (__hp('Module.mad', 'line', 124, 124) || __x__.length === 2 && true && true) {
+  if (__x__.length === 2 && true && true) {
     let [,b1] = __x__;
-    return __hpLineWrap('Module.mad', 124, b1);
+    return (() => {
+  __branchTracker_124_27_0__.increment(({ __constructor: "Unit", __args: [] }))
+  return (() => {
+  __lineTracker_125__.increment(({ __constructor: "Unit", __args: [] }))
+  return b1
+})()
+})();
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('Module.mad', 123, tuple));
-    return __hpLineWrap('Module.mad', 126, b);
-}));
-((__x__) => {
-  if (__hp('Module.mad', 'line', 129, 129) || __x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
-    let [{ __args: [n]},{ __args: [m]}] = __x__;
-    return __hpLineWrap('Module.mad', 129, __hpLineWrap('Module.mad', 129, n)) + __hpLineWrap('Module.mad', 129, __hpLineWrap('Module.mad', 129, m));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(([__hpLineWrap('Module.mad', 129, Just)(__hpLineWrap('Module.mad', 129, 3)), __hpLineWrap('Module.mad', 129, Just)(__hpLineWrap('Module.mad', 129, 4))]));
-export default { fn, map };
+})((() => {
+  __lineTracker_124__.increment(({ __constructor: "Unit", __args: [] }))
+  return tuple
+})());
+    return (() => {
+  __lineTracker_127__.increment(({ __constructor: "Unit", __args: [] }))
+  return b
+})();
+});
+export default { fn, mapList };
 const makeArgs = () => {
   let list = {}
   let start = list

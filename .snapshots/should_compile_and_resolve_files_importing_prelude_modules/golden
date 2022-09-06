@@ -7,7 +7,7 @@ import {} from "./../__internals__.mjs"
 import L from "./../.prelude/List.mjs";
 
 let main = (_ => {
-    L.map((x => x * 2))(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
+    L.map((x => (x * 2)))(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};

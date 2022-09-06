@@ -119,8 +119,8 @@ export lines = split("\n")
  * @example
  * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
  */
- unlines :: List String -> String
- export unlines = join("\n")
+unlines :: List String -> String
+export unlines = join("\n")
 
 
 words :: String -> List String

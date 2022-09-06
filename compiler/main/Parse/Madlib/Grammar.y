@@ -444,7 +444,7 @@ app :: { Src.Exp }
 multiExpBody :: { [Src.Exp] }
   : 'return' exp              { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
   | {- empty -}               { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
-  | bodyExp rets multiExpBody { $1:$3 }
+  | bodyExp rets multiExpBody { $1 : $3 }
 
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'                       %shift { Src.Source (mergeAreas (Src.getArea $2) (Src.getArea $4)) (tokenTarget $1) (Src.TypedExp $2 $4) }
@@ -669,7 +669,14 @@ buildAbsOrParenthesizedName parenLeftArea parenRightArea sourceTarget n@(Src.Sou
     Src.Source (mergeAreas parenLeftArea (Src.getArea exp)) sourceTarget (Src.Abs [n] [exp])
 
   Just exps ->
-    Src.Source (mergeAreas parenLeftArea (Src.getArea $ last exps)) sourceTarget (Src.AbsWithMultilineBody [n] exps)
+    let area = case last exps of
+          Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) _ Src.LUnit ->
+            Src.getArea $ last (init exps)
+
+          last ->
+            Src.getArea last
+
+    in  Src.Source (mergeAreas parenLeftArea area) sourceTarget (Src.AbsWithMultilineBody [n] exps)
 
 
 nameToPattern :: Area -> Src.SourceTarget -> String -> Src.Pattern
