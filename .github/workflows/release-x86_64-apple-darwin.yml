@@ -34,7 +34,9 @@ jobs:
         run: npm i -g rollup @rollup/plugin-node-resolve
 
       - name: Install LLVM 9
-        run: brew install llvm-hs/llvm/llvm-9
+        run: |
+          brew install llvm-hs/llvm/llvm-9
+          ls -l /usr/local/opt/llvm-9/bin/
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
@@ -57,7 +59,9 @@ jobs:
           TARGET="MACOS_X64" AR="llvm-ar-9" ./scripts/build-runtime
 
       - name: Build tools
-        run: ./scripts/build
+        run: |
+          export PATH="$PATH:/usr/local/opt/llvm-9/bin"
+          ./scripts/build
 
       - name: Bundle archive
         run: |
