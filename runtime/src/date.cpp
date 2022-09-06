@@ -87,12 +87,12 @@ madlib__record__Record_t *madlib__date__toDateInfo(int64_t epochMilliseconds) {
   madlib__record__Record_t *result = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
   result->fieldCount = 7;
   result->fields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 7);
-  result->fields[0] = millisecondField;
-  result->fields[1] = secondsField;
-  result->fields[2] = minutesField;
-  result->fields[3] = hoursField;
-  result->fields[4] = dayField;
-  result->fields[5] = monthField;
+  result->fields[0] = dayField;
+  result->fields[1] = hoursField;
+  result->fields[2] = millisecondField;
+  result->fields[3] = minutesField;
+  result->fields[4] = monthField;
+  result->fields[5] = secondsField;
   result->fields[6] = yearField;
 
   return result;
