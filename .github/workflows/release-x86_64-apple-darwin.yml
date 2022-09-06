@@ -34,21 +34,24 @@ jobs:
         run: npm i -g rollup @rollup/plugin-node-resolve
 
       - name: Install LLVM 9
-        run: brew install llvm-hs/llvm/llvm-9
+        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install llvm-hs/llvm/llvm-9
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
 
-      - name: Fix llvm install
-        run: cd /usr/local/Cellar/llvm-9/9.0.1/bin/ && ln -s llvm-config-9 llvm-config || cd /usr/local/Cellar/llvm-9/9.0.1.reinstall/bin/ && ln -s llvm-config-9 llvm-config
+      # - name: Fix llvm install
+      #   run: cd /usr/local/Cellar/llvm-9/9.0.1/bin/ && ln -s llvm-config-9 llvm-config || cd /usr/local/Cellar/llvm-9/9.0.1.reinstall/bin/ && ln -s llvm-config-9 llvm-config
 
       - name: Install alex and happy
         run: stack install alex happy
 
       - name: Build madlib executable
-        run: |
-          export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
-          stack build
+        run: stack build
+
+      # - name: Build madlib executable
+      #   run: |
+      #     export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
+      #     stack build
 
       - name: Add rpath
         run: install_name_tool -change /usr/local/opt/llvm-9/lib/llvm-9/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
