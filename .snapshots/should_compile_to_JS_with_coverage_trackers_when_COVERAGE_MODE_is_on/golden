@@ -6,25 +6,16 @@ import __Coverage__ from "./.prelude/Coverage.mjs";
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
 Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_a4654) => (__$a__ => ((__x__) => {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_p4305) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return (() => {
-  __branchTracker_0_32_0__.increment(({ __constructor: "Unit", __args: [] }))
-  return `Just(` + Inspect_a4654.inspect()(a0) + `)`
-})();
+    return `Just(` + Inspect_p4305.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
-    return (() => {
-  __branchTracker_0_32_1__.increment(({ __constructor: "Unit", __args: [] }))
-  return `Nothing`
-})();
+    return `Nothing`;
   }
   else if (true) {
-    return (() => {
-  __branchTracker_0_32_2__.increment(({ __constructor: "Unit", __args: [] }))
-  return `Unknown`
-})();
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -33,22 +24,9 @@ Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_a4
   }
 })(__$a__));
 Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e4684) => (__$a__ => `{ ` + `cars: ` + Inspect_e4684.inspect()(__$a__.cars) + ` }`);
+Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e4320) => (__$a__ => `{ ` + `cars: ` + Inspect_e4320.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v4701) => (Inspect_o4694) => (__$a__ => `{ ` + `name: ` + Inspect_o4694.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_v4701.inspect()(__$a__.x) + ` }`);
-let __branchTracker_0_32_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(2);
-let __branchTracker_0_32_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(1);
-let __branchTracker_0_32_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(32)(0);
-let __branchTracker_0_31_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(2);
-let __branchTracker_0_31_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(1);
-let __branchTracker_0_31_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(31)(0);
-let __branchTracker_0_30_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(30)(1);
-let __branchTracker_0_30_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(30)(0);
-let __branchTracker_0_28_2__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(2);
-let __branchTracker_0_28_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(1);
-let __branchTracker_0_28_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(28)(0);
-let __branchTracker_0_29_1__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(29)(1);
-let __branchTracker_0_29_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(0)(29)(0);
+Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v4337) => (Inspect_o4330) => (__$a__ => `{ ` + `name: ` + Inspect_o4330.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_v4337.inspect()(__$a__.x) + ` }`);
 let __functionTracker_123_snd__ = __Coverage__.Reporter.functionTracker(`Module.mad`)(123)(`snd`);
 let __lineTracker_127__ = __Coverage__.Reporter.lineTracker(`Module.mad`)(127);
 let __branchTracker_124_27_0__ = __Coverage__.Reporter.branchTracker(`Module.mad`)(124)(27)(0);

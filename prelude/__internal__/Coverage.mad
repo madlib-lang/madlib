@@ -373,21 +373,29 @@ buildAllResults = (coverageData) => {
 printRows :: List (List String) -> {}
 printRows = (rows) => {
   finalRows = pipe(
-    map(
-      where {
+    List.mapWithIndex(
+      (row, index) => where(row) {
         [module, line, fn, branch, total] =>
-          `${module} ${line} ${fn} ${branch} ${total}`
+          if (index == 0) {
+            `${module}  ${line}  ${fn}  ${branch}  ${total}`
+          } else {
+            `${module}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
+          }
       }
     ),
     where {
       [header, ...moduleRows] =>
-        [header, String.repeat('-', String.length(header)), ...moduleRows]
+        [
+          header,
+          pipe(String.length, String.repeat('-'), IO.grey)(header),
+          ...moduleRows
+        ]
     },
     String.join("\n")
   )(rows)
 
   IO.putLine("\nCoverage")
-  IO.putLine("--------\n")
+  IO.putLine(IO.grey("--------\n"))
   IO.putLine(finalRows)
   IO.putLine("")
 }
@@ -422,35 +430,47 @@ formatRows = (rows) =>
           Math.substract($, String.length(colContent)),
           List.repeat(' '),
           String.fromList,
-          (spaces) => colContent ++ spaces
+          (spaces) => colIndex == 0 ? colContent ++ spaces : spaces ++ colContent
         )(colIndex))
       )(rows)
     }
   }
 
 
-displayCoverageResults :: Dictionary String CoverageData -> {}
-displayCoverageResults = (coverageData) => {
-  rows = pipe(
-    buildAllResults,
-    map(
-      where {
-        ModuleResult(astPath, line, fn, branch, total) =>
-          [
-            astPath,
-            `${keepTwoDecimals(inspect(line))}%`,
-            `${keepTwoDecimals(inspect(fn))}%`,
-            `${keepTwoDecimals(inspect(branch))}%`,
-            `${keepTwoDecimals(inspect(total))}%`,
-          ]
-      }
-    ),
-    (rs) => [["Module", "Lines", "Functions", "Branches", "Total"], ...rs],
-    formatRows,
-    printRows
-  )(coverageData)
+renderPercentage :: String -> String
+renderPercentage = (input) => where(scan(String.dropLast(1, input))) {
+  Just(num) =>
+    if (num > 90) {
+      IO.green(input)
+    } else if (num > 75) {
+      IO.yellow(input)
+    } else {
+      IO.red(input)
+    }
 
+  Nothing =>
+    IO.red(input)
 }
+
+displayCoverageResults :: Dictionary String CoverageData -> {}
+displayCoverageResults = (coverageData) => pipe(
+  buildAllResults,
+  map(
+    where {
+      ModuleResult(astPath, line, fn, branch, total) =>
+        [
+          astPath,
+          `${keepTwoDecimals(inspect(line))}%`,
+          `${keepTwoDecimals(inspect(fn))}%`,
+          `${keepTwoDecimals(inspect(branch))}%`,
+          `${keepTwoDecimals(inspect(total))}%`,
+        ]
+    }
+  ),
+  (rs) => [["Module", "Lines", "Functions", "Branches", "Total"], ...rs],
+  formatRows,
+  printRows
+)(coverageData)
 
 
 generateLcov :: Dictionary String CoverageData -> String

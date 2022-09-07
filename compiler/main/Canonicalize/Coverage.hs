@@ -32,8 +32,11 @@ addTrackers options ast@AST{ apath = Just path } = do
     updatedImports'  <- addImport processModuleName "Process" processModulePath updatedImports
     updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
     updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods)) -> do
-      methods' <- mapM (addTrackersToExp options path) methods
-      return $ Canonical area (Instance n ps p methods')
+      if n == "Eq" || n == "Inspect" then
+        return $ Canonical area (Instance n ps p methods)
+      else do
+        methods' <- mapM (addTrackersToExp options path) methods
+        return $ Canonical area (Instance n ps p methods')
     trackers         <- generateTrackerFunctions
     return ast { aexps = trackers ++ updatedExps, ainstances = updatedInstances, aimports = updatedImports' }
   else
