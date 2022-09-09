@@ -465,6 +465,7 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
   curl_easy_setopt(handle, CURLOPT_HTTPHEADER, lcurlHeaders);
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, methodString);
   curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "gzip,deflate,zstd");
+  curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0);
   if (boxedBody->index == madlib__maybe__Maybe_JUST_INDEX) {
     if (asBytes) {
       curl_easy_setopt(handle, CURLOPT_POSTFIELDS, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->bytes);
