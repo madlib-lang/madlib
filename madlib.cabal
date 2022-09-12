@@ -1,10 +1,8 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 73dd5e38d4c8ca4e6ff2c933b3f085f34ae90a2685f760a4c425920444305a36
 
 name:           madlib
 version:        0.15.2
@@ -113,8 +111,6 @@ library
       VersionLock.VersionLock
   other-modules:
       Paths_madlib
-  autogen-modules:
-      Paths_madlib
   hs-source-dirs:
       compiler/main
   ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -122,7 +118,7 @@ library
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
-    , aeson >=1.5.6.0
+    , aeson ==1.5.5.1
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
@@ -200,8 +196,6 @@ library common
       Parse.DocString.DocString
   other-modules:
       Paths_madlib
-  autogen-modules:
-      Paths_madlib
   hs-source-dirs:
       compiler/common
   ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -209,7 +203,7 @@ library common
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
-    , aeson >=1.5.6.0
+    , aeson ==1.5.5.1
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
@@ -266,8 +260,6 @@ executable madlib
   main-is: Main.hs
   other-modules:
       Paths_madlib
-  autogen-modules:
-      Paths_madlib
   hs-source-dirs:
       compiler/app
   ghc-options: -threaded -funbox-strict-fields -O4 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -275,7 +267,7 @@ executable madlib
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
-    , aeson >=1.5.6.0
+    , aeson ==1.5.5.1
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
@@ -342,15 +334,13 @@ test-suite madlib-test
       TestUtils
       Utils.PathSpec
       Paths_madlib
-  autogen-modules:
-      Paths_madlib
   hs-source-dirs:
       compiler/test
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
     , MissingH >=1.4.3.0
-    , aeson >=1.5.6.0
+    , aeson ==1.5.5.1
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
