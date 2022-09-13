@@ -1006,17 +1006,36 @@ generateExp env symbolTable exp = case exp of
               _ ->
                 undefined
 
-  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> do
+  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    andLhs <- currentBlock
+    condBr leftOperand' andRhs andOutput
+
+    andRhs <- block `named` "and.rhs"
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result                <- Instruction.and leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
+    andRhs'               <- currentBlock
+    br andOutput
 
-  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "||" _)) [leftOperand, rightOperand]) -> do
+    andOutput <- block `named` "and.output"
+    output <- phi [(leftOperand', andLhs), (result, andRhs')]
+    return (symbolTable, output, Nothing)
+
+  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "||" _)) [leftOperand, rightOperand]) -> mdo
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    orLhs <- currentBlock
+    condBr leftOperand' orOutput orRhs
+
+    orRhs <- block `named` "or.rhs"
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result                <- Instruction.or leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
+    orRhs'                <- currentBlock
+    br orOutput
+
+    orOutput <- block `named` "or.output"
+    output <- phi [(leftOperand', orLhs), (result, orRhs')]
+
+    return (symbolTable, output, Nothing)
 
   Core.Typed qt _ metadata (Core.Call fn args) -> case fn of
     -- Calling a known method
