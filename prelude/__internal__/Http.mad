@@ -70,7 +70,8 @@ export getHeader = (headerName, response) => pipe(
 // ----- Error ------------------------------------
 
 export type ClientError
-  = AccessDenied // libcurl 9
+  // libcurl 9
+  = AccessDenied
   // libcurl 6
   | AddressNotFound
   // libcurl 61

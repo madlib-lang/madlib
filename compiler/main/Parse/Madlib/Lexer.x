@@ -74,7 +74,8 @@ tokens :-
   <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                       { beginComment }
   <comment>   [.\n]                                                                           ;
   <comment>   \*\/                                                                            { endComment }
-  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                      ; -- Comments
+  -- <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*                                           ; -- Comments
+  <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*[\n]?                                      ; -- Comments
 
   <0> import                                                                                  { mapToken (\_ -> TokenImport) }
   <0> export                                                                                  { decideTokenExport }
@@ -198,7 +199,7 @@ recordTypeRegex :: Regex
 recordTypeRegex = toRegex "\\`[ \n\t]*(\\.\\.\\.[a-zA-Z0-9_]*(,)?|[a-zA-Z0-9_]*[ \n\t]*::)"
 
 isTokenExport :: Regex
-isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+[ \n]*="
+isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*)*[ \n]*="
 
 isTypeExport :: Regex
 isTypeExport = toRegex "\\`export[ ]+type"
@@ -418,7 +419,7 @@ jsxTextPopOut i@(posn, prevChar, pending, input) len = do
 decideTokenExport :: AlexInput -> Int -> Alex Token
 decideTokenExport (posn, prevChar, pending, input) len = do
   sourceTarget <- getCurrentSourceTarget
-  let next           = BLU.fromString $ take 125 input
+  let next           = BLU.fromString $ take 300 input
       matchedTypeExp = match isTypeExport next :: Bool
       matchedTE      = match isTokenExport next :: Bool
       token          = 

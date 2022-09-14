@@ -17,6 +17,8 @@ import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
+import Debug.Trace
+import qualified Data.Maybe as Maybe
 
 
 data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
@@ -27,12 +29,24 @@ colorWhen when c s | when      = color c s
 
 color :: Color -> String -> String
 color c s = case c of
-  Green         -> "\x1b[32m" <> s <> "\x1b[0m"
-  Yellow        -> "\x1b[33m" <> s <> "\x1b[0m"
-  Red           -> "\x1b[31m" <> s <> "\x1b[0m"
-  Grey          -> "\x1b[90m" <> s <> "\x1b[0m"
-  WhiteOnRed    -> "\x1b[41m" <> s <> "\x1b[0m"
-  WhiteOnYellow -> "\x1b[43m" <> s <> "\x1b[0m"
+  Green ->
+    "\x1b[32m" <> s <> "\x1b[0m"
+
+  Yellow ->
+    "\x1b[33m" <> s <> "\x1b[0m"
+
+  Red ->
+    "\x1b[31m" <> s <> "\x1b[0m"
+
+  Grey ->
+    "\x1b[90m" <> s <> "\x1b[0m"
+
+  WhiteOnRed ->
+    "\x1b[41m" <> s <> "\x1b[0m"
+
+  WhiteOnYellow ->
+    "\x1b[43m" <> s <> "\x1b[0m"
+
 
 underlineWhen :: Bool -> String -> String
 underlineWhen when s | when      = "\x1b[4m" <> s <> "\x1b[0m"
@@ -64,8 +78,8 @@ formatWarning rf json (CompilationWarning warning ctx) = do
                 <> formatWarningContent json warning
 
         _ -> formatWarningContent json warning
-
-  return $ colorWhen (not json) WhiteOnYellow "Warning" <> " " <> formattedWarning
+  let fullContent = colorWhen (not json) WhiteOnYellow "Warning" <> " " <> formattedWarning
+  return $ unlines (("│ " <>) <$> lines fullContent)
 
 formatWarningContent :: Bool -> WarningKind -> String
 formatWarningContent _ warning = case warning of
@@ -120,9 +134,8 @@ format rf json (CompilationError err ctx) = do
                 <> formatTypeError json err
 
         _ -> formatTypeError json err
-
-  return $ colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
-
+  let fullContent = colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
+  return $ unlines (("│ " <>) <$> lines fullContent)
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
 formatTypeError :: Bool -> TypeError -> String
@@ -168,13 +181,14 @@ formatTypeError json err = case err of
       <> schemeToStr scInferred
 
   UnificationError t t' ->
-    "Type error, expected:\n"
-      <> "    "
-      <> colorWhen (not json) Green (prettyPrintType True t')
-      <> "\n"
-      <> "But found:\n"
-      <> "    "
-      <> colorWhen (not json) Red (prettyPrintType True t)
+    let (_, _, pretty, pretty') = prettyPrintTypesWithDiff (not json) (mempty, mempty) (mempty, mempty) t t'
+    in  "I found a type error!\nexpected:\n"
+          <> "    "
+          <> pretty'
+          <> "\n"
+          <> "but found:\n"
+          <> "    "
+          <> pretty
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"
@@ -460,6 +474,133 @@ prettyPrintQualType qt =
   schemeToStr (Forall [] qt)
 
 
+prettyPrintTypesWithDiff :: Bool -> (M.Map String Int, M.Map String Int) -> (M.Map String Int, M.Map String Int) -> Type -> Type -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), String, String)
+prettyPrintTypesWithDiff colored vars1 vars2 t1 t2 = case (t1, t2) of
+  (TApp (TApp (TCon (TC "(->)" _) _) tl1) tr1, TApp (TApp (TCon (TC "(->)" _) _) tl2) tr2) ->
+    let (vars1', vars2', tl1', tl2')   = prettyPrintTypesWithDiff colored vars1 vars2 tl1 tl2
+        (vars1'', vars2'', tr1', tr2') = prettyPrintTypesWithDiff colored vars1' vars2' tr1 tr2
+        pretty1 = case tl1 of
+          TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+            colorWhen colored Grey "(" <> colorWhen colored Grey tl1' <> colorWhen colored Grey ")" <> colorWhen colored Grey " -> " <> colorWhen colored Grey tr1'
+
+          _ ->
+            colorWhen colored Grey tl1' <> colorWhen colored Grey " -> " <> colorWhen colored Grey tr1'
+
+        pretty2 = case tl2 of
+          TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+            colorWhen colored Grey "(" <> colorWhen colored Grey tl2' <> colorWhen colored Grey ")" <> colorWhen colored Grey " -> " <> colorWhen colored Grey tr2'
+
+          _ ->
+            colorWhen colored Grey tl2' <> colorWhen colored Grey " -> " <> colorWhen colored Grey tr2'
+    in  (vars1'', vars2'', pretty1, pretty2)
+
+  (TApp (TApp (TCon (TC "(,)" _) _) tl1) tr1, TApp (TApp (TCon (TC "(,)" _) _) tl2) tr2) ->
+    let (vars1', vars2', tl1', tl2')   = prettyPrintTypesWithDiff colored vars1 vars2 tl1 tl2
+        (vars1'', vars2'', tr1', tr2') = prettyPrintTypesWithDiff colored vars1' vars2' tr1 tr2
+        openTuple = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator = colorWhen colored Grey ", "
+    in  ( vars1''
+        , vars2''
+        , openTuple <> tl1' <> separator <> tr1' <> closeTuple
+        , openTuple <> tl2' <> separator <> tr2' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TCon (TC "(,,)" _) _) t11) t12) t13, TApp (TApp (TApp (TCon (TC "(,,)" _) _) t21) t22) t23) ->
+    let (vars1', vars2', t11', t21')     = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')   = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23') = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        openTuple = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator = colorWhen colored Grey ", "
+    in  ( vars1'''
+        , vars2'''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> closeTuple
+        )
+
+  (TApp l1 r1, TApp l2 r2) ->
+    let (vars1', vars2', l1', l2')   = prettyPrintTypesWithDiff colored vars1 vars2 l1 l2
+        (vars1'', vars2'', r1', r2') = prettyPrintTypesWithDiff colored vars1' vars2' r1 r2
+        pretty1 = case r1 of
+          TApp _ _ | not (isTuple r1) ->
+            l1' <> colorWhen colored Grey " (" <> r1' <> colorWhen colored Grey ")"
+
+          _ ->
+            l1' <> " " <> r1'
+        pretty2 = case r2 of
+          TApp _ _ | not (isTuple r2) ->
+            l2' <> colorWhen colored Grey " (" <> r2' <> colorWhen colored Grey ")"
+
+          _ ->
+            l2' <> " " <> r2'
+    in  (vars1'', vars2'', pretty1, pretty2)
+
+  (TRecord fields1 base1, TRecord fields2 base2) ->
+    let allFields1 = case base1 of
+          Just (TRecord fields _) ->
+            fields <> fields1
+          _ ->
+            fields1
+        allFields2 = case base2 of
+          Just (TRecord fields _) ->
+            fields <> fields2
+          _ ->
+            fields2
+        ((finalVars1, finalHkVars1), (finalVars2, finalHkVars2), compiledFields1, compiledFields2) =
+            foldl'
+                (\(allVars1, allVars2, compiledFields1', compiledFields2') (fieldName, fieldType1) ->
+                    case M.lookup fieldName allFields2 of
+                      Just fieldType2 ->
+                        let (allVars1', allVars2', pretty1, pretty2) = prettyPrintTypesWithDiff colored allVars1 allVars2 fieldType1 fieldType2
+                        in  (allVars1', allVars2', compiledFields1' ++ [colorWhen colored Grey $ fieldName <> " :: " <> pretty1], compiledFields2' ++ [colorWhen colored Grey $ fieldName <> " :: " <> pretty2])
+
+                      Nothing ->
+                        let (vars1', hkVars1', pretty1) = prettyPrintType' True allVars1 fieldType1
+                        in  ((vars1', hkVars1'), allVars2, compiledFields1' ++ [colorWhen (Maybe.isJust base2 && colored) Grey $ colorWhen (Maybe.isNothing base2 && colored) Red $ fieldName <> " :: " <> pretty1], compiledFields2')
+                )
+                (vars1, vars2, [], [])
+              $ M.toList allFields1
+        
+        missingFields = allFields2 M.\\ allFields1
+        ((finalVars2', finalHkVars2'), compiledMissingFields') =
+            foldl'
+                (\(allVars2, compiledFields2') (fieldName, fieldType2) ->
+                    let (vars2', hkVars2', pretty2) = prettyPrintType' True allVars2 fieldType2
+                    in  ((vars2', hkVars2'), compiledFields2' ++ [colorWhen colored Green $ fieldName <> " :: " <> pretty2])
+                )
+                ((finalVars2, finalHkVars2), [])
+              $ M.toList missingFields
+        (finalVars1', formattedBase1)   = case base1 of
+          Just t1  ->
+            let (vars, hkVars, pretty) = prettyPrintType' True (finalVars1, finalHkVars1) t1
+            in ((vars, hkVars), colorWhen colored Grey "..." <> colorWhen colored Grey pretty <> colorWhen colored Grey ", ")
+
+          Nothing ->
+            ((finalVars1, finalHkVars1), "")
+
+        (finalVars2'', formattedBase2)   = case base2 of
+          Just t2  ->
+            let (vars, hkVars, pretty) = prettyPrintType' True (finalVars2', finalHkVars2') t2
+            in ((vars, hkVars), colorWhen colored Grey "..." <> colorWhen colored Grey pretty <> colorWhen colored Grey ", ")
+
+          Nothing ->
+            ((finalVars2', finalHkVars2'), "")
+
+        compiled1 = colorWhen colored Grey "{ " <> formattedBase1 <> intercalate (colorWhen colored Grey ", ") compiledFields1 <> colorWhen colored Grey " }"
+        compiled2 = colorWhen colored Grey "{ " <> formattedBase2 <> intercalate (colorWhen colored Grey ", ") (compiledFields2 ++ compiledMissingFields') <> colorWhen colored Grey " }"
+    in  (finalVars1', finalVars2'', compiled1, compiled2)
+
+  (t1, t2) ->
+    let (vars1', hkVars1', pretty1) = prettyPrintType' True vars1 t1
+        (vars2', hkVars2', pretty2) = prettyPrintType' True vars2 t2
+    in if t1 /= t2 then
+      ((vars1', hkVars1'), (vars2', hkVars2'), colorWhen colored Red pretty1, colorWhen colored Green pretty2)
+    else
+      ((vars1', hkVars1'), (vars2', hkVars2'), colorWhen colored Grey pretty1, colorWhen colored Grey pretty2)
+
+
+
 prettyPrintType :: Bool -> Type -> String
 prettyPrintType rewrite =
   lst . prettyPrintType' rewrite (mempty, mempty)
@@ -476,12 +617,20 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     else
       case k of
         Star -> case M.lookup n vars of
-          Just x  -> (vars, hkVars, [letters !! x])
-          Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, [letters !! newIndex])
+          Just x ->
+            (vars, hkVars, [letters !! x])
+
+          Nothing ->
+            let newIndex = M.size vars
+            in  (M.insert n newIndex vars, hkVars, [letters !! newIndex])
 
         Kfun _ _ -> case M.lookup n hkVars of
-          Just x  -> (vars, hkVars, [hkLetters !! x])
-          Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
+          Just x ->
+            (vars, hkVars, [hkLetters !! x])
+
+          Nothing ->
+            let newIndex = M.size hkVars
+            in  (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
 
   TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
@@ -511,8 +660,11 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
             let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' rewrite (vars, hkVars) tl'
                 (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', hkVarsLeft') tr'
                 leftParenthesis                    = case tl' of
-                  TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
-                  _ -> False
+                  TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+                    True
+
+                  _ ->
+                    False
                 left'' = if leftParenthesis then "(" <> left' <> ")" else left'
             in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
 
@@ -549,9 +701,20 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
         compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
     in  (finalVars, finalHkVars, compiled)
 
-  TGen n -> (vars, hkVars, "TGen" <> show n)
+  TGen n ->
+    if not rewrite then
+      (vars, hkVars, "T" <> show n)
+    else
+      case M.lookup ("T" <> show n) vars of
+        Just x  ->
+          (vars, hkVars, [letters !! x])
 
-  _      -> (vars, hkVars, "")
+        Nothing ->
+          let newIndex = M.size vars
+          in  (M.insert ("T" <> show n) newIndex vars, hkVars, [letters !! newIndex])
+
+  _ ->
+    (vars, hkVars, "")
 
 
 removeNamespace :: String -> String

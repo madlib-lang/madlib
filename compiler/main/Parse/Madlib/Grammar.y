@@ -697,6 +697,7 @@ sanitizeImportPath = init . tail
 
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
+-- lexerWrap f = alexMonadScan >>= (\t -> trace (ppShow t) (f t))
 
 
 parseError :: Token -> Alex a
