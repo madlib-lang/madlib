@@ -2608,15 +2608,15 @@
 , [ CompilationError
       (UnificationError
          (TRecord
-            (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-            Nothing)
-         (TRecord
             (fromList
                [ ( "x" , TVar (TV "f5" Star) ) , ( "y" , TVar (TV "g6" Star) ) ])
+            Nothing)
+         (TRecord
+            (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
             Nothing))
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 33 1 34) (Loc 49 1 50)
+        , ctxArea = Area (Loc 0 1 1) (Loc 51 1 52)
         }
   ]
 )

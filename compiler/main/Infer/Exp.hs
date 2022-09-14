@@ -513,7 +513,7 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
     (s1, _  , t1, eabs) <- infer options env abs
     (s2, ps2, t2, earg) <- infer options env rec
 
-    s3                  <- contextualUnify env fa t1 (t2 `fn` tv)
+    s3                  <- contextualUnifyAccess env fa t1 (t2 `fn` tv)
 
     let s      = s3 `compose` s2 `compose` s1
     let t      = apply s tv
@@ -871,7 +871,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
   (s, ps, t, e) <- infer options env' exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
-  s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (flipUnificationError . limitContextArea 2)
+  s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
   -- s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
 

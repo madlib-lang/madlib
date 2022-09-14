@@ -229,8 +229,21 @@ getTypeDeclName td = case td of
 
 isTypeExport :: Exp -> Bool
 isTypeExport exp = case exp of
-  Canonical _ (TypeExport _) -> True
-  _                          -> False
+  Canonical _ (TypeExport _) ->
+    True
+
+  _ ->
+    False
+
+
+isAccess :: Exp -> Bool
+isAccess exp = case exp of
+  Canonical _ (Access _ _) ->
+    True
+
+  _ ->
+    False
+
 
 getTypeExportName :: Exp -> String
 getTypeExportName exp = case exp of

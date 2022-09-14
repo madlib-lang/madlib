@@ -147,16 +147,16 @@
             (TApp
                (TApp
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TCon (TC "Integer" Star) "prelude"))
+                  (TCon (TC "String" Star) "prelude"))
                (TCon (TC "Boolean" Star) "prelude")))
          (TApp
             (TApp
                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TVar (TV "b1" Star)))
+               (TCon (TC "String" Star) "prelude"))
             (TApp
                (TApp
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "b1" Star)))
+                  (TCon (TC "Integer" Star) "prelude"))
                (TCon (TC "Boolean" Star) "prelude"))))
       Context
         { ctxAstPath = "Module.mad"

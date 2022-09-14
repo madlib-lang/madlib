@@ -115,21 +115,9 @@ runCompilationTask watchMode state options invalidatedPaths = do
         return (warnings, errors)
 
     formattedWarnings <- mapM (Explain.formatWarning readFile False) warnings
-    let ppWarnings =
-          if null warnings then
-            ""
-          else
-            List.intercalate "\n\n\n" formattedWarnings <> "\n"
-
     formattedErrors   <- mapM (Explain.format readFile False) errors
-    let ppErrors =
-          if null errors then
-            ""
-          else
-            List.intercalate "\n\n\n" formattedErrors <> "\n"
 
-    putStr ppWarnings
-    putStr ppErrors
+    putStr $ List.intercalate "\n\n" (formattedWarnings ++ formattedErrors)
     unless (null errors || watchMode) $ do
       exitFailure
 

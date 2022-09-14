@@ -178,8 +178,8 @@ instance Match t => Match [t] where
     foldM merge nullSubst ss
 
 
-contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnify env exp t1 t2 = catchError
+contextualUnifyAccess :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnifyAccess env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
     (CompilationError (UnificationError _ _) ctx) -> do
@@ -188,8 +188,22 @@ contextualUnify env exp t1 t2 = catchError
           hasNotChanged = t2' == t2 || t1' == t1
           t2'' = if hasNotChanged then t2 else t2'
           t1'' = if hasNotChanged then t1 else t1'
-      (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
-      addContext env exp (CompilationError (UnificationError t2''' t1''') ctx)
+
+      (t2''', t1''')   <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
+      (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
+      addContext env exp (CompilationError (UnificationError t2'''' t1'''') ctx)
+
+    e ->
+      addContext env exp e
+  )
+
+contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnify env exp t1 t2 = catchError
+  (unify t1 t2)
+  (\case
+    (CompilationError (UnificationError _ _) ctx) -> do
+      (t2', t1') <- improveRecordErrorTypes t2 t1
+      addContext env exp (CompilationError (UnificationError t2' t1') ctx)
 
     e ->
       addContext env exp e
@@ -216,3 +230,130 @@ flipUnificationError e@(CompilationError err x) = case err of
 addContext :: Env -> Can.Canonical a -> CompilationError -> Infer b
 addContext env (Can.Canonical area _) (CompilationError err _) =
   throwError $ CompilationError err (Context (envCurrentPath env) area)
+
+
+
+-- Improve record related errors
+
+improveRecordErrorTypes :: Type -> Type -> Infer (Type, Type)
+improveRecordErrorTypes t1 t2 = do
+  s1 <- gentleUnify t1 t2
+  s2 <- gentleUnify t2 t1
+  let t1' = cleanBase $ apply (s1 `compose` s2) t1
+  let t2' = cleanBase $ apply (s1 `compose` s2) t2
+  -- let t1' = skipBase $ apply (s1 `compose` s2) t1
+  -- let t2' = skipBase $ apply (s1 `compose` s2) t2
+  return (t1', t2')
+
+
+-- TODO: need to copy unify but use gentleUnify everywhere or else we only do it on the surface
+-- gentleUnify :: Type -> Type -> Infer Substitution
+-- gentleUnify t1 t2 = catchError (unify t1 t2) (const $ return mempty)
+
+-- TODO: this should probably not always happen
+cleanBase :: Type -> Type
+cleanBase t = case t of
+  TRecord fields (Just (TRecord extraFields _)) ->
+    TRecord (extraFields <> fields) Nothing
+
+  TApp l r ->
+    TApp (cleanBase l) (cleanBase r)
+
+  _ ->
+    t
+
+skipBase :: Type -> Type
+skipBase t = case t of
+  TRecord fields (Just (TRecord extraFields _)) ->
+    TRecord (extraFields <> fields) Nothing
+
+  TRecord fields _ ->
+    TRecord fields Nothing
+
+  TApp l r ->
+    TApp (skipBase l) (skipBase r)
+
+  _ ->
+    t
+
+
+gentleUnifyVars :: Substitution -> [Type] -> [Type] -> Infer Substitution
+gentleUnifyVars s (tp : xs) (tp' : xs') = do
+  s1 <- gentleUnify tp tp'
+  gentleUnifyVars (compose s s1) xs xs'
+gentleUnifyVars s _ _  = return s
+
+
+gentleUnify :: Type -> Type -> Infer Substitution
+gentleUnify (l `TApp` r) (l' `TApp` r') = do
+  s1 <- gentleUnify l l'
+  s2 <- gentleUnify (apply s1 r) (apply s1 r')
+  return $ compose s1 s2
+
+gentleUnify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
+  (Just tBase, Just tBase') -> do
+    s1 <- gentleUnify tBase' (TRecord (M.union fields fields') base)
+
+    let fieldsToCheck  = M.intersection fields fields'
+        fieldsToCheck' = M.intersection fields' fields
+
+    s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+    s3 <- gentleUnify tBase tBase'
+
+    return $ s3 `compose` s2 `compose` s1
+
+  (Just tBase, Nothing) -> do
+    s1 <- gentleUnify tBase (TRecord fields' base)
+
+    if not $ M.null (M.difference fields fields') then
+      return M.empty
+    else do
+      let fieldsToCheck  = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+      s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+
+      return $ s2 `compose` s1
+
+  (Nothing, Just tBase') -> do
+    s1 <- gentleUnify tBase' (TRecord fields base')
+
+    if not $ M.null (M.difference fields' fields) then
+      return M.empty
+    else do
+      let fieldsToCheck  = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+      s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+      return $ s2 `compose` s1
+
+  _ -> do
+    let extraFields  = M.difference fields fields'
+        extraFields' = M.difference fields' fields
+    if extraFields' /= mempty || extraFields /= mempty
+      then throwError $ CompilationError (UnificationError r l) NoContext
+      else do
+        let updatedFields  = M.union fields extraFields'
+            updatedFields' = M.union fields' extraFields
+            types          = M.elems updatedFields
+            types'         = M.elems updatedFields'
+        gentleUnifyVars M.empty types types'
+
+gentleUnify (TVar tv) t         = varBind tv t
+gentleUnify t         (TVar tv) = varBind tv t
+gentleUnify (TCon a fpa) (TCon b fpb)
+  | a == b && fpa == fpb = return M.empty
+  | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
+  | a /= b               = return M.empty
+  | fpa /= fpb           = return M.empty
+
+gentleUnify (TCon (TC tNameA _) _) t2@(TApp (TCon (TC tNameB k) fpb) _)
+  | tNameA == "String" && tNameB == "Element" = do
+      tv <- newTVar Star
+      gentleUnify (TApp (TCon (TC "Element" k) fpb) tv) t2
+
+gentleUnify t1@(TApp (TCon (TC tNameB k) fpb) _) (TCon (TC tNameA _) _)
+  | tNameB == "Element" && tNameA == "String" = do
+      tv <- newTVar Star
+      gentleUnify (TApp (TCon (TC "Element" k) fpb) tv) t1
+
+gentleUnify _ _ = return M.empty
+
