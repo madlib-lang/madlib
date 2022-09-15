@@ -835,7 +835,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, var, Nothing)
 
       Nothing ->
-        error $ "Var not found " <> n <> "\nExp: "<>ppShow exp
+        error $ "Var not found " <> n <> "\nExp: "<>ppShow exp -- <> "\n" <> ppShow symbolTable
 
   -- (Core.Placeholder (ClassRef "Functor" [] False True , "b183")
   Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef _ _ False True, _) _) -> do

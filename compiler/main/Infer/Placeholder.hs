@@ -2,7 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# LANGUAGE NamedFieldPuns #-}
 module Infer.Placeholder where
 
 import           Infer.Type
@@ -128,16 +127,15 @@ insertClassPlaceholders options env exp (p : ps) =
 
 shouldInsert :: Env -> Pred -> Infer Bool
 shouldInsert env p = do
-  let cls = predClass p
-      ts  = predTypes p
-  inst <- findInst env $ IsIn cls ts Nothing
+  inst <- findInst env $ IsIn (predClass p) (predTypes p) Nothing
 
   let insert = case inst of
         Just (Instance (_ :=> p') _) ->
           let (_, IsIn _ withoutVars _) = removeInstanceVars p' p
           in  any isTVar withoutVars
 
-        Nothing -> True
+        Nothing ->
+          True
   return insert
 
 
@@ -266,6 +264,25 @@ updateClassPlaceholder options env cleanUpEnv _ push s ph =
 
                 _ ->
                   Nothing
+
+        -- if not call then
+        --   -- if not var' then
+        --     -- if the instance is resolved there's no point in having (IntegerDict) => ... and we can
+        --     -- safely drop the dictionary.
+        --     -- return exp'
+        --   -- else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+        --     -- In that case we need to extend the env to express what dictionary was removed so that we can
+        --     -- remove the dictionaries at call sites
+        --     -- In the case of method definition, the predicates come from interface declaration and instance
+        --     -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+        --     -- just yet.
+        --     -- return exp'
+        --   -- else
+        --     return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+        -- -- else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
+        -- --   return exp'
+        -- else
+        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
         if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
           -- this class ref is already in scope so we skip the placeholder

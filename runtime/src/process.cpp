@@ -72,7 +72,9 @@ void madlib__process__internal__initExtra() {
   }
 }
 
-madlib__list__Node_t *madlib__process__internal__getArgs() { return __args__; }
+madlib__list__Node_t *madlib__process__internal__getArgs() {
+  return __args__;
+}
 
 madlib__list__Node_t *madlib__process__internal__getEnv() {
   madlib__list__Node_t *envItems = madlib__list__empty();

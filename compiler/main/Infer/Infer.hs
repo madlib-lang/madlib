@@ -8,7 +8,7 @@ import           Error.Error
 import qualified Rock
 import Driver.Query
 
-type Infer a = forall m . (Rock.MonadFetch Query m, MonadError CompilationError m, MonadState InferState m) => m a
+type Infer a = forall m . (Rock.MonadFetch Query m, MonadIO m, MonadError CompilationError m, MonadState InferState m) => m a
 
 data InferState = InferState { count :: Int, errors :: [CompilationError] }
 
