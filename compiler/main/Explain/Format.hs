@@ -124,22 +124,18 @@ format rf json (CompilationError err ctx) = do
   let formattedError = case ctx of
         Context fp area ->
           let (Area (Loc _ line _) _) = area
-          in  "in module '"
-                <> fp
-                <> "' at line "
-                <> show line
-                <> ":\n"
+          in  "in module '" <> fp <> "' at line " <> show line <> ":\n"
                 <> showAreaInSource json area area moduleContent
                 <> "\n"
-                <> formatTypeError json err
+                <> formatTypeError json moduleContent err
 
-        _ -> formatTypeError json err
+        _ -> formatTypeError json moduleContent err
   let fullContent = colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
   return $ unlines (("│ " <>) <$> lines fullContent)
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
-formatTypeError :: Bool -> TypeError -> String
-formatTypeError json err = case err of
+formatTypeError :: Bool -> [String] -> TypeError -> String
+formatTypeError json moduleContent err = case err of
   NoMain ->
     "You forgot to define a 'main' function in your main module."
 
@@ -201,12 +197,18 @@ formatTypeError json err = case err of
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
-  AmbiguousType (TV _ _, IsIn cls _ _ : _) ->
-    "An ambiguity could not be resolved! I am\n"
-      <> "looking for an instance of '"
-      <> cls
-      <> "' but could not resolve it. You\n"
-      <> "might want to add a type annotation to make it resolvable."
+  AmbiguousType (TV _ _, IsIn cls _ maybeArea : _) ->
+    let areaDesc = case maybeArea of
+          Nothing ->
+            ""
+
+          Just area@(Area (Loc _ l _) _) ->
+            let linesInSource = showAreaInSource' 1 1 json area area moduleContent
+            in  "\nThe constraint originates from line '" <> show l <> "':\n"
+                <> linesInSource
+    in  "I am looking for an instance of '" <> cls <> "' but could not resolve it.\n"
+        <> areaDesc
+        <> "\n\nHint: You might want to add a type annotation to make it resolvable."
 
   AmbiguousType (TV n _, []) ->
     "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
@@ -377,11 +379,14 @@ formatHighlightArea (Area (Loc _ _ c) (Loc _ _ c')) =
 
 
 showAreaInSource :: Bool -> Area -> Area -> [String] -> String
-showAreaInSource json start end code =
+showAreaInSource = showAreaInSource' 2 3
+
+showAreaInSource' :: Int -> Int -> Bool -> Area -> Area -> [String] -> String
+showAreaInSource' before after json start end code =
   let lines                    = [1 ..]
       (firstLine, lastLine)    = computeLinesToShow start end
-      firstLineToShow          = max 0 (firstLine - 2)
-      lastLineToShow           = lastLine + 3
+      firstLineToShow          = max 0 (firstLine - before)
+      lastLineToShow           = lastLine + after
       amountCharsForLineNumber = length $ show lastLineToShow
       prettyPrintedLineNumbers =
           (\n ->
@@ -390,17 +395,17 @@ showAreaInSource json start end code =
               in  replicate spacesToAdd ' ' <> asStr <> "|"
             )
             <$> lines
-      before = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
+      before' = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
         <$> slice firstLineToShow (firstLine - 1) (zip prettyPrintedLineNumbers code)
       expContent = uncurry (<>) <$> slice firstLine lastLine (zip prettyPrintedLineNumbers code)
-      after      = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
+      after'      = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
         <$> slice (lastLine + 1) lastLineToShow (zip prettyPrintedLineNumbers code)
       (Area (Loc x line col) (Loc _ line' col')) = end
       endCol                = if line == line' then col' else col + 1
       highlightArea         = Area (Loc x line col) (Loc x line endCol)
       spacesBeforeHighlight = " " <> concat (" " <$ show lastLineToShow)
       formattedArea         = spacesBeforeHighlight <> formatHighlightArea highlightArea
-  in  unlines $ before ++ expContent ++ [formattedArea] ++ after
+  in  unlines $ before' ++ expContent ++ [formattedArea] ++ after'
 
 
 letters :: [Char]

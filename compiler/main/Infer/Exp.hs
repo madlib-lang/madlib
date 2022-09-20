@@ -197,8 +197,7 @@ inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.
 inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
-  let env'' = env' { envGenExclude = param : envGenExclude env' }
-  (s, ps, t, es) <- inferBody options env'' body
+  (s, ps, t, es) <- inferBody options env' body
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
 
@@ -213,29 +212,22 @@ inferBody options env [e] = do
   return (s, ps, t, [e'])
 
 inferBody options env (e : es) = do
-  (s, ps, env', e') <- case  e of
-    Can.Canonical _ Can.TypedExp{} ->
-      inferExplicitlyTyped options True env e
+  (s, (returnPreds, placeholderPreds), env', e') <- case  e of
+    Can.Canonical _ Can.TypedExp{} -> do
+      (s, ps, env', e') <- inferExplicitlyTyped options True env e
+      return (s, (ps, ps), env', e')
 
     _ -> do
-      (s, (_, ps), env, e') <- inferImplicitlyTyped options True env e
-      return (s, ps, env, e')
+      (s, allPreds, env, e') <- inferImplicitlyTyped options True env e
+      return (s, allPreds, env, e')
 
-  e''               <- insertClassPlaceholders options env' e' (dedupePreds ps)
+  e''               <- insertClassPlaceholders options env' e' (dedupePreds placeholderPreds)
 
-  let env'' =
-        case Can.getExpName e of
-          Just n ->
-            env' { envGenExclude = n : envGenExclude env' }
-
-          _ ->
-            env'
-
-  (sb, ps', tb, eb) <- inferBody options (updateBodyEnv s env'') es
+  (sb, ps', tb, eb) <- inferBody options (updateBodyEnv s env') es
 
   let finalS = s `compose` sb
 
-  return (finalS, apply finalS ps', tb, e'' : eb)
+  return (finalS, apply finalS $ returnPreds ++ ps', tb, e'' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,
@@ -785,22 +777,22 @@ isMain exp = Can.getExpName exp == Just "main"
 
 inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
-  -- liftIO $ putStrLn $ ppShow (envGenExclude env)
-  -- liftIO $ putStrLn $ ppShow (M.keys $ envVars env)
   (env', tv) <- case Can.getExpName exp of
     Just n -> case M.lookup n (envVars env) of
       Just sc -> do
         _ :=> t' <- instantiate sc
         return (env, t')
       --  ^ if a var is already present we don't override its type with a fresh var.
-      Nothing                   -> do
+
+      Nothing -> do
         tv <- newTVar Star
         return (extendVars env (n, Forall [] $ [] :=> tv), tv)
+
     Nothing -> do
       tv <- newTVar Star
       return (env, tv)
 
-  (s1, ps1, t1, e1) <- infer options env' exp
+  (s1, ps1, t1, _) <- infer options env' exp
   ps1' <- concat <$> mapM (gatherInstPreds env') ps1
 
   -- We need to update the env again in case the inference of the function resulted in overloading so that
@@ -818,7 +810,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   (s2, ps, t, e) <- infer options (apply s1 env''') exp
   let s = s1 `compose` s2
 
-  -- let env'' = apply s env'''
   env'' <- case Can.getExpName exp of
     Just n ->
       return $ extendVars env''' (n, Forall [] $ apply s $ ps :=> t)
@@ -826,28 +817,15 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     Nothing ->
       return $ apply s env'''
 
-
-  -- let (s, ps, t, e) = (s1, ps1, t1, e1)
-  -- let env'' = env'''
-
-  s'            <- contextualUnify env'' exp (apply s tv) t
+  s' <- contextualUnify env'' exp (apply s tv) t
   let s'' = s `compose` s1 `compose` s'
-      envWithVarsExcluded =
-        env''
-          {
-            envVars =
-              if isLet then
-                M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env''
-              else
-                envVars env''
-          }
+      envWithVarsExcluded = env''
+        { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
 
       ps' = apply s'' ps
       t'  = apply s'' tv
-      fs  = ftv (apply s'' envWithVarsExcluded)
-      -- fs  = ftv (apply s'' env'')
-      -- fsGen = ftv (apply s'' envWithVarsExcluded)
       vs  = ftv t'
+      fs  = ftv (apply s'' envWithVarsExcluded)
       gs  = vs \\ fs
   (ds, rs, _) <- catchError
     (split False env'' fs vs ps')
@@ -860,9 +838,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     )
 
   (ds', sDefaults) <-
-    -- if isFunctionType t' then
-    --   return (ds ++ rs, mempty)
-    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) && not (isFunctionType t) then do
+    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) && not (isFunctionType t') then do
       (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
@@ -873,37 +849,41 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area)
       return ([], sDef' `compose` sDef)
+    -- else if isFunctionType t then do
+    --   (sDef, rs')   <- tryDefaults env'' rs
+    --   (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
+    --   return (ds ++ rs'', sDef' `compose` sDef)
     else do
-      (sDef, rs')   <- tryDefaults env'' rs
-      (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
-      return (ds ++ rs'', sDef' `compose` sDef)
       -- (sDef, rs')   <- tryDefaults env'' rs
       -- (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
       -- return (ds ++ rs'', sDef' `compose` sDef)
+      return (ds ++ rs, mempty)
 
   ds'' <- dedupePreds <$> getAllParentPreds env ds'
   let sFinal = sDefaults `compose` s''
 
   let sc =
-        if isLet && not (isFunctionType t') then
-          Forall [] $ apply sFinal (ds'' :=> t')
-        else
+        -- if isLet && not (isFunctionType t') then
+        --   Forall [] $ apply sFinal (ds'' :=> t')
+        -- else
           quantify gs $ apply sFinal (ds'' :=> t')
 
-  -- liftIO $ putStrLn $ "Exp: " <> ppShow (Can.getExpName exp)
-  -- liftIO $ putStrLn $ "PS': " <> ppShow ps'
-  -- liftIO $ putStrLn $ "T': " <> ppShow t'
-  -- liftIO $ putStrLn $ "VS: " <> ppShow vs
-  -- liftIO $ putStrLn $ "DS': " <> ppShow ds'
-  -- liftIO $ putStrLn $ "GS: " <> ppShow gs
-  -- liftIO $ putStrLn $ "SC: " <> ppShow sc
+  -- if a predicate refers to a type variable that is not present in the type
+  -- itself we will never be able to find a matching instance and thus have
+  -- an ambiguity
+  when (isFunctionType t' && (ftv ds' \\ ftv t') /= mempty) $ do
+    throwError $ CompilationError
+        (AmbiguousType (TV "-" Star, ds'))
+        (Context (envCurrentPath env) area)
+
+  let returnPreds = if isFunctionType t' then [] else ds''
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t'))
+      return (sFinal, (returnPreds, ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t'))
+      return (sFinal, (returnPreds, ds''), env, updateQualType e (apply sFinal $ ds'' :=> t'))
 
 
 inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -926,10 +906,19 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
 
-  let qs'  = apply s' qs
+  let envWithVarsExcluded =
+        env'
+          {
+            envVars =
+              if isLet then
+                M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'
+              else
+                envVars env'
+          }
+      qs'  = apply s' qs
       t''  = apply s' t
       t''' = mergeRecords (apply s' t') t''
-      fs   = ftv (apply s' env)
+      fs   = ftv (apply s' envWithVarsExcluded)
       gs   = ftv (apply s' t') \\ fs
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
   (ds, rs, substDefaultResolution) <- catchError
@@ -956,73 +945,13 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
     let sc'' = quantify gs qt'
     let env'' = case Can.getExpName exp of
           Just n  ->
-            if isLet && not (isFunctionType t') then
-              extendVars env' (n, Forall [] qt')
-            else
-              extendVars env' (n, sc'')
-
+            extendVars env' (n, sc'')
           Nothing ->
             env'
 
     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ = undefined
--- inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
--- inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
---   qt@(qs :=> t') <- instantiate sc
-
---   let env' = case Can.getExpName exp of
---         Just n  -> extendVars env (n, Forall [] qt)
---         -- Just n  -> extendVars env (n, sc)
---         Nothing -> env
-
---   (s, ps, t, e) <- infer env' exp
---   -- (s, ps, t, e) <- infer env' (Can.getTypedExpExp exp)
---   s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
---   let s' = s `compose` s'' `compose` s''
-
---   let qs'  = apply s' qs
---       t''  = apply s' t
---       -- t''  = apply s' (trace ("T: "<>ppShow t<>"\ns': "<>ppShow s') t)
---       t''' = mergeRecords (apply s' t') t''
---       -- fs   = ftv (apply s' env')
---       fs   = concat $ ftv <$> s'
---       gs   = ftv t''' \\ fs
---   ps'      <- filterM ((not <$>) . entail env' []) (apply s' ps)
---   (ds, rs, substDefaultResolution) <- catchError
---     (split True env' fs gs ps')
---     (\case
---       (CompilationError e NoContext) ->
---         throwError $ CompilationError e (Context (envCurrentPath env) area)
-
---       (CompilationError e c) ->
---         throwError $ CompilationError e c
---     )
-
---   qs'' <- dedupePreds <$> getAllParentPreds env' (dedupePreds (ds ++ rs))
-
---   let scCheck  = quantify (ftv t''') (apply substDefaultResolution ((ds ++ rs) :=> t'''))
---   -- let scCheck  = quantify (ftv (trace ("GS: "<>ppShow gs<>"\nFS: "<>ppShow fs<>"\nRS: "<>ppShow rs<>"\nDS: "<>ppShow ds<>"\nQT: "<>ppShow ((ps') :=> t''')) t''')) (apply substDefaultResolution ((ds ++ rs) :=> t'''))
---   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (trace ("T1: "<>ppShow (ps :=> t)<>"\ndefaultS: "<>ppShow substDefaultResolution<>"\nQT: "<>ppShow (qs :=> t')) t'''))
---   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> apply s' t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (apply s' t'''))
---   if sc /= scCheck then
---     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
---   else if not (null rs) then
---     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
---   else do
---     let e'   = updateQualType e (ds :=> t''')
-
---     let qt'  = qs'' :=> t'''
---     let sc'' = quantify gs qt'
---     -- let sc'' = quantify (ftv qt') qt'
---     let env'' = case Can.getExpName exp of
---           Just n  -> extendVars env' (n, sc'')
---           Nothing -> env'
-
---     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
-
--- inferExplicitlyTyped env _ = undefined
-
 
 
 inferExps :: Options -> Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)
@@ -1042,20 +971,19 @@ inferExps options env (e : es) = do
 
 inferExp :: Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
-  -- TODO: Should this return Nothing?
-  return (Nothing, env) -- return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
+  return (Nothing, env)
 inferExp options env e = do
-  (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
-    Can.Canonical _ Can.TypedExp{} ->
+  (s, placeholderPreds, env', e') <- upgradeContext env (Can.getArea e) $ case e of
+    Can.Canonical _ Can.TypedExp{} -> do
       inferExplicitlyTyped options False env e
 
     _ -> do
       -- NB: Currently handles Extern nodes as well
-      (_, _, env', _) <- inferImplicitlyTyped options False env e
-      (s, (_, ps), env'', e') <- inferImplicitlyTyped options False env' e
-      return (s, ps, env'', e')
+      -- (_, _, env', _)                       <- inferImplicitlyTyped options False env e
+      (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
+      return (s, placeholderPreds, env'', e')
 
-  e''  <- insertClassPlaceholders options env' e' ps
+  e''  <- insertClassPlaceholders options env' e' placeholderPreds
   e''' <- updatePlaceholders options env' (CleanUpEnv False [] [] []) False s e''
 
   return (Just e''', env')
