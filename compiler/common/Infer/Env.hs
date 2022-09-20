@@ -48,6 +48,5 @@ data Env
     -- TODO: remove and use envImportInfo instead
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]
-    , envGenExclude :: [String]
     }
     deriving(Eq, Show, Generic, Hashable)

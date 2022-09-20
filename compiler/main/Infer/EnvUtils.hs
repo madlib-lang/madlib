@@ -403,5 +403,4 @@ initialEnv = Env
   , envCurrentPath = ""
   , envNamespacesInScope = mempty
   , envImportInfo = mempty
-  , envGenExclude = []
   }
