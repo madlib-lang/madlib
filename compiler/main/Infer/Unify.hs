@@ -211,7 +211,7 @@ contextualUnify env exp t1 t2 = catchError
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution
-contextualUnifyElems _ []      = return M.empty
+contextualUnifyElems _ []        = return M.empty
 contextualUnifyElems env (h : r) = contextualUnifyElems' env h r
 
 contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Type)] -> Infer Substitution
@@ -337,8 +337,8 @@ gentleUnify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base
             types'         = M.elems updatedFields'
         gentleUnifyVars M.empty types types'
 
-gentleUnify (TVar tv) t         = varBind tv t
-gentleUnify t         (TVar tv) = varBind tv t
+gentleUnify (TVar tv) t         = return $ M.singleton tv t
+gentleUnify t         (TVar tv) = return $ M.singleton tv t
 gentleUnify (TCon a fpa) (TCon b fpb)
   | a == b && fpa == fpb = return M.empty
   | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
