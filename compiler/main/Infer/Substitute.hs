@@ -73,7 +73,7 @@ instance Substitutable Type where
   ftv (TVar a                    ) = [a]
   ftv (t1      `TApp` t2         ) = ftv t1 `union` ftv t2
   ftv (TRecord fields Nothing    ) = foldr (\v s -> union s $ ftv v) [] (M.elems fields)
-  ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) ++ ftv base
+  ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) `union` ftv base
   ftv _                            = []
 
 

@@ -74,10 +74,9 @@ insertVarPlaceholders options env exp@(Slv.Typed t a e) (p : ps) =
     return exp
 
 
-
 insertClassPlaceholders :: Options -> Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 insertClassPlaceholders _ _   exp []       = return exp
-insertClassPlaceholders options env exp (p : ps) =
+insertClassPlaceholders options env exp (p : ps) = do
   if optInsertInstancePlaholders options then do
     insert <- shouldInsert env p
     if not insert then
@@ -264,6 +263,14 @@ updateClassPlaceholder options env cleanUpEnv _ push s ph =
 
                 _ ->
                   Nothing
+
+
+        -- if not call then
+        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+        -- else
+        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
+
+
 
         if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
           -- this class ref is already in scope so we skip the placeholder

@@ -152,8 +152,8 @@ prettyQt :: Bool -> Qual Type -> String
 prettyQt topLevel qt@(_ :=> t)
   | qt == failedQt = "_"
   | topLevel       = prettyPrintQualType qt
-  | otherwise      = prettyPrintQualType qt
-  -- | otherwise      = prettyPrintType True t
+  | otherwise      = prettyPrintType True t
+  -- | otherwise      = prettyPrintQualType qt
 
 
 data Node
