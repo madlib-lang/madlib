@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 module Infer.Placeholder where
 
 import           Infer.Type
@@ -122,6 +123,68 @@ insertClassPlaceholders options env exp (p : ps) = do
       _ -> return exp
   else
     return exp
+
+any' :: [a] -> (a -> Bool) -> Bool
+any' = flip any
+
+cleanUpDeletedVarPlaceholders :: [Pred] -> Slv.Exp -> Slv.Exp
+cleanUpDeletedVarPlaceholders removedPs exp = case exp of
+  Slv.Typed qt area (Slv.Placeholder ref@(Slv.ClassRef cls _ _ _, ts) e) ->
+    let wasRemoved = any' removedPs $ \(IsIn cls' ts' _) -> cls == cls' && ts == ts'
+    in  if wasRemoved then
+          cleanUpDeletedVarPlaceholders removedPs e
+        else
+          Slv.Typed qt area (Slv.Placeholder ref (cleanUpDeletedVarPlaceholders removedPs e))
+
+  Slv.Typed qt area (Slv.App fn arg isFinal) ->
+    let fn' = cleanUpDeletedVarPlaceholders removedPs fn
+        arg' = cleanUpDeletedVarPlaceholders removedPs arg
+    in  Slv.Typed qt area (Slv.App fn' arg' isFinal)
+
+  Slv.Typed qt area (Slv.TemplateString exps) ->
+    let exps' = map (cleanUpDeletedVarPlaceholders removedPs) exps
+    in  Slv.Typed qt area (Slv.TemplateString exps')
+
+  Slv.Typed qt area (Slv.Access rec field) ->
+    let rec' = cleanUpDeletedVarPlaceholders removedPs rec
+        field' = cleanUpDeletedVarPlaceholders removedPs field
+    in  Slv.Typed qt area (Slv.Access rec' field')
+
+  Slv.Typed qt area (Slv.Abs param body) ->
+    let body' = map (cleanUpDeletedVarPlaceholders removedPs) body
+    in  Slv.Typed qt area (Slv.Abs param body')
+
+  Slv.Typed qt area (Slv.Assignment name value) ->
+    let value' = cleanUpDeletedVarPlaceholders removedPs value
+    in  Slv.Typed qt area (Slv.Assignment name value')
+
+  Slv.Typed qt area (Slv.Export e) ->
+    let e' = cleanUpDeletedVarPlaceholders removedPs e
+    in  Slv.Typed qt area (Slv.Export e')
+
+  Slv.Typed qt area (Slv.TypedExp e typing sc) ->
+    let e' = cleanUpDeletedVarPlaceholders removedPs e
+    in  Slv.Typed qt area (Slv.TypedExp e' typing sc)
+
+  Slv.Typed qt area (Slv.ListConstructor items) ->
+    let cleanUpListItem = \case
+          Slv.Typed qt area (Slv.ListItem e) ->
+            Slv.Typed qt area (Slv.ListItem (cleanUpDeletedVarPlaceholders removedPs e))
+
+          Slv.Typed qt area (Slv.ListSpread e) ->
+            Slv.Typed qt area (Slv.ListSpread (cleanUpDeletedVarPlaceholders removedPs e))
+        items' = map cleanUpListItem items
+    in  Slv.Typed qt area (Slv.ListConstructor items')
+
+  Slv.Typed qt area (Slv.TupleConstructor exps) ->
+    let exps' = map (cleanUpDeletedVarPlaceholders removedPs) exps
+    in  Slv.Typed qt area (Slv.TupleConstructor exps')
+
+  -- TODO: walk down the tree
+  
+  or ->
+    or
+
 
 
 shouldInsert :: Env -> Pred -> Infer Bool
@@ -272,27 +335,70 @@ updateClassPlaceholder options env cleanUpEnv _ push s ph =
 
 
 
-        if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
-          -- this class ref is already in scope so we skip the placeholder
-          return exp'
-        else if not call then
+        if not call then
           if not var' then
-            -- if the instance is resolve there's no point in having (IntegerDict) => ... and we can
+            -- if the instance is resolved there's no point in having (IntegerDict) => ... and we can
             -- safely drop the dictionary.
             return exp'
-          else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
-            -- In that case we need to extend the env to express what dictionary was removed so that we can
-            -- remove the dictionaries at call sites
-            -- In the case of method definition, the predicates come from interface declaration and instance
-            -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
-            -- just yet.
-            return exp'
+          -- else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+          --   -- In that case we need to extend the env to express what dictionary was removed so that we can
+          --   -- remove the dictionaries at call sites
+          --   -- In the case of method definition, the predicates come from interface declaration and instance
+          --   -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+          --   -- just yet.
+          --   return exp'
           else
             return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
         else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
           return exp'
         else
           return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
+
+        -- if (newRef `elem` dictsInScope cleanUpEnv) && isNameInScope maybeName cleanUpEnv then do
+        --   -- liftIO $ putStrLn $ "maybeName: " <> ppShow maybeName <> "\nisInScope: " <> ppShow (isNameInScope maybeName cleanUpEnv) <> "\n\n"
+        --   -- this class ref is already in scope so we skip the placeholder
+        --   return exp'
+        -- else if not call then
+        --   if not var' then
+        --     -- if the instance is resolved there's no point in having (IntegerDict) => ... and we can
+        --     -- safely drop the dictionary.
+        --     return exp'
+        --   else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+        --     -- In that case we need to extend the env to express what dictionary was removed so that we can
+        --     -- remove the dictionaries at call sites
+        --     -- In the case of method definition, the predicates come from interface declaration and instance
+        --     -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+        --     -- just yet.
+        --     return exp'
+        --   else
+        --     return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+        -- else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
+        --   return exp'
+        -- else
+        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
+
+
+        -- if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
+        --   -- this class ref is already in scope so we skip the placeholder
+        --   return exp'
+        -- else if not call then
+        --   if not var' then
+        --     -- if the instance is resolved there's no point in having (IntegerDict) => ... and we can
+        --     -- safely drop the dictionary.
+        --     return exp'
+        --   else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+        --     -- In that case we need to extend the env to express what dictionary was removed so that we can
+        --     -- remove the dictionaries at call sites
+        --     -- In the case of method definition, the predicates come from interface declaration and instance
+        --     -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+        --     -- just yet.
+        --     return exp'
+        --   else
+        --     return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+        -- else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
+        --   return exp'
+        -- else
+        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
       _ ->
         undefined

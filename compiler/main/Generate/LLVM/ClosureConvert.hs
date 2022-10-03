@@ -226,10 +226,10 @@ findFreeVars env exp = do
         (MethodRef _ _ False, _) ->
           return []
 
-        (ClassRef interface _ _ True, ts) -> do
         -- (ClassRef interface _ False True, ts) -> do
-          let dictName = "$" <> interface <> "$" <> ts
-          findFreeVars (env { dictsInScope = dictName : dictsInScope env }) exp
+        -- -- (ClassRef interface _ False True, ts) -> do
+        --   let dictName = "$" <> interface <> "$" <> ts
+        --   findFreeVars (env { dictsInScope = dictName : dictsInScope env }) exp
 
         _ ->
           findFreeVars env exp
@@ -619,25 +619,26 @@ instance Convertable Exp Exp where
     Definition params body -> do
       body''       <- convertBody [] env body
       fvs          <- findFreeVars env fullExp
+      let withoutFreeVarDictsNotInScope = removeDictsNotInScope env fvs
       functionName <- generateLiftedName env "$lambda"
 
       let paramsWithFreeVars =
             (
               (\(n, exp) ->
                 Typed (getQualType exp) emptyArea [ReferenceParameter | n `elem` mutationsInScope env] n
-              ) <$> fvs
+              ) <$> withoutFreeVarDictsNotInScope
             ) ++ params
 
-      let liftedType = foldr fn t (getType . snd <$> fvs)
+      let liftedType = foldr fn t (getType . snd <$> withoutFreeVarDictsNotInScope)
       let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
       addTopLevelExp lifted
 
       let functionNode = Typed (ps :=> liftedType) area [] (Var functionName False)
 
-      if null fvs then
+      if null withoutFreeVarDictsNotInScope then
         return functionNode
       else
-        let fvVarNodes = snd <$> fvs
+        let fvVarNodes = snd <$> withoutFreeVarDictsNotInScope
             fvVarNodes' =
               (\arg -> case arg of
                   Typed argQt argArea argMeta (Var n False) | n `elem` mutationsInScope env ->
@@ -656,9 +657,9 @@ instance Convertable Exp Exp where
         let placeholderParams = Typed ([] :=> tVar "dict") emptyArea [] <$> dicts
         case innerExp of
           Typed _ _ _ Definition{} -> do
-            convertDefinition env { dictsInScope = dictsInScope env ++ dicts } functionName dicts [] innerExp
+            convertDefinition env { stillTopLevel = False, dictsInScope = dictsInScope env ++ dicts } functionName dicts [] innerExp
           _ -> do
-            innerExp' <- convert env { stillTopLevel = False } innerExp
+            innerExp' <- convert env { stillTopLevel = False, dictsInScope = dictsInScope env ++ dicts } innerExp
             return $ Typed (ps :=> typeWithPlaceholders) area metadata (Assignment functionName (Typed (ps :=> typeWithPlaceholders) area [] (Definition placeholderParams [innerExp'])))
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph

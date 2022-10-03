@@ -242,6 +242,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             renamedAst       = Rename.renameAST coreAst
             reducedAst       = EtaReduction.reduceAST renamedAst
             closureConverted = ClosureConvert.convertAST reducedAst
+        -- liftIO $ putStrLn $ "reducedAst:\n" <> ppShow reducedAst
         return (TCE.resolveAST closureConverted, (mempty, mempty))
 
       _ -> do
