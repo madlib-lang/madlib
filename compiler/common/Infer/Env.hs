@@ -40,11 +40,11 @@ data ImportInfo
 
 data Env
   = Env
-    { envVars         :: Vars
-    , envInterfaces   :: Interfaces
+    { envVars :: Vars
+    , envInterfaces :: Interfaces
     , envConstructors :: Set.Set String
-    , envMethods      :: Methods
-    , envCurrentPath  :: FilePath
+    , envMethods :: Methods
+    , envCurrentPath :: FilePath
     -- TODO: remove and use envImportInfo instead
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]

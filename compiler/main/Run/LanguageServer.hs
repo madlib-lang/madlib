@@ -340,7 +340,7 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
               <|> findNodeAtLoc False loc falsy
 
             Slv.Export exp' ->
-              findNodeAtLoc False loc exp'
+              findNodeAtLoc True loc exp'
 
             Slv.TypedExp exp' typing _ ->
               findNodeInTypeAnnotation loc Nothing typing
