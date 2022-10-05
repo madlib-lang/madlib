@@ -193,14 +193,14 @@ extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
 
-computeRemovedPsBecauseSolved :: Env -> [Pred] -> [Pred] -> Infer [Pred]
+computeRemovedPsBecauseSolved :: Env -> [Pred] -> [Pred] -> Infer [Int]
 computeRemovedPsBecauseSolved env unapplied applied = do
-  maybes <- forM (zip unapplied applied) $ \(unapp, app) -> do
+  maybes <- forM (zip3 unapplied applied [0..]) $ \(unapp, app, index) -> do
     maybeUnappliedInst <- findInst env unapp
-    maybeAppliedInst <- findInst env app
+    maybeAppliedInst   <- findInst env app
     case (maybeUnappliedInst, maybeAppliedInst) of
       (Nothing, Just _) ->
-        return $ Just unapp
+        return $ Just index
 
       (_, _) ->
         return Nothing
@@ -213,19 +213,17 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
   (s, ps, t, es) <- inferBody options env' body
-  -- (s, ps, t, es) <- inferImplicitGroup options True env' body
-
-  let ftvEnv = ftv (apply s env') `List.union` ftv (apply s (tv `fn` t))
 
   (es', s', _) <- foldM
-    (\(results, accSubst, removedPs') (Slv.Typed (ps' :=> t') area e) -> do
+    (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
+      let ftvEnv = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
       let ps'' = apply accSubst ps'
       let ftvExtra = ftvForLetGen (apply accSubst t')
-      liftIO $ putStrLn $ "Exp:\n" <> ppShow (Slv.getExpName (Slv.Typed (ps' :=> t') area e))
-      liftIO $ putStrLn $ "ps':\n" <> ppShow ps'
-      liftIO $ putStrLn $ "ps'':\n" <> ppShow ps''
-      liftIO $ putStrLn $ "removedPs':\n" <> ppShow removedPs'
-      liftIO $ putStrLn $ "fullExp':\n" <> ppShow (Slv.Typed (ps' :=> t') area e)
+      -- liftIO $ putStrLn $ "ftv:\n" <> ppShow (ftvEnv `List.union` ftvExtra)
+      -- liftIO $ putStrLn $ "ps':\n" <> ppShow ps'
+      -- liftIO $ putStrLn $ "ps'':\n" <> ppShow ps''
+      -- liftIO $ putStrLn $ "indicesToRemove':\n" <> ppShow (envPlaceholdersToDelete env)
+      -- liftIO $ putStrLn $ "fullExp':\n" <> ppShow (Slv.Typed (ps' :=> t') area e)
 
       (ps''', extraS) <- do
         prep <- forM ps'' $ \p -> do
@@ -239,7 +237,12 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
 
         let solvedPs = catMaybes prep
         let unsolvedPs = ps'' \\ solvedPs
-        if ambiguities (ftvEnv `List.union` ftvExtra) (apply s unsolvedPs) /= [] then do
+
+        if ambiguities (ftvEnv `List.union` ftvExtra) unsolvedPs /= [] then do
+          -- liftIO $ putStrLn $ "Exp:" <> ppShow (Slv.getExpName (Slv.Typed (ps' :=> t') area e))
+          -- liftIO $ putStrLn $ "ambiguities:\n" <> ppShow (ambiguities (ftvEnv `List.union` ftvExtra) unsolvedPs)
+
+
           (sDef, unsolvedPs')   <- tryDefaults env unsolvedPs
           (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
           let subst = sDef' `compose` sDef
@@ -254,80 +257,39 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
         else
           return (ps'', mempty)
 
-      e' <- insertClassPlaceholders options env (Slv.Typed (apply accSubst $ ps''' :=> t') area e) (dedupePreds (apply accSubst ps'''))
-      psToRemove <- computeRemovedPsBecauseSolved env ps' ps''
-      let removedPs'' = removedPs' ++ (ps'' \\ ps''') ++ psToRemove
-      let e'' = cleanUpDeletedVarPlaceholders removedPs'' e'
-      return (results ++ [e''], extraS `compose` accSubst, removedPs'')
+      let sFinal = extraS `compose` accSubst
+      -- let sFinal = accSubst `compose` extraS
+      e' <- insertClassPlaceholders options env (Slv.Typed (apply sFinal $ ps''' :=> t') area e) (dedupePreds (apply sFinal ps'''))
+      -- liftIO $ putStrLn $ "loc:\n" <> ppShow (Slv.getArea fullExp)
+      -- liftIO $ putStrLn $ "ps':\n" <> ppShow ps'
+      -- liftIO $ putStrLn $ "ps'':\n" <> ppShow (apply sFinal ps')
+      let ps'' = ps'
+      -- let ps'' = reverse $ dedupePreds ps'
+      psToRemove <- computeRemovedPsBecauseSolved env ps'' (apply sFinal ps'')
+      -- psToRemove <- computeRemovedPsBecauseSolved env ps'' (apply sFinal ps'')
+
+      -- liftIO $ putStrLn $ "indicesToRemove':\n" <> ppShow psToRemove
+      -- let removedPs'' = removedPs' ++ (ps'' \\ ps''') ++ psToRemove
+      let env''' = case Slv.getExpName fullExp of
+            Just n ->
+              env'' { envPlaceholdersToDelete = M.insert n psToRemove (envPlaceholdersToDelete env'') }
+
+            Nothing ->
+              env''
+      -- liftIO $ putStrLn $ "e:\n" <> ppShow e
+      -- liftIO $ putStrLn $ "ps':\n" <> ppShow ps''
+      -- liftIO $ putStrLn $ "ps'':\n" <> ppShow (apply (extraS `compose` accSubst) ps'')
+      -- liftIO $ putStrLn $ "envPlaceholdersToDelete:\n" <> ppShow (envPlaceholdersToDelete env''')
+      let e'' = cleanUpDeletedVarPlaceholders env''' e'
+
+      return (results ++ [e''], sFinal, apply sFinal env''')
     )
-    (mempty, s, mempty)
+    (mempty, s, env')
     es
-
-  -- es' <- forM es $ \(Slv.Typed (ps' :=> t') area e) -> do
-  --   let ps'' = apply s ps'
-  --   let ftvExtra = ftvForLetGen (apply s t')
-
-  --   (ps''', extraS) <- do
-  --     prep <- forM ps'' $ \p -> do
-  --       maybeInst <- findInst env p
-  --       case maybeInst of
-  --         Just _ ->
-  --           return $ Just p
-
-  --         _ ->
-  --           return Nothing
-
-  --     let solvedPs = catMaybes prep
-  --     let unsolvedPs = ps'' \\ solvedPs
-  --     if ambiguities (ftvEnv `List.union` ftvExtra) (apply s unsolvedPs) /= [] then do
-  --       -- liftIO $ putStrLn $ "as:\n" <> ppShow (ambiguities (ftvEnv `List.union` ftvExtra) (apply s unsolvedPs))
-  --       (sDef, unsolvedPs')   <- tryDefaults env unsolvedPs
-  --       (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
-  --       let subst = sDef' `compose` sDef
-
-  --       if ambiguities (ftvEnv `List.union` ftvExtra) unsolvedPs'' /= [] then do
-  --         -- liftIO $ putStrLn $ "fvs:\n" <> ppShow (ftvEnv `List.union` ftvExtra)
-  --         -- liftIO $ putStrLn $ "ps:\n" <> ppShow (apply s unsolvedPs)
-  --         -- liftIO $ putStrLn $ "as:\n" <> ppShow (ambiguities (ftvEnv `List.union` ftvExtra) unsolvedPs'')
-  --         -- liftIO $ putStrLn $ "s:\n" <> ppShow s
-  --         throwError $ CompilationError
-  --           (AmbiguousType (TV "-" Star, apply subst unsolvedPs''))
-  --           (Context (envCurrentPath env) area)
-  --       else
-  --         return (unsolvedPs'' ++ solvedPs, subst)
-  --       return (unsolvedPs'' ++ solvedPs, subst)
-  --     else
-  --       return (ps'', mempty)
-
-  --   insertClassPlaceholders options env (Slv.Typed (apply extraS $ ps''' :=> t') area e) (dedupePreds (apply extraS ps'''))
-
-  -- (ps', extraS) <- do
-  --   let ftvExtra = ftv (apply s (tv `fn` t))
-  --   if ambiguities (ftvEnv `List.union` ftvExtra) (apply s ps) /= [] then do
-  --     -- liftIO $ putStrLn $ "module path: " <> envCurrentPath env
-  --     -- liftIO $ putStrLn $ "ambiguities:\n" <> ppShow (ambiguities allVars rs')
-  --     (sDef, rs'')   <- tryDefaults env ps
-  --     (sDef', rs''') <- tryDefaults env (apply sDef rs'')
-  --     let subst = sDef' `compose` sDef
-  --     -- liftIO $ putStrLn $ "after defaults:\n" <> ppShow rs'''
-
-  --     -- if isFunctionType t' && (ftv (apply subst rs''') \\ ftv (apply subst t')) /= mempty then
-  --     -- if (ftv (apply subst rs''') \\ ftv (apply subst t')) /= mempty then
-  --     if ambiguities (ftvEnv `List.union` ftvExtra) rs''' /= [] then
-  --       throwError $ CompilationError
-  --         (AmbiguousType (TV "-" Star, apply subst rs'''))
-  --         (Context (envCurrentPath env) area)
-  --     else
-  --       return (rs''', subst)
-  --     return (rs''', subst)
-  --   else
-  --     return (ps, mempty)
 
   let t'        = apply s' (tv `fn` t)
       paramType = apply s' tv
 
-
-  -- liftIO $ putStrLn $ "es':\n" <> ppShow es'
   return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' ps :=> paramType) area param) es' (apply s' ps :=> t'))
 
 
@@ -921,286 +883,6 @@ foldM' :: (Foldable t, Monad m) => t a -> b -> (b -> a -> m b) -> m b
 foldM' a b c = foldM c b a
 
 
-inferImplicitGroup :: Options -> Bool -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferImplicitGroup options isLet env exps = do
-  (env_', s_, results_) <- foldM' exps (env, mempty, []) $ \(env', accSubst, results') exp@(Can.Canonical area _) -> do
-    (env'', tv) <- case Can.getExpName exp of
-      Just n -> case M.lookup n (envVars env') of
-        Just sc -> do
-          _ :=> t' <- instantiate sc
-          return (env', t')
-          --  ^ if a var is already present we don't override its type with a fresh var.
-
-        Nothing -> do
-          tv <- newTVar Star
-          return (extendVars env' (n, Forall [] $ [] :=> tv), tv)
-
-      Nothing -> do
-        tv <- newTVar Star
-        return (env', tv)
-
-    (s, ps, t, e) <- infer options env'' exp
-
-    env''' <- case Can.getExpName exp of
-      Just n ->
-        return $ apply s $ extendVars env'' (n, Forall [] $ ps :=> t)
-
-      Nothing ->
-        return $ apply s env''
-
-    s' <- contextualUnify env''' exp (apply s tv) t
-
-    let s'' = s `compose` s'
-        ps' = apply s'' ps
-        t'  = apply s'' tv
-        vs  =
-          if isLet then
-            ftvForLetGen t'
-          else
-            ftv t'
-        fs  = ftv (apply s'' env)
-        gs  = vs \\ fs
-    (ds, rs, _) <- catchError
-      (split False (apply s'' env) fs (ftv t') ps')
-      (\case
-        (CompilationError e NoContext) ->
-          throwError $ CompilationError e (Context (envCurrentPath env) area)
-
-        (CompilationError e c) ->
-          throwError $ CompilationError e c
-      )
-
-    -- let sFinal = accSubst `compose` s''
-    let sFinal = s'' `compose` accSubst
-    -- let sFinal = sDefaults `compose` s''
-
-    let sc = quantify gs $ apply sFinal (rs :=> t')
-    let env'''' = case Can.getExpName exp of
-          Just n ->
-            extendVars env''' (n, sc)
-
-          Nothing ->
-            env'''
-
-    return (env'''', sFinal, results' ++ [((ds, rs), t', updateQualType e (apply sFinal $ rs :=> t'))])
-  
-  let env_'' = apply s_ env
-      fs_  = ftv env_''
-      -- vss  = map (\(_, t, _) -> ftv t) results
-      -- gs = foldr1 List.union vss
-      -- rs' = concat $ map (\((_, rs), _, _) -> rs) results
-  let ((_, lastRs_), _, _) = last results_
-  let lastRs_' = apply s_ lastRs_
-
-  withPlaceholders_ <- forM results_ $ \((ds, rs'), t', e) -> do
-    (rs'', extraS) <- do
-      let rs_' = apply s_ rs'
-      if ambiguities (fs_ ++ ftv lastRs_' ++ ftvForLetGen t') rs_' /= [] then do
-      -- if ambiguities (fs_ ++ ftv lastRs_) rs' /= [] then do
-        (sDef, rs'')   <- tryDefaults env_'' rs_'
-        (sDef', rs''') <- tryDefaults env_'' (apply sDef rs'')
-        let subst = sDef' `compose` sDef
-
-        if ambiguities (fs_ ++ ftv lastRs_') rs''' /= [] then
-          throwError $ CompilationError
-            (AmbiguousType (TV "-" Star, apply subst rs'''))
-            (Context (envCurrentPath env) (Slv.getArea e))
-        else
-          return (apply subst rs''', subst)
-      else
-        return (rs_', mempty)
-
-    let envVars =
-          case Slv.getExpName e of
-            Just n ->
-              let vs  =
-                    if isLet then
-                      ftvForLetGen t'
-                    else
-                      ftv t'
-                  fs  = ftv (apply (extraS `compose` s_) env)
-                  gs  = vs \\ fs
-                  sc = quantify gs $ apply (extraS `compose` s_) (rs' :=> t')
-              in  [(n, sc)]
-
-            Nothing ->
-              []
-
-    return (ds, rs'', t', e, extraS, envVars)
-
-  let extraS_             = foldl1 compose $ map (\(_, _, _, _, e, _) -> e) withPlaceholders_
-  let finalEnvVars        = M.fromList $ concatMap (\(_, _, _, _, _, f) -> f) withPlaceholders_
-  let sFinal_             = extraS_ `compose` s_
-  let finalEnv            = env_' { envVars = M.union (apply sFinal_ <$> finalEnvVars) (envVars env_') }
-
-  (env', s, results) <- foldM' exps (finalEnv, sFinal_, []) $ \(env', accSubst, results') exp@(Can.Canonical area _) -> do
-    (env'', tv) <- case Can.getExpName exp of
-      Just n -> case M.lookup n (envVars env') of
-        Just sc -> do
-          _ :=> t' <- instantiate sc
-          return (env', t')
-          --  ^ if a var is already present we don't override its type with a fresh var.
-
-        Nothing -> do
-          tv <- newTVar Star
-          return (extendVars env' (n, Forall [] $ [] :=> tv), tv)
-
-      Nothing -> do
-        tv <- newTVar Star
-        return (env', tv)
-
-    (s1, ps, t, e) <- infer options env'' exp
-    -- let s = s1 `compose` sFinal_
-    let s = s1 `compose` accSubst
-    -- let s = s1 `compose` s1 `compose` sFinal_
-
-
-    -- let s = sFinal_ `compose` s1
-    -- let s = accSubst `compose` sFinal_ `compose` s1
-    -- let s = accSubst `compose` sFinal_ `compose` s1
-    -- let s = s1 `compose` s1
-
-
-    -- liftIO $ putStrLn $ "S:\n" <> ppShow s
-    -- liftIO $ putStrLn $ "accSubst:\n" <> ppShow accSubst
-    -- liftIO $ putStrLn $ "sFinal_:\n" <> ppShow sFinal_
-
-    let env''' = env''
-    -- env''' <- case Can.getExpName exp of
-    --   Just n ->
-    --     return $ extendVars env'' (n, Forall [] $ apply s $ ps :=> t)
-
-    --   Nothing ->
-    --     return $ apply s env''
-
-    s' <- contextualUnify env''' exp (apply s tv) (apply s t)
-    let s'' = s `compose` s'
-        ps' = apply s'' ps
-        t'  = apply s'' tv
-        vs  =
-          if isLet then
-            ftvForLetGen t'
-          else
-            ftv t'
-        fs  = ftv (apply s'' env)
-        gs  = vs \\ fs
-    (ds, rs, _) <- catchError
-      (split False (apply s'' env) fs (ftv t') ps')
-      (\case
-        (CompilationError e NoContext) ->
-          throwError $ CompilationError e (Context (envCurrentPath env) area)
-
-        (CompilationError e c) ->
-          throwError $ CompilationError e c
-      )
-
-    -- let sFinal = sDefaults `compose` s'' `compose` accSubst
-    let sFinal = s''-- `compose` accSubst
-
-    -- let sFinal = sFinal_ `compose` sDefaults `compose` s'' `compose` accSubst
-    -- let sFinal = sDefaults `compose` s''
-
-    -- let sc = quantify gs $ apply sFinal (rs' :=> t')
-    -- let env'''' = case Can.getExpName exp of
-    --       Just n ->
-    --         extendVars env'' (n, sc)
-
-    --       Nothing ->
-    --         env''
-
-    return (env''', sFinal, results' ++ [((ds, rs), t', updateQualType e (apply sFinal $ rs :=> t'))])
-  
-  let env'' = apply s env
-      fs  = ftv env''
-      -- vss  = map (\(_, t, _) -> ftv t) results
-      -- gs = foldr1 List.union vss
-      -- rs' = concat $ map (\((_, rs), _, _) -> rs) results
-  let ((_, lastRs), _, _) = last results
-  let lastRs' = apply s lastRs
-
-  withPlaceholders <- forM results $ \((ds, rs'), t', e) -> do
-    (rs'', extraS) <- do
-      let rs_' = apply s rs'
-
-      if ambiguities (fs ++ ftv lastRs ++ ftvForLetGen t') rs_' /= [] then do
-      -- if ambiguities (fs ++ ftv lastRs') rs_' /= [] then do
-        (sDef, rs'')   <- tryDefaults env'' rs_'
-        (sDef', rs''') <- tryDefaults env'' (apply sDef rs'')
-        let subst = sDef' `compose` sDef
-
-        if ambiguities (fs ++ ftv lastRs') rs''' /= [] then
-          throwError $ CompilationError
-            (AmbiguousType (TV "-" Star, apply subst rs'''))
-            (Context (envCurrentPath env) (Slv.getArea e))
-        else
-          return (apply subst rs''', subst)
-      else
-        return (rs_', mempty)
-        -- return (apply s rs', mempty)
-
-    rs''' <- dedupePreds <$> getAllParentPreds env rs''
-
-    e' <- insertClassPlaceholders options env' e rs'''
-    -- liftIO $ putStrLn $ "Exp: " <> ppShow (Slv.getExpName e)
-    -- liftIO $ putStrLn $ "rs''': " <> ppShow rs'''
-    -- liftIO $ putStrLn $ "ds: " <> ppShow ds
-    let envVars =
-          case Slv.getExpName e of
-            Just n ->
-              let vs  =
-                    if isLet then
-                      ftvForLetGen t'
-                    else
-                      ftv t'
-                  fs  = ftv (apply (extraS `compose` s) env)
-                  gs  = vs \\ fs
-                  sc = quantify gs $ apply (extraS `compose` s) (rs' :=> t')
-              in  [(n, sc)]
-
-            Nothing ->
-              []
-
-    return (ds, rs'', t', e', extraS, envVars)
-
-  -- liftIO $ putStrLn $ "withPlaceholders:\n" <> ppShow withPlaceholders <> "\n"
-
-  let extraS              = foldl1 compose $ map (\(_, _, _, _, e, _) -> e) withPlaceholders
-  let sFinal              = extraS `compose` s
-
-  let dss                 = map (\(a, _, _, _, _, _) -> a) withPlaceholders
-  let (_, rs, _, _, _, _) = last withPlaceholders
-  let ts                  = map (\(_, _, c, _, _, _) -> apply sFinal c) withPlaceholders
-  let es                  = map (\(_, _, _, d, _, _) -> d) withPlaceholders
-
-  -- let finalEnvVars        = concatMap (\(_, _, _, _, _, f) -> f) withPlaceholders
-  -- let finalEnv            = env' { envVars = M.union (M.fromList finalEnvVars) (envVars env') }
-  
-  
-  return (sFinal, rs ++ concat dss, last ts, es)
-
--- tiImpls         :: Infer [Impl] [Assump]
--- tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
---   let is    = map fst bs
---       scs   = map toScheme ts
---       as'   = zipWith (:>:) is scs ++ as
---       altss = map snd bs
---   pss <- sequence (zipWith (tiAlts ce as') altss ts)
---   s   <- getSubst
---   let ps'     = apply s (concat pss)
---       ts'     = apply s ts
---       fs      = tv (apply s as)
---       vss     = map tv ts'
---       gs      = foldr1 union vss \\ fs
---   (ds,rs) <- split ce fs (foldr1 intersect vss) ps'
---   if restricted bs then
---       let gs'  = gs \\ tv rs
---           scs' = map (quantify gs' . ([]:=>)) ts'
---       in return (ds++rs, zipWith (:>:) is scs')
---     else
---       let scs' = map (quantify gs . (rs:=>)) ts'
---       in return (ds, zipWith (:>:) is scs')
-
-
 inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   (env', tv) <- case Can.getExpName exp of
@@ -1221,11 +903,39 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   (s1, ps1, t1, e1) <- infer options env' exp
   ps1' <- concat <$> mapM (gatherInstPreds env') ps1
 
+
+  let envWithVarsExcluded = env'
+        { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env' }
+
+      ps' = apply s1 ps1
+      t'  = apply s1 tv
+      vs  =
+        if isLet then
+          ftvForLetGen t'
+        else
+            ftv t'
+      fs  = ftv (apply s1 envWithVarsExcluded)
+      gs  = vs \\ fs
+  (_, rs, _) <- catchError
+    (split False envWithVarsExcluded fs (ftv t') ps')
+    (\case
+      (CompilationError e NoContext) -> do
+        throwError $ CompilationError e (Context (envCurrentPath env) area)
+
+      (CompilationError e c) -> do
+        throwError $ CompilationError e c
+    )
+
+  -- liftIO $ putStrLn $ "Exp: " <> ppShow (Slv.getExpName e1)
+  -- liftIO $ putStrLn $ "s1:\n" <> ppShow s1
+  -- liftIO $ putStrLn $ "ps1:\n" <> ppShow ps1
+  -- liftIO $ putStrLn $ "t:\n" <> ppShow (rs :=> t1)
+  -- liftIO $ putStrLn $ "applied t:\n" <> ppShow (apply s1 $ rs :=> t1)
   -- We need to update the env again in case the inference of the function resulted in overloading so that
   -- we can have the predicates to generate the correct placeholders when fetching the var from the env
   env''' <- case Can.getExpName exp of
     Just n ->
-      return $ extendVars env' (n, Forall [] $ ps1' :=> t1)
+      return $ extendVars env' (n, Forall [] $ rs :=> t1)
 
     Nothing ->
       return env'
@@ -1233,16 +943,17 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   -- Once we have gattered clues we update the env types and infer it again
   -- to handle recursion errors. We probably need to improve that solution at
   -- some point!
-  -- (s2, ps, t, e) <- infer options (apply s1 env''') exp
-  -- let s = s1 `compose` s2
-  let (s, ps, t, e) = (s1, ps1, t1, e1)
+  (s2, ps, t, e) <- infer options (apply s1 env''') exp
+  let s = s1 `compose` s2
+  -- let (s, ps, t, e) = (s1, ps1, t1, e1)
 
-  env'' <- case Can.getExpName exp of
-    Just n ->
-      return $ extendVars env''' (n, Forall [] $ apply s $ ps :=> t)
+  -- env'' <- case Can.getExpName exp of
+  --   Just n ->
+  --     return $ extendVars env''' (n, Forall [] $ apply s $ ps :=> t)
 
-    Nothing ->
-      return $ apply s env'''
+  --   Nothing ->
+  --     return $ apply s env'''
+  let env'' = apply s env'''
 
   s' <- contextualUnify env'' exp (apply s tv) t
   let s'' = s `compose` s1 `compose` s'
@@ -1280,42 +991,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area)
       return ([], [], sDef' `compose` sDef)
-    -- else if isFunctionType t then do
-    --   (sDef, rs')   <- tryDefaults env'' rs
-    --   (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
-    --   return (ds ++ rs'', sDef' `compose` sDef)
     else do
       return (ds, rs, mempty)
-
-  -- -- if a predicate refers to a type variable that is not present in the type
-  -- -- itself we will never be able to find a matching instance and thus have
-  -- -- an ambiguity
-  -- (rs'', extraS) <- do
-  --   let allVars = fs
-  --   -- let allVars =
-  --   --       if isLet then
-  --   --         fs ++ ftv t'
-  --   --       else
-  --   --         fs
-  --   -- if (ftv rs' \\ ftv t') /= mempty then do
-  --   if ambiguities allVars rs' /= [] then do
-  --     -- liftIO $ putStrLn $ "module path: " <> envCurrentPath env
-  --     -- liftIO $ putStrLn $ "ambiguities:\n" <> ppShow (ambiguities allVars rs')
-  --     (sDef, rs'')   <- tryDefaults env'' rs'
-  --     (sDef', rs''') <- tryDefaults env'' (apply sDef rs'')
-  --     let subst = sDef' `compose` sDef
-  --     -- liftIO $ putStrLn $ "after defaults:\n" <> ppShow rs'''
-
-  --     -- if isFunctionType t' && (ftv (apply subst rs''') \\ ftv (apply subst t')) /= mempty then
-  --     -- if (ftv (apply subst rs''') \\ ftv (apply subst t')) /= mempty then
-  --     if ambiguities allVars rs''' /= [] then
-  --       throwError $ CompilationError
-  --         (AmbiguousType (TV "-" Star, apply subst rs'''))
-  --         (Context (envCurrentPath env) area)
-  --     else
-  --       return (rs''', subst)
-  --   else
-  --     return (rs', mempty)
 
   let rs'' = rs'
   let extraS = mempty
@@ -1325,28 +1002,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   -- let sFinal = sDefaults `compose` s''
 
   let sc = quantify gs $ apply sFinal (rs''' :=> t')
-
-  -- liftIO $ putStrLn $ "Exp:" <> ppShow (Can.getExpName exp)
-  -- liftIO $ putStrLn $ "rs'" <> ppShow rs'
-  -- liftIO $ putStrLn $ "rs'''" <> ppShow rs'''
-  -- liftIO $ putStrLn $ "ds'" <> ppShow ds'
-  -- liftIO $ putStrLn $ "t'" <> ppShow t'
-  -- liftIO $ putStrLn $ "vars in scope" <> ppShow (fs ++ ftv t')
-  -- liftIO $ putStrLn $ "sc" <> ppShow sc
-  -- liftIO $ putStrLn $ "sFinal" <> ppShow sFinal
-        -- if isLet && not (isFunctionType t') then
-        --   Forall [] $ apply sFinal (rs'' :=> t')
-        -- else
-        --   quantify gs $ apply sFinal (rs'' :=> t')
-
-
-
-  -- when (isFunctionType t' && (ftv (ds' ++ rs') \\ ftv t') /= mempty) $ do
-  --   throwError $ CompilationError
-  --       (AmbiguousType (TV "-" Star, rs'))
-  --       (Context (envCurrentPath env) area)
-
-  -- let returnPreds = if isFunctionType t' then [] else ds'
 
   case Can.getExpName exp of
     Just n  ->

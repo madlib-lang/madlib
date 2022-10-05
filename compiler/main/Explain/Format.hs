@@ -19,6 +19,7 @@ import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
 import Debug.Trace
 import qualified Data.Maybe as Maybe
+import Infer.Exp (dedupePreds)
 
 
 data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
@@ -428,7 +429,7 @@ kindToStr k = case k of
 schemeToStr :: Scheme -> String
 schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
 schemeToStr (Forall _ (ps :=> t)) =
-  let (vars, hkVars, predStr) = predsToStr True (mempty, mempty) ps
+  let (vars, hkVars, predStr) = predsToStr True (mempty, mempty) (dedupePreds ps)
       (_, _, typeStr)         = prettyPrintType' True (vars, hkVars) t
   in
     if length ps > 1 then

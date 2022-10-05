@@ -8,6 +8,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
 {-# HLINT ignore "Use lambda-case" #-}
+{-# LANGUAGE LambdaCase #-}
 module Generate.LLVM.ClosureConvert where
 
 import qualified Control.Monad.State           as MonadState
@@ -752,11 +753,57 @@ instance Convertable Exp Exp where
     Placeholder (placeholderRef, ts) exp -> do
       exp'            <- convert env exp
       placeholderRef' <- convertPlaceholderRef placeholderRef
-      return $ Typed qt area metadata (Placeholder (placeholderRef', ts) exp')
+      let converted = Typed qt area metadata (Placeholder (placeholderRef', ts) exp')
+      -- case findPlaceholderExp (trace ("PH Exp:\n" <> ppShow (findPlaceholderExp converted)<>"\nlifted:\n"<> ppShow (lifted env)) converted) of
+      -- case findPlaceholderExp converted of
+      case findPlaceholderExp exp of
+        -- Typed _ _ _ (Call (Typed _ _ _ (Var n False)) _) ->
+        Typed _ _ _ (Var n False) ->
+          case M.lookup n (lifted env) of
+            Just (_, capturedVars) ->
+              let capturedVars' =
+                    mapMaybe
+                      (\case
+                          Typed _ _ _ (Var n False) ->
+                            Just n
+
+                          _ ->
+                            Nothing
+                      )
+                      capturedVars
+              in  return $ cleanUpCapturedPlaceholders env capturedVars' converted
+            _ ->
+              return converted
+
+        _ ->
+          return converted
+      -- return $ Typed qt area metadata (Placeholder (placeholderRef', ts) exp')
 
     _ ->
       return fullExp
 
+
+cleanUpCapturedPlaceholders :: Env -> [String] -> Exp -> Exp
+cleanUpCapturedPlaceholders env capturedVars exp = case exp of
+  Typed qt area metadata (Placeholder ref@(ClassRef interfaceName _ True _, ts) e) ->
+    let argName = "$" <> interfaceName <> "$" <> ts
+    -- in  if argName `elem` capturedVars && argName `elem` dictsInScope env then
+    in  if argName `elem` capturedVars && argName `elem` dictsInScope env then
+          cleanUpCapturedPlaceholders env capturedVars e
+        else
+          Typed qt area metadata (Placeholder ref (cleanUpCapturedPlaceholders env capturedVars e))
+
+  or ->
+    or
+
+
+findPlaceholderExp :: Exp -> Exp
+findPlaceholderExp exp = case exp of
+  Typed _ _ _ (Placeholder (ClassRef _ _ True _, _) e) ->
+    findPlaceholderExp e
+
+  or ->
+    or
 
 
 convertPlaceholderRef :: PlaceholderRef -> Convert PlaceholderRef
