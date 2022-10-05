@@ -12,7 +12,6 @@ import           Error.Context
 import           Infer.Infer
 import           Infer.Env
 import           Control.Monad.Except
-import           Data.Maybe
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified AST.Canonical                 as Can
@@ -43,10 +42,8 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-
       s3 <- unify tBase tBase'
 
       return $ s3 `compose` s2 `compose` s1
@@ -58,7 +55,6 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       return $ s2 `compose` s1
@@ -70,7 +66,6 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          -- z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       return $ s2 `compose` s1
@@ -81,12 +76,6 @@ instance Unify Type where
       if extraFields' /= mempty || extraFields /= mempty
         then throwError $ CompilationError (UnificationError r l) NoContext
         else do
-          -- let updatedFields  = M.union fields extraFields'
-          --     updatedFields' = M.union fields' extraFields
-          --     types          = M.elems updatedFields
-          --     types'         = M.elems updatedFields'
-          --     z              = zip types types'
-          -- unifyVars M.empty z
           let updatedFields  = M.union fields extraFields'
               updatedFields' = M.union fields' extraFields
               types          = M.elems updatedFields
@@ -169,7 +158,6 @@ instance Match Type where
     -- Not complete but that's all we need for now as we don't support userland
     -- record instances. An instance for a record would be matched for all records.
     unify (TRecord fields1 Nothing) (TRecord fields2 Nothing)
-    -- return M.empty
   match t1 t2 = throwError $ CompilationError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where
@@ -241,16 +229,9 @@ improveRecordErrorTypes t1 t2 = do
   s2 <- gentleUnify t2 t1
   let t1' = cleanBase $ apply (s1 `compose` s2) t1
   let t2' = cleanBase $ apply (s1 `compose` s2) t2
-  -- let t1' = skipBase $ apply (s1 `compose` s2) t1
-  -- let t2' = skipBase $ apply (s1 `compose` s2) t2
   return (t1', t2')
 
 
--- TODO: need to copy unify but use gentleUnify everywhere or else we only do it on the surface
--- gentleUnify :: Type -> Type -> Infer Substitution
--- gentleUnify t1 t2 = catchError (unify t1 t2) (const $ return mempty)
-
--- TODO: this should probably not always happen
 cleanBase :: Type -> Type
 cleanBase t = case t of
   TRecord fields (Just (TRecord extraFields _)) ->
