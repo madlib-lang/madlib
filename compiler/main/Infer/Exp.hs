@@ -218,7 +218,9 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
     (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
       let ftvEnv = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
       let ps'' = apply accSubst ps'
+      let ftvExtra = ftv (apply accSubst t')
       let ftvExtra = ftvForLetGen (apply accSubst t')
+      let ftvExtra = []
       -- liftIO $ putStrLn $ "ftv:\n" <> ppShow (ftvEnv `List.union` ftvExtra)
       -- liftIO $ putStrLn $ "ps':\n" <> ppShow ps'
       -- liftIO $ putStrLn $ "ps'':\n" <> ppShow ps''

@@ -941,6 +941,9 @@ generateExp env symbolTable exp = case exp of
             ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
             store ptr' 0 exp'
             return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
+
+          or ->
+            error $ "found: " <> ppShow or
       else
         return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
 
