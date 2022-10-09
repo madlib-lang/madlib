@@ -48,6 +48,7 @@ data Env
     -- TODO: remove and use envImportInfo instead
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]
+    , envPlaceholdersInScope :: [Pred]
     , envPlaceholdersToDelete :: Map.Map String [Int]
     -- ^ key is the name of the binding and the list of int is the placeholder indices to remove
     }

@@ -7,6 +7,7 @@
             (Export
                (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TCon (TC "Integer" Star) "prelude")
                   (Area (Loc 41 3 1) (Loc 56 3 16))
@@ -23,7 +24,8 @@
             (Area (Loc 57 4 1) (Loc 73 4 17))
             (Export
                (Typed
-                  ([ IsIn
+                  ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   , IsIn
                        "Number"
                        [ TCon (TC "Integer" Star) "prelude" ]
                        (Just (Area (Loc 71 4 15) (Loc 72 4 16)))
@@ -84,6 +86,7 @@
             (Export
                (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TCon (TC "Integer" Star) "prelude")
                   (Area (Loc 74 5 1) (Loc 90 5 17))
@@ -411,7 +414,7 @@
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TRecord
                        (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                       (Just (TVar (TV "t45" Star)))))
+                       (Just (TVar (TV "r43" Star)))))
                  (TCon (TC "String" Star) "prelude"))
             (Area (Loc 656 32 1) (Loc 708 32 53))
             (Assignment
@@ -423,7 +426,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "t45" Star)))))
+                             (Just (TVar (TV "r43" Star)))))
                        (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 671 32 16) (Loc 708 32 53))
                   (Abs
@@ -431,7 +434,7 @@
                         ([] :=>
                            TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "t45" Star))))
+                             (Just (TVar (TV "r43" Star))))
                         (Area (Loc 0 0 0) (Loc 0 0 0))
                         "__x__")
                      [ Typed
@@ -442,7 +445,7 @@
                                ([] :=>
                                   TRecord
                                     (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                    (Just (TVar (TV "t45" Star))))
+                                    (Just (TVar (TV "r43" Star))))
                                (Area (Loc 0 0 0) (Loc 0 0 0))
                                (Var "__x__" False))
                             [ Typed
@@ -453,7 +456,7 @@
                                         (TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "t45" Star)))))
+                                           (Just (TVar (TV "r43" Star)))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 679 32 24) (Loc 706 32 51))
                                 (Is
@@ -462,7 +465,7 @@
                                          TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "t45" Star))))
+                                           (Just (TVar (TV "r43" Star))))
                                       (Area (Loc 679 32 24) (Loc 680 32 25))
                                       (PVar "f"))
                                    (Typed
@@ -517,7 +520,7 @@
                                                             , TCon (TC "String" Star) "prelude"
                                                             )
                                                           ])
-                                                       (Just (TVar (TV "t45" Star))))
+                                                       (Just (TVar (TV "r43" Star))))
                                                   (Area (Loc 700 32 45) (Loc 701 32 46))
                                                   (Var "f" False))
                                                (Typed
@@ -535,7 +538,7 @@
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "t45" Star)))))
+                                                             (Just (TVar (TV "r43" Star)))))
                                                        (TCon (TC "String" Star) "prelude"))
                                                   (Area (Loc 702 32 47) (Loc 706 32 51))
                                                   (Var ".name" False))))
@@ -572,17 +575,17 @@
                                                              , TCon (TC "String" Star) "prelude"
                                                              )
                                                            ])
-                                                        (Just (TVar (TV "h163" Star)))
+                                                        (Just (TVar (TV "x153" Star)))
                                                     )
                                                   ])
-                                               (Just (TVar (TV "i164" Star)))
+                                               (Just (TVar (TV "y154" Star)))
                                            )
                                          , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                          ])
-                                      (Just (TVar (TV "f135" Star))))
+                                      (Just (TVar (TV "v125" Star))))
                                )
                              ])
-                          (Just (TVar (TV "b183" Star))))))
+                          (Just (TVar (TV "r173" Star))))))
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TCon (TC "String" Star) "prelude")))
@@ -649,17 +652,17 @@
                                                                        (TC "String" Star) "prelude"
                                                                    )
                                                                  ])
-                                                              (Just (TVar (TV "h163" Star)))
+                                                              (Just (TVar (TV "x153" Star)))
                                                           )
                                                         ])
-                                                     (Just (TVar (TV "i164" Star)))
+                                                     (Just (TVar (TV "y154" Star)))
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "f135" Star))))
+                                            (Just (TVar (TV "v125" Star))))
                                      )
                                    ])
-                                (Just (TVar (TV "b183" Star))))))
+                                (Just (TVar (TV "r173" Star))))))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TCon (TC "String" Star) "prelude")))
@@ -722,17 +725,17 @@
                                                                        (TC "String" Star) "prelude"
                                                                    )
                                                                  ])
-                                                              (Just (TVar (TV "h163" Star)))
+                                                              (Just (TVar (TV "x153" Star)))
                                                           )
                                                         ])
-                                                     (Just (TVar (TV "i164" Star)))
+                                                     (Just (TVar (TV "y154" Star)))
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "f135" Star))))
+                                            (Just (TVar (TV "v125" Star))))
                                      )
                                    ])
-                                (Just (TVar (TV "b183" Star)))))
+                                (Just (TVar (TV "r173" Star)))))
                         (Area (Loc 733 33 25) (Loc 736 33 28))
                         "_P_")
                      [ Typed
@@ -801,14 +804,14 @@
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "h163" Star)))
+                                                               (Just (TVar (TV "x153" Star)))
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "i164" Star)))
+                                                      (Just (TVar (TV "y154" Star)))
                                                   )
                                                 , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                 ])
-                                             (Just (TVar (TV "f135" Star))))))
+                                             (Just (TVar (TV "v125" Star))))))
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                        (TCon (TC "String" Star) "prelude")))
@@ -858,16 +861,16 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "h163" Star)))
+                                                                           (TVar (TV "x153" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i164" Star)))
+                                                               (Just (TVar (TV "y154" Star)))
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "f135" Star)))))
+                                                      (Just (TVar (TV "v125" Star)))))
                                                 (TCon (TC "String" Star) "prelude")))
                                           (TApp
                                              (TApp
@@ -905,16 +908,16 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "h163" Star)))
+                                                                           (TVar (TV "x153" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i164" Star)))
+                                                               (Just (TVar (TV "y154" Star)))
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "f135" Star))))))
+                                                      (Just (TVar (TV "v125" Star))))))
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TCon (TC "String" Star) "prelude"))))
@@ -974,17 +977,17 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "h163"
+                                                                                       "x153"
                                                                                        Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "i164" Star)))
+                                                                     (Just (TVar (TV "y154" Star)))
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "f135" Star)))))
+                                                            (Just (TVar (TV "v125" Star)))))
                                                       (TCon (TC "String" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -1029,17 +1032,17 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "h163"
+                                                                                       "x153"
                                                                                        Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "i164" Star)))
+                                                                     (Just (TVar (TV "y154" Star)))
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "f135" Star))))))
+                                                            (Just (TVar (TV "v125" Star))))))
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                       (TCon (TC "String" Star) "prelude"))))
@@ -1077,16 +1080,16 @@
                                                                            "prelude"
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "h163" Star)))
+                                                                  (Just (TVar (TV "x153" Star)))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "i164" Star)))
+                                                         (Just (TVar (TV "y154" Star)))
                                                      )
                                                    , ( "tchouk"
                                                      , TCon (TC "String" Star) "prelude"
                                                      )
                                                    ])
-                                                (Just (TVar (TV "f135" Star)))))
+                                                (Just (TVar (TV "v125" Star)))))
                                           (TCon (TC "String" Star) "prelude"))
                                      (Area (Loc 1215 43 7) (Loc 1227 43 19))
                                      (Var "FunctionLink" False))
@@ -1141,14 +1144,14 @@
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "h163" Star)))
+                                                         (Just (TVar (TV "x153" Star)))
                                                      )
                                                    ])
-                                                (Just (TVar (TV "i164" Star)))
+                                                (Just (TVar (TV "y154" Star)))
                                             )
                                           , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                           ])
-                                       (Just (TVar (TV "f135" Star)))))
+                                       (Just (TVar (TV "v125" Star)))))
                                (Area (Loc 733 33 25) (Loc 1207 42 5))
                                (App
                                   (Typed
@@ -1209,16 +1212,16 @@
                                                                               "prelude"
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "h163" Star)))
+                                                                     (Just (TVar (TV "x153" Star)))
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "i164" Star)))
+                                                            (Just (TVar (TV "y154" Star)))
                                                         )
                                                       , ( "tchouk"
                                                         , TCon (TC "String" Star) "prelude"
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "f135" Star))))))
+                                                   (Just (TVar (TV "v125" Star))))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TRecord
@@ -1243,16 +1246,16 @@
                                                                            "prelude"
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "h163" Star)))
+                                                                  (Just (TVar (TV "x153" Star)))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "i164" Star)))
+                                                         (Just (TVar (TV "y154" Star)))
                                                      )
                                                    , ( "tchouk"
                                                      , TCon (TC "String" Star) "prelude"
                                                      )
                                                    ])
-                                                (Just (TVar (TV "f135" Star))))))
+                                                (Just (TVar (TV "v125" Star))))))
                                      (Area (Loc 764 35 3) (Loc 1207 42 5))
                                      (App
                                         (Typed
@@ -1302,17 +1305,17 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "h163"
+                                                                                       "x153"
                                                                                        Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "i164" Star)))
+                                                                     (Just (TVar (TV "y154" Star)))
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "f135" Star)))))
+                                                            (Just (TVar (TV "v125" Star)))))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -1358,19 +1361,19 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "h163"
+                                                                                          "x153"
                                                                                           Star)))
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "i164" Star)))
+                                                                           (TVar (TV "y154" Star)))
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "f135" Star)))))
+                                                               (Just (TVar (TV "v125" Star)))))
                                                          (TCon (TC "Integer" Star) "prelude"))))
                                                 (TApp
                                                    (TApp
@@ -1415,17 +1418,17 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "h163"
+                                                                                       "x153"
                                                                                        Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "i164" Star)))
+                                                                     (Just (TVar (TV "y154" Star)))
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "f135" Star))))))
+                                                            (Just (TVar (TV "v125" Star))))))
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                       (TRecord
@@ -1462,16 +1465,16 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "h163" Star)))
+                                                                                 (TV "x153" Star)))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "i164" Star)))
+                                                                  (Just (TVar (TV "y154" Star)))
                                                               )
                                                             , ( "tchouk"
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "f135" Star)))))))
+                                                         (Just (TVar (TV "v125" Star)))))))
                                            (Area (Loc 764 35 3) (Loc 770 35 9))
                                            (Var "sortBy" False))
                                         (Typed
@@ -1534,16 +1537,16 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "h163" Star)))
+                                                                           (TVar (TV "x153" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i164" Star)))
+                                                               (Just (TVar (TV "y154" Star)))
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "f135" Star)))))
+                                                      (Just (TVar (TV "v125" Star)))))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -1583,16 +1586,16 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "h163" Star)))
+                                                                                 (TV "x153" Star)))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "i164" Star)))
+                                                                  (Just (TVar (TV "y154" Star)))
                                                               )
                                                             , ( "tchouk"
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "f135" Star)))))
+                                                         (Just (TVar (TV "v125" Star)))))
                                                    (TCon (TC "Integer" Star) "prelude")))
                                            (Area (Loc 771 35 10) (Loc 1206 42 4))
                                            (Abs
@@ -1654,16 +1657,16 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "h163" Star)))
+                                                                           (TVar (TV "x153" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i164" Star)))
+                                                               (Just (TVar (TV "y154" Star)))
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "f135" Star))))
+                                                      (Just (TVar (TV "v125" Star))))
                                                  (Area (Loc 772 35 11) (Loc 773 35 12))
                                                  "a")
                                               [ Typed
@@ -1739,18 +1742,18 @@
                                                                                (Just
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "h163"
+                                                                                        "x153"
                                                                                         Star)))
                                                                            )
                                                                          ])
-                                                                      (Just (TVar (TV "i164" Star)))
+                                                                      (Just (TVar (TV "y154" Star)))
                                                                   )
                                                                 , ( "tchouk"
                                                                   , TCon
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "f135" Star)))))
+                                                             (Just (TVar (TV "v125" Star)))))
                                                        (TCon (TC "Integer" Star) "prelude"))
                                                   (Area (Loc 771 35 10) (Loc 1206 42 4))
                                                   (Abs
@@ -1833,18 +1836,18 @@
                                                                                (Just
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "h163"
+                                                                                        "x153"
                                                                                         Star)))
                                                                            )
                                                                          ])
-                                                                      (Just (TVar (TV "i164" Star)))
+                                                                      (Just (TVar (TV "y154" Star)))
                                                                   )
                                                                 , ( "tchouk"
                                                                   , TCon
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "f135" Star))))
+                                                             (Just (TVar (TV "v125" Star))))
                                                         (Area (Loc 775 35 14) (Loc 776 35 15))
                                                         "b")
                                                      [ Typed
@@ -1949,14 +1952,14 @@
                                                                                             (Just
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "h163"
+                                                                                                     "x153"
                                                                                                      Star)))
                                                                                         )
                                                                                       ])
                                                                                    (Just
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "i164"
+                                                                                            "y154"
                                                                                             Star)))
                                                                                )
                                                                              , ( "tchouk"
@@ -1968,7 +1971,7 @@
                                                                              ])
                                                                           (Just
                                                                              (TVar
-                                                                                (TV "f135" Star)))))
+                                                                                (TV "v125" Star)))))
                                                                     (TRecord
                                                                        (fromList
                                                                           [ ( "ik"
@@ -2010,14 +2013,14 @@
                                                                                          (Just
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "h163"
+                                                                                                  "x153"
                                                                                                   Star)))
                                                                                      )
                                                                                    ])
                                                                                 (Just
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "i164"
+                                                                                         "y154"
                                                                                          Star)))
                                                                             )
                                                                           , ( "tchouk"
@@ -2027,7 +2030,7 @@
                                                                             )
                                                                           ])
                                                                        (Just
-                                                                          (TVar (TV "f135" Star)))))
+                                                                          (TVar (TV "v125" Star)))))
                                                                (Area
                                                                   (Loc 787 35 26) (Loc 794 35 33))
                                                                (TupleConstructor
@@ -2080,14 +2083,14 @@
                                                                                              (Just
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "h163"
+                                                                                                      "x153"
                                                                                                       Star)))
                                                                                          )
                                                                                        ])
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "i164"
+                                                                                             "y154"
                                                                                              Star)))
                                                                                 )
                                                                               , ( "tchouk"
@@ -2100,7 +2103,7 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "f135" Star))))
+                                                                                 (TV "v125" Star))))
                                                                       (Area
                                                                          (Loc 789 35 28)
                                                                          (Loc 790 35 29))
@@ -2154,14 +2157,14 @@
                                                                                              (Just
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "h163"
+                                                                                                      "x153"
                                                                                                       Star)))
                                                                                          )
                                                                                        ])
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "i164"
+                                                                                             "y154"
                                                                                              Star)))
                                                                                 )
                                                                               , ( "tchouk"
@@ -2174,7 +2177,7 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "f135" Star))))
+                                                                                 (TV "v125" Star))))
                                                                       (Area
                                                                          (Loc 792 35 31)
                                                                          (Loc 793 35 32))
@@ -2259,14 +2262,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -2280,7 +2283,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -2329,14 +2332,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -2350,7 +2353,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -2418,14 +2421,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -2439,7 +2442,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -2488,14 +2491,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -2509,7 +2512,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 802 36 5)
@@ -2564,14 +2567,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -2585,7 +2588,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 804 36 7)
@@ -2680,14 +2683,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -2701,7 +2704,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 821 36 24)
@@ -3071,14 +3074,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -3092,7 +3095,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -3141,14 +3144,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -3162,7 +3165,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -3230,14 +3233,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -3251,7 +3254,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -3300,14 +3303,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -3321,7 +3324,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 867 37 5)
@@ -3376,14 +3379,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -3397,7 +3400,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 869 37 7)
@@ -3492,14 +3495,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -3513,7 +3516,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 886 37 24)
@@ -3883,14 +3886,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -3904,7 +3907,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -3953,14 +3956,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -3974,7 +3977,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -4042,14 +4045,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -4063,7 +4066,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -4112,14 +4115,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -4133,7 +4136,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 930 38 5)
@@ -4188,14 +4191,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -4209,7 +4212,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 932 38 7)
@@ -4304,14 +4307,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -4325,7 +4328,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 951 38 26)
@@ -4695,14 +4698,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -4716,7 +4719,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -4765,14 +4768,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -4786,7 +4789,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -4854,14 +4857,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -4875,7 +4878,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -4924,14 +4927,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -4945,7 +4948,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 997 39 5)
@@ -5000,14 +5003,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -5021,7 +5024,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 999 39 7)
@@ -5116,14 +5119,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -5137,7 +5140,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 1016 39 24)
@@ -5513,14 +5516,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -5534,7 +5537,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -5583,14 +5586,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -5604,7 +5607,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -5672,14 +5675,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -5693,7 +5696,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -5742,14 +5745,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -5763,7 +5766,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 1061 40 5)
@@ -5818,14 +5821,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -5839,7 +5842,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 1063 40 7)
@@ -5934,14 +5937,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -5955,7 +5958,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 1080 40 24)
@@ -5988,14 +5991,14 @@
                                                                                                        (Just
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "h163"
+                                                                                                                "x153"
                                                                                                                 Star)))
                                                                                                    )
                                                                                                  ])
                                                                                               (Just
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "i164"
+                                                                                                       "y154"
                                                                                                        Star))))
                                                                                          (Area
                                                                                             (Loc
@@ -6031,7 +6034,7 @@
                                                                                                           (Just
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "h163"
+                                                                                                                   "x153"
                                                                                                                    Star))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -6417,14 +6420,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -6438,7 +6441,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -6487,14 +6490,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -6508,7 +6511,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
@@ -6576,14 +6579,14 @@
                                                                                                    (Just
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "h163"
+                                                                                                            "x153"
                                                                                                             Star)))
                                                                                                )
                                                                                              ])
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "i164"
+                                                                                                   "y154"
                                                                                                    Star)))
                                                                                       )
                                                                                     , ( "tchouk"
@@ -6597,7 +6600,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "f135"
+                                                                                          "v125"
                                                                                           Star)))))
                                                                            (TRecord
                                                                               (fromList
@@ -6646,14 +6649,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -6667,7 +6670,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star)))))
                                                                       (Area
                                                                          (Loc 1134 41 5)
@@ -6722,14 +6725,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -6743,7 +6746,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 1136 41 7)
@@ -6776,14 +6779,14 @@
                                                                                                        (Just
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "h163"
+                                                                                                                "x153"
                                                                                                                 Star)))
                                                                                                    )
                                                                                                  ])
                                                                                               (Just
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "i164"
+                                                                                                       "y154"
                                                                                                        Star))))
                                                                                          (Area
                                                                                             (Loc
@@ -6819,7 +6822,7 @@
                                                                                                           (Just
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "h163"
+                                                                                                                   "x153"
                                                                                                                    Star))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -6924,14 +6927,14 @@
                                                                                                     (Just
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "h163"
+                                                                                                             "x153"
                                                                                                              Star)))
                                                                                                 )
                                                                                               ])
                                                                                            (Just
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i164"
+                                                                                                    "y154"
                                                                                                     Star)))
                                                                                        )
                                                                                      , ( "tchouk"
@@ -6945,7 +6948,7 @@
                                                                                   (Just
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "f135"
+                                                                                           "v125"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 1161 41 32)
@@ -7294,14 +7297,14 @@
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "h163" Star)))
+                                                               (Just (TVar (TV "x153" Star)))
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "i164" Star)))
+                                                      (Just (TVar (TV "y154" Star)))
                                                   )
                                                 , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                 ])
-                                             (Just (TVar (TV "f135" Star)))))
+                                             (Just (TVar (TV "v125" Star)))))
                                      (Area (Loc 733 33 25) (Loc 760 34 22))
                                      (App
                                         (Typed
@@ -7361,14 +7364,14 @@
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "h163"
+                                                                                                "x153"
                                                                                                 Star)))
                                                                                    )
                                                                                  ])
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "i164"
+                                                                                       "y154"
                                                                                        Star)))
                                                                           )
                                                                         , ( "tchouk"
@@ -7377,10 +7380,10 @@
                                                                               "prelude"
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "f135" Star))))
+                                                                     (Just (TVar (TV "v125" Star))))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "b183" Star))))))
+                                                         (Just (TVar (TV "r173" Star))))))
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TRecord
@@ -7412,16 +7415,16 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "h163" Star)))
+                                                                           (TVar (TV "x153" Star)))
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i164" Star)))
+                                                               (Just (TVar (TV "y154" Star)))
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "f135" Star))))))
+                                                      (Just (TVar (TV "v125" Star))))))
                                            (Area (Loc 741 34 3) (Loc 760 34 22))
                                            (App
                                               (Typed
@@ -7494,14 +7497,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -7515,11 +7518,11 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "b183" Star)))))
+                                                                  (Just (TVar (TV "r173" Star)))))
                                                             (TApp
                                                                (TCon
                                                                   (TC "List" (Kfun Star Star))
@@ -7565,13 +7568,13 @@
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "h163"
+                                                                                             "x153"
                                                                                              Star)))
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "i164" Star)))
+                                                                                 (TV "y154" Star)))
                                                                        )
                                                                      , ( "tchouk"
                                                                        , TCon
@@ -7579,7 +7582,7 @@
                                                                            "prelude"
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "f135" Star)))))))
+                                                                  (Just (TVar (TV "v125" Star)))))))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -7647,14 +7650,14 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "h163"
+                                                                                                         "x153"
                                                                                                          Star)))
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "i164"
+                                                                                                "y154"
                                                                                                 Star)))
                                                                                    )
                                                                                  , ( "tchouk"
@@ -7668,11 +7671,11 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "f135"
+                                                                                       "v125"
                                                                                        Star))))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "b183" Star))))))
+                                                                  (Just (TVar (TV "r173" Star))))))
                                                          (TApp
                                                             (TCon
                                                                (TC "List" (Kfun Star Star))
@@ -7715,19 +7718,19 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "h163"
+                                                                                          "x153"
                                                                                           Star)))
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "i164" Star)))
+                                                                           (TVar (TV "y154" Star)))
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "f135" Star)))))))
+                                                               (Just (TVar (TV "v125" Star)))))))
                                                  (Area (Loc 741 34 3) (Loc 746 34 8))
                                                  (Var "chain" False))
                                               (Typed
@@ -7785,14 +7788,14 @@
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "h163"
+                                                                                                   "x153"
                                                                                                    Star)))
                                                                                       )
                                                                                     ])
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "i164"
+                                                                                          "y154"
                                                                                           Star)))
                                                                              )
                                                                            , ( "tchouk"
@@ -7802,10 +7805,10 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "f135" Star))))
+                                                                           (TVar (TV "v125" Star))))
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "b183" Star)))))
+                                                            (Just (TVar (TV "r173" Star)))))
                                                       (TApp
                                                          (TCon
                                                             (TC "List" (Kfun Star Star)) "prelude")
@@ -7844,17 +7847,17 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "h163"
+                                                                                       "x153"
                                                                                        Star)))
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "i164" Star)))
+                                                                     (Just (TVar (TV "y154" Star)))
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "f135" Star))))))
+                                                            (Just (TVar (TV "v125" Star))))))
                                                  (Area (Loc 747 34 9) (Loc 759 34 21))
                                                  (Var ".expressions" False))
                                               True))
@@ -7907,22 +7910,22 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "h163"
+                                                                                          "x153"
                                                                                           Star)))
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "i164" Star)))
+                                                                           (TVar (TV "y154" Star)))
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "f135" Star))))
+                                                               (Just (TVar (TV "v125" Star))))
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "b183" Star)))))
+                                                   (Just (TVar (TV "r173" Star)))))
                                            (Area (Loc 733 33 25) (Loc 736 33 28))
                                            (Var "_P_" False))
                                         True))
@@ -8603,17 +8606,17 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TVar (TV "v203" Star)))
-                                     (TVar (TV "w204" Star))))
+                                        (TVar (TV "l193" Star)))
+                                     (TVar (TV "m194" Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TApp
                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                        (TVar (TV "v203" Star))))
+                                        (TVar (TV "l193" Star))))
                                   (TApp
                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TVar (TV "w204" Star)))))
+                                     (TVar (TV "m194" Star)))))
                           (Area (Loc 431 23 3) (Loc 473 23 45))
                           (Assignment
                              "map"
@@ -8626,17 +8629,17 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "v203" Star)))
-                                           (TVar (TV "w204" Star))))
+                                              (TVar (TV "l193" Star)))
+                                           (TVar (TV "m194" Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TApp
                                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                              (TVar (TV "v203" Star))))
+                                              (TVar (TV "l193" Star))))
                                         (TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TVar (TV "w204" Star)))))
+                                           (TVar (TV "m194" Star)))))
                                 (Area (Loc 437 23 9) (Loc 473 23 45))
                                 (Abs
                                    (Typed
@@ -8645,8 +8648,8 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "v203" Star)))
-                                           (TVar (TV "w204" Star)))
+                                              (TVar (TV "l193" Star)))
+                                           (TVar (TV "m194" Star)))
                                       (Area (Loc 438 23 10) (Loc 439 23 11))
                                       "f")
                                    [ Typed
@@ -8658,24 +8661,24 @@
                                                   "prelude")
                                                (TApp
                                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                  (TVar (TV "v203" Star))))
+                                                  (TVar (TV "l193" Star))))
                                             (TApp
                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                               (TVar (TV "w204" Star))))
+                                               (TVar (TV "m194" Star))))
                                        (Area (Loc 437 23 9) (Loc 473 23 45))
                                        (Abs
                                           (Typed
                                              ([] :=>
                                                 TApp
                                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                  (TVar (TV "v203" Star)))
+                                                  (TVar (TV "l193" Star)))
                                              (Area (Loc 441 23 13) (Loc 443 23 15))
                                              "xs")
                                           [ Typed
                                               ([] :=>
                                                  TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                   (TVar (TV "w204" Star)))
+                                                   (TVar (TV "m194" Star)))
                                               (Area (Loc 448 23 20) (Loc 473 23 45))
                                               (JSExp " xs.map((x) => f(x)) ")
                                           ])

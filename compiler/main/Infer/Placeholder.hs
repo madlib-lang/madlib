@@ -23,6 +23,7 @@ import LLVM.AST.Instruction (Instruction(cleanup))
 import Debug.Trace
 import Text.Show.Pretty
 import Run.Options
+import Data.Maybe
 
 
 {-
@@ -130,13 +131,13 @@ any' = flip any
 
 
 
-removePlaceholders :: [Int] -> Int -> Slv.Exp -> Slv.Exp
-removePlaceholders indicesToRemove index exp = case exp of
-  Slv.Typed qt area (Slv.Placeholder ref@(Slv.ClassRef _ _ True _, _) e) ->
+removePlaceholders :: [Int] -> Int -> Bool -> Slv.Exp -> Slv.Exp
+removePlaceholders indicesToRemove index isCall exp = case exp of
+  Slv.Typed qt area (Slv.Placeholder ref@(Slv.ClassRef _ _ isCall' _, _) e) | isCall == isCall' ->
     if index `elem` indicesToRemove then
-      removePlaceholders indicesToRemove (index + 1) e
+      removePlaceholders indicesToRemove (index + 1) isCall e
     else
-      Slv.Typed qt area (Slv.Placeholder ref (removePlaceholders indicesToRemove (index + 1) e))
+      Slv.Typed qt area (Slv.Placeholder ref (removePlaceholders indicesToRemove (index + 1) isCall e))
 
   _ ->
     exp
@@ -149,7 +150,7 @@ cleanUpDeletedVarPlaceholders env exp = case exp of
     case getPlaceholderExp exp of
       Slv.Typed _ _ (Slv.Var name False) ->
         let psToRemove = Maybe.fromMaybe [] (M.lookup name (envPlaceholdersToDelete env))
-        in  removePlaceholders psToRemove 0 exp
+        in  removePlaceholders psToRemove 0 True exp
 
       _ ->
         exp
@@ -269,7 +270,6 @@ updateMethodPlaceholder options env _ s ph@(Slv.Typed qt@(_ :=> t) a (Slv.Placeh
     -- The following block serves to check that the inferred type for a method
     -- which was unified in type check with the class' scheme, is actually a
     -- type that is correct, given the actual instance's specific type.
-    -- ss    <- do
     do
       maybeInst <- findInst env (IsIn cls instanceTypes' Nothing)
       case maybeInst of
@@ -324,6 +324,15 @@ collectPlaceholders ph = case ph of
   _ ->
     ([], ph)
 
+collectParamPlaceholdersAsPreds :: Slv.Exp -> [Pred]
+collectParamPlaceholdersAsPreds ph = case ph of
+  Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef cls _ False _, ts) next) ->
+    let nextPs = collectParamPlaceholdersAsPreds next
+    in  IsIn cls ts Nothing : nextPs
+
+  _ ->
+    []
+
 
 getPlaceholderExp :: Slv.Exp -> Slv.Exp
 getPlaceholderExp ph = case ph of
@@ -354,56 +363,12 @@ updateClassPlaceholder options env cleanUpEnv _ push s ph =
 
         ps'   <- buildClassRefPreds env cls instanceTypes'
 
-        -- let newRef = (cls, instanceTypes')
-        nextEnv <-
-              if not call then do
-                -- we need to gather parent interfaces as a constraint Applicative f => ...
-                -- will generate an additional Functor f constraint and we need this one
-                -- to be in the env or the clean up will not be complete.
-                parents <- getAllParentPreds env [IsIn cls instanceTypes' Nothing]
-                let allRefs = (\(IsIn name ts _) -> (name, ts)) <$> parents
-                return $ foldr addDict cleanUpEnv allRefs
-              else
-                return $ addAppliedDict (cls, instanceTypes) cleanUpEnv
-        exp'  <- updatePlaceholders options env nextEnv push s exp
-
-        -- let wrappedExp = getPlaceholderExp ph
-
-        -- let maybeName =
-        --       case wrappedExp of
-        --         Slv.Typed _ _ (Slv.Var n _) ->
-        --           Just n
-
-        --         _ ->
-        --           Nothing
+        exp'  <- updatePlaceholders options env cleanUpEnv push s exp
 
         if not call then
             return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
         else
           return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-
-        -- if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
-        --   -- this class ref is already in scope so we skip the placeholder
-        --   return exp'
-        -- else if not call then
-        --   if not var' then
-        --     -- if the instance is resolved there's no point in having (IntegerDict) => ... and we can
-        --     -- safely drop the dictionary.
-        --     return exp'
-        --   else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
-        --     -- In that case we need to extend the env to express what dictionary was removed so that we can
-        --     -- remove the dictionaries at call sites
-        --     -- In the case of method definition, the predicates come from interface declaration and instance
-        --     -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
-        --     -- just yet.
-        --     return exp'
-        --   else
-        --     return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
-        -- else if (cls, instanceTypes') `elem` appliedDicts cleanUpEnv then
-        --   return exp'
-        -- else
-        --   return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-
       _ ->
         undefined
   else
@@ -446,6 +411,7 @@ data CleanUpEnv
   , dictsInScope :: [(String, [Type])]
   , appliedDicts :: [(String, [Type])]
   , namesInScope :: [String]
+  , placeholdersToDelete :: M.Map String [Int]
   }
   deriving(Eq, Show)
 
@@ -463,25 +429,55 @@ addName name env =
 
 
 
+computeRemovedPsBecauseSolved :: Env -> [Pred] -> [Pred] -> Infer [Int]
+computeRemovedPsBecauseSolved env unapplied applied = do
+  maybes <- forM (zip3 unapplied applied [0..]) $ \(unapp, app, index) -> do
+    maybeUnappliedInst <- findInst env unapp
+    maybeAppliedInst   <- findInst env app
+    case (maybeUnappliedInst, maybeAppliedInst) of
+      (Nothing, Just _) ->
+        return $ Just index
+
+      (_, _) ->
+        if app `elem` envPlaceholdersInScope env then
+          return $ Just index
+        else
+          return Nothing
+
+  return $ catMaybes maybes
+
+
 updatePlaceholdersForExpList :: Options -> Env -> CleanUpEnv -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
 updatePlaceholdersForExpList options env cleanUpEnv push s exps = case exps of
   (e : es) -> case e of
-    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) -> do
-      let cleanUpEnv' = addName name cleanUpEnv
-      next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
-      e' <- updatePlaceholders options env cleanUpEnv' push s e
-      return (e' : next)
+    Slv.Typed qt area (Slv.Assignment name ph@(Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef _ _ False _, _) _))) -> do
+      let pss  = collectParamPlaceholdersAsPreds ph
+          pss' = apply s pss
+      psToRemove <- computeRemovedPsBecauseSolved env pss pss'
+      let env' = env { envPlaceholdersToDelete = M.insert name psToRemove (envPlaceholdersToDelete env), envPlaceholdersInScope = envPlaceholdersInScope env ++ pss' }
+          ph'  = removePlaceholders psToRemove 0 False ph
+      e'   <- updatePlaceholders options env' cleanUpEnv push s (Slv.Typed qt area (Slv.Assignment name ph'))
+      next <- updatePlaceholdersForExpList options env' cleanUpEnv push s es
+      let e'' = cleanUpDeletedVarPlaceholders env' e'
+      return (e'' : next)
 
-    Slv.Typed _ _ (Slv.Assignment name _) -> do
-      let cleanUpEnv' = addName name cleanUpEnv
-      next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
-      e' <- updatePlaceholders options env cleanUpEnv' push s e
-      return (e' : next)
+    -- Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) -> do
+    --   let cleanUpEnv' = addName name cleanUpEnv
+    --   next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
+    --   e' <- updatePlaceholders options env cleanUpEnv' push s e
+    --   return (e' : next)
+
+    -- Slv.Typed _ _ (Slv.Assignment name _) -> do
+    --   let cleanUpEnv' = addName name cleanUpEnv
+    --   next <- updatePlaceholdersForExpList options env cleanUpEnv' push s es
+    --   e' <- updatePlaceholders options env cleanUpEnv' push s e
+    --   return (e' : next)
 
     _ -> do
       next <- updatePlaceholdersForExpList options env cleanUpEnv push s es
       e'   <- updatePlaceholders options env cleanUpEnv push s e
-      return (e' : next)
+      let e'' = cleanUpDeletedVarPlaceholders env e'
+      return (e'' : next)
 
   [] ->
     return []
@@ -519,8 +515,15 @@ updatePlaceholders options env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = ca
     iss' <- mapM (updateIs s) iss
     return $ Slv.Typed (apply s qt) a $ Slv.Where exp' iss'
 
-  Slv.Assignment n ph@(Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef{}, _) _)) -> do
-    updatedPlaceholder <- updateClassPlaceholder options env cleanUpEnv (Just n) push s ph
+  Slv.Assignment n ph@(Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef _ _ isCall _, _) _)) -> do
+    let env' =
+          if not isCall then
+            let pss = collectParamPlaceholdersAsPreds ph
+            in  env { envPlaceholdersInScope = envPlaceholdersInScope env ++ apply s pss }
+          else
+            env
+
+    updatedPlaceholder <- updateClassPlaceholder options env' cleanUpEnv (Just n) push s ph
     return $ Slv.Typed  (apply s qt) a (Slv.Assignment n updatedPlaceholder)
 
   Slv.Assignment n exp -> do

@@ -1609,10 +1609,10 @@
 , []
 , [ CompilationError
       (UnificationError
-         (TCon (TC "Failure" Star) "Module.mad")
          (TApp
             (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-            (TVar (TV "e4" Star))))
+            (TVar (TV "e4" Star)))
+         (TCon (TC "Failure" Star) "Module.mad"))
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 120 7 16) (Loc 121 7 17)

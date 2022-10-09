@@ -47,7 +47,7 @@
                                   TApp
                                     (TApp
                                        (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                       (TVar (TV "d3" Star)))
+                                       (TVar (TV "l11" Star)))
                                     (TCon (TC "Integer" Star) "prelude"))
                                (Area (Loc 73 3 3) (Loc 103 3 33))
                                (App
@@ -67,8 +67,8 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "d3" Star)))
-                                                      (TVar (TV "i8" Star))))
+                                                         (TVar (TV "l11" Star)))
+                                                      (TVar (TV "q16" Star))))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -82,14 +82,14 @@
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
                                                             (TCon (TC "Integer" Star) "prelude"))
-                                                         (TVar (TV "i8" Star))))
-                                                   (TVar (TV "i8" Star)))))
+                                                         (TVar (TV "q16" Star))))
+                                                   (TVar (TV "q16" Star)))))
                                           (TApp
                                              (TApp
                                                 (TCon
                                                    (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                    "Module.mad")
-                                                (TVar (TV "d3" Star)))
+                                                (TVar (TV "l11" Star)))
                                              (TCon (TC "Integer" Star) "prelude")))
                                      (Area (Loc 73 3 3) (Loc 77 3 7))
                                      (Var "Wish" True))
@@ -105,8 +105,8 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "d3" Star)))
-                                                (TVar (TV "i8" Star))))
+                                                   (TVar (TV "l11" Star)))
+                                                (TVar (TV "q16" Star))))
                                           (TApp
                                              (TApp
                                                 (TCon
@@ -118,8 +118,8 @@
                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                          "prelude")
                                                       (TCon (TC "Integer" Star) "prelude"))
-                                                   (TVar (TV "i8" Star))))
-                                             (TVar (TV "i8" Star))))
+                                                   (TVar (TV "q16" Star))))
+                                             (TVar (TV "q16" Star))))
                                      (Area (Loc 78 3 8) (Loc 102 3 32))
                                      (Abs
                                         (Typed
@@ -133,8 +133,8 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "d3" Star)))
-                                                (TVar (TV "i8" Star)))
+                                                   (TVar (TV "l11" Star)))
+                                                (TVar (TV "q16" Star)))
                                            (Area (Loc 79 3 9) (Loc 82 3 12))
                                            "bad")
                                         [ Typed
@@ -155,8 +155,8 @@
                                                                 "(->)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
                                                           (TCon (TC "Integer" Star) "prelude"))
-                                                       (TVar (TV "i8" Star))))
-                                                 (TVar (TV "i8" Star)))
+                                                       (TVar (TV "q16" Star))))
+                                                 (TVar (TV "q16" Star)))
                                             (Area (Loc 78 3 8) (Loc 102 3 32))
                                             (Abs
                                                (Typed
@@ -172,7 +172,7 @@
                                                                 "(->)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
                                                           (TCon (TC "Integer" Star) "prelude"))
-                                                       (TVar (TV "i8" Star)))
+                                                       (TVar (TV "q16" Star)))
                                                   (Area (Loc 84 3 14) (Loc 88 3 18))
                                                   "good")
                                                [ Typed
@@ -181,7 +181,7 @@
                                                         [ TCon (TC "Integer" Star) "prelude" ]
                                                         Nothing
                                                     ] :=>
-                                                      TVar (TV "i8" Star))
+                                                      TVar (TV "q16" Star))
                                                    (Area (Loc 94 3 24) (Loc 101 3 31))
                                                    (App
                                                       (Typed
@@ -195,7 +195,7 @@
                                                                     "prelude")
                                                                  (TCon
                                                                     (TC "Integer" Star) "prelude"))
-                                                              (TVar (TV "i8" Star)))
+                                                              (TVar (TV "q16" Star)))
                                                          (Area (Loc 94 3 24) (Loc 98 3 28))
                                                          (Var "good" False))
                                                       (Typed
@@ -276,8 +276,8 @@
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "t45" Star)))
-                                        (TVar (TV "u46" Star))))
+                                           (TVar (TV "b53" Star)))
+                                        (TVar (TV "c54" Star))))
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -285,14 +285,14 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "v47" Star)))
-                                           (TVar (TV "u46" Star))))
-                                     (TVar (TV "u46" Star)))))
+                                              (TVar (TV "d55" Star)))
+                                           (TVar (TV "c54" Star))))
+                                     (TVar (TV "c54" Star)))))
                             (TApp
                                (TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                  (TVar (TV "t45" Star)))
-                               (TVar (TV "v47" Star)))))
+                                  (TVar (TV "b53" Star)))
+                               (TVar (TV "d55" Star)))))
                   ]
               , adtType =
                   TApp
@@ -331,8 +331,8 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TVar (TV "v21" Star)))
-                                     (TVar (TV "x23" Star))))
+                                        (TVar (TV "d29" Star)))
+                                     (TVar (TV "f31" Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -340,8 +340,8 @@
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                           (TVar (TV "v21" Star)))
-                                        (TVar (TV "x23" Star))))
+                                           (TVar (TV "d29" Star)))
+                                        (TVar (TV "f31" Star))))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -356,8 +356,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "v21" Star)))
-                                           (TVar (TV "x23" Star))))
+                                              (TVar (TV "d29" Star)))
+                                           (TVar (TV "f31" Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -366,12 +366,12 @@
                                                  (TCon
                                                     (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                     "Module.mad")
-                                                 (TVar (TV "v21" Star)))
-                                              (TVar (TV "x23" Star))))
+                                                 (TVar (TV "d29" Star)))
+                                              (TVar (TV "f31" Star))))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Eq" [] False True , [ TVar (TV "v21" Star) ] )
+                                   ( ClassRef "Eq" [] False True , [ TVar (TV "d29" Star) ] )
                                    (Typed
                                       ([] :=>
                                          TApp
@@ -383,8 +383,8 @@
                                                     (TCon
                                                        (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                        "Module.mad")
-                                                    (TVar (TV "v21" Star)))
-                                                 (TVar (TV "x23" Star))))
+                                                    (TVar (TV "d29" Star)))
+                                                 (TVar (TV "f31" Star))))
                                            (TApp
                                               (TApp
                                                  (TCon
@@ -395,15 +395,15 @@
                                                        (TCon
                                                           (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                           "Module.mad")
-                                                       (TVar (TV "v21" Star)))
-                                                    (TVar (TV "x23" Star))))
+                                                       (TVar (TV "d29" Star)))
+                                                    (TVar (TV "f31" Star))))
                                               (TCon (TC "Boolean" Star) "prelude")))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
-                                         ( ClassRef "Eq" [] False True , [ TVar (TV "x23" Star) ] )
+                                         ( ClassRef "Eq" [] False True , [ TVar (TV "f31" Star) ] )
                                          (Typed
-                                            ([ IsIn "Eq" [ TVar (TV "x23" Star) ] Nothing
-                                             , IsIn "Eq" [ TVar (TV "v21" Star) ] Nothing
+                                            ([ IsIn "Eq" [ TVar (TV "f31" Star) ] Nothing
+                                             , IsIn "Eq" [ TVar (TV "d29" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -416,8 +416,8 @@
                                                              (TC
                                                                 "Wish" (Kfun Star (Kfun Star Star)))
                                                              "Module.mad")
-                                                          (TVar (TV "v21" Star)))
-                                                       (TVar (TV "x23" Star))))
+                                                          (TVar (TV "d29" Star)))
+                                                       (TVar (TV "f31" Star))))
                                                  (TApp
                                                     (TApp
                                                        (TCon
@@ -430,8 +430,8 @@
                                                                    "Wish"
                                                                    (Kfun Star (Kfun Star Star)))
                                                                 "Module.mad")
-                                                             (TVar (TV "v21" Star)))
-                                                          (TVar (TV "x23" Star))))
+                                                             (TVar (TV "d29" Star)))
+                                                          (TVar (TV "f31" Star))))
                                                     (TCon (TC "Boolean" Star) "prelude")))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
@@ -453,8 +453,8 @@
                                                                           (Kfun
                                                                              Star (Kfun Star Star)))
                                                                        "prelude")
-                                                                    (TVar (TV "v21" Star)))
-                                                                 (TVar (TV "w22" Star))))
+                                                                    (TVar (TV "d29" Star)))
+                                                                 (TVar (TV "e30" Star))))
                                                            (TApp
                                                               (TApp
                                                                  (TCon
@@ -471,9 +471,9 @@
                                                                                 Star
                                                                                 (Kfun Star Star)))
                                                                           "prelude")
-                                                                       (TVar (TV "x23" Star)))
-                                                                    (TVar (TV "w22" Star))))
-                                                              (TVar (TV "w22" Star)))
+                                                                       (TVar (TV "f31" Star)))
+                                                                    (TVar (TV "e30" Star))))
+                                                              (TVar (TV "e30" Star)))
                                                        ]
                                                        (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                    ] :=>
@@ -483,8 +483,8 @@
                                                              (TC
                                                                 "Wish" (Kfun Star (Kfun Star Star)))
                                                              "Module.mad")
-                                                          (TVar (TV "v21" Star)))
-                                                       (TVar (TV "x23" Star)))
+                                                          (TVar (TV "d29" Star)))
+                                                       (TVar (TV "f31" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
                                                [ Typed
@@ -506,8 +506,8 @@
                                                                               Star
                                                                               (Kfun Star Star)))
                                                                         "prelude")
-                                                                     (TVar (TV "v21" Star)))
-                                                                  (TVar (TV "w22" Star))))
+                                                                     (TVar (TV "d29" Star)))
+                                                                  (TVar (TV "e30" Star))))
                                                             (TApp
                                                                (TApp
                                                                   (TCon
@@ -525,9 +525,9 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "x23" Star)))
-                                                                     (TVar (TV "w22" Star))))
-                                                               (TVar (TV "w22" Star)))
+                                                                        (TVar (TV "f31" Star)))
+                                                                     (TVar (TV "e30" Star))))
+                                                               (TVar (TV "e30" Star)))
                                                         ]
                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                     ] :=>
@@ -545,8 +545,8 @@
                                                                        "Wish"
                                                                        (Kfun Star (Kfun Star Star)))
                                                                     "Module.mad")
-                                                                 (TVar (TV "v21" Star)))
-                                                              (TVar (TV "x23" Star))))
+                                                                 (TVar (TV "d29" Star)))
+                                                              (TVar (TV "f31" Star))))
                                                         (TCon (TC "Boolean" Star) "prelude"))
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    (Abs
@@ -572,8 +572,8 @@
                                                                                     (Kfun
                                                                                        Star Star)))
                                                                               "prelude")
-                                                                           (TVar (TV "v21" Star)))
-                                                                        (TVar (TV "w22" Star))))
+                                                                           (TVar (TV "d29" Star)))
+                                                                        (TVar (TV "e30" Star))))
                                                                   (TApp
                                                                      (TApp
                                                                         (TCon
@@ -595,9 +595,9 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "x23" Star)))
-                                                                           (TVar (TV "w22" Star))))
-                                                                     (TVar (TV "w22" Star)))
+                                                                                 (TV "f31" Star)))
+                                                                           (TVar (TV "e30" Star))))
+                                                                     (TVar (TV "e30" Star)))
                                                               ]
                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                           ] :=>
@@ -608,8 +608,8 @@
                                                                        "Wish"
                                                                        (Kfun Star (Kfun Star Star)))
                                                                     "Module.mad")
-                                                                 (TVar (TV "v21" Star)))
-                                                              (TVar (TV "x23" Star)))
+                                                                 (TVar (TV "d29" Star)))
+                                                              (TVar (TV "f31" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          "__$b__")
                                                       [ Typed
@@ -634,8 +634,8 @@
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                "prelude")
-                                                                            (TVar (TV "v21" Star)))
-                                                                         (TVar (TV "w22" Star))))
+                                                                            (TVar (TV "d29" Star)))
+                                                                         (TVar (TV "e30" Star))))
                                                                    (TApp
                                                                       (TApp
                                                                          (TCon
@@ -657,9 +657,9 @@
                                                                                            Star)))
                                                                                   "prelude")
                                                                                (TVar
-                                                                                  (TV "x23" Star)))
-                                                                            (TVar (TV "w22" Star))))
-                                                                      (TVar (TV "w22" Star)))
+                                                                                  (TV "f31" Star)))
+                                                                            (TVar (TV "e30" Star))))
+                                                                      (TVar (TV "e30" Star)))
                                                                ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -689,8 +689,8 @@
                                                                                           Star)))
                                                                                  "Module.mad")
                                                                               (TVar
-                                                                                 (TV "v21" Star)))
-                                                                           (TVar (TV "x23" Star))))
+                                                                                 (TV "d29" Star)))
+                                                                           (TVar (TV "f31" Star))))
                                                                      (TApp
                                                                         (TApp
                                                                            (TCon
@@ -701,8 +701,8 @@
                                                                                     (Kfun
                                                                                        Star Star)))
                                                                               "Module.mad")
-                                                                           (TVar (TV "v21" Star)))
-                                                                        (TVar (TV "x23" Star))))
+                                                                           (TVar (TV "d29" Star)))
+                                                                        (TVar (TV "f31" Star))))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (TupleConstructor
                                                                    [ Typed
@@ -719,8 +719,8 @@
                                                                                            Star)))
                                                                                   "Module.mad")
                                                                                (TVar
-                                                                                  (TV "v21" Star)))
-                                                                            (TVar (TV "x23" Star)))
+                                                                                  (TV "d29" Star)))
+                                                                            (TVar (TV "f31" Star)))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        (Var "__$a__" False)
@@ -738,8 +738,8 @@
                                                                                            Star)))
                                                                                   "Module.mad")
                                                                                (TVar
-                                                                                  (TV "v21" Star)))
-                                                                            (TVar (TV "x23" Star)))
+                                                                                  (TV "d29" Star)))
+                                                                            (TVar (TV "f31" Star)))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        (Var "__$b__" False)
@@ -771,11 +771,11 @@
                                                                                       "prelude")
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "v21"
+                                                                                         "d29"
                                                                                          Star)))
                                                                                 (TVar
                                                                                    (TV
-                                                                                      "w22" Star))))
+                                                                                      "e30" Star))))
                                                                           (TApp
                                                                              (TApp
                                                                                 (TCon
@@ -800,13 +800,13 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "x23"
+                                                                                            "f31"
                                                                                             Star)))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "w22"
+                                                                                         "e30"
                                                                                          Star))))
-                                                                             (TVar (TV "w22" Star)))
+                                                                             (TVar (TV "e30" Star)))
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -846,11 +846,11 @@
                                                                                         "Module.mad")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "v21"
+                                                                                           "d29"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "x23"
+                                                                                        "f31"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TApp
@@ -865,11 +865,11 @@
                                                                                      "Module.mad")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "v21"
+                                                                                        "d29"
                                                                                         Star)))
                                                                                (TVar
                                                                                   (TV
-                                                                                     "x23" Star)))))
+                                                                                     "f31" Star)))))
                                                                       (TCon
                                                                          (TC "Boolean" Star)
                                                                          "prelude"))
@@ -901,11 +901,11 @@
                                                                                         "Module.mad")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "v21"
+                                                                                           "d29"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "x23"
+                                                                                        "f31"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TApp
@@ -920,10 +920,10 @@
                                                                                      "Module.mad")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "v21"
+                                                                                        "d29"
                                                                                         Star)))
                                                                                (TVar
-                                                                                  (TV "x23" Star))))
+                                                                                  (TV "f31" Star))))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        (PTuple
@@ -942,11 +942,11 @@
                                                                                          "Module.mad")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "v21"
+                                                                                            "d29"
                                                                                             Star)))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "x23"
+                                                                                         "f31"
                                                                                          Star)))
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -980,11 +980,11 @@
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "v21"
+                                                                                                             "d29"
                                                                                                              Star)))
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "w22"
+                                                                                                          "e30"
                                                                                                           Star))))
                                                                                               (TApp
                                                                                                  (TApp
@@ -1010,15 +1010,15 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "x23"
+                                                                                                                "f31"
                                                                                                                 Star)))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "w22"
+                                                                                                             "e30"
                                                                                                              Star))))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "w22"
+                                                                                                       "e30"
                                                                                                        Star)))
                                                                                           ]
                                                                                           (Just
@@ -1056,11 +1056,11 @@
                                                                                                       "prelude")
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "v21"
+                                                                                                         "d29"
                                                                                                          Star)))
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "w22"
+                                                                                                      "e30"
                                                                                                       Star))))
                                                                                           (TApp
                                                                                              (TApp
@@ -1086,15 +1086,15 @@
                                                                                                          "prelude")
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "x23"
+                                                                                                            "f31"
                                                                                                             Star)))
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "w22"
+                                                                                                         "e30"
                                                                                                          Star))))
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "w22"
+                                                                                                   "e30"
                                                                                                    Star))))
                                                                                      (Area
                                                                                         (Loc 0 0 0)
@@ -1116,11 +1116,11 @@
                                                                                          "Module.mad")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "v21"
+                                                                                            "d29"
                                                                                             Star)))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "x23"
+                                                                                         "f31"
                                                                                          Star)))
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -1154,11 +1154,11 @@
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "v21"
+                                                                                                             "d29"
                                                                                                              Star)))
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "w22"
+                                                                                                          "e30"
                                                                                                           Star))))
                                                                                               (TApp
                                                                                                  (TApp
@@ -1184,15 +1184,15 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "x23"
+                                                                                                                "f31"
                                                                                                                 Star)))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "w22"
+                                                                                                             "e30"
                                                                                                              Star))))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "w22"
+                                                                                                       "e30"
                                                                                                        Star)))
                                                                                           ]
                                                                                           (Just
@@ -1230,11 +1230,11 @@
                                                                                                       "prelude")
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "v21"
+                                                                                                         "d29"
                                                                                                          Star)))
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "w22"
+                                                                                                      "e30"
                                                                                                       Star))))
                                                                                           (TApp
                                                                                              (TApp
@@ -1260,15 +1260,15 @@
                                                                                                          "prelude")
                                                                                                       (TVar
                                                                                                          (TV
-                                                                                                            "x23"
+                                                                                                            "f31"
                                                                                                             Star)))
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "w22"
+                                                                                                         "e30"
                                                                                                          Star))))
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "w22"
+                                                                                                   "e30"
                                                                                                    Star))))
                                                                                      (Area
                                                                                         (Loc 0 0 0)
@@ -1303,11 +1303,11 @@
                                                                                             "prelude")
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "v21"
+                                                                                               "d29"
                                                                                                Star)))
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "w22"
+                                                                                            "e30"
                                                                                             Star))))
                                                                                 (TApp
                                                                                    (TApp
@@ -1333,15 +1333,15 @@
                                                                                                "prelude")
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "x23"
+                                                                                                  "f31"
                                                                                                   Star)))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "w22"
+                                                                                               "e30"
                                                                                                Star))))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "w22"
+                                                                                         "e30"
                                                                                          Star)))
                                                                             ]
                                                                             (Just
@@ -1382,11 +1382,11 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "v21"
+                                                                                                     "d29"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "w22"
+                                                                                                  "e30"
                                                                                                   Star))))
                                                                                       (TApp
                                                                                          (TApp
@@ -1412,15 +1412,15 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "x23"
+                                                                                                        "f31"
                                                                                                         Star)))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "w22"
+                                                                                                     "e30"
                                                                                                      Star))))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "w22"
+                                                                                               "e30"
                                                                                                Star)))
                                                                                   ]
                                                                                   (Just
@@ -1524,11 +1524,11 @@
                                                                                                         "prelude")
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "v21"
+                                                                                                           "d29"
                                                                                                            Star)))
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "w22"
+                                                                                                        "e30"
                                                                                                         Star))))
                                                                                             (TApp
                                                                                                (TApp
@@ -1554,15 +1554,15 @@
                                                                                                            "prelude")
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "x23"
+                                                                                                              "f31"
                                                                                                               Star)))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "w22"
+                                                                                                           "e30"
                                                                                                            Star))))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "w22"
+                                                                                                     "e30"
                                                                                                      Star)))
                                                                                         ]
                                                                                         (Just
@@ -1612,11 +1612,11 @@
                                                                                                               "prelude")
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "v21"
+                                                                                                                 "d29"
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "w22"
+                                                                                                              "e30"
                                                                                                               Star))))
                                                                                                   (TApp
                                                                                                      (TApp
@@ -1642,15 +1642,15 @@
                                                                                                                  "prelude")
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "x23"
+                                                                                                                    "f31"
                                                                                                                     Star)))
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "w22"
+                                                                                                                 "e30"
                                                                                                                  Star))))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "w22"
+                                                                                                           "e30"
                                                                                                            Star)))
                                                                                               ]
                                                                                               (Just
@@ -1699,11 +1699,11 @@
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "v21"
+                                                                                                                   "d29"
                                                                                                                    Star)))
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "w22"
+                                                                                                                "e30"
                                                                                                                 Star))))
                                                                                                     (TApp
                                                                                                        (TApp
@@ -1729,15 +1729,15 @@
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "x23"
+                                                                                                                      "f31"
                                                                                                                       Star)))
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "w22"
+                                                                                                                   "e30"
                                                                                                                    Star))))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "w22"
+                                                                                                             "e30"
                                                                                                              Star)))))
                                                                                               (TCon
                                                                                                  (TC
@@ -1781,11 +1781,11 @@
                                                                                                                     "prelude")
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "v21"
+                                                                                                                       "d29"
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "w22"
+                                                                                                                    "e30"
                                                                                                                     Star))))
                                                                                                         (TApp
                                                                                                            (TApp
@@ -1811,15 +1811,15 @@
                                                                                                                        "prelude")
                                                                                                                     (TVar
                                                                                                                        (TV
-                                                                                                                          "x23"
+                                                                                                                          "f31"
                                                                                                                           Star)))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "w22"
+                                                                                                                       "e30"
                                                                                                                        Star))))
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "w22"
+                                                                                                                 "e30"
                                                                                                                  Star)))
                                                                                                     ]
                                                                                                     Nothing
@@ -1859,11 +1859,11 @@
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "v21"
+                                                                                                                         "d29"
                                                                                                                          Star)))
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "w22"
+                                                                                                                      "e30"
                                                                                                                       Star))))
                                                                                                           (TApp
                                                                                                              (TApp
@@ -1889,15 +1889,15 @@
                                                                                                                          "prelude")
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "x23"
+                                                                                                                            "f31"
                                                                                                                             Star)))
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "w22"
+                                                                                                                         "e30"
                                                                                                                          Star))))
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "w22"
+                                                                                                                   "e30"
                                                                                                                    Star)))))
                                                                                                     (TApp
                                                                                                        (TApp
@@ -1934,11 +1934,11 @@
                                                                                                                          "prelude")
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "v21"
+                                                                                                                            "d29"
                                                                                                                             Star)))
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "w22"
+                                                                                                                         "e30"
                                                                                                                          Star))))
                                                                                                              (TApp
                                                                                                                 (TApp
@@ -1964,15 +1964,15 @@
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "x23"
+                                                                                                                               "f31"
                                                                                                                                Star)))
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "w22"
+                                                                                                                            "e30"
                                                                                                                             Star))))
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "w22"
+                                                                                                                      "e30"
                                                                                                                       Star)))))
                                                                                                        (TCon
                                                                                                           (TC
@@ -2041,11 +2041,11 @@
                                                                                                                           "prelude")
                                                                                                                        (TVar
                                                                                                                           (TV
-                                                                                                                             "v21"
+                                                                                                                             "d29"
                                                                                                                              Star)))
                                                                                                                     (TVar
                                                                                                                        (TV
-                                                                                                                          "w22"
+                                                                                                                          "e30"
                                                                                                                           Star))))
                                                                                                               (TApp
                                                                                                                  (TApp
@@ -2071,15 +2071,15 @@
                                                                                                                              "prelude")
                                                                                                                           (TVar
                                                                                                                              (TV
-                                                                                                                                "x23"
+                                                                                                                                "f31"
                                                                                                                                 Star)))
                                                                                                                        (TVar
                                                                                                                           (TV
-                                                                                                                             "w22"
+                                                                                                                             "e30"
                                                                                                                              Star))))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "w22"
+                                                                                                                       "e30"
                                                                                                                        Star)))
                                                                                                           ]
                                                                                                           Nothing
@@ -2119,11 +2119,11 @@
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "v21"
+                                                                                                                               "d29"
                                                                                                                                Star)))
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "w22"
+                                                                                                                            "e30"
                                                                                                                             Star))))
                                                                                                                 (TApp
                                                                                                                    (TApp
@@ -2149,15 +2149,15 @@
                                                                                                                                "prelude")
                                                                                                                             (TVar
                                                                                                                                (TV
-                                                                                                                                  "x23"
+                                                                                                                                  "f31"
                                                                                                                                   Star)))
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "w22"
+                                                                                                                               "e30"
                                                                                                                                Star))))
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "w22"
+                                                                                                                         "e30"
                                                                                                                          Star)))))
                                                                                                           (TApp
                                                                                                              (TApp
@@ -2194,11 +2194,11 @@
                                                                                                                                "prelude")
                                                                                                                             (TVar
                                                                                                                                (TV
-                                                                                                                                  "v21"
+                                                                                                                                  "d29"
                                                                                                                                   Star)))
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "w22"
+                                                                                                                               "e30"
                                                                                                                                Star))))
                                                                                                                    (TApp
                                                                                                                       (TApp
@@ -2224,15 +2224,15 @@
                                                                                                                                   "prelude")
                                                                                                                                (TVar
                                                                                                                                   (TV
-                                                                                                                                     "x23"
+                                                                                                                                     "f31"
                                                                                                                                      Star)))
                                                                                                                             (TVar
                                                                                                                                (TV
-                                                                                                                                  "w22"
+                                                                                                                                  "e30"
                                                                                                                                   Star))))
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "w22"
+                                                                                                                            "e30"
                                                                                                                             Star)))))
                                                                                                              (TCon
                                                                                                                 (TC
@@ -2278,11 +2278,11 @@
                                                                                                                     "prelude")
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "v21"
+                                                                                                                       "d29"
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "w22"
+                                                                                                                    "e30"
                                                                                                                     Star))))
                                                                                                         (TApp
                                                                                                            (TApp
@@ -2308,15 +2308,15 @@
                                                                                                                        "prelude")
                                                                                                                     (TVar
                                                                                                                        (TV
-                                                                                                                          "x23"
+                                                                                                                          "f31"
                                                                                                                           Star)))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "w22"
+                                                                                                                       "e30"
                                                                                                                        Star))))
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "w22"
+                                                                                                                 "e30"
                                                                                                                  Star)))
                                                                                                     ]
                                                                                                     (Just
@@ -2354,11 +2354,11 @@
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "v21"
+                                                                                                                   "d29"
                                                                                                                    Star)))
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "w22"
+                                                                                                                "e30"
                                                                                                                 Star))))
                                                                                                     (TApp
                                                                                                        (TApp
@@ -2384,15 +2384,15 @@
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "x23"
+                                                                                                                      "f31"
                                                                                                                       Star)))
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "w22"
+                                                                                                                   "e30"
                                                                                                                    Star))))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "w22"
+                                                                                                             "e30"
                                                                                                              Star))))
                                                                                                (Area
                                                                                                   (Loc
@@ -2434,11 +2434,11 @@
                                                                                                               "prelude")
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "v21"
+                                                                                                                 "d29"
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "w22"
+                                                                                                              "e30"
                                                                                                               Star))))
                                                                                                   (TApp
                                                                                                      (TApp
@@ -2464,15 +2464,15 @@
                                                                                                                  "prelude")
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "x23"
+                                                                                                                    "f31"
                                                                                                                     Star)))
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "w22"
+                                                                                                                 "e30"
                                                                                                                  Star))))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "w22"
+                                                                                                           "e30"
                                                                                                            Star)))
                                                                                               ]
                                                                                               (Just
@@ -2510,11 +2510,11 @@
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "v21"
+                                                                                                             "d29"
                                                                                                              Star)))
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "w22"
+                                                                                                          "e30"
                                                                                                           Star))))
                                                                                               (TApp
                                                                                                  (TApp
@@ -2540,15 +2540,15 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "x23"
+                                                                                                                "f31"
                                                                                                                 Star)))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "w22"
+                                                                                                             "e30"
                                                                                                              Star))))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "w22"
+                                                                                                       "e30"
                                                                                                        Star))))
                                                                                          (Area
                                                                                             (Loc
@@ -2591,11 +2591,11 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "v21"
+                                                                                                     "d29"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "w22"
+                                                                                                  "e30"
                                                                                                   Star))))
                                                                                       (TApp
                                                                                          (TApp
@@ -2621,15 +2621,15 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "x23"
+                                                                                                        "f31"
                                                                                                         Star)))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "w22"
+                                                                                                     "e30"
                                                                                                      Star))))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "w22"
+                                                                                               "e30"
                                                                                                Star)))
                                                                                   ]
                                                                                   (Just
@@ -2682,11 +2682,11 @@
                                                                                         "Module.mad")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "v21"
+                                                                                           "d29"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "x23"
+                                                                                        "f31"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TApp
@@ -2701,11 +2701,11 @@
                                                                                      "Module.mad")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "v21"
+                                                                                        "d29"
                                                                                         Star)))
                                                                                (TVar
                                                                                   (TV
-                                                                                     "x23" Star)))))
+                                                                                     "f31" Star)))))
                                                                       (TCon
                                                                          (TC "Boolean" Star)
                                                                          "prelude"))
@@ -2737,11 +2737,11 @@
                                                                                         "Module.mad")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "v21"
+                                                                                           "d29"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "x23"
+                                                                                        "f31"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TApp
@@ -2756,10 +2756,10 @@
                                                                                      "Module.mad")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "v21"
+                                                                                        "d29"
                                                                                         Star)))
                                                                                (TVar
-                                                                                  (TV "x23" Star))))
+                                                                                  (TV "f31" Star))))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        PAny)
@@ -2826,8 +2826,8 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TVar (TV "l37" Star)))
-                                     (TVar (TV "n39" Star))))
+                                        (TVar (TV "t45" Star)))
+                                     (TVar (TV "v47" Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -2842,12 +2842,12 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "l37" Star)))
-                                           (TVar (TV "n39" Star))))
+                                              (TVar (TV "t45" Star)))
+                                           (TVar (TV "v47" Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "l37" Star) ] )
+                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "t45" Star) ] )
                                    (Typed
                                       ([] :=>
                                          TApp
@@ -2859,17 +2859,17 @@
                                                     (TCon
                                                        (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                        "Module.mad")
-                                                    (TVar (TV "l37" Star)))
-                                                 (TVar (TV "n39" Star))))
+                                                    (TVar (TV "t45" Star)))
+                                                 (TVar (TV "v47" Star))))
                                            (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
                                          ( ClassRef "Inspect" [] False True
-                                         , [ TVar (TV "n39" Star) ]
+                                         , [ TVar (TV "v47" Star) ]
                                          )
                                          (Typed
-                                            ([ IsIn "Inspect" [ TVar (TV "n39" Star) ] Nothing
-                                             , IsIn "Inspect" [ TVar (TV "l37" Star) ] Nothing
+                                            ([ IsIn "Inspect" [ TVar (TV "v47" Star) ] Nothing
+                                             , IsIn "Inspect" [ TVar (TV "t45" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -2882,8 +2882,8 @@
                                                              (TC
                                                                 "Wish" (Kfun Star (Kfun Star Star)))
                                                              "Module.mad")
-                                                          (TVar (TV "l37" Star)))
-                                                       (TVar (TV "n39" Star))))
+                                                          (TVar (TV "t45" Star)))
+                                                       (TVar (TV "v47" Star))))
                                                  (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
@@ -2905,8 +2905,8 @@
                                                                           (Kfun
                                                                              Star (Kfun Star Star)))
                                                                        "prelude")
-                                                                    (TVar (TV "l37" Star)))
-                                                                 (TVar (TV "m38" Star))))
+                                                                    (TVar (TV "t45" Star)))
+                                                                 (TVar (TV "u46" Star))))
                                                            (TApp
                                                               (TApp
                                                                  (TCon
@@ -2923,9 +2923,9 @@
                                                                                 Star
                                                                                 (Kfun Star Star)))
                                                                           "prelude")
-                                                                       (TVar (TV "n39" Star)))
-                                                                    (TVar (TV "m38" Star))))
-                                                              (TVar (TV "m38" Star)))
+                                                                       (TVar (TV "v47" Star)))
+                                                                    (TVar (TV "u46" Star))))
+                                                              (TVar (TV "u46" Star)))
                                                        ]
                                                        (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                    ] :=>
@@ -2935,8 +2935,8 @@
                                                              (TC
                                                                 "Wish" (Kfun Star (Kfun Star Star)))
                                                              "Module.mad")
-                                                          (TVar (TV "l37" Star)))
-                                                       (TVar (TV "n39" Star)))
+                                                          (TVar (TV "t45" Star)))
+                                                       (TVar (TV "v47" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
                                                [ Typed
@@ -2958,8 +2958,8 @@
                                                                               Star
                                                                               (Kfun Star Star)))
                                                                         "prelude")
-                                                                     (TVar (TV "l37" Star)))
-                                                                  (TVar (TV "m38" Star))))
+                                                                     (TVar (TV "t45" Star)))
+                                                                  (TVar (TV "u46" Star))))
                                                             (TApp
                                                                (TApp
                                                                   (TCon
@@ -2977,9 +2977,9 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "n39" Star)))
-                                                                     (TVar (TV "m38" Star))))
-                                                               (TVar (TV "m38" Star)))
+                                                                        (TVar (TV "v47" Star)))
+                                                                     (TVar (TV "u46" Star))))
+                                                               (TVar (TV "u46" Star)))
                                                         ]
                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                     ] :=>
@@ -2995,8 +2995,8 @@
                                                                        "Wish"
                                                                        (Kfun Star (Kfun Star Star)))
                                                                     "Module.mad")
-                                                                 (TVar (TV "l37" Star)))
-                                                              (TVar (TV "n39" Star)))
+                                                                 (TVar (TV "t45" Star)))
+                                                              (TVar (TV "v47" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Var "__$a__" False))
                                                       [ Typed
@@ -3021,8 +3021,8 @@
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                "prelude")
-                                                                            (TVar (TV "l37" Star)))
-                                                                         (TVar (TV "m38" Star))))
+                                                                            (TVar (TV "t45" Star)))
+                                                                         (TVar (TV "u46" Star))))
                                                                    (TApp
                                                                       (TApp
                                                                          (TCon
@@ -3044,9 +3044,9 @@
                                                                                            Star)))
                                                                                   "prelude")
                                                                                (TVar
-                                                                                  (TV "n39" Star)))
-                                                                            (TVar (TV "m38" Star))))
-                                                                      (TVar (TV "m38" Star)))
+                                                                                  (TV "v47" Star)))
+                                                                            (TVar (TV "u46" Star))))
+                                                                      (TVar (TV "u46" Star)))
                                                                ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -3067,8 +3067,8 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "Module.mad")
-                                                                        (TVar (TV "l37" Star)))
-                                                                     (TVar (TV "n39" Star))))
+                                                                        (TVar (TV "t45" Star)))
+                                                                     (TVar (TV "v47" Star))))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Is
@@ -3083,8 +3083,8 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "Module.mad")
-                                                                        (TVar (TV "l37" Star)))
-                                                                     (TVar (TV "n39" Star)))
+                                                                        (TVar (TV "t45" Star)))
+                                                                     (TVar (TV "v47" Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (PCon
                                                                    "Wish"
@@ -3115,11 +3115,11 @@
                                                                                             "prelude")
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "l37"
+                                                                                               "t45"
                                                                                                Star)))
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "m38"
+                                                                                            "u46"
                                                                                             Star))))
                                                                                 (TApp
                                                                                    (TApp
@@ -3145,15 +3145,15 @@
                                                                                                "prelude")
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "n39"
+                                                                                                  "v47"
                                                                                                   Star)))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "m38"
+                                                                                               "u46"
                                                                                                Star))))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "m38"
+                                                                                         "u46"
                                                                                          Star)))
                                                                             ]
                                                                             (Just
@@ -3185,11 +3185,11 @@
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "l37"
+                                                                                           "t45"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "m38"
+                                                                                        "u46"
                                                                                         Star))))
                                                                             (TApp
                                                                                (TApp
@@ -3215,14 +3215,14 @@
                                                                                            "prelude")
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "n39"
+                                                                                              "v47"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "m38"
+                                                                                           "u46"
                                                                                            Star))))
                                                                                (TVar
-                                                                                  (TV "m38" Star))))
+                                                                                  (TV "u46" Star))))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        (PVar "a0")
@@ -3253,10 +3253,10 @@
                                                                                      "prelude")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "l37"
+                                                                                        "t45"
                                                                                         Star)))
                                                                                (TVar
-                                                                                  (TV "m38" Star))))
+                                                                                  (TV "u46" Star))))
                                                                          (TApp
                                                                             (TApp
                                                                                (TCon
@@ -3281,13 +3281,13 @@
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "n39"
+                                                                                           "v47"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "m38"
+                                                                                        "u46"
                                                                                         Star))))
-                                                                            (TVar (TV "m38" Star)))
+                                                                            (TVar (TV "u46" Star)))
                                                                      ]
                                                                      (Just
                                                                         (Area
@@ -3332,11 +3332,11 @@
                                                                                             "prelude")
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "l37"
+                                                                                               "t45"
                                                                                                Star)))
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "m38"
+                                                                                            "u46"
                                                                                             Star))))
                                                                                 (TApp
                                                                                    (TApp
@@ -3362,15 +3362,15 @@
                                                                                                "prelude")
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "n39"
+                                                                                                  "v47"
                                                                                                   Star)))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "m38"
+                                                                                               "u46"
                                                                                                Star))))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "m38"
+                                                                                         "u46"
                                                                                          Star)))
                                                                             ]
                                                                             (Just
@@ -3411,11 +3411,11 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "l37"
+                                                                                                     "t45"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "m38"
+                                                                                                  "u46"
                                                                                                   Star))))
                                                                                       (TApp
                                                                                          (TApp
@@ -3441,15 +3441,15 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "n39"
+                                                                                                        "v47"
                                                                                                         Star)))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "m38"
+                                                                                                     "u46"
                                                                                                      Star))))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "m38"
+                                                                                               "u46"
                                                                                                Star)))
                                                                                   ]
                                                                                   Nothing
@@ -3489,11 +3489,11 @@
                                                                                                     "prelude")
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "l37"
+                                                                                                       "t45"
                                                                                                        Star)))
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "m38"
+                                                                                                    "u46"
                                                                                                     Star))))
                                                                                         (TApp
                                                                                            (TApp
@@ -3519,15 +3519,15 @@
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "n39"
+                                                                                                          "v47"
                                                                                                           Star)))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "m38"
+                                                                                                       "u46"
                                                                                                        Star))))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "m38"
+                                                                                                 "u46"
                                                                                                  Star)))))
                                                                                   (TCon
                                                                                      (TC
@@ -3590,11 +3590,11 @@
                                                                                                         "prelude")
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "l37"
+                                                                                                           "t45"
                                                                                                            Star)))
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "m38"
+                                                                                                        "u46"
                                                                                                         Star))))
                                                                                             (TApp
                                                                                                (TApp
@@ -3620,15 +3620,15 @@
                                                                                                            "prelude")
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "n39"
+                                                                                                              "v47"
                                                                                                               Star)))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "m38"
+                                                                                                           "u46"
                                                                                                            Star))))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "m38"
+                                                                                                     "u46"
                                                                                                      Star)))
                                                                                         ]
                                                                                         Nothing
@@ -3668,11 +3668,11 @@
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "l37"
+                                                                                                             "t45"
                                                                                                              Star)))
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "m38"
+                                                                                                          "u46"
                                                                                                           Star))))
                                                                                               (TApp
                                                                                                  (TApp
@@ -3698,15 +3698,15 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "n39"
+                                                                                                                "v47"
                                                                                                                 Star)))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "m38"
+                                                                                                             "u46"
                                                                                                              Star))))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "m38"
+                                                                                                       "u46"
                                                                                                        Star)))))
                                                                                         (TCon
                                                                                            (TC
@@ -3746,11 +3746,11 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "l37"
+                                                                                                     "t45"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "m38"
+                                                                                                  "u46"
                                                                                                   Star))))
                                                                                       (TApp
                                                                                          (TApp
@@ -3776,15 +3776,15 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "n39"
+                                                                                                        "v47"
                                                                                                         Star)))
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "m38"
+                                                                                                     "u46"
                                                                                                      Star))))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "m38"
+                                                                                               "u46"
                                                                                                Star)))
                                                                                   ]
                                                                                   (Just
@@ -3817,11 +3817,11 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "l37"
+                                                                                                 "t45"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "m38"
+                                                                                              "u46"
                                                                                               Star))))
                                                                                   (TApp
                                                                                      (TApp
@@ -3847,15 +3847,15 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "n39"
+                                                                                                    "v47"
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "m38"
+                                                                                                 "u46"
                                                                                                  Star))))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "m38"
+                                                                                           "u46"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 0 0 0)
@@ -3890,8 +3890,8 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "Module.mad")
-                                                                        (TVar (TV "l37" Star)))
-                                                                     (TVar (TV "n39" Star))))
+                                                                        (TVar (TV "t45" Star)))
+                                                                     (TVar (TV "v47" Star))))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Is
@@ -3906,8 +3906,8 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "Module.mad")
-                                                                        (TVar (TV "l37" Star)))
-                                                                     (TVar (TV "n39" Star)))
+                                                                        (TVar (TV "t45" Star)))
+                                                                     (TVar (TV "v47" Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 PAny)
                                                              (Typed

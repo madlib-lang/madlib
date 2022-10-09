@@ -227,11 +227,6 @@ findFreeVars env exp = do
         (MethodRef _ _ False, _) ->
           return []
 
-        -- (ClassRef interface _ False True, ts) -> do
-        -- -- (ClassRef interface _ False True, ts) -> do
-        --   let dictName = "$" <> interface <> "$" <> ts
-        --   findFreeVars (env { dictsInScope = dictName : dictsInScope env }) exp
-
         _ ->
           findFreeVars env exp
 

@@ -7,10 +7,10 @@ let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Functor = {};
 global.Monad = {};
 Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_g214) => (__$a__ => ((__x__) => {
+Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_o248) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(` + Inspect_g214.inspect()(a0) + `)`;
+    return `Just(` + Inspect_o248.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
     return `Nothing`;
@@ -25,14 +25,14 @@ Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_g2
   }
 })(__$a__));
 Inspect['Either_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Either_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v229) => (Inspect_s226) => (__$a__ => ((__x__) => {
+Inspect['Either_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d263) => (Inspect_a260) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(` + Inspect_s226.inspect()(a0) + `)`;
+    return `Right(` + Inspect_a260.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(` + Inspect_v229.inspect()(a0) + `)`;
+    return `Left(` + Inspect_d263.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -127,8 +127,8 @@ Monad['Either_568c75136c0c369c440814a7af59434a']['chain'] = () => (f => __x__ =>
 })(__x__));
 Monad['Either_568c75136c0c369c440814a7af59434a']['of'] = () => (x => Right(x));
 let inc = (a => (a + 1));
-let doIt = (Functor_v21) => (x => Functor_v21.map()((k => (k + 1)))(x));
-let fn = (Functor_g32) => Functor_g32.map()(inc);
+let doIt = (Functor_t19) => (x => Functor_t19.map()((k => (k + 1)))(x));
+let fn = (Functor_e30) => Functor_e30.map()(inc);
 let hideCall = (x => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0] === 2) {
     return Monad.Either_568c75136c0c369c440814a7af59434a.chain()((a => Right((a + 1))))(Right(2));

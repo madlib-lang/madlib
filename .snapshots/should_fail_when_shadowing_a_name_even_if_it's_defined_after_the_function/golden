@@ -2,74 +2,44 @@
     { aimports = []
     , aexps =
         [ Typed
-            ([ IsIn
-                 "Number"
-                 [ TVar (TV "j9" Star) ]
-                 (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
-             ] :=>
+            ([] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TVar (TV "i8" Star)))
-                 (TVar (TV "j9" Star)))
+                    (TVar (TV "f5" Star)))
+                 (TVar (TV "h7" Star)))
             (Area (Loc 0 1 1) (Loc 31 3 11))
             (Assignment
                "g"
                (Typed
-                  ([ IsIn
-                       "Number"
-                       [ TVar (TV "j9" Star) ]
-                       (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
-                   ] :=>
+                  ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "i8" Star)))
-                       (TVar (TV "j9" Star)))
-                  (Area (Loc 0 1 1) (Loc 31 3 11))
-                  (Placeholder
-                     ( ClassRef "Number" [] False True , [ TVar (TV "j9" Star) ] )
+                          (TVar (TV "f5" Star)))
+                       (TVar (TV "h7" Star)))
+                  (Area (Loc 4 1 5) (Loc 31 3 11))
+                  (Abs
                      (Typed
-                        ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing
-                         , IsIn
-                             "Number"
-                             [ TVar (TV "j9" Star) ]
-                             (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
-                         ] :=>
-                           TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "i8" Star)))
-                             (TVar (TV "j9" Star)))
-                        (Area (Loc 4 1 5) (Loc 31 3 11))
-                        (Abs
-                           (Typed
-                              ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing
-                               , IsIn
-                                   "Number"
-                                   [ TVar (TV "j9" Star) ]
-                                   (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
-                               ] :=>
-                                 TVar (TV "i8" Star))
-                              (Area (Loc 5 1 6) (Loc 6 1 7))
-                              "x")
-                           [ Typed
-                               ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
-                                  TVar (TV "j9" Star))
-                               (Area (Loc 15 2 3) (Loc 20 2 8))
-                               (Assignment
-                                  "a"
-                                  (Typed
-                                     ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
-                                        TVar (TV "j9" Star))
-                                     (Area (Loc 19 2 7) (Loc 20 2 8))
-                                     (LNum "2")))
-                           , Typed
-                               ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
-                                  TVar (TV "j9" Star))
-                               (Area (Loc 30 3 10) (Loc 31 3 11))
-                               (Var "a" False)
-                           ])))))
+                        ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                           TVar (TV "f5" Star))
+                        (Area (Loc 5 1 6) (Loc 6 1 7))
+                        "x")
+                     [ Typed
+                         ([] :=> TVar (TV "h7" Star))
+                         (Area (Loc 15 2 3) (Loc 20 2 8))
+                         (Assignment
+                            "a"
+                            (Typed
+                               ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                                  TVar (TV "h7" Star))
+                               (Area (Loc 19 2 7) (Loc 20 2 8))
+                               (LNum "2")))
+                     , Typed
+                         ([] :=> TVar (TV "h7" Star))
+                         (Area (Loc 30 3 10) (Loc 31 3 11))
+                         (Var "a" False)
+                     ])))
         , Typed
             ([] :=> TCon (TC "Integer" Star) "prelude")
             (Area (Loc 34 5 1) (Loc 39 5 6))
