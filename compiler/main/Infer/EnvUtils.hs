@@ -106,13 +106,15 @@ setNamespacesInScope env ns = env { envNamespacesInScope = ns }
 
 
 mergeEnv :: Env -> Env -> Env
-mergeEnv initial env = Env { envVars              = envVars initial <> envVars env
-                           , envMethods           = envMethods initial <> envMethods env
-                           , envInterfaces        = envInterfaces initial <> envInterfaces env
-                           , envConstructors      = envConstructors initial <> envConstructors env
-                           , envCurrentPath       = envCurrentPath env
-                           , envNamespacesInScope = envNamespacesInScope initial <> envNamespacesInScope env
-                           , envImportInfo        = envImportInfo initial
+mergeEnv initial env = Env { envVars                 = envVars initial <> envVars env
+                           , envMethods              = envMethods initial <> envMethods env
+                           , envInterfaces           = envInterfaces initial <> envInterfaces env
+                           , envConstructors         = envConstructors initial <> envConstructors env
+                           , envCurrentPath          = envCurrentPath env
+                           , envNamespacesInScope    = envNamespacesInScope initial <> envNamespacesInScope env
+                           , envImportInfo           = envImportInfo initial
+                           , envPlaceholdersToDelete = mempty
+                           , envPlaceholdersInScope  = []
                            }
 
 
@@ -404,4 +406,5 @@ initialEnv = Env
   , envNamespacesInScope = mempty
   , envImportInfo = mempty
   , envPlaceholdersToDelete = mempty
+  , envPlaceholdersInScope = []
   }

@@ -1,19 +1,27 @@
-1|f = (x) => {
-  ^
-\ESC[90m2|  a = x + 1\ESC[0m
-\ESC[90m3|  return a + \"\"\ESC[0m
-\ESC[90m4|}\ESC[0m
-\nI could not find any instance for 'Number String'. Verify that you imported the module\nwhere the Number instance for 'String' is defined.
-\nNB: remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly.
+│ 1|f = (x) => {
+│   ^
+│ \ESC[90m2|  a = x + 1\ESC[0m
+│ \ESC[90m3|  return a + \"\"\ESC[0m
+│ \ESC[90m4|}\ESC[0m
+│ 
+│ I could not find any instance for 'Number String'. Verify that you imported the module
+│ where the Number instance for 'String' is defined.
+│ 
+│ NB: remember that instance methods are automatically imported when the module
+│ is imported, directly, or indirectly.
 
 
 
-\ESC[90m5|\ESC[0m
-\ESC[90m6|main = () => {\ESC[0m\n7|  true && \"Hello\"
-            ^^^^^^^
-\ESC[90m8|  f(3)\ESC[0m
-\ESC[90m9|}\ESC[0m
-\nType error, expected:
-    \ESC[32mBoolean\ESC[0m\nBut found:
-    \ESC[31mString\ESC[0m
+│ \ESC[90m5|\ESC[0m
+│ \ESC[90m6|main = () => {\ESC[0m
+│ 7|  true && \"Hello\"
+│             ^^^^^^^
+│ \ESC[90m8|  f(3)\ESC[0m
+│ \ESC[90m9|}\ESC[0m
+│ 
+│ I found a type error!
+│ expected:
+│     \ESC[90m\ESC[32mBoolean\ESC[0m\ESC[0m\ESC[90m -> \ESC[0m\ESC[90m\ESC[90mBoolean\ESC[0m\ESC[0m
+│ but found:
+│     \ESC[90m\ESC[31mString\ESC[0m\ESC[0m\ESC[90m -> \ESC[0m\ESC[90m\ESC[90mBoolean\ESC[0m\ESC[0m
 

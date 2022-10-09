@@ -189,9 +189,10 @@ spec = do
               , "│ 1|// here is the error"
               , "│   ^^^^^^^^^^^^^^^^^^^^"
               , "│ "
-              , "│ An ambiguity could not be resolved! I am"
-              , "│ looking for an instance of 'Monoid' but could not resolve it. You"
-              , "│ might want to add a type annotation to make it resolvable."
+              , "│ I am looking for an instance of 'Monoid' but could not resolve it."
+              , "│ "
+              , "│ "
+              , "│ Hint: You might want to add a type annotation to make it resolvable."
               ]
       actual `shouldBe` expected
 

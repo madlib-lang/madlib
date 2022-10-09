@@ -46,7 +46,7 @@
                                ([] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "c2" Star)))
+                                    (TVar (TV "d3" Star)))
                                (Area (Loc 17 2 3) (Loc 19 2 5))
                                (ListConstructor [])
                            , Typed
@@ -57,8 +57,8 @@
                                (Area (Loc 22 3 3) (Loc 31 3 12))
                                (ListConstructor
                                   [ Typed
-                                      ([ IsIn "Number" [ TVar (TV "f5" Star) ] Nothing ] :=>
-                                         TVar (TV "f5" Star))
+                                      ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                                         TVar (TV "k10" Star))
                                       (Area (Loc 23 3 4) (Loc 24 3 5))
                                       (ListItem
                                          (Typed
@@ -71,8 +71,8 @@
                                             (Area (Loc 23 3 4) (Loc 24 3 5))
                                             (LNum "1")))
                                   , Typed
-                                      ([ IsIn "Number" [ TVar (TV "g6" Star) ] Nothing ] :=>
-                                         TVar (TV "g6" Star))
+                                      ([ IsIn "Number" [ TVar (TV "l11" Star) ] Nothing ] :=>
+                                         TVar (TV "l11" Star))
                                       (Area (Loc 26 3 7) (Loc 27 3 8))
                                       (ListItem
                                          (Typed
@@ -85,8 +85,8 @@
                                             (Area (Loc 26 3 7) (Loc 27 3 8))
                                             (LNum "2")))
                                   , Typed
-                                      ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
-                                         TVar (TV "h7" Star))
+                                      ([ IsIn "Number" [ TVar (TV "m12" Star) ] Nothing ] :=>
+                                         TVar (TV "m12" Star))
                                       (Area (Loc 29 3 10) (Loc 30 3 11))
                                       (ListItem
                                          (Typed

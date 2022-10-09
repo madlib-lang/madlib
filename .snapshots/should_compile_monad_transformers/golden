@@ -12,10 +12,10 @@ global.MonadTrans = {};
 global.MonadWriter = {};
 global.MonadState = {};
 Inspect['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['WriterT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_s304) => (Inspect_u306) => (Inspect_t305) => (__$a__ => ((__x__) => {
+Inspect['WriterT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_a390) => (Inspect_c392) => (Inspect_b391) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let a0 = __x__.__args[0];
-    return `WriterT(` + Inspect_s304.inspect()(a0) + `)`;
+    return `WriterT(` + Inspect_a390.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -27,10 +27,10 @@ Inspect['WriterT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_
   }
 })(__$a__));
 Inspect['Identity_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Identity_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_e316) => (__$a__ => ((__x__) => {
+Inspect['Identity_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_m402) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a0 = __x__.__args[0];
-    return `Identity(` + Inspect_e316.inspect()(a0) + `)`;
+    return `Identity(` + Inspect_m402.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -42,7 +42,7 @@ Inspect['Identity_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect
   }
 })(__$a__));
 Inspect['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['StateT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_r329) => (Inspect_q328) => (Inspect_s330) => (__$a__ => ((__x__) => {
+Inspect['StateT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_z415) => (Inspect_y414) => (Inspect_a416) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "StateT" && true) {
     let a0 = __x__.__args[0];
     return `StateT(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -62,7 +62,7 @@ Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
 Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['mappend'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
 Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['mempty'] = () => (null);
 Functor['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Functor['WriterT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_h371) => (f => m => WriterT(Functor_h371.map()((__x__ => ((__x__) => {
+Functor['WriterT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_p457) => (f => m => WriterT(Functor_p457.map()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
     return ([f(a), w]);
@@ -74,13 +74,13 @@ Functor['WriterT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_h371
   }
 })(__x__)))(runWriterT(m))));
 Applicative['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Applicative['WriterT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Semigroup_u410) => (Monoid_u410) => (Functor_v411) => (Applicative_v411) => (mf => mm => WriterT(liftA2(Functor_v411)(Applicative_v411)((x1 => x2 => ((__x__) => {
+Applicative['WriterT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Semigroup_c496) => (Monoid_c496) => (Functor_d497) => (Applicative_d497) => (mf => mm => WriterT(liftA2(Functor_d497)(Applicative_d497)((x1 => x2 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
     return ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return ([a(b), Monoid_u410.mappend()(w)(ww)]);
+    return ([a(b), Monoid_c496.mappend()(w)(ww)]);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -95,15 +95,15 @@ Applicative['WriterT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Semigroup
     throw 'non exhaustive patterns!';
   }
 })(x1)))(runWriterT(mf))(runWriterT(mm))));
-Applicative['WriterT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Semigroup_l427) => (Monoid_l427) => (Functor_j425) => (Applicative_j425) => (x => WriterT(Applicative_j425.pure()(([x, Monoid_l427.mempty()]))));
+Applicative['WriterT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Semigroup_t513) => (Monoid_t513) => (Functor_r511) => (Applicative_r511) => (x => WriterT(Applicative_r511.pure()(([x, Monoid_t513.mempty()]))));
 Monad['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Monad['WriterT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_d471) => (Applicative_d471) => (Monad_d471) => (Semigroup_c470) => (Monoid_c470) => (f => m => WriterT(Monad_d471.chain()((__x__ => ((__x__) => {
+Monad['WriterT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_l557) => (Applicative_l557) => (Monad_l557) => (Semigroup_k556) => (Monoid_k556) => (f => m => WriterT(Monad_l557.chain()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return Monad_d471.chain()((__x__ => ((__x__) => {
+    return Monad_l557.chain()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return Monad_d471.of()(([b, Monoid_c470.mappend()(w)(ww)]));
+    return Monad_l557.of()(([b, Monoid_k556.mappend()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -118,9 +118,9 @@ Monad['WriterT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_d471
     throw 'non exhaustive patterns!';
   }
 })(__x__)))(runWriterT(m))));
-Monad['WriterT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_o482) => (Applicative_o482) => (Monad_o482) => (Semigroup_n481) => (Monoid_n481) => Applicative.WriterT_568c75136c0c369c440814a7af59434a.pure()(Semigroup_n481)(Monoid_n481)(Functor_o482)(Applicative_o482);
+Monad['WriterT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_w568) => (Applicative_w568) => (Monad_w568) => (Semigroup_v567) => (Monoid_v567) => Applicative.WriterT_568c75136c0c369c440814a7af59434a.pure()(Semigroup_v567)(Monoid_v567)(Functor_w568)(Applicative_w568);
 MonadTrans['m_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadTrans['m_WriterT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Semigroup_k504) => (Monoid_k504) => (Functor_i502) => (Applicative_i502) => (Monad_i502) => (m => WriterT(Monad_i502.chain()((a => Monad_i502.of()(([a, Monoid_k504.mempty()]))))(m)));
+MonadTrans['m_WriterT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Semigroup_s590) => (Monoid_s590) => (Functor_q588) => (Applicative_q588) => (Monad_q588) => (m => WriterT(Monad_q588.chain()((a => Monad_q588.of()(([a, Monoid_s590.mempty()]))))(m)));
 Functor['Identity_568c75136c0c369c440814a7af59434a'] = {};
 Functor['Identity_568c75136c0c369c440814a7af59434a']['map'] = () => (f => m => Identity(f(runIdentity(m))));
 Applicative['Identity_568c75136c0c369c440814a7af59434a'] = {};
@@ -130,7 +130,7 @@ Monad['Identity_568c75136c0c369c440814a7af59434a'] = {};
 Monad['Identity_568c75136c0c369c440814a7af59434a']['chain'] = () => (f => mm => f(runIdentity(mm)));
 Monad['Identity_568c75136c0c369c440814a7af59434a']['of'] = () => Applicative.Identity_568c75136c0c369c440814a7af59434a.pure();
 Functor['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Functor['StateT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_f577) => (f => m => StateT((s => Functor_f577.map()((__x__ => ((__x__) => {
+Functor['StateT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_n663) => (f => m => StateT((s => Functor_n663.map()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return ([f(a), ss]);
@@ -142,13 +142,13 @@ Functor['StateT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_f577)
   }
 })(__x__)))(runStateT(m)(s)))));
 Applicative['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Applicative['StateT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Functor_z623) => (Applicative_z623) => (Monad_z623) => (mf => mm => StateT((s => Monad_z623.chain()((__x__ => ((__x__) => {
+Applicative['StateT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Functor_h709) => (Applicative_h709) => (Monad_h709) => (mf => mm => StateT((s => Monad_h709.chain()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [f,ss] = __x__;
-    return Monad_z623.chain()((__x__ => ((__x__) => {
+    return Monad_h709.chain()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [m,sss] = __x__;
-    return Monad_z623.of()(([f(m), sss]));
+    return Monad_h709.of()(([f(m), sss]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -163,9 +163,9 @@ Applicative['StateT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Functor_z6
     throw 'non exhaustive patterns!';
   }
 })(__x__)))(runStateT(mf)(s)))));
-Applicative['StateT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Functor_o638) => (Applicative_o638) => (Monad_o638) => (a => StateT((s => Monad_o638.of()(([a, s])))));
+Applicative['StateT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Functor_w724) => (Applicative_w724) => (Monad_w724) => (a => StateT((s => Monad_w724.of()(([a, s])))));
 Monad['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Monad['StateT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_v671) => (Applicative_v671) => (Monad_v671) => (f => m => StateT((s => Monad_v671.chain()((__x__ => ((__x__) => {
+Monad['StateT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_d757) => (Applicative_d757) => (Monad_d757) => (f => m => StateT((s => Monad_d757.chain()((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return runStateT(f(a))(ss);
@@ -176,21 +176,21 @@ Monad['StateT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_v671)
     throw 'non exhaustive patterns!';
   }
 })(__x__)))(runStateT(m)(s)))));
-Monad['StateT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_k686) => (Applicative_k686) => (Monad_k686) => (a => StateT((s => Monad_k686.of()(([a, s])))));
+Monad['StateT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_s772) => (Applicative_s772) => (Monad_s772) => (a => StateT((s => Monad_s772.of()(([a, s])))));
 MonadTrans['m_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadTrans['m_StateT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Functor_f707) => (Applicative_f707) => (Monad_f707) => (m => StateT((s => Monad_f707.chain()((a => Monad_f707.of()(([a, s]))))(m))));
+MonadTrans['m_StateT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Functor_n793) => (Applicative_n793) => (Monad_n793) => (m => StateT((s => Monad_n793.chain()((a => Monad_n793.of()(([a, s]))))(m))));
 MonadWriter['w_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadWriter['w_WriterT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_s720) => (Applicative_s720) => (Monad_s720) => (Semigroup_m714) => (Monoid_m714) => (v => WriterT(Monad_s720.of()(([({ __constructor: "Unit", __args: [] }), v]))));
+MonadWriter['w_WriterT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_a806) => (Applicative_a806) => (Monad_a806) => (Semigroup_u800) => (Monoid_u800) => (v => WriterT(Monad_a806.of()(([({ __constructor: "Unit", __args: [] }), v]))));
 MonadWriter['w_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadWriter['w_StateT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_f733) => (Applicative_f733) => (Semigroup_y726) => (Monad_f733) => (Monoid_y726) => (MonadWriter_y726_f733) => (Functor_f733) => (Applicative_f733) => (Monad_f733) => (Semigroup_y726) => (Monoid_y726) => (_P_ => MonadTrans.m_StateT_568c75136c0c369c440814a7af59434a.lift()(Functor_f733)(Applicative_f733)(Monad_f733)(MonadWriter_y726_f733.tell()(_P_)));
+MonadWriter['w_StateT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_n819) => (Applicative_n819) => (Semigroup_g812) => (Monad_n819) => (Monoid_g812) => (MonadWriter_g812_n819) => (Functor_n819) => (Applicative_n819) => (Monad_n819) => (Semigroup_g812) => (Monoid_g812) => (_P_ => MonadTrans.m_StateT_568c75136c0c369c440814a7af59434a.lift()(Functor_n819)(Applicative_n819)(Monad_n819)(MonadWriter_g812_n819.tell()(_P_)));
 MonadState['s_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_u748) => (Applicative_u748) => (Monad_u748) => StateT((s => Monad_u748.of()(([s, s]))));
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_h761) => (Applicative_h761) => (Monad_h761) => (f => StateT((s => Monad_h761.of()(([({ __constructor: "Unit", __args: [] }), f(s)])))));
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_v775) => (Applicative_v775) => (Monad_v775) => (s => StateT((_ => Monad_v775.of()(([({ __constructor: "Unit", __args: [] }), s])))));
+MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_c834) => (Applicative_c834) => (Monad_c834) => StateT((s => Monad_c834.of()(([s, s]))));
+MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_p847) => (Applicative_p847) => (Monad_p847) => (f => StateT((s => Monad_p847.of()(([({ __constructor: "Unit", __args: [] }), f(s)])))));
+MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_d861) => (Applicative_d861) => (Monad_d861) => (s => StateT((_ => Monad_d861.of()(([({ __constructor: "Unit", __args: [] }), s])))));
 MonadState['s_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_g786) => (Applicative_g786) => (Monad_g786) => (MonadState_f785_g786) => (Functor_g786) => (Applicative_g786) => (Monad_g786) => (Semigroup_h787) => (Monoid_h787) => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_h787)(Monoid_h787)(Functor_g786)(Applicative_g786)(Monad_g786)(MonadState_f785_g786.get());
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_w802) => (Applicative_w802) => (Monad_w802) => (MonadState_v801_w802) => (Functor_w802) => (Applicative_w802) => (Monad_w802) => (Semigroup_x803) => (Monoid_x803) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_x803)(Monoid_x803)(Functor_w802)(Applicative_w802)(Monad_w802)(MonadState_v801_w802.modify()(_P_)));
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_m818) => (Applicative_m818) => (Monad_m818) => (MonadState_f811_m818) => (Functor_m818) => (Applicative_m818) => (Monad_m818) => (Semigroup_n819) => (Monoid_n819) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_n819)(Monoid_n819)(Functor_m818)(Applicative_m818)(Monad_m818)(MonadState_f811_m818.put()(_P_)));
+MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_o872) => (Applicative_o872) => (Monad_o872) => (MonadState_n871_o872) => (Functor_o872) => (Applicative_o872) => (Monad_o872) => (Semigroup_p873) => (Monoid_p873) => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_p873)(Monoid_p873)(Functor_o872)(Applicative_o872)(Monad_o872)(MonadState_n871_o872.get());
+MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_e888) => (Applicative_e888) => (Monad_e888) => (MonadState_d887_e888) => (Functor_e888) => (Applicative_e888) => (Monad_e888) => (Semigroup_f889) => (Monoid_f889) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_f889)(Monoid_f889)(Functor_e888)(Applicative_e888)(Monad_e888)(MonadState_d887_e888.modify()(_P_)));
+MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_u904) => (Applicative_u904) => (Monad_u904) => (MonadState_n897_u904) => (Functor_u904) => (Applicative_u904) => (Monad_u904) => (Semigroup_v905) => (Monoid_v905) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_v905)(Monoid_v905)(Functor_u904)(Applicative_u904)(Monad_u904)(MonadState_n897_u904.put()(_P_)));
 export let andDo = (Functor_c28) => (Applicative_c28) => (Monad_c28) => (b => a => Monad_c28.chain()((_ => b))(a));
 export let runWriterT = (__x__ => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {

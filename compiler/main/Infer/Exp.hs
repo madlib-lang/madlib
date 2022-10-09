@@ -193,21 +193,6 @@ extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
 
-computeRemovedPsBecauseSolved :: Env -> [Pred] -> [Pred] -> Infer [Int]
-computeRemovedPsBecauseSolved env unapplied applied = do
-  maybes <- forM (zip3 unapplied applied [0..]) $ \(unapp, app, index) -> do
-    maybeUnappliedInst <- findInst env unapp
-    maybeAppliedInst   <- findInst env app
-    case (maybeUnappliedInst, maybeAppliedInst) of
-      (Nothing, Just _) ->
-        return $ Just index
-
-      (_, _) ->
-        return Nothing
-
-  return $ catMaybes maybes
-
-
 inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
@@ -237,10 +222,30 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
           (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
           let subst = sDef' `compose` sDef
 
-          if ambiguities fs unsolvedPs'' /= [] then do
-            throwError $ CompilationError
-              (AmbiguousType (TV "-" Star, apply subst unsolvedPs''))
-              (Context (envCurrentPath env) area)
+          -- if ambiguities fs unsolvedPs'' /= [] then do
+          if unsolvedPs'' /= [] then do
+            forM_ unsolvedPs'' $ \p -> do
+              catchError
+                (byInst env (apply subst p))
+                (\case
+                  (CompilationError FatalError NoContext) ->
+                    if ambiguities fs unsolvedPs'' /= [] then
+                      case p of
+                        IsIn _ (TVar tv : _) _ ->
+                          throwError $ CompilationError
+                            (AmbiguousType (tv, apply subst unsolvedPs''))
+                            (Context (envCurrentPath env) area)
+
+                        _ ->
+                          throwError $ CompilationError
+                            (AmbiguousType (TV "-" Star, apply subst unsolvedPs''))
+                            (Context (envCurrentPath env) area)
+                      else
+                        return []
+                  or ->
+                    throwError or
+                )
+            return (unsolvedPs'' ++ solvedPs, subst)
           else
             return (unsolvedPs'' ++ solvedPs, subst)
           return (unsolvedPs'' ++ solvedPs, subst)
@@ -257,7 +262,11 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
 
             Nothing ->
               env''
-      let e'' = cleanUpDeletedVarPlaceholders env''' e'
+      let e'' =
+            if all null (envPlaceholdersToDelete env''') then
+              e'
+            else
+              cleanUpDeletedVarPlaceholders env''' e'
 
       return (results ++ [e''], sFinal, apply sFinal env''')
     )
@@ -1059,7 +1068,7 @@ inferExp options env e = do
       return (s, placeholderPreds, env'', e')
 
   e''  <- insertClassPlaceholders options env' e' placeholderPreds
-  e''' <- updatePlaceholders options env' (CleanUpEnv False [] [] []) False s e''
+  e''' <- updatePlaceholders options env' (CleanUpEnv False [] [] [] mempty) False s e''
 
   return (Just e''', env')
 

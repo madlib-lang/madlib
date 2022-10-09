@@ -140,16 +140,16 @@
 , []
 , [ CompilationError
       (AmbiguousType
-         ( TV "c2" Star
+         ( TV "e4" Star
          , [ IsIn
                "Read"
-               [ TVar (TV "c2" Star) ]
+               [ TVar (TV "e4" Star) ]
                (Just (Area (Loc 130 10 3) (Loc 134 10 7)))
            ]
          ))
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 130 10 3) (Loc 134 10 7)
+        , ctxArea = Area (Loc 130 10 3) (Loc 139 10 12)
         }
   ]
 )

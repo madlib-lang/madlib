@@ -241,10 +241,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let coreAst          = astToCore False slvAst
             renamedAst       = Rename.renameAST coreAst
             reducedAst       = EtaReduction.reduceAST renamedAst
-            closureConverted = ClosureConvert.convertAST reducedAst
-            -- closureConverted = ClosureConvert.convertAST (TCE.resolveAST reducedAst)
-        -- liftIO $ putStrLn $ "reducedAst:\n" <> ppShow reducedAst
-        return (TCE.resolveAST closureConverted, (mempty, mempty))
+            tceResolved      = TCE.resolveAST reducedAst
+            closureConverted = ClosureConvert.convertAST tceResolved
+        return (closureConverted, (mempty, mempty))
 
       _ -> do
         let coreAst     = astToCore (optOptimized options) slvAst
