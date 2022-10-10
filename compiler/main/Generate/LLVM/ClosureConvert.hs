@@ -114,6 +114,27 @@ findFreeVars env exp = do
     Typed _ _ _ (Var "/" _) ->
       return []
 
+    Typed _ _ _ (Var "&" _) ->
+      return []
+
+    Typed _ _ _ (Var "|" _) ->
+      return []
+
+    Typed _ _ _ (Var "^" _) ->
+      return []
+
+    Typed _ _ _ (Var "~" _) ->
+      return []
+
+    Typed _ _ _ (Var "<<" _) ->
+      return []
+
+    Typed _ _ _ (Var ">>" _) ->
+      return []
+
+    Typed _ _ _ (Var ">>>" _) ->
+      return []
+
     Typed _ _ _ (Var "==" _) ->
       return []
 
@@ -136,6 +157,9 @@ findFreeVars env exp = do
       return []
 
     Typed _ _ _ (Var "&&" _) ->
+      return []
+
+    Typed _ _ _ (Var "||" _) ->
       return []
 
     Typed _ _ _ (Var "%" _) ->

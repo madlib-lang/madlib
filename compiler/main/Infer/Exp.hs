@@ -1068,7 +1068,7 @@ inferExp options env e = do
       return (s, placeholderPreds, env'', e')
 
   e''  <- insertClassPlaceholders options env' e' placeholderPreds
-  e''' <- updatePlaceholders options env' (CleanUpEnv False [] [] [] mempty) False s e''
+  e''' <- updatePlaceholders options env' False s e''
 
   return (Just e''', env')
 
