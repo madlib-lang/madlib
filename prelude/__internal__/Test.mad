@@ -2,9 +2,77 @@ import Wish from "Wish"
 import IO from "IO"
 import { always, equals, ifElse } from "Function"
 import List from "List"
+import String from "String"
+import Dictionary from "Dictionary"
 import Tuple from "Tuple"
+import Process from "Process"
+import FilePath from "FilePath/Posix"
+import Math from "Math"
+import { Just, fromMaybe } from "Maybe"
 import {} from "Number"
 
+
+RESET_CODE :: String
+RESET_CODE = "\x1b[H\x1b[J"
+
+BACK_TO_TOP_CODE :: String
+BACK_TO_TOP_CODE = "\x1b[0;0H"
+
+PREFIX_RUNS :: String
+PREFIX_RUNS = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGYellow], " RUNS ")
+
+PREFIX_PASS :: String
+PREFIX_PASS = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGGreen], " PASS ")
+
+PREFIX_FAIL :: String
+PREFIX_FAIL = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGRed], " FAIL ")
+
+CHAR_CHECK :: String
+CHAR_CHECK = "✓"
+
+CHAR_CROSS :: String
+CHAR_CROSS = "×"
+
+EMPTY_REPORT :: TestReport
+EMPTY_REPORT = TestReport("", 0, 0, 0)
+
+CWD :: String
+CWD = Process.getCurrentWorkingDirectory()
+
+
+// Result collector
+
+// SuiteResult(total, succeeded, failed)
+type SuiteResult = SuiteResult(Integer, Integer, Integer)
+
+type TestResult
+  = Success
+  | Failure
+
+makeResultCollector :: {} -> {
+  getResults :: {} -> Dictionary String SuiteResult,
+  setResults :: Dictionary String SuiteResult -> {}
+}
+makeResultCollector = () => {
+  results = {{}}
+
+  getResults = () => results
+
+  setResults = (newResults) => {
+    results = newResults
+  }
+
+  return { getResults, setResults }
+}
+
+collector :: {
+  getResults :: {} -> Dictionary String SuiteResult,
+  setResults :: Dictionary String SuiteResult -> {}
+}
+collector = makeResultCollector()
+
+
+// Test API
 
 export type AssertionError a
   = AssertionError(a, a)
@@ -13,19 +81,10 @@ export type AssertionError a
   | NotImplemented
 
 
-// Contains the accumulated String to be displayed, the amount of tests run, the amount of successful tests, and the amount of failed tests
+// Contains the accumulated String to be displayed,
+// the amount of tests run, the amount of successful tests,
+// and the amount of failed tests
 type TestReport = TestReport(String, Integer, Integer, Integer)
-
-
-EMPTY_REPORT = TestReport("", 0, 0, 0)
-
-
-CHAR_CHECK :: String
-CHAR_CHECK = "✓"
-
-
-CHAR_CROSS :: String
-CHAR_CROSS = "×"
 
 
 updateMessage :: (String -> String) -> TestReport -> TestReport
@@ -69,8 +128,8 @@ failureReport = (message) =>
 
 
 successReport :: String -> TestReport
-successReport = (message) =>
-  TestReport(message, 1, 1, 0)
+successReport = (_) =>
+  TestReport("", 1, 1, 0)
 
 
 mergeReports :: TestReport -> TestReport -> TestReport
@@ -121,19 +180,134 @@ generateReportSuiteEndMessage = pipe(
   ifElse(
     equals(0),
     always("No test found\n\n"),
-    always("Test suite finished\n\n")
+    always("")
   )
 )
 
 
+prepareSuitePath :: String -> String
+prepareSuitePath = (suitePath) => {
+  cwdParts = FilePath.splitPath(CWD)
+  partIndex = 0
+
+  return pipe(
+    FilePath.splitPath,
+    List.dropWhile((part) => {
+      justPart = pipe(
+        FilePath.dropTrailingPathSeparator,
+        Just
+      )(part)
+      justCwdPart = pipe(
+        List.nth(partIndex),
+        map(FilePath.dropTrailingPathSeparator)
+      )(cwdParts)
+      drop = justPart == justCwdPart
+      partIndex = partIndex + 1
+      return drop
+    }),
+    (parts) => {
+      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), IO.grey)(parts)
+      fileName = pipe(
+        List.last,
+        fromMaybe("")
+      )(parts)
+
+      return path ++ fileName
+    }
+  )(suitePath)
+}
+
+
+spaces :: Integer -> String
+spaces = (amount) => pipe(
+  List.repeat(' '),
+  String.fromList
+)(amount)
+
+
+printSuiteResults :: Dictionary String SuiteResult -> {}
+printSuiteResults = (results) => {
+  IO.put(RESET_CODE)
+  IO.put(BACK_TO_TOP_CODE)
+
+  pipe(
+    Dictionary.toList,
+    map(
+      where {
+        #[suitePath, SuiteResult(total, success, failed)] =>
+          do {
+            counts = `${inspect(success + failed)}/${inspect(total)}`
+            preparedSuitePath = prepareSuitePath(suitePath)
+            coloredCounts = failed > 0
+              ? IO.red(counts)
+              : IO.green(counts)
+            prefix = total == success + failed
+              ? failed > 0
+                  ? PREFIX_FAIL
+                  : PREFIX_PASS
+              : PREFIX_RUNS
+            message = `${prefix} ${preparedSuitePath}  [${coloredCounts}]`
+
+            return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
+          }
+      }
+    ),
+    ((prepared) => {
+      firsts = map(Tuple.fst, prepared)
+      longest = List.reduce((biggest, input) => Math.max(biggest, String.length(input)), 0, firsts)
+
+      map(where {
+        #[start, counts] =>
+          IO.putLine(`${start}${spaces(longest - String.length(start))} [${counts}]`)
+      }, prepared)
+    })
+  )(results)
+  IO.putLine("")
+}
+
+
+updateSuiteResult :: String -> TestResult -> a -> a
+updateSuiteResult = (suitePath, result, a) => {
+  pipe(
+    Dictionary.update(
+      where {
+        SuiteResult(total, success, failed) =>
+          result == Success
+            ? SuiteResult(total, success + 1, failed)
+            : SuiteResult(total, success, failed + 1)
+      },
+      suitePath
+    ),
+    collector.setResults
+  )(collector.getResults())
+
+  printSuiteResults(collector.getResults())
+
+  return a
+}
+
+
 runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
 runTestSuite = (suitePath, testsInSuite) => pipe(
-  map(Wish.bichain(pipe(failureReport, of), pipe(successReport, of))),
+  (tests) => {
+    pipe(
+      Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0)),
+      collector.setResults
+    )(collector.getResults())
+
+    return tests
+  },
+  map(Wish.bichain(pipe(updateSuiteResult(suitePath, Failure), failureReport, of), pipe(updateSuiteResult(suitePath, Success), successReport, of))),
   Wish.parallel,
   map(
     pipe(
       List.reduce(mergeReports, EMPTY_REPORT),
-      updateMessage((str) => `${suitePath}\n${str}${generateReportSuiteEndMessage(testsInSuite)}`)
+      where {
+        TestReport(msg, total, success, failed) =>
+          (total == 0 || failed > 0)
+            ? TestReport(`${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`, total, success, failed)
+            : TestReport("", total, success, failed)
+      }
     )
   )
 )(testsInSuite)
@@ -142,12 +316,16 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
 runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> {}
 export runAllTestSuites = (testSuites) => pipe(
   map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
+  (suites) => {
+    printSuiteResults(collector.getResults())
+    return suites
+  },
   Wish.parallel,
   map(List.reduce(mergeReports, EMPTY_REPORT)),
   Wish.fulfill(
     (_) => ({}),
     (report) => {
-      IO.putLine(getMessage(report))
+      IO.put(getMessage(report))
       return IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
     }
   )
