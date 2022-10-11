@@ -201,7 +201,8 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
 
   (es', s', _) <- foldM
     (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
-      let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
+      -- let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
+      let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t)) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
       (ps''', extraS) <- do
