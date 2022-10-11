@@ -11,14 +11,13 @@ import qualified System.Environment.Executable  as Executable
 import           Run.Target
 import           Run.Utils
 import           System.Directory
-import           Text.Show.Pretty
 import           AST.Source
-import qualified AST.Solved                    as Slv
-import qualified Canonicalize.AST              as Can
-import qualified Canonicalize.Env              as Can
-import qualified Generate.LLVM.LLVM            as LLVM
-import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
-import qualified Generate.LLVM.Rename          as Rename
+import qualified AST.Solved                     as Slv
+import qualified Canonicalize.AST               as Can
+import qualified Canonicalize.Env               as Can
+import qualified Generate.LLVM.LLVM             as LLVM
+import qualified Generate.LLVM.ClosureConvert   as ClosureConvert
+import qualified Generate.LLVM.Rename           as Rename
 import qualified Utils.PathUtils                as PathUtils
 import qualified Utils.Path                     as PathUtils
 import           Explain.Location
@@ -26,22 +25,27 @@ import qualified Data.Map                       as Map
 import qualified Data.List                      as List
 import qualified Data.Maybe                     as Maybe
 import           Control.Monad.State
-import qualified Distribution.System as DistributionSystem
-import qualified Explain.Format as Explain
-import qualified System.Exit as Exit
-import qualified Optimize.TCE as TCE
-import qualified Optimize.EtaReduction as EtaReduction
-import Utils.Path
+import qualified Distribution.System            as DistributionSystem
+import qualified Explain.Format                 as Explain
+import qualified System.Exit                    as Exit
+import           Utils.Path
 import qualified Driver
 import qualified Driver.Query as Query
-import Run.Options
-import Utils.PathUtils (defaultPathUtils)
+import           Run.Options
+import           Utils.PathUtils (defaultPathUtils)
 import qualified AST.Source as Src
-import Error.Error
+import           Error.Error
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
-import Rock (Cyclic)
-import Error.Warning
+import           Rock (Cyclic)
+import           Error.Warning
 
+
+
+resetCode :: String
+resetCode = "\x1b[H\x1b[J"
+
+backToTopCode :: String
+backToTopCode = "\x1b[0;0H"
 
 
 runTests :: String -> Target -> Bool -> Bool -> IO ()
@@ -77,14 +81,19 @@ runTests entrypoint target watchMode coverage = do
           , optMustHaveMain = True
           }
 
-  runTestTask state options canonicalEntrypoint []
   when watchMode $ do
-    Driver.watch rootPath (runTestTask state options canonicalEntrypoint)
+    putStr resetCode
+    putStr backToTopCode
+
+  runTestTask watchMode state options canonicalEntrypoint []
+
+  when watchMode $ do
+    Driver.watch rootPath (runTestTask watchMode state options canonicalEntrypoint)
     return ()
 
 
-runTestTask :: Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
-runTestTask state options canonicalEntrypoint invalidatedPaths = do
+runTestTask :: Bool -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
+runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
   Driver.recordAndPrintDuration "Tests built and run in " $ do
     sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
     Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
@@ -139,6 +148,10 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
           else
             readFile p
 
+    when (watchMode && not (null warnings) || not (null errors)) $ do
+      putStr resetCode
+      putStr backToTopCode
+
     unless (null warnings) $ do
       formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
       putStrLn $ List.intercalate "\n\n\n" formattedWarnings
@@ -160,15 +173,15 @@ runTestTask state options canonicalEntrypoint invalidatedPaths = do
             try $ callCommand $ "node " <> jsExePath
 
       case (testOutput :: Either IOError ()) of
-        Left e ->
-          error $ ppShow e
+        Left _ ->
+          unless watchMode Exit.exitFailure
 
         Right _ ->
           return ()
     else do
       formattedErrors <- mapM (Explain.format rf False) errors
       putStrLn $ List.intercalate "\n\n\n" formattedErrors
-      Exit.exitFailure
+      unless watchMode Exit.exitFailure
 
 
 generateTestSuiteName :: Int -> String

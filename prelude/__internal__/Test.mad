@@ -305,7 +305,12 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
       where {
         TestReport(msg, total, success, failed) =>
           (total == 0 || failed > 0)
-            ? TestReport(`${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`, total, success, failed)
+            ? TestReport(
+                `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
+                total,
+                success,
+                failed
+              )
             : TestReport("", total, success, failed)
       }
     )
@@ -326,7 +331,10 @@ export runAllTestSuites = (testSuites) => pipe(
     (_) => ({}),
     (report) => {
       IO.put(getMessage(report))
-      return IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
+      IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
+      if (getFailureCount(report) > 0) {
+        Process.exit(1)
+      } else { {} }
     }
   )
 )(testSuites)
