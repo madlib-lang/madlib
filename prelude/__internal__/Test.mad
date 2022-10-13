@@ -1,6 +1,6 @@
 import Wish from "Wish"
 import IO from "IO"
-import { always, equals, ifElse } from "Function"
+import { always, equals, ifElse, when } from "Function"
 import List from "List"
 import String from "String"
 import Dictionary from "Dictionary"
@@ -8,24 +8,35 @@ import Tuple from "Tuple"
 import Process from "Process"
 import FilePath from "FilePath/Posix"
 import Math from "Math"
-import { Just, fromMaybe } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
 import {} from "Number"
 
 
-RESET_CODE :: String
-RESET_CODE = "\x1b[H\x1b[J"
+moveCursorUpCode :: Integer -> String
+moveCursorUpCode = (lines) => `\x1b[${inspect(lines)}A`
 
-BACK_TO_TOP_CODE :: String
-BACK_TO_TOP_CODE = "\x1b[0;0H"
+
+IS_COLOR_ENABLED :: Boolean
+IS_COLOR_ENABLED = do {
+  noColor = Process.getEnv("NO_COLOR")
+  return noColor == Just("") || noColor == Nothing
+}
+
 
 PREFIX_RUNS :: String
-PREFIX_RUNS = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGYellow], " RUNS ")
+PREFIX_RUNS = IS_COLOR_ENABLED
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGYellow], " RUNS ")
+  : "RUNS "
 
 PREFIX_PASS :: String
-PREFIX_PASS = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGGreen], " PASS ")
+PREFIX_PASS = IS_COLOR_ENABLED
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGGreen], " PASS ")
+  : "PASS "
 
 PREFIX_FAIL :: String
-PREFIX_FAIL = IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGRed], " FAIL ")
+PREFIX_FAIL = IS_COLOR_ENABLED
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGRed], " FAIL ")
+  : "FAIL "
 
 CHAR_CHECK :: String
 CHAR_CHECK = "✓"
@@ -206,7 +217,7 @@ prepareSuitePath = (suitePath) => {
       return drop
     }),
     (parts) => {
-      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), IO.grey)(parts)
+      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
       fileName = pipe(
         List.last,
         fromMaybe("")
@@ -227,9 +238,6 @@ spaces = (amount) => pipe(
 
 printSuiteResults :: Dictionary String SuiteResult -> {}
 printSuiteResults = (results) => {
-  IO.put(RESET_CODE)
-  IO.put(BACK_TO_TOP_CODE)
-
   pipe(
     Dictionary.toList,
     map(
@@ -238,9 +246,14 @@ printSuiteResults = (results) => {
           do {
             counts = `${inspect(success + failed)}/${inspect(total)}`
             preparedSuitePath = prepareSuitePath(suitePath)
-            coloredCounts = failed > 0
-              ? IO.red(counts)
-              : IO.green(counts)
+            coloredCounts =
+              if (IS_COLOR_ENABLED) {
+                failed > 0
+                ? IO.red(counts)
+                : IO.green(counts)
+              } else {
+                counts
+              }
             prefix = total == success + failed
               ? failed > 0
                   ? PREFIX_FAIL
@@ -281,7 +294,12 @@ updateSuiteResult = (suitePath, result, a) => {
     collector.setResults
   )(collector.getResults())
 
-  printSuiteResults(collector.getResults())
+  if (IS_COLOR_ENABLED) {
+    do {
+      IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
+      printSuiteResults(collector.getResults())
+    }
+  }
 
   return a
 }
@@ -322,7 +340,9 @@ runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> {}
 export runAllTestSuites = (testSuites) => pipe(
   map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
   (suites) => {
-    printSuiteResults(collector.getResults())
+    if (IS_COLOR_ENABLED) {
+      printSuiteResults(collector.getResults())
+    }
     return suites
   },
   Wish.parallel,
@@ -330,11 +350,14 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.fulfill(
     (_) => ({}),
     (report) => {
+      if (!IS_COLOR_ENABLED) {
+        printSuiteResults(collector.getResults())
+      }
       IO.put(getMessage(report))
       IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
       if (getFailureCount(report) > 0) {
         Process.exit(1)
-      } else { {} }
+      }
     }
   )
 )(testSuites)

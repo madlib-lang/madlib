@@ -13,6 +13,19 @@ import fs from "fs"
 {/Node}
 -#
 
+/**
+ * Reads a directory and returns a Wish containing the file entries
+ * of the directory at the path given as parameter.
+ *
+ * @since 0.13.0
+ * @example
+ * fulfill(
+ *   IO.log,
+ *   IO.log,
+ *   read("/")
+ * )
+ * // ["bin", "dev", "etc", "home", "opt", "tmp", "usr"]
+ */
 read :: String -> Wish IOError (List String)
 export read = (path) => Wish((bad, good) => #- {
   fs.readdir(path, (err, files) => {
@@ -38,6 +51,19 @@ export read = (path) => Wish((bad, good) => #- {
 readFFI :: String -> (Integer -> List String -> {}) -> {}
 readFFI = extern "madlib__directory__read"
 
+/**
+ * Reads a directory and returns a Wish containing the file entries
+ * of the directory at the path given as parameter.
+ *
+ * @since 0.13.0
+ * @example
+ * fulfill(
+ *   IO.log,
+ *   IO.log,
+ *   read("/")
+ * )
+ * // ["bin", "dev", "etc", "home", "opt", "tmp", "usr"]
+ */
 read :: String -> Wish IOError (List String)
 export read = (path) => Wish((bad, good) =>
   readFFI(

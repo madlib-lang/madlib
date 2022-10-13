@@ -198,11 +198,44 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
   (s, ps, t, es) <- inferBody options env' body
+  (s', es')      <- postProcessBody options env' s (tv `fn` t) es
 
+  let t'        = apply s' (tv `fn` t)
+      paramType = apply s' tv
+
+  return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' ps :=> paramType) area param) es' (apply s' ps :=> t'))
+
+
+inferBody :: Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
+inferBody options env [e] = do
+  (s, ps, t, e') <- infer options env e
+  return (s, ps, t, [e'])
+
+inferBody options env (e : es) = do
+  (s, (returnPreds, _), env', e') <- case e of
+    Can.Canonical _ Can.TypedExp{} -> do
+      (s, ps, env', e') <- inferExplicitlyTyped options True env e
+      return (s, (ps, ps), env', e')
+
+    _ -> do
+      (s, allPreds, env, e') <- inferImplicitlyTyped options True env e
+      return (s, allPreds, env, e')
+
+  let e'' = e'
+  (sb, ps', tb, eb) <- inferBody options (apply s env') es
+
+  let finalS = s `compose` sb
+
+  return (finalS, apply finalS $ returnPreds ++ ps', tb, e'' : eb)
+
+
+postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
+postProcessBody options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
       -- let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
-      let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t)) `List.union` ftvForLetGen (apply accSubst t')
+      -- let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst (tv `fn` t)) `List.union` ftvForLetGen (apply accSubst t')
+      let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
       (ps''', extraS) <- do
@@ -271,47 +304,10 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
 
       return (results ++ [e''], sFinal, apply sFinal env''')
     )
-    (mempty, s, env')
+    (mempty, s, env)
     es
 
-  let t'        = apply s' (tv `fn` t)
-      paramType = apply s' tv
-
-  return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' ps :=> paramType) area param) es' (apply s' ps :=> t'))
-
-
-inferBody :: Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody options env [e] = do
-  (s, ps, t, e') <- infer options env e
-  return (s, ps, t, [e'])
-
-inferBody options env (e : es) = do
-  (s, (returnPreds, _), env', e') <- case e of
-    Can.Canonical _ Can.TypedExp{} -> do
-      (s, ps, env', e') <- inferExplicitlyTyped options True env e
-      return (s, (ps, ps), env', e')
-
-    _ -> do
-      (s, allPreds, env, e') <- inferImplicitlyTyped options True env e
-      return (s, allPreds, env, e')
-
-  let e'' = e'
-  (sb, ps', tb, eb) <- inferBody options (apply s env') es
-
-  let finalS = s `compose` sb
-
-  return (finalS, apply finalS $ returnPreds ++ ps', tb, e'' : eb)
-
--- Applies a substitution only to types in the env that are not a function.
--- This is needed for function bodies, so that we can define a function that is generic,
--- but other types should not. Say if we have a var xs = [] that has type List a and that
--- later in the function we can infer that this list is a List Number, then that substitution
--- should be applied to the env so that correct type can be inferred.
--- updateBodyEnv :: Substitution -> Env -> Env
--- updateBodyEnv s e =
---   -- e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> apply s sc) (envVars e) }
---   e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t then sc else apply s sc) (envVars e) }
-
+  return (s', es')
 
 
 -- INFER APP
@@ -623,8 +619,9 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
 inferDo :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferDo options env (Can.Canonical area (Can.Do exps)) = do
   (s, ps, t, exps') <- inferBody options env exps
+  (s', exps'')      <- postProcessBody options env s t exps'
 
-  return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.Do exps'))
+  return (s', apply s' ps, apply s' t, Slv.Typed (apply s' $ ps :=> t) area (Slv.Do exps''))
 
 
 

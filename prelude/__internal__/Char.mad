@@ -7,6 +7,15 @@ import String from "String"
 import { MORE, LESS, EQUAL } from "Compare"
 
 
+/**
+ * Comparable implementation for characters
+ *
+ * @since 0.13.0
+ * @example
+ * compare('a', 'b') // MORE
+ * compare('b', 'a') // LESS
+ * compare('a', 'a') // EQUAL
+ */
 instance Comparable Char {
   compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
 }
@@ -21,6 +30,15 @@ charCompare :: Char -> Char -> ComparisonResult
 charCompare = extern "madlib__char__compare"
 
 
+/**
+ * Comparable implementation for characters
+ *
+ * @since 0.13.0
+ * @example
+ * compare('a', 'b') // MORE
+ * compare('b', 'a') // LESS
+ * compare('a', 'a') // EQUAL
+ */
 instance Comparable Char {
   compare = charCompare
 }
@@ -47,6 +65,11 @@ instance Show Char {
 
 /**
  * Returns true if the character is a digit, false otherwise.
+ *
+ * @since 0.13.0
+ * @example
+ * isDigit('a') // false
+ * isDigit('3') // true
  */
 isDigit :: Char -> Boolean
 export isDigit = (s) =>
@@ -65,6 +88,11 @@ export isDigit = (s) =>
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the
  * input contains more than one character, false is returned.
+ * @since 0.13.0
+ * @example
+ * isLetter('0') // false
+ * isLetter('=') // false
+ * isLetter('a') // true
  */
 isLetter :: Char -> Boolean
 export isLetter = (c) => pipe(
@@ -75,19 +103,47 @@ export isLetter = (c) => pipe(
 
 #iftarget js
 
+/**
+ * Returns the lower cased version of a character
+ * @since 0.13.0
+ * @example
+ * toLower('A') // 'a'
+ * toLower('a') // 'a'
+ */
 toLower :: Char -> Char
 export toLower = (c) => #- c.toLowerCase() -#
 
 
+/**
+ * Returns the upper cased version of a character
+ * @since 0.13.0
+ * @example
+ * toLower('A') // 'A'
+ * toLower('a') // 'A'
+ */
 toUpper :: Char -> Char
 export toUpper = (c) => #- c.toUpperCase() -#
 
 #elseif llvm
 
+/**
+ * Returns the lower cased version of a character
+ * @since 0.13.0
+ * @example
+ * toLower('A') // 'a'
+ * toLower('a') // 'a'
+ */
 toLower :: Char -> Char
 export toLower = extern "madlib__char__toLower"
 
 
+/**
+ * Returns the upper cased version of a character
+ * @since 0.13.0
+ * @example
+ * toLower('A') // 'A'
+ * toLower('a') // 'A'
+ */
 toUpper :: Char -> Char
 export toUpper = extern "madlib__char__toUpper"
 

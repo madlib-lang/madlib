@@ -14,6 +14,7 @@ import type { VersionRange } from "./Version"
 
 import { findByName, updateEntry } from "./Context"
 import { intersectRanges, isInRange } from "./Version"
+import Color from "./Color"
 
 
 export alias ValidationInput = {
@@ -128,10 +129,10 @@ instance Monad Validate {
 printError :: a -> Error -> a
 export printError = (a, error) => where(IO.trace("err", error)) {
   CopyToMadlibModulesFailed(msg) =>
-    IO.putLineAndPass(`  - ${IO.red(msg)}`, a)
+    IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
 
   MadlibDotJsonCouldNotBeLoaded(msg) =>
-    IO.putLineAndPass(`  - ${IO.red(msg)}`, a)
+    IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
 
   _ =>
     a
@@ -140,19 +141,19 @@ export printError = (a, error) => where(IO.trace("err", error)) {
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>
-    IO.putLineAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow("Package version does not match constraints")}`, a)
 
   InvalidVersionHash =>
-    IO.putLineAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow("Package version hash is corrupted")}`, a)
 
   InvalidBuildHash =>
     IO.putLineAndPass(
-      `  - ${IO.yellow("Build hash is corrupted")}`,
+      `  - ${Color.yellow("Build hash is corrupted")}`,
       a
     )
 
   VersionDotLockMissing =>
-    IO.putLineAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow("version.lock file missing")}`, a)
 
   _ =>
     a

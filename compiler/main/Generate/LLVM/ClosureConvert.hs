@@ -355,8 +355,8 @@ getPatternVars (Typed _ _ _ pat) = case pat of
 
 findMutationsInExp :: [String] -> Exp -> [String]
 findMutationsInExp params exp = case exp of
-  Typed _ _ _ (Assignment n _) | n `elem` params ->
-    [n]
+  Typed _ _ _ (Assignment n e) | n `elem` params ->
+    n : findMutationsInExp params e
 
   Typed _ _ _ (Assignment _ e) ->
     findMutationsInExp params e
@@ -413,8 +413,8 @@ findMutationsInBody params body = case body of
 
 findAllMutationsInExp :: [String] -> Exp -> [String]
 findAllMutationsInExp params exp = case exp of
-  Typed _ _ _ (Assignment n _) | n `elem` params ->
-    [n]
+  Typed _ _ _ (Assignment n e) | n `elem` params ->
+    n : findAllMutationsInExp params e
 
   Typed _ _ _ (Assignment _ e) ->
     findAllMutationsInExp params e
@@ -715,7 +715,14 @@ instance Convertable Exp Exp where
             return $ Typed qt area metadata (Assignment functionName functionNode)
 
     Assignment name exp -> do
-      exp' <- convert env exp
+      let env' =
+            if stillTopLevel env then
+              let mutations = findMutationsInBody [] [exp]
+                  allMutations = findAllMutationsInExps [] [exp]
+              in  env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations }
+            else
+              env
+      exp' <- convert env' exp
       return $ Typed qt area metadata (Assignment name exp')
 
     Export exp -> do

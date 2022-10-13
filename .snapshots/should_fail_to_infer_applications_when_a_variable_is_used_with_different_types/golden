@@ -10298,30 +10298,18 @@
 , []
 , [ CompilationError
       (UnificationError
+         (TRecord
+            (fromList
+               [ ( "todos"
+                 , TApp
+                     (TCon (TC "List" (Kfun Star Star)) "prelude")
+                     (TVar (TV "o92" Star))
+                 )
+               ])
+            (Just (TVar (TV "r95" Star))))
          (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TRecord
-                  (fromList
-                     [ ( "todos"
-                       , TApp
-                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                           (TVar (TV "o92" Star))
-                       )
-                     ])
-                  (Just (TVar (TV "r95" Star)))))
-            (TApp
-               (TCon (TC "List" (Kfun Star Star)) "prelude")
-               (TVar (TV "l89" Star))))
-         (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TApp
-                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                  (TVar (TV "l89" Star))))
-            (TApp
-               (TCon (TC "List" (Kfun Star Star)) "prelude")
-               (TVar (TV "l89" Star)))))
+            (TCon (TC "List" (Kfun Star Star)) "prelude")
+            (TVar (TV "l89" Star))))
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 934 39 41) (Loc 939 39 46)

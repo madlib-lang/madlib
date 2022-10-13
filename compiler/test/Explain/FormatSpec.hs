@@ -489,33 +489,33 @@ spec = do
           expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
       actual `shouldBe` expected
 
-  describe "prettyPrintConstructorTyping" $ do
+  describe "prettyPrintTyping" $ do
     it "should pretty print a typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRSingle "a")) (Slv.Untyped emptyArea $ Slv.TRTuple [Slv.Untyped emptyArea (Slv.TRSingle "a"), Slv.Untyped emptyArea (Slv.TRSingle "a")]))
-          actual = prettyPrintConstructorTyping' True typing
+          actual = prettyPrintTyping' True typing
       actual `shouldBe` "(a -> #[a, a])"
 
     it "should pretty print a constructor typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRComp "List" [Slv.Untyped emptyArea (Slv.TRComp "String" [])])
-          actual = prettyPrintConstructorTyping typing
+          actual = prettyPrintTyping typing
       actual `shouldBe` "(List String)"
 
     it "should pretty print a wrapped constructor typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRComp "Maybe" [Slv.Untyped emptyArea (Slv.TRComp "List" [Slv.Untyped emptyArea $ Slv.TRComp "Integer" []])])
-          actual = prettyPrintConstructorTyping typing
+          actual = prettyPrintTyping typing
       actual `shouldBe` "(Maybe (List Integer))"
 
     it "should pretty print a var typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRSingle "a")
-          actual = prettyPrintConstructorTyping typing
+          actual = prettyPrintTyping typing
       actual `shouldBe` "a"
 
     it "should pretty print a record typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRRecord (Map.fromList [("readFile", (emptyArea, Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRSingle "String")) (Slv.Untyped emptyArea (Slv.TRComp "Wish" [Slv.Untyped emptyArea $ Slv.TRSingle "IOError", Slv.Untyped emptyArea $ Slv.TRSingle "String"]))))), ("writeFile", (emptyArea, Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRSingle "String")) (Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRSingle "String")) (Slv.Untyped emptyArea (Slv.TRComp "Wish" [Slv.Untyped emptyArea $ Slv.TRSingle "IOError", Slv.Untyped emptyArea $ Slv.TRSingle "String"])))))))]) Nothing)
-          actual = prettyPrintConstructorTyping typing
+          actual = prettyPrintTyping typing
       actual `shouldBe` "{ readFile :: String -> Wish IOError String, writeFile :: String -> String -> Wish IOError String }"
 
     it "should pretty print a sub function typing" $ do
       let typing = Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRSingle "a")) (Slv.Untyped emptyArea (Slv.TRSingle "b")))) (Slv.Untyped emptyArea (Slv.TRArr (Slv.Untyped emptyArea (Slv.TRComp "m" [Slv.Untyped emptyArea $ Slv.TRSingle "a"])) (Slv.Untyped emptyArea (Slv.TRComp "m" [Slv.Untyped emptyArea $ Slv.TRSingle "b"])))))
-          actual = prettyPrintConstructorTyping typing
+          actual = prettyPrintTyping typing
       actual `shouldBe` "((a -> b) -> m a -> m b)"

@@ -1,5 +1,34 @@
+/**
+ * The DateTime type represents a date and time at UTC.
+ *
+ * @since 0.15.0
+ * @example
+ * now()
+ */
 export type DateTime = DateTime(Integer)
+
+
+/**
+ * The LocalDateTime type represents a date and time for
+ * the timezone of the local machine.
+ *
+ * @since 0.15.0
+ */
 export type LocalDateTime = LocalDateTime(Integer)
+
+
+/**
+ * Date info is a record representation of a DateTime with
+ * fields going up to the millisecond.
+ *
+ * month range is: [1-12]
+ * day range is: [1-31]
+ * hours range is: [0-23]
+ * minutes and seconds range is: [0-59]
+ * milliseconds range is: [0-999]
+ *
+ * @since 0.15.0
+ */
 export alias DateInfo = {
   milliseconds :: Integer,
   seconds :: Integer,
@@ -10,6 +39,12 @@ export alias DateInfo = {
   year :: Integer,
 }
 
+
+/**
+ * TimeUnit type used for some operations on dates
+ *
+ * @since 0.15.0
+ */
 export type TimeUnit
   = Millisecond
   | Second
@@ -37,11 +72,6 @@ fromDateInfoFFI = extern "madlib__date__fromDateInfo"
 
 nowFFI :: {} -> Integer
 nowFFI = extern "Date.now"
-
-getMonth :: DateTime -> Integer
-getMonth = (date) => #-
-  new Date(date).getMonth() + 1
--#
 
 toISOStringFFI :: Integer -> String
 toISOStringFFI = (date) => #-
@@ -77,33 +107,91 @@ fromDateInfoFFI = (dateInfo) => #-
 
 #endif
 
+/**
+ * Returns the current time as a DateTime value
+ *
+ * @since 0.15.0
+ * @example
+ * now()
+ */
 now :: {} -> DateTime
 export now = pipe(nowFFI, DateTime)
 
+
+/**
+ * Converts a DateTime to a String in ISO format:
+ * {year}-{month}-{day}T{hours}:{minutes}:{seconds}.{milliseconds}Z
+ *
+ * @since 0.15.0
+ * @example
+ * toISOString(now()) // "2022-10-13T19:01:00.000Z" at the time of writing this
+ */
 toISOString :: DateTime -> String
 export toISOString = (date) => pipe(
   getTimestamp,
   toISOStringFFI
 )(date)
 
+
+/**
+ * Returns the inner integer timestamp of a DateTime
+ *
+ * @since 0.15.0
+ * @example
+ * getTimeStamp(now())
+ */
 getTimestamp :: DateTime -> Integer
 export getTimestamp = (date) => where(date) {
   DateTime(t) =>
     t
 }
 
+
+/**
+ * Converts a DateTime value to a DateInfo record, allowing to easily read
+ * all components of a date such as the month or day.
+ *
+ * @since 0.15.0
+ * @example
+ * toDateInfo(now())
+ */
 toDateInfo :: DateTime -> DateInfo
 export toDateInfo = (date) => pipe(
   getTimestamp,
   toDateInfoFFI
 )(date)
 
+
+/**
+ * Creates a DateTime value from a DateInfo record.
+ *
+ * @since 0.15.0
+ * @example
+ * fromDateInfo({
+ *   year: 2022,
+ *   month: 12,
+ *   day: 31,
+ *   hours: 21,
+ *   minutes: 45,
+ *   seconds: 0,
+ *   milliseconds: 0,
+ * })
+ * // DateTime(1672523100000)
+ */
 fromDateInfo :: DateInfo -> DateTime
 export fromDateInfo = (dateInfo) => pipe(
   fromDateInfoFFI,
   DateTime
 )(dateInfo)
 
+
+/**
+ * Adds a temporal value to a DateTime
+ *
+ * @since 0.15.0
+ * @example
+ * add(1, Hour, DateTime(0)) // DateTime(3600000)
+ */
 add :: Integer -> TimeUnit -> DateTime -> DateTime
 export add  = (x, unit, date) => where(unit) {
   Millisecond =>

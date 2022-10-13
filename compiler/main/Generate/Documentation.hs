@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Generate.Documentation where
 
 import           Data.Aeson.Text                ( encodeToLazyText )
@@ -20,8 +21,6 @@ import           Infer.Type
 import           Explain.Format
 import           Text.Regex.TDFA
 import           Utils.Tuple
-import Debug.Trace
-import Text.Show.Pretty
 
 data DocItemPair
   = DocItemPair (Maybe DocItem) (Maybe DocItem)
@@ -244,7 +243,7 @@ buildTypeDeclarationDocItem :: [DocString] -> Slv.TypeDecl -> DocItem
 buildTypeDeclarationDocItem docStrings typeDecl = case typeDecl of
   Slv.Untyped _ (Slv.Alias name params tipe _) ->
     let params'     = unwords params
-        tipe'       = prettyPrintConstructorTyping tipe
+        tipe'       = prettyPrintTyping tipe
         docString   = findDocStringForTypeName name docStrings
         description = getDescriptionForDocItem docString
         example     = getExampleForDocItem docString
@@ -255,7 +254,7 @@ buildTypeDeclarationDocItem docStrings typeDecl = case typeDecl of
     let params' = unwords params
         ctors' =
           (\(Slv.Untyped _ (Slv.Constructor n ts _)) ->
-            n <> " " <> unwords (prettyPrintConstructorTyping <$> ts)
+            n <> "(" <> intercalate ", " (prettyPrintTyping <$> ts) <> ")"
           ) <$> ctors
         docString   = findDocStringForTypeName name docStrings
         description = getDescriptionForDocItem docString
@@ -274,7 +273,7 @@ buildInterfaceDocItem docStrings (Slv.Untyped _ (Slv.Interface name constraints 
         or   ->
           or
 
-      methods'    = M.map (prettyPrintConstructorTyping' False) methodTypings
+      methods'    = M.map (prettyPrintTyping' False) methodTypings
       methods''   = M.elems $ M.mapWithKey (\n t -> n <> " :: " <> t) methods'
       docString   = findDocStringForInterfaceName name docStrings
       description = getDescriptionForDocItem docString
@@ -641,7 +640,7 @@ extractModuleDescription docStrings =
 formatType :: Slv.Exp -> String
 formatType (Slv.Typed qt _ exp) = case exp of
   -- Slv.TypedExp _ typing _ ->
-  --   prettyPrintConstructorTyping' False typing
+  --   prettyPrintTyping' False typing
 
   _ ->
     prettyPrintQualType qt

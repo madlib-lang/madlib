@@ -1,6 +1,6 @@
 import type { Maybe } from "./Maybe"
 import { test, assertEquals } from "Test"
-import { Just, Nothing, fromMaybe } from "./Maybe"
+import { Just, Nothing, fromMaybe, isJust } from "./Maybe"
 import {} from "Number"
 
 test("map should map the value in the Maybe", (_) =>
@@ -26,3 +26,6 @@ test("inspect - Nothing", (_) => assertEquals(inspect((Nothing :: Maybe Integer)
 
 test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
 test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))
+
+test("isJust", (_) => assertEquals(isJust(Just(4)), true))
+test("isJust - Nothing", (_) => assertEquals(isJust(Nothing), false))

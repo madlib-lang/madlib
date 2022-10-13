@@ -190,8 +190,14 @@ contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
     (CompilationError (UnificationError _ _) ctx) -> do
-      (t2', t1') <- improveRecordErrorTypes t2 t1
-      addContext env exp (CompilationError (UnificationError t2' t1') ctx)
+      let t2' = getParamTypeOrSame t2
+          t1' = getParamTypeOrSame t1
+          hasNotChanged = t2' == t2 || t1' == t1
+          t2'' = if hasNotChanged then t2 else t2'
+          t1'' = if hasNotChanged then t1 else t1'
+      (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
+      (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
+      addContext env exp (CompilationError (UnificationError t2'''' t1'''') ctx)
 
     e ->
       addContext env exp e
