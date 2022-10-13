@@ -1,0 +1,23 @@
+import Process from "Process"
+import IO from "IO"
+import { Just, Nothing } from "Maybe"
+
+
+IS_COLOR_ENABLED :: Boolean
+IS_COLOR_ENABLED = do {
+  noColor = Process.getEnv("NO_COLOR")
+  return noColor == Just("") || noColor == Nothing
+}
+
+
+export red = (text) => IS_COLOR_ENABLED
+  ? IO.red(text)
+  : text
+
+export green = (text) => IS_COLOR_ENABLED
+  ? IO.green(text)
+  : text
+
+export yellow = (text) => IS_COLOR_ENABLED
+  ? IO.yellow(text)
+  : text

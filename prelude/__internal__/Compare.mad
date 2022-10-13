@@ -27,10 +27,26 @@ interface Eq a => Comparable a {
 }
 
 
+/**
+ * Returns true if two comparable values are equal
+ *
+ * @since 0.13.0
+ * @example
+ * eq(1, 3) // false
+ * eq(3, 3) // true
+ */
 eq :: Comparable a => a -> a -> Boolean
 export eq = (a, b) => compare(a, b) == EQUAL
 
 
+/**
+ * Returns true if two comparable values aren't equal
+ *
+ * @since 0.13.0
+ * @example
+ * notEq(1, 3) // true
+ * notEq(3, 3) // false
+ */
 notEq :: Comparable a => a -> a -> Boolean
 export notEq = (a, b) => compare(a, b) != EQUAL
 

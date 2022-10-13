@@ -31,8 +31,6 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
 
 #- import { spawn as spawnJs } from "child_process" -#
 
-// TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
-// to match the api from libuv and node
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
 export exec = (command, args, options) => Wish((bad, good) => #- {
   let stdoutChunks = []
@@ -178,8 +176,6 @@ execFFI :: String -> List String -> CommandOptions -> (Integer -> String -> Stri
 execFFI = extern "madlib__process__exec"
 
 
-// TODO: change API to String -> List String -> Options -> Wish CommandResult CommandResult
-// to match the api from libuv and node
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
 export exec = (command, args, options) => Wish((bad, good) =>
   execFFI(

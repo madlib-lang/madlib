@@ -19,6 +19,21 @@ test("fromDateInfo", (_) =>
   )
 )
 
+test("fromDateInfo - december", (_) =>
+  assertEquals(
+    Date.fromDateInfo({
+      year: 2022,
+      month: 12,
+      day: 31,
+      hours: 21,
+      minutes: 45,
+      seconds: 0,
+      milliseconds: 0,
+    }),
+    Date.DateTime(1672523100000)
+  )
+)
+
 test("toDateInfo", (_) =>
   assertEquals(
     Date.toDateInfo(Date.DateTime(1657913122363)),

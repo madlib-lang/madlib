@@ -345,6 +345,10 @@ exp :: { Src.Exp }
   | exp '.' name                                             %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $17)) (tokenTarget $1) (Src.If $3 $7 $15) }
+  | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet
+      %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.If $3 $7 (Src.Source (Src.getArea $7) (tokenTarget $1) Src.LUnit)) }
+  | 'if' '(' exp ')' maybeRet exp maybeRet
+      %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $6)) (tokenTarget $1) (Src.If $3 $6 (Src.Source (Src.getArea $6) (tokenTarget $1) Src.LUnit)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet maybeRet exp maybeRet
       { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $14)) (tokenTarget $1) (Src.If $3 $7 $14) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'

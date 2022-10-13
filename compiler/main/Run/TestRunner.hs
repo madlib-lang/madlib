@@ -39,6 +39,9 @@ import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 import           Rock (Cyclic)
 import           Error.Warning
 
+import           GHC.IO.Handle
+import           GHC.IO.Handle.FD
+
 
 
 resetCode :: String
@@ -81,10 +84,6 @@ runTests entrypoint target watchMode coverage = do
           , optMustHaveMain = True
           }
 
-  when watchMode $ do
-    putStr resetCode
-    putStr backToTopCode
-
   runTestTask watchMode state options canonicalEntrypoint []
 
   when watchMode $ do
@@ -95,6 +94,11 @@ runTests entrypoint target watchMode coverage = do
 runTestTask :: Bool -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
 runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
   Driver.recordAndPrintDuration "Tests built and run in " $ do
+    when watchMode $ do
+      putStr resetCode
+      putStr backToTopCode
+      hFlush stdout
+
     sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
     Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
     Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
@@ -148,15 +152,18 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
           else
             readFile p
 
-    when (watchMode && not (null warnings) || not (null errors)) $ do
-      putStr resetCode
-      putStr backToTopCode
-
     unless (null warnings) $ do
       formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
       putStrLn $ List.intercalate "\n\n\n" formattedWarnings
 
     if null errors then do
+      if watchMode then do
+        putStr resetCode
+        putStr backToTopCode
+        hFlush stdout
+      else
+        putStrLn ""
+
       setEnv "COVERAGE_TEXT" "ON"
       let jsExePath = computeTargetPath (optOutputPath options) (optRootPath options) (optEntrypoint options)
       testOutput <- case DistributionSystem.buildOS of
@@ -182,6 +189,8 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
       formattedErrors <- mapM (Explain.format rf False) errors
       putStrLn $ List.intercalate "\n\n\n" formattedErrors
       unless watchMode Exit.exitFailure
+
+  when watchMode $ putStrLn "\nWatching... (press ctrl-C to quit)"
 
 
 generateTestSuiteName :: Int -> String

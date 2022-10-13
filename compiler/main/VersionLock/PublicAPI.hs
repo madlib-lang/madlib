@@ -79,7 +79,7 @@ addInterface (Slv.Untyped _ (Slv.Interface name supers vars _ methodTypings)) ap
           lst (predsToStr False mempty supers) <> " => " <> key
         else
           key
-      methods = prettyPrintConstructorTyping' False <$> methodTypings
+      methods = prettyPrintTyping' False <$> methodTypings
   in  api { apiInterfaces = Map.insert key' methods $ apiInterfaces api }
 
 addInstance :: Slv.Instance -> PublicAPI -> PublicAPI
@@ -100,7 +100,7 @@ addADT (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
           key <> " " <> unwords params
         else
           key
-      ctors' = (\(Slv.Untyped _ (Slv.Constructor name ts _)) -> unwords $ name : (prettyPrintConstructorTyping <$> ts)) <$> ctors
+      ctors' = (\(Slv.Untyped _ (Slv.Constructor name ts _)) -> unwords $ name : (prettyPrintTyping <$> ts)) <$> ctors
   in  api { apiTypes = Map.insert key' ctors' $ apiTypes api }
 
 addAlias :: Slv.TypeDecl -> PublicAPI -> PublicAPI
@@ -111,7 +111,7 @@ addAlias (Slv.Untyped _ (Slv.Alias name params typing _)) api =
           key <> " " <> unwords params
         else
           key
-      aliased = prettyPrintConstructorTyping typing
+      aliased = prettyPrintTyping typing
   in  api { apiAliases = Map.insert key' aliased $ apiAliases api }
 
 

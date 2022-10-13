@@ -45,6 +45,7 @@ import {
 import Constants from "./Constants"
 import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
 import { hashVersion } from "./Hash"
+import Color from "./Color"
 
 
 copyPackageToMadlibModules :: Config -> Dependency -> Wish Process.CommandResult Process.CommandResult
@@ -64,7 +65,7 @@ getDependencies = pipe(
     Either.Left(e) =>
       of(
         Either.Left(
-          IO.red(
+          Color.red(
             `The 'madlib.json' file from your project could not be loaded. It is either malformed or inexistant.\nHere is the error I found: '${e}'.`
           )
         )
@@ -204,14 +205,14 @@ displayResult = (validation) => where(validation) {
   Valid(a) =>
     pipe(
       displayInstalling,
-      IO.putLineAndPass(`  - ${IO.green("installed!")}`)
+      IO.putLineAndPass(`  - ${Color.green("installed!")}`)
     )(validation)
 
   NotValid(warnings, a) =>
     pipe(
       displayInstalling,
       List.reduce(printWarning, $, warnings),
-      IO.putLineAndPass(`  - ${IO.green("installed!")}`)
+      IO.putLineAndPass(`  - ${Color.green("installed!")}`)
     )(validation)
 
   ValidationError(warnings, err, maybeA) =>
@@ -332,7 +333,7 @@ processDependencies = (config, context, dependencies) => pipe(
     pipe(
       List.filter(where {
         DownloadError(err) =>
-          IO.putLineAndPass(IO.red(`${err}\n`), false)
+          IO.putLineAndPass(Color.red(`${err}\n`), false)
 
         Downloaded(_) =>
           true

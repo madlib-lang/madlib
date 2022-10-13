@@ -64,8 +64,7 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
     if watchMode then
       when watchMode $ do
         state <- Driver.initialState
-        runCompilationTask False state options [canonicalEntrypoint]
-        putStrLn "\nWatching... (press ctrl-C to quit)"
+        runCompilationTask True state options [canonicalEntrypoint]
         Driver.watch rootPath (runCompilationTask True state options)
         return ()
     else do
@@ -121,4 +120,4 @@ runCompilationTask watchMode state options invalidatedPaths = do
     unless (null errors || watchMode) $ do
       exitFailure
 
-  return ()
+  when watchMode $ putStrLn "\nWatching... (press ctrl-C to quit)"

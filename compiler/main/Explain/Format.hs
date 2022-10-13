@@ -17,9 +17,9 @@ import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
-import Debug.Trace
-import qualified Data.Maybe as Maybe
-import Infer.Exp (dedupePreds)
+import qualified Data.Maybe                    as Maybe
+import           Infer.Exp (dedupePreds)
+import           System.Environment (lookupEnv)
 
 
 data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
@@ -65,7 +65,9 @@ getModuleContent _  _                        =
 
 formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO String
 formatWarning rf json (CompilationWarning warning ctx) = do
+  noColor       <- lookupEnv "NO_COLOR"
   moduleContent <- lines <$> getModuleContent rf ctx
+  let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
   let formattedWarning = case ctx of
         Context fp area ->
           let (Area (Loc _ line _) _) = area
@@ -74,12 +76,12 @@ formatWarning rf json (CompilationWarning warning ctx) = do
                 <> "' at line "
                 <> show line
                 <> ":\n"
-                <> showAreaInSource json area area moduleContent
+                <> showAreaInSource (not isColorEnabled) area area moduleContent
                 <> "\n"
-                <> formatWarningContent json warning
+                <> formatWarningContent (not isColorEnabled) warning
 
-        _ -> formatWarningContent json warning
-  let fullContent = colorWhen (not json) WhiteOnYellow "Warning" <> " " <> formattedWarning
+        _ -> formatWarningContent (not isColorEnabled) warning
+  let fullContent = colorWhen isColorEnabled WhiteOnYellow "Warning" <> " " <> formattedWarning
   return $ unlines (("│ " <>) <$> lines fullContent)
 
 formatWarningContent :: Bool -> WarningKind -> String
@@ -121,17 +123,19 @@ formatWarningContent _ warning = case warning of
 
 format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
 format rf json (CompilationError err ctx) = do
+  noColor       <- lookupEnv "NO_COLOR"
   moduleContent <- lines <$> getModuleContent rf ctx
+  let isColorEnabled =  not json && not (noColor /= Just "" && Maybe.isJust noColor)
   let formattedError = case ctx of
         Context fp area ->
           let (Area (Loc _ line _) _) = area
           in  "in module '" <> fp <> "' at line " <> show line <> ":\n"
-                <> showAreaInSource json area area moduleContent
+                <> showAreaInSource (not isColorEnabled) area area moduleContent
                 <> "\n"
-                <> formatTypeError json moduleContent err
+                <> formatTypeError (not isColorEnabled) moduleContent err
 
-        _ -> formatTypeError json moduleContent err
-  let fullContent = colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
+        _ -> formatTypeError (not isColorEnabled) moduleContent err
+  let fullContent = colorWhen isColorEnabled WhiteOnRed "Error" <> " " <> formattedError
   return $ unlines (("│ " <>) <$> lines fullContent)
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
@@ -503,9 +507,9 @@ prettyPrintTypesWithDiff colored vars1 vars2 t1 t2 = case (t1, t2) of
   (TApp (TApp (TCon (TC "(,)" _) _) tl1) tr1, TApp (TApp (TCon (TC "(,)" _) _) tl2) tr2) ->
     let (vars1', vars2', tl1', tl2')   = prettyPrintTypesWithDiff colored vars1 vars2 tl1 tl2
         (vars1'', vars2'', tr1', tr2') = prettyPrintTypesWithDiff colored vars1' vars2' tr1 tr2
-        openTuple = colorWhen colored Grey "#["
+        openTuple  = colorWhen colored Grey "#["
         closeTuple = colorWhen colored Grey "]"
-        separator = colorWhen colored Grey ", "
+        separator  = colorWhen colored Grey ", "
     in  ( vars1''
         , vars2''
         , openTuple <> tl1' <> separator <> tr1' <> closeTuple
@@ -516,13 +520,132 @@ prettyPrintTypesWithDiff colored vars1 vars2 t1 t2 = case (t1, t2) of
     let (vars1', vars2', t11', t21')     = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')   = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23') = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
-        openTuple = colorWhen colored Grey "#["
+        openTuple  = colorWhen colored Grey "#["
         closeTuple = colorWhen colored Grey "]"
-        separator = colorWhen colored Grey ", "
+        separator  = colorWhen colored Grey ", "
     in  ( vars1'''
         , vars2'''
         , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> closeTuple
         , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) t11) t12) t13) t14, TApp(TApp (TApp (TApp (TCon (TC "(,,,)" _) _) t21) t22) t23) t24) ->
+    let (vars1', vars2', t11', t21')       = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')     = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')   = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24') = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1''''
+        , vars2''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) t11) t12) t13) t14) t15, TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) t21) t22) t23) t24) t25) ->
+    let (vars1', vars2', t11', t21')         = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')       = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')     = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')   = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25') = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1'''''
+        , vars2'''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) t11) t12) t13) t14) t15) t16, TApp (TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) t21) t22) t23) t24) t25) t26) ->
+    let (vars1', vars2', t11', t21')           = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')         = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')       = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')     = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25')   = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        (vars1'''''', vars2'''''', t16', t26') = prettyPrintTypesWithDiff colored vars1''''' vars2''''' t16 t26
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1''''''
+        , vars2''''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> separator <> t16' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> separator <> t26' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17, TApp (TApp (TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) ->
+    let (vars1', vars2', t11', t21')             = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')           = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')         = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')       = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25')     = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        (vars1'''''', vars2'''''', t16', t26')   = prettyPrintTypesWithDiff colored vars1''''' vars2''''' t16 t26
+        (vars1''''''', vars2''''''', t17', t27') = prettyPrintTypesWithDiff colored vars1'''''' vars2'''''' t17 t27
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1'''''''
+        , vars2'''''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> separator <> t16' <> separator <> t17' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> separator <> t26' <> separator <> t27' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18, TApp (TApp (TApp (TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) ->
+    let (vars1', vars2', t11', t21')               = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')             = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')           = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')         = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25')       = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        (vars1'''''', vars2'''''', t16', t26')     = prettyPrintTypesWithDiff colored vars1''''' vars2''''' t16 t26
+        (vars1''''''', vars2''''''', t17', t27')   = prettyPrintTypesWithDiff colored vars1'''''' vars2'''''' t17 t27
+        (vars1'''''''', vars2'''''''', t18', t28') = prettyPrintTypesWithDiff colored vars1''''''' vars2''''''' t18 t28
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1''''''''
+        , vars2''''''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> separator <> t16' <> separator <> t17' <> separator <> t18' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> separator <> t26' <> separator <> t27' <> separator <> t28' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18) t19, TApp (TApp (TApp (TApp (TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) t29) ->
+    let (vars1', vars2', t11', t21')                 = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')               = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')             = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')           = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25')         = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        (vars1'''''', vars2'''''', t16', t26')       = prettyPrintTypesWithDiff colored vars1''''' vars2''''' t16 t26
+        (vars1''''''', vars2''''''', t17', t27')     = prettyPrintTypesWithDiff colored vars1'''''' vars2'''''' t17 t27
+        (vars1'''''''', vars2'''''''', t18', t28')   = prettyPrintTypesWithDiff colored vars1''''''' vars2''''''' t18 t28
+        (vars1''''''''', vars2''''''''', t19', t29') = prettyPrintTypesWithDiff colored vars1'''''''' vars2'''''''' t19 t29
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1'''''''''
+        , vars2'''''''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> separator <> t16' <> separator <> t17' <> separator <> t18' <> separator <> t19' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> separator <> t26' <> separator <> t27' <> separator <> t28' <> separator <> t29' <> closeTuple
+        )
+
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18) t19) t110, TApp (TApp (TApp (TApp (TApp (TApp (TApp(TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) t29) t210) ->
+    let (vars1', vars2', t11', t21')                     = prettyPrintTypesWithDiff colored vars1 vars2 t11 t21
+        (vars1'', vars2'', t12', t22')                   = prettyPrintTypesWithDiff colored vars1' vars2' t12 t22
+        (vars1''', vars2''', t13', t23')                 = prettyPrintTypesWithDiff colored vars1'' vars2'' t13 t23
+        (vars1'''', vars2'''', t14', t24')               = prettyPrintTypesWithDiff colored vars1''' vars2''' t14 t24
+        (vars1''''', vars2''''', t15', t25')             = prettyPrintTypesWithDiff colored vars1'''' vars2'''' t15 t25
+        (vars1'''''', vars2'''''', t16', t26')           = prettyPrintTypesWithDiff colored vars1''''' vars2''''' t16 t26
+        (vars1''''''', vars2''''''', t17', t27')         = prettyPrintTypesWithDiff colored vars1'''''' vars2'''''' t17 t27
+        (vars1'''''''', vars2'''''''', t18', t28')       = prettyPrintTypesWithDiff colored vars1''''''' vars2''''''' t18 t28
+        (vars1''''''''', vars2''''''''', t19', t29')     = prettyPrintTypesWithDiff colored vars1'''''''' vars2'''''''' t19 t29
+        (vars1'''''''''', vars2'''''''''', t110', t210') = prettyPrintTypesWithDiff colored vars1''''''''' vars2''''''''' t110 t210
+        openTuple  = colorWhen colored Grey "#["
+        closeTuple = colorWhen colored Grey "]"
+        separator  = colorWhen colored Grey ", "
+    in  ( vars1''''''''''
+        , vars2''''''''''
+        , openTuple <> t11' <> separator <> t12' <> separator <> t13' <> separator <> t14' <> separator <> t15' <> separator <> t16' <> separator <> t17' <> separator <> t18' <> separator <> t19' <> separator <> t110' <> closeTuple
+        , openTuple <> t21' <> separator <> t22' <> separator <> t23' <> separator <> t24' <> separator <> t25' <> separator <> t26' <> separator <> t27' <> separator <> t28' <> separator <> t29' <> separator <> t210' <> closeTuple
         )
 
   (TApp l1 r1, TApp l2 r2) ->
@@ -567,7 +690,7 @@ prettyPrintTypesWithDiff colored vars1 vars2 t1 t2 = case (t1, t2) of
                 )
                 (vars1, vars2, [], [])
               $ M.toList allFields1
-        
+
         missingFields = allFields2 M.\\ allFields1
         ((finalVars2', finalHkVars2'), compiledMissingFields') =
             foldl'
@@ -731,22 +854,22 @@ removeNamespace name =
     name
 
 
-prettyPrintConstructorTyping :: Slv.Typing -> String
-prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
+prettyPrintTyping :: Slv.Typing -> String
+prettyPrintTyping t@(Slv.Untyped _ typing) = case typing of
   Slv.TRComp _ ts ->
     if not (null ts) then
-      "(" <> prettyPrintConstructorTyping' False t <> ")"
+      "(" <> prettyPrintTyping' False t <> ")"
     else
-      prettyPrintConstructorTyping' False t
+      prettyPrintTyping' False t
 
   Slv.TRArr _ _ ->
-    "(" <> prettyPrintConstructorTyping' False t <> ")"
+    "(" <> prettyPrintTyping' False t <> ")"
 
-  _ -> prettyPrintConstructorTyping' True t
+  _ -> prettyPrintTyping' True t
 
 
-prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
-prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
+prettyPrintTyping' :: Bool -> Slv.Typing -> String
+prettyPrintTyping' paren (Slv.Untyped _ typing) = case typing of
   Slv.TRSingle n ->
     removeNamespace n
 
@@ -756,32 +879,32 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
       "("
       <> removeNamespace n
       <> space
-      <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+      <> unwords ((\t -> prettyPrintTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
       <> ")"
     else
       removeNamespace n
       <> space
-      <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+      <> unwords ((\t -> prettyPrintTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
 
   Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
     "("
-      <> prettyPrintConstructorTyping' False l
+      <> prettyPrintTyping' False l
       <> " -> "
-      <> prettyPrintConstructorTyping' False r
+      <> prettyPrintTyping' False r
       <> ") -> "
-      <> prettyPrintConstructorTyping' False r'
+      <> prettyPrintTyping' False r'
 
   Slv.TRArr l r ->
     if paren then
-      "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
+      "(" <> prettyPrintTyping' False l <> " -> " <> prettyPrintTyping' False r <> ")"
     else
-      prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
+      prettyPrintTyping' False l <> " -> " <> prettyPrintTyping' False r
 
   Slv.TRTuple ts ->
-    "#[" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> "]"
+    "#[" <> intercalate ", " (prettyPrintTyping' False <$> ts) <> "]"
 
   Slv.TRRecord ts _ ->
-    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) (snd <$> ts)
+    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintTyping' False v) (snd <$> ts)
         fields  = M.elems mapped
         fields' = intercalate ", " fields
     in  "{ " <> fields' <> " }"
@@ -801,10 +924,33 @@ isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
 
 isTuple :: Type -> Bool
 isTuple t = case t of
-  TApp (TApp (TCon (TC "(,)" _) _) _) _ -> True
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _) _) _) _ -> True
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) _) _) _) _ -> True
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) _) _) _) _) _ -> True
+  TApp (TApp (TCon (TC "(,)" _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) _) _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) _) _) _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) _) _) _) _) _) _) _) _) _ ->
+    True
+
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _) _) _) _) _) _) _) _) _) _) _ ->
+    True
+
   _ -> False
 
 

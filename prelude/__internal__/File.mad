@@ -13,6 +13,15 @@ import fs from "fs"
 -#
 
 
+/**
+ * Writes a text file. The first argument is the path to the file
+ * and the second argument is the text to write to it. It returns
+ * a Wish and the result is discarded, meaning that it contains Unit.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
+ */
 write :: String -> String -> Wish IOError {}
 export write = (path, content) =>
   Wish((bad, good) => #- {
@@ -27,6 +36,15 @@ export write = (path, content) =>
   } -#)
 
 
+/**
+ * Writes a binary file. The first argument is the path to the file
+ * and the second argument is the bytes to write to it. It returns
+ * a Wish and the result is discarded, meaning that it contains Unit.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
+ */
 writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, bytes) =>
   Wish((bad, good) => #- {
@@ -110,6 +128,16 @@ export readBytes = (path) => Wish((bad, good) =>
 writeFFI :: String -> String -> (Integer -> {} -> {}) -> {}
 writeFFI = extern "madlib__file__write"
 
+
+/**
+ * Writes a text file. The first argument is the path to the file
+ * and the second argument is the text to write to it. It returns
+ * a Wish and the result is discarded, meaning that it contains Unit.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
+ */
 write :: String -> String -> Wish IOError {}
 export write = (path, content) => Wish((bad, good) =>
   writeFFI(
@@ -126,6 +154,16 @@ export write = (path, content) => Wish((bad, good) =>
 writeBytesFFI :: String -> ByteArray -> (Integer -> {} -> {}) -> {}
 writeBytesFFI = extern "madlib__file__writeBytes"
 
+
+/**
+ * Writes a binary file. The first argument is the path to the file
+ * and the second argument is the bytes to write to it. It returns
+ * a Wish and the result is discarded, meaning that it contains Unit.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
+ */
 writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, content) => Wish((bad, good) =>
   writeBytesFFI(

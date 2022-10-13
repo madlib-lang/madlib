@@ -2,13 +2,34 @@ import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
 
+/**
+ * Executes the given function until it returns false.
+ *
+ * @since 0.13.0
+ * @example
+ * x = 0
+ * while(() => {
+ *   x = x + 1
+ *   return x != 5
+ * })
+ * // x == 5
+ */
 while :: ({} -> Boolean) -> {}
 export while = (f) =>
-  f({})
-    ? while(f)
-    : {}
+  if (f()) {
+    while(f)
+  }
 
 
+/**
+ * Given a start value, a predicate function and a transformation function,
+ * it applies the transformation function to the value until the predicate
+ * function returns false.
+ *
+ * @since 0.13.0
+ * @example
+ * loop(1, (x) => x < 10, (x) => x * 2) // 16
+ */
 loop :: a -> (a -> Boolean) -> (a -> a) -> a
 export loop = (start, pred, evaluate) =>
   pred(start)

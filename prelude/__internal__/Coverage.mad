@@ -5,16 +5,28 @@ import Dictionary from "Dictionary"
 import List from "List"
 import String from "String"
 import Tuple from "Tuple"
+import FilePath from "FilePath/Posix"
 import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
 import { EQUAL } from "Compare"
 import { integerToFloat } from "Number"
+import { always, when } from "Function"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 import IO from "IO"
 
 
+COVERAGE_TEXT :: String
 COVERAGE_TEXT = "COVERAGE_TEXT"
+
+IS_COLOR_ENABLED :: Boolean
+IS_COLOR_ENABLED = do {
+  noColor = Process.getEnv("NO_COLOR")
+  return noColor == Just("") || noColor == Nothing
+}
+
+CWD :: String
+CWD = Process.getCurrentWorkingDirectory()
 
 alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
 
@@ -378,6 +390,8 @@ printRows = (rows) => {
         [module, line, fn, branch, total] =>
           if (index == 0) {
             `${module}  ${line}  ${fn}  ${branch}  ${total}`
+          } else if (index < List.length(rows) - 1) {
+            `${renderModulePath(module)}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
           } else {
             `${module}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
           }
@@ -387,7 +401,7 @@ printRows = (rows) => {
       [header, ...moduleRows] =>
         [
           header,
-          pipe(String.length, String.repeat('-'), IO.grey)(header),
+          pipe(String.length, String.repeat('-'), when(always(IS_COLOR_ENABLED), IO.grey))(header),
           ...moduleRows
         ]
     },
@@ -395,7 +409,7 @@ printRows = (rows) => {
   )(rows)
 
   IO.putLine("\nCoverage")
-  IO.putLine(IO.grey("--------\n"))
+  IO.putLine(IS_COLOR_ENABLED ? IO.grey("--------\n") : "--------\n")
   IO.putLine(finalRows)
   IO.putLine("")
 }
@@ -438,19 +452,65 @@ formatRows = (rows) =>
 
 
 renderPercentage :: String -> String
-renderPercentage = (input) => where(scan(String.dropLast(1, input))) {
-  Just(num) =>
-    if (num > 90) {
-      IO.green(input)
-    } else if (num > 75) {
-      IO.yellow(input)
-    } else {
-      IO.red(input)
-    }
+renderPercentage = (input) =>
+  if (IS_COLOR_ENABLED) {
+    where(scan(String.dropLast(1, input))) {
+      Just(num) =>
+        if (num > 90) {
+          IO.green(input)
+        } else if (num > 75) {
+          IO.yellow(input)
+        } else {
+          IO.red(input)
+        }
 
-  Nothing =>
-    IO.red(input)
+      Nothing =>
+        IO.red(input)
+    }
+  } else {
+    input
+  }
+
+
+renderModulePath :: String -> String
+renderModulePath = (modulePath) => pipe(
+  FilePath.splitPath,
+  (parts) => {
+    path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
+    fileName = pipe(
+      List.last,
+      fromMaybe("")
+    )(parts)
+
+    return path ++ fileName
+  }
+)(modulePath)
+
+
+processSuitePath :: String -> String
+processSuitePath = (suitePath) => {
+  cwdParts = FilePath.splitPath(CWD)
+  partIndex = 0
+
+  return pipe(
+    FilePath.splitPath,
+    List.dropWhile((part) => {
+      justPart = pipe(
+        FilePath.dropTrailingPathSeparator,
+        Just
+      )(part)
+      justCwdPart = pipe(
+        List.nth(partIndex),
+        map(FilePath.dropTrailingPathSeparator)
+      )(cwdParts)
+      drop = justPart == justCwdPart
+      partIndex = partIndex + 1
+      return drop
+    }),
+    FilePath.joinPath
+  )(suitePath)
 }
+
 
 displayCoverageResults :: Dictionary String CoverageData -> {}
 displayCoverageResults = (coverageData) => pipe(
@@ -459,7 +519,7 @@ displayCoverageResults = (coverageData) => pipe(
     where {
       ModuleResult(astPath, line, fn, branch, total) =>
         [
-          astPath,
+          processSuitePath(astPath),
           `${keepTwoDecimals(inspect(line))}%`,
           `${keepTwoDecimals(inspect(fn))}%`,
           `${keepTwoDecimals(inspect(branch))}%`,

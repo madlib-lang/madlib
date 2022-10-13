@@ -126,6 +126,15 @@ export fromMaybe = (or) => where {
     or
 }
 
+
+/**
+ * Returns true if the Maybe is a Just, false otherwise.
+ *
+ * @since 0.11.0
+ * @example
+ * isJust(Just("something")) // true
+ * isJust(Nothing)           // false
+ */
 isJust :: Maybe a -> Boolean
 export isJust = where {
   Just(_) =>

@@ -34,7 +34,7 @@ import qualified Data.List as List
 import           Control.Monad (forM_, join, forM, unless)
 import           Data.IORef
 import qualified AST.Solved as Slv
-import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintConstructorTyping, prettyPrintConstructorTyping')
+import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping')
 import           Control.Applicative ((<|>))
 import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified)
 import qualified Error.Warning as Warning
@@ -552,7 +552,7 @@ nodeToHoverInfo modulePath node = do
       return $ name <> " :: " <> kindToStr k
 
     RecordFieldAnnotation _ name typing ->
-      return $ name <> " :: " <> prettyPrintConstructorTyping' False typing
+      return $ name <> " :: " <> prettyPrintTyping' False typing
 
     -- TODO: make dry with case for TRSingle
     TypingNode _ (Slv.Untyped _ (Slv.TRComp name ts)) -> do
