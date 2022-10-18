@@ -48,13 +48,13 @@ generateTrackerFunctions = do
   coverableInfo <- gets coverableInfo
   forM coverableInfo $ \case
     Line line astPath ->
-      return $ Canonical emptyArea (Assignment (makeLineTrackerName line) (Canonical emptyArea (App (Canonical emptyArea (App lineTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)))
+      return $ Canonical emptyArea (Assignment (makeLineTrackerName line) (Canonical emptyArea (Access (Canonical emptyArea (App (Canonical emptyArea (App lineTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) True)) (Canonical emptyArea (Var ".increment")))))
 
     Function line name astPath ->
-      return $ Canonical emptyArea (Assignment (makeFunctionTrackerName line name) (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App functionTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LStr name)) True)))
+      return $ Canonical emptyArea (Assignment (makeFunctionTrackerName line name) (Canonical emptyArea (Access (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App functionTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LStr name)) True)) (Canonical emptyArea (Var ".increment")))))
 
     Branch line blockIndex branchIndex astPath ->
-      return $ Canonical emptyArea (Assignment (makeBranchTrackerName line blockIndex branchIndex) (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App branchTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LNum (show blockIndex))) False)) (Canonical emptyArea (LNum (show branchIndex))) True)))
+      return $ Canonical emptyArea (Assignment (makeBranchTrackerName line blockIndex branchIndex) (Canonical emptyArea (Access (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App branchTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LNum (show blockIndex))) False)) (Canonical emptyArea (LNum (show branchIndex))) True)) (Canonical emptyArea (Var ".increment")))))
 
 
 coverageModuleName :: String
@@ -117,7 +117,7 @@ makeBranchTrackerName line blockIndex branchIndex =
 makeFunctionTracker :: FilePath -> Int -> String -> CanonicalM Exp
 makeFunctionTracker astPath functionLine functionName = do
   pushCoverable (Function { cname = functionName, cline = functionLine, castpath = astPath })
-  return $ Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeFunctionTrackerName functionLine functionName)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True)
+  return $ Canonical emptyArea (App (Canonical emptyArea (Var $ makeFunctionTrackerName functionLine functionName)) (Canonical emptyArea LUnit) True)
 
 
 addLineTracker :: FilePath -> Exp -> CanonicalM Exp
@@ -129,7 +129,7 @@ addLineTracker astPath exp = do
     return exp
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True), exp])
 
 
 addLineTrackerForLine :: FilePath -> Int -> Exp -> CanonicalM Exp
@@ -140,7 +140,7 @@ addLineTrackerForLine astPath line exp = do
     return exp
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True), exp])
 
 
 addFunctionTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
@@ -157,7 +157,7 @@ addFunctionTrackerToBody astPath line name body = case body of
 addBranchTracker :: FilePath -> Int -> Int -> Int -> Exp -> CanonicalM Exp
 addBranchTracker astPath line blockIndex branchIndex exp = do
   pushCoverable Branch { cline = line, cblocknumber = blockIndex, cbranchnumber = branchIndex, castpath = astPath }
-  return $ Canonical (getArea exp) (Do [Canonical emptyArea (App (Canonical emptyArea (Access (Canonical emptyArea (Var $ makeBranchTrackerName line blockIndex branchIndex)) (Canonical emptyArea (Var ".increment")))) (Canonical emptyArea LUnit) True), exp])
+  return $ Canonical (getArea exp) (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeBranchTrackerName line blockIndex branchIndex)) (Canonical emptyArea LUnit) True), exp])
 
 
 updateBody :: [Exp] -> ([Exp] -> CanonicalM [Exp]) -> CanonicalM [Exp]

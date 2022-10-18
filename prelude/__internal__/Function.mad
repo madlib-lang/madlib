@@ -22,7 +22,7 @@ export complement = (fn) => ((x) => (!fn(x)))
  * map(always(true), [1, 2 ,3]) // [true, true, true]
  */
 always :: a -> b -> a
-export always = (a, b) => a
+export always = (a, _) => a
 
 /**
  * Returns exactly what you give it.

@@ -24,8 +24,11 @@ import qualified Canonicalize.EnvUtils as EnvUtils
 import qualified Rock
 import qualified Driver.Query as Query
 import qualified Infer.Type as Ty
-import Debug.Trace
 import qualified Text.Show.Pretty as PP
+import qualified Data.Set as Set
+import           Error.Warning
+import           Error.Context
+import Text.Regex.TDFA ((=~))
 
 
 class Canonicalizable a b where
@@ -35,6 +38,7 @@ class Canonicalizable a b where
 mainTyping :: Src.Typing
 mainTyping = Src.Source emptyArea Src.TargetAll (Src.TRArr (Src.Source emptyArea Src.TargetAll (Src.TRComp "List" [Src.Source emptyArea Src.TargetAll (Src.TRSingle "String")])) (Src.Source emptyArea Src.TargetAll (Src.TRSingle "{}")))
 
+
 updateMainFunction :: Env.Env -> Target -> Area -> Src.Exp -> Src.Typing -> CanonicalM Can.Exp
 updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assignment mainName main)) typing = do
   sc        <- typingToScheme env typing
@@ -43,11 +47,12 @@ updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assi
   if Src.isAbs main then
     return $ Can.Canonical initialArea (Can.TypedExp (Can.Canonical assignmentArea (Can.Assignment mainName main')) canTyping sc)
   else
-    return $ Can.Canonical initialArea (Can.TypedExp (Can.Canonical assignmentArea 
+    return $ Can.Canonical initialArea (Can.TypedExp (Can.Canonical assignmentArea
       (Can.Assignment
         mainName
         (Can.Canonical assignmentArea (Can.Abs (Can.Canonical emptyArea "__args__") [Can.Canonical assignmentArea (Can.App main' (Can.Canonical emptyArea (Can.Var "__args__")) True)]))
     )) canTyping sc)
+
 
 instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
@@ -125,16 +130,17 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Access rec' field')
 
     Src.AbsWithMultilineBody params body ->
-      buildAbs env target area params body
+      processAbs env target area params body
 
     Src.Abs params body ->
-      buildAbs env target area params body
+      processAbs env target area params body
 
     Src.Return exp ->
       canonicalize env target exp
 
     Src.Assignment name exp -> do
       exp' <- canonicalize env target exp
+      pushNameDeclaration (Env.envExpPosition env) name
       return $ Can.Canonical area (Can.Assignment name exp')
 
     Src.Export exp -> do
@@ -288,13 +294,66 @@ instance Canonicalizable Src.Exp Can.Exp where
       error $ "unhandled node type\n" <> ppShow fullExp
 
 
+processAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
+processAbs env target area params body = do
+  allAccessesBeforeAbs <- getAllAccesses
+  allDeclaredBeforeAbs <- getAllDeclaredNames
+
+  resetNameAccesses
+  resetNamesDeclared
+
+  abs'               <- buildAbs env target area params body
+
+  allAccessesInAbs   <- getAllAccesses
+  nameAccessesInAbs  <- getAllNameAccesses
+  namesDeclaredInAbs <- getAllDeclaredNames
+
+  setAccesses (allAccessesInAbs <> allAccessesBeforeAbs)
+  setDeclaredNames (namesDeclaredInAbs <> allDeclaredBeforeAbs)
+
+  let localDecls   = map (\(e, i) -> (Src.getLocalOrNotExportedAssignmentName e, i + Env.envExpPosition env)) (zip body [0..])
+  let localDecls'  = map (\(Just x, i) -> (x, i)) $ filter (Maybe.isJust . fst) localDecls
+  let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` (Set.map (\(Declared _ n') -> n') allDeclaredBeforeAbs)) localDecls'
+  let unusedParams = filter (\(Src.Source _ _ n) -> n /= "_" && n `Set.notMember` nameAccessesInAbs) params
+  let unusedDecls  =
+        filter
+          (\(Src.Source _ _ n, i) ->
+            n /= "_"
+            && n `Set.notMember` nameAccessesInAbs
+            && n `Set.notMember` (Set.map (\(Declared _ n') -> n') $ Set.filter (\(Declared pos _) -> pos > i) namesDeclaredInAbs)
+          )
+          localDecls''
+  let unusedDecls' = map fst unusedDecls
+
+  allJS <- getJS
+
+  unusedParams' <-
+    if null unusedParams then
+      return unusedParams
+    else do
+      return $ filter (not . (allJS =~) . (\(Src.Source _ _ n) -> n)) unusedParams
+
+  unusedDecls'' <-
+    if null unusedDecls' then
+      return unusedDecls'
+    else do
+      return $ filter (not . (allJS =~) . (\(Src.Source _ _ n) -> n)) unusedDecls'
+
+  forM_ unusedParams' $ \(Src.Source area' _ n) -> do
+    pushWarning $ CompilationWarning (UnusedParameter n) (Context (Env.envCurrentPath env) area')
+
+  forM_ unusedDecls'' $ \(Src.Source area' _ n) -> do
+    pushWarning $ CompilationWarning (UnusedDeclaration n) (Context (Env.envCurrentPath env) area')
+
+  return abs'
+
 buildAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
 buildAbs env target area@(Area _ (Loc a l c)) [] body = do
-  body' <- mapM (canonicalize env target) body
+  body' <- mapM (\(e, i) -> canonicalize env { Env.envExpPosition = i + Env.envExpPosition env } target e) (zip body [0..])
   let param = Can.Canonical (Area (Loc (a - 1) l (c - 1)) (Loc (a - 1) l (c - 1))) "_"
   return $ Can.Canonical area (Can.Abs param body')
 buildAbs env target area [Src.Source area' _ param] body = do
-  body' <- mapM (canonicalize env target) body
+  body' <- mapM (\(e, i) -> canonicalize env { Env.envExpPosition = i + Env.envExpPosition env } target e) (zip body [0..])
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) body')
 buildAbs env target area (Src.Source area' _ param:xs) body  = do
   next <- buildAbs env target area xs body

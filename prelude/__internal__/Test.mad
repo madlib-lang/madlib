@@ -98,13 +98,6 @@ export type AssertionError a
 type TestReport = TestReport(String, Integer, Integer, Integer)
 
 
-updateMessage :: (String -> String) -> TestReport -> TestReport
-updateMessage = (f, report) => where(report) {
-  TestReport(str, total, successful, failed) =>
-    TestReport(f(str), total, successful, failed)
-}
-
-
 getMessage :: TestReport -> String
 getMessage = where {
   TestReport(str, _, _, _) =>

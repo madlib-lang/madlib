@@ -29,6 +29,7 @@ import qualified Distribution.System            as DistributionSystem
 import qualified Explain.Format                 as Explain
 import qualified System.Exit                    as Exit
 import           Utils.Path
+import           Utils.List
 import qualified Driver
 import qualified Driver.Query as Query
 import           Run.Options
@@ -94,6 +95,12 @@ runTests entrypoint target watchMode coverage = do
 runTestTask :: Bool -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
 runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
   Driver.recordAndPrintDuration "Tests built and run in " $ do
+    let rf p =
+          if "__TestMain__.mad" `List.isSuffixOf` p then
+            return ""
+          else
+            readFile p
+
     when watchMode $ do
       putStr resetCode
       putStr backToTopCode
@@ -123,14 +130,18 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
 
     (warnings, errors) <- case result of
       Right (_, warnings, []) -> do
-        (_, extraWarnings, _) <- Driver.runIncrementalTask
+        unless (null warnings) $ do
+          formattedWarnings <- mapM (Explain.formatWarning rf False) $ removeDuplicates warnings
+          putStrLn $ List.intercalate "\n\n" formattedWarnings
+
+        (_, _, _) <- Driver.runIncrementalTask
           state
           options
           invalidatedPaths
           mempty
           Driver.Don'tPrune
           (Driver.compilationTask $ optEntrypoint options)
-        return (extraWarnings ++ warnings, [])
+        return ([], [])
 
       Right (_, warnings, errors) ->
         return (warnings, errors)
@@ -146,15 +157,9 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
 
         return (warnings, errors)
 
-    let rf p =
-          if "__TestMain__.mad" `List.isSuffixOf` p then
-            return ""
-          else
-            readFile p
-
     unless (null warnings) $ do
       formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
-      putStrLn $ List.intercalate "\n\n\n" formattedWarnings
+      putStrLn $ List.intercalate "\n\n" formattedWarnings
 
     if null errors then do
       if watchMode then do
@@ -186,7 +191,7 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
         Right _ ->
           return ()
     else do
-      formattedErrors <- mapM (Explain.format rf False) errors
+      formattedErrors <- mapM (Explain.format rf False) $ removeDuplicates errors
       putStrLn $ List.intercalate "\n\n\n" formattedErrors
       unless watchMode Exit.exitFailure
 

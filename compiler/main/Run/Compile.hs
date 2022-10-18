@@ -9,7 +9,7 @@ import           Control.Monad                  ( forever
                                                 , unless
                                                 )
 import           Data.List                     as List
-
+import           Utils.List
 import qualified Explain.Format                as Explain
 import           Error.Warning
 import qualified Utils.PathUtils               as PathUtils
@@ -17,12 +17,12 @@ import           Run.CommandLine
 import           Run.Options
 import qualified Driver
 import qualified Rock
-import Driver.Query
-import Error.Error
-import Driver (Prune(Don'tPrune))
-import System.Console.ANSI
-import Rock (Cyclic)
-import System.Exit (exitFailure)
+import           Driver.Query
+import           Error.Error
+import           Driver (Prune(Don'tPrune))
+import           System.Console.ANSI
+import           Rock (Cyclic)
+import           System.Exit (exitFailure)
 
 
 runCompilation :: Command -> IO ()
@@ -90,14 +90,18 @@ runCompilationTask watchMode state options invalidatedPaths = do
 
     (warnings, errors) <- case result of
       Right (_, warnings, []) -> do
-        (_, extraWarnings, _) <- Driver.runIncrementalTask
+        unless (null warnings) $ do
+          formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
+          putStrLn $ List.intercalate "\n\n" formattedWarnings
+
+        (_, _, _) <- Driver.runIncrementalTask
           state
           options
           invalidatedPaths
           mempty
           Don'tPrune
           (Driver.compilationTask $ optEntrypoint options)
-        return (extraWarnings ++ warnings, [])
+        return ([], [])
 
       Right (_, warnings, errors) ->
         return (warnings, errors)
@@ -113,8 +117,8 @@ runCompilationTask watchMode state options invalidatedPaths = do
 
         return (warnings, errors)
 
-    formattedWarnings <- mapM (Explain.formatWarning readFile False) warnings
-    formattedErrors   <- mapM (Explain.format readFile False) errors
+    formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
+    formattedErrors   <- mapM (Explain.format readFile False) $ removeDuplicates errors
 
     putStr $ List.intercalate "\n\n" (formattedWarnings ++ formattedErrors)
     unless (null errors || watchMode) $ do

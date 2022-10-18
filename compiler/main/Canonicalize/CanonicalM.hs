@@ -21,11 +21,17 @@ data Accessed
   | TypeAccessed String
   deriving(Eq, Show, Ord)
 
+data Declared
+  = Declared Int String
+  deriving(Eq, Show, Ord)
+
+
 
 data CanonicalState
   = CanonicalState
       { warnings :: [CompilationWarning]
       , namesAccessed :: Set.Set Accessed
+      , namesDeclared :: Set.Set Declared
       , accumulatedJS :: String
       , typesToDerive :: [InstanceToDerive]
       -- List of InstanceToDerive for which an instance of Eq has been defined.
@@ -109,6 +115,11 @@ resetJS = do
   s <- get
   put s { accumulatedJS = "" }
 
+pushNameDeclaration :: Int -> String -> CanonicalM ()
+pushNameDeclaration position name = do
+  s <- get
+  put s { namesDeclared = namesDeclared s <> Set.singleton (Declared position name) }
+
 pushNameAccess :: String -> CanonicalM ()
 pushNameAccess name = do
   s <- get
@@ -123,6 +134,24 @@ resetNameAccesses :: CanonicalM ()
 resetNameAccesses = do
   s <- get
   put s { namesAccessed = Set.empty }
+
+resetNamesDeclared :: CanonicalM ()
+resetNamesDeclared = do
+  s <- get
+  put s { namesDeclared = Set.empty }
+
+setDeclaredNames :: Set.Set Declared -> CanonicalM ()
+setDeclaredNames declared = do
+  s <- get
+  put s { namesDeclared = declared }
+
+setAccesses :: Set.Set Accessed -> CanonicalM ()
+setAccesses accesses = do
+  s <- get
+  put s { namesAccessed = accesses }
+
+getAllDeclaredNames :: CanonicalM (Set.Set Declared)
+getAllDeclaredNames = gets namesDeclared
 
 getAllAccesses :: CanonicalM (Set.Set Accessed)
 getAllAccesses = gets namesAccessed

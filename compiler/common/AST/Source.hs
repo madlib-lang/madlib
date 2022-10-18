@@ -293,3 +293,19 @@ isAbs exp = case exp of
 
   _ ->
     False
+
+
+-- Used to detected unused variables
+getLocalOrNotExportedAssignmentName :: Exp -> Maybe (Source String)
+getLocalOrNotExportedAssignmentName (Source (Area (Loc a l c) _) target exp) = case exp of
+  Assignment name _ ->
+    return $ Source (Area (Loc a l c) (Loc (a + length name) l (c + length name))) target name
+
+  TypedExp (Source (Area (Loc a l c) _) target' (Assignment name _)) _ ->
+    return $ Source (Area (Loc a l c) (Loc (a + length name) l (c + length name))) target' name
+
+  NamedTypedExp name _ _ ->
+    return $ Source (Area (Loc a l c) (Loc (a + length name) l (c + length name))) target name
+
+  _ ->
+    Nothing

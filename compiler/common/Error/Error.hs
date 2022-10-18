@@ -7,7 +7,7 @@ import           Error.Context
 import           Explain.Location
 
 
-data CompilationError = CompilationError TypeError Context deriving(Eq, Show)
+data CompilationError = CompilationError TypeError Context deriving(Eq, Ord, Show)
 
 data TypeError
   = InfiniteType TVar Type

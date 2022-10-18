@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 module Canonicalize.AST where
 
 
@@ -52,6 +53,51 @@ findAllExportedTypeNames ast =
       typeExportNames = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
       typeNames       = Can.getTypeDeclName <$> exportedADTs
   in  typeExportNames ++ typeNames
+
+
+findAllNotExportedTopLevelDeclarationNames :: Can.AST -> [Can.Canonical Can.Name]
+findAllNotExportedTopLevelDeclarationNames ast =
+  let exportedVarNames      = mapMaybe Can.getExportName (Can.aexps ast)
+      notExportedVarNames   = mapMaybe Can.getNotExportedExpName (Can.aexps ast)
+      notExportedVarNames'  = filter ((\n -> n `notElem` exportedVarNames && n /= "main") . Can.getCanonicalContent) notExportedVarNames
+  in  notExportedVarNames'
+
+
+findAllNotExportedConstructorNames :: Can.AST -> [Can.Canonical Can.Name]
+findAllNotExportedConstructorNames ast =
+  let exportedADTs          = filter Can.isTypeDeclExported (Can.atypedecls ast)
+      exportedCtors         = concat $ Can.getCtors <$> exportedADTs
+      exportedCtorNames     = Can.getCtorName <$> exportedCtors
+      notExportedADTs       = filter (not . Can.isTypeDeclExported) (Can.atypedecls ast)
+      notExportedCtors      = concat $ Can.getCtors <$> notExportedADTs
+      notExportedCtorNames  = Can.getCanonicalCtorName <$> notExportedCtors
+      notExportedCtorNames' = filter ((`notElem` exportedCtorNames) . Can.getCanonicalContent) notExportedCtorNames
+  in  notExportedCtorNames'
+
+
+findAllNotExportedTypeNames :: Can.AST -> [(Can.Canonical Can.Name, [Can.Name])]
+findAllNotExportedTypeNames ast =
+  let notExportedADTs  = filter (not . Can.isTypeDeclExported) (Can.atypedecls ast)
+      typeExportNames  = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
+      exportedVarNames = mapMaybe Can.getExportName (Can.aexps ast)
+      typeNames =
+        mapMaybe
+          (\case
+              Can.Canonical area Can.Alias{ Can.aliasname, Can.aliasexported = False } ->
+                Just (Can.Canonical area aliasname, [])
+
+              Can.Canonical area Can.ADT{ Can.adtname, Can.adtconstructors, Can.adtexported = False } ->
+                let ctorNames = Can.getCtorName <$> adtconstructors
+                in  if any (`elem` exportedVarNames) ctorNames then
+                      Nothing
+                    else
+                      Just (Can.Canonical area adtname, ctorNames)
+
+              _ ->
+                Nothing
+          )
+          notExportedADTs
+  in  filter ((`notElem` typeExportNames) . Can.getCanonicalContent . fst) typeNames
 
 
 validateImport :: FilePath -> Src.Import -> CanonicalM ()
@@ -145,6 +191,55 @@ checkUnusedImports env imports = do
     (withJSCheck ++ unusedTypes)
 
 
+checkUnusedDeclarations :: Env -> Can.AST -> CanonicalM ()
+checkUnusedDeclarations env ast = do
+  let declsToFind = findAllNotExportedTopLevelDeclarationNames ast
+  let constructorsToFind = findAllNotExportedConstructorNames ast
+  namesAccessed <- S.toList <$> getAllNameAccesses
+  let unusedNames = filter (not . (`elem` namesAccessed) . Can.getCanonicalContent) declsToFind
+  let unusedConstructors = filter (not . (`elem` namesAccessed) . Can.getCanonicalContent) constructorsToFind
+
+  allJS <- getJS
+
+  unusedNames' <-
+    if null unusedNames then
+      return unusedNames
+    else do
+      return $ filter (not . (allJS =~) . Can.getCanonicalContent) unusedNames
+
+  unusedConstructors' <-
+    if null unusedConstructors then
+      return unusedConstructors
+    else do
+      return $ filter (not . (allJS =~) . Can.getCanonicalContent) unusedConstructors
+
+  forM_ unusedNames' $ \(Can.Canonical area unusedName) -> do
+    pushWarning (CompilationWarning (UnusedTopLevelDeclaration unusedName) (Context (envCurrentPath env) area))
+
+  forM_ unusedConstructors' $ \(Can.Canonical area unusedName) -> do
+    pushWarning (CompilationWarning (UnusedConstructor unusedName) (Context (envCurrentPath env) area))
+
+
+checkUnusedTypes :: Env -> Can.AST -> CanonicalM ()
+checkUnusedTypes env ast = do
+  let namesToFind = findAllNotExportedTypeNames ast
+  typesAccessed <- S.toList <$> getAllTypeAccesses
+  namesAccessed <- S.toList <$> getAllNameAccesses
+  -- let unusedNames = filter (not . (`elem` typesAccessed) . Can.getCanonicalContent) namesToFind
+  let unusedNames =
+        mapMaybe
+          (\(Can.Canonical area typeName, ctorNames) ->
+            if typeName `elem` typesAccessed || any (`elem` namesAccessed) ctorNames then
+              Nothing
+            else
+              Just $ Can.Canonical area typeName
+          )
+          namesToFind
+
+  forM_ unusedNames $ \(Can.Canonical area unusedName) -> do
+    pushWarning (CompilationWarning (UnusedType unusedName) (Context (envCurrentPath env) area))
+
+
 findDictionaryFromListName :: FilePath -> [Src.Import] -> String
 findDictionaryFromListName dictionaryModulePath imports = case imports of
   ((Src.Source _ _ (Src.NamedImport names _ path)) : next) | path == dictionaryModulePath ->
@@ -198,7 +293,6 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   resetJS
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls sourceAst
-  -- liftIO $ putStrLn (ppShow env''')
   imports               <- mapM (canonicalize env''' (optTarget options)) $ Src.aimports sourceAst
   exps                  <- mapM (canonicalize env''' (optTarget options)) $ Src.aexps sourceAst
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
@@ -210,7 +304,6 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
     else
       throwError $ CompilationError NoMain (Context astPath (Area (Loc 1 1 1) (Loc 2 2 2)))
 
-  checkUnusedImports env'' imports
 
 
   derivedTypes             <- getDerivedTypes
@@ -234,10 +327,13 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
-                                --  , Can.ainstances  = instances
                                  , Can.ainstances  = derivedEqInstances ++ derivedInspectInstances ++ instances
                                  , Can.apath       = Src.apath sourceAst
                                  }
+
+  checkUnusedImports env'' imports
+  checkUnusedDeclarations env'' canonicalizedAST
+  checkUnusedTypes env'' canonicalizedAST
 
   -- add `export type TypeName` types to the current env.
   envTds <- extractExportsFromAST env'''' canonicalizedAST

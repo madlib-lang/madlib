@@ -6,7 +6,13 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedParameter "x")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 5 1 6) (Loc 6 1 7)
+        }
+  ]
 , [ CompilationError
       (RecursiveVarAccess "p")
       Context

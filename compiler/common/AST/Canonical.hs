@@ -61,6 +61,10 @@ getCtorScheme (Canonical _ (Constructor _ _ sc _)) = sc
 getCtorName :: Constructor -> Name
 getCtorName (Canonical _ (Constructor name _ _ _)) = name
 
+getCanonicalCtorName :: Constructor -> Canonical Name
+getCanonicalCtorName (Canonical (Area (Loc a l c) _) (Constructor name _ _ _)) =
+  Canonical (Area (Loc a l c) (Loc (a + length name) l (c + length name))) name
+
 getCtorType :: Constructor -> Ty.Type
 getCtorType (Canonical _ (Constructor _ _ _ t)) = t
 
@@ -222,10 +226,15 @@ isTypeDeclExported td = case td of
   Canonical _ ADT { adtexported }     -> adtexported
   Canonical _ Alias { aliasexported } -> aliasexported
 
+
 getTypeDeclName :: TypeDecl -> String
 getTypeDeclName td = case td of
-  Canonical _ ADT { adtname }     -> adtname
-  Canonical _ Alias { aliasname } -> aliasname
+  Canonical _ ADT { adtname } ->
+    adtname
+
+  Canonical _ Alias { aliasname } ->
+    aliasname
+
 
 isTypeExport :: Exp -> Bool
 isTypeExport exp = case exp of
@@ -249,6 +258,7 @@ getTypeExportName :: Exp -> String
 getTypeExportName exp = case exp of
   Canonical _ (TypeExport name) -> name
 
+
 getExportName :: Exp -> Maybe Name
 getExportName exp = case exp of
   Canonical _ (NameExport name) ->
@@ -266,6 +276,7 @@ getExportName exp = case exp of
   _ ->
     Nothing
 
+
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Canonical _ (NamedImport   _ _ n) ->
@@ -281,8 +292,10 @@ getImportAbsolutePath imp = case imp of
 getArea :: Canonical a -> Area
 getArea (Canonical a _) = a
 
+
 getCanonicalContent :: Canonical a -> a
 getCanonicalContent (Canonical _ a) = a
+
 
 getExpName :: Exp -> Maybe String
 getExpName (Canonical _ exp) = case exp of
@@ -298,7 +311,19 @@ getExpName (Canonical _ exp) = case exp of
   Export (Canonical _ (Assignment name _)) ->
     return name
 
-  _                 ->
+  _ ->
+    Nothing
+
+
+getNotExportedExpName :: Exp -> Maybe (Canonical String)
+getNotExportedExpName (Canonical (Area (Loc a l c) _) exp) = case exp of
+  Assignment name _ ->
+    return $ Canonical (Area (Loc a l c) (Loc (a + length name) l (c + length name))) name
+
+  TypedExp (Canonical (Area (Loc a l c) _) (Assignment name _)) _ _ ->
+    return $ Canonical (Area (Loc a l c) (Loc (a + length name) l (c + length name))) name
+
+  _ ->
     Nothing
 
 

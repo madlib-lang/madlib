@@ -183,8 +183,8 @@ export nesting = (f) => NestingDoc(f)
 
 
 renderPretty :: Float -> Integer -> Doc -> SimpleDoc
-export renderPretty = (rfrac, w, doc) => {
-//   r = Math.max(0, min(w, round(fromIntegral(w) * rfrac)))
+export renderPretty = (_, w, doc) => {
+  // r = Math.max(0, min(w, round(fromIntegral(w) * rfrac)))
   r = w
 
   nicest :: Integer -> Integer -> SimpleDoc -> SimpleDoc -> SimpleDoc
@@ -231,7 +231,6 @@ export renderPretty = (rfrac, w, doc) => {
           best(n, k, [#[i, f(i)], ...ds])
       }
   }
-
 
   return best(0, 0, [#[0, doc]])
 }
