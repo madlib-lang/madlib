@@ -45,6 +45,8 @@ data Env
     , envCurrentPath :: FilePath
     , envFromDictionaryListName :: String
     , envIsMainModule :: Bool
+    , envExpPosition :: Int
+    -- ^ used for unused var checks, if we reassign from a later place then it's fine
     }
     deriving(Eq, Show, Generic, Hashable)
 
@@ -56,4 +58,5 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tD
                  , envFromDictionaryListName = ""
                  , envImportInfo = []
                  , envIsMainModule = False
+                 , envExpPosition = 0
                  }

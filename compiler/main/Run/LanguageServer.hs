@@ -883,7 +883,7 @@ warningToDiagnostic warning = do
         Nothing                   -- _code
         (Just "Madlib")           -- _source
         (T.pack formattedWarning)   -- _message
-        (if Warning.isUnusedImport warning then Just $ List [DtUnnecessary] else Nothing)                   -- _tags
+        (if Warning.isUnusedWarning warning then Just $ List [DtUnnecessary] else Nothing)                   -- _tags
         Nothing                   -- _relatedInformation
 
     _ ->

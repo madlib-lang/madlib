@@ -6,7 +6,7 @@ import           Explain.Location
 data Context
   = NoContext
   | Context { ctxAstPath :: FilePath, ctxArea :: Area }
-  deriving(Eq, Show)
+  deriving(Eq, Ord, Show)
 
 
 getCtxArea :: Context -> Maybe Area

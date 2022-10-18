@@ -77,7 +77,12 @@ int32_t *utf8Decode(char *str) {
   int i = 0;
   int outputIndex = 0;
   size_t strLength = strlen(str);
-  int32_t *output = (int32_t*)GC_MALLOC_ATOMIC(sizeof(int32_t) * (strLength + 1));
+
+  // Note: using GC_MALLOC_ATOMIC seems to cause to following warning:
+  // "GC Warning: Repeated allocation of very large block (appr. size 100007936):
+	// May lead to memory leak and poor performance"
+  // which causes memory to be corrupted when the input string is big ( tested with 10MB string )
+  int32_t *output = (int32_t*)GC_MALLOC(sizeof(int32_t) * (strLength + 1));
   while (str[i] != '\0') {
     if (!isunicode(str[i])) {
       output[outputIndex] = str[i];

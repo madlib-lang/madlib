@@ -371,9 +371,9 @@ absOrParenthesizedName :: { Src.Exp }
   | '(' ')' '=>' rets exp                              %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $5)) (tokenTarget $1) (Src.Abs [] [$5]) }
   | '(' ')' '=>' '{' rets multiExpBody rets '}'        %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.AbsWithMultilineBody [] $6) }
 
-maybeAbsExps :: { Maybe [Src.Exp] }
-  : '=>' rets bodyExp                   %shift { Just [$3] }
-  | '=>' '{' rets multiExpBody rets '}' %shift { Just $4 }
+maybeAbsExps :: { Maybe (Area, [Src.Exp]) }
+  : '=>' rets bodyExp                   %shift { Just (mergeAreas (tokenArea $1) (Src.getArea $3), [$3]) }
+  | '=>' '{' rets multiExpBody rets '}' %shift { Just (mergeAreas (tokenArea $1) (tokenArea $6), $4) }
   | {- nothing -}                       %shift { Nothing }
 
 
@@ -382,7 +382,7 @@ do :: { Src.Exp }
 
 doExps :: { [Src.Exp] }
   : 'return' exp              %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
-  | {- empty -}             %shift { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
+  | {- empty -}               %shift { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
   | name '<-' exp rets doExps %shift { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $3)) (tokenTarget $1) (Src.DoAssignment (strV $1) $3)] <> $5 }
   | bodyExp rets doExps       %shift { [$1] <> $3 }
 
@@ -664,23 +664,23 @@ buildPipe :: Area -> Src.SourceTarget -> [Src.Exp] -> Src.Exp
 buildPipe area sourceTarget exps = Src.Source area sourceTarget (Src.Pipe exps)
 
 
-buildAbsOrParenthesizedName :: Area -> Area -> Src.SourceTarget -> Src.Source Name -> Maybe [Src.Exp] -> Src.Exp
+buildAbsOrParenthesizedName :: Area -> Area -> Src.SourceTarget -> Src.Source Name -> Maybe (Area, [Src.Exp]) -> Src.Exp
 buildAbsOrParenthesizedName parenLeftArea parenRightArea sourceTarget n@(Src.Source nameArea _ name) maybeExp = case maybeExp of
   Nothing ->
     Src.Source (mergeAreas parenLeftArea parenRightArea) sourceTarget (Src.Parenthesized parenLeftArea (Src.Source nameArea sourceTarget $ Src.Var name) parenRightArea)
 
-  Just [exp] ->
+  Just (_, [exp]) ->
     Src.Source (mergeAreas parenLeftArea (Src.getArea exp)) sourceTarget (Src.Abs [n] [exp])
 
-  Just exps ->
-    let area = case last exps of
-          Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) _ Src.LUnit ->
-            Src.getArea $ last (init exps)
+  Just (initialArea, exps) ->
+    -- let area = case last exps of
+    --       Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) _ Src.LUnit ->
+    --         Src.getArea $ last (init exps)
 
-          last ->
-            Src.getArea last
+    --       last ->
+    --         Src.getArea last
 
-    in  Src.Source (mergeAreas parenLeftArea area) sourceTarget (Src.AbsWithMultilineBody [n] exps)
+    Src.Source (mergeAreas parenLeftArea initialArea) sourceTarget (Src.AbsWithMultilineBody [n] exps)
 
 
 nameToPattern :: Area -> Src.SourceTarget -> String -> Src.Pattern

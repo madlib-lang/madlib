@@ -172,7 +172,7 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
 
 
 discardError :: (e -> a) -> Wish e a -> Wish {} a
-export discardError = (recover, wish) => Wish((badCB, goodCB) => where(wish) {
+export discardError = (recover, wish) => Wish((_, goodCB) => where(wish) {
   Wish(run) =>
     run(pipe(recover, goodCB), goodCB)
 })

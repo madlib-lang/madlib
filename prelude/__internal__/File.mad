@@ -143,7 +143,7 @@ export write = (path, content) => Wish((bad, good) =>
   writeFFI(
     path,
     content,
-    (libuvError, result) =>
+    (libuvError, _) =>
       libuvError != 0
         ? bad(IOError.fromLibuvError(libuvError))
         : good({})
@@ -169,7 +169,7 @@ export writeBytes = (path, content) => Wish((bad, good) =>
   writeBytesFFI(
     path,
     content,
-    (libuvError, result) =>
+    (libuvError, _) =>
       libuvError != 0
         ? bad(IOError.fromLibuvError(libuvError))
         : good({})

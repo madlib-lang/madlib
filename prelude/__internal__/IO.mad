@@ -11,9 +11,6 @@ END_COLOR = "\x1b[0m"
 colorize :: String -> String -> String
 colorize = (color, v) => color ++ v ++ END_COLOR
 
-uncolorize :: String -> String
-uncolorize = (v) => END_COLOR ++ v
-
 // via https://en.wikipedia.org/wiki/ANSI_escape_code
 
 export ansi = {

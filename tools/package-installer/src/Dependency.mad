@@ -1,7 +1,5 @@
-import type { Wish } from "Wish"
 import type { Maybe } from "Maybe"
 import J from "JsonParser"
-import Either from "Either"
 import {} from "Wish"
 import { Nothing } from "Maybe"
 
@@ -39,15 +37,4 @@ export dependencyParser = J.field(
       J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string)))
     )
   )
-)
-
-
-parseDependencies :: String -> Wish String (List Dependency)
-parseDependencies = pipe(
-  J.parse(dependencyParser),
-  where {
-    Either.Left(_) => of([])
-
-    Either.Right(a) => of(a)
-  }
 )

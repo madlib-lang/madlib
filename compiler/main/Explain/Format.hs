@@ -94,6 +94,31 @@ formatWarningContent _ warning = case warning of
       <> "'\n"
       <> "but it seems that you never use it."
 
+  UnusedParameter name ->
+    "You declared a parameter named '" <> name <> "' but it seems that you never\n"
+    <> "use it.\n\n"
+    <> "Hint: Remove this parameter if you don't need it or use the skip parameter '_' to suppress this warning."
+
+  UnusedDeclaration name ->
+    "You declared a variable named '" <> name <> "' but it seems that you never\n"
+    <> "use it.\n\n"
+    <> "Hint: Remove it if you don't need it."
+
+  UnusedTopLevelDeclaration name ->
+    "You declared a top level binding named '" <> name <> "' but it seems that you never\n"
+    <> "use it.\n\n"
+    <> "Hint: Remove it if you don't need it."
+
+  UnusedConstructor name ->
+    "You declared a constructor named '" <> name <> "' but it seems that you never\n"
+    <> "use it.\n\n"
+    <> "Hint: Remove it if you don't need it."
+
+  UnusedType name ->
+    "You declared a type named '" <> name <> "' but it seems that you never\n"
+    <> "use it.\n\n"
+    <> "Hint: Remove it if you don't need it."
+
   MadlibVersionMinorTooLow pkgName minVersion versionUsed ->
     let start = case pkgName of
           Just n  -> "The package '" <> n <> "'"
@@ -120,6 +145,9 @@ formatWarningContent _ warning = case warning of
           <> "'. Because major versions differ it means there is a breaking\n"
           <> "change and you may not be able to run the project.\n\n"
           <> "Hint: Update your version of madlib."
+
+  _ ->
+    ppShow warning
 
 format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
 format rf json (CompilationError err ctx) = do
@@ -370,7 +398,8 @@ formatTypeError json moduleContent err = case err of
     "You tried to import the module '" <> importName <> "', but it could not be found\n\n"
     <> "Hint: verify that you don't have a typo."
 
-  _ -> ppShow err
+  _ ->
+    ppShow err
 
 
 -- computeLinesToShow : returns the first line and the last line to show

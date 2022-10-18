@@ -130,6 +130,12 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "addTodo")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 7 1 8)
+        }
+  ]
 , []
 )

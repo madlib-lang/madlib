@@ -51,8 +51,8 @@ test("parse    - wrong version", (_) => pipe(
 test("load     - success", (_) => {
   config = {
     readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
-    writeFile: (path, data) => good({}),
-    writeBytes: (path, data) => good({}),
+    writeFile: (_, _) => good({}),
+    writeBytes: (_, _) => good({}),
     readDir: always(good([])),
     exists: always(good(true)),
     exec: (_, _, _) => good({ exitCode: 0, stdout: "OK", stderr: "" }),
