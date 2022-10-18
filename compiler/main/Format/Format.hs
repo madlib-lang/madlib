@@ -40,6 +40,19 @@ getNodeArea node = case node of
     getArea inst
 
 
+nodesLineDiff :: Node -> Node -> Int
+nodesLineDiff n1 n2 =
+  let (Area _ (Loc _ l1 _)) = getNodeArea n1
+      (Area (Loc _ l2 _) _) = getNodeArea n2
+  in  l2 - l1
+
+expLineDiff :: Exp -> Exp -> Int
+expLineDiff e1 e2 =
+  let (Area _ (Loc _ l1 _)) = getArea e1
+      (Area (Loc _ l2 _) _) = getArea e2
+  in  l2 - l1
+
+
 astToNodeList :: AST -> [Node]
 astToNodeList ast =
   let imports    = aimports ast
@@ -345,18 +358,16 @@ issToDoc comments iss = case iss of
 
 bodyToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 bodyToDoc comments exps = case exps of
+  [Source _ _ LUnit] ->
+    (Pretty.emptyDoc, comments)
+
   [exp] ->
     expToDoc comments exp
 
   (exp : next) ->
     let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
-        breaks              = case next of
-          [Source _ _ Return{}] ->
-            emptyLine <> Pretty.hardline
-
-          _ ->
-            Pretty.hardline
+        breaks              = Pretty.hcat $ replicate (expLineDiff exp (head next)) Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
 
   [] ->
@@ -582,6 +593,9 @@ shouldNestApp args = case args of
   [Source _ _ TupleConstructor{}] ->
     False
 
+  [] ->
+    False
+
   _ ->
     True
 
@@ -601,7 +615,7 @@ formatParams isSingle paramsDoc =
 
 
 expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])
-expToDoc comments exp = 
+expToDoc comments exp =
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
       (exp', comments'') = case exp of
         Source _ _ (App fn@(Source _ _ Access{}) args) ->
@@ -631,17 +645,18 @@ expToDoc comments exp =
                   Pretty.pretty " => " <> body'
           in  ( params'' <> arrowAndBody, comments''')
 
-        Source _ _ (AbsWithMultilineBody params body) ->
+        Source area _ (AbsWithMultilineBody params body) ->
           let (params', comments'') = paramsToDoc comments' params
-              (body', comments''') = bodyToDoc comments'' body
+              (body', comments''')  = bodyToDoc comments'' body
+              (commentsAfterBody, comments'''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'''
               params'' = formatParams (length params == 1) params'
           in  ( params''
                 <> Pretty.pretty " => "
                 <> Pretty.lbrace
-                <> Pretty.nest indentSize (Pretty.line <> body')
+                <> Pretty.nest indentSize (Pretty.line <> body' <> commentsAfterBody)
                 <> Pretty.line
                 <> Pretty.rbrace
-              , comments'''
+              , comments''''
               )
 
         Source _ _ (Do exps) ->
@@ -659,12 +674,12 @@ expToDoc comments exp =
           in  (Pretty.pretty "return " <> exp', comments'')
 
         Source _ _ (Assignment name exp) ->
-          let name'             = Pretty.pretty name
+          let name'              = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " = " <> exp', comments'')
 
         Source _ _ (DoAssignment name exp) ->
-          let name'             = Pretty.pretty name
+          let name'              = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " <- " <> exp', comments'')
 
@@ -842,7 +857,10 @@ expToDoc comments exp =
           let (parts, comments'') = accessToDocs comments' access
               first               = head parts
               rest                = tail parts
-          in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
+          in  if length rest > 1 then
+                (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
+              else
+                (first <> Pretty.hcat rest, comments'')
 
         Source _ _ (TemplateString exps) ->
           let (content, comments'') = templateStringExpsToDoc comments' exps
@@ -1139,7 +1157,7 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
             comment'          = commentToDoc topLevel comment
             comment''         =
               if nodeStartLine - commentEndLine > 1 then
-                comment' <> Pretty.line' <> Pretty.line'
+                comment' <> hcat (replicate (nodeStartLine - commentEndLine - 1) Pretty.line')
               else
                 comment'
         in  (comment'' <> next, comments')
@@ -1166,16 +1184,16 @@ nodesToDocs :: [Comment] -> [Node] -> (Pretty.Doc ann, [Comment])
 nodesToDocs comments nodes = case nodes of
   (node : more) ->
     let (commentsDoc, comments') = insertComments True (getNodeArea node) comments
+        emptyLinesToAdd          =
+            if null more then
+              Pretty.line
+            else
+              Pretty.hcat $ replicate (nodesLineDiff node (head more)) Pretty.line
         (node', comments'')      =
           case node of
             ExpNode exp ->
               let (exp', comments'') = expToDoc comments' exp
-                  emptyLines =
-                    if null more then
-                      Pretty.line
-                    else
-                      Pretty.line <> Pretty.line <> Pretty.line
-              in  (exp' <> emptyLines, comments'')
+              in  (exp' <> emptyLinesToAdd, comments'')
 
             ImportNode imp ->
               let (imp', comments'') = importToDoc comments' imp
@@ -1189,30 +1207,15 @@ nodesToDocs comments nodes = case nodes of
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td
-                  emptyLines =
-                    if null more then
-                      Pretty.line
-                    else
-                      Pretty.line <> Pretty.line <> Pretty.line
-              in  (td' <> emptyLines, comments'')
+              in  (td' <> emptyLinesToAdd, comments'')
 
             InterfaceNode interface ->
               let (interface', comments'') = interfaceToDoc comments' interface
-                  emptyLines =
-                    if null more then
-                      Pretty.line
-                    else
-                      Pretty.line <> Pretty.line <> Pretty.line
-              in  (interface' <> emptyLines, comments'')
+              in  (interface' <> emptyLinesToAdd, comments'')
 
             InstanceNode inst ->
               let (inst', comments'') = instanceToDoc comments' inst
-                  emptyLines =
-                    if null more then
-                      Pretty.line
-                    else
-                      Pretty.line <> Pretty.line <> Pretty.line
-              in  (inst' <> emptyLines, comments'')
+              in  (inst' <> emptyLinesToAdd, comments'')
         (more', comments''') = nodesToDocs comments'' more
     in  (commentsDoc <> node' <> more', comments''')
 
