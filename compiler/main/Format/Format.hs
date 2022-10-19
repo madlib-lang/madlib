@@ -1007,12 +1007,24 @@ targetToString sourceTarget = case sourceTarget of
     "all"
 
 
+importNamesToDoc :: [Comment] -> [Source Name] -> ([Pretty.Doc ann], [Comment])
+importNamesToDoc comments names = case names of
+  (Source area _ name : more) ->
+    let (commentDoc, comments') = insertComments False area comments
+        nameDoc                 = Pretty.pretty name
+        (more', comments'')     = importNamesToDoc comments' more
+    in  (commentDoc <> nameDoc : more', comments'')
+
+  [] ->
+    ([], comments)
+
+
 importToDoc :: [Comment] -> Import -> (Pretty.Doc ann, [Comment])
 importToDoc comments imp = case imp of
   Source area _ (NamedImport names path _) ->
-    let nameDocs = Pretty.pretty <$> sort (getSourceContent <$> names)
+    let (commentDoc, comments') = insertComments False area comments
+        (nameDocs, comments'')  = importNamesToDoc comments' names
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
-        (commentDoc, comments') = insertComments False area comments
         lineDoc  =
           if null names then
             Pretty.emptyDoc
@@ -1026,13 +1038,13 @@ importToDoc comments imp = case imp of
               <> lineDoc <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
-        , comments'
+        , comments''
         )
 
   Source area _ (TypeImport names path _) ->
-    let nameDocs = Pretty.pretty <$> sort (getSourceContent <$> names)
-        namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
-        (commentDoc, comments') = insertComments False area comments
+    let (commentDoc, comments') = insertComments False area comments
+        (nameDocs, comments'')  = importNamesToDoc comments' names
+        namesDoc                = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
     in  ( Pretty.group
             (
               commentDoc
@@ -1041,18 +1053,19 @@ importToDoc comments imp = case imp of
               <> Pretty.line <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
-        , comments'
+        , comments''
         )
 
   Source area _ (DefaultImport name path _) ->
     let nameDoc = (Pretty.pretty . getSourceContent) name
-        (commentDoc, comments') = insertComments False area comments
+        (commentDoc, comments')         = insertComments False area comments
+        (commentDocForName, comments'') = insertComments False (getArea name) comments'
     in  ( commentDoc
           <> Pretty.pretty "import "
-          <> nameDoc
+          <> (commentDocForName <> nameDoc)
           <> Pretty.pretty " from "
           <> Pretty.pretty ("\"" ++ path ++ "\"")
-        , comments'
+        , comments''
         )
 
 
@@ -1172,9 +1185,9 @@ commentToDoc topLevel comment = case comment of
   MultilineComment _ c ->
     let break =
           if topLevel then
-            Pretty.line'
+            Pretty.hardline
           else
-            Pretty.softline'
+            Pretty.line
     in Pretty.pretty c <> break
 
 
@@ -1223,69 +1236,57 @@ insertRemainingComments comments = case comments of
 
 
 
+data ImportType
+  = APreludeTypeImport
+  | BPackageTypeImport
+  | CLocalTypeImport
+  | DPreludeImport
+  | EPackageImport
+  | FLocalImport
+  deriving(Eq, Ord)
+
+gatherImportNodes :: [Node] -> ([(Import, (ImportType, FilePath))], [Node])
+gatherImportNodes nodes = gatherImportNodes' nodes []
 
 
-
-gatherImportNodes :: [Node] -> ([Import], [Import], [Import], [Import], [Import], [Import], [Node])
-gatherImportNodes nodes = gatherImportNodes' nodes ([], [], [], [], [], [])
-
-
-gatherImportNodes' :: [Node] -> ([Import], [Import], [Import], [Import], [Import], [Import]) -> ([Import], [Import], [Import], [Import], [Import], [Import], [Node])
-gatherImportNodes' nodes (preludeTypes, preludeNames, libTypes, libNames, types, names) = case nodes of
+gatherImportNodes' :: [Node] -> [(Import, (ImportType, FilePath))] -> ([(Import, (ImportType, FilePath))], [Node])
+gatherImportNodes' nodes acc = case nodes of
   (ImportNode imp : next) ->
     let importPath         = snd $ getImportPath imp
         absoluteImportPath = getImportAbsolutePath imp
         pathType           = getPathType importPath
     in  case pathType of
           FileSystemPath | isTypeImport imp ->
-            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, libNames, imp : types, names)
+            gatherImportNodes' next (acc ++ [(imp, (CLocalTypeImport, importPath))])
 
           FileSystemPath ->
-            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, libNames, types, imp : names)
+            gatherImportNodes' next (acc ++ [(imp, (FLocalImport, importPath))])
 
           PackagePath | isPreludePath absoluteImportPath && isTypeImport imp ->
-            gatherImportNodes' next (imp : preludeTypes, preludeNames, libTypes, libNames, types, names)
+            gatherImportNodes' next (acc ++ [(imp, (APreludeTypeImport, importPath))])
 
           PackagePath | isPreludePath absoluteImportPath ->
-            gatherImportNodes' next (preludeTypes, imp : preludeNames, libTypes, libNames, types, names)
+            gatherImportNodes' next (acc ++ [(imp, (DPreludeImport, importPath))])
 
           _ | isTypeImport imp ->
-            gatherImportNodes' next (preludeTypes, preludeNames, imp : libTypes, libNames, types, names)
+            gatherImportNodes' next (acc ++ [(imp, (BPackageTypeImport, importPath))])
 
           _ ->
-            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, imp : libNames, types, names)
-
-      -- gatherImportNodes' next (n : preludeTypes, preludeNames, libTypes, libNames, types, names)
+            gatherImportNodes' next (acc ++ [(imp, (EPackageImport, importPath))])
 
   _ ->
-    let sorter = \a b ->
-          let pathA = snd $ getImportPath a
-              pathB = snd $ getImportPath b
-          in  if pathA > pathB then
-                GT
-              else if pathA < pathB then
-                LT
-              else
-                EQ
-    in  ( sortBy sorter preludeTypes
-        , sortBy sorter preludeNames
-        , sortBy sorter libTypes
-        , sortBy sorter libNames
-        , sortBy sorter types
-        , sortBy sorter names
-        , nodes
-        )
+    (acc, nodes)
 
 
-renderImportGroup :: [Comment] -> [Import] -> (Pretty.Doc ann, [Comment])
-renderImportGroup comments imports = case imports of
+renderImports :: [Comment] -> [Import] -> ([Pretty.Doc ann], [Comment])
+renderImports comments imports = case imports of
   (imp : more) ->
     let (imp', comments')   = importToDoc comments imp
-        (more', comments'') = renderImportGroup comments' more
-    in  (imp' <> Pretty.hardline <> more', comments'')
+        (more', comments'') = renderImports comments' more
+    in  (imp' <> Pretty.hardline : more', comments'')
 
   [] ->
-    (Pretty.emptyDoc, comments)
+    ([], comments)
 
 
 nodesToDocs :: [Comment] -> [Node] -> (Pretty.Doc ann, [Comment])
@@ -1304,28 +1305,13 @@ nodesToDocs comments nodes = case nodes of
               in  (exp' <> emptyLinesToAdd, comments'', more)
 
             ImportNode _ ->
-              let (preludeTypeImports, preludeImports, libTypeImports, libImports, typeImports, imports, more') = gatherImportNodes nodes
-                  (preludeTypeImports', comments'') = renderImportGroup comments' preludeTypeImports
-                  (preludeImports', comments''')    = renderImportGroup comments'' preludeImports
-                  (libTypeImports', comments'''')   = renderImportGroup comments''' libTypeImports
-                  (libImports', comments''''')      = renderImportGroup comments'''' libImports
-                  (typeImports', comments'''''')    = renderImportGroup comments''''' typeImports
-                  (imports', comments''''''')       = renderImportGroup comments'''''' imports
-              in  ( preludeTypeImports'
-                    <> (if not (null preludeTypeImports) then Pretty.hardline else Pretty.emptyDoc)
-                    <> preludeImports'
-                    <> (if not (null preludeImports) then Pretty.hardline else Pretty.emptyDoc)
-                    <> libTypeImports'
-                    <> (if not (null libTypeImports) then Pretty.hardline else Pretty.emptyDoc)
-                    <> libImports'
-                    <> (if not (null libImports) then Pretty.hardline else Pretty.emptyDoc)
-                    <> typeImports'
-                    <> (if not (null typeImports) then Pretty.hardline else Pretty.emptyDoc)
-                    <> imports'
-                    <> (if not (null imports) then Pretty.hardline else Pretty.emptyDoc)
-                  , comments'''''''
-                  , more'
-                  )
+              let (importData, more')    = gatherImportNodes nodes
+                  (imports, importInfo)  = unzip importData
+                  (imports', comments'') = renderImports comments' imports
+                  sorter = \(_, ordA) (_, ordB) -> compare ordA ordB
+                  grouper = \(_, (importTypeA, _)) (_, (importTypeB, _)) -> importTypeA == importTypeB
+                  sorted = intercalate [Pretty.hardline] $ map (fst <$>) $ groupBy grouper $ sortBy sorter (zip imports' importInfo)
+              in  (Pretty.hcat sorted <> Pretty.hardline <> Pretty.hardline <> Pretty.hardline, comments'', more')
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td

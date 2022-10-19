@@ -248,7 +248,13 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "a")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
+        }
+  ]
 , [ CompilationError
       (NotInScope "definedAfter" (Loc 4 1 5))
       Context

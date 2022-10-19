@@ -724,6 +724,18 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedParameter "f")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 43 2 8) (Loc 44 2 9)
+        }
+  , CompilationWarning
+      (UnusedParameter "xs")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 46 2 11) (Loc 48 2 13)
+        }
+  ]
 , []
 )

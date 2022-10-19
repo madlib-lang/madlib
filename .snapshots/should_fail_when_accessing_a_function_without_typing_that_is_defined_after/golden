@@ -242,7 +242,13 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "f")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
+        }
+  ]
 , [ CompilationError
       (ShouldBeTypedOrAbove "definedAfter")
       Context
