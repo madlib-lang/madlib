@@ -8,7 +8,7 @@
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TVar (TV "f5" Star)))
                  (TVar (TV "h7" Star)))
-            (Area (Loc 0 1 1) (Loc 31 3 11))
+            (Area (Loc 0 1 1) (Loc 33 4 2))
             (Assignment
                "g"
                (Typed
@@ -18,7 +18,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "f5" Star)))
                        (TVar (TV "h7" Star)))
-                  (Area (Loc 4 1 5) (Loc 31 3 11))
+                  (Area (Loc 4 1 5) (Loc 33 4 2))
                   (Abs
                      (Typed
                         ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
@@ -127,6 +127,12 @@
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 5 1 6) (Loc 6 1 7)
+        }
+  , CompilationWarning
+      (UnusedTopLevelDeclaration "g")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
         }
   ]
 , [ CompilationError
