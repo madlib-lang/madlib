@@ -213,6 +213,16 @@ isMacroExp exp = case exp of
   _ ->
     False
 
+
+isTypeImport :: Import -> Bool
+isTypeImport imp = case imp of
+  Source _ _ TypeImport{} ->
+    True
+
+  _ ->
+    False
+
+
 getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
   Source _ _ (NamedImport names _ _) ->

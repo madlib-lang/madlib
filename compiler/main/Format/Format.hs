@@ -9,6 +9,8 @@ import           Data.Text.Prettyprint.Doc.Render.String as Pretty
 import           AST.Source as Src
 import           Explain.Location
 import           Parse.Comments.Lexer
+import qualified Explain.Location as Location
+import Utils.Path (getPathType, ModulePath (FileSystemPath, PackagePath), isPreludePath)
 
 
 
@@ -40,17 +42,25 @@ getNodeArea node = case node of
     getArea inst
 
 
-nodesLineDiff :: Node -> Node -> Int
-nodesLineDiff n1 n2 =
-  let (Area _ (Loc _ l1 _)) = getNodeArea n1
-      (Area (Loc _ l2 _) _) = getNodeArea n2
-  in  l2 - l1
+nodesLineDiff :: [Comment] -> Node -> Node -> Int
+nodesLineDiff comments n1 n2 =
+  computeLineDiff comments (getNodeArea n1) (getNodeArea n2)
 
-expLineDiff :: Exp -> Exp -> Int
-expLineDiff e1 e2 =
-  let (Area _ (Loc _ l1 _)) = getArea e1
-      (Area (Loc _ l2 _) _) = getArea e2
-  in  l2 - l1
+
+computeLineDiff :: [Comment] -> Area -> Area -> Int
+computeLineDiff comments  (Area _ (Loc _ l1 _)) (Area (Loc _ l2 _) _) =
+  let l2' = case comments of
+        (c : _) ->
+          min (Location.getLineFromStart $ getCommentArea c) l2
+
+        _ ->
+          l2
+  in  l2' - l1
+
+
+expLineDiff :: [Comment] -> Exp -> Exp -> Int
+expLineDiff comments e1 e2 =
+  computeLineDiff comments (getArea e1) (getArea e2)
 
 
 astToNodeList :: AST -> [Node]
@@ -367,7 +377,7 @@ bodyToDoc comments exps = case exps of
   (exp : next) ->
     let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
-        breaks              = Pretty.hcat $ replicate (expLineDiff exp (head next)) Pretty.hardline
+        breaks              = Pretty.hcat $ replicate (expLineDiff comments'' exp (head next)) Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
 
   [] ->
@@ -618,8 +628,24 @@ expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])
 expToDoc comments exp =
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
       (exp', comments'') = case exp of
-        Source _ _ (App fn@(Source _ _ Access{}) args) ->
-          accessAsFNToDoc comments' fn args
+        Source _ _ (App fn@(Source _ _ (Access rec field)) args) ->
+          case rec of
+            Source _ _ Access{} ->
+              accessAsFNToDoc comments' fn args
+
+            Source _ _ (App (Source _ _ Access{}) _) ->
+              accessAsFNToDoc comments' fn args
+
+            _ ->
+              let (rec', comments'')    = expToDoc comments' rec
+                  (field', comments''') = expToDoc comments'' field
+                  (args', comments'''') = argsToDoc comments''' args
+                  args'' =
+                    if shouldNestApp args then
+                      Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> Pretty.line' <> Pretty.rparen)
+                    else
+                      Pretty.lparen <> args' <> Pretty.rparen
+              in  (rec' <> field' <> args'', comments'''')
 
         Source _ _ (App fn args) ->
           let (fn', comments'')    = expToDoc comments' fn
@@ -649,7 +675,7 @@ expToDoc comments exp =
           let (params', comments'') = paramsToDoc comments' params
               (body', comments''')  = bodyToDoc comments'' body
               (commentsAfterBody, comments'''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'''
-              params'' = formatParams (length params == 1) params'
+              params'' = formatParams (length params <= 1) params'
           in  ( params''
                 <> Pretty.pretty " => "
                 <> Pretty.lbrace
@@ -853,14 +879,24 @@ expToDoc comments exp =
               rest                = tail parts
           in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
 
-        access@(Source _ _ Access{}) ->
-          let (parts, comments'') = accessToDocs comments' access
-              first               = head parts
-              rest                = tail parts
-          in  if length rest > 1 then
-                (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
-              else
-                (first <> Pretty.hcat rest, comments'')
+        access@(Source _ _ (Access rec field)) ->
+          case rec of
+            Source _ _ Access{} ->
+              let (parts, comments'') = accessToDocs comments' access
+                  first               = head parts
+                  rest                = tail parts
+              in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
+
+            Source _ _ (App (Source _ _ Access{}) _) ->
+              let (parts, comments'') = accessToDocs comments' access
+                  first               = head parts
+                  rest                = tail parts
+              in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
+
+            _ ->
+              let (rec', comments'')    = expToDoc comments' rec
+                  (field', comments''') = expToDoc comments'' field
+              in  (rec' <> field', comments''')
 
         Source _ _ (TemplateString exps) ->
           let (content, comments'') = templateStringExpsToDoc comments' exps
@@ -973,9 +1009,10 @@ targetToString sourceTarget = case sourceTarget of
 
 importToDoc :: [Comment] -> Import -> (Pretty.Doc ann, [Comment])
 importToDoc comments imp = case imp of
-  Source _ _ (NamedImport names path _) ->
-    let nameDocs = Pretty.pretty . getSourceContent <$> names
+  Source area _ (NamedImport names path _) ->
+    let nameDocs = Pretty.pretty <$> sort (getSourceContent <$> names)
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
+        (commentDoc, comments') = insertComments False area comments
         lineDoc  =
           if null names then
             Pretty.emptyDoc
@@ -983,34 +1020,39 @@ importToDoc comments imp = case imp of
             Pretty.line
     in  ( Pretty.group
             (
-              Pretty.pretty "import " <> Pretty.lbrace
+              commentDoc
+              <> Pretty.pretty "import " <> Pretty.lbrace
               <> Pretty.nest indentSize (lineDoc <> namesDoc)
               <> lineDoc <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
-        , comments
+        , comments'
         )
 
-  Source _ _ (TypeImport names path _) ->
-    let nameDocs = Pretty.pretty . getSourceContent <$> names
+  Source area _ (TypeImport names path _) ->
+    let nameDocs = Pretty.pretty <$> sort (getSourceContent <$> names)
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
+        (commentDoc, comments') = insertComments False area comments
     in  ( Pretty.group
             (
-              Pretty.pretty "import type " <> Pretty.lbrace
+              commentDoc
+              <> Pretty.pretty "import type " <> Pretty.lbrace
               <> Pretty.nest indentSize (Pretty.line <> namesDoc)
               <> Pretty.line <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
-        , comments
+        , comments'
         )
 
-  Source _ _ (DefaultImport name path _) ->
+  Source area _ (DefaultImport name path _) ->
     let nameDoc = (Pretty.pretty . getSourceContent) name
-    in  ( Pretty.pretty "import "
+        (commentDoc, comments') = insertComments False area comments
+    in  ( commentDoc
+          <> Pretty.pretty "import "
           <> nameDoc
           <> Pretty.pretty " from "
           <> Pretty.pretty ("\"" ++ path ++ "\"")
-        , comments
+        , comments'
         )
 
 
@@ -1180,6 +1222,72 @@ insertRemainingComments comments = case comments of
     (Pretty.emptyDoc, comments)
 
 
+
+
+
+
+gatherImportNodes :: [Node] -> ([Import], [Import], [Import], [Import], [Import], [Import], [Node])
+gatherImportNodes nodes = gatherImportNodes' nodes ([], [], [], [], [], [])
+
+
+gatherImportNodes' :: [Node] -> ([Import], [Import], [Import], [Import], [Import], [Import]) -> ([Import], [Import], [Import], [Import], [Import], [Import], [Node])
+gatherImportNodes' nodes (preludeTypes, preludeNames, libTypes, libNames, types, names) = case nodes of
+  (ImportNode imp : next) ->
+    let importPath         = snd $ getImportPath imp
+        absoluteImportPath = getImportAbsolutePath imp
+        pathType           = getPathType importPath
+    in  case pathType of
+          FileSystemPath | isTypeImport imp ->
+            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, libNames, imp : types, names)
+
+          FileSystemPath ->
+            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, libNames, types, imp : names)
+
+          PackagePath | isPreludePath absoluteImportPath && isTypeImport imp ->
+            gatherImportNodes' next (imp : preludeTypes, preludeNames, libTypes, libNames, types, names)
+
+          PackagePath | isPreludePath absoluteImportPath ->
+            gatherImportNodes' next (preludeTypes, imp : preludeNames, libTypes, libNames, types, names)
+
+          _ | isTypeImport imp ->
+            gatherImportNodes' next (preludeTypes, preludeNames, imp : libTypes, libNames, types, names)
+
+          _ ->
+            gatherImportNodes' next (preludeTypes, preludeNames, libTypes, imp : libNames, types, names)
+
+      -- gatherImportNodes' next (n : preludeTypes, preludeNames, libTypes, libNames, types, names)
+
+  _ ->
+    let sorter = \a b ->
+          let pathA = snd $ getImportPath a
+              pathB = snd $ getImportPath b
+          in  if pathA > pathB then
+                GT
+              else if pathA < pathB then
+                LT
+              else
+                EQ
+    in  ( sortBy sorter preludeTypes
+        , sortBy sorter preludeNames
+        , sortBy sorter libTypes
+        , sortBy sorter libNames
+        , sortBy sorter types
+        , sortBy sorter names
+        , nodes
+        )
+
+
+renderImportGroup :: [Comment] -> [Import] -> (Pretty.Doc ann, [Comment])
+renderImportGroup comments imports = case imports of
+  (imp : more) ->
+    let (imp', comments')   = importToDoc comments imp
+        (more', comments'') = renderImportGroup comments' more
+    in  (imp' <> Pretty.hardline <> more', comments'')
+
+  [] ->
+    (Pretty.emptyDoc, comments)
+
+
 nodesToDocs :: [Comment] -> [Node] -> (Pretty.Doc ann, [Comment])
 nodesToDocs comments nodes = case nodes of
   (node : more) ->
@@ -1188,35 +1296,49 @@ nodesToDocs comments nodes = case nodes of
             if null more then
               Pretty.line
             else
-              Pretty.hcat $ replicate (nodesLineDiff node (head more)) Pretty.line
-        (node', comments'')      =
+              Pretty.hcat $ replicate (nodesLineDiff comments' node (head more)) Pretty.line
+        (node', comments'', newMore) =
           case node of
             ExpNode exp ->
               let (exp', comments'') = expToDoc comments' exp
-              in  (exp' <> emptyLinesToAdd, comments'')
+              in  (exp' <> emptyLinesToAdd, comments'', more)
 
-            ImportNode imp ->
-              let (imp', comments'') = importToDoc comments' imp
-                  emptyLines = case more of
-                    (ImportNode _ : _) ->
-                      Pretty.line
-
-                    _ ->
-                      Pretty.line <> Pretty.line <> Pretty.line <> Pretty.line
-              in  (imp' <> emptyLines, comments'')
+            ImportNode _ ->
+              let (preludeTypeImports, preludeImports, libTypeImports, libImports, typeImports, imports, more') = gatherImportNodes nodes
+                  (preludeTypeImports', comments'') = renderImportGroup comments' preludeTypeImports
+                  (preludeImports', comments''')    = renderImportGroup comments'' preludeImports
+                  (libTypeImports', comments'''')   = renderImportGroup comments''' libTypeImports
+                  (libImports', comments''''')      = renderImportGroup comments'''' libImports
+                  (typeImports', comments'''''')    = renderImportGroup comments''''' typeImports
+                  (imports', comments''''''')       = renderImportGroup comments'''''' imports
+              in  ( preludeTypeImports'
+                    <> (if not (null preludeTypeImports) then Pretty.hardline else Pretty.emptyDoc)
+                    <> preludeImports'
+                    <> (if not (null preludeImports) then Pretty.hardline else Pretty.emptyDoc)
+                    <> libTypeImports'
+                    <> (if not (null libTypeImports) then Pretty.hardline else Pretty.emptyDoc)
+                    <> libImports'
+                    <> (if not (null libImports) then Pretty.hardline else Pretty.emptyDoc)
+                    <> typeImports'
+                    <> (if not (null typeImports) then Pretty.hardline else Pretty.emptyDoc)
+                    <> imports'
+                    <> (if not (null imports) then Pretty.hardline else Pretty.emptyDoc)
+                  , comments'''''''
+                  , more'
+                  )
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td
-              in  (td' <> emptyLinesToAdd, comments'')
+              in  (td' <> emptyLinesToAdd, comments'', more)
 
             InterfaceNode interface ->
               let (interface', comments'') = interfaceToDoc comments' interface
-              in  (interface' <> emptyLinesToAdd, comments'')
+              in  (interface' <> emptyLinesToAdd, comments'', more)
 
             InstanceNode inst ->
               let (inst', comments'') = instanceToDoc comments' inst
-              in  (inst' <> emptyLinesToAdd, comments'')
-        (more', comments''') = nodesToDocs comments'' more
+              in  (inst' <> emptyLinesToAdd, comments'', more)
+        (more', comments''') = nodesToDocs comments'' newMore
     in  (commentsDoc <> node' <> more', comments''')
 
   [] ->

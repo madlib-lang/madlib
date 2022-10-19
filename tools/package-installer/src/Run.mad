@@ -4,8 +4,6 @@ import List from "List"
 import String from "String"
 import { bad, bichain, chainRej, discardError, mapRej, parallel } from "Wish"
 import IO from "IO"
-import Json from "JsonParser"
-import Either from "Either"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import Process from "Process"
 import Tuple from "Tuple"
@@ -18,28 +16,27 @@ import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
-import type { ValidationInput, ValidationOutput, Validate } from "./Validate"
+import type { Validate, ValidationInput, ValidationOutput } from "./Validate"
 import type { Config } from "./Config"
 import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "./Context"
-import { dependencyParser } from "./Dependency"
 import MadlibDotJson from "./MadlibDotJson"
 import VersionDotLock from "./VersionDotLock"
 import {
-  failWithRecoverable,
-  validate,
-  unsafeGetValidationValue,
-  Valid,
-  NotValid,
-  ValidationError,
-  printWarning,
   BuildHashCouldNotBeGenerated,
-  VersionDotLockMissing,
-  printError,
   CopyToMadlibModulesFailed,
-  MadlibDotJsonCouldNotBeLoaded
+  MadlibDotJsonCouldNotBeLoaded,
+  NotValid,
+  Valid,
+  ValidationError,
+  VersionDotLockMissing,
+  failWithRecoverable,
+  printError,
+  printWarning,
+  unsafeGetValidationValue,
+  validate
 } from "./Validate"
 import Constants from "./Constants"
-import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
+import { DownloadError, Downloaded, downloadIfNotCached } from "./Download"
 import { hashVersion } from "./Hash"
 import Color from "./Color"
 
@@ -51,8 +48,11 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
     destination: `${Constants.MADLIB_MODULES_PATH}${fromMaybe("", d.name)}`,
     source: `${Constants.TEMPORARY_MODULES_PATH}${d.sanitizedUrl}/`,
   }),
-  (paths) => config
-    .exec("cp", ["-R", paths.source, paths.destination,], Process.DEFAULT_COMMAND_OPTIONS)
+  (paths) => config.exec(
+    "cp",
+    ["-R", paths.source, paths.destination,],
+    Process.DEFAULT_COMMAND_OPTIONS
+  )
 )(dependency)
 
 
@@ -114,12 +114,11 @@ readVersionDotLock = (config, dependency) => pipe(
 
 computeBuildHash :: Config -> Dependency -> Wish {} (Validate String)
 computeBuildHash = (config, dependency) => pipe(
-  (d) => config
-    .exec(
-      "madlib",
-      ["package", "generate-hash", "-i", projectBaseUrl(d),],
-      Process.DEFAULT_COMMAND_OPTIONS
-    ),
+  (d) => config.exec(
+    "madlib",
+    ["package", "generate-hash", "-i", projectBaseUrl(d),],
+    Process.DEFAULT_COMMAND_OPTIONS
+  ),
   map(.stdout),
   map(Valid),
   discardError(always(NotValid([BuildHashCouldNotBeGenerated,], "")))
@@ -257,10 +256,9 @@ runPostInstallHook = (isMainPackage, madlibDotJson, passThrough) => pipe(
     Just(script) =>
       do {
         cwd = isMainPackage ? "./" : `madlib_modules/${madlibDotJson.name}`
-        IO
-          .putLine(
-            `Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`
-          )
+        IO.putLine(
+          `Executing postInstall script for package '${madlibDotJson.name}', it may take a while.`
+        )
         _ <- Process.exec("sh", ["-c", script,], { ...Process.DEFAULT_COMMAND_OPTIONS, cwd, })
         IO.putLine(`postInstall script executed for package '${madlibDotJson.name}'`)
         return of({})
@@ -325,14 +323,13 @@ processDependency = (config, contextAndNextDeps, dependency) => pipe(
 
 
 filterAlreadyInstalledDependencies :: Context -> List Dependency -> List Dependency
-filterAlreadyInstalledDependencies = (context, dependencies) => List
-  .filter(
-    pipe(
-      .sanitizedUrl,
-      hasPackageBeenInstalled($, context),
-      not
-    )
-  )(dependencies)
+filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
+  pipe(
+    .sanitizedUrl,
+    hasPackageBeenInstalled($, context),
+    not
+  )
+)(dependencies)
 
 
 processDependencies :: Config -> Context -> List Dependency -> Wish {} #[Context, List Dependency]
@@ -344,16 +341,15 @@ processDependencies = (config, context, dependencies) => pipe(
   ),
   map(
     pipe(
-      List
-        .filter(
-          where {
-            DownloadError(err) =>
-              IO.putLineAndPass(Color.red(`${err}\n`), false)
+      List.filter(
+        where {
+          DownloadError(err) =>
+            IO.putLineAndPass(Color.red(`${err}\n`), false)
 
-            Downloaded(_) =>
-              true
-          }
-        ),
+          Downloaded(_) =>
+            true
+        }
+      ),
       map(where { Downloaded(a) => a })
     )
   ),

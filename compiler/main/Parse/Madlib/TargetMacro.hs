@@ -16,6 +16,9 @@ resolveMacros target ast =
 
 matchTarget :: Target -> Source a -> Bool
 matchTarget target (Source _ sourceTarget _) = case sourceTarget of
+  _ | target == TAny ->
+    True
+
   TargetLLVM | target == TLLVM ->
     True
 

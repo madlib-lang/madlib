@@ -19,6 +19,8 @@ import           Format.Format
 import Text.Show.Pretty
 import Parse.Madlib.Grammar (parse)
 import Data.Either.Combinators (mapLeft)
+import Run.Options
+import Run.Target
 
 
 
@@ -39,7 +41,20 @@ parseASTsToFormat  (fp : fps)   = do
 
       Right code -> do
         next <- parseASTsToFormat fps
-        let ast = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) (parse code)
+        let options = Options { optPathUtils = defaultPathUtils
+                              , optEntrypoint = canonicalEntrypoint
+                              , optRootPath = "./"
+                              , optOutputPath = "./build"
+                              , optTarget = TAny
+                              , optOptimized = False
+                              , optBundle = False
+                              , optCoverage = False
+                              , optGenerateDerivedInstances = True
+                              , optInsertInstancePlaholders = True
+                              , optMustHaveMain = True
+                              }
+        ast  <- buildAST options canonicalEntrypoint code
+        let ast' = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) ast
         let comments =
               case parseComments code of
                 Right a ->
@@ -48,14 +63,27 @@ parseASTsToFormat  (fp : fps)   = do
                 Left _ ->
                   Left $ CompilationError Error NoContext
 
-        let astWithComments = (,) <$> ((\a -> a {apath = Just ""}) <$> ast) <*> comments
+        let astWithComments = (,) <$> ((\a -> a {apath = Just ""}) <$> ast') <*> comments
 
         return $ (:) <$> astWithComments <*> next
 
 
 parseCodeToFormat :: String -> IO (Either CompilationError [(AST, [Comment])])
 parseCodeToFormat code = do
-  let ast = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) (parse code)
+  let options = Options { optPathUtils = defaultPathUtils
+                        , optEntrypoint = "./Module.mad"
+                        , optRootPath = "./"
+                        , optOutputPath = "./build"
+                        , optTarget = TAny
+                        , optOptimized = False
+                        , optBundle = False
+                        , optCoverage = False
+                        , optGenerateDerivedInstances = True
+                        , optInsertInstancePlaholders = True
+                        , optMustHaveMain = True
+                        }
+  ast  <- buildAST options "./Module.mad" code
+  let ast' = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) ast
   let comments =
         case parseComments code of
           Right a ->
@@ -63,7 +91,7 @@ parseCodeToFormat code = do
 
           Left _ ->
             Left $ CompilationError Error NoContext
-  return $ (\a cs -> [(a, cs)]) <$> ((\a -> a {apath = Just ""}) <$> ast) <*> comments
+  return $ (\a cs -> [(a, cs)]) <$> ((\a -> a {apath = Just ""}) <$> ast') <*> comments
 
 
 processAST :: Int -> Bool -> AST -> [Comment] -> IO String
