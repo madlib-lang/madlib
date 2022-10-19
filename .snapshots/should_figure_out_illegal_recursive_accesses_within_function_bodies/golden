@@ -12,6 +12,12 @@
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 5 1 6) (Loc 6 1 7)
         }
+  , CompilationWarning
+      (UnusedTopLevelDeclaration "g")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
+        }
   ]
 , [ CompilationError
       (RecursiveVarAccess "p")

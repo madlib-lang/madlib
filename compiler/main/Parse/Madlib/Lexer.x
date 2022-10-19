@@ -192,7 +192,7 @@ jsxTagClose :: Regex
 jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+[ \n\t]*>"
 
 constraintRegex :: Regex
-constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
+constraintRegex = toRegex "\\`([^={]|\n)*(=>)[^}]*"
 
 -- Use for instance headers, the initial opening curly is already consumed
 recordTypeRegex :: Regex

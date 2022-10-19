@@ -144,9 +144,9 @@ importDecls :: { [Src.Import] }
   | importDecl             %shift { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str rets        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
+  : 'import' '{' rets importNames '}' 'from' str rets        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.NamedImport $4 (sanitizeImportPath $ strV $7) (sanitizeImportPath $ strV $7)) }
   | 'import' name 'from' str rets                       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.DefaultImport (Src.Source (tokenArea $2) (tokenTarget $1) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
-  | 'import' 'type' '{' importNames '}' 'from' str rets { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.TypeImport $4 (sanitizeImportPath $ strV $7) (sanitizeImportPath $ strV $7)) }
+  | 'import' 'type' '{' rets importNames '}' 'from' str rets { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.TypeImport $5 (sanitizeImportPath $ strV $8) (sanitizeImportPath $ strV $8)) }
   -- TODO: reconsider if we really want global imports as that's receipe for name collisions and unpredictable behavior
   -- | 'import' str rets                                   { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.ImportAll (sanitizeImportPath $ strV $2) (sanitizeImportPath $ strV $2)) }
 
@@ -173,7 +173,7 @@ methodDefs :: { M.Map Src.Name Src.Typing }
 instance :: { Src.Instance }
   : 'instance' name manyTypings '{{' rets methodImpls rets '}'                          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.Instance [] (strV $2) $3 $6) }
   | 'instance' instanceConstraint '=>' name manyTypings '{{' rets methodImpls rets '}'           { Src.Source (mergeAreas (tokenArea $1) (tokenArea $10)) (tokenTarget $1) (Src.Instance [$2] (strV $4) $5 $8) }
-  | 'instance' '(' instanceConstraints ')' '=>' name manyTypings '{{' rets methodImpls rets '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $12)) (tokenTarget $1) (Src.Instance $3 (strV $6) $7 $10) }
+  | 'instance' '(' maybeRet instanceConstraints ')' '=>' name manyTypings '{{' rets methodImpls rets '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $13)) (tokenTarget $1) (Src.Instance $4 (strV $7) $8 $11) }
 
 methodImpls :: { M.Map Src.Name Src.Exp }
   : name '=' exp { M.fromList [(strV $1, Src.Source (mergeAreas (tokenArea $1) (Src.getArea $3)) (tokenTarget $1) (Src.Assignment (strV $1) $3))] }
@@ -239,8 +239,8 @@ constrainedTyping :: { Src.Typing }
   | typings  %shift { $1 }
 
 instanceConstraints :: { [Src.Typing] }
-  : instanceConstraint { [$1] }
-  | instanceConstraints ',' instanceConstraint { $1 <> [$3] }
+  : instanceConstraint                                  { [$1] }
+  | instanceConstraints ',' maybeRet instanceConstraint { $1 <> [$4] }
 
 instanceConstraint :: { Src.Typing }
   : nameC nameC                 { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.TRComp (strV $1) [Src.Source (tokenArea $2) (tokenTarget $1) (Src.TRSingle (strV $2))]) }
