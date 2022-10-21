@@ -67,7 +67,13 @@
           }
       )
     ]
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "might")
+      Context
+        { ctxAstPath = "./ModuleB.mad"
+        , ctxArea = Area (Loc 27 3 1) (Loc 32 3 6)
+        }
+  ]
 , [ CompilationError
       (UnboundVariable "M.Maybe")
       Context

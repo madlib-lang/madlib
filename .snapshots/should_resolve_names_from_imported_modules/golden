@@ -587,6 +587,12 @@
           }
       )
     ]
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "addThree")
+      Context
+        { ctxAstPath = "./ModuleA.mad"
+        , ctxArea = Area (Loc 53 4 1) (Loc 61 4 9)
+        }
+  ]
 , []
 )

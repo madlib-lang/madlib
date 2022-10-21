@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use list comprehension" #-}
 module Format.Format where
 
 import           Data.List
@@ -11,6 +13,9 @@ import           Explain.Location
 import           Parse.Comments.Lexer
 import qualified Explain.Location as Location
 import Utils.Path (getPathType, ModulePath (FileSystemPath, PackagePath), isPreludePath)
+import Data.Functor (($>))
+import Debug.Trace
+import Text.Show.Pretty (ppShow)
 
 
 
@@ -47,6 +52,11 @@ nodesLineDiff comments n1 n2 =
   computeLineDiff comments (getNodeArea n1) (getNodeArea n2)
 
 
+expLineDiff :: [Comment] -> Exp -> Exp -> Int
+expLineDiff comments e1 e2 =
+  computeLineDiff comments (getArea e1) (getArea e2)
+
+
 computeLineDiff :: [Comment] -> Area -> Area -> Int
 computeLineDiff comments  (Area _ (Loc _ l1 _)) (Area (Loc _ l2 _) _) =
   let l2' = case comments of
@@ -56,11 +66,6 @@ computeLineDiff comments  (Area _ (Loc _ l1 _)) (Area (Loc _ l2 _) _) =
         _ ->
           l2
   in  l2' - l1
-
-
-expLineDiff :: [Comment] -> Exp -> Exp -> Int
-expLineDiff comments e1 e2 =
-  computeLineDiff comments (getArea e1) (getArea e2)
 
 
 astToNodeList :: AST -> [Node]
@@ -205,7 +210,7 @@ dictItemsToDoc comments fields = case fields of
             Pretty.emptyDoc
           else
             Pretty.line
-    in  ( value' <> Pretty.pretty ": " <> key' <> Pretty.pretty "," <> line <> more'
+    in  ( key' <> Pretty.pretty ": " <> value' <> Pretty.pretty "," <> line <> more'
         , comments'''
         )
 
@@ -449,7 +454,7 @@ accessAsFNToDoc comments access args =
 typingArgsToDoc :: [Comment] -> [Typing] -> (Pretty.Doc ann, [Comment])
 typingArgsToDoc comments typings = case typings of
   (typing : more) ->
-    let (typing', comments') = typingToDoc comments typing
+    let (typing', comments') = typingToDoc False comments typing
         typing'' = case typing of
           Source _ _ TRComp{} ->
             Pretty.lparen <> typing' <> Pretty.rparen
@@ -471,96 +476,164 @@ typingArgsToDoc comments typings = case typings of
     (Pretty.emptyDoc, comments)
 
 
-typingListToDoc :: [Comment] -> [Typing] -> (Pretty.Doc ann, [Comment])
-typingListToDoc comments typings = case typings of
+typingListToDoc :: Bool -> [Comment] -> [Typing] -> (Pretty.Doc ann, [Comment])
+typingListToDoc canBreak comments typings = case typings of
   (typing : more) ->
-    let (typing', comments') = typingToDoc comments typing
-        (more', comments'')  = typingListToDoc comments' more
+    let (commentDoc, comments') = insertComments False (getArea typing) comments
+        (typing', comments'') = typingToDoc canBreak comments' typing
+        (more', comments''')  = typingListToDoc canBreak comments'' more
         comma =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.pretty ", "
-    in  (typing' <> comma <> more', comments'')
+            Pretty.comma <> (if canBreak then Pretty.line else Pretty.space)
+    in  (commentDoc <> typing' <> comma <> more', comments''')
 
   [] ->
     (Pretty.emptyDoc, comments)
 
 
-recordFieldTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (Pretty.Doc ann, [Comment])
-recordFieldTypingsToDoc comments fields = case fields of
+recordFieldTypingsToDoc :: Bool -> [Comment] -> [(Src.Name, Typing)] -> (Pretty.Doc ann, [Comment])
+recordFieldTypingsToDoc canBreak comments fields = case fields of
   ((name, typing) : more) ->
-    let (typing', comments') = typingToDoc comments typing
-        (more', comments'')  = recordFieldTypingsToDoc comments' more
-        comma =
-          if null more then
-            Pretty.comma
-          else
-            Pretty.pretty ", "
-    in  (Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> comma <> more', comments'')
+    let (commentsDoc, comments') = insertComments False (getArea typing) comments
+        (typing', comments'') = typingToDoc canBreak comments' typing
+        (more', comments''')  = recordFieldTypingsToDoc canBreak comments'' more
+        comma
+          | null more = Pretty.comma
+          | not canBreak = Pretty.pretty ", "
+          | otherwise = Pretty.comma <> Pretty.line
+    in  (commentsDoc <> Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> comma <> more', comments''')
 
   [] ->
     (Pretty.emptyDoc, comments)
 
-methodTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (Pretty.Doc ann, [Comment])
-methodTypingsToDoc comments methods = case methods of
+methodTypingsToDoc :: Bool -> [Comment] -> [(Src.Name, Typing)] -> (Pretty.Doc ann, [Comment])
+methodTypingsToDoc canBreak comments methods = case methods of
   ((name, typing) : more) ->
-    let (typing', comments') = typingToDoc comments typing
-        (more', comments'')  = methodTypingsToDoc comments' more
+    let (commentDoc, comments') = insertComments True (getArea typing) comments
+        (typing', comments'') = typingToDoc canBreak comments' typing
+        (more', comments''')  = methodTypingsToDoc canBreak comments'' more
         after =
           if null more then
             Pretty.emptyDoc
           else
             emptyLine <> Pretty.line'
-    in  (Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> after <> more', comments'')
+    in  (commentDoc <> Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> after <> more', comments''')
 
   [] ->
     (Pretty.emptyDoc, comments)
 
 
-typingToDoc :: [Comment] -> Typing -> (Pretty.Doc ann, [Comment])
-typingToDoc comments typing = case typing of
+flattenTRArrs :: Typing -> [Typing]
+flattenTRArrs typing = case typing of
+  Source _ _ (TRArr left right) ->
+    left : flattenTRArrs right
+
+  _ ->
+    [typing]
+
+
+trArrPartsToDocs :: Bool -> [Comment] -> [Typing] -> ([Pretty.Doc ann], [Comment])
+trArrPartsToDocs canBreak comments typings = case typings of
+  (typing@(Source _ _ TRArr{}) : more) ->
+    let (typing', comments') = typingToDoc canBreak comments typing
+        (commentDocs, comments'') =
+          if null more then
+            ([], comments')
+          else
+            insertCommentsAsDocList False (getArea $ head more) comments'
+        (more', comments''')  = trArrPartsToDocs canBreak comments'' more
+        sep = if canBreak then Pretty.line else Pretty.space
+        sep' = if canBreak then Pretty.hardline else Pretty.space
+        commentDoc = Pretty.hcat $ map (sep'<>) commentDocs
+        arrow =
+          if null more then
+            []
+          else
+            [sep <> Pretty.pretty "-> "]
+    in  (Pretty.lparen <> typing' <> Pretty.rparen : commentDoc : arrow ++ more', comments''')
+
+  (typing : more) ->
+    let (typing', comments') = typingToDoc canBreak comments typing
+        (commentDocs, comments'') =
+          if null more then
+            ([], comments')
+          else
+            insertCommentsAsDocList False (getArea $ head more) comments'
+        (more', comments''')  = trArrPartsToDocs canBreak comments'' more
+        sep = if canBreak then Pretty.line else Pretty.space
+        sep' = if canBreak then Pretty.hardline else Pretty.space
+        commentDoc = Pretty.hcat $ map (sep'<>) commentDocs
+        arrow =
+          if null more then
+            []
+          else
+            [sep <> Pretty.pretty "-> "]
+    in  (typing' : commentDoc : arrow ++ more', comments''')
+
+  [] ->
+    ([], comments)
+
+
+typingToDoc :: Bool -> [Comment] -> Typing -> (Pretty.Doc ann, [Comment])
+typingToDoc canBreak comments typing = case typing of
   Source _ _ (TRSingle n) ->
     (Pretty.pretty n, comments)
 
   Source _ _ (TRComp n args) ->
     let (args', comments') = typingArgsToDoc comments args
-    in  (Pretty.pretty n <> Pretty.space <> args', comments')
+        space = if null args then Pretty.emptyDoc else Pretty.space
+    in  (Pretty.pretty n <> space <> args', comments')
 
-  Source _ _ (TRArr left right) ->
-    let (left', comments')   = typingToDoc comments left
-        (right', comments'') = typingToDoc comments' right
-        left'' = case left of
-          Source _ _ TRArr{} ->
-            Pretty.lparen <> left' <> Pretty.rparen
-
-          _ ->
-            left'
-    in  (left'' <> Pretty.pretty " -> " <> right', comments'')
+  Source _ _ TRArr{} ->
+    let parts = flattenTRArrs typing
+        (parts', comments') = trArrPartsToDocs canBreak comments parts
+    in  ( Pretty.group $ Pretty.hcat parts'
+        , comments'
+        )
 
   Source _ _ (TRTuple typings) ->
-    let (typings', comments') = typingListToDoc comments typings
-    in  (Pretty.pretty "#[" <> typings' <> Pretty.pretty "]", comments')
+    let (typings', comments') = typingListToDoc canBreak comments typings
+        sep = if canBreak then Pretty.line' else Pretty.emptyDoc
+    in  ( Pretty.group
+            (
+              Pretty.pretty "#["
+              <> Pretty.nest indentSize (sep <> typings')
+              <> sep
+            )
+            <> Pretty.pretty "]"
+        , comments'
+        )
 
   Source _ _ (TRRecord fields maybeExt) ->
-    let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList (snd <$> fields))
+    let (typings', comments')   = recordFieldTypingsToDoc canBreak comments (Map.toList (snd <$> fields))
+        sep = if canBreak then Pretty.line else Pretty.space
         (maybeExt', comments'') = case maybeExt of
           Just ext ->
-            let (ext', comments''') = typingToDoc comments' ext
-            in  (Pretty.pretty "..." <> ext' <> Pretty.pretty ", ", comments''')
+            let (ext', comments''') = typingToDoc canBreak comments' ext
+            in  (Pretty.pretty "..." <> ext' <> Pretty.pretty "," <> sep, comments''')
 
           Nothing ->
             (Pretty.emptyDoc, comments')
-    in  (Pretty.pretty "{ " <> maybeExt' <> typings' <> Pretty.pretty " }", comments'')
+    in  ( Pretty.group
+            (
+              Pretty.lbrace
+              <> Pretty.nest indentSize (sep <> maybeExt' <> typings')
+              <> sep
+            )
+            <> Pretty.rbrace
+        , comments''
+        )
 
   Source _ _ (TRConstrained constraints typing) ->
-    let (constraints', comments') = typingListToDoc comments constraints
+    let (constraints', comments') = typingListToDoc canBreak comments constraints
         constraints'' =
           if length constraints > 1 then
             Pretty.lparen <> constraints' <> Pretty.rparen
           else
             constraints'
-        (typing', comments'') = typingToDoc comments' typing
+        (typing', comments'') = typingToDoc canBreak comments' typing
     in  (constraints'' <> Pretty.pretty " => " <> typing', comments'')
 
 
@@ -674,12 +747,13 @@ expToDoc comments exp =
         Source area _ (AbsWithMultilineBody params body) ->
           let (params', comments'') = paramsToDoc comments' params
               (body', comments''')  = bodyToDoc comments'' body
-              (commentsAfterBody, comments'''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'''
+              (commentsAfterBody, comments'''') = insertCommentsAsDocList False (Area (getEndLoc area) (getEndLoc area)) comments'''
+              commentsAfterBody' = hcat $ intersperse Pretty.hardline commentsAfterBody
               params'' = formatParams (length params <= 1) params'
           in  ( params''
                 <> Pretty.pretty " => "
                 <> Pretty.lbrace
-                <> Pretty.nest indentSize (Pretty.line <> body' <> commentsAfterBody)
+                <> Pretty.nest indentSize (Pretty.line <> body' <> commentsAfterBody')
                 <> Pretty.line
                 <> Pretty.rbrace
               , comments''''
@@ -819,7 +893,7 @@ expToDoc comments exp =
                   <> Pretty.line'
                 else
                   Pretty.lparen <> exp'
-          in  ( Pretty.group (Pretty.pretty "where " <> exp'')
+          in  ( Pretty.group (Pretty.pretty "where" <> exp'')
                 <> Pretty.pretty ") {"
                 <> Pretty.nest indentSize (Pretty.line <> iss')
                 <> Pretty.line <> Pretty.rbrace
@@ -843,7 +917,7 @@ expToDoc comments exp =
           (Pretty.pretty n, comments')
 
         Source _ _ (LChar c) ->
-          (Pretty.pretty $ '\'':c:'\'':"", comments')
+          (Pretty.pretty $ show c, comments')
 
         Source _ _ (LStr s) ->
           (Pretty.pretty s, comments')
@@ -903,9 +977,9 @@ expToDoc comments exp =
           in  (Pretty.pretty "`" <> content <> Pretty.pretty "`", comments'')
 
         Source _ _ (Export (Source _ _ (Extern typing name name'))) ->
-          let (typing', comments'') = typingToDoc comments' typing
+          let (typing', comments'') = typingToDoc True comments' typing
           in  (
-                Pretty.pretty name <> Pretty.pretty " :: " <> typing'<> Pretty.hardline
+                Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> Pretty.hardline
                 <> Pretty.pretty "export " <> Pretty.pretty name <> Pretty.pretty " = extern \"" <> Pretty.pretty name' <> Pretty.pretty "\""
               , comments''
               )
@@ -967,7 +1041,7 @@ expToDoc comments exp =
               )
 
         Source _ _ (Extern typing name name') ->
-          let (typing', comments'') = typingToDoc comments' typing
+          let (typing', comments'') = typingToDoc True comments' typing
           in  (
                 Pretty.pretty name <> Pretty.pretty " :: " <> typing'<> Pretty.hardline
                 <> Pretty.pretty name <> Pretty.pretty " = extern \"" <> Pretty.pretty name' <> Pretty.pretty "\""
@@ -976,12 +1050,12 @@ expToDoc comments exp =
 
         Source _ _ (TypedExp exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
-              (typing', comments''') = typingToDoc comments'' typing
+              (typing', comments''') = typingToDoc True comments'' typing
           in  (Pretty.lparen <> exp' <> Pretty.pretty " :: " <> typing' <> Pretty.rparen, comments''')
 
         Source _ _ (NamedTypedExp name exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
-              (typing', comments''') = typingToDoc comments'' typing
+              (typing', comments''') = typingToDoc True comments'' typing
           in  (Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> Pretty.line' <> exp', comments''')
 
         Source _ _ (IfTarget sourceTarget) ->
@@ -1069,23 +1143,31 @@ importToDoc comments imp = case imp of
         )
 
 
-constructorsToDoc :: [Comment] -> [Constructor] -> (Pretty.Doc ann, [Comment])
+constructorsToDoc :: [Comment] -> [(Constructor, Doc ann)] -> (Pretty.Doc ann, [Comment])
 constructorsToDoc comments ctors = case ctors of
-  (Source _ _ (Constructor name args) : more) ->
+  ((Source area _ (Constructor name args), separator) : more) ->
     let name' = Pretty.pretty name
-        (args', comments')  = typingListToDoc comments args
+        (commentsDoc, comments') = insertCommentsAsDocList False area comments
+        (args', comments'')  = typingListToDoc True comments' args
         args''              =
           if null args then
             Pretty.emptyDoc
           else
-            Pretty.lparen <> args' <> Pretty.rparen
-        (more', comments'') = constructorsToDoc comments' more
-        end =
-          if null more then
-            Pretty.emptyDoc
+            Pretty.group
+              (
+                Pretty.lparen
+                <> Pretty.nest indentSize (Pretty.line' <> args')
+                <> Pretty.line'
+              )
+              <> Pretty.rparen
+        (more', comments''') = constructorsToDoc comments'' more
+        possibleNewLineBeforeComment =
+          if length comments' /= length comments then
+            Pretty.hardline
           else
-            Pretty.line <> Pretty.pretty "|" <> Pretty.space
-    in  (name' <> args'' <> end <> more', comments'')
+            Pretty.emptyDoc
+    in  (possibleNewLineBeforeComment <> Pretty.hcat (intersperse Pretty.hardline commentsDoc) <> separator <> name' <> args'' <> more', comments''')
+    -- in  (possibleNewLineBeforeComment <> Pretty.hcat commentsDoc <> separator <> name' <> args'' <> more', comments''')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -1101,14 +1183,16 @@ typeDeclToDoc comments td = case td of
           else
             Pretty.emptyDoc
         params = Pretty.hcat (Pretty.punctuate Pretty.space (Pretty.pretty <$> adtparams adt))
-        equals =
+        equals = Pretty.line <> Pretty.pretty "= "
+        space =
           if null (adtparams adt) then
-            Pretty.line' <> Pretty.pretty "= "
+            Pretty.emptyDoc
           else
-            Pretty.line <> Pretty.pretty "= "
-        (constructors, comments') = constructorsToDoc comments (adtconstructors adt)
-    in  ( export <> Pretty.pretty "type " <> name <> Pretty.space <> params
-          <> Pretty.group (Pretty.nest indentSize (equals <> constructors))
+            Pretty.space
+        prefixOperators = equals : ([0..] $> Pretty.line <> Pretty.pretty "| ")
+        (constructors, comments') = constructorsToDoc comments (zip (adtconstructors adt) prefixOperators)
+    in  ( export <> Pretty.pretty "type " <> name <> space <> params
+          <> Pretty.group (Pretty.nest indentSize constructors)
         , comments'
         )
 
@@ -1124,7 +1208,7 @@ typeDeclToDoc comments td = case td of
             Pretty.emptyDoc
           else
             Pretty.hcat (Pretty.punctuate Pretty.space (Pretty.pretty <$> aliasparams alias)) <> Pretty.space
-        (typing, comments') = typingToDoc comments (aliastype alias)
+        (typing, comments') = typingToDoc True comments (aliastype alias)
     in  ( export <> Pretty.pretty "alias " <> name <> Pretty.space <> params <> Pretty.pretty "= " <> typing
         , comments'
         )
@@ -1133,14 +1217,14 @@ typeDeclToDoc comments td = case td of
 interfaceToDoc :: [Comment] -> Interface -> (Pretty.Doc ann, [Comment])
 interfaceToDoc comments interface = case interface of
   Source _ _ (Interface constraints name vars methods) ->
-    let (constraints', comments') = typingListToDoc comments constraints
+    let (constraints', comments') = typingListToDoc True comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc
           | length constraints > 1 = Pretty.lparen <> constraints' <> Pretty.rparen <> Pretty.pretty " => "
           | otherwise              = constraints' <> Pretty.pretty " => "
 
         vars' = Pretty.hcat (Pretty.punctuate Pretty.space (Pretty.pretty <$> vars))
-        (methods', comments'') = methodTypingsToDoc comments' (Map.toList methods)
+        (methods', comments'') = methodTypingsToDoc True comments' (Map.toList methods)
     in  ( Pretty.pretty "interface " <> constraints'' <> Pretty.pretty name <> Pretty.space <> vars' <> Pretty.pretty " {" <> Pretty.nest indentSize (Pretty.line <> methods') <> Pretty.line <> Pretty.rbrace
         ,comments''
         )
@@ -1149,8 +1233,8 @@ interfaceToDoc comments interface = case interface of
 methodsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 methodsToDoc comments methods = case methods of
   (exp : more) ->
-    let (exp', comments') = expToDoc comments exp
-        (more', comments'')  = methodsToDoc comments' more
+    let (exp', comments')   = expToDoc comments exp
+        (more', comments'') = methodsToDoc comments' more
         after =
           if null more then
             Pretty.emptyDoc
@@ -1165,7 +1249,7 @@ methodsToDoc comments methods = case methods of
 instanceToDoc :: [Comment] -> Instance -> (Pretty.Doc ann, [Comment])
 instanceToDoc comments inst = case inst of
   Source _ _ (Instance constraints name typings methods) ->
-    let (constraints', _) = typingListToDoc comments constraints
+    let (constraints', _) = typingListToDoc True comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc
           | length constraints > 1 = Pretty.lparen <> constraints' <> Pretty.rparen <> Pretty.pretty " => "
@@ -1191,6 +1275,15 @@ commentToDoc topLevel comment = case comment of
     in Pretty.pretty c <> break
 
 
+commentToDocWithoutBreak :: Comment -> Pretty.Doc ann
+commentToDocWithoutBreak comment = case comment of
+  Comment _ c ->
+    Pretty.pretty c
+
+  MultilineComment _ c ->
+    Pretty.pretty c
+
+
 isInlineComment :: Comment -> Bool
 isInlineComment comment = case comment of
   Comment _ _ ->
@@ -1210,11 +1303,7 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
       if afterOrSameLine then
         let (next, comments') = insertComments topLevel area (tail comments)
             comment'          = commentToDoc topLevel comment
-            comment''         =
-              if nodeStartLine - commentEndLine > 1 then
-                comment' <> hcat (replicate (nodeStartLine - commentEndLine - 1) Pretty.line')
-              else
-                comment'
+            comment''         = comment' <> hcat (replicate (computeLineDiff (tail comments) commentArea area - 1) Pretty.line')
         in  (comment'' <> next, comments')
       else
         let (next, comments') = insertComments topLevel area (tail comments)
@@ -1222,6 +1311,25 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
 
   [] ->
     (Pretty.emptyDoc, comments)
+
+
+insertCommentsAsDocList :: Bool -> Area -> [Comment] -> ([Pretty.Doc ann], [Comment])
+insertCommentsAsDocList topLevel area comments = case comments of
+  (comment : _) ->
+    let commentArea = getCommentArea comment
+        after                                         = area `isAfter` commentArea
+        afterOrSameLine                               = after || isSameLine area commentArea && isInlineComment comment
+    in
+      if afterOrSameLine then
+        let (next, comments') = insertCommentsAsDocList topLevel area (tail comments)
+            comment'          = commentToDocWithoutBreak comment
+        in  (comment' : next, comments')
+      else
+        let (next, comments') = insertCommentsAsDocList topLevel area (tail comments)
+        in  (next, comment : comments')
+
+  [] ->
+    ([], comments)
 
 
 insertRemainingComments :: [Comment] -> (Pretty.Doc ann, [Comment])
@@ -1293,15 +1401,15 @@ nodesToDocs :: [Comment] -> [Node] -> (Pretty.Doc ann, [Comment])
 nodesToDocs comments nodes = case nodes of
   (node : more) ->
     let (commentsDoc, comments') = insertComments True (getNodeArea node) comments
-        emptyLinesToAdd          =
-            if null more then
-              Pretty.line
-            else
-              Pretty.hcat $ replicate (nodesLineDiff comments' node (head more)) Pretty.line
         (node', comments'', newMore) =
           case node of
             ExpNode exp ->
               let (exp', comments'') = expToDoc comments' exp
+                  emptyLinesToAdd    =
+                    if null more then
+                      Pretty.hardline
+                    else
+                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (exp' <> emptyLinesToAdd, comments'', more)
 
             ImportNode _ ->
@@ -1315,14 +1423,29 @@ nodesToDocs comments nodes = case nodes of
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td
+                  emptyLinesToAdd   =
+                    if null more then
+                      Pretty.hardline
+                    else
+                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (td' <> emptyLinesToAdd, comments'', more)
 
             InterfaceNode interface ->
               let (interface', comments'') = interfaceToDoc comments' interface
+                  emptyLinesToAdd          =
+                    if null more then
+                      Pretty.hardline
+                    else
+                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (interface' <> emptyLinesToAdd, comments'', more)
 
             InstanceNode inst ->
               let (inst', comments'') = instanceToDoc comments' inst
+                  emptyLinesToAdd     =
+                    if null more then
+                      Pretty.hardline
+                    else
+                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (inst' <> emptyLinesToAdd, comments'', more)
         (more', comments''') = nodesToDocs comments'' newMore
     in  (commentsDoc <> node' <> more', comments''')

@@ -141,13 +141,14 @@ export methodStr = where {
   TRACE => "TRACE"
 }
 
+
+#iftarget js
+
 headerKey :: Header -> String
 headerKey = where { Header(key, _) => key }
 
 headerValue :: Header -> String
 headerValue = where { Header(_, val) => val }
-
-#iftarget js
 
 #-
 const buildHeaderObj = (headerItems) => {

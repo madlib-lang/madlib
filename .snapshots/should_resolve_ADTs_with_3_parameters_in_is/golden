@@ -3603,6 +3603,12 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "content")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 39 2 1) (Loc 46 2 8)
+        }
+  ]
 , []
 )

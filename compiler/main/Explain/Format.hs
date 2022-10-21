@@ -94,6 +94,12 @@ formatWarningContent _ warning = case warning of
       <> "'\n"
       <> "but it seems that you never use it."
 
+  MissingMethods missingMethods ->
+    "The instance does not implement all methods. The missing methods are the following:\n"
+    <> intercalate "\n" (map ("  - "<>) missingMethods)
+    <> "\n\n"
+    <> "Hint: Implement the missing methods."
+
   UnusedParameter name ->
     "You declared a parameter named '" <> name <> "' but it seems that you never\n"
     <> "use it.\n\n"

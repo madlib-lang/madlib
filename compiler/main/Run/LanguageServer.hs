@@ -590,7 +590,7 @@ nodeToHoverInfo modulePath node = do
               -- otherwise we try to find a var in an interface declaration
               -- maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface modulePath rootTypingName
               maybeInterface <- Can.lookupInterface' canEnv rootTypingName
-              return $ maybeInterface >>= \(CanEnv.Interface vars _) -> do
+              return $ maybeInterface >>= \(CanEnv.Interface vars _ _) -> do
                 case findTRSingleIndex typings typing of
                   Just i ->
                     if i < length vars then
