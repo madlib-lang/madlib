@@ -23,8 +23,8 @@ import           Data.List
 import           Utils.List
 import qualified Rock
 import qualified Driver.Query                  as Query
-import Explain.Location (emptyArea)
-
+import           Explain.Location (emptyArea)
+import           Error.Warning
 
 
 canonicalizeInterfaces :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
@@ -60,7 +60,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
 
     env' <- if null tvs'
       then throwError $ CompilationError FatalError (Context (envCurrentPath env) area)
-      else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
+      else return $ env { envInterfaces = M.insert n (Interface tvs' supers (M.keys ms)) (envInterfaces env) }
 
     canMs <- mapM canonicalizeTyping ms
     return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
@@ -118,7 +118,12 @@ lookupInterface' env name = case M.lookup name (envInterfaces env) of
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
 canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do
-    (Interface tvs _) <- lookupInterface env n
+    (Interface tvs _ methodNames) <- lookupInterface env n
+    let missingMethods = methodNames \\ M.keys methods
+
+    when (missingMethods /= []) $ do
+      pushWarning $ CompilationWarning (MissingMethods missingMethods) (Context (envCurrentPath env) area)
+
     ts <- zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
     let subst = foldr (\t s -> s `compose` buildVarSubsts t) mempty ts
 
@@ -126,7 +131,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
       apply subst
         <$> mapM
               (\(Src.Source _ _ (Src.TRComp interface' args)) -> do
-                (Interface tvs _) <- lookupInterface env interface'
+                (Interface tvs _ _) <- lookupInterface env interface'
                 vars <- mapM
                     (\case
                       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k

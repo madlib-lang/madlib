@@ -146,4 +146,4 @@ computeAbsoluteImportPathsForAST :: PathUtils -> FilePath -> AST -> IO (Either C
 computeAbsoluteImportPathsForAST pathUtils rootPath ast@AST{ aimports, apath = Just path } = do
   updatedImports <- computeAbsoluteImportPaths pathUtils path rootPath aimports
   return $ (\updated -> ast { aimports = updated }) <$> updatedImports
-computeAbsoluteImportPathsForAST _ _ _ = undefined
+computeAbsoluteImportPathsForAST _ _ ast = error $ "ast has no path\n\n" <> ppShow ast

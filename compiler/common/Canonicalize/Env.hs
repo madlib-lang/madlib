@@ -15,7 +15,7 @@ import           GHC.Generics hiding(Constructor)
 
 
 data Interface
-  = Interface [TVar] [Pred]
+  = Interface [TVar] [Pred] [String]
   deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecls = M.Map String Type
@@ -53,7 +53,7 @@ data Env
 
 initialEnv :: Env
 initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary), ("Array", tArray), ("ByteArray", tByteArray)]
-                 , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] []), ("Inspect", Interface [TV "a" Star] [])]
+                 , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] [] ["=="]), ("Inspect", Interface [TV "a" Star] [] ["inspect"])]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""
                  , envImportInfo = []

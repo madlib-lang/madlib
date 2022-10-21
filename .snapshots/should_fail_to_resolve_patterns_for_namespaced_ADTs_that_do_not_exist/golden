@@ -46,7 +46,13 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "might")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 5 1 6)
+        }
+  ]
 , [ CompilationError
       (UnboundVariable "M.Maybe")
       Context

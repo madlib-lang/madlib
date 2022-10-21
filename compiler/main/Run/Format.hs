@@ -36,7 +36,7 @@ parseASTsToFormat  (fp : fps)   = do
           Left  _ -> Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
 
   case source of
-      Left e ->
+      Left _ ->
         return $ Left $ CompilationError (ImportNotFound canonicalEntrypoint) NoContext
 
       Right code -> do
@@ -53,7 +53,12 @@ parseASTsToFormat  (fp : fps)   = do
                               , optInsertInstancePlaholders = True
                               , optMustHaveMain = True
                               }
-        ast  <- buildAST options canonicalEntrypoint code
+        ast <- case parse code of
+          Right a ->
+            computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) (setPath a fp)
+
+          Left _ ->
+            return $ Left $ CompilationError Error NoContext
         let ast' = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) ast
         let comments =
               case parseComments code of
@@ -82,7 +87,13 @@ parseCodeToFormat code = do
                         , optInsertInstancePlaholders = True
                         , optMustHaveMain = True
                         }
-  ast  <- buildAST options "./Module.mad" code
+  -- ast  <- buildAST options "./Module.mad" code
+  ast <- case parse code of
+        Right a ->
+          computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) (setPath a "./Module.mad")
+
+        Left _ ->
+          return $ Left $ CompilationError Error NoContext
   let ast' = mapLeft (const $ CompilationError (GrammarError "" "") NoContext) ast
   let comments =
         case parseComments code of

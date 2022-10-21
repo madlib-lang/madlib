@@ -221,8 +221,8 @@ adtConstructors :: { [Src.Constructor] }
   | adtConstructor maybeRet                      %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
-  : name '(' adtConstructorArgs ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.Constructor (strV $1) $3) }
-  | name                            %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Constructor (strV $1) []) }
+  : name '(' rets adtConstructorArgs ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.Constructor (strV $1) $4) }
+  | name                                 %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Constructor (strV $1) []) }
 
 adtConstructorArgs :: { [Src.Typing] }
   : typing                                  %shift { [$1] }
@@ -276,18 +276,20 @@ typings :: { Src.Typing }
   | typing                       %shift { $1 }
 
 typing :: { Src.Typing }
-  : name                                                %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.TRSingle $ strV $1) }
-  | '{' '}'                                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.TRSingle "{}") }
-  | '(' typings ')'                                     %shift { $2 }
-  | '{' recordTypingArgs maybeComma '}'                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.TRRecord $2 Nothing) }
-  | '{' '...' name ','  recordTypingArgs maybeComma '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.TRRecord $5 (Just (Src.Source (mergeAreas (tokenArea $2) (tokenArea $3)) (tokenTarget $1) (Src.TRSingle $ strV $3)))) }
-  | '{' '...' name '}'                                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.TRRecord mempty (Just (Src.Source (mergeAreas (tokenArea $2) (tokenArea $3)) (tokenTarget $1) (Src.TRSingle $ strV $3)))) }
-  | '#[' tupleTypings ']'                               %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.TRTuple $2) }
+  : name                                                     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.TRSingle $ strV $1) }
+  | '{' '}'                                                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.TRSingle "{}") }
+  | '(' typings ')'                                          %shift { $2 }
+  | '{' rets recordTypingArgs maybeComma '}'                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRRecord $3 Nothing) }
+  | '{' rets '...' name ','  recordTypingArgs maybeComma '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.TRRecord $6 (Just (Src.Source (mergeAreas (tokenArea $3) (tokenArea $4)) (tokenTarget $1) (Src.TRSingle $ strV $4)))) }
+  | '{' rets '...' name '}'                                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRRecord mempty (Just (Src.Source (mergeAreas (tokenArea $3) (tokenArea $4)) (tokenTarget $1) (Src.TRSingle $ strV $4)))) }
+  | '#[' tupleTypings ']'                                    %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }
   : name compositeTypingArgs          { Src.Source (mergeAreas (tokenArea $1) (Src.getArea (last $2))) (tokenTarget $1) (Src.TRComp (strV $1) $2) }
   | name '.' name compositeTypingArgs { Src.Source (mergeAreas (tokenArea $1) (Src.getArea (last $4))) (tokenTarget $1) (Src.TRComp (strV $1<>"."<>strV $3) $4) }
   | name '.' name                     { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.TRComp (strV $1<>"."<>strV $3) []) }
+  | '(' name rets compositeTypingArgs ')'          { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRComp (strV $2) $4) }
+  | '(' name '.' name rets compositeTypingArgs ')' { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.TRComp (strV $2<>"."<>strV $4) $6) }
 
 compositeTypingArgs :: { [Src.Typing] }
   : name                                                   { [Src.Source (tokenArea $1) (tokenTarget $1) (Src.TRSingle $ strV $1)] }
@@ -430,20 +432,20 @@ templateStringParts :: { [Src.Exp] }
   | templateStringParts rets exp { $1 <> [$3] }
 
 app :: { Src.Exp }
-  : app '(' argsWithPlaceholder ')'          %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.App $1 $3) }
-  | name '(' argsWithPlaceholder ')'         %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) $3) }
-  | '.' name '(' argsWithPlaceholder ')'     %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) $4) }
-  | name '(' 'ret' argsWithPlaceholder ')'   %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) $4) }
-  | exp '(' argsWithPlaceholder ')'          %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.App $1 $3) }
-  | '(' exp ')' '(' argsWithPlaceholder ')'  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.App $2 $5) }
-  | exp '.' name '(' argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $6)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) $5) }
+  : app '(' rets argsWithPlaceholder ')'      %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $5)) (Src.getSourceTarget $1) (Src.App $1 $4) }
+  | name '(' rets argsWithPlaceholder ')'     %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) $4) }
+  | '.' name '(' rets argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) $5) }
+  | name '(' 'ret' argsWithPlaceholder ')'    %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) $4) }
+  | exp '(' argsWithPlaceholder ')'           %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.App $1 $3) }
+  | '(' exp ')' '(' rets argsWithPlaceholder ')'   %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.App $2 $6) }
+  | exp '.' name '(' rets argsWithPlaceholder ')'  %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $7)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) $6) }
   -- Nullary sugar
-  | app '(' ')'                              %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
-  | name '(' ')'                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) []) }
-  | '.' name '(' ')'                         %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) []) }
-  | exp '(' ')'                              %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
-  | '(' exp ')' '(' ')'                      %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App $2 []) }
-  | exp '.' name '(' ')'                     %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $5)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) []) }
+  | app '(' ')'                               %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
+  | name '(' ')'                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) []) }
+  | '.' name '(' ')'                          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) []) }
+  | exp '(' ')'                               %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
+  | '(' exp ')' '(' ')'                       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App $2 []) }
+  | exp '.' name '(' ')'                      %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $5)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) []) }
 
 multiExpBody :: { [Src.Exp] }
   : 'return' exp              { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
