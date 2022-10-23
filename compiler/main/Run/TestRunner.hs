@@ -132,7 +132,7 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
       Right (_, warnings, []) -> do
         unless (null warnings) $ do
           formattedWarnings <- mapM (Explain.formatWarning rf False) $ removeDuplicates warnings
-          putStrLn $ List.intercalate "\n\n" formattedWarnings
+          putStrLn $ List.intercalate "\n" formattedWarnings
 
         (_, _, _) <- Driver.runIncrementalTask
           state
@@ -159,7 +159,7 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
 
     unless (null warnings) $ do
       formattedWarnings <- mapM (Explain.formatWarning rf False) warnings
-      putStrLn $ List.intercalate "\n\n" formattedWarnings
+      putStrLn $ List.intercalate "\n" formattedWarnings
 
     if null errors then do
       if watchMode then do

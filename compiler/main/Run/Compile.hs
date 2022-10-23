@@ -92,7 +92,7 @@ runCompilationTask watchMode state options invalidatedPaths = do
       Right (_, warnings, []) -> do
         unless (null warnings) $ do
           formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
-          putStrLn $ List.intercalate "\n\n" formattedWarnings
+          putStrLn $ List.intercalate "\n" formattedWarnings
 
         (_, _, _) <- Driver.runIncrementalTask
           state
@@ -120,7 +120,7 @@ runCompilationTask watchMode state options invalidatedPaths = do
     formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
     formattedErrors   <- mapM (Explain.format readFile False) $ removeDuplicates errors
 
-    putStr $ List.intercalate "\n\n" (formattedWarnings ++ formattedErrors)
+    putStr $ List.intercalate "\n" (formattedWarnings ++ formattedErrors)
     unless (null errors || watchMode) $ do
       exitFailure
 
