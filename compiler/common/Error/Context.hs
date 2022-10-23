@@ -11,7 +11,7 @@ data Context
 
 getCtxArea :: Context -> Maybe Area
 getCtxArea ctx = case ctx of
-  NoContext        ->
+  NoContext ->
     Nothing
 
   Context _ area ->
@@ -20,8 +20,17 @@ getCtxArea ctx = case ctx of
 
 getCtxPath :: Context -> Maybe FilePath
 getCtxPath ctx = case ctx of
-  NoContext        ->
+  NoContext ->
     Nothing
 
   Context path _ ->
     Just path
+
+
+getCtxPath' :: Context -> FilePath
+getCtxPath' ctx = case ctx of
+  NoContext ->
+    ""
+
+  Context path _ ->
+    path
