@@ -70,27 +70,6 @@ getModuleContent _  _                        =
   return ""
 
 
-
--- formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO String
--- formatWarning rf json (CompilationWarning warning ctx) = do
---   noColor       <- lookupEnv "NO_COLOR"
---   moduleContent <- lines <$> getModuleContent rf ctx
---   let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
---   let formattedWarning = case ctx of
---         Context fp area ->
---           let (Area (Loc _ line _) _) = area
---           in  "in module '"
---                 <> fp
---                 <> "' at line "
---                 <> show line
---                 <> ":\n"
---                 <> showAreaInSource (not isColorEnabled) area area moduleContent
---                 <> "\n"
---                 <> formatWarningContent (not isColorEnabled) warning
-
---         _ -> formatWarningContent (not isColorEnabled) warning
---   let fullContent = colorWhen isColorEnabled WhiteOnYellow "Warning" <> " " <> formattedWarning
---   return $ unlines (("│ " <>) <$> lines fullContent)
 formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO String
 formatWarning rf json (CompilationWarning warning ctx) = do
   noColor       <- lookupEnv "NO_COLOR"
@@ -412,14 +391,18 @@ createErrorDiagnostic color context typeError = case typeError of
             , Diagnose.This "It is not a definition and is not allowed"
             )
           ]
-          [Diagnose.Hint "Top level expressions are not allowed in Madlib,\nyou may want to assign it to a top level variable."]
+          [ Diagnose.Note "Top level expressions are not allowed in Madlib."
+          , Diagnose.Hint "You may want to assign it to a top level variable."
+          ]
 
       NoContext ->
         Diagnose.Err
           Nothing
           "Not a definition"
           []
-          [Diagnose.Hint "Top level expressions are not allowed in Madlib,\nyou may want to assign it to a top level variable."]
+          [ Diagnose.Note "Top level expressions are not allowed in Madlib."
+          , Diagnose.Hint "You may want to assign it to a top level variable."
+          ]
 
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
@@ -1103,7 +1086,7 @@ createErrorDiagnostic color context typeError = case typeError of
           "Wrong alias argument count"
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
             , Diagnose.This $
-                "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut"
+                "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
                 <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given"
             )
           ]

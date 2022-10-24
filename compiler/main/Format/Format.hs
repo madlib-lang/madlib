@@ -748,7 +748,12 @@ expToDoc comments exp =
           let (params', comments'') = paramsToDoc comments' params
               (body', comments''')  = bodyToDoc comments'' body
               (commentsAfterBody, comments'''') = insertCommentsAsDocList False (Area (getEndLoc area) (getEndLoc area)) comments'''
-              commentsAfterBody' = hcat $ intersperse Pretty.hardline commentsAfterBody
+              commentsAfterBody' = case body of
+                [Source _ _ LUnit] ->
+                  hcat $ intersperse Pretty.hardline commentsAfterBody
+
+                _ ->
+                  Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
               params'' = formatParams (length params <= 1) params'
           in  ( params''
                 <> Pretty.pretty " => "
@@ -759,14 +764,21 @@ expToDoc comments exp =
               , comments''''
               )
 
-        Source _ _ (Do exps) ->
+        Source area _ (Do exps) ->
           let (exps', comments'') = bodyToDoc comments' exps
+              (commentsAfterBody, comments''') = insertCommentsAsDocList False (Area (getEndLoc area) (getEndLoc area)) comments''
+              commentsAfterBody' = case exps of
+                [Source _ _ LUnit] ->
+                  hcat $ intersperse Pretty.hardline commentsAfterBody
+
+                _ ->
+                  Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
           in  ( Pretty.pretty "do "
                 <> Pretty.lbrace
-                <> Pretty.nest indentSize (Pretty.line <> exps')
+                <> Pretty.nest indentSize (Pretty.line <> exps' <> commentsAfterBody')
                 <> Pretty.line
                 <> Pretty.rbrace
-              , comments''
+              , comments'''
               )
 
         Source _ _ (Return exp) ->
