@@ -26,6 +26,7 @@ import           Control.Monad.Trans.Maybe
 import Debug.Trace
 import Text.Show.Pretty
 import Run.Options
+import Explain.Location
 
 
 -- defined :: Maybe a -> Bool
@@ -35,10 +36,10 @@ import Run.Options
 -- overlap       :: Env -> Pred -> Pred -> Bool
 -- overlap env p q = defined (unify env p q)
 
-addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
-addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
+addInterface :: Env -> Area -> Id -> [TVar] -> [Pred] -> Infer Env
+addInterface env area id tvs ps = case M.lookup id (envInterfaces env) of
   Just _  ->
-    throwError $ CompilationError (InterfaceAlreadyDefined id) NoContext
+    throwError $ CompilationError (InterfaceAlreadyDefined id) (Context (envCurrentPath env) area)
 
   Nothing ->
     return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }

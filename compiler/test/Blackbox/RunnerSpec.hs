@@ -147,7 +147,7 @@ compile state options invalidatedPaths = do
         else
           List.intercalate "\n\n\n" formattedWarnings <> "\n"
 
-  formattedErrors   <- mapM (Explain.format readFile False) (sanitizeError <$> errors)
+  formattedErrors   <- mapM (Explain.formatError readFile False) (sanitizeError <$> errors)
   -- We drop the first line for now as it contains paths that are system-dependent
   let formattedErrors' = unlines . drop 1 . lines <$> formattedErrors
   let ppErrors =

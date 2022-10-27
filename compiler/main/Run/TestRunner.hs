@@ -191,7 +191,7 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
         Right _ ->
           return ()
     else do
-      formattedErrors <- mapM (Explain.format rf False) $ removeDuplicates errors
+      formattedErrors <- mapM (Explain.formatError rf False) $ removeDuplicates errors
       putStrLn $ List.intercalate "\n\n\n" formattedErrors
       unless watchMode Exit.exitFailure
 

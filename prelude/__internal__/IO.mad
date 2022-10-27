@@ -13,6 +13,11 @@ colorize = (color, v) => color ++ v ++ END_COLOR
 
 // via https://en.wikipedia.org/wiki/ANSI_escape_code
 
+/**
+ * Ansi styles to be used with the ansiColor function.
+ *
+ * @since 0.11.0
+ */
 export ansi = {
   FGBlack: "30",
   FGRed: "31",
@@ -58,6 +63,14 @@ export ansi = {
   FormatInvert: "7",
 }
 
+
+/**
+ * Adds ansi escape codes to a string given a list of styles.
+ *
+ * @since 0.11.0
+ * @example
+ * ansiColor([ansi.FormatBold, ansi.FGBrightRed], "will be red and bold")
+ */
 ansiColor :: List String -> String -> String
 export ansiColor = (parts, str) => colorize(
   `\x1b[${join(";", parts)}m`,
@@ -122,6 +135,14 @@ prettyCase = (color, str) => pipe(
 )(str)
 
 
+/**
+ * Given a color function and a label it prints the given value with
+ * a label colored by the color function.
+ *
+ * @since 0.11.0
+ * @example
+ * colortrace(text.green, "label", [1, 2, 3])
+ */
 colortrace :: Inspect a => (String -> String) -> String -> a -> a
 export colortrace = (fn, v, a) => trace(
   prettyCase(fn, v),
@@ -144,6 +165,13 @@ import readline from "readline"
 -#
 
 
+/**
+ * Writes a string to stdout without line return.
+ *
+ * @since 0.11.0
+ * @example
+ * put("Hello world")
+ */
 put :: String -> {}
 export put = (a) => #- {
   {Node}
@@ -154,10 +182,25 @@ export put = (a) => #- {
   {/Browser}
 } -#
 
+
+/**
+ * Writes a string to stdout with line return.
+ *
+ * @since 0.11.0
+ * @example
+ * putLine("Hello world")
+ */
 putLine :: String -> {}
 export putLine = (a) => #- console.log(a) -#
 
 
+/**
+ * Writes a string to stderr without line return.
+ *
+ * @since 0.11.0
+ * @example
+ * err("Hello world")
+ */
 err :: String -> {}
 export err = (e) => #- {
   {Node}
@@ -169,6 +212,11 @@ export err = (e) => #- {
 } -#
 
 
+/**
+ * A Wish reading one line from stdin
+ *
+ * @since 0.11.0
+ */
 getLine :: Wish IOError.IOError String
 export getLine = Wish((bad, good) => #- {
   {Node}
@@ -188,6 +236,12 @@ export getLine = Wish((bad, good) => #- {
   {/Browser}
 } -#)
 
+
+/**
+ * A Wish reading from stdin
+ *
+ * @since 0.11.0
+ */
 get :: Wish IOError.IOError String
 export get = Wish((bad, good) => #- {
   {Node}
@@ -213,36 +267,17 @@ export get = Wish((bad, good) => #- {
   {/Browser}
 } -#)
 
-
-
-export alias Row = { id :: String, cols :: List #[String, String] }
-
-table :: List Row -> a -> a
-export table = (rows, a) => (#- {
-  const xSpaces = x => new Array(x).fill(' ').join('')
-
-  let rowsArr = __listToJSArray__(rows)
-
-  const longestId = rowsArr.map(x => x.id.length).reduce((a, b) => Math.max(a, b), 0)
-
-  const readyRows = rowsArr
-    .map(x => ({ ...x, id: x.id + xSpaces(longestId - x.id.length) }))
-    .reduce((rows, row) => {
-      const colsArr = __listToJSArray__(row.cols)
-      return {
-        ...rows,
-        [row.id]: colsArr.reduce((o, [colName, colValue]) => { o[colName] = colValue; return o; }, {})
-      }
-    }, {})
-  console.table(readyRows)
-  return a
-} -#)
-
 #elseif llvm
 
 getLineFFI :: (Integer -> String -> {}) -> {}
 getLineFFI = extern "madlib__stdio__getLine"
 
+
+/**
+ * A Wish reading one line from stdin
+ *
+ * @since 0.11.0
+ */
 getLine :: Wish IOError.IOError String
 export getLine = Wish((bad, good) =>
   getLineFFI(
@@ -253,9 +288,16 @@ export getLine = Wish((bad, good) =>
   )
 )
 
+
 getFFI :: (Integer -> String -> {}) -> {}
 getFFI = extern "madlib__stdio__get"
 
+
+/**
+ * A Wish reading from stdin
+ *
+ * @since 0.11.0
+ */
 get :: Wish IOError.IOError String
 export get = Wish((bad, good) =>
   getFFI(
@@ -266,33 +308,100 @@ export get = Wish((bad, good) =>
   )
 )
 
+
+/**
+ * Writes a string to stdout with line return.
+ *
+ * @since 0.11.0
+ * @example
+ * putLine("Hello world")
+ */
 putLine :: String -> {}
 export putLine = extern "madlib__stdio__putLine"
 
+
+/**
+ * Writes a string to stdout without line return.
+ *
+ * @since 0.11.0
+ * @example
+ * put("Hello world")
+ */
 put :: String -> {}
 export put = extern "madlib__stdio__put"
 
+
+/**
+ * Writes a string to stderr without line return.
+ *
+ * @since 0.11.0
+ * @example
+ * err("Hello world")
+ */
 err :: String -> {}
 export err = extern "madlib__stdio__err"
 
 
 #endif
 
+/**
+ * Writes a Madlib value to stdout with line return.
+ *
+ * @since 0.11.0
+ * @example
+ * log({ x: 7, y: 13 })
+ */
 log :: Inspect a => a -> {}
 export log = pipe(inspect, putLine)
 
+
+/**
+ * Writes a string to stderr with line return.
+ *
+ * @since 0.11.0
+ * @example
+ * errLine("Hello world")
+ */
 errLine :: String -> {}
 export errLine = (error) => err(error ++ "\n")
 
+
+/**
+ * Convenient function to print something in the middle of a pipe.
+ * It prints the given string and returns whatever second parameter
+ * is given.
+ *
+ * @since 0.11.0
+ * @example
+ * putLineAndPass("Something", 3) // 3
+ */
 putLineAndPass :: String -> a -> a
 export putLineAndPass = (v, a) => {
   putLine(v)
   return a
 }
 
+
+/**
+ * Convenient function to print a line return.
+ *
+ * @since 0.11.0
+ * @example
+ * putEmptyLine(3) // 3
+ */
 putEmptyLine :: a -> a
 export newLine = putLineAndPass("")
 
+
+/**
+ * Very useful within pipes as it allows one to quickly introspect,
+ * whatever value is currently coming through the pipe.
+ *
+ * @since 0.11.0
+ * @example
+ * // prints "current value 6" and returns 7
+ * pipe((x) => x * 2, trace("current value"), (x) => x + 1)(3)
+ */
 trace :: Inspect a => String -> a -> a
 export trace = (v, a) => {
   putLine(`${v} ${inspect(a)}`)

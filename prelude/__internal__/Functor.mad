@@ -1,11 +1,32 @@
 import { always } from "Function"
 
+
+
 /**
+ * A functor represents a type that can be mapped over.
+ * An abstract datatype f a, which has the ability for its value(s) to be mapped over,
+ * can become an instance of the Functor typeclass. That is to say, a new Functor, f b,
+ * can be made from f a by transforming all of its value(s), whilst leaving the
+ * structure of f itself unmodified.
+ *
  * @since 0.0.8
+ * @example
+ * map((x) => x + 1, Just(1)) // Just(2)
  */
 interface Functor m {
   map :: (a -> b) -> m a -> m b
 }
 
+
+/**
+ * Sets the value of a Functor
+ *
+ * @since 0.0.8
+ * @example
+ * mapL(3, Just(4)) // Just(3)
+ */
 mapL :: Functor m => a -> m b -> m a
-export mapL = pipe(always, map)
+export mapL = pipe(
+  always,
+  map
+)

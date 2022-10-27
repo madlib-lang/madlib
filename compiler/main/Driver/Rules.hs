@@ -235,7 +235,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
-    -- liftIO $ putStrLn $ ppShow slvAst
     case optTarget options of
       TLLVM -> do
         let coreAst          = astToCore False slvAst
@@ -252,7 +251,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   BuiltObjectFile path -> nonInput $ do
     coreAst                           <- Rock.fetch $ CoreAST path
-    -- liftIO $ putStrLn $ ppShow coreAst
     builtModule@(_, _, objectContent) <- LLVM.compileModule options coreAst
 
     liftIO $ do

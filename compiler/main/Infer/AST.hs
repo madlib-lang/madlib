@@ -120,7 +120,7 @@ buildInitialEnv priorEnv Can.AST { Can.apath = Nothing } = return priorEnv
 buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath, Can.aimports }
   = do
     let methods = foldr (\(Can.Canonical _ (Can.Interface _ _ _ mtds' _)) mtds -> mtds <> mtds') mempty ainterfaces
-    env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _ _)) -> addInterface env id vars preds)
+    env' <- foldM (\env (Can.Canonical area (Can.Interface id preds vars _ _)) -> addInterface env { envCurrentPath = apath } area id vars preds)
                   priorEnv
                   ainterfaces
     env'' <- foldM

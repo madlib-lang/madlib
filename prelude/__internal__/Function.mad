@@ -7,7 +7,7 @@
  * @example
  * complement((x) => x % 2 == 0)(2) // false
  */
-complement :: (a -> Boolean) -> (a -> Boolean)
+complement :: (a -> Boolean) -> a -> Boolean
 export complement = (fn) => ((x) => (!fn(x)))
 
 
@@ -71,9 +71,7 @@ export notEquals = (val, a) => val != a
  * ifElse(equals(4), (x) => x + 1, (x) => x * 2, 5) // 10
  */
 ifElse :: (a -> Boolean) -> (a -> b) -> (a -> b) -> a -> b
-export ifElse = (predicate, truthy, falsy, value) => predicate(value)
-  ? truthy(value)
-  : falsy(value)
+export ifElse = (predicate, truthy, falsy, value) => predicate(value) ? truthy(value) : falsy(value)
 
 /**
  * It runs a transformation only if the predicate returns true, otherwise it
@@ -85,8 +83,7 @@ export ifElse = (predicate, truthy, falsy, value) => predicate(value)
  * when(equals(4), (x) => x * 2, 5) // 5
  */
 when :: (a -> Boolean) -> (a -> a) -> a -> a
-export when = (predicate, truthy, value) =>
-  ifElse(predicate, truthy, always(value), value)
+export when = (predicate, truthy, value) => ifElse(predicate, truthy, always(value), value)
 
 /**
  * Returns the complement of the given Boolean value.
@@ -99,6 +96,10 @@ export when = (predicate, truthy, value) =>
 not :: Boolean -> Boolean
 export not = (b) => !b
 
+
+/**
+ * Given any value, returns unit.
+ */
 noop :: a -> {}
 export noop = (_) => ({})
 
@@ -107,31 +108,45 @@ export noop = (_) => ({})
  *
  * @since 0.5.0
  */
-flip :: (a -> b -> c) -> (b -> a -> c)
+flip :: (a -> b -> c) -> b -> a -> c
 export flip = (f) => ((b, a) => f(a, b))
 
 
+/**
+ * Given a predicate and a list of values it returns true if the predicate returns
+ * true for any of the values in the list.
+ *
+ * @since 0.11.0
+ * @example
+ * any((x) => x > 10, [1, 2, 3]) // false
+ * any((x) => x < 10, [1, 2, 3]) // true
+ */
 any :: (a -> Boolean) -> List a -> Boolean
 export any = (predicate, list) => where(list) {
-  [] =>
+  [,] =>
     false
 
-  [x, ...xs] =>
-    predicate(x)
-      ? true
-      : any(predicate, xs)
+  [x, ...xs,] =>
+    predicate(x) ? true : any(predicate, xs)
 }
 
 
+/**
+ * Given a predicate and a list of values it returns true if the predicate returns
+ * true for all values in the list.
+ *
+ * @since 0.11.0
+ * @example
+ * all((x) => x > 2, [1, 2, 3]) // false
+ * all((x) => x < 4, [1, 2, 3]) // true
+ */
 all :: (a -> Boolean) -> List a -> Boolean
 export all = (predicate, list) => where(list) {
-  [] =>
+  [,] =>
     true
 
-  [x, ...xs] =>
-    !predicate(x)
-      ? false
-      : all(predicate, xs)
+  [x, ...xs,] =>
+    !predicate(x) ? false : all(predicate, xs)
 }
 
 /**
@@ -175,7 +190,7 @@ const nativeMemoize = (fn) => {
 }
 -#
 
-memoize :: (a -> b) -> (a -> b)
+memoize :: (a -> b) -> a -> b
 export memoize = (fn) => #- nativeMemoize(fn) -#
 
 #endif

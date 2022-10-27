@@ -118,7 +118,7 @@ runCompilationTask watchMode state options invalidatedPaths = do
         return (warnings, errors)
 
     formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
-    formattedErrors   <- mapM (Explain.format readFile False) $ removeDuplicates errors
+    formattedErrors   <- mapM (Explain.formatError readFile False) $ removeDuplicates errors
 
     putStr $ List.intercalate "\n" (formattedWarnings ++ formattedErrors)
     unless (null errors || watchMode) $ do

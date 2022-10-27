@@ -1,36 +1,26 @@
 import type { Either } from "Either"
-import type { Maybe } from "Maybe"
 import type { JsonValue } from "JsonValue"
+import type { Maybe } from "Maybe"
 
-import Parse from "Parse"
-import {
-  char,
-  choice,
-  digit,
-  many,
-  notChar,
-  runParser,
-  sepBy,
-  some,
-  spaces,
-  symbol
-} from "Parse"
-import String from "String"
-import List from "List"
-import { always } from "Function"
-import { Just, Nothing } from "Maybe"
-import { Left, Right } from "Either"
-import {} from "Number"
 import Dictionary from "Dictionary"
+import { Left, Right } from "Either"
+import { always } from "Function"
 import {
-  JsonString,
-  JsonInteger,
-  JsonFloat,
-  JsonBoolean,
-  JsonNull,
   JsonArray,
-  JsonObject
+  JsonBoolean,
+  JsonFloat,
+  JsonInteger,
+  JsonNull,
+  JsonObject,
+  JsonString
 } from "JsonValue"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import {} from "Number"
+import Parse from "Parse"
+import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
+import String from "String"
+
 
 
 // Parser
@@ -41,7 +31,7 @@ stringCharacter = choice([
   map(always('"'), Parse.string("\\\"")),
   map(always('\n'), Parse.string("\\n")),
   map(always('\t'), Parse.string("\\t")),
-  notChar('"')
+  notChar('"'),
 ])
 
 
@@ -73,7 +63,6 @@ jsonInteger = pipe(
         Nothing =>
           Parse.fail
       }
-      
     )
   )
 )(digit)
@@ -110,12 +99,8 @@ jsonNull = pipe(
 jsonBoolean :: Parse.Parser JsonValue
 jsonBoolean = pipe(
   choice,
-  map(
-    (b) => b == "true"
-      ? JsonBoolean(true)
-      : JsonBoolean(false)
-  )
-)([symbol("true"), symbol("false")])
+  map((b) => b == "true" ? JsonBoolean(true) : JsonBoolean(false))
+)([symbol("true"), symbol("false"),])
 
 
 jsonArray :: Parse.Parser JsonValue
@@ -156,15 +141,7 @@ jsonValue :: Parse.Parser JsonValue
 jsonValue = do {
   _ <- alt(spaces, pure([]))
 
-  return choice([
-    jsonFloat,
-    jsonInteger,
-    jsonNull,
-    jsonBoolean,
-    jsonString,
-    jsonArray,
-    jsonObject,
-  ])
+  return choice([jsonFloat, jsonInteger, jsonNull, jsonBoolean, jsonString, jsonArray, jsonObject,])
 }
 
 
@@ -172,15 +149,29 @@ jsonValue = do {
 // Parser Public API
 // ----------
 
+/**
+ * Parser type
+ *
+ * @since 0.11.0
+ */
 export type Parser r = Parser(JsonValue -> Either String r)
 
-getParserFn :: Parser a -> (JsonValue -> Either String a)
+getParserFn :: Parser a -> JsonValue -> Either String a
 getParserFn = (parser) => where(parser) {
   Parser(fn) =>
     fn
 }
 
 
+/**
+ * Runs the given parser on a string input and returns and Either
+ * which contains the value or is a Left if it failed.
+ *
+ * @since 0.11.0
+ * @example
+ * parse(string, `"Json string"`) // Right("Json string")
+ * parse(string, `3`) // Left("Error parsing string")
+ */
 parse :: Parser b -> String -> Either String b
 export parse = (parser, input) => pipe(
   runParser(jsonValue),
@@ -197,156 +188,246 @@ export parse = (parser, input) => pipe(
 )(input)
 
 
+/**
+ * Parser constructor function
+ *
+ * @since 0.11.0
+ * @example
+ * succeed(47)
+ */
 succeed :: a -> Parser a
-export succeed = (a) => Parser((_) => Right(a))
+export succeed = (a) => Parser(() => Right(a))
 
 
+/**
+ * Creates a failing parser from an error string
+ *
+ * @since 0.11.0
+ * @example
+ * fail("This did not work out")
+ */
 fail :: String -> Parser a
-export fail = (err) => Parser((_) => Left(err))
+export fail = (err) => Parser(() => Left(err))
 
 
+/**
+ * Functor instance of the json parser. It maps over the value contained
+ * in the parser
+ *
+ * @since 0.11.0
+ * @example
+ * map((x) => x + 1, succeed(4)) // succeed(5)
+ */
 instance Functor Parser {
-  map = (f, parser) => Parser((input) => where(parser) {
-    Parser(parserFn) =>
-      map(f, parserFn(input))
-  })
+  map = (f, parser) => Parser(
+    (input) => where(parser) {
+      Parser(parserFn) =>
+        map(f, parserFn(input))
+    }
+  )
 }
 
 
+/**
+ * Applicative instance of the json parser.
+ *
+ * @since 0.11.0
+ * @example
+ * ap(pure((x) => x + 1), succeed(4)) // succeed(5)
+ */
 instance Applicative Parser {
+  ap = (mf, parser) => Parser(
+    (input) => where(mf) {
+      Parser(f) =>
+        where(parser) {
+          Parser(parserFn) =>
+            ap(f(input), parserFn(input))
+        }
+    }
+  )
+
   pure = succeed
-
-  ap = (mf, parser) => Parser((input) => where(mf) {
-    Parser(f) =>
-      where(parser) {
-        Parser(parserFn) =>
-          ap(f(input), parserFn(input))
-      }
-  })
 }
 
 
+/**
+ * Monad instance of the json parser.
+ *
+ * @since 0.11.0
+ * @example
+ * chain((x) => of(x + 1), succeed(4)) // succeed(5)
+ */
 instance Monad Parser {
+  chain = (fn, parser) => Parser(
+    (input) => where(parser) {
+      Parser(parserFn) =>
+        where(parserFn(input)) {
+          Right(a) =>
+            where(fn(a)) {
+              Parser(parserFn_) =>
+                parserFn_(input)
+            }
+
+          Left(e) =>
+            Left(e)
+        }
+    }
+  )
+
   of = succeed
-
-  chain = (fn, parser) => Parser((input) => where(parser) {
-    Parser(parserFn) =>
-      where(parserFn(input)) {
-        Right(a) =>
-          where(fn(a)) {
-            Parser(parserFn_) =>
-              parserFn_(input)
-          }
-
-        Left(e) =>
-          Left(e)
-      }
-  })
 }
 
 
+/**
+ * String parser, it parses a json string of the form "string content"
+ *
+ * @since 0.11.0
+ * @example
+ * parse(string, `"Json string"`) // Right("Json string")
+ */
 string :: Parser String
-export string = Parser((input) => where(input) {
-  JsonString(s) =>
-    Right(s)
+export string = Parser(
+  (input) => where(input) {
+    JsonString(s) =>
+      Right(s)
 
-  _ =>
-    Left("Error parsing string")
-})
+    _ =>
+      Left("Error parsing string")
+  }
+)
 
 
+/**
+ * Integer parser, it parses an integer of the form 33
+ *
+ * @since 0.11.0
+ * @example
+ * parse(integer, `4`) // Right(4)
+ */
 integer :: Parser Integer
-export integer = Parser((input) => where(input) {
-  JsonInteger(i) =>
-    Right(i)
+export integer = Parser(
+  (input) => where(input) {
+    JsonInteger(i) =>
+      Right(i)
 
-  _ =>
-    Left("Error parsing integer")
-})
+    _ =>
+      Left("Error parsing integer")
+  }
+)
 
 
+/**
+ * Float parser, it parses an integer of the form 33.3
+ *
+ * @since 0.11.0
+ * @example
+ * parse(float, `33.3`) // Right(33.3)
+ */
 float :: Parser Float
-export float = Parser((input) => where(input) {
-  JsonFloat(f) =>
-    Right(f)
+export float = Parser(
+  (input) => where(input) {
+    JsonFloat(f) =>
+      Right(f)
 
-  _ =>
-    Left("Error parsing float")
-})
+    _ =>
+      Left("Error parsing float")
+  }
+)
 
 
+/**
+ * Boolean parser, it parses the value true or false
+ *
+ * @since 0.11.0
+ * @example
+ * parse(boolean, `true`)    // Right(true)
+ * parse(boolean, `false`)   // Right(false)
+ * parse(boolean, `"false"`) // Left("Error parsing boolean")
+ */
 boolean :: Parser Boolean
-export boolean = Parser((input) => where(input) {
-  JsonBoolean(b) =>
-    Right(b)
+export boolean = Parser(
+  (input) => where(input) {
+    JsonBoolean(b) =>
+      Right(b)
 
-  _ =>
-    Left("Error parsing boolean")
-})
+    _ =>
+      Left("Error parsing boolean")
+  }
+)
 
 
 list :: Parser a -> Parser (List a)
-export list = (parser) => Parser((input) => where(input) {
-  JsonArray(arr) =>
-    where(parser) {
-      Parser(parserFn) =>
-        List.mapM(parserFn, arr)
-    }
+export list = (parser) => Parser(
+  (input) => where(input) {
+    JsonArray(arr) =>
+      where(parser) {
+        Parser(parserFn) =>
+          List.mapM(parserFn, arr)
+      }
 
-  _ =>
-    Left("Error parsing list")
-})
+    _ =>
+      Left("Error parsing list")
+  }
+)
 
 
 dict :: Parser b -> Parser (Dictionary String b)
-export dict = (parser) => Parser((input) => where(#[input, parser]) {
-  #[JsonObject(d), Parser(parserFn)] =>
-    Dictionary.mapM(parserFn, d)
+export dict = (parser) => Parser(
+  (input) => where(#[input, parser]) {
+    #[JsonObject(d), Parser(parserFn)] =>
+      Dictionary.mapM(parserFn, d)
 
-  _ =>
-    Left("Error parsing dict")
-})
+    _ =>
+      Left("Error parsing dict")
+  }
+)
 
 
 maybe :: Parser a -> Parser (Maybe a)
-export maybe = (parser) => Parser((input) => where(getParserFn(parser, input)) {
-  Right(a) =>
-    Right(Just(a))
+export maybe = (parser) => Parser(
+  (input) => where(getParserFn(parser, input)) {
+    Right(a) =>
+      Right(Just(a))
 
-  Left(_) =>
-    Right(Nothing)
-})
+    Left(_) =>
+      Right(Nothing)
+  }
+)
 
 
 lazy :: ({} -> Parser a) -> Parser a
-export lazy = (wrapped) => Parser((input) => where(wrapped({})) {
-  Parser(parserFn) =>
-    parserFn(input)
-})
+export lazy = (wrapped) => Parser(
+  (input) => where(wrapped({})) {
+    Parser(parserFn) =>
+      parserFn(input)
+  }
+)
 
 
 field :: String -> Parser b -> Parser b
-export field = (fieldName, parser) => Parser((input) => where(input) {
-  JsonObject(d) =>
-    pipe(
-      Dictionary.get(fieldName),
-      where {
-        Just(value) =>
-          getParserFn(parser, value)
+export field = (fieldName, parser) => Parser(
+  (input) => where(input) {
+    JsonObject(d) =>
+      pipe(
+        Dictionary.get(fieldName),
+        where {
+          Just(value) =>
+            getParserFn(parser, value)
 
-        Nothing =>
-          Left(`Error parsing fieldname '${fieldName}'`)
-      }
-    )(d)
+          Nothing =>
+            Left(`Error parsing fieldname '${fieldName}'`)
+        }
+      )(d)
 
-  _ =>
-    Left(`Error parsing fieldname '${fieldName}'`)
-})
+    _ =>
+      Left(`Error parsing fieldname '${fieldName}'`)
+  }
+)
 
 
 path :: List String -> Parser b -> Parser b
-export path = (pathParts, parser) => Parser((input) =>
-  pipe(
+export path = (pathParts, parser) => Parser(
+  (input) => pipe(
     List.reduce(
       (val, fieldName) => where(val) {
         Right(JsonObject(d)) =>
@@ -355,7 +436,7 @@ export path = (pathParts, parser) => Parser((input) =>
             where {
               Just(value) =>
                 Right(value)
-      
+
               Nothing =>
                 Left(`Error parsing fieldname '${fieldName}'`)
             }
@@ -376,8 +457,8 @@ export chain1 = chain
 
 
 chain2 :: (a -> b -> Parser c) -> Parser a -> Parser b -> Parser c
-export chain2 = (fn, parserA, parserB) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input)]) {
+export chain2 = (fn, parserA, parserB) => Parser(
+  (input) => where(#[getParserFn(parserA, input), getParserFn(parserB, input)]) {
     #[Right(a), Right(b)] =>
       getParserFn(fn(a, b), input)
 
@@ -391,8 +472,12 @@ export chain2 = (fn, parserA, parserB) => Parser((input) =>
 
 
 chain3 :: (a -> b -> c -> Parser d) -> Parser a -> Parser b -> Parser c -> Parser d
-export chain3 = (fn, parserA, parserB, parserC) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input)]) {
+export chain3 = (fn, parserA, parserB, parserC) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input)
+  ]) {
     #[Right(a), Right(b), Right(c)] =>
       getParserFn(fn(a, b, c), input)
 
@@ -409,8 +494,13 @@ export chain3 = (fn, parserA, parserB, parserC) => Parser((input) =>
 
 
 chain4 :: (a -> b -> c -> d -> Parser e) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e
-export chain4 = (fn, parserA, parserB, parserC, parserD) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input)]) {
+export chain4 = (fn, parserA, parserB, parserC, parserD) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d)] =>
       getParserFn(fn(a, b, c, d), input)
 
@@ -429,9 +519,21 @@ export chain4 = (fn, parserA, parserB, parserC, parserD) => Parser((input) =>
 )
 
 
-chain5 :: (a -> b -> c -> d -> e -> Parser f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
-export chain5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input)]) {
+chain5 :: (a -> b -> c -> d -> e -> Parser f)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+export chain5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e)] =>
       getParserFn(fn(a, b, c, d, e), input)
 
@@ -453,9 +555,23 @@ export chain5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser((inp
 )
 
 
-chain6 :: (a -> b -> c -> d -> e -> f -> Parser g) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g
-export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input)]) {
+chain6 :: (a -> b -> c -> d -> e -> f -> Parser g)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)] =>
       getParserFn(fn(a, b, c, d, e, f), input)
 
@@ -480,9 +596,25 @@ export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pa
 )
 
 
-chain7 :: (a -> b -> c -> d -> e -> f -> g -> Parser h) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h
-export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input), getParserFn(parserG, input)]) {
+chain7 :: (a -> b -> c -> d -> e -> f -> g -> Parser h)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+-> Parser h
+export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input),
+    getParserFn(parserG, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)] =>
       getParserFn(fn(a, b, c, d, e, f, g), input)
 
@@ -510,9 +642,37 @@ export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parse
 )
 
 
-chain8 :: (a -> b -> c -> d -> e -> f -> g -> h -> Parser i) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i
-export chain8 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input), getParserFn(parserG, input), getParserFn(parserH, input)]) {
+chain8 :: (a -> b -> c -> d -> e -> f -> g -> h -> Parser i)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+-> Parser h
+-> Parser i
+export chain8 = (
+  fn,
+  parserA,
+  parserB,
+  parserC,
+  parserD,
+  parserE,
+  parserF,
+  parserG,
+  parserH
+) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input),
+    getParserFn(parserG, input),
+    getParserFn(parserH, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)] =>
       getParserFn(fn(a, b, c, d, e, f, g, h), input)
 
@@ -548,8 +708,8 @@ export map1 = map
 
 
 map2 :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
-export map2 = (fn, parserA, parserB) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input)]) {
+export map2 = (fn, parserA, parserB) => Parser(
+  (input) => where(#[getParserFn(parserA, input), getParserFn(parserB, input)]) {
     #[Right(a), Right(b)] =>
       Right(fn(a, b))
 
@@ -563,8 +723,12 @@ export map2 = (fn, parserA, parserB) => Parser((input) =>
 
 
 map3 :: (a -> b -> c -> d) -> Parser a -> Parser b -> Parser c -> Parser d
-export map3 = (fn, parserA, parserB, parserC) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input)]) {
+export map3 = (fn, parserA, parserB, parserC) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input)
+  ]) {
     #[Right(a), Right(b), Right(c)] =>
       Right(fn(a, b, c))
 
@@ -581,8 +745,13 @@ export map3 = (fn, parserA, parserB, parserC) => Parser((input) =>
 
 
 map4 :: (a -> b -> c -> d -> e) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e
-export map4 = (fn, parserA, parserB, parserC, parserD) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input)]) {
+export map4 = (fn, parserA, parserB, parserC, parserD) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d)] =>
       Right(fn(a, b, c, d))
 
@@ -601,9 +770,21 @@ export map4 = (fn, parserA, parserB, parserC, parserD) => Parser((input) =>
 )
 
 
-map5 :: (a -> b -> c -> d -> e -> f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
-export map5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input)]) {
+map5 :: (a -> b -> c -> d -> e -> f)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+export map5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e)] =>
       Right(fn(a, b, c, d, e))
 
@@ -625,9 +806,23 @@ export map5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser((input
 )
 
 
-map6 :: (a -> b -> c -> d -> e -> f -> g) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g
-export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input)]) {
+map6 :: (a -> b -> c -> d -> e -> f -> g)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)] =>
       Right(fn(a, b, c, d, e, f))
 
@@ -652,9 +847,25 @@ export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pars
 )
 
 
-map7 :: (a -> b -> c -> d -> e -> f -> g -> h) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h
-export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input), getParserFn(parserG, input)]) {
+map7 :: (a -> b -> c -> d -> e -> f -> g -> h)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+-> Parser h
+export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input),
+    getParserFn(parserG, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)] =>
       Right(fn(a, b, c, d, e, f, g))
 
@@ -681,9 +892,37 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
   }
 )
 
-map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i
-export map8 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH) => Parser((input) =>
-  where(#[getParserFn(parserA, input), getParserFn(parserB, input), getParserFn(parserC, input), getParserFn(parserD, input), getParserFn(parserE, input), getParserFn(parserF, input), getParserFn(parserG, input), getParserFn(parserH, input)]) {
+map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i)
+-> Parser a
+-> Parser b
+-> Parser c
+-> Parser d
+-> Parser e
+-> Parser f
+-> Parser g
+-> Parser h
+-> Parser i
+export map8 = (
+  fn,
+  parserA,
+  parserB,
+  parserC,
+  parserD,
+  parserE,
+  parserF,
+  parserG,
+  parserH
+) => Parser(
+  (input) => where(#[
+    getParserFn(parserA, input),
+    getParserFn(parserB, input),
+    getParserFn(parserC, input),
+    getParserFn(parserD, input),
+    getParserFn(parserE, input),
+    getParserFn(parserF, input),
+    getParserFn(parserG, input),
+    getParserFn(parserH, input)
+  ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)] =>
       Right(fn(a, b, c, d, e, f, g, h))
 
