@@ -1,27 +1,30 @@
 import { assertEquals, test } from "Test"
+
 import Math from "./Math"
 
-test("add", (_) => assertEquals(Math.add(4, 3), 7))
 
-test("substract", (_) => assertEquals(Math.substract(4, 3), 1))
 
-test("multiply", (_) => assertEquals(Math.multiply(4, 3), 12))
+test("add", () => assertEquals(Math.add(4, 3), 7))
 
-test("divide", (_) => assertEquals(Math.divide(6, 3), 2))
+test("substract", () => assertEquals(Math.substract(4, 3), 1))
 
-test("mod", (_) => assertEquals(Math.mod(5, 3), 2))
+test("multiply", () => assertEquals(Math.multiply(4, 3), 12))
 
-test("sqrt", (_) => assertEquals(Math.sqrt(9), 3))
+test("divide", () => assertEquals(Math.divide(6, 3), 2))
 
-test("pow", (_) => assertEquals(Math.pow(2, 3), 8))
+test("mod", () => assertEquals(Math.mod(5, 3), 2))
 
-test("round - below", (_) => assertEquals(Math.round(4.2), 4))
-test("round - above", (_) => assertEquals(Math.round(4.6), 5))
+test("sqrt", () => assertEquals(Math.sqrt(9), 3))
 
-test("ceil", (_) => assertEquals(Math.ceil(4.1), 5))
-test("floor", (_) => assertEquals(Math.floor(4.8), 4))
+test("pow", () => assertEquals(Math.pow(2, 3), 8))
 
-test("square", (_) => assertEquals(Math.square(4), 16))
+test("round - below", () => assertEquals(Math.round(4.2), 4))
+test("round - above", () => assertEquals(Math.round(4.6), 5))
 
-test("min", (_) => assertEquals(Math.min(4, -1.5), -1.5))
-test("max", (_) => assertEquals(Math.max(-17, -1.5), -1.5))
+test("ceil", () => assertEquals(Math.ceil(4.1), 5))
+test("floor", () => assertEquals(Math.floor(4.8), 4))
+
+test("square", () => assertEquals(Math.square(4), 16))
+
+test("min", () => assertEquals(Math.min(4, -1.5), -1.5))
+test("max", () => assertEquals(Math.max(-17, -1.5), -1.5))

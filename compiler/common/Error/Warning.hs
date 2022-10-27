@@ -15,8 +15,8 @@ data WarningKind
   | UnusedTopLevelDeclaration String
   | MadlibVersionMajorDiffer (Maybe String) String String
   | MadlibVersionMinorTooLow (Maybe String) String String
-  | MissingMethods [String]
   -- ^ pkgName versionRequired versionUsed
+  | MissingMethods [String]
   deriving(Eq, Show, Ord)
 
 

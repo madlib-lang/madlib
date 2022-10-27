@@ -1,0 +1,9 @@
+import { assertEquals, test } from "Test"
+
+import { Left, Right } from "./Either"
+import { parse, string } from "./JsonParser"
+
+
+
+test("parse - success", () => assertEquals(parse(string, `"Json string"`), Right("Json string")))
+test("parse - error", () => assertEquals(parse(string, `3`), Left("Error parsing string")))

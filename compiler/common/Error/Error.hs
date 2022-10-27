@@ -23,7 +23,6 @@ data TypeError
   | NoInstanceFound String [Type]
   | InterfaceAlreadyDefined String
   | InterfaceNotExisting String
-  | MethodDoesNotMatchInterfaceType Type Type
   | AmbiguousType (TVar, [Pred])
   | ADTAlreadyDefined Type
   | CapitalizedADTTVar String String
@@ -34,7 +33,6 @@ data TypeError
   | WrongAliasArgCount String Int Int
   | UnknownType String
   | WrongSpreadType String
-  | FieldNotExisting String
   | ImportNotFound String
   | NotExported String String
   | GrammarError FilePath String

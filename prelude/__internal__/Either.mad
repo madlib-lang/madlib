@@ -1,6 +1,8 @@
-import {} from "Monad"
 import {} from "Bifunctor"
+import {} from "Monad"
 import {} from "Show"
+
+
 
 /**
  * An Either is a type which allows for modeling a disjoint union ("a" or "b", but in a safe way).
@@ -10,9 +12,7 @@ import {} from "Show"
  *
  * @since 0.0.5
  */
-export type Either e a
-  = Left(e)
-  | Right(a)
+export type Either e a = Left(e) | Right(a)
 
 
 /**
@@ -48,8 +48,6 @@ instance Functor (Either e) {
  * ap(Right((x) => x + 1), Left("oups")) // Left("oups")
  */
 instance Applicative (Either e) {
-  pure = Right
-
   ap = (mf, m) => where(mf) {
     Left(e) =>
       Left(e)
@@ -57,6 +55,8 @@ instance Applicative (Either e) {
     Right(f) =>
       map(f, m)
   }
+
+  pure = Right
 }
 
 
@@ -71,8 +71,6 @@ instance Applicative (Either e) {
  * chain((x) => Right(x + 1), Left("no")) // Left("no")
  */
 instance Monad (Either e) {
-  of = pure
-
   chain = (f) => where {
     Right(a) =>
       f(a)
@@ -80,6 +78,8 @@ instance Monad (Either e) {
     Left(e) =>
       Left(e)
   }
+
+  of = pure
 }
 
 
@@ -93,6 +93,7 @@ instance Bifunctor Either {
   }
 
   mapFirst = mapLeft
+
   mapSecond = map
 }
 
@@ -105,7 +106,8 @@ instance Bifunctor Either {
  * show((Right(3) :: Either Number Number)) // "Right 3"
  * show((Left(3) :: Either Number Number))  // "Left 3"
  */
-instance (Show e, Show a) => Show (Either e a) {
+instance (Show e,
+Show a) => Show (Either e a) {
   show = where {
     Right(a) =>
       "Right " ++ show(a)

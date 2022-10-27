@@ -874,7 +874,7 @@ groupWarnsByModule warnings =
 
 warningToDiagnostic :: CompilationWarning -> IO Diagnostic
 warningToDiagnostic warning = do
-  formattedWarning <- Explain.formatWarning readFile True warning
+  formattedWarning <- Explain.simpleFormatWarning True warning
   case warning of
     CompilationWarning _ (Context _ area) ->
       return $ Diagnostic
@@ -899,7 +899,7 @@ warningToDiagnostic warning = do
 
 errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
-  formattedError <- Explain.format readFile True err
+  formattedError <- Explain.simpleFormatError True err
   case err of
     CompilationError _ (Context _ area) ->
       return $ Diagnostic

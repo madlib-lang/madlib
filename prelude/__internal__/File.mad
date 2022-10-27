@@ -1,8 +1,10 @@
-import type { Wish } from "Wish"
 import type { IOError } from "IOError"
+import type { Wish } from "Wish"
 
-import { Wish } from "Wish"
 import IOError from "IOError"
+import { Wish } from "Wish"
+
+
 
 #iftarget js
 
@@ -23,17 +25,18 @@ import fs from "fs"
  * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
  */
 write :: String -> String -> Wish IOError {}
-export write = (path, content) =>
-  Wish((bad, good) => #- {
-    fs.writeFile(path, content, (err) => {
-      if (err) {
-        bad(IOError.UnknownError);
-      }
-      else {
-        good(path)
-      }
-    })
-  } -#)
+export write = (path, content) => Wish(
+  (bad, good) => #- {
+      fs.writeFile(path, content, (err) => {
+        if (err) {
+          bad(IOError.UnknownError);
+        }
+        else {
+          good(path)
+        }
+      })
+    } -#
+)
 
 
 /**
@@ -46,81 +49,126 @@ export write = (path, content) =>
  * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
  */
 writeBytes :: String -> ByteArray -> Wish IOError {}
-export writeBytes = (path, bytes) =>
-  Wish((bad, good) => #- {
-    fs.writeFile(path, bytes, (err) => {
+export writeBytes = (path, bytes) => Wish(
+  (bad, good) => #- {
+      fs.writeFile(path, bytes, (err) => {
+        if (err) {
+          bad(IOError.UnknownError);
+        }
+        else {
+          good(null)
+        }
+      })
+    } -#
+)
+
+
+/**
+ * Reads a text file.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.putLine, read("./test.txt"))
+ */
+read :: String -> Wish IOError String
+export read = (path) => Wish(
+  (bad, good) => #- {
+    fs.readFile(path, "utf8", (err, d) => {
       if (err) {
         bad(IOError.UnknownError);
       }
       else {
-        good(null)
+        good(d)
       }
     })
-  } -#)
+  } -#
+)
 
 
-read :: String -> Wish IOError String
-export read = (path) => Wish((bad, good) => #- {
-  fs.readFile(path, "utf8", (err, d) => {
-    if (err) {
-      bad(IOError.UnknownError);
-    }
-    else {
-      good(d)
-    }
-  })
-} -#)
-
+/**
+ * Reads a binary file.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, read("./test.bin"))
+ */
 readBytes :: String -> Wish IOError ByteArray
-export readBytes = (path) => Wish((bad, good) => #- {
-  fs.readFile(path, (err, d) => {
-    if (err) {
-      bad(IOError.UnknownError);
-    }
-    else {
-      good(d)
-    }
-  })
-} -#)
+export readBytes = (path) => Wish(
+  (bad, good) => #- {
+    fs.readFile(path, (err, d) => {
+      if (err) {
+        bad(IOError.UnknownError);
+      }
+      else {
+        good(d)
+      }
+    })
+  } -#
+)
 
+
+/**
+ * Checks whether a file exists or not. If the file does not exist
+ * the Wish is rejected.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(always(IO.putLine("does not exist")), always(IO.putLine("exists")), exists("/"))
+ */
 exists :: String -> Wish {} Boolean
-export exists = (path) => Wish((bad, good) => #- {
-  fs.access(path, fs.constants.F_OK, (err) => {
-    if (err) {
-      bad(null);
-    } else {
-      good(true);
-    }
-  });
-} -#)
+export exists = (path) => Wish(
+  (bad, good) => #- {
+    fs.access(path, fs.constants.F_OK, (err) => {
+      if (err) {
+        bad(null);
+      } else {
+        good(true);
+      }
+    });
+  } -#
+)
 
 #elseif llvm
 
 readFFI :: String -> (Integer -> String -> {}) -> {}
 readFFI = extern "madlib__file__read"
 
+
+/**
+ * Reads a text file.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.putLine, read("./test.txt"))
+ */
 read :: String -> Wish IOError String
-export read = (path) => Wish((bad, good) =>
-  readFFI(
+export read = (path) => Wish(
+  (bad, good) => readFFI(
     path,
-    (libuvError, fileContent) =>
-      libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
-        : good(fileContent)
+    (libuvError, fileContent) => libuvError != 0
+      ? bad(IOError.fromLibuvError(libuvError))
+      : good(fileContent)
   )
 )
 
 readBytesFFI :: String -> (Integer -> ByteArray -> {}) -> {}
 readBytesFFI = extern "madlib__file__readBytes"
 
+
+/**
+ * Reads a binary file.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, read("./test.bin"))
+ */
 readBytes :: String -> Wish IOError ByteArray
-export readBytes = (path) => Wish((bad, good) =>
-  readBytesFFI(
+export readBytes = (path) => Wish(
+  (bad, good) => readBytesFFI(
     path,
-    (libuvError, fileContent) =>
-      libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
-        : good(fileContent)
+    (libuvError, fileContent) => libuvError != 0
+      ? bad(IOError.fromLibuvError(libuvError))
+      : good(fileContent)
   )
 )
 
@@ -139,14 +187,11 @@ writeFFI = extern "madlib__file__write"
  * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
  */
 write :: String -> String -> Wish IOError {}
-export write = (path, content) => Wish((bad, good) =>
-  writeFFI(
+export write = (path, content) => Wish(
+  (bad, good) => writeFFI(
     path,
     content,
-    (libuvError, _) =>
-      libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
-        : good({})
+    (libuvError, _) => libuvError != 0 ? bad(IOError.fromLibuvError(libuvError)) : good({})
   )
 )
 
@@ -165,29 +210,27 @@ writeBytesFFI = extern "madlib__file__writeBytes"
  * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
  */
 writeBytes :: String -> ByteArray -> Wish IOError {}
-export writeBytes = (path, content) => Wish((bad, good) =>
-  writeBytesFFI(
+export writeBytes = (path, content) => Wish(
+  (bad, good) => writeBytesFFI(
     path,
     content,
-    (libuvError, _) =>
-      libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
-        : good({})
+    (libuvError, _) => libuvError != 0 ? bad(IOError.fromLibuvError(libuvError)) : good({})
   )
 )
 
 existsFFI :: String -> (Boolean -> {}) -> {}
 existsFFI = extern "madlib__file__exists"
 
-// TODO: should probably return Wish {} {}
+
+/**
+ * Checks whether a file exists or not. If the file does not exist
+ * the Wish is rejected.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(always(IO.putLine("does not exist")), always(IO.putLine("exists")), exists("/"))
+ */
 exists :: String -> Wish {} Boolean
-export exists = (path) => Wish((bad, good) =>
-  existsFFI(
-    path,
-    (g) => g
-      ? good(true)
-      : bad({})
-  )
-)
+export exists = (path) => Wish((bad, good) => existsFFI(path, (g) => g ? good(true) : bad({})))
 
 #endif

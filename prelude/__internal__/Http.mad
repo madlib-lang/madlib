@@ -1,16 +1,21 @@
-import type { Wish } from "Wish"
 import type { Maybe } from "Maybe"
-import { Wish } from "Wish"
-import String from "String"
-import { Nothing } from "Maybe"
+import type { Wish } from "Wish"
+
 import {} from "ByteArray"
 import List from "List"
-import {} from "Number"
+import { Nothing } from "Maybe"
 import { Just } from "Maybe"
+import {} from "Number"
+import String from "String"
+import { Wish } from "Wish"
+
+
 
 #iftarget js
-import { fulfill } from "Wish"
 import { isJust } from "Maybe"
+import { fulfill } from "Wish"
+
+
 
 #-
 {Node}
@@ -22,7 +27,11 @@ import zlib from "zlib"
 
 #endif
 
-
+/**
+ * Type alias for the http status code from a response
+ *
+ * @since 0.11.0
+ */
 export alias Status = Integer
 export BadRequest = 400
 export Unauthorized = 401
@@ -30,45 +39,55 @@ export PaymentRequired = 402
 export NotFound = 404
 export OK = 200
 
-export type TransferEncoding
-  = Chunked
-  | Compress
-  | Deflate
-  | Gzip
-
+/**
+ * Http header, the unique constructor takes the header name as first parameter
+ * and the value as second parameter
+ *
+ * @since 0.11.0
+ * @example
+ * Header("content-encoding", "gzip")
+ */
 export type Header = Header(String, String)
 
 
-export type Method
-  = CONNECT
-  | DELETE
-  | GET
-  | HEAD
-  | OPTIONS
-  | PATCH
-  | POST
-  | PUT
-  | TRACE
-
-export alias Response a = {
-  status :: Status,
-  body :: a,
-  headers :: List Header
-}
+/**
+ * Type representing the http method of a request
+ *
+ * @since 0.11.0
+ */
+export type Method = CONNECT | DELETE | GET | HEAD | OPTIONS | PATCH | POST | PUT | TRACE
 
 
+/**
+ * Type alias for the response record, representing a http response.
+ * The body field is parameterized and the type of the body will most
+ * likely be ByteArray or String, depending on which flavor of the
+ * request functions you use and what kind of data you expect.
+ *
+ * @since 0.11.0
+ */
+export alias Response a = { body :: a, headers :: List Header, status :: Status, }
+
+
+/**
+ * Retrieves all the headers of a given name from a Response record.
+ *
+ * @since 0.11.0
+ */
 getHeader :: String -> Response a -> List Header
 export getHeader = (headerName, response) => pipe(
   .headers,
-  List.filter(where {
-    Header(name, _) =>
-      String.toLower(name) == String.toLower(headerName)
-  })
+  List.filter(where { Header(name, _) => String.toLower(name) == String.toLower(headerName) })
 )(response)
 
 
 // ----- Error ------------------------------------
 
+/**
+ * Type representing client errors such as BadUrl.
+ *
+ * @since 0.11.0
+ */
 export type ClientError
   // libcurl 9
   = AccessDenied
@@ -108,47 +127,80 @@ export type ClientError
   | UnsupportedProtocol
 
 
-export type Error a
-  = BadResponse(Response a)
-  | ClientError(ClientError)
+/**
+ * General Error type that can either be a BadResponse, in which case the request
+ * has been performed but responded with a status code >= 400, or a ClientError,
+ * in which case no request has been issued because the request was not correct.
+ *
+ * @since 0.11.0
+ */
+export type Error a = BadResponse(Response a) | ClientError(ClientError)
 
 
+/**
+ * Type alias representing requests. The body is optional and is thus a Maybe a,
+ * where the body will most likely be a ByteArray or String, depending on what
+ * kind of request you perform.
+ *
+ * @since 0.11.0
+ */
 export alias Request a = {
+  body :: Maybe a,
+  headers :: List Header,
   method :: Method,
   url :: String,
-  headers :: List Header,
-  body :: Maybe a
 }
 
+
+/**
+ * Returns a string representation of a Method value.
+ *
+ * @since 0.11.0
+ */
 methodStr :: Method -> String
 export methodStr = where {
-  GET => "GET"
+  GET =>
+    "GET"
 
-  POST => "POST"
+  POST =>
+    "POST"
 
-  PUT => "PUT"
+  PUT =>
+    "PUT"
 
-  DELETE => "DELETE"
+  DELETE =>
+    "DELETE"
 
-  PATCH => "PATCH"
+  PATCH =>
+    "PATCH"
 
-  HEAD => "HEAD"
+  HEAD =>
+    "HEAD"
 
-  OPTIONS => "OPTIONS"
+  OPTIONS =>
+    "OPTIONS"
 
-  CONNECT => "CONNECT"
+  CONNECT =>
+    "CONNECT"
 
-  TRACE => "TRACE"
+  TRACE =>
+    "TRACE"
 }
 
 
 #iftarget js
 
 headerKey :: Header -> String
-headerKey = where { Header(key, _) => key }
+headerKey = where {
+  Header(key, _) =>
+    key
+}
 
 headerValue :: Header -> String
-headerValue = where { Header(_, val) => val }
+headerValue = where {
+  Header(_, val) =>
+    val
+}
 
 #-
 const buildHeaderObj = (headerItems) => {
@@ -184,282 +236,308 @@ var capitalizeHeaderName = (input) => input.replace(/(^|[\s-])\S/g, (match) => {
 -#
 
 
+/**
+ * Generic function to perform http requests with a String body for the request and the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, request({
+ *   body: "Some data",
+ *   headers: [Header("Accept", "text/plain")],
+ *   method: GET,
+ *   url: "https://some.url",
+ * }))
+ */
 request :: Request String -> Wish (Error String) (Response String)
-export request = (config) => Wish((bad, good) => #-{
-  {Browser}
-    let headers = config.headers
-    const xhr = new XMLHttpRequest();
-    xhr.open(methodStr(config.method), config.url)
-    xhr.responseType = "arraybuffer"
+export request = (config) => Wish(
+  (bad, good) => #-{
+    {Browser}
+      let headers = config.headers
+      const xhr = new XMLHttpRequest();
+      xhr.open(methodStr(config.method), config.url)
+      xhr.responseType = "arraybuffer"
 
-    while (headers !== null) {
-      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
-      headers = headers.n
-    }
+      while (headers !== null) {
+        xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+        headers = headers.n
+      }
 
-    if (isJust(config.body)) {
-      xhr.send(config.body.__args[0])
-    } else {
-      xhr.send()
-    }
-
-    xhr.onerror = (err) => {
-      // TODO: need to check err and build a correct error here
-      return bad(ClientError(InternalError))
-    }
-
-    xhr.onload = () => {
-      const contentType = xhr.getResponseHeader('Content-Type')
-        ? xhr.getResponseHeader('Content-Type').split(";")[0]
-        : "text/plain"
-      const headerString = xhr.getAllResponseHeaders()
-      const headerLines = headerString.split("\r\n")
-      const responseHeaders = headerLines
-        .map((line) => line
-          .split(":")
-          .map((s) => s.trim())
-        )
-        .filter(s => s.length == 2)
-        .map(([key, value]) => Header(key)(value))
-
-      let current = {}
-      let headersList = current
-      if (responseHeaders.length === 0) {
-        headerList = null
+      if (isJust(config.body)) {
+        xhr.send(config.body.__args[0])
       } else {
-        responseHeaders.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+        xhr.send()
       }
 
-      const buffer = xhr.response
-      const ui8 = new Uint8Array(buffer)
-
-      if (xhr.status >= 400) {
-        bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }))
-      } else {
-        good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
+      xhr.onerror = (err) => {
+        // TODO: need to check err and build a correct error here
+        return bad(ClientError(InternalError))
       }
-    }
-  {/Browser}
-  {Node}
-    const headers = buildHeaderObj(config.headers)
-    let reqFn = http.request
-    const protocol = config.url.split("://")[0]
 
-    if (protocol === "https") {
-      reqFn = https.request
-    } else if (protocol !== "http") {
-      return bad(ClientError(BadUrl(`Invalid protocol '${protocol}'`)))
-    }
-
-    if (isJust(config.body)) {
-      headers["Content-Length"] = config.body.__args[0].length
-    }
-
-    const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
-      if (response.statusCode === 302) {
-        fulfill(bad)(good)(request({ ...config, url: response.headers.location }))
-      }
-      else {
-        const contentType = response.headers["content-type"]
-          ? response.headers["content-type"].split(";")[0]
+      xhr.onload = () => {
+        const contentType = xhr.getResponseHeader('Content-Type')
+          ? xhr.getResponseHeader('Content-Type').split(";")[0]
           : "text/plain"
-
-        let chunks = []
-        let headers = Object.keys(response.headers).flatMap(key => {
-            const value = response.headers[key]
-            if (Array.isArray(value)) {
-              return value.map(v => Header(capitalizeHeaderName(key))(v))
-            } else {
-              return [Header(capitalizeHeaderName(key))(value)]
-            }
-          })
-
-        response.on('data', (chunk) => {
-          chunks.push(Buffer.from(chunk, 'binary'));
-        });
+        const headerString = xhr.getAllResponseHeaders()
+        const headerLines = headerString.split("\r\n")
+        const responseHeaders = headerLines
+          .map((line) => line
+            .split(":")
+            .map((s) => s.trim())
+          )
+          .filter(s => s.length == 2)
+          .map(([key, value]) => Header(key)(value))
 
         let current = {}
         let headersList = current
-        if (headers.length === 0) {
+        if (responseHeaders.length === 0) {
           headerList = null
         } else {
-          headers.forEach((item) => {
+          responseHeaders.forEach((item) => {
             current = current.n = { v: item, n: null }
           })
           headersList = headersList.n
         }
 
-        response.on('end', () => {
-          const buffer = Buffer.concat(chunks)
-          const responseBody = (response.headers["content-encoding"] === "gzip")
-            ? zlib.gunzipSync(buffer)
-            : buffer
-          if (response.statusCode >= 400) {
-            bad(BadResponse({ body: responseBody.toString(), status: response.statusCode, headers: headersList }))
-          } else {
-            if (response.headers["content-encoding"] === "gzip") {
-              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
-            } else {
-              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
-            }
-          }
-        });
+        const buffer = xhr.response
+        const ui8 = new Uint8Array(buffer)
+
+        if (xhr.status >= 400) {
+          bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }))
+        } else {
+          good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
+        }
       }
-    });
+    {/Browser}
+    {Node}
+      const headers = buildHeaderObj(config.headers)
+      let reqFn = http.request
+      const protocol = config.url.split("://")[0]
 
-    if (isJust(config.body)) {
-      req.write(config.body.__args[0])
-    }
+      if (protocol === "https") {
+        reqFn = https.request
+      } else if (protocol !== "http") {
+        return bad(ClientError(BadUrl(`Invalid protocol ''`)))
+      }
 
-    req.on('error', (err) => {
-      // TODO: need to check error and build it correctly
-      bad(ClientError(InternalError))
-    })
-    req.end();
-  {/Node}
-}-#)
+      if (isJust(config.body)) {
+        headers["Content-Length"] = config.body.__args[0].length
+      }
+
+      const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
+        if (response.statusCode === 302) {
+          fulfill(bad)(good)(request({ ...config, url: response.headers.location }))
+        }
+        else {
+          const contentType = response.headers["content-type"]
+            ? response.headers["content-type"].split(";")[0]
+            : "text/plain"
+
+          let chunks = []
+          let headers = Object.keys(response.headers).flatMap(key => {
+              const value = response.headers[key]
+              if (Array.isArray(value)) {
+                return value.map(v => Header(capitalizeHeaderName(key))(v))
+              } else {
+                return [Header(capitalizeHeaderName(key))(value)]
+              }
+            })
+
+          response.on('data', (chunk) => {
+            chunks.push(Buffer.from(chunk, 'binary'));
+          });
+
+          let current = {}
+          let headersList = current
+          if (headers.length === 0) {
+            headerList = null
+          } else {
+            headers.forEach((item) => {
+              current = current.n = { v: item, n: null }
+            })
+            headersList = headersList.n
+          }
+
+          response.on('end', () => {
+            const buffer = Buffer.concat(chunks)
+            const responseBody = (response.headers["content-encoding"] === "gzip")
+              ? zlib.gunzipSync(buffer)
+              : buffer
+            if (response.statusCode >= 400) {
+              bad(BadResponse({ body: responseBody.toString(), status: response.statusCode, headers: headersList }))
+            } else {
+              if (response.headers["content-encoding"] === "gzip") {
+                good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
+              } else {
+                good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
+              }
+            }
+          });
+        }
+      });
+
+      if (isJust(config.body)) {
+        req.write(config.body.__args[0])
+      }
+
+      req.on('error', (err) => {
+        // TODO: need to check error and build it correctly
+        bad(ClientError(InternalError))
+      })
+      req.end();
+    {/Node}
+  }-#
+)
 
 
+/**
+ * Generic function to perform http requests with a ByteArray body for the request and the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, request({
+ *   body: ByteArray.fromString("Some data"),
+ *   headers: [Header("Accept", "text/plain")],
+ *   method: GET,
+ *   url: "https://some.url",
+ * }))
+ */
 requestBytes :: Request ByteArray -> Wish (Error ByteArray) (Response ByteArray)
-export requestBytes = (config) => Wish((bad, good) => #-{
-  {Browser}
-    let headers = config.headers
-    const xhr = new XMLHttpRequest();
-    xhr.open(methodStr(config.method), config.url)
-    xhr.responseType = "arraybuffer"
+export requestBytes = (config) => Wish(
+  (bad, good) => #-{
+    {Browser}
+      let headers = config.headers
+      const xhr = new XMLHttpRequest();
+      xhr.open(methodStr(config.method), config.url)
+      xhr.responseType = "arraybuffer"
 
-    while (headers !== null) {
-      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
-      headers = headers.n
-    }
+      while (headers !== null) {
+        xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+        headers = headers.n
+      }
 
-    if (isJust(config.body)) {
-      xhr.send(config.body.__args[0])
-    } else {
-      xhr.send()
-    }
-
-    xhr.onerror = (err) => {
-      // TODO: need to check err and build a correct error here
-      return bad(ClientError(InternalError))
-    }
-
-    xhr.onload = () => {
-      const contentType = xhr.getResponseHeader('Content-Type')
-        ? xhr.getResponseHeader('Content-Type').split(";")[0]
-        : "text/plain"
-      const headerString = xhr.getAllResponseHeaders()
-      const headerLines = headerString.split("\n")
-      const responseHeaders = headerLines
-        .map((line) => line
-          .split(":")
-          .map((s) => s.trim())
-        )
-        .filter(s => s.length == 2)
-        .map(([key, value]) => Header(key)(value))
-
-      let current = {}
-      let headersList = current
-      if (responseHeaders.length === 0) {
-        headerList = null
+      if (isJust(config.body)) {
+        xhr.send(config.body.__args[0])
       } else {
-        responseHeaders.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+        xhr.send()
       }
 
-      const buffer = xhr.response
-      const ui8 = new Uint8Array(buffer)
-
-      if (xhr.status >= 400) {
-        bad(BadResponse({ body: ui8, status: xhr.status, headers: headersList }))
-      } else {
-        good({ body: ui8, status: xhr.status, headers: headersList })
+      xhr.onerror = (err) => {
+        // TODO: need to check err and build a correct error here
+        return bad(ClientError(InternalError))
       }
-    }
-  {/Browser}
-  {Node}
-    const headers = buildHeaderObj(config.headers)
-    let reqFn = http.request
-    const protocol = config.url.split("://")[0]
 
-    if (protocol === "https") {
-      reqFn = https.request
-    } else if (protocol !== "http") {
-      return bad(ClientError(BadUrl(`Invalid protocol '${protocol}'`)))
-    }
-
-    if (isJust(config.body)) {
-      headers["Content-Length"] = config.body.__args[0].length
-    }
-
-    const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
-      if (response.statusCode === 302) {
-        fulfill(bad)(good)(requestBytes({ ...config, url: response.headers.location }))
-      }
-      else {
-        const contentType = response.headers["content-type"]
-          ? response.headers["content-type"].split(";")[0]
+      xhr.onload = () => {
+        const contentType = xhr.getResponseHeader('Content-Type')
+          ? xhr.getResponseHeader('Content-Type').split(";")[0]
           : "text/plain"
-
-        let chunks = []
-        let headers = Object.keys(response.headers).flatMap(key => {
-            const value = response.headers[key]
-            if (Array.isArray(value)) {
-              return value.map(v => Header(key)(v))
-            } else {
-              return [Header(key)(value)]
-            }
-          })
+        const headerString = xhr.getAllResponseHeaders()
+        const headerLines = headerString.split("\n")
+        const responseHeaders = headerLines
+          .map((line) => line
+            .split(":")
+            .map((s) => s.trim())
+          )
+          .filter(s => s.length == 2)
+          .map(([key, value]) => Header(key)(value))
 
         let current = {}
         let headersList = current
-        if (headers.length === 0) {
+        if (responseHeaders.length === 0) {
           headerList = null
         } else {
-          headers.forEach((item) => {
+          responseHeaders.forEach((item) => {
             current = current.n = { v: item, n: null }
           })
           headersList = headersList.n
         }
 
-        response.on('data', (chunk) => {
-          chunks.push(Buffer.from(chunk, 'binary'));
-        });
+        const buffer = xhr.response
+        const ui8 = new Uint8Array(buffer)
 
-        response.on('end', () => {
-          const buffer = Buffer.concat(chunks)
-          const ui8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT)
-          const responseBody = (response.headers["content-encoding"] === "gzip")
-            ? zlib.gunzipSync(ui8)
-            : ui8
-
-          if (response.statusCode >= 400) {
-            bad(BadResponse({ body: responseBody, status: response.statusCode, headers: headersList }))
-          } else {
-            good({ body: responseBody, status: response.statusCode, headers: headersList })
-          }
-        });
+        if (xhr.status >= 400) {
+          bad(BadResponse({ body: ui8, status: xhr.status, headers: headersList }))
+        } else {
+          good({ body: ui8, status: xhr.status, headers: headersList })
+        }
       }
-    });
+    {/Browser}
+    {Node}
+      const headers = buildHeaderObj(config.headers)
+      let reqFn = http.request
+      const protocol = config.url.split("://")[0]
 
-    if (isJust(config.body)) {
-      req.write(config.body.__args[0])
-    }
+      if (protocol === "https") {
+        reqFn = https.request
+      } else if (protocol !== "http") {
+        return bad(ClientError(BadUrl(`Invalid protocol ''`)))
+      }
 
-    req.on('error', (err) => {
-      // TODO: need to check error and build it correctly
-      bad(ClientError(InternalError))
-    })
-    req.end();
-  {/Node}
-}-#)
+      if (isJust(config.body)) {
+        headers["Content-Length"] = config.body.__args[0].length
+      }
 
+      const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
+        if (response.statusCode === 302) {
+          fulfill(bad)(good)(requestBytes({ ...config, url: response.headers.location }))
+        }
+        else {
+          const contentType = response.headers["content-type"]
+            ? response.headers["content-type"].split(";")[0]
+            : "text/plain"
 
+          let chunks = []
+          let headers = Object.keys(response.headers).flatMap(key => {
+              const value = response.headers[key]
+              if (Array.isArray(value)) {
+                return value.map(v => Header(key)(v))
+              } else {
+                return [Header(key)(value)]
+              }
+            })
+
+          let current = {}
+          let headersList = current
+          if (headers.length === 0) {
+            headerList = null
+          } else {
+            headers.forEach((item) => {
+              current = current.n = { v: item, n: null }
+            })
+            headersList = headersList.n
+          }
+
+          response.on('data', (chunk) => {
+            chunks.push(Buffer.from(chunk, 'binary'));
+          });
+
+          response.on('end', () => {
+            const buffer = Buffer.concat(chunks)
+            const ui8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT)
+            const responseBody = (response.headers["content-encoding"] === "gzip")
+              ? zlib.gunzipSync(ui8)
+              : ui8
+
+            if (response.statusCode >= 400) {
+              bad(BadResponse({ body: responseBody, status: response.statusCode, headers: headersList }))
+            } else {
+              good({ body: responseBody, status: response.statusCode, headers: headersList })
+            }
+          });
+        }
+      });
+
+      if (isJust(config.body)) {
+        req.write(config.body.__args[0])
+      }
+
+      req.on('error', (err) => {
+        // TODO: need to check error and build it correctly
+        bad(ClientError(InternalError))
+      })
+      req.end();
+    {/Node}
+  }-#
+)
 
 
 #elseif llvm
@@ -467,45 +545,86 @@ export requestBytes = (config) => Wish((bad, good) => #-{
 requestFFI :: Request String -> (Error String -> {}) -> (Response String -> {}) -> {}
 requestFFI = extern "madlib__http__request"
 
+
+/**
+ * Generic function to perform http requests with a String body for the request and the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, request({
+ *   body: "Some data",
+ *   headers: [Header("Accept", "text/plain")],
+ *   method: GET,
+ *   url: "https://some.url",
+ * }))
+ */
 request :: Request String -> Wish (Error String) (Response String)
-export request = (config) => Wish((bad, good) =>
-  requestFFI(config, bad, good)
-)
+export request = (config) => Wish((bad, good) => requestFFI(config, bad, good))
+
 
 requestBytesFFI :: Request ByteArray -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> {}
 requestBytesFFI = extern "madlib__http__requestBytes"
 
+
+/**
+ * Generic function to perform http requests with a ByteArray body for the request and the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, requestBytes({
+ *   body: ByteArray.fromString("Some data"),
+ *   headers: [Header("Accept", "text/plain")],
+ *   method: GET,
+ *   url: "https://some.url",
+ * }))
+ */
 requestBytes :: Request ByteArray -> Wish (Error ByteArray) (Response ByteArray)
-export requestBytes = (config) => Wish((bad, good) =>
-  requestBytesFFI(config, bad, good)
-)
+export requestBytes = (config) => Wish((bad, good) => requestBytesFFI(config, bad, good))
 
 #endif
 
+/**
+ * Function to perform a simple GET http request with a String body for the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, get("https://some.url"))
+ */
 get :: String -> Wish (Error String) (Response String)
-export get = (url) => request({
-  method: GET,
-  url,
-  headers: [],
-  body: Nothing,
-})
+export get = (url) => request({ method: GET, url, headers: [], body: Nothing, })
 
+
+/**
+ * Function to perform a simple GET http request with a ByteArray body for the response
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, getBytes("https://some.url"))
+ */
 getBytes :: String -> Wish (Error ByteArray) (Response ByteArray)
-export getBytes = (url) => requestBytes({
-  method: GET,
-  url,
-  headers: [],
-  body: Nothing,
-})
+export getBytes = (url) => requestBytes({ method: GET, url, headers: [], body: Nothing, })
 
+
+/**
+ * Function to perform a GET http request with a String body for the response.
+ * It also accepts a lit of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, getWithHeaders("https://some.url", [Header("Accept", "text/plain")]))
+ */
 getWithHeaders :: String -> List Header -> Wish (Error String) (Response String)
-export getWithHeaders = (url, headers) => request({
-  method: GET,
-  url,
-  headers,
-  body: Nothing,
-})
+export getWithHeaders = (url, headers) => request({ method: GET, url, headers, body: Nothing, })
 
+
+/**
+ * Function to perform a GET http request with a ByteArray body for the response.
+ * It also accepts a lit of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, getBytesWithHeaders("https://some.url", [Header("Accept", "text/plain")]))
+ */
 getBytesWithHeaders :: String -> List Header -> Wish (Error ByteArray) (Response ByteArray)
 export getBytesWithHeaders = (url, headers) => requestBytes({
   method: GET,
@@ -514,14 +633,25 @@ export getBytesWithHeaders = (url, headers) => requestBytes({
   body: Nothing,
 })
 
-post :: String -> String -> Wish (Error String) (Response String)
-export post = (url, body) => request({
-  method: POST,
-  url,
-  headers: [],
-  body: Just(body),
-})
 
+/**
+ * Function to perform a POST http request with a String body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, post("https://some.url", "Some body"))
+ */
+post :: String -> String -> Wish (Error String) (Response String)
+export post = (url, body) => request({ method: POST, url, headers: [], body: Just(body), })
+
+
+/**
+ * Function to perform a POST http request with a ByteArray body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, postBytes("https://some.url", ByteArray.fromString("Some body")))
+ */
 postBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
 export postBytes = (url, body) => requestBytes({
   method: POST,
@@ -530,6 +660,15 @@ export postBytes = (url, body) => requestBytes({
   body: Just(body),
 })
 
+
+/**
+ * Function to perform a POST http request with a String body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, postWithHeaders("https://some.url", "Some body", [Header("Accept", "text/plain")]))
+ */
 postWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
 export postWithHeaders = (url, body, headers) => request({
   method: POST,
@@ -538,7 +677,23 @@ export postWithHeaders = (url, body, headers) => request({
   body: Just(body),
 })
 
-postBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+
+/**
+ * Function to perform a POST http request with a ByteArray body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, postBytesWithHeaders(
+ *   "https://some.url",
+ *   "Some body",
+ *   [Header("Accept", "application/zip")]
+ * ))
+ */
+postBytesWithHeaders :: String
+-> ByteArray
+-> List Header
+-> Wish (Error ByteArray) (Response ByteArray)
 export postBytesWithHeaders = (url, body, headers) => requestBytes({
   method: POST,
   url,
@@ -546,38 +701,93 @@ export postBytesWithHeaders = (url, body, headers) => requestBytes({
   body: Just(body),
 })
 
+
+/**
+ * Function to perform a PUT http request with a String body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, put("https://some.url", "Some body"))
+ */
 put :: String -> String -> Wish (Error String) (Response String)
-export put = (url, body) => request({
-  method: PUT,
-  url,
-  headers: [],
-  body: Just(body),
-})
+export put = (url, body) => request({ method: PUT, url, headers: [], body: Just(body), })
 
+
+/**
+ * Function to perform a PUT http request with a ByteArray body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, putBytes("https://some.url", ByteArray.fromString("Some body")))
+ */
 putBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
-export putBytes = (url, body) => requestBytes({
-  method: PUT,
-  url,
-  headers: [],
-  body: Just(body),
-})
+export putBytes = (url, body) => requestBytes({ method: PUT, url, headers: [], body: Just(body), })
 
+
+/**
+ * Function to perform a PUT http request with a String body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, putWithHeaders("https://some.url", "Some body", [Header("Accept", "text/plain")]))
+ */
 putWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
 export putWithHeaders = (url, body, headers) => request({
   method: PUT,
   url,
   body: Just(body),
-  headers
+  headers,
 })
 
-putBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+
+/**
+ * Function to perform a PUT http request with a ByteArray body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, putBytesWithHeaders(
+ *   "https://some.url",
+ *   "Some body",
+ *   [Header("Accept", "application/zip")]
+ * ))
+ */
+putBytesWithHeaders :: String
+-> ByteArray
+-> List Header
+-> Wish (Error ByteArray) (Response ByteArray)
 export putBytesWithHeaders = (url, body, headers) => requestBytes({
   method: PUT,
   url,
   body: Just(body),
-  headers
+  headers,
 })
 
+
+/**
+ * Function to perform a DELETE http request with a String body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, delete("https://some.url", "Some body"))
+ */
+delete :: String -> String -> Wish (Error String) (Response String)
+export delete = (url, body) => request({
+  method: DELETE,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+
+/**
+ * Function to perform a DELETE http request with a ByteArray body for the request and the response.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, deleteBytes("https://some.url", ByteArray.fromString("Some body")))
+ */
 deleteBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
 export deleteBytes = (url, body) => requestBytes({
   method: DELETE,
@@ -586,18 +796,43 @@ export deleteBytes = (url, body) => requestBytes({
   body: Just(body),
 })
 
+
+/**
+ * Function to perform a DELETE http request with a String body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, deleteWithHeaders("https://some.url", "Some body", [Header("Accept", "text/plain")]))
+ */
 deleteWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
 export deleteWithHeaders = (url, body, headers) => request({
   method: DELETE,
   url,
   body: Just(body),
-  headers
+  headers,
 })
 
-deleteBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+
+/**
+ * Function to perform a DELETE http request with a ByteArray body for the request and the response.
+ * It also accepts a list of headers.
+ *
+ * @since 0.11.0
+ * @example
+ * fulfill(IO.log, IO.log, deleteBytesWithHeaders(
+ *   "https://some.url",
+ *   "Some body",
+ *   [Header("Accept", "application/zip")]
+ * ))
+ */
+deleteBytesWithHeaders :: String
+-> ByteArray
+-> List Header
+-> Wish (Error ByteArray) (Response ByteArray)
 export deleteBytesWithHeaders = (url, body, headers) => requestBytes({
   method: DELETE,
   url,
   body: Just(body),
-  headers
+  headers,
 })

@@ -382,7 +382,7 @@ bodyToDoc comments exps = case exps of
   (exp : next) ->
     let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
-        breaks              = Pretty.hcat $ replicate (expLineDiff comments'' exp (head next)) Pretty.hardline
+        breaks              = Pretty.hcat $ replicate (expLineDiff comments' exp (head next)) Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
 
   [] ->
@@ -753,14 +753,26 @@ expToDoc comments exp =
                   hcat $ intersperse Pretty.hardline commentsAfterBody
 
                 _ ->
-                  Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
+                  if length comments'''' == length comments''' then
+                    Pretty.emptyDoc
+                  else
+                    Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
               params'' = formatParams (length params <= 1) params'
-          in  ( params''
-                <> Pretty.pretty " => "
-                <> Pretty.lbrace
-                <> Pretty.nest indentSize (Pretty.line <> body' <> commentsAfterBody')
-                <> Pretty.line
-                <> Pretty.rbrace
+              doc = case body of
+                [Source _ _ LUnit] | length comments'''' == length comments'' ->
+                  params''
+                  <> Pretty.pretty " => "
+                  <> Pretty.lbrace
+                  <> Pretty.rbrace
+
+                _ ->
+                  params''
+                  <> Pretty.pretty " => "
+                  <> Pretty.lbrace
+                  <> Pretty.nest indentSize (Pretty.line <> body' <> commentsAfterBody')
+                  <> Pretty.line
+                  <> Pretty.rbrace
+          in  ( doc
               , comments''''
               )
 
@@ -772,12 +784,23 @@ expToDoc comments exp =
                   hcat $ intersperse Pretty.hardline commentsAfterBody
 
                 _ ->
-                  Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
-          in  ( Pretty.pretty "do "
-                <> Pretty.lbrace
-                <> Pretty.nest indentSize (Pretty.line <> exps' <> commentsAfterBody')
-                <> Pretty.line
-                <> Pretty.rbrace
+                  if length comments''' == length comments'' then
+                    Pretty.emptyDoc
+                  else
+                    Pretty.hardline <> hcat (intersperse Pretty.hardline commentsAfterBody)
+              doc = case exps of
+                [Source _ _ LUnit] | length comments''' == length comments'' ->
+                  Pretty.pretty "do "
+                  <> Pretty.lbrace
+                  <> Pretty.rbrace
+
+                _ ->
+                    Pretty.pretty "do "
+                  <> Pretty.lbrace
+                  <> Pretty.nest indentSize (Pretty.line <> exps' <> commentsAfterBody')
+                  <> Pretty.line
+                  <> Pretty.rbrace
+          in  ( doc
               , comments'''
               )
 
@@ -1008,7 +1031,8 @@ expToDoc comments exp =
 
         Source _ _ (JSExp js) ->
           let lines' = lines js
-              js' = Pretty.pretty js
+              leadingSpaces = length $ takeWhile (== ' ') js
+              js' = Pretty.nesting $ \n -> Pretty.nest (leadingSpaces - n) $ Pretty.pretty js
           in
             if length lines' > 1 then
               (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#", comments')
@@ -1109,7 +1133,7 @@ importToDoc :: [Comment] -> Import -> (Pretty.Doc ann, [Comment])
 importToDoc comments imp = case imp of
   Source area _ (NamedImport names path _) ->
     let (commentDoc, comments') = insertComments False area comments
-        (nameDocs, comments'')  = importNamesToDoc comments' names
+        (nameDocs, comments'')  = importNamesToDoc comments' (sortBy (\a b -> compare (getSourceContent a) (getSourceContent b)) names)
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
         lineDoc  =
           if null names then
@@ -1129,7 +1153,7 @@ importToDoc comments imp = case imp of
 
   Source area _ (TypeImport names path _) ->
     let (commentDoc, comments') = insertComments False area comments
-        (nameDocs, comments'')  = importNamesToDoc comments' names
+        (nameDocs, comments'')  = importNamesToDoc comments' (sortBy (\a b -> compare (getSourceContent a) (getSourceContent b)) names)
         namesDoc                = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
     in  ( Pretty.group
             (
@@ -1306,9 +1330,9 @@ isInlineComment comment = case comment of
 
 
 insertComments :: Bool -> Area -> [Comment] -> (Pretty.Doc ann, [Comment])
-insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case comments of
+insertComments topLevel area comments = case comments of
   (comment : _) ->
-    let commentArea@(Area _ (Loc _ commentEndLine _)) = getCommentArea comment
+    let commentArea = getCommentArea comment
         after                                         = area `isAfter` commentArea
         afterOrSameLine                               = after || isSameLine area commentArea && isInlineComment comment
     in
