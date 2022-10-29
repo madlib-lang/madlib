@@ -356,6 +356,15 @@ export boolean = Parser(
 )
 
 
+/**
+ * List parser, it parses a json list of the form [value1, value2].
+ * The list must be homogenous and the parser given as a parameter
+ * must match the type of what the list contains.
+ *
+ * @since 0.11.0
+ * @example
+ * parse(list(string), `["one string", "two strings"]`)
+ */
 list :: Parser a -> Parser (List a)
 export list = (parser) => Parser(
   (input) => where(input) {

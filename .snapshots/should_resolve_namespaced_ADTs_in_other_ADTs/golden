@@ -2984,6 +2984,12 @@
           }
       )
     ]
-, []
+, [ CompilationWarning
+      (UnusedDeclaration "x")
+      Context
+        { ctxAstPath = "./ModuleB.mad"
+        , ctxArea = Area (Loc 80 4 3) (Loc 81 4 4)
+        }
+  ]
 , []
 )

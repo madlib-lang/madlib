@@ -16399,6 +16399,18 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "mergeLeft")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 911 40 1) (Loc 920 40 10)
+        }
+  , CompilationWarning
+      (UnusedType "ShopContext")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 1222 58 1) (Loc 1338 62 2)
+        }
+  ]
 , []
 )

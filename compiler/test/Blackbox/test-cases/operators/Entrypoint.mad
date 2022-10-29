@@ -62,7 +62,9 @@ main = () => {
   IO.log(5 * 3.3)
 
   IO.log(-(1 :: Byte))
+  IO.log(invert((1 :: Byte)))
   IO.log(-3.3)
+  IO.log(invert(3.3))
 
   IO.log(5 > (3 :: Byte))
   IO.log(5 > 3.3)

@@ -187,6 +187,12 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "substract")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 9 1 10)
+        }
+  ]
 , []
 )

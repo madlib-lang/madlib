@@ -10295,7 +10295,73 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedParameter "a")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 78 4 14) (Loc 79 4 15)
+        }
+  , CompilationWarning
+      (UnusedParameter "maybe")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 81 4 17) (Loc 86 4 22)
+        }
+  , CompilationWarning
+      (UnusedParameter "bad")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 173 8 19) (Loc 176 8 22)
+        }
+  , CompilationWarning
+      (UnusedParameter "i")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 240 11 8) (Loc 241 11 9)
+        }
+  , CompilationWarning
+      (UnusedParameter "xs")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 243 11 11) (Loc 245 11 13)
+        }
+  , CompilationWarning
+      (UnusedParameter "toggled")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 863 37 6) (Loc 870 37 13)
+        }
+  , CompilationWarning
+      (UnusedParameter "__")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 706 31 25) (Loc 708 31 27)
+        }
+  , CompilationWarning
+      (UnusedTopLevelDeclaration "res")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 595 25 1) (Loc 598 25 4)
+        }
+  , CompilationWarning
+      (UnusedTopLevelDeclaration "toggleTodo")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 682 31 1) (Loc 692 31 11)
+        }
+  , CompilationWarning
+      (UnusedConstructor "Just")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 15 1 16) (Loc 19 1 20)
+        }
+  , CompilationWarning
+      (UnusedConstructor "Nothing")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 25 1 26) (Loc 32 1 33)
+        }
+  ]
 , [ CompilationError
       (UnificationError
          (TRecord

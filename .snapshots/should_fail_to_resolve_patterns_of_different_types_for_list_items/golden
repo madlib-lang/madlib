@@ -108,7 +108,13 @@
     , ainstances = []
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "x")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 1 1 2)
+        }
+  ]
 , [ CompilationError
       (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
       Context

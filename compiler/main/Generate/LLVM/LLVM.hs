@@ -1297,7 +1297,7 @@ generateExp env symbolTable exp = case exp of
 
         "Byte" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          result                <- sub leftOperand' (C.int8 256)
+          result                <- mul leftOperand' (C.int8 (-1))
           return (symbolTable, result, Nothing)
 
         "Float" -> do
