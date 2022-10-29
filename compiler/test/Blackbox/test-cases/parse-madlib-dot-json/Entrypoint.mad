@@ -58,19 +58,6 @@ export dependencyParser =
   )
 
 
-parseDependencies :: String -> Wish String (List Dependency)
-parseDependencies = pipe(
-  J.parse(dependencyParser),
-  where {
-    Left(_) =>
-      of([])
-
-    Right(a) =>
-      of(a)
-  }
-)
-
-
 makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
 makeMadlibDotJson = (
   name,

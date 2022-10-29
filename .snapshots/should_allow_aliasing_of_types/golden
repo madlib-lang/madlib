@@ -14949,6 +14949,36 @@
           }
       )
     ]
-, []
+, [ CompilationWarning
+      (UnusedParameter "a")
+      Context
+        { ctxAstPath = "./ModuleB.mad"
+        , ctxArea = Area (Loc 215 10 32) (Loc 216 10 33)
+        }
+  , CompilationWarning
+      (UnusedParameter "a")
+      Context
+        { ctxAstPath = "./ModuleB.mad"
+        , ctxArea = Area (Loc 202 10 19) (Loc 203 10 20)
+        }
+  , CompilationWarning
+      (UnusedTopLevelDeclaration "double")
+      Context
+        { ctxAstPath = "./ModuleB.mad"
+        , ctxArea = Area (Loc 73 4 1) (Loc 79 4 7)
+        }
+  , CompilationWarning
+      (UnusedParameter "badCB")
+      Context
+        { ctxAstPath = "./ModuleA.mad"
+        , ctxArea = Area (Loc 1486 82 28) (Loc 1491 82 33)
+        }
+  , CompilationWarning
+      (UnusedParameter "goodCB")
+      Context
+        { ctxAstPath = "./ModuleA.mad"
+        , ctxArea = Area (Loc 1574 86 16) (Loc 1580 86 22)
+        }
+  ]
 , []
 )

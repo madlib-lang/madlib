@@ -1,14 +1,21 @@
-│ 1|import {} from \"./Import\"
-│   ^^^^^^^^^^^^^^^^^^^^^^^^^
-│ 
-│ I found an import cycle:
-│ 
-│ Entrypoint.mad
-│   -> Import.mad
-│     -> Entrypoint.mad
-│ 
-│ Hint: Import cycles are not allowed and usually show a design issue. Consider splitting things in more
-│ modules in order to have both modules import a common dependency instead of having them being co-dependent.
-│ Another solution would be to move things that depend on the other module from the cycle into the other in
-│ order to collocate things that depend on each other.
+     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1m/Users/arnaudboeglin/Code/madlib/compiler/test/Blackbox/test-cases/import-cycle/Entrypoint.mad@1:1-1:26\ESC[0m
+     \ESC[0;90;1m│\ESC[0m
+\ESC[0;90;1m   1 │\ESC[0m \ESC[0;91;1mi\ESC[0m\ESC[0;91;1mm\ESC[0m\ESC[0;91;1mp\ESC[0m\ESC[0;91;1mo\ESC[0m\ESC[0;91;1mr\ESC[0m\ESC[0;91;1mt\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m{\ESC[0m\ESC[0;91;1m}\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1mf\ESC[0m\ESC[0;91;1mr\ESC[0m\ESC[0;91;1mo\ESC[0m\ESC[0;91;1mm\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m\"\ESC[0m\ESC[0;91;1m.\ESC[0m\ESC[0;91;1m/\ESC[0m\ESC[0;91;1mI\ESC[0m\ESC[0;91;1mm\ESC[0m\ESC[0;91;1mp\ESC[0m\ESC[0;91;1mo\ESC[0m\ESC[0;91;1mr\ESC[0m\ESC[0;91;1mt\ESC[0m\ESC[0;91;1m\"\ESC[0m
+     \ESC[0;90;1m•\ESC[0m \ESC[0;91m┬\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m
+     \ESC[0;90;1m•\ESC[0m \ESC[0;91m╰╸\ESC[0m \ESC[0;91mI found an import cycle:
+     \ESC[0;90;1m•\ESC[0;91m    
+     \ESC[0;90;1m•\ESC[0;91m    Entrypoint.mad
+     \ESC[0;90;1m•\ESC[0;91m      -> Import.mad
+     \ESC[0;90;1m•\ESC[0;91m        -> Entrypoint.mad
+     \ESC[0;90;1m•\ESC[0;91m    \ESC[0m
+     \ESC[0;90;1m•\ESC[0m
+     \ESC[0;90;1m│\ESC[0m \ESC[0;96mNote: Import cycles are not allowed and usually show a design issue.\ESC[0m
+     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Consider splitting things in more modules in order to have
+     \ESC[0;90;1m│\ESC[0;96m       both modules import a common dependency instead of having
+     \ESC[0;90;1m│\ESC[0;96m       them being co-dependent.\ESC[0m
+     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Another solution would be to move
+     \ESC[0;90;1m│\ESC[0;96m       things that depend on the other module from the cycle into
+     \ESC[0;90;1m│\ESC[0;96m       the other in order to collocate things that depend on each
+     \ESC[0;90;1m│\ESC[0;96m       other.\ESC[0m
+\ESC[0;90;1m─────╯\ESC[0m
 

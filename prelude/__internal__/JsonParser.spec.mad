@@ -1,9 +1,19 @@
 import { assertEquals, test } from "Test"
 
 import { Left, Right } from "./Either"
-import { parse, string } from "./JsonParser"
+import { list, parse, string } from "./JsonParser"
 
 
 
 test("parse - success", () => assertEquals(parse(string, `"Json string"`), Right("Json string")))
 test("parse - error", () => assertEquals(parse(string, `3`), Left("Error parsing string")))
+
+test(
+  "list  - success",
+  () => assertEquals(
+    parse(list(string), `["one string", "two strings"]`),
+    Right(["one string", "two strings",])
+  )
+)
+
+test("list  - error", () => assertEquals(parse(list(string), `1`), Left("Error parsing list")))

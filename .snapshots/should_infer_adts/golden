@@ -1028,6 +1028,18 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedDeclaration "result")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 55 3 3) (Loc 61 3 9)
+        }
+  , CompilationWarning
+      (UnusedConstructor "Error")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 32 1 33) (Loc 37 1 38)
+        }
+  ]
 , []
 )

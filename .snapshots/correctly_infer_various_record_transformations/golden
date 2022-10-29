@@ -5227,6 +5227,36 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      (UnusedDeclaration "ff")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 17 2 3) (Loc 19 2 5)
+        }
+  , CompilationWarning
+      (UnusedDeclaration "r0")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 167 13 3) (Loc 169 13 5)
+        }
+  , CompilationWarning
+      (UnusedDeclaration "r1")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 194 14 3) (Loc 196 14 5)
+        }
+  , CompilationWarning
+      (UnusedDeclaration "r2")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 234 15 3) (Loc 236 15 5)
+        }
+  , CompilationWarning
+      (UnusedDeclaration "fxy")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 271 17 3) (Loc 274 17 6)
+        }
+  ]
 , []
 )

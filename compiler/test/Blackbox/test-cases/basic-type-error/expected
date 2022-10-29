@@ -1,27 +1,30 @@
-│ 1|f = (x) => {
-│   ^
-│ \ESC[90m2|  a = x + 1\ESC[0m
-│ \ESC[90m3|  return a + \"\"\ESC[0m
-│ \ESC[90m4|}\ESC[0m
-│ 
-│ I could not find any instance for 'Number String'. Verify that you imported the module
-│ where the Number instance for 'String' is defined.
-│ 
-│ NB: remember that instance methods are automatically imported when the module
-│ is imported, directly, or indirectly.
+     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@1:1-4:2\ESC[0m
+     \ESC[0;90;1m│\ESC[0m
+\ESC[0;90;1m   1 │\ESC[0m \ESC[0;91m╭\ESC[0m\ESC[0;91m┤\ESC[0m \ESC[0;91;1mf\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m=\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m(\ESC[0m\ESC[0;91;1mx\ESC[0m\ESC[0;91;1m)\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m=\ESC[0m\ESC[0;91;1m>\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m{\ESC[0m
+\ESC[0;90;1m   2 │\ESC[0m \ESC[0;91m│  \ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1ma\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m=\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1mx\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m+\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m1\ESC[0m
+\ESC[0;90;1m   3 │\ESC[0m \ESC[0;91m│  \ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1mr\ESC[0m\ESC[0;91;1me\ESC[0m\ESC[0;91;1mt\ESC[0m\ESC[0;91;1mu\ESC[0m\ESC[0;91;1mr\ESC[0m\ESC[0;91;1mn\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1ma\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m+\ESC[0m\ESC[0;91;1m \ESC[0m\ESC[0;91;1m\"\ESC[0m\ESC[0;91;1m\"\ESC[0m
+\ESC[0;90;1m   4 │\ESC[0m \ESC[0;91m├\ESC[0m\ESC[0;91m┤\ESC[0m \ESC[0;91;1m}\ESC[0m
+     \ESC[0;90;1m•\ESC[0m \ESC[0;91m│ \ESC[0m
+     \ESC[0;90;1m•\ESC[0m \ESC[0;91m╰╸ No instance for 'Number String' was found.
+     \ESC[0;90;1m•\ESC[0;91m    \ESC[0m
+     \ESC[0;90;1m•\ESC[0m
+     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Verify that you imported the module where the Number
+     \ESC[0;90;1m│\ESC[0;96m       instance for 'String' is defined\ESC[0m
+     \ESC[0;90;1m│\ESC[0m \ESC[0;96mNote: Remember that instance methods are automatically imported when the module
+     \ESC[0;90;1m│\ESC[0;96m       is imported, directly, or indirectly.\ESC[0m
+\ESC[0;90;1m─────╯\ESC[0m
 
 
 
-│ \ESC[90m5|\ESC[0m
-│ \ESC[90m6|main = () => {\ESC[0m
-│ 7|  true && \"Hello\"
-│             ^^^^^^^
-│ \ESC[90m8|  f(3)\ESC[0m
-│ \ESC[90m9|}\ESC[0m
-│ 
-│ I found a type error!
-│ expected:
-│     \ESC[32mBoolean\ESC[0m
-│ but found:
-│     \ESC[31mString\ESC[0m
+     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@7:11-7:18\ESC[0m
+     \ESC[0;90;1m│\ESC[0m
+\ESC[0;90;1m   7 │\ESC[0m \ESC[0;97m \ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mu\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m&\ESC[0m\ESC[0;97m&\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;91;1m\"\ESC[0m\ESC[0;91;1mH\ESC[0m\ESC[0;91;1me\ESC[0m\ESC[0;91;1ml\ESC[0m\ESC[0;91;1ml\ESC[0m\ESC[0;91;1mo\ESC[0m\ESC[0;91;1m\"\ESC[0m
+     \ESC[0;90;1m•\ESC[0m           \ESC[0;91m┬\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m
+     \ESC[0;90;1m•\ESC[0m           \ESC[0;91m╰╸\ESC[0m \ESC[0;91m\ESC[0mexpected:
+     \ESC[0;90;1m•\ESC[0;91m                \ESC[0m\ESC[0;92;1mBoolean\ESC[0m
+     \ESC[0;90;1m•\ESC[0;91m              
+     \ESC[0;90;1m•\ESC[0;91m              \ESC[0mbut found:
+     \ESC[0;90;1m•\ESC[0;91m                \ESC[0m\ESC[0;91;1mString\ESC[0m
+     \ESC[0;90;1m•\ESC[0;91m              \ESC[0m
+\ESC[0;90;1m─────╯\ESC[0m
 
