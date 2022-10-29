@@ -7,23 +7,25 @@ import           Test.Hspec                     ( describe
 import           System.Directory
 import           GHC.IO                         (unsafePerformIO)
 import           Control.Monad
-import           System.FilePath (joinPath, takeFileName)
+import           System.FilePath (joinPath, takeFileName, splitPath)
 import           Run.Options
 import qualified Utils.PathUtils as Path
-import Run.Target
+import           Run.Target
 import qualified Driver
-import Run.Compile
-import Control.Exception (try)
-import System.Process
-import System.Exit (ExitCode)
-import Text.Show.Pretty (ppShow)
+import           Control.Exception (try)
+import           System.Process
+import           System.Exit (ExitCode)
+import           Text.Show.Pretty (ppShow)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
-import Error.Warning (CompilationWarning)
-import Error.Error (CompilationError (CompilationError), TypeError (ImportCycle))
-import Driver.Query (Query)
-import Rock (Cyclic)
-import Driver (Prune(..))
+import           Error.Warning (CompilationWarning)
+import           Error.Error (CompilationError (CompilationError), TypeError (ImportCycle))
+import           Driver.Query (Query)
+import           Rock (Cyclic)
+import           Driver (Prune(..))
+import           Error.Context (Context(ctxAstPath))
+import Debug.Trace
+import Data.List (isInfixOf)
 
 
 printInfo :: IO ()
@@ -77,7 +79,7 @@ sanitizeError :: CompilationError -> CompilationError
 sanitizeError err = case err of
   CompilationError (ImportCycle paths) ctx ->
     let updatedPaths = takeFileName <$> paths
-    in  CompilationError (ImportCycle updatedPaths) ctx
+    in  CompilationError (ImportCycle updatedPaths) ctx { ctxAstPath = joinPath $ dropWhile (not . ("compiler" `isInfixOf`)) $ splitPath $ ctxAstPath ctx }
 
   or ->
     or
