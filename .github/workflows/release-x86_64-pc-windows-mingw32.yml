@@ -52,6 +52,11 @@ jobs:
             unzip
             tar
 
+      - name: Fix git
+        run: |
+          Import-Module ProcessMitigations
+          Get-Item -Path "C:\msys64\usr\bin\*.exe" | %{ Set-ProcessMitigation -Name $_.Name -Disable ForceRelocateImages }
+
       - name: Install LLVM 9
         run: |
           curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
@@ -69,9 +74,6 @@ jobs:
 
       - name: Install happy and alex
         run: stack install alex happy
-
-      - name: Fix git
-        run: Get-Item -Path "C:\msys64\usr\bin\*.exe" | %{ Set-ProcessMitigation -Name $_.Name -Disable ForceRelocateImages }
 
       - name: Build madlib
         shell: msys2 {0}
