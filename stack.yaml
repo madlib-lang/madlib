@@ -122,6 +122,9 @@ extra-deps:
 - dependent-hashmap-0.1.0.1@sha256:6d1c20bd79f32d8daebd3cc741f884cc3d093118e3b876eb957defd4c594a966,1892
 - parallel-io-0.3.5@sha256:97db32eb84b3141f4957f6d208c0ef8adce647cbf68099417e93c7d9a45f9b35,3482
 - diagnose-2.4.0@sha256:c594a0b512a8d3aa58b240070467d6f337ef0769e367a0e74f2081307b1b13d7,5941
+# This is needed for diagnose, TODO: update it when a new version comes out as it may be broken wrt space width
+- git: https://github.com/solidsnack/wcwidth.git
+  commit: 747297319f0dd0c8e8f72b7de4fbf52aad73d5b0
 
 # Override default flag values for local packages and extra-deps
 flags:
