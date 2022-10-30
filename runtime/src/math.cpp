@@ -1,5 +1,6 @@
 #include <math.h>
 #include <random>
+#include <ctime>
 
 static const int SEED = time(0);
 
