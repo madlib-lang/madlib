@@ -74,6 +74,13 @@ jobs:
         shell: msys2 {0}
         run: rm -rf /msys64/usr/lib/git-core
 
+      - name: Check git
+        shell: msys2 {0}
+        run: |
+          ls -l /msys64/usr/lib/git-core
+          where git
+          which git
+
       - name: Build madlib
         shell: msys2 {0}
         run: PATH="/c/Program Files/LLVM/bin:/mingw64/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Roaming/local/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH" stack build -v --flag madlib:static
