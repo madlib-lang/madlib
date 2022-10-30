@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/List.mad
+// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/List.mad
 import {} from "./../__internals__.mjs"
 import {  } from "./Monoid.mjs";
 import {  } from "./Show.mjs";
@@ -134,7 +134,7 @@ export let repeat = (a => count => {
       let $count = $$count;
 
         $_continue_ = false;
-        ($count <= 0 ? ($_end_.n = (null), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: $a }, $$a = $a, $$count = $count - 1, $_continue_ = true))
+        ($count <= 0 ? ($_end_.n = (null), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: $a }, $$a = $a, $$count = ($count - 1), $_continue_ = true))
     }
     return $_result_;
 });
@@ -150,16 +150,16 @@ export let repeatWith = (f => count => {
       let $index = $$index;
 
         $_continue_ = false;
-        ($index >= count ? ($_end_.n = (null), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: f($index) }, $$index = $index + 1, $_continue_ = true))
+        ($index >= count ? ($_end_.n = (null), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: f($index) }, $$index = ($index + 1), $_continue_ = true))
     }
     return $_result_;
 });
     return helper(0);
 });
-export let range = (start => end => repeatWith((i => i + start))(end - start));
-export let mapM = (Functor_p171) => (Applicative_p171) => (f => list => {
-    let helper = (x => result => (_P_ => (__$PH2__ => Applicative_p171.ap()(__$PH2__)(result))((__$PH1__ => Functor_p171.map()(__$PH1__)(f(x)))(_P_)))((x_ => result_ => ({ v: x_, n: result_ }))));
-    return reduceRight(helper)(Applicative_p171.pure()((null)))(list);
+export let range = (start => end => repeatWith((i => (i + start)))((end - start)));
+export let mapM = (Functor_z207) => (Applicative_z207) => (f => list => {
+    let helper = (x => result => (_P_ => (__$PH2__ => Applicative_z207.ap()(__$PH2__)(result))((__$PH1__ => Functor_z207.map()(__$PH1__)(f(x)))(_P_)))((x_ => result_ => ({ v: x_, n: result_ }))));
+    return reduceRight(helper)(Applicative_z207.pure()((null)))(list);
 });
 export let singleton = Applicative.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.pure();
 export let intercalate = (sep => list => {
@@ -233,7 +233,7 @@ let _intercalateWithIndex = (i => f => xs => ((__x__) => {
   }
   else if (__x__ !== null && true && true) {
     let { v: one, n: rest } = __x__;
-    return ({ v: one, n: { v: f(i), n: _intercalateWithIndex(i + 1)(f)(rest) } });
+    return ({ v: one, n: { v: f(i), n: _intercalateWithIndex((i + 1))(f)(rest) } });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -262,7 +262,7 @@ export let mapWithIndex = (f => list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: a, n: xs } = __x__;
-    ($_end_ = $_end_.n = { v: f(a)($index) }, $$list_ = xs, $$index = $index + 1, $_continue_ = true);
+    ($_end_ = $_end_.n = { v: f(a)($index) }, $$list_ = xs, $$index = ($index + 1), $_continue_ = true);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -413,7 +413,7 @@ export let nth = (i => list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: a, n: xs } = __x__;
-    (__eq__($i, 0) ? ($_result_ = Just(a)) : ($$i = $i - 1, $$list = xs, $_continue_ = true));
+    (__eq__($i, 0) ? ($_result_ = Just(a)) : ($$i = ($i - 1), $$list = xs, $_continue_ = true));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -456,13 +456,13 @@ export let reduceLeft = (f => acc => list => {
     return $_result_;
 });
 export let reduce = reduceLeft;
-export let reduceM = (Functor_c444) => (Applicative_c444) => (Monad_c444) => (f => acc => list => ((__x__) => {
+export let reduceM = (Functor_v515) => (Applicative_v515) => (Monad_v515) => (f => acc => list => ((__x__) => {
   if (__x__ === null) {
-    return Monad_c444.of()(acc);
+    return Monad_v515.of()(acc);
   }
   else if (__x__ !== null && true && true) {
     let { v: a, n: xs } = __x__;
-    return Monad_c444.chain()((v => reduceM(Functor_c444)(Applicative_c444)(Monad_c444)(f)(v)(xs)))(f(acc)(a));
+    return Monad_v515.chain()((v => reduceM(Functor_v515)(Applicative_v515)(Monad_v515)(f)(v)(xs)))(f(acc)(a));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -547,7 +547,7 @@ export let _$_length_$_ = (list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: a, n: xs } = __x__;
-    ($$list_ = xs, $$count = $count + 1, $_continue_ = true);
+    ($$list_ = xs, $$count = ($count + 1), $_continue_ = true);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -582,7 +582,7 @@ export let slice = (start => end => list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: a, n: xs } = __x__;
-    (__eq__($start_, 0) && $end_ > 0 ? ($_end_ = $_end_.n = { v: a }, $$start_ = 0, $$end_ = $end_ - 1, $$list_ = xs, $_continue_ = true) : ($start_ > 0 ? ($$start_ = $start_ - 1, $$end_ = $end_ - 1, $$list_ = xs, $_continue_ = true) : ($_end_.n = (null), $_result_ = $_start_.n)));
+    (__eq__($start_, 0) && $end_ > 0 ? ($_end_ = $_end_.n = { v: a }, $$start_ = 0, $$end_ = ($end_ - 1), $$list_ = xs, $_continue_ = true) : ($start_ > 0 ? ($$start_ = ($start_ - 1), $$end_ = ($end_ - 1), $$list_ = xs, $_continue_ = true) : ($_end_.n = (null), $_result_ = $_start_.n)));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -593,8 +593,8 @@ export let slice = (start => end => list => {
     }
     return $_result_;
 });
-    let realStart = (start < 0 ? start + _$_length_$_(list) : start);
-    let realEnd = (__eq__(end, 0) ? _$_length_$_(list) : (end < 0 ? end + _$_length_$_(list) : end));
+    let realStart = (start < 0 ? (start + _$_length_$_(list)) : start);
+    let realEnd = (__eq__(end, 0) ? _$_length_$_(list) : (end < 0 ? (end + _$_length_$_(list)) : end));
     return helper(realStart)(realEnd)(list);
 });
 export let isEmpty = (xs => __eq__(xs, (null)));
@@ -784,9 +784,9 @@ export let sortBy = (compareFn => list => {
 });
     return (_P_ => mergeAll(sequences(compareFn)(_P_)))(list);
 });
-export let sort = (Comparable_i788) => sortBy(Comparable_i788.compare());
-export let sortAsc = (Comparable_l791) => sort(Comparable_l791);
-export let sortDesc = (Comparable_r797) => sortBy((a => b => Comparable_r797.compare()(a)(b) * -1));
+export let sort = (Comparable_i944) => sortBy(Comparable_i944.compare());
+export let sortAsc = (Comparable_l947) => sort(Comparable_l947);
+export let sortDesc = (Comparable_r953) => sortBy((a => b => (Comparable_r953.compare()(a)(b) * -1)));
 export let flatten = reduceLeft(concat)((null));
 export let zip = (as => bs => {
     let $_result_;

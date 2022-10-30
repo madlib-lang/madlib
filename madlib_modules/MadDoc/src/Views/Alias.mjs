@@ -11,7 +11,7 @@ import { Example } from "./Example.mjs";
 import {  } from "./../Parser/Documentation.mjs";
 
 Inspect['Record_hasJSf_0282beae8e01da97cf064d349e642ce84_hasLLVMf_1282beae8e01da97cf064d349e642ce84_isAvailablef_2282beae8e01da97cf064d349e642ce84'] = {};
-Inspect['Record_hasJSf_0282beae8e01da97cf064d349e642ce84_hasLLVMf_1282beae8e01da97cf064d349e642ce84_isAvailablef_2282beae8e01da97cf064d349e642ce84']['inspect'] = () => (Inspect_a156) => (Inspect_t149) => (Inspect_m142) => (__$a__ => `{ ` + `hasJS: ` + Inspect_m142.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_t149.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_a156.inspect()(__$a__.isAvailable) + ` }`);
+Inspect['Record_hasJSf_0282beae8e01da97cf064d349e642ce84_hasLLVMf_1282beae8e01da97cf064d349e642ce84_isAvailablef_2282beae8e01da97cf064d349e642ce84']['inspect'] = () => (Inspect_k166) => (Inspect_d159) => (Inspect_w152) => (__$a__ => `{ ` + `hasJS: ` + Inspect_w152.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_d159.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_k166.inspect()(__$a__.isAvailable) + ` }`);
 export let Alias = (moduleName => aliasDef => {
     let aliasedType = aliasDef.aliasedType;
     let params = (String.isEmpty(aliasDef.params) ? `` : ` ` + aliasDef.params);

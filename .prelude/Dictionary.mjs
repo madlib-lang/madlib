@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Dictionary.mad
+// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Dictionary.mad
 import {} from "./../__internals__.mjs"
 import {  } from "./Maybe.mjs";
 import { eq, gt } from "./Compare.mjs";
@@ -53,9 +53,9 @@ let removeConsecutiveDoubles = (list => {
     }
     return $_result_;
 });
-export let fromList = (Comparable_k88) => (_P_ => Dictionary(removeConsecutiveDoubles(List.sortBy((a => b => Comparable_k88.compare()(Tuple.fst(a))(Tuple.fst(b))))(_P_))));
+export let fromList = (Comparable_m90) => (_P_ => Dictionary(removeConsecutiveDoubles(List.sortBy((a => b => Comparable_m90.compare()(Tuple.fst(a))(Tuple.fst(b))))(_P_))));
 export let empty = Dictionary((null));
-export let insert = (Comparable_a130) => (key => value => dict => {
+export let insert = (Comparable_w152) => (key => value => dict => {
     let helper = (list => {
     let $_result_;
     let $_continue_ = true;
@@ -73,7 +73,7 @@ export let insert = (Comparable_a130) => (key => value => dict => {
   }
   else if (__x__ !== null && __x__.v.length === 2 && true && true && true) {
     let { v: [k, v], n: xs } = __x__;
-    (eq(Comparable_a130)(k)(key) ? ($_end_.n = ({ v: ([key, value]), n: xs }), $_result_ = $_start_.n) : (gt(Comparable_a130)(k)(key) ? ($_end_.n = ({ v: ([key, value]), n: { v: ([k, v]), n: xs } }), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: ([k, v]) }, $$list = xs, $_continue_ = true)));
+    (eq(Comparable_w152)(k)(key) ? ($_end_.n = ({ v: ([key, value]), n: xs }), $_result_ = $_start_.n) : (gt(Comparable_w152)(k)(key) ? ($_end_.n = ({ v: ([key, value]), n: { v: ([k, v]), n: xs } }), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: ([k, v]) }, $$list = xs, $_continue_ = true)));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -96,10 +96,51 @@ export let insert = (Comparable_a130) => (key => value => dict => {
   }
 })(dict);
 });
-export let get = (Comparable_p145) => (k => __x__ => ((__x__) => {
+export let update = (Comparable_d211) => (fn => key => dict => {
+    let helper = (list => {
+    let $_result_;
+    let $_continue_ = true;
+    let $_start_ = {};
+    let $_end_ = $_start_;
+    let $$list = list;
+
+    while($_continue_) {
+      let $list = $$list;
+
+        $_continue_ = false;
+        ((__x__) => {
+  if (__x__ === null) {
+    ($_end_.n = (null), $_result_ = $_start_.n);
+  }
+  else if (__x__ !== null && __x__.v.length === 2 && true && true && true) {
+    let { v: [k, v], n: xs } = __x__;
+    (eq(Comparable_d211)(k)(key) ? ($_end_.n = ({ v: ([key, fn(v)]), n: xs }), $_result_ = $_start_.n) : (gt(Comparable_d211)(k)(key) ? ($_end_.n = ({ v: ([k, v]), n: xs }), $_result_ = $_start_.n) : ($_end_ = $_end_.n = { v: ([k, v]) }, $$list = xs, $_continue_ = true)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})($list)
+    }
+    return $_result_;
+});
+    return ((__x__) => {
   if (__x__.__constructor === "Dictionary" && true) {
     let items = __x__.__args[0];
-    return (_P_ => Functor.Maybe_17998c1898470349f86806803a2b29f2.map()(Tuple.snd)(List.find((item => ((__x__) => {
+    return Dictionary(helper(items));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(dict);
+});
+export let get = (Comparable_s226) => (k => __x__ => ((__x__) => {
+  if (__x__.__constructor === "Dictionary" && true) {
+    let items = __x__.__args[0];
+    return (_P_ => Functor.Maybe_eadd07e55d46112f77467431f86f5e2d.map()(Tuple.snd)(List.find((item => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [kk,] = __x__;
     return __eq__(k, kk);
@@ -117,10 +158,10 @@ export let get = (Comparable_p145) => (k => __x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-export let merge = (Comparable_z181) => (a => b => ((__x__) => {
+export let merge = (Comparable_c262) => (a => b => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Dictionary" && true && __x__[1].__constructor === "Dictionary" && true) {
     let [{ __args: [itemsA]},{ __args: [itemsB]}] = __x__;
-    return fromList(Comparable_z181)(List.concat(itemsA)(itemsB));
+    return fromList(Comparable_c262)(List.concat(itemsA)(itemsB));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -150,13 +191,13 @@ export let toList = (dict => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(dict));
-export let mapM = (Functor_m246) => (Applicative_m246) => (f => dict => ((__x__) => {
+export let mapM = (Functor_p327) => (Applicative_p327) => (f => dict => ((__x__) => {
   if (__x__.__constructor === "Dictionary" && true) {
     let items = __x__.__args[0];
-    return (_P_ => Functor_m246.map()(Dictionary)(List.mapM(Functor_m246)(Applicative_m246)((__x__ => ((__x__) => {
+    return (_P_ => Functor_p327.map()(Dictionary)(List.mapM(Functor_p327)(Applicative_p327)((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [k,v] = __x__;
-    return Functor_m246.map()((mapped => ([k, mapped])))(f(v));
+    return Functor_p327.map()((mapped => ([k, mapped])))(f(v));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -204,4 +245,4 @@ export let values = (m => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m));
-export default { fromList, empty, insert, get, merge, _$_length_$_, toList, mapM, mapWithKey, keys, values };
+export default { fromList, empty, insert, update, get, merge, _$_length_$_, toList, mapM, mapWithKey, keys, values };

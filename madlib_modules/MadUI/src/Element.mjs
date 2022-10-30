@@ -7,7 +7,7 @@ import { EventConstructors } from "./Event.mjs";
 
 export let Element = ({ __constructor: "Element", __args: [  ] });
 Inspect['Element_e57bb41ee76a8c1acf300f8ac2295260'] = {};
-Inspect['Element_e57bb41ee76a8c1acf300f8ac2295260']['inspect'] = () => (Inspect_r823) => (__$a__ => ((__x__) => {
+Inspect['Element_e57bb41ee76a8c1acf300f8ac2295260']['inspect'] = () => (Inspect_b599) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Element") {
     return `Element`;
   }

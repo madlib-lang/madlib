@@ -8,7 +8,7 @@ import { always } from "./../../../../.prelude/Function.mjs";
 let handleInput = (state => event => ((__x__) => {
   if (__x__.__constructor === "InputEvent" && true) {
     let e = __x__.__args[0];
-    return ({ v: Monad.Wish_48091bbb4c188d584814a4a3f8207f71.of()(always(({ ...state, search: String.toLower(e.target.value) }))), n: null });
+    return ({ v: Monad.Wish_48e4c68256950cf75b1d1da053be4dfb.of()(always(({ ...state, search: String.toLower(e.target.value) }))), n: null });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

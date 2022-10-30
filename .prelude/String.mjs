@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/String.mad
+// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/String.mad
 import {} from "./../__internals__.mjs"
 import { Just, Nothing } from "./Maybe.mjs";
 import { MORE, LESS, EQUAL } from "./Compare.mjs";
@@ -37,6 +37,10 @@ export let unlines = join(`\n`);
 export let words = split(` `);
 export let unwords = join(` `);
 export let toList = (str =>  {
+  if (str.length === 0) {
+    return null
+  }
+
   let result = { v: null, n: null }
   let current = result
   str.split('').forEach(c => {
@@ -68,7 +72,7 @@ export let charAt = (n => s => {
   return !!c ? Just(c) : Nothing
 });
 export let firstChar = charAt(0);
-export let lastChar = (s => charAt(_$_length_$_(s) - 1)(s));
+export let lastChar = (s => charAt((_$_length_$_(s) - 1))(s));
 export let trim = (s =>  s.trim() );
 export let trimStart = (s =>  s.trimStart() );
 export let trimEnd = (s =>  s.trimEnd() );

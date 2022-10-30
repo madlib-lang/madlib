@@ -20,7 +20,7 @@ Inspect['GlobalAction_8fa092d0d5414d48db6f0f118b65d141']['inspect'] = () => (Ins
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-export let syncAction = (stateUpdate => _ => event => ({ v: Monad.Wish_48091bbb4c188d584814a4a3f8207f71.of()((state => stateUpdate(state)(event))), n: null }));
+export let syncAction = (stateUpdate => _ => event => ({ v: Monad.Wish_48e4c68256950cf75b1d1da053be4dfb.of()((state => stateUpdate(state)(event))), n: null }));
 export let onAfterPrint = GlobalAction(`afterprint`);
 export let onBeforePrint = GlobalAction(`beforeprint`);
 export let onBeforeUnload = GlobalAction(`beforeunload`);

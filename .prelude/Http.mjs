@@ -1,19 +1,15 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Http.mad
+// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Http.mad
 import {} from "./../__internals__.mjs"
-import { fulfill } from "./Wish.mjs";
 import { isJust } from "./Maybe.mjs";
-import { Wish } from "./Wish.mjs";
-import String from "./String.mjs";
-import { Nothing } from "./Maybe.mjs";
+import { fulfill } from "./Wish.mjs";
 import {  } from "./ByteArray.mjs";
 import List from "./List.mjs";
-import {  } from "./Number.mjs";
+import { Nothing } from "./Maybe.mjs";
 import { Just } from "./Maybe.mjs";
+import {  } from "./Number.mjs";
+import String from "./String.mjs";
+import { Wish } from "./Wish.mjs";
 
-export let Chunked = ({ __constructor: "Chunked", __args: [  ] });
-export let Compress = ({ __constructor: "Compress", __args: [  ] });
-export let Deflate = ({ __constructor: "Deflate", __args: [  ] });
-export let Gzip = ({ __constructor: "Gzip", __args: [  ] });
 export let Header = (a => b => ({ __constructor: "Header", __args: [ a, b ] }));
 export let CONNECT = ({ __constructor: "CONNECT", __args: [  ] });
 export let DELETE = ({ __constructor: "DELETE", __args: [  ] });
@@ -44,31 +40,8 @@ export let UnresolvedProxy = ({ __constructor: "UnresolvedProxy", __args: [  ] }
 export let UnsupportedProtocol = ({ __constructor: "UnsupportedProtocol", __args: [  ] });
 export let BadResponse = (a => ({ __constructor: "BadResponse", __args: [ a ] }));
 export let ClientError = (a => ({ __constructor: "ClientError", __args: [ a ] }));
-Inspect['TransferEncoding_796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['TransferEncoding_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Chunked") {
-    return `Chunked`;
-  }
-  else if (__x__.__constructor === "Compress") {
-    return `Compress`;
-  }
-  else if (__x__.__constructor === "Deflate") {
-    return `Deflate`;
-  }
-  else if (__x__.__constructor === "Gzip") {
-    return `Gzip`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Header_796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['Header_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Header_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['Header_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Header" && true && true) {
     let a0 = __x__.__args[0];
     let a1 = __x__.__args[1];
@@ -83,8 +56,8 @@ Inspect['Header_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Method_796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['Method_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Method_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['Method_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "CONNECT") {
     return `CONNECT`;
   }
@@ -121,10 +94,10 @@ Inspect['Method_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_d445) => (Inspect_w438) => (Inspect_p431) => (__$a__ => `{ ` + `body: ` + Inspect_p431.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_w438.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_d445.inspect()(__$a__.status) + ` }`);
-Inspect['ClientError_796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['ClientError_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_m428) => (Inspect_f421) => (Inspect_y414) => (__$a__ => `{ ` + `body: ` + Inspect_y414.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_f421.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_m428.inspect()(__$a__.status) + ` }`);
+Inspect['ClientError_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['ClientError_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "AccessDenied") {
     return `AccessDenied`;
   }
@@ -189,15 +162,15 @@ Inspect['ClientError_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (__$a
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Error_796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['Error_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_n481) => (__$a__ => ((__x__) => {
+Inspect['Error_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['Error_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_w464) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "BadResponse" && true) {
     let a0 = __x__.__args[0];
-    return `BadResponse(` + Inspect.Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_statusf_2796b81c0e00da04bf7bbfe5795b16551.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_796b81c0e00da04bf7bbfe5795b16551]))(Inspect_n481)(a0) + `)`;
+    return `BadResponse(` + Inspect.Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_e12fd0e5657b374d6d8faca6bf3fb291]))(Inspect_w464)(a0) + `)`;
   }
   else if (__x__.__constructor === "ClientError" && true) {
     let a0 = __x__.__args[0];
-    return `ClientError(` + Inspect.ClientError_796b81c0e00da04bf7bbfe5795b16551.inspect()(a0) + `)`;
+    return `ClientError(` + Inspect.ClientError_e12fd0e5657b374d6d8faca6bf3fb291.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -208,8 +181,8 @@ Inspect['Error_796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_n4
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_methodf_2796b81c0e00da04bf7bbfe5795b16551_urlf_3796b81c0e00da04bf7bbfe5795b16551'] = {};
-Inspect['Record_bodyf_0796b81c0e00da04bf7bbfe5795b16551_headersf_1796b81c0e00da04bf7bbfe5795b16551_methodf_2796b81c0e00da04bf7bbfe5795b16551_urlf_3796b81c0e00da04bf7bbfe5795b16551']['inspect'] = () => (Inspect_b521) => (Inspect_u514) => (Inspect_n507) => (Inspect_g500) => (__$a__ => `{ ` + `body: ` + Inspect_g500.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_n507.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_u514.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_b521.inspect()(__$a__.url) + ` }`);
+Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_methodf_2e12fd0e5657b374d6d8faca6bf3fb291_urlf_3e12fd0e5657b374d6d8faca6bf3fb291'] = {};
+Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_methodf_2e12fd0e5657b374d6d8faca6bf3fb291_urlf_3e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_k504) => (Inspect_d497) => (Inspect_w490) => (Inspect_p483) => (__$a__ => `{ ` + `body: ` + Inspect_p483.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_w490.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_d497.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_k504.inspect()(__$a__.url) + ` }`);
 
 
 ;
@@ -314,121 +287,121 @@ const gunzipResponse = (response) => {
 
 ;
 export let request = (config => Wish((bad => good => {
-      let headers = config.headers
-    const xhr = new XMLHttpRequest();
-    xhr.open(methodStr(config.method), config.url)
-    xhr.responseType = "arraybuffer"
+          let headers = config.headers
+      const xhr = new XMLHttpRequest();
+      xhr.open(methodStr(config.method), config.url)
+      xhr.responseType = "arraybuffer"
 
-    while (headers !== null) {
-      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
-      headers = headers.n
-    }
-
-    if (isJust(config.body)) {
-      xhr.send(config.body.__args[0])
-    } else {
-      xhr.send()
-    }
-
-    xhr.onerror = (err) => {
-      // TODO: need to check err and build a correct error here
-      return bad(ClientError(InternalError))
-    }
-
-    xhr.onload = () => {
-      const contentType = xhr.getResponseHeader('Content-Type')
-        ? xhr.getResponseHeader('Content-Type').split(";")[0]
-        : "text/plain"
-      const headerString = xhr.getAllResponseHeaders()
-      const headerLines = headerString.split("\r\n")
-      const responseHeaders = headerLines
-        .map((line) => line
-          .split(":")
-          .map((s) => s.trim())
-        )
-        .filter(s => s.length == 2)
-        .map(([key, value]) => Header(key)(value))
-
-      let current = {}
-      let headersList = current
-      if (responseHeaders.length === 0) {
-        headerList = null
-      } else {
-        responseHeaders.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+      while (headers !== null) {
+        xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+        headers = headers.n
       }
 
-      const buffer = xhr.response
-      const ui8 = new Uint8Array(buffer)
-
-      if (xhr.status >= 400) {
-        bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }))
+      if (isJust(config.body)) {
+        xhr.send(config.body.__args[0])
       } else {
-        good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
+        xhr.send()
       }
-    }
-    
-})));
+
+      xhr.onerror = (err) => {
+        // TODO: need to check err and build a correct error here
+        return bad(ClientError(InternalError))
+      }
+
+      xhr.onload = () => {
+        const contentType = xhr.getResponseHeader('Content-Type')
+          ? xhr.getResponseHeader('Content-Type').split(";")[0]
+          : "text/plain"
+        const headerString = xhr.getAllResponseHeaders()
+        const headerLines = headerString.split("\r\n")
+        const responseHeaders = headerLines
+          .map((line) => line
+            .split(":")
+            .map((s) => s.trim())
+          )
+          .filter(s => s.length == 2)
+          .map(([key, value]) => Header(key)(value))
+
+        let current = {}
+        let headersList = current
+        if (responseHeaders.length === 0) {
+          headerList = null
+        } else {
+          responseHeaders.forEach((item) => {
+            current = current.n = { v: item, n: null }
+          })
+          headersList = headersList.n
+        }
+
+        const buffer = xhr.response
+        const ui8 = new Uint8Array(buffer)
+
+        if (xhr.status >= 400) {
+          bad(BadResponse({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }))
+        } else {
+          good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
+        }
+      }
+        
+  })));
 export let requestBytes = (config => Wish((bad => good => {
-      let headers = config.headers
-    const xhr = new XMLHttpRequest();
-    xhr.open(methodStr(config.method), config.url)
-    xhr.responseType = "arraybuffer"
+          let headers = config.headers
+      const xhr = new XMLHttpRequest();
+      xhr.open(methodStr(config.method), config.url)
+      xhr.responseType = "arraybuffer"
 
-    while (headers !== null) {
-      xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
-      headers = headers.n
-    }
-
-    if (isJust(config.body)) {
-      xhr.send(config.body.__args[0])
-    } else {
-      xhr.send()
-    }
-
-    xhr.onerror = (err) => {
-      // TODO: need to check err and build a correct error here
-      return bad(ClientError(InternalError))
-    }
-
-    xhr.onload = () => {
-      const contentType = xhr.getResponseHeader('Content-Type')
-        ? xhr.getResponseHeader('Content-Type').split(";")[0]
-        : "text/plain"
-      const headerString = xhr.getAllResponseHeaders()
-      const headerLines = headerString.split("\n")
-      const responseHeaders = headerLines
-        .map((line) => line
-          .split(":")
-          .map((s) => s.trim())
-        )
-        .filter(s => s.length == 2)
-        .map(([key, value]) => Header(key)(value))
-
-      let current = {}
-      let headersList = current
-      if (responseHeaders.length === 0) {
-        headerList = null
-      } else {
-        responseHeaders.forEach((item) => {
-          current = current.n = { v: item, n: null }
-        })
-        headersList = headersList.n
+      while (headers !== null) {
+        xhr.setRequestHeader(headerKey(headers.v), headerValue(headers.v))
+        headers = headers.n
       }
 
-      const buffer = xhr.response
-      const ui8 = new Uint8Array(buffer)
-
-      if (xhr.status >= 400) {
-        bad(BadResponse({ body: ui8, status: xhr.status, headers: headersList }))
+      if (isJust(config.body)) {
+        xhr.send(config.body.__args[0])
       } else {
-        good({ body: ui8, status: xhr.status, headers: headersList })
+        xhr.send()
       }
-    }
-    
-})));
+
+      xhr.onerror = (err) => {
+        // TODO: need to check err and build a correct error here
+        return bad(ClientError(InternalError))
+      }
+
+      xhr.onload = () => {
+        const contentType = xhr.getResponseHeader('Content-Type')
+          ? xhr.getResponseHeader('Content-Type').split(";")[0]
+          : "text/plain"
+        const headerString = xhr.getAllResponseHeaders()
+        const headerLines = headerString.split("\n")
+        const responseHeaders = headerLines
+          .map((line) => line
+            .split(":")
+            .map((s) => s.trim())
+          )
+          .filter(s => s.length == 2)
+          .map(([key, value]) => Header(key)(value))
+
+        let current = {}
+        let headersList = current
+        if (responseHeaders.length === 0) {
+          headerList = null
+        } else {
+          responseHeaders.forEach((item) => {
+            current = current.n = { v: item, n: null }
+          })
+          headersList = headersList.n
+        }
+
+        const buffer = xhr.response
+        const ui8 = new Uint8Array(buffer)
+
+        if (xhr.status >= 400) {
+          bad(BadResponse({ body: ui8, status: xhr.status, headers: headersList }))
+        } else {
+          good({ body: ui8, status: xhr.status, headers: headersList })
+        }
+      }
+        
+  })));
 export let get = (url => request(({ method: GET, url: url, headers: (null), body: Nothing })));
 export let getBytes = (url => requestBytes(({ method: GET, url: url, headers: (null), body: Nothing })));
 export let getWithHeaders = (url => headers => request(({ method: GET, url: url, headers: headers, body: Nothing })));
@@ -441,7 +414,8 @@ export let put = (url => body => request(({ method: PUT, url: url, headers: (nul
 export let putBytes = (url => body => requestBytes(({ method: PUT, url: url, headers: (null), body: Just(body) })));
 export let putWithHeaders = (url => body => headers => request(({ method: PUT, url: url, body: Just(body), headers: headers })));
 export let putBytesWithHeaders = (url => body => headers => requestBytes(({ method: PUT, url: url, body: Just(body), headers: headers })));
+export let _$_delete_$_ = (url => body => request(({ method: DELETE, url: url, headers: (null), body: Just(body) })));
 export let deleteBytes = (url => body => requestBytes(({ method: DELETE, url: url, headers: (null), body: Just(body) })));
 export let deleteWithHeaders = (url => body => headers => request(({ method: DELETE, url: url, body: Just(body), headers: headers })));
 export let deleteBytesWithHeaders = (url => body => headers => requestBytes(({ method: DELETE, url: url, body: Just(body), headers: headers })));
-export default { BadRequest, Unauthorized, PaymentRequired, NotFound, OK, getHeader, methodStr, request, requestBytes, get, getBytes, getWithHeaders, getBytesWithHeaders, post, postBytes, postWithHeaders, postBytesWithHeaders, put, putBytes, putWithHeaders, putBytesWithHeaders, deleteBytes, deleteWithHeaders, deleteBytesWithHeaders, Chunked, Compress, Deflate, Gzip, Header, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE, AccessDenied, AddressNotFound, BadTransferEncoding, BadUrl, ConnectionFailed, Http2FramingError, IncompleteResponse, InternalError, InvalidSSLCertificate, MalformedResponse, NotSupported, SSLConnectionFailed, SSLEngineNotFound, SSLInitializationFailed, Timeout, TooManyRedirects, UnresolvedProxy, UnsupportedProtocol, BadResponse, ClientError };
+export default { BadRequest, Unauthorized, PaymentRequired, NotFound, OK, getHeader, methodStr, request, requestBytes, get, getBytes, getWithHeaders, getBytesWithHeaders, post, postBytes, postWithHeaders, postBytesWithHeaders, put, putBytes, putWithHeaders, putBytesWithHeaders, _$_delete_$_, deleteBytes, deleteWithHeaders, deleteBytesWithHeaders, Header, CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE, AccessDenied, AddressNotFound, BadTransferEncoding, BadUrl, ConnectionFailed, Http2FramingError, IncompleteResponse, InternalError, InvalidSSLCertificate, MalformedResponse, NotSupported, SSLConnectionFailed, SSLEngineNotFound, SSLInitializationFailed, Timeout, TooManyRedirects, UnresolvedProxy, UnsupportedProtocol, BadResponse, ClientError };

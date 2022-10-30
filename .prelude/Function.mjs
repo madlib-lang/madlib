@@ -1,7 +1,7 @@
-// file: /opt/hostedtoolcache/node/14.20.0/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Function.mad
+// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Function.mad
 import {} from "./../__internals__.mjs"
 export let complement = (fn => x => !(fn(x)));
-export let always = (a => b => a);
+export let always = (a => _ => a);
 export let identity = (a => a);
 export let equals = (val => a => __eq__(val, a));
 export let notEquals = (val => a => !__eq__(val, a));
