@@ -77,12 +77,12 @@ jobs:
       - name: Remove msys git
         run: Remove-Item -Recurse -Force D:\a\_temp\msys64\usr\lib\git-core
 
-      - name: Check git
-        shell: msys2 {0}
-        run: |
-          ls -l /msys64/usr/lib/git-core
-          where git
-          which git
+      # - name: Check git
+      #   shell: msys2 {0}
+      #   run: |
+      #     ls -l /msys64/usr/lib/git-core
+      #     where git
+      #     which git
 
       - name: Build madlib
         shell: msys2 {0}
