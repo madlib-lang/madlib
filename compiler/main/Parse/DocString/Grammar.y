@@ -38,7 +38,7 @@ docs :: { [DocString] }
   | doc docs { $1 : $2 }
 
 doc :: { DocString }
-  : 'moduleStart' parts 'end'         { ModuleDoc (tokenTarget $1) (processCharacters $2) }
+  : 'moduleStart' parts tags 'end'    { ModuleDoc (tokenTarget $1) (processCharacters $2) }
   | 'functionStart' parts tags 'end'  { FunctionDoc (tokenTarget $1) (getFunctionName $1) (processCharacters $2) $3 }
   | 'typeDefStart' parts tags 'end'   { TypeDefDoc (tokenTarget $1) (getTypeName $1) (processCharacters $2) $3 }
   | 'interfaceStart' parts tags 'end' { InterfaceDoc (tokenTarget $1) (getInterfaceName $1) (processCharacters $2) $3 }
