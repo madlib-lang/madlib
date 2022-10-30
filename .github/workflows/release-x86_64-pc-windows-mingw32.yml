@@ -52,9 +52,6 @@ jobs:
             unzip
             tar
 
-      - name: Kill msys programs
-        run: taskkill /F /FI "MODULES eq msys-2.0.dll"
-
       - name: Install LLVM 9
         run: |
           curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
@@ -74,6 +71,7 @@ jobs:
         run: stack install alex happy
 
       - name: Remove msys git
+        shell: msys2 {0}
         run: rm -rf /msys64/usr/lib/git-core
 
       - name: Build madlib
