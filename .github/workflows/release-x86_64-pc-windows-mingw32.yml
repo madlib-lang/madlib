@@ -71,8 +71,10 @@ jobs:
         run: stack install alex happy
 
       - name: Locate
-        shell: msys2 {0}
-        run: locate msys-2.0.dll
+        run: gci -recurse -filter "msys-2.0.dll"
+
+      - name: Locate
+        run: gci -Recurse -Filter "msys-2.0.dll" -File -ErrorAction SilentlyContinue -Path "D:\"
 
       - name: Remove msys git
         shell: msys2 {0}
