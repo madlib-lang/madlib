@@ -38,7 +38,6 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           update: false
-          # update: true
           install: >-
             git
             mingw-w64-x86_64-curl
@@ -71,30 +70,9 @@ jobs:
       - name: Install happy and alex
         run: stack install alex happy
 
-      - name: Locate
-        run: gci -recurse -filter "msys-2.0.dll"
-
-      - name: Locate
-        run: gci -Recurse -Filter "msys-2.0.dll" -File -ErrorAction SilentlyContinue -Path "D:\"
-
-      # - name: Remove msys git
-      #   shell: msys2 {0}
-      #   run: rm -rf /msys64/usr/lib/git-core
-
-      # - name: Remove msys git
-      #   run: Remove-Item -Recurse -Force D:\a\_temp\msys64\usr\lib\git-core
-
-      # - name: Check git
-      #   shell: msys2 {0}
-      #   run: |
-      #     ls -l /msys64/usr/lib/git-core
-      #     where git
-      #     which git
-
       - name: Build madlib
         shell: msys2 {0}
         run: PATH="/c/Program Files/LLVM/bin:/mingw64/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Roaming/local/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH" stack build -v --flag madlib:static
-
 
       - name: Build tools
         shell: msys2 {0}
