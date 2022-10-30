@@ -70,6 +70,9 @@ jobs:
       - name: Install happy and alex
         run: stack install alex happy
 
+      - name: Fix git
+        run: Get-Item -Path "C:\msys64\usr\bin\*.exe" | %{ Set-ProcessMitigation -Name $_.Name -Disable ForceRelocateImages }
+
       - name: Build madlib
         shell: msys2 {0}
         run: PATH="/c/Program Files/LLVM/bin:/mingw64/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Roaming/local/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH" stack build -v --flag madlib:static
