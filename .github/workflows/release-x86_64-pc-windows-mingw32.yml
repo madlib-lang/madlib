@@ -70,6 +70,10 @@ jobs:
       - name: Install happy and alex
         run: stack install alex happy
 
+      - name: Locate
+        shell: msys2 {0}
+        run: locate msys-2.0.dll
+
       - name: Remove msys git
         shell: msys2 {0}
         run: rm -rf /msys64/usr/lib/git-core
