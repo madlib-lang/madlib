@@ -37,7 +37,8 @@ jobs:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          update: true
+          update: false
+          # update: true
           install: >-
             git
             mingw-w64-x86_64-curl
@@ -76,12 +77,12 @@ jobs:
       - name: Locate
         run: gci -Recurse -Filter "msys-2.0.dll" -File -ErrorAction SilentlyContinue -Path "D:\"
 
-      - name: Remove msys git
-        shell: msys2 {0}
-        run: rm -rf /msys64/usr/lib/git-core
+      # - name: Remove msys git
+      #   shell: msys2 {0}
+      #   run: rm -rf /msys64/usr/lib/git-core
 
-      - name: Remove msys git
-        run: Remove-Item -Recurse -Force D:\a\_temp\msys64\usr\lib\git-core
+      # - name: Remove msys git
+      #   run: Remove-Item -Recurse -Force D:\a\_temp\msys64\usr\lib\git-core
 
       # - name: Check git
       #   shell: msys2 {0}
