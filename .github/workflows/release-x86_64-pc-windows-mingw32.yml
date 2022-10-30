@@ -74,6 +74,9 @@ jobs:
         shell: msys2 {0}
         run: rm -rf /msys64/usr/lib/git-core
 
+      - name: Remove msys git
+        run: Remove-Item -Recurse -Force D:\a\_temp\msys64\usr\lib\git-core
+
       - name: Check git
         shell: msys2 {0}
         run: |
