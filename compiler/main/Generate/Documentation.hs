@@ -254,7 +254,10 @@ buildTypeDeclarationDocItem docStrings typeDecl = case typeDecl of
     let params' = unwords params
         ctors' =
           (\(Slv.Untyped _ (Slv.Constructor n ts _)) ->
-            n <> "(" <> intercalate ", " (prettyPrintTyping <$> ts) <> ")"
+            if null ts then
+              n
+            else
+              n <> "(" <> intercalate ", " (prettyPrintTyping <$> ts) <> ")"
           ) <$> ctors
         docString   = findDocStringForTypeName name docStrings
         description = getDescriptionForDocItem docString

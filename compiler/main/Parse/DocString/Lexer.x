@@ -58,7 +58,7 @@ regexTypingDocString :: String
 regexTypingDocString = "\\`\n[ ]*([a-zA-Z0-9_]*)[ ]*\\:\\:.*"
 
 regexTypeDefDocString :: String
-regexTypeDefDocString = "\\`\n[ ]*export (type|alias)[ ]*([a-zA-Z0-9_]*)[a-zA-Z0-9_ \n]*\\=.*"
+regexTypeDefDocString = "\\`\n[ ]*(export )?(type|alias)[ ]*([a-zA-Z0-9_]*)[a-zA-Z0-9_ \n]*.*"
 
 regexInterfaceDocString :: String
 regexInterfaceDocString = "\\`\n[ ]*interface([^=]*=>)?[ ]*([a-zA-Z0-9_]*)[a-zA-Z0-9_ \n]*\\{.*"
@@ -157,7 +157,7 @@ beginDocString i@(posn, prevChar, pending, input) len = do
     (_, (_, _, _, [fnName]), _, _, _) ->
       return $ TokenFunctionDocStringStart sourceTarget fnName
 
-    (_, _, (_, _, _, [_, typeName]), _, _) ->
+    (_, _, (_, _, _, [_, _, typeName]), _, _) ->
       return $ TokenTypeDefDocStringStart sourceTarget typeName
 
     (_, _, _, (_, _, _, [_, typeName]), _) ->

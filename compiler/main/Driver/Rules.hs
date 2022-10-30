@@ -117,7 +117,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Right ds ->
         return (ds, (mempty, mempty))
 
-      Left _ ->
+      Left e -> do
+        -- liftIO $ putStrLn $ ppShow e
         return ([], (mempty, mempty))
 
   CanonicalizedASTWithEnv path -> nonInput $ do
