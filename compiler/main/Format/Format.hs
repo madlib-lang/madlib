@@ -250,28 +250,24 @@ jsxChildrenToDoc comments children = case children of
     let (commentsDoc, comments') = insertComments False area comments
         -- We need to remove the leading and trailing double quote
         s'                       = init (tail s)
-        exp' =
-          if last s' == ' ' then
-            commentsDoc <> Pretty.pretty (init s') <> Pretty.line
-          else
-            commentsDoc <> Pretty.pretty s'
-        (more', comments'') = jsxChildrenToDoc comments' more
-    in  (exp' <> more', comments'')
+        exp'                     = commentsDoc <> Pretty.pretty s'
+        (more', comments'')      = jsxChildrenToDoc comments' more
+    in  (exp' <> (if null more then emptyDoc else Pretty.line') <> more', comments'')
 
   (JsxChild exp : more) ->
     let (exp', comments')   = expToDoc comments exp
         (more', comments'') = jsxChildrenToDoc comments' more
-    in  (exp' <> more', comments'')
+    in  (exp' <> (if null more then emptyDoc else Pretty.line') <> more', comments'')
 
   (JsxSpreadChild exp : more) ->
     let (exp', comments')   = expToDoc comments exp
         (more', comments'') = jsxChildrenToDoc comments' more
-    in  (Pretty.lbrace <> Pretty.pretty "..." <> exp' <> Pretty.rbrace <> more', comments'')
+    in  (Pretty.lbrace <> Pretty.pretty "..." <> exp' <> Pretty.rbrace <> (if null more then emptyDoc else Pretty.line') <> more', comments'')
 
   (JsxExpChild exp : more) ->
     let (exp', comments')   = expToDoc comments exp
         (more', comments'') = jsxChildrenToDoc comments' more
-    in  (Pretty.lbrace <> exp' <> Pretty.rbrace <> more', comments'')
+    in  (Pretty.lbrace <> exp' <> Pretty.rbrace <> (if null more then emptyDoc else Pretty.line') <> more', comments'')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -740,6 +736,9 @@ expToDoc comments exp =
                 [Source _ _ BinOp{}] ->
                   Pretty.pretty " =>" <> Pretty.nest indentSize (Pretty.softline <> body')
 
+                [Source _ _ JsxTag{}] ->
+                  Pretty.pretty " =>" <> Pretty.nest indentSize (Pretty.group (Pretty.line <> body'))
+
                 _ ->
                   Pretty.pretty " => " <> body'
           in  ( params'' <> arrowAndBody, comments''')
@@ -975,7 +974,7 @@ expToDoc comments exp =
 
         Source _ _ (Parenthesized _ exp _) ->
           let (exp', comments'') = expToDoc comments' exp
-          in  (Pretty.lparen <> exp' <> Pretty.rparen, comments'')
+          in  (Pretty.group (Pretty.nest indentSize (Pretty.lparen <> line' <> exp') <> Pretty.line' <> Pretty.rparen), comments'')
 
         Source _ _ (UnOp operator operand) ->
           let (operator', comments'') = expToDoc comments' operator
@@ -1038,29 +1037,36 @@ expToDoc comments exp =
               (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#", comments')
             else
               (Pretty.group (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#"), comments')
-              -- (Pretty.group (Pretty.pretty "#-" <> Pretty.line <> js' <> Pretty.line <> Pretty.pretty "-#"), comments')
 
         Source _ _ (JsxTag name props children) ->
           let (props', comments'')     = jsxPropsToDoc comments' props
               (children', comments''') = jsxChildrenToDoc comments'' children
-              lineAfterName           =
+              lineAfterName            =
                 if null props then
-                  Pretty.line'
+                  Pretty.emptyDoc
                 else
                   Pretty.line
+              lineBeforeRightChevron   =
+                if null props then
+                  Pretty.emptyDoc
+                else
+                  Pretty.line'
+
           in  ( Pretty.group
                   (
-                    Pretty.group
-                      (
-                        Pretty.pretty "<" <> Pretty.pretty name
-                        <> Pretty.nest indentSize (lineAfterName <> props')
-                        <> Pretty.line'
-                        <> Pretty.pretty ">"
-                      )
-                    <> Pretty.nest indentSize (Pretty.line' <> children')
-                    <> Pretty.line'
-                    <> Pretty.pretty "</" <> Pretty.pretty name <> Pretty.pretty ">"
+                    Pretty.pretty "<" <> Pretty.pretty name
+                    <> Pretty.nest indentSize (lineAfterName <> props')
+                    <> lineBeforeRightChevron
+                    <> Pretty.pretty ">"
                   )
+                <>  (
+                      if null children then
+                        Pretty.emptyDoc
+                      else
+                        Pretty.nest indentSize (Pretty.line' <> children')
+                    )
+                <> Pretty.line'
+                <> Pretty.pretty "</" <> Pretty.pretty name <> Pretty.pretty ">"
               , comments'''
               )
 

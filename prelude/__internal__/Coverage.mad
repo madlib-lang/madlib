@@ -4,7 +4,6 @@ import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
 import String from "String"
-import Tuple from "Tuple"
 import FilePath from "FilePath/Posix"
 import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
@@ -182,19 +181,19 @@ export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySecti
 // currently not used, possibly we want to move this to List but because of
 // cyclical imports we need to find a solution for private / public modules
 // in prelude
-groupOn :: Comparable b => (a -> b) -> List a -> List (List a)
-groupOn = (f) => {
-  unpack = pipe(Dictionary.toList, map(Tuple.snd))
-  fld = (m, a) => where(Dictionary.get(f(a), m)) {
-    Nothing =>
-      Dictionary.insert(f(a), [a], m)
+// groupOn :: Comparable b => (a -> b) -> List a -> List (List a)
+// groupOn = (f) => {
+//   unpack = pipe(Dictionary.toList, map(Tuple.snd))
+//   fld = (m, a) => where(Dictionary.get(f(a), m)) {
+//     Nothing =>
+//       Dictionary.insert(f(a), [a], m)
 
-    Just(as) =>
-      Dictionary.insert(f(a), [a, ...as], m)
-  }
+//     Just(as) =>
+//       Dictionary.insert(f(a), [a, ...as], m)
+//   }
 
-  return pipe(List.reduceLeft(fld, Dictionary.empty), unpack)
-}
+//   return pipe(List.reduceLeft(fld, Dictionary.empty), unpack)
+// }
 
 
 instance Comparable CoverableLine {

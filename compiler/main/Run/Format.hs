@@ -75,9 +75,10 @@ parseASTsToFormat  (fp : fps)   = do
 
 parseCodeToFormat :: String -> IO (Either CompilationError [(AST, [Comment])])
 parseCodeToFormat code = do
+  cwd <- Directory.getCurrentDirectory
   let options = Options { optPathUtils = defaultPathUtils
                         , optEntrypoint = "./Module.mad"
-                        , optRootPath = "./"
+                        , optRootPath = cwd
                         , optOutputPath = "./build"
                         , optTarget = TAny
                         , optOptimized = False
@@ -87,7 +88,6 @@ parseCodeToFormat code = do
                         , optInsertInstancePlaholders = True
                         , optMustHaveMain = True
                         }
-  -- ast  <- buildAST options "./Module.mad" code
   ast <- case parse code of
         Right a ->
           computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) (setPath a "./Module.mad")
