@@ -6,6 +6,8 @@
 #include "apply-pap.hpp"
 
 uv_loop_t *getLoop();
+uv_rwlock_t *getLock();
+uv_mutex_t *getMutex();
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,6 +15,7 @@ extern "C" {
 
 int libuvErrorToMadlibIOError(int libuvError);
 
+void __initEventLoopOnly__();
 void __initEventLoop__();
 void __startEventLoop__();
 
