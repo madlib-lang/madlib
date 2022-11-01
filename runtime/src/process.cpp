@@ -1,8 +1,10 @@
-
-#include <gc.h>
+#define GC_NO_THREAD_REDIRECTS
+# ifndef GC_THREADS
+#   define GC_THREADS
+# endif
+#include <uv.h>
 #include "process.hpp"
 #include <sys/mman.h>
-#include <uv.h>
 #include <cstring>
 #include "apply-pap.hpp"
 #include "event-loop.hpp"
@@ -11,6 +13,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <time.h>
+#include <gc.h>
 
 #ifndef __MINGW32__
   #include <glob.h>
@@ -28,6 +31,8 @@ extern "C" {
 #define MAP_NORESERVE 0
 #endif
 
+// #define UV_THREADPOOL_SIZE 128
+
 extern char **environ;
 
 extern void __main__start__();
@@ -40,6 +45,8 @@ static char **ARGV = NULL;
 
 void __main__init__(int argc, char **argv) {
   GC_set_dont_precollect(1);
+  GC_allow_register_threads();
+
   // TODO: make min alloc and initial heap size available to compilation options
   size_t minAlloc = 50 * 1024 * 1024; // 50MB
   GC_set_min_bytes_allocd(minAlloc);
@@ -63,6 +70,7 @@ void __main__init__(int argc, char **argv) {
 
 void madlib__process__internal__initExtra() {
   GC_INIT();
+  setenv("UV_THREADPOOL_SIZE", "128", 1);
   __args__ = madlib__list__empty();
 
   srand(time(NULL));
@@ -335,6 +343,101 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   }
 
 }
+
+
+
+// thread
+void madlib__process__writeLock(void *_) {
+  uv_rwlock_wrlock(getLock());
+}
+
+void madlib__process__writeUnlock(void *_) {
+  uv_rwlock_wrunlock(getLock());
+}
+
+void madlib__process__readLock(void *_) {
+  uv_rwlock_rdlock(getLock());
+}
+
+void madlib__process__readUnlock(void *_) {
+  uv_rwlock_rdunlock(getLock());
+}
+
+void madlib__process__mutexLock(void *_) {
+  uv_mutex_lock(getMutex());
+}
+
+void madlib__process__mutexUnlock(void *_) {
+  uv_mutex_unlock(getMutex());
+}
+
+
+
+
+typedef struct ThreadData {
+  void *callback;
+  void *threadFn;
+  void *result;
+} ThreadData_t;
+
+
+void onThreadLoopClose(uv_handle_t *handle) {}
+
+void onThreadLoopWalk(uv_handle_t *handle, void *arg) {
+  if (!uv_is_closing(handle)) {  // FALSE: handle is closing
+    uv_close(handle, onThreadLoopClose);
+  }
+}
+
+
+void runThread(uv_work_t *req) {
+  struct GC_stack_base sb;
+  GC_get_stack_base(&sb);
+  GC_register_my_thread(&sb);
+  GC_INIT();
+  __initEventLoopOnly__();
+  uv_loop_t *threadLoop = getLoop();
+  ThreadData_t *data = (ThreadData_t*) req->data;
+
+  void *result = __applyPAP__(data->threadFn, 1, NULL);
+  data->result = result;
+
+  uv_run(threadLoop, UV_RUN_DEFAULT);
+
+  int r = uv_loop_close(threadLoop);
+  if (r != 0) {
+    // Close pending handles
+    uv_walk(threadLoop, onThreadLoopWalk, NULL);
+
+    // run the loop until there are no pending callbacks
+    do {
+      r = uv_run(threadLoop, UV_RUN_ONCE);
+    } while (r != 0);
+    // Now we're safe.
+    r = uv_loop_close(threadLoop);
+  }
+  GC_FREE(threadLoop);
+}
+
+
+void afterThread(uv_work_t *req, int status) {
+  ThreadData_t *data = (ThreadData_t*) req->data;
+  void *cb = data->callback;
+  void *result = data->result;
+  GC_FREE(data);
+  GC_FREE(req);
+  __applyPAP__(cb, 1, result);
+}
+
+void madlib__process__thread(PAP_t *fn, PAP_t *callback) {
+  uv_work_t *req = (uv_work_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(uv_work_t));
+  ThreadData_t *data = (ThreadData_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(ThreadData_t));
+  data->callback = callback;
+  data->threadFn = fn;
+  req->data = data;
+  int r = uv_queue_work(getLoop(), req, runThread, afterThread);
+}
+
 
 #ifdef __cplusplus
 }
