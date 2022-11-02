@@ -372,16 +372,33 @@ void madlib__process__mutexUnlock(void *_) {
 }
 
 
-
-
 typedef struct ThreadData {
-  void *callback;
+  void *badCallback;
+  void *goodCallback;
   void *threadFn;
   void *result;
+  bool isBad;
 } ThreadData_t;
 
 
+void goodCallbackFn(uv_work_t *req, void *result) {
+  ThreadData_t *data = (ThreadData_t*) req->data;
+  data->result = result;
+  data->isBad = false;
+  uv_cancel((uv_req_t*)req);
+}
+
+
+void badCallbackFn(uv_work_t *req, void *result) {
+  ThreadData_t *data = (ThreadData_t*) req->data;
+  data->result = result;
+  data->isBad = true;
+  uv_cancel((uv_req_t*)req);
+}
+
+
 void onThreadLoopClose(uv_handle_t *handle) {}
+
 
 void onThreadLoopWalk(uv_handle_t *handle, void *arg) {
   if (!uv_is_closing(handle)) {  // FALSE: handle is closing
@@ -399,8 +416,20 @@ void runThread(uv_work_t *req) {
   uv_loop_t *threadLoop = getLoop();
   ThreadData_t *data = (ThreadData_t*) req->data;
 
-  void *result = __applyPAP__(data->threadFn, 1, NULL);
-  data->result = result;
+  PAP_t *goodCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
+  goodCallbackArg->fn = (void*)goodCallbackFn;
+  goodCallbackArg->arity = 2;
+  goodCallbackArg->missingArgCount = 2;
+
+  PAP_t *badCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
+  badCallbackArg->fn = (void*)badCallbackFn;
+  badCallbackArg->arity = 2;
+  badCallbackArg->missingArgCount = 2;
+
+  PAP_t *goodCallbackArgWithData = (PAP_t*) __applyPAP__(goodCallbackArg, 1, req);
+  PAP_t *badCallbackArgWithData = (PAP_t*) __applyPAP__(badCallbackArg, 1, req);
+
+  __applyPAP__(data->threadFn, 2, badCallbackArgWithData, goodCallbackArgWithData);
 
   uv_run(threadLoop, UV_RUN_DEFAULT);
 
@@ -422,17 +451,25 @@ void runThread(uv_work_t *req) {
 
 void afterThread(uv_work_t *req, int status) {
   ThreadData_t *data = (ThreadData_t*) req->data;
-  void *cb = data->callback;
+  void *badCallback = data->badCallback;
+  void *goodCallback = data->goodCallback;
   void *result = data->result;
+  bool isBad = data->isBad;
   GC_FREE(data);
   GC_FREE(req);
-  __applyPAP__(cb, 1, result);
+
+  if (isBad) {
+    __applyPAP__(badCallback, 1, result);
+  } else {
+    __applyPAP__(goodCallback, 1, result);
+  }
 }
 
-void madlib__process__thread(PAP_t *fn, PAP_t *callback) {
+void madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback) {
   uv_work_t *req = (uv_work_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(uv_work_t));
   ThreadData_t *data = (ThreadData_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(ThreadData_t));
-  data->callback = callback;
+  data->badCallback = badCallback;
+  data->goodCallback = goodCallback;
   data->threadFn = fn;
   req->data = data;
   int r = uv_queue_work(getLoop(), req, runThread, afterThread);

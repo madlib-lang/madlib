@@ -43,17 +43,7 @@
                               (Area (Loc 339 19 1) (Loc 339 19 1))
                               "_")
                            [ Typed
-                               ([ IsIn
-                                    "Show"
-                                    [ TApp
-                                        (TApp
-                                           (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "Integer" Star) "prelude"))
-                                        (TCon (TC "Boolean" Star) "prelude")
-                                    ]
-                                    (Just (Area (Loc 321 18 3) (Loc 325 18 7)))
-                                ] :=>
-                                  TCon (TC "String" Star) "prelude")
+                               ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 321 18 3) (Loc 338 18 20))
                                (App
                                   (Typed
