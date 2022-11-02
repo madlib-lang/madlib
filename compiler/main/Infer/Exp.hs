@@ -233,20 +233,16 @@ postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer 
 postProcessBody options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
-      -- let fs = ftv (apply accSubst env') `List.union` ftv (apply accSubst (tv `fn` t))
-      -- let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst (tv `fn` t)) `List.union` ftvForLetGen (apply accSubst t')
       let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
-      (ps''', extraS) <- do
+      (ps''', substFromDefaulting) <- do
         prep <- forM ps'' $ \p -> do
-          maybeInst <- findInst env p
-          case maybeInst of
-            Just _ ->
-              return $ Just p
-
-            _ ->
-              return Nothing
+          isResolved <- entail env [] p
+          if isResolved then
+            return $ Just p
+          else
+            return Nothing
 
         let solvedPs = catMaybes prep
         let unsolvedPs = ps'' \\ solvedPs
@@ -256,7 +252,6 @@ postProcessBody options env s expType es = do
           (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
           let subst = sDef' `compose` sDef
 
-          -- if ambiguities fs unsolvedPs'' /= [] then do
           if unsolvedPs'' /= [] then do
             forM_ unsolvedPs'' $ \p -> do
               catchError
@@ -286,7 +281,7 @@ postProcessBody options env s expType es = do
         else
           return (ps'', mempty)
 
-      let sFinal = extraS `compose` accSubst
+      let sFinal = substFromDefaulting `compose` accSubst
       e' <- insertClassPlaceholders options env (Slv.Typed (apply sFinal $ ps''' :=> t') area e) (dedupePreds (apply sFinal ps'''))
       psToRemove <- computeRemovedPsBecauseSolved env ps' (apply sFinal ps')
 
