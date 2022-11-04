@@ -4,26 +4,90 @@ import { Wish } from "Wish"
 
 
 
-writeLock :: a -> {}
+type Mutex = Mutex
+export type Mutex
+
+
+type Lock = Lock
+export type Lock
+
+#iftarget llvm
+
+createMutex :: {} -> Mutex
+export createMutex = extern "madlib__process__makeMutex"
+
+
+createLock :: {} -> Lock
+export createLock = extern "madlib__process__makeLock"
+
+
+writeLock :: Lock -> {}
 export writeLock = extern "madlib__process__writeLock"
 
-writeUnlock :: a -> {}
+
+writeUnlock :: Lock -> {}
 export writeUnlock = extern "madlib__process__writeUnlock"
 
-readLock :: a -> {}
+
+readLock :: Lock -> {}
 export readLock = extern "madlib__process__readLock"
 
-readUnlock :: a -> {}
+
+readUnlock :: Lock -> {}
 export readUnlock = extern "madlib__process__readUnlock"
 
-mutexLock :: a -> {}
+
+mutexLock :: Mutex -> {}
 export mutexLock = extern "madlib__process__mutexLock"
 
-mutexUnlock :: a -> {}
+
+mutexUnlock :: Mutex -> {}
 export mutexUnlock = extern "madlib__process__mutexUnlock"
+
 
 threadFFI :: ((e -> {}) -> (a -> {}) -> {}) -> (e -> {}) -> (a -> {}) -> {}
 threadFFI = extern "madlib__process__thread"
 
+
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
 export create = (handler) => Wish((bad, good) => { threadFFI(handler, bad, good) })
+
+
+#elseif js
+
+createMutex :: {} -> Mutex
+export createMutex = () => Mutex
+
+
+createLock :: {} -> Lock
+export createLock = () => Lock
+
+
+writeLock :: Lock -> {}
+export writeLock = () => ({})
+
+
+writeUnlock :: Lock -> {}
+export writeUnlock = () => ({})
+
+
+readLock :: Lock -> {}
+export readLock = () => ({})
+
+
+readUnlock :: Lock -> {}
+export readUnlock = () => ({})
+
+
+mutexLock :: Mutex -> {}
+export mutexLock = () => ({})
+
+
+mutexUnlock :: Mutex -> {}
+export mutexUnlock = () => ({})
+
+
+create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
+export create = (handler) => Wish(handler)
+
+#endif

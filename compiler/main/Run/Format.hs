@@ -16,11 +16,11 @@ import           Error.Context
 import           Error.Error
 import           Format.Format
 
-import Text.Show.Pretty
-import Parse.Madlib.Grammar (parse)
-import Data.Either.Combinators (mapLeft)
-import Run.Options
-import Run.Target
+import           Text.Show.Pretty
+import           Parse.Madlib.Grammar (parse)
+import           Data.Either.Combinators (mapLeft)
+import           Run.Options
+import           Run.Target
 
 
 

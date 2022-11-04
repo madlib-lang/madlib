@@ -65,7 +65,8 @@ findAllNotExportedTopLevelDeclarationNames ast =
 
 findAllNotExportedConstructorNames :: Can.AST -> [Can.Canonical Can.Name]
 findAllNotExportedConstructorNames ast =
-  let exportedADTs          = filter Can.isTypeDeclExported (Can.atypedecls ast)
+  let typeExportNames       = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
+      exportedADTs          = filter (\td -> Can.isTypeDeclExported td || (Can.getTypeDeclName td `elem` typeExportNames)) (Can.atypedecls ast)
       exportedCtors         = concat $ Can.getCtors <$> exportedADTs
       exportedCtorNames     = Can.getCtorName <$> exportedCtors
       notExportedADTs       = filter (not . Can.isTypeDeclExported) (Can.atypedecls ast)

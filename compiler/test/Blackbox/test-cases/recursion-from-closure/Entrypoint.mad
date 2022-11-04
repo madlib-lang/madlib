@@ -1,0 +1,11 @@
+/**
+ * This was causing issues because at the time we call `sub`,
+ * the variable x is not in scope in the closure created by the
+ * anonymous lambda. This is because in that lambda, x does not
+ * appear and is thus not concidered a free variable.
+ */
+main = () => {
+  x = 3
+
+  sub = () => if (true) { (() => x + 1)() } else { (() => sub())() }
+}

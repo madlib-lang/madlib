@@ -11,17 +11,7 @@
 
 static thread_local uv_loop_t *loop;
 
-static uv_rwlock_t __lock__;
-
-static uv_mutex_t __mutex__;
-
 uv_loop_t *getLoop() { return loop; }
-
-uv_rwlock_t *getLock() { return &__lock__; }
-
-uv_mutex_t *getMutex() { return &__mutex__; }
-
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -247,17 +237,13 @@ void madlib__eventloop__onExit(PAP_t *cb) {
 
 
 void __startEventLoop__() {
-  uv_rwlock_init(getLock());
-  uv_mutex_init(getMutex());
-
   uv_run(loop, UV_RUN_DEFAULT);
   if (__exitCB__) {
     __applyPAP__(__exitCB__, 1, NULL);
     uv_run(loop, UV_RUN_DEFAULT);
   }
 
-  uv_rwlock_destroy(getLock());
-  uv_mutex_destroy(getMutex());
+
   int r = uv_loop_close(loop);
 
   if (r != 0) {

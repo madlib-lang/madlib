@@ -513,7 +513,7 @@ instance Compilable Exp where
               allExceptLast = init compiledExps
               l = last compiledExps
           in "(() => {\n  "
-              <> intercalate "\n  " allExceptLast
+              <> intercalate ";\n  " allExceptLast
               <> "\n  return " <> l
               <> "\n})()"
 
