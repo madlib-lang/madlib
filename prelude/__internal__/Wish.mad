@@ -115,49 +115,52 @@ bad :: e -> Wish e a
 export bad = (e) => Wish((badCB, _) => badCB(e))
 
 
-parallel :: List (Wish e a) -> Wish e (List a)
-export parallel = (wishes) => Wish((badCB, goodCB) => {
+parallelN :: Integer -> List (Wish e a) -> Wish e (List a)
+export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
   amountOfWishesToProcess = length(wishes)
   ko = false
   ok = 0
+  runningWishes = 0
+  wishesNotStarted = wishes
+  indexOfLastStartedWish = 0
 
   result :: List #[Integer, a]
   result = []
-
-  next :: Integer -> {}
-  next = (amountResolved) =>
-    amountResolved == amountOfWishesToProcess
-      ? pipe(
-          sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
-          map(Tuple.snd),
-          goodCB
-        )(result)
-      : {}
 
   fork :: Integer -> List (Wish e a) -> {}
   fork = (index, ws) => where(ws) {
     [wish, ...nextWishes] =>
       do {
+        wishesNotStarted = nextWishes
+        runningWishes = runningWishes + 1
+        indexOfLastStartedWish = indexOfLastStartedWish + 1
+
         where(wish) {
           Wish(run) =>
             run(
               (err) =>
-                ko == false
-                  ? do {
-                      ko = true
-                      return badCB(err)
-                    }
-                  : {}
-              ,
+                if (!ko) do {
+                  ko = true
+                  return badCB(err)
+                },
               (x) => {
                 result = [#[index, x], ...result]
                 ok = ok + 1
-                return next(ok)
+                runningWishes = runningWishes - 1
+                return ok == amountOfWishesToProcess
+                  ? pipe(
+                      sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+                      map(Tuple.snd),
+                      goodCB
+                    )(result)
+                  : fork(indexOfLastStartedWish + 1, wishesNotStarted)
               }
             )
         }
 
-        return fork(index + 1, nextWishes)
+        if (concurrent < 0 || runningWishes < concurrent) {
+          fork(indexOfLastStartedWish, wishesNotStarted)
+        }
       }
 
     [] =>
@@ -169,6 +172,9 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
   return fork(0, wishes)
 })
 
+
+parallel :: List (Wish e a) -> Wish e (List a)
+export parallel = parallelN(-1)
 
 
 discardError :: (e -> a) -> Wish e a -> Wish {} a

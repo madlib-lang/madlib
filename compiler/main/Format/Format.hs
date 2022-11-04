@@ -821,6 +821,24 @@ expToDoc comments exp =
           let (cond', comments'')    = expToDoc comments' cond
               (truthy', comments''') = expToDoc comments'' truthy
               (falsy', comments'''') = expToDoc comments''' falsy
+              showElse = case falsy of
+                Source _ _ LUnit ->
+                  False
+
+                _ ->
+                  True
+              isIfDo = case truthy of
+                Source _ _ (Do _) ->
+                  True
+
+                _ ->
+                  False
+              isElseDo = case falsy of
+                Source _ _ (Do _) ->
+                  True
+
+                _ ->
+                  False
           in  ( Pretty.group
                 (
                   Pretty.pretty "if ("
@@ -828,13 +846,23 @@ expToDoc comments exp =
                 )
               <> Pretty.group
                   (
-                    Pretty.pretty ") {"
-                    <> Pretty.nest indentSize (Pretty.line <> truthy') <> Pretty.line <> Pretty.rbrace
+                    if isIfDo then
+                      Pretty.rparen <> Pretty.space <> truthy'
+                    else
+                      Pretty.pretty ") {"
+                      <> Pretty.nest indentSize (Pretty.line <> truthy') <> Pretty.line <> Pretty.rbrace
                   )
-              <> Pretty.group
-                  (
-                    Pretty.pretty " else {"
-                    <> Pretty.nest indentSize (Pretty.line <> falsy') <> Pretty.line <> Pretty.rbrace
+              <>  (
+                    if isElseDo then
+                      Pretty.group (Pretty.pretty " else "  <> falsy')
+                    else if showElse then
+                      Pretty.group
+                        (
+                          Pretty.pretty " else {"
+                          <> Pretty.nest indentSize (Pretty.line <> falsy') <> Pretty.line <> Pretty.rbrace
+                        )
+                    else
+                      Pretty.emptyDoc
                   )
               , comments''''
               )

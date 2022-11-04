@@ -17,7 +17,6 @@ import           Infer.AST
 import           Infer.Infer
 import           Infer.EnvUtils
 import qualified Infer.Env                     as SlvEnv
-import           Data.IORef
 import           Parse.Madlib.AST
 import           Control.Monad.IO.Class
 import           Driver.Query
@@ -40,7 +39,6 @@ import Run.Options
 import Data.Bifunctor (first)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
-import Control.Monad.Writer
 import Utils.List
 import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings, coverableInfo))

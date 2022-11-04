@@ -347,30 +347,6 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
 
 
 // thread
-void madlib__process__writeLock(void *_) {
-  uv_rwlock_wrlock(getLock());
-}
-
-void madlib__process__writeUnlock(void *_) {
-  uv_rwlock_wrunlock(getLock());
-}
-
-void madlib__process__readLock(void *_) {
-  uv_rwlock_rdlock(getLock());
-}
-
-void madlib__process__readUnlock(void *_) {
-  uv_rwlock_rdunlock(getLock());
-}
-
-void madlib__process__mutexLock(void *_) {
-  uv_mutex_lock(getMutex());
-}
-
-void madlib__process__mutexUnlock(void *_) {
-  uv_mutex_unlock(getMutex());
-}
-
 
 typedef struct ThreadData {
   void *badCallback;
@@ -473,6 +449,43 @@ void madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback)
   data->threadFn = fn;
   req->data = data;
   int r = uv_queue_work(getLoop(), req, runThread, afterThread);
+}
+
+
+uv_rwlock_t *madlib__process__makeLock(void *_) {
+  uv_rwlock_t *lock = (uv_rwlock_t*) GC_MALLOC(sizeof(uv_rwlock_t));
+  uv_rwlock_init(lock);
+  return lock;
+}
+
+uv_mutex_t *madlib__process__makeMutex(void *_) {
+  uv_mutex_t *mutex = (uv_mutex_t*) GC_MALLOC(sizeof(uv_mutex_t));
+  uv_mutex_init(mutex);
+  return mutex;
+}
+
+void madlib__process__writeLock(uv_rwlock_t *lock) {
+  uv_rwlock_wrlock(lock);
+}
+
+void madlib__process__writeUnlock(uv_rwlock_t *lock) {
+  uv_rwlock_wrunlock(lock);
+}
+
+void madlib__process__readLock(uv_rwlock_t *lock) {
+  uv_rwlock_rdlock(lock);
+}
+
+void madlib__process__readUnlock(uv_rwlock_t *lock) {
+  uv_rwlock_rdunlock(lock);
+}
+
+void madlib__process__mutexLock(uv_mutex_t *mutex) {
+  uv_mutex_lock(mutex);
+}
+
+void madlib__process__mutexUnlock(uv_mutex_t *mutex) {
+  uv_mutex_unlock(mutex);
 }
 
 

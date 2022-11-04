@@ -437,14 +437,14 @@ app :: { Src.Exp }
   | '.' name '(' rets argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) $5) }
   | name '(' 'ret' argsWithPlaceholder ')'    %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) $4) }
   | exp '(' argsWithPlaceholder ')'           %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.App $1 $3) }
-  | '(' exp ')' '(' rets argsWithPlaceholder ')'   %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.App $2 $6) }
+  | '(' exp ')' '(' rets argsWithPlaceholder ')'   %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.App (Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Parenthesized (tokenArea $1) $2 (tokenArea $3))) $6) }
   | exp '.' name '(' rets argsWithPlaceholder ')'  %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $7)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) $6) }
   -- Nullary sugar
   | app '(' ')'                               %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
   | name '(' ')'                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) []) }
   | '.' name '(' ')'                          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.App (Src.Source (tokenArea $2) (tokenTarget $1) (Src.Var $ '.':strV $2)) []) }
   | exp '(' ')'                               %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $3)) (Src.getSourceTarget $1) (Src.App $1 []) }
-  | '(' exp ')' '(' ')'                       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App $2 []) }
+  | '(' exp ')' '(' ')'                       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.App (Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Parenthesized (tokenArea $1) $2 (tokenArea $3))) []) }
   | exp '.' name '(' ')'                      %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $5)) (Src.getSourceTarget $1) (Src.App (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) []) }
 
 multiExpBody :: { [Src.Exp] }

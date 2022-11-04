@@ -97,6 +97,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/unused-imports"
         , "compiler/test/Blackbox/test-cases/import-cycle"
         , "compiler/test/Blackbox/test-cases/operators"
+        , "compiler/test/Blackbox/test-cases/recursion-from-closure"
         ]
   forM_ cases $ \casePath -> do
     before (compileAndRun casePath) $ describe "" $ do

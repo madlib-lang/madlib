@@ -171,7 +171,13 @@ findFreeVars env exp = do
 
     Typed _ _ _ (Var n _) -> do
       var' <- convert env exp
-      return [(n, var')]
+      let liftedVars = lifted env
+      case M.lookup n liftedVars of
+        Just (_, vars) ->
+          return $ map (\v@(Typed _ _ _ (Var n' _)) -> (n', v)) vars
+
+        _ ->
+          return [(n, var')]
 
     Typed _ _ _ (Definition params body) -> do
       vars <- findFreeVarsInBody env body
@@ -551,7 +557,6 @@ convertDefinition env functionName dicts captured (Typed (ps :=> t) area metadat
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
     functionName' <- generateLiftedName env functionName
-    -- functionName' <- generateLiftedName env (trace ("mutationsInScope: " <> ppShow (mutationsInScope env) <> "\nallocatedMutations: " <> ppShow (allocatedMutations env)) functionName)
 
     let dictParams         = Typed ([] :=> tVar "dict") emptyArea [] <$> dicts
     let paramsWithFreeVars = ((\(name, Typed qt _ _ _) -> Typed qt emptyArea [ReferenceParameter | name `elem` mutationsInScope env] name) <$> captured) ++ dictParams ++ params
@@ -559,10 +564,10 @@ convertDefinition env functionName dicts captured (Typed (ps :=> t) area metadat
     body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env) body
 
     let liftedType   = foldr fn t $ (getType . snd <$> captured) ++ (tVar "dict" <$ dicts)
-    let lifted       = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
+    let lifted'      = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
     let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
 
-    addTopLevelExp lifted
+    addTopLevelExp lifted'
 
     if null captured then
       return $ Typed (ps :=> t) area [] (Assignment functionName functionNode)
@@ -651,8 +656,8 @@ instance Convertable Exp Exp where
             ) ++ params
 
       let liftedType = foldr fn t (getType . snd <$> withoutFreeVarDictsNotInScope)
-      let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
-      addTopLevelExp lifted
+      let lifted'    = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
+      addTopLevelExp lifted'
 
       let functionNode = Typed (ps :=> liftedType) area [] (Var functionName False)
 

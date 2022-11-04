@@ -78,6 +78,7 @@ safeExtendVarsForAbsParam env (i, sc) = case M.lookup i (envVars env) of
       throwError $ CompilationError (NameAlreadyDefined i) NoContext
     else
       return $ extendVars env (i, sc)
+
   Nothing -> return $ extendVars env (i, sc)
 
 
