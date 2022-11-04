@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE LambdaCase #-}
 module Driver.Rules where
 
 import qualified Rock
@@ -115,8 +116,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Right ds ->
         return (ds, (mempty, mempty))
 
-      Left e -> do
-        -- liftIO $ putStrLn $ ppShow e
+      Left _ -> do
         return ([], (mempty, mempty))
 
   CanonicalizedASTWithEnv path -> nonInput $ do
@@ -231,6 +231,53 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ForeignTypeDeclaration modulePath name -> nonInput $ do
     (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return (List.find (\fullTd@(Slv.Untyped _ td) -> Slv.isADT fullTd && Slv.adtname td == name || Slv.isAlias fullTd && Slv.aliasname td == name) atypedecls, (mempty, mempty))
+
+  TypeDeclarationByConstructorName currentModulePath ctorName -> nonInput $ do
+    (Slv.AST { Slv.atypedecls, Slv.aimports }, _) <- Rock.fetch $ SolvedASTWithEnv currentModulePath
+    let searchInForeignModule = do
+          let (importPath, realCtorName) =
+                if "." `List.isInfixOf` ctorName then
+                  let namespace = List.takeWhile (/= '.') ctorName
+                      ctorName' = tail $ List.dropWhile (/= '.') ctorName
+                      foundImport =
+                        Maybe.fromMaybe undefined $ List.find
+                          (\case
+                            Slv.Untyped _ (Slv.DefaultImport (Slv.Untyped _ name) _ _) ->
+                              name == namespace
+
+                            _ -> False
+                          )
+                          aimports
+                  in  (Slv.getImportAbsolutePath foundImport, ctorName')
+                else
+                  let foundImport =
+                        Maybe.fromMaybe undefined $ List.find
+                          (\case
+                            Slv.Untyped _ (Slv.NamedImport names _ _) ->
+                              any ((== ctorName) . Slv.getValue) names
+
+                            _ -> False
+                          )
+                          aimports
+                  in  (Slv.getImportAbsolutePath foundImport, ctorName)
+          result <- Rock.fetch $ TypeDeclarationByConstructorName importPath realCtorName
+          return (result, (mempty, mempty))
+    let foundTypeDecl = List.find
+          (\case
+              Slv.Untyped _ Slv.ADT { Slv.adtconstructors } ->
+                any ((== ctorName) . Slv.getConstructorName) adtconstructors
+
+              _ ->
+                False
+          )
+          atypedecls
+    case foundTypeDecl of
+      Just found ->
+        return (found, (mempty, mempty))
+
+      Nothing ->
+        searchInForeignModule
+
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
