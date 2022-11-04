@@ -1,7 +1,6 @@
-#define GC_NO_THREAD_REDIRECTS
-# ifndef GC_THREADS
-#   define GC_THREADS
-# endif
+#ifndef GC_THREADS
+  #define GC_THREADS
+#endif
 #include <uv.h>
 #include "process.hpp"
 #include <sys/mman.h>
@@ -31,7 +30,6 @@ extern "C" {
 #define MAP_NORESERVE 0
 #endif
 
-// #define UV_THREADPOOL_SIZE 128
 
 extern char **environ;
 
@@ -47,7 +45,7 @@ void __main__init__(int argc, char **argv) {
   GC_set_dont_precollect(1);
   GC_allow_register_threads();
 
-  // TODO: make min alloc and initial heap size available to compilation options
+  // TODO: make min alloc and initial heap size available as compilation options
   size_t minAlloc = 50 * 1024 * 1024; // 50MB
   GC_set_min_bytes_allocd(minAlloc);
   GC_expand_hp(64 * 1024 * 1024); // 64MB
