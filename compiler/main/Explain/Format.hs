@@ -182,8 +182,8 @@ createSimpleWarningDiagnostic _ _ warning = case warning of
 
   IncompletePattern missingPatterns ->
     "Incomplete pattern\n\n"
-    <> "Missing patterns:\n"
-    <> intercalate "\n" (map ("  - "++) missingPatterns)
+    <> "Examples of missing patterns:\n"
+    <> intercalate "\n" (map ("  - "++) missingPatterns) <> "\n\n"
     <> "Note: If the input of where is not handled by a branch, it will most likely crash at\nruntime.\n"
     <> "Hint: Pattern match the missing constructors or add a catch all branch with '_ => ...'."
 
@@ -416,7 +416,7 @@ createWarningDiagnostic _ context warning = case warning of
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
             , Diagnose.This $
                 "The branches do not cover all cases\n"
-                <> "Missing patterns:\n"
+                <> "Examples of missing patterns:\n"
                 <> intercalate "\n" (map ("  - "++) missingPatterns)
             )
           ]
