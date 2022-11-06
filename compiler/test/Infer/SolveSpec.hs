@@ -23,15 +23,15 @@ import           Error.Error
 import           Run.Target
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
-import Error.Warning
+import           Error.Warning
 import qualified Driver
-import Run.Options
-import Utils.PathUtils
-import Driver (Prune(Don'tPrune))
+import           Run.Options
+import           Utils.PathUtils
+import           Driver (Prune(Don'tPrune))
 import qualified Rock
 import qualified Driver.Query as Query
-import GHC.IO (unsafePerformIO)
-import Control.Monad (forM)
+import           GHC.IO (unsafePerformIO)
+import           Control.Monad (forM)
 import           System.FilePath (normalise)
 
 

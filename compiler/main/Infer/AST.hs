@@ -42,6 +42,7 @@ import qualified Driver.Query                               as Query
 import qualified Rock
 import Explain.Location (emptyArea)
 import Run.Options
+import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
 
 
 {-|
@@ -479,5 +480,6 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
           }
 
   checkAST initialEnv ast'
+  ExhaustivePatterns.check env'' ast'
 
   return (ast' , env'')

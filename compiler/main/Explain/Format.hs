@@ -180,6 +180,18 @@ createSimpleWarningDiagnostic _ _ warning = case warning of
         <> "change and you may not be able to run the project\n\n"
         <> "Hint: Update your version of madlib."
 
+  IncompletePattern missingPatterns ->
+    "Incomplete pattern\n\n"
+    <> "Missing patterns:\n"
+    <> intercalate "\n" (map ("  - "++) missingPatterns)
+    <> "Note: If the input of where is not handled by a branch, it will most likely crash at\nruntime.\n"
+    <> "Hint: Pattern match the missing constructors or add a catch all branch with '_ => ...'."
+
+  RedundantPattern ->
+    "Redundant pattern\n\n"
+    <> "Note: This pattern will never be reached.\n"
+    <> "Hint: Remove it or move it higher up so that it might be useful."
+
 
 createWarningDiagnostic :: Bool -> Context -> WarningKind -> Diagnose.Report String
 createWarningDiagnostic _ context warning = case warning of
@@ -394,6 +406,55 @@ createWarningDiagnostic _ context warning = case warning of
           "Minor Madlib version is too low"
           []
           [Diagnose.Hint "Update your version of madlib."]
+
+  IncompletePattern missingPatterns ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Warn
+          Nothing
+          "Incomplete pattern"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "The branches do not cover all cases\n"
+                <> "Missing patterns:\n"
+                <> intercalate "\n" (map ("  - "++) missingPatterns)
+            )
+          ]
+          [ Diagnose.Note "If the input of where is not handled by a branch, it will most likely crash at\nruntime."
+          , Diagnose.Hint "Pattern match the missing constructors or add a catch all branch with '_ => ...'."
+          ]
+
+      NoContext ->
+        Diagnose.Warn
+          Nothing
+          "Incomplete pattern"
+          []
+          [ Diagnose.Note "If the input of where is not handled by a branch, it will most likely crash at\nruntime."
+          , Diagnose.Hint "Pattern match the missing constructors or add a catch all branch with '_ => ...'."
+          ]
+
+  RedundantPattern ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Warn
+          Nothing
+          "Redundant pattern"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "Unreachable pattern"
+            )
+          ]
+          [ Diagnose.Note "This pattern will never be reached."
+          , Diagnose.Hint "Remove it or move it higher up so that it might be useful."
+          ]
+
+      NoContext ->
+        Diagnose.Warn
+          Nothing
+          "Redundant pattern"
+          []
+          [ Diagnose.Note "This pattern will never be reached."
+          , Diagnose.Hint "Remove it or move it higher up so that it might be useful."
+          ]
 
 
 formatError :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String

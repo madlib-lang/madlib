@@ -16,6 +16,7 @@ import qualified Canonicalize.CanonicalM       as Can
 import qualified AST.Solved                    as Slv
 import           Infer.AST
 import           Infer.Infer
+import qualified Infer.Infer                   as Slv
 import           Infer.EnvUtils
 import qualified Infer.Env                     as SlvEnv
 import           Parse.Madlib.AST
@@ -123,7 +124,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     sourceAst      <- Rock.fetch $ ParsedAST path
     dictModulePath <- Rock.fetch DictionaryModuleAbsolutePath
 
-    (can, Can.CanonicalState { warnings }) <- runCanonicalM $ do
+    (can, Can.CanonicalState { Can.warnings }) <- runCanonicalM $ do
       (ast, env, instancesToDerive) <- Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
       ast' <-
         if optCoverage options then
@@ -168,11 +169,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       return (ast'', env)
 
     case res of
-      Right (astAndEnv, InferState _ []) -> do
-        return (astAndEnv, (mempty, mempty))
+      Right (astAndEnv, InferState _ [] warnings) -> do
+        return (astAndEnv, (warnings, mempty))
 
-      Right ((ast, env), InferState _ errors) ->
-        return ((ast { Slv.apath = Just path }, env), (mempty, errors))
+      Right ((ast, env), InferState _ errors warnings) ->
+        return ((ast { Slv.apath = Just path }, env), (warnings, errors))
 
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
@@ -231,53 +232,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ForeignTypeDeclaration modulePath name -> nonInput $ do
     (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return (List.find (\fullTd@(Slv.Untyped _ td) -> Slv.isADT fullTd && Slv.adtname td == name || Slv.isAlias fullTd && Slv.aliasname td == name) atypedecls, (mempty, mempty))
-
-  TypeDeclarationByConstructorName currentModulePath ctorName -> nonInput $ do
-    (Slv.AST { Slv.atypedecls, Slv.aimports }, _) <- Rock.fetch $ SolvedASTWithEnv currentModulePath
-    let searchInForeignModule = do
-          let (importPath, realCtorName) =
-                if "." `List.isInfixOf` ctorName then
-                  let namespace = List.takeWhile (/= '.') ctorName
-                      ctorName' = tail $ List.dropWhile (/= '.') ctorName
-                      foundImport =
-                        Maybe.fromMaybe undefined $ List.find
-                          (\case
-                            Slv.Untyped _ (Slv.DefaultImport (Slv.Untyped _ name) _ _) ->
-                              name == namespace
-
-                            _ -> False
-                          )
-                          aimports
-                  in  (Slv.getImportAbsolutePath foundImport, ctorName')
-                else
-                  let foundImport =
-                        Maybe.fromMaybe undefined $ List.find
-                          (\case
-                            Slv.Untyped _ (Slv.NamedImport names _ _) ->
-                              any ((== ctorName) . Slv.getValue) names
-
-                            _ -> False
-                          )
-                          aimports
-                  in  (Slv.getImportAbsolutePath foundImport, ctorName)
-          result <- Rock.fetch $ TypeDeclarationByConstructorName importPath realCtorName
-          return (result, (mempty, mempty))
-    let foundTypeDecl = List.find
-          (\case
-              Slv.Untyped _ Slv.ADT { Slv.adtconstructors } ->
-                any ((== ctorName) . Slv.getConstructorName) adtconstructors
-
-              _ ->
-                False
-          )
-          atypedecls
-    case foundTypeDecl of
-      Just found ->
-        return (found, (mempty, mempty))
-
-      Nothing ->
-        searchInForeignModule
-
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
@@ -425,7 +379,7 @@ emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], 
 
 runInfer :: StateT InferState (ExceptT e m) a -> m (Either e (a, InferState))
 runInfer a =
-  runExceptT (runStateT a InferState { count = 0, errors = [] })
+  runExceptT (runStateT a InferState { count = 0, errors = [], Slv.warnings = [] })
 
 
 runCanonicalM :: ExceptT e (StateT Can.CanonicalState m) a -> m (Either e a, Can.CanonicalState)
