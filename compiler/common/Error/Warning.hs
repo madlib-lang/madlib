@@ -17,6 +17,8 @@ data WarningKind
   | MadlibVersionMinorTooLow (Maybe String) String String
   -- ^ pkgName versionRequired versionUsed
   | MissingMethods [String]
+  | IncompletePattern [String]
+  | RedundantPattern
   deriving(Eq, Show, Ord)
 
 
@@ -50,6 +52,9 @@ isUnusedWarning warning = case warning of
     True
 
   CompilationWarning (UnusedConstructor _) _ ->
+    True
+
+  CompilationWarning RedundantPattern _ ->
     True
 
   _ ->

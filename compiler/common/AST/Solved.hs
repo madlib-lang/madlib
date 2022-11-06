@@ -6,6 +6,7 @@
 module AST.Solved where
 
 import qualified Data.Map                      as M
+import qualified Data.List                     as List
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
@@ -239,6 +240,12 @@ getADTConstructors td = case td of
     Nothing
 
 
+unsafeGetADTConstructors :: TypeDecl -> [Constructor]
+unsafeGetADTConstructors td = case td of
+  Untyped _ ADT { adtconstructors } ->
+    adtconstructors
+
+
 getConstructorName :: Constructor -> String
 getConstructorName (Untyped _ (Constructor name _ _)) = name
 
@@ -258,6 +265,19 @@ isADTExported adt = case adt of
 
   _ ->
     False
+
+
+isSpreadPattern :: Pattern -> Bool
+isSpreadPattern pattern = case pattern of
+  Typed _ _ (PSpread _) ->
+    True
+
+  _ ->
+    False
+
+
+getSpreadPattern :: [Pattern] -> Maybe Pattern
+getSpreadPattern patterns = List.find isSpreadPattern patterns
 
 
 isAliasExported :: TypeDecl -> Bool
