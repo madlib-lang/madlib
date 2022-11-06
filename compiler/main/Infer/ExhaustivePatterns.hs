@@ -85,7 +85,7 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
     return $ Ctor (ADTInfo (length ctors) ctors) name args'
 
   Slv.PList lis -> do
-    let nil     = Ctor (ADTInfo 2 [conCtor, nilCtor]) "Nil" []
+    let nil     = Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Nil__" []
 
     case Slv.getSpreadPattern lis of
       Just _ -> do
@@ -95,13 +95,13 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
         foldM
           (\tl hd -> do
               hd' <- simplify ast env hd
-              return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "Cons" [tl, hd']
+              return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Cons__" [tl, hd']
           )
           nil
           lis
     where
-      conCtor = Slv.Untyped emptyArea (Slv.Constructor "Cons" [Slv.Untyped emptyArea (Slv.TRSingle "a")] tList)
-      nilCtor = Slv.Untyped emptyArea (Slv.Constructor "Nil" [] tList)
+      conCtor = Slv.Untyped emptyArea (Slv.Constructor "__Cons__" [Slv.Untyped emptyArea (Slv.TRSingle "a")] tList)
+      nilCtor = Slv.Untyped emptyArea (Slv.Constructor "__Nil__" [] tList)
       buildConsPattern :: [Slv.Pattern] -> Infer Pattern
       buildConsPattern patterns = case patterns of
         [pat] ->
@@ -110,7 +110,7 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
         pat : pats -> do
           pat'  <- simplify ast env pat
           pats' <- buildConsPattern pats
-          return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "Cons" [pats', pat']
+          return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Cons__" [pats', pat']
 
   Slv.PSpread pattern ->
     simplify ast env pattern
@@ -330,7 +330,6 @@ checkPatterns ast env area patterns = do
           return ()
 
         badPatterns -> do
-          liftIO $ putStrLn $ ppShow badPatterns
           pushWarning (CompilationWarning (IncompletePattern (map showPattern $ concat badPatterns)) (Context (envCurrentPath env) area))
 
 
@@ -351,10 +350,39 @@ showPattern pattern = case pattern of
         s
 
   Ctor _ name args ->
-    name <> "(" <> List.intercalate ", " (showPattern <$> args) <> ")"
+    if name == "__Cons__" then
+      "[" <> List.intercalate ", " (List.replicate (getConsArgCount pattern) "_") <> "]"
+    else if name == "__Nil__" then
+      "[]"
+    else if name `List.elem` [ "(,)"
+                             , "(,,)"
+                             , "(,,,)"
+                             , "(,,,,)"
+                             , "(,,,,,)"
+                             , "(,,,,,,)"
+                             , "(,,,,,,,)"
+                             , "(,,,,,,,,)"
+                             , "(,,,,,,,,,)"
+                             ] then
+      "#[" <> showArgs args <> "]"
+    else if null args then
+      name
+    else
+      name <> "(" <> showArgs args <> ")"
+    where
+      showArgs as = List.intercalate ", " (showPattern <$> as)
 
   Record fields ->
     "{ " <> List.intercalate ", " (map (\(name, pat) -> name <> ": " <> showPattern pat) (Map.toList fields)) <> " }"
+
+
+getConsArgCount :: Pattern -> Int
+getConsArgCount pattern = case pattern of
+  Ctor _ "__Cons__" args ->
+    1 + getConsArgCount (head args)
+
+  _ ->
+    0
 
 
 -- EXHAUSTIVE PATTERNS
