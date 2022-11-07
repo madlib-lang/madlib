@@ -1387,6 +1387,12 @@
     , apath = Just "Module.mad"
     }
 , [ CompilationWarning
+      (IncompletePattern [ "Nothing" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 48 4 3) (Loc 79 6 4)
+        }
+  , CompilationWarning
       (UnusedConstructor "Nothing")
       Context
         { ctxAstPath = "Module.mad"

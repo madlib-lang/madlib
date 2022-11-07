@@ -161,6 +161,9 @@ export Argv = where (getArgsFFI()) {
     String.take(2, exePath) == "./"
       ? [canonicalizePath(joinPath([getCurrentWorkingDirectory(), exePath])), ...args]
       : [exePath, ...args]
+
+  [] =>
+    []
 }
 
 

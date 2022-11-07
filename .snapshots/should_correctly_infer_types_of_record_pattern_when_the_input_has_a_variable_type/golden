@@ -135,6 +135,12 @@
     , apath = Just "Module.mad"
     }
 , [ CompilationWarning
+      RedundantPattern
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 42 3 3) (Loc 50 3 11)
+        }
+  , CompilationWarning
       (UnusedTopLevelDeclaration "fn2")
       Context
         { ctxAstPath = "Module.mad"

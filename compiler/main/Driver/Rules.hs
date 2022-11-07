@@ -231,7 +231,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   ForeignTypeDeclaration modulePath name -> nonInput $ do
     (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
-    return (List.find (\fullTd@(Slv.Untyped _ td) -> Slv.isADT fullTd && Slv.adtname td == name || Slv.isAlias fullTd && Slv.aliasname td == name) atypedecls, (mempty, mempty))
+    return ( List.find
+              (\fullTd@(Slv.Untyped _ td) ->
+                Slv.isADT fullTd && Slv.adtname td == name
+                || Slv.isAlias fullTd && Slv.aliasname td == name
+              )
+              atypedecls
+           , (mempty, mempty)
+           )
 
   CoreAST path -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
