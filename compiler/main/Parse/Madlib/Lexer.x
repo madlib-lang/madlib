@@ -54,7 +54,7 @@ import qualified Data.ByteString.Char8 as Char8
 $alpha    = [a-zA-Z]                        -- alphabetic characters
 $empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
 $superEmpty = [\ \t\f\v\r\n]
-$head     = [\ \n]                          -- leading whitespace and / or newline
+$head     = [\t\ \n]                        -- leading whitespace and / or newline
 $tail     = [\n]                            -- trailing newline
 $multilineStringContent = [$printable \n]
 
@@ -63,7 +63,7 @@ $jsxTextPopOut = [\<\>\{\}]
 
 $digit    = 0-9                             -- digits
 
-@head = [\ ]*[\n]?[\ ]*
+@head = [\ \t]*[\n]?[\t\ ]*
 
 @decimal  = $digit($digit)*                 -- decimal
 @negative = \-
@@ -139,10 +139,10 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { decideTokenName }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+                                      { mapToken (\_ -> TokenPlus) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+\+                                    { mapToken (\_ -> TokenDoublePlus) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-[\ \n]+                                     { mapToken (\_ -> TokenDash) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-[\ \n]+                              { mapToken (\_ -> TokenDash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-[\t\ \n]+                                   { mapToken (\_ -> TokenDash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\t\ ]*\-[\t\ \n]+                          { mapToken (\_ -> TokenDash) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-                                            { mapToken (\_ -> TokenDashUnary) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-                                     { mapToken (\_ -> TokenDashUnary) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\t\ ]*\-                                   { mapToken (\_ -> TokenDashUnary) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\?                                      { mapToken (\_ -> TokenQuestionMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\*                                      { mapToken (\_ -> TokenStar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag> @head\/                        { mapToken (\_ -> TokenSlash) }
@@ -167,7 +167,7 @@ tokens :-
   <stringTemplate> \\[nt`]                                                                              { escapedStringTemplateContent }
   <stringTemplate> `                                                                                    { endStringTemplate }
   <stringTemplate> [.\n]                                                                                { pushStringToTemplate }
-  <jsxText> [\ \n]*"//"[^\n]*                                                                           ; -- Comments jsx
+  <jsxText> [\t\ \n]*"//"[^\n]*                                                                         ; -- Comments jsx
   <jsxText> \n($superEmpty|\/\/)*                                                                       ;
   <jsxText> $jsxText+                                                                                   { decideTokenName }
   <jsxText> $jsxTextPopOut                                                                              { jsxTextPopOut }
@@ -199,10 +199,10 @@ recordTypeRegex :: Regex
 recordTypeRegex = toRegex "\\`[ \n\t]*(\\.\\.\\.[a-zA-Z0-9_]*(,)?|[a-zA-Z0-9_]*[ \n\t]*::)"
 
 isTokenExport :: Regex
-isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*)*[ \n]*="
+isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*)*[ \n\t]*="
 
 isTypeExport :: Regex
-isTypeExport = toRegex "\\`export[ ]+type"
+isTypeExport = toRegex "\\`export[ \t]+type"
 
 
 -- Int: commentDepth
