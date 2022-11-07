@@ -791,13 +791,13 @@ generateDiagnostics invalidatePath state uri fileUpdates = do
   let path = uriToPath uri
   (jsWarnings, jsErrors) <- runTypeCheck invalidatePath state TNode path fileUpdates
 
-  sendDiagnosticsForWarningsAndErrors jsWarnings jsErrors
+  -- sendDiagnosticsForWarningsAndErrors jsWarnings jsErrors
 
   (llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
   let allWarnings = jsWarnings `List.union` llvmWarnings
   let allErrors = jsErrors `List.union` llvmErrors
 
-  flushDiagnosticsBySource 20 (Just "Madlib")
+  -- flushDiagnosticsBySource 20 (Just "Madlib")
   sendDiagnosticsForWarningsAndErrors allWarnings allErrors
 
 

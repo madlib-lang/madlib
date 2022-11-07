@@ -4,6 +4,7 @@
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.ExhaustivePatterns where
 
@@ -32,6 +33,7 @@ import           Text.Show.Pretty (ppShow)
 import           Error.Warning
 import           Error.Context
 import qualified Data.Set as Set
+import Debug.Trace
 
 
 -- PATTERN
@@ -41,8 +43,21 @@ data Pattern
   | Literal Literal
   | Ctor ADTInfo String [Pattern]
   | Record (Map.Map String Pattern)
-  deriving(Eq, Show)
+  deriving(Eq)
 
+instance Show Pattern where
+  show pattern = case pattern of
+    Anything ->
+      "Anything"
+
+    Literal lit ->
+      "Literal " <> show lit
+
+    Ctor _ name pats ->
+      "Ctor " <> name <> show pats
+
+    Record fields ->
+      "Record " <> show fields
 
 data Literal
   = Chr Char
@@ -54,10 +69,9 @@ data Literal
 
 -- CREATE SIMPLIFIED PATTERNS
 
-
 simplify :: Slv.AST -> Env -> Slv.Pattern -> Infer Pattern
 simplify _ _ (Slv.Untyped _ _)           = undefined
-simplify ast env (Slv.Typed _ _ pattern) = case pattern of
+simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
   Slv.PAny ->
     return Anything
 
@@ -66,7 +80,15 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
 
   Slv.PRecord fields -> do
     fields' <- mapM (simplify ast env) fields
-    return $ Record fields'
+    let allFields = case t of
+          TRecord fieldTypes _ ->
+            Map.union
+              fields'
+              (Map.map (const Anything) fieldTypes)
+
+          _ ->
+            fields'
+    return $ Record allFields
 
   -- TODO: Add this pattern
   -- Can.PUnit ->
@@ -81,15 +103,24 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
   Slv.PCon name args -> do
     args' <- mapM (simplify ast env) args
     td    <- findTypeDeclByConstructorName ast name
-    let ctors = Slv.unsafeGetADTConstructors (Maybe.fromMaybe undefined td)
-    return $ Ctor (ADTInfo (length ctors) ctors) name args'
+    case td of
+      Nothing ->
+        -- Most likely a constructor that does not exist, in that case we skip
+        -- it by returning Anything as an error has already been emitted for
+        -- this.
+        return Anything
+
+      Just td' -> do
+        let ctors = Slv.unsafeGetADTConstructors td'
+        return $ Ctor (ADTInfo (length ctors) ctors) (canonicalizeCtorName name) args'
 
   Slv.PList lis -> do
     let nil     = Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Nil__" []
 
     case Slv.getSpreadPattern lis of
-      Just _ -> do
+      Just _ ->
         buildConsPattern lis
+        -- buildConsPattern (reverse lis)
 
       Nothing ->
         foldM
@@ -100,7 +131,7 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
           nil
           lis
     where
-      conCtor = Slv.Untyped emptyArea (Slv.Constructor "__Cons__" [Slv.Untyped emptyArea (Slv.TRSingle "a")] tList)
+      conCtor = Slv.Untyped emptyArea (Slv.Constructor "__Cons__" [Slv.Untyped emptyArea (Slv.TRSingle "a"), Slv.Untyped emptyArea (Slv.TRSingle "a")] tList)
       nilCtor = Slv.Untyped emptyArea (Slv.Constructor "__Nil__" [] tList)
       buildConsPattern :: [Slv.Pattern] -> Infer Pattern
       buildConsPattern patterns = case patterns of
@@ -111,6 +142,9 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
           pat'  <- simplify ast env pat
           pats' <- buildConsPattern pats
           return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Cons__" [pats', pat']
+
+        _ ->
+          undefined
 
   Slv.PSpread pattern ->
     simplify ast env pattern
@@ -129,19 +163,9 @@ simplify ast env (Slv.Typed _ _ pattern) = case pattern of
         falseCtor = Slv.Untyped emptyArea (Slv.Constructor "false" [] tBool)
     return $ Ctor (ADTInfo 2 [trueCtor, falseCtor]) (if bool == "true" then "true" else "false") []
 
-  _ ->
-    return Anything
-
-
-
-{-# NOINLINE nilName #-}
-nilName :: String
-nilName = "[]"
-
 
 
 -- ERROR
-
 
 data Error
   = Incomplete [Pattern]
@@ -152,15 +176,13 @@ data Error
 
 -- CHECK
 
-
 check :: Env -> Slv.AST -> Infer ()
 check env ast@Slv.AST { Slv.aexps } = do
   checkExps ast env aexps
 
 
 
--- CHECK DECLS
-
+-- CHECK Exps
 
 checkExps :: Slv.AST -> Env -> [Slv.Exp] -> Infer ()
 checkExps ast env exps = do
@@ -173,15 +195,55 @@ checkExps ast env exps = do
       return ()
 
 
-
--- CHECK EXPRESSIONS
-
-
 checkExp :: Slv.AST -> Env -> Slv.Exp -> Infer ()
+checkExp _ _ (Slv.Untyped _ _)                 = undefined
 checkExp ast env (Slv.Typed _ area expression) =
   case expression of
     Slv.Assignment _ exp ->
       checkExp ast env exp
+
+    Slv.TypedExp exp _ _ ->
+      checkExp ast env exp
+
+    Slv.App fn arg _ -> do
+      checkExp ast env fn
+      checkExp ast env arg
+
+    Slv.Abs _ body ->
+      mapM_ (checkExp ast env) body
+
+    Slv.Do body ->
+      mapM_ (checkExp ast env) body
+
+    Slv.Var _ _ ->
+      return ()
+
+    Slv.If cond truthy falsy -> do
+      checkExp ast env cond
+      checkExp ast env truthy
+      checkExp ast env falsy
+
+    Slv.NameExport _ ->
+      return ()
+
+    Slv.Placeholder _ exp ->
+      checkExp ast env exp
+
+    Slv.Access rec field -> do
+      checkExp ast env rec
+      checkExp ast env field
+
+    Slv.Extern {} ->
+      return ()
+
+    Slv.TypeExport _ ->
+      return ()
+
+    Slv.Export exp ->
+      checkExp ast env exp
+
+    Slv.TupleConstructor exps ->
+      mapM_ (checkExp ast env) exps
 
     Slv.ListConstructor lis ->
       foldM
@@ -191,115 +253,59 @@ checkExp ast env (Slv.Typed _ area expression) =
 
             Slv.Typed _ _ (Slv.ListSpread e) ->
               checkExp ast env e
+
+            Slv.Untyped _ _ ->
+              undefined
         )
         ()
         lis
+
+    Slv.Record fields ->
+      foldM
+        (\_ li -> case li of
+            Slv.Typed _ _ (Slv.Field (_, e)) ->
+              checkExp ast env e
+
+            Slv.Typed _ _ (Slv.FieldSpread e) ->
+              checkExp ast env e
+
+            Slv.Untyped _ _ ->
+              undefined
+        )
+        ()
+        fields
 
     Slv.Where e cases -> do
       checkCases ast env area cases
       checkExp ast env e
 
-    _ ->
+    Slv.LNum _ ->
       return ()
 
+    Slv.LFloat _ ->
+      return ()
 
-    -- Can.VarLocal _ ->
-    --   errors
+    Slv.LBool _ ->
+      return ()
 
-    -- Can.VarTopLevel _ _ ->
-    --   errors
+    Slv.LStr _ ->
+      return ()
 
-    -- Can.VarKernel _ _ ->
-    --   errors
+    Slv.LChar _ ->
+      return ()
 
-    -- Can.VarForeign _ _ _ ->
-    --   errors
+    Slv.LUnit ->
+      return ()
 
-    -- Can.VarCtor _ _ _ _ _ ->
-    --   errors
+    Slv.JSExp _ ->
+      return ()
 
-    -- Can.VarDebug _ _ _ ->
-    --   errors
-
-    -- Can.VarOperator _ _ _ _ ->
-    --   errors
-
-    -- Can.Chr _ ->
-    --   errors
-
-    -- Can.Str _ ->
-    --   errors
-
-    -- Can.Int _ ->
-    --   errors
-
-    -- Can.Float _ ->
-    --   errors
-
-    -- Can.List entries ->
-    --   foldr checkExp errors entries
-
-    -- Can.Negate expr ->
-    --   checkExp expr errors
-
-    -- Can.Binop _ _ _ _ left right ->
-    --   checkExp left $
-    --     checkExp right errors
-
-    -- Can.Lambda args body ->
-    --   foldr checkArg (checkExp body errors) args
-
-    -- Can.Call func args ->
-    --   checkExp func $ foldr checkExp errors args
-
-    -- Can.If branches finally ->
-    --   foldr checkIfBranch (checkExp finally errors) branches
-
-    -- Can.Let def body ->
-    --   checkDef def $ checkExp body errors
-
-    -- Can.LetRec defs body ->
-    --   foldr checkDef (checkExp body errors) defs
-
-    -- Can.LetDestruct pattern@(A.At reg _) expr body ->
-    --   checkPatterns reg BadDestruct [pattern] $
-    --     checkExp expr $ checkExp body errors
-
-    -- Can.Case expr branches ->
-    --   checkExp expr $ checkCases region branches errors
-
-    -- Can.Accessor _ ->
-    --   errors
-
-    -- Can.Access record _ ->
-    --   checkExp record errors
-
-    -- Can.Update _ record fields ->
-    --   checkExp record $ Map.foldr checkField errors fields
-
-    -- Can.Record fields ->
-    --   Map.foldr checkExp errors fields
-
-    -- Can.Unit ->
-    --   errors
-
-    -- Can.Tuple a b maybeC ->
-    --   checkExp a $
-    --     checkExp b $
-    --       case maybeC of
-    --         Nothing ->
-    --           errors
-
-    --         Just c ->
-    --           checkExp c errors
-
-    -- Can.Shader _ _ ->
-    --   errors
+    Slv.TemplateString exps ->
+      mapM_ (checkExp ast env) exps
 
 
 
 -- CHECK CASE EXPRESSION
-
 
 checkCases :: Slv.AST -> Env -> Area -> [Slv.Is] -> Infer ()
 checkCases ast env area cases = do
@@ -308,14 +314,14 @@ checkCases ast env area cases = do
 
 
 checkCaseBranch :: Slv.AST -> Env -> [Slv.Pattern] -> Slv.Is -> Infer [Slv.Pattern]
+checkCaseBranch _ _ _ (Slv.Untyped _ _)                               = undefined
 checkCaseBranch ast env patterns (Slv.Typed _ _ (Slv.Is pattern exp)) = do
   checkExp ast env exp
   return $ pattern : patterns
 
 
 
--- -- CHECK PATTERNS
-
+-- CHECK PATTERNS
 
 checkPatterns :: Slv.AST -> Env -> Area -> [Slv.Pattern] -> Infer ()
 checkPatterns ast env area patterns = do
@@ -330,7 +336,9 @@ checkPatterns ast env area patterns = do
           return ()
 
         badPatterns -> do
-          pushWarning (CompilationWarning (IncompletePattern (map showPattern $ concat badPatterns)) (Context (envCurrentPath env) area))
+          let badPatterns' = map head $ filter (not . null) badPatterns
+          unless (null badPatterns') $
+            pushWarning (CompilationWarning (IncompletePattern (map showPattern badPatterns')) (Context (envCurrentPath env) area))
 
 
 showPattern :: Pattern -> String
@@ -351,7 +359,18 @@ showPattern pattern = case pattern of
 
   Ctor _ name args ->
     if name == "__Cons__" then
-      "[" <> List.intercalate ", " (List.replicate (getConsArgCount pattern) "_") <> "]"
+      case getConsArgs pattern of
+        [] ->
+          "[]"
+
+        [arg] ->
+          "[" <> showPattern arg <> "]"
+
+        realArgs ->
+          if last realArgs == Anything then
+            "[" <> List.intercalate ", " (map showPattern (init realArgs)) <> ", ..._" <> "]"
+          else
+            "[" <> List.intercalate ", " (map showPattern realArgs) <> "]"
     else if name == "__Nil__" then
       "[]"
     else if name `List.elem` [ "(,)"
@@ -376,17 +395,19 @@ showPattern pattern = case pattern of
     "{ " <> List.intercalate ", " (map (\(name, pat) -> name <> ": " <> showPattern pat) (Map.toList fields)) <> " }"
 
 
-getConsArgCount :: Pattern -> Int
-getConsArgCount pattern = case pattern of
-  Ctor _ "__Cons__" args ->
-    1 + getConsArgCount (head args)
+getConsArgs :: Pattern -> [Pattern]
+getConsArgs pattern = case pattern of
+  Ctor _ "__Cons__" [tail, arg] ->
+    arg : getConsArgs tail
 
-  _ ->
-    0
+  Ctor _ "__Nil__" _ ->
+    []
+
+  arg ->
+    [arg]
 
 
 -- EXHAUSTIVE PATTERNS
-
 
 -- INVARIANTS:
 --
@@ -404,35 +425,36 @@ isExhaustive matrix n =
       if n == 0 then
         []
       else
-      let ctors   = collectCtors matrix
-          numSeen = Map.size ctors
-      in  if numSeen == 0 then
-            let maybeBaseRecord = extractRecordPatterns matrix
-            in  case maybeBaseRecord of
-              Nothing ->
-                (:) Anything
-                  <$> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
+        let ctors   = collectCtors matrix
+            numSeen = Map.size ctors
+        in  if numSeen == 0 then
+              let maybeBaseRecord = extractRecordPatterns matrix
+              in  case maybeBaseRecord of
+                Nothing ->
+                  (:) Anything
+                    <$> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
 
-              Just baseRecord ->
-                let fieldNames = Map.keys baseRecord
-                    isAltExhaustive fieldName =
-                      isExhaustive
-                        (Maybe.mapMaybe (specializeRowByRecordField fieldName) matrix)
-                        n
-                in  concatMap isAltExhaustive fieldNames
-          else
-            let alts@(ADTInfo numAlts ctorList) = snd (Map.findMin ctors)
-            in  if numSeen < numAlts then
-                  (:)
-                    <$> Maybe.mapMaybe (isMissing alts ctors) ctorList
-                    <*> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
-                else
-                  let isAltExhaustive (Slv.Untyped _ (Slv.Constructor name params _)) =
-                        recoverCtor alts name (length params) <$>
+                Just baseRecord ->
+                  let fieldNames = Map.keys baseRecord
+                      isAltExhaustive fieldName =
                         isExhaustive
-                          (Maybe.mapMaybe (specializeRowByCtor name (length params)) matrix)
-                          (length params + n - 1)
-                  in  concatMap isAltExhaustive ctorList
+                          (Maybe.mapMaybe (specializeRowByRecordField fieldName) matrix)
+                          n
+                      fields' = map (\fieldName -> ((fieldName,) <$>) <$> filter (not . null) (isAltExhaustive fieldName)) fieldNames
+                  in  map (map (Record . Map.fromList)) fields'
+            else
+              let alts@(ADTInfo numAlts ctorList) = snd (Map.findMin ctors)
+              in  if numSeen < numAlts then
+                    (:)
+                      <$> Maybe.mapMaybe (isMissing alts ctors) ctorList
+                      <*> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
+                  else
+                    let isAltExhaustive (Slv.Untyped _ (Slv.Constructor name params _)) =
+                          recoverCtor alts name (length params) <$>
+                          isExhaustive
+                            (Maybe.mapMaybe (specializeRowByCtor name (length params)) matrix)
+                            (length params + n - 1)
+                    in  concatMap isAltExhaustive ctorList
 
 
 isMissing :: ADTInfo -> Map.Map String a -> Slv.Constructor -> Maybe Pattern
@@ -458,13 +480,13 @@ recoverCtor union name arity patterns =
 
 
 -- INVARIANT: Produces a list of rows where (forall row. length row == 1)
-toNonRedundantRows :: Slv.AST -> Env -> [Slv.Pattern] -> Infer (Either Error [[Pattern]])
+toNonRedundantRows :: Slv.AST -> Env -> [Slv.Pattern] -> Infer (Either () [[Pattern]])
 toNonRedundantRows ast env patterns =
-  toSimplifiedUsefulRows ast env [] [] patterns
+  toSimplifiedUsefulRows ast env [] [] (reverse patterns)
 
 
 -- INVARIANT: Produces a list of rows where (forall row. length row == 1)
-toSimplifiedUsefulRows :: Slv.AST -> Env -> [[Pattern]] -> [Slv.Pattern] -> [Slv.Pattern] -> Infer (Either Error [[Pattern]])
+toSimplifiedUsefulRows :: Slv.AST -> Env -> [[Pattern]] -> [Slv.Pattern] -> [Slv.Pattern] -> Infer (Either () [[Pattern]])
 toSimplifiedUsefulRows ast env checkedRows checkedPatterns uncheckedPatterns =
   case uncheckedPatterns of
     [] ->
@@ -476,12 +498,10 @@ toSimplifiedUsefulRows ast env checkedRows checkedPatterns uncheckedPatterns =
       if isUseful checkedRows nextRow then
         toSimplifiedUsefulRows ast env (nextRow : checkedRows) (pattern : checkedPatterns) rest
       else do
-        -- pushWarning $ CompilationWarning RedundantPattern (Context (envCurrentPath env) (Slv.getArea pattern))
         mapM_
           (pushWarning . CompilationWarning RedundantPattern . Context (envCurrentPath env) . Slv.getArea)
-          (pattern : checkedPatterns)
-        return $ Left (Redundant (length checkedRows + 1))
-
+          [pattern]
+        toSimplifiedUsefulRows ast env (nextRow : checkedRows) (pattern : checkedPatterns) rest
 
 
 -- Check if a new row "vector" is useful given previous rows "matrix"
@@ -563,7 +583,7 @@ specializeRowByCtor ctorName arity row =
         \ should never align in pattern match exhaustiveness checks."
 
     [] ->
-      Just []
+      error "Compiler error! Empty matrices should not get specialized."
 
 
 -- INVARIANT: (length row == N) ==> (length result == N-1)
@@ -687,7 +707,6 @@ isComplete matrix =
 
 -- COLLECT CTORS
 
-
 collectCtors :: [[Pattern]] -> Map.Map String ADTInfo
 collectCtors matrix =
   List.foldl' collectCtorsHelp Map.empty matrix
@@ -704,6 +723,7 @@ collectCtorsHelp ctors row =
 
 
 -- COLLECT RECORD FIELDS
+
 extractRecordPatterns :: [[Pattern]] -> Maybe (Map.Map String Pattern)
 extractRecordPatterns matrix =
   if containsRecord matrix then
@@ -740,15 +760,35 @@ collectRecordFields nameCollection row =
       nameCollection
 
 
+findTypeDeclInASTByConstructorName :: Slv.AST -> String -> Maybe Slv.TypeDecl
+findTypeDeclInASTByConstructorName Slv.AST { Slv.atypedecls } ctorName =
+  List.find
+    (\case
+        Slv.Untyped _ Slv.ADT { Slv.adtconstructors } ->
+          any ((== ctorName) . Slv.getConstructorName) adtconstructors
+
+        _ ->
+          False
+    )
+    atypedecls
+
+
+canonicalizeCtorName :: String -> String
+canonicalizeCtorName ctorName =
+  if "." `List.isInfixOf` ctorName then
+    tail $ List.dropWhile (/= '.') ctorName
+  else
+    ctorName
+
 findTypeDeclByConstructorName :: Rock.MonadFetch Query m => Slv.AST -> String -> m (Maybe Slv.TypeDecl)
-findTypeDeclByConstructorName Slv.AST { Slv.atypedecls, Slv.aimports } ctorName = do
+findTypeDeclByConstructorName ast@Slv.AST { Slv.aimports } ctorName = do
   let searchInForeignModule _ = do
         let (importPath, realCtorName) =
               if "." `List.isInfixOf` ctorName then
                 let namespace = List.takeWhile (/= '.') ctorName
                     ctorName' = tail $ List.dropWhile (/= '.') ctorName
                     foundImport =
-                      Maybe.fromMaybe (error ("namespace is: " <> namespace)) $ List.find
+                      List.find
                         (\case
                           Slv.Untyped _ (Slv.DefaultImport (Slv.Untyped _ name) _ _) ->
                             name == namespace
@@ -756,10 +796,10 @@ findTypeDeclByConstructorName Slv.AST { Slv.atypedecls, Slv.aimports } ctorName 
                           _ -> False
                         )
                         aimports
-                in  (Slv.getImportAbsolutePath foundImport, ctorName')
+                in  (Slv.getImportAbsolutePath <$> foundImport, ctorName')
               else
                 let foundImport =
-                      Maybe.fromMaybe undefined $ List.find
+                      List.find
                         (\case
                           Slv.Untyped _ (Slv.NamedImport names _ _) ->
                             any ((== ctorName) . Slv.getValue) names
@@ -767,17 +807,15 @@ findTypeDeclByConstructorName Slv.AST { Slv.atypedecls, Slv.aimports } ctorName 
                           _ -> False
                         )
                         aimports
-                in  (Slv.getImportAbsolutePath foundImport, ctorName)
-        Rock.fetch $ ForeignTypeDeclaration importPath realCtorName
-  let foundTypeDecl = List.find
-        (\case
-            Slv.Untyped _ Slv.ADT { Slv.adtconstructors } ->
-              any ((== ctorName) . Slv.getConstructorName) adtconstructors
+                in  (Slv.getImportAbsolutePath <$> foundImport, ctorName)
+        case importPath of
+          Nothing ->
+            return Nothing
 
-            _ ->
-              False
-        )
-        atypedecls
+          Just importPath' -> do
+            (ast', _) <- Rock.fetch $ SolvedASTWithEnv importPath'
+            return $ findTypeDeclInASTByConstructorName ast' realCtorName
+  let foundTypeDecl = findTypeDeclInASTByConstructorName ast ctorName
   case foundTypeDecl of
     Just found ->
       return $ Just found

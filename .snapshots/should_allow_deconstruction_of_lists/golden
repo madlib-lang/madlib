@@ -153,6 +153,12 @@
     , apath = Just "Module.mad"
     }
 , [ CompilationWarning
+      (IncompletePattern [ "[]" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 4 1 5) (Loc 56 3 2)
+        }
+  , CompilationWarning
       (UnusedTopLevelDeclaration "x")
       Context
         { ctxAstPath = "Module.mad"

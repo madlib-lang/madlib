@@ -1828,7 +1828,13 @@
         ]
     , apath = Just "Module.mad"
     }
-, []
+, [ CompilationWarning
+      RedundantPattern
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 125 7 5) (Loc 144 7 24)
+        }
+  ]
 , [ CompilationError
       (UnboundVariable "Integer")
       Context
