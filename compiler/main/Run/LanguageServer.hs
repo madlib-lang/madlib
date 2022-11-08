@@ -34,9 +34,9 @@ import qualified Data.List as List
 import           Control.Monad (forM_, join, forM, unless)
 import           Data.IORef
 import qualified AST.Solved as Slv
-import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping')
+import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping', renderSchemesWithDiff)
 import           Control.Applicative ((<|>))
-import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified)
+import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified, Scheme (Forall))
 import qualified Error.Warning as Warning
 import           Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
@@ -151,9 +151,8 @@ isInRange (Loc _ l c) (Area (Loc _ lstart cstart) (Loc _ lend cend)) =
 prettyQt :: Bool -> Qual Type -> String
 prettyQt topLevel qt@(_ :=> t)
   | qt == failedQt = "_"
-  | topLevel       = prettyPrintQualType qt
-  | otherwise      = prettyPrintType True t
-  -- | otherwise      = prettyPrintQualType qt
+  | topLevel       = let (r, _) = renderSchemesWithDiff False (Forall [] qt) (Forall [] qt) in r
+  | otherwise      = let (r, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t)) in r
 
 
 data Node

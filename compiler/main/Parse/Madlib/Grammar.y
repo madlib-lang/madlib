@@ -465,10 +465,10 @@ where :: { Src.Exp }
   | 'where' '{' rets iss rets '}'                     %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.WhereAbs $4) }
 
 iss :: { [Src.Is] }
-  : pattern '=>' maybeRet exp 'ret'              %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Is $1 $4)] }
-  | pattern '=>' maybeRet exp                    %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Is $1 $4)] }
-  | iss maybeRet pattern '=>' maybeRet exp       %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.getSourceTarget $3) (Src.Is $3 $6)] }
-  | iss maybeRet pattern '=>' maybeRet exp 'ret' %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.getSourceTarget $3) (Src.Is $3 $6)] }
+  : pattern '=>' maybeRet exp rets              %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Is $1 $4)] }
+  | pattern '=>' maybeRet exp                   %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Is $1 $4)] }
+  | iss maybeRet pattern '=>' maybeRet exp      %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.getSourceTarget $3) (Src.Is $3 $6)] }
+  | iss maybeRet pattern '=>' maybeRet exp rets %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.getSourceTarget $3) (Src.Is $3 $6)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern %shift { $1 }

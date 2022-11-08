@@ -8724,18 +8724,6 @@
         , ctxArea = Area (Loc 997 39 5) (Loc 1031 39 39)
         }
   , CompilationWarning
-      (IncompletePattern
-         [ "#[{ ik: _ }, { ik: _ }]"
-         , "#[{ lui: _ }, { lui: _ }]"
-         , "#[{ name: _ }, { name: _ }]"
-         , "#[{ po: { pi: { nameD: _ } } }]"
-         , "#[{ tchouk: _ }, { tchouk: _ }]"
-         ])
-      Context
-        { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 781 35 20) (Loc 1206 42 4)
-        }
-  , CompilationWarning
       (UnusedTopLevelDeclaration "generateFunctionLinks")
       Context
         { ctxAstPath = "Module.mad"

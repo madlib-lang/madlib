@@ -309,7 +309,7 @@ keepTwoDecimals :: String -> String
 keepTwoDecimals = (input) => pipe(
   String.split("."),
   where {
-    [before, after] =>
+    [before, after, ..._] =>
       if (String.length(after) == 1) {
         before ++ "." ++ after ++ "0"
       } else {
@@ -318,6 +318,9 @@ keepTwoDecimals = (input) => pipe(
 
     [before] =>
       before ++ ".00"
+
+    [] =>
+      ""
   }
 )(input)
 
@@ -394,6 +397,9 @@ printRows = (rows) => {
           } else {
             `${module}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
           }
+
+        _ =>
+          ""
       }
     ),
     where {
@@ -403,6 +409,9 @@ printRows = (rows) => {
           pipe(String.length, String.repeat('-'), when(always(IS_COLOR_ENABLED), IO.grey))(header),
           ...moduleRows
         ]
+
+      _ =>
+        [""]
     },
     String.join("\n")
   )(rows)

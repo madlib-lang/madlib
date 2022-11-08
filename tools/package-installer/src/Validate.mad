@@ -3,7 +3,6 @@ import type { Maybe } from "Maybe"
 import { andDo } from "Monad"
 import { equals, ifElse, not, always } from "Function"
 import { Just, Nothing } from "Maybe"
-import { append } from "List"
 import IO from "IO"
 
 import type { Context, VersionInfo } from "./Context"
@@ -133,9 +132,6 @@ export printError = (a, error) => where(IO.trace("err", error)) {
 
   MadlibDotJsonCouldNotBeLoaded(msg) =>
     IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
-
-  _ =>
-    a
 }
 
 printWarning :: a -> Warning -> a
@@ -209,7 +205,10 @@ export addWarning = (warning, validationResult) => where(validationResult) {
     NotValid([warning], a)
 
   NotValid(warnings, a) =>
-    NotValid(append(warning, warnings), a)
+    NotValid([warning, ...warnings], a)
+
+  ValidationError(warnings, error, a) =>
+    ValidationError([warning, ...warnings], error, a)
 }
 
 
@@ -261,12 +260,21 @@ setValidationResultValue = (value) => where {
 
   NotValid(warnings, _) =>
     NotValid(warnings, value)
+
+  ValidationError(warnings, error, _) =>
+    ValidationError(warnings, error, Just(value))
 }
 
 unsafeGetValidationValue :: Validate a -> a
 export unsafeGetValidationValue = where {
-  Valid(a) => a
-  NotValid(_, a) => a
+  Valid(a) =>
+    a
+
+  NotValid(_, a) =>
+    a
+
+  ValidationError(_, _, Just(a)) =>
+    a
 }
 
 getValidationValue :: Validate a -> Maybe a
@@ -319,10 +327,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
     madlibDotJson
   }
 
-  return where(rangeResult) {
-    Valid(_) => Valid(validationOutput)
-    NotValid(warnings, _) => NotValid(warnings, validationOutput)
-  }
+  return setValidationResultValue(validationOutput, rangeResult)
 }
 
 

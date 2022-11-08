@@ -341,16 +341,15 @@ processDependencies = (config, context, dependencies) => pipe(
   ),
   map(
     pipe(
-      List.filter(
+      List.mapMaybe(
         where {
           DownloadError(err) =>
-            IO.putLineAndPass(Color.red(`${err}\n`), false)
+            IO.putLineAndPass(Color.red(`${err}\n`), Nothing)
 
-          Downloaded(_) =>
-            true
+          Downloaded(a) =>
+            Just(a)
         }
-      ),
-      map(where { Downloaded(a) => a })
+      )
     )
   ),
   chain(List.reduceM(processDependency(config), #[context, []])),

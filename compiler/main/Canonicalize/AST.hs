@@ -5,7 +5,6 @@
 module Canonicalize.AST where
 
 
-import           Run.Target
 import qualified AST.Source                               as Src
 import qualified AST.Canonical                            as Can
 import           Canonicalize.Env                         as CanEnv

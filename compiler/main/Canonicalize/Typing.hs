@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use second" #-}
 module Canonicalize.Typing where
 
 
@@ -226,9 +228,16 @@ typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
 typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
   fields' <- mapM (typingToType env (KindRequired Star)) (snd <$> fields)
   base'   <- mapM (typingToType env (KindRequired Star)) base
-  when (Maybe.isNothing base) $ do
-    let fieldNames = M.keys fields'
-    pushRecordToDerive fieldNames
+
+  case base' of
+    Just (TRecord baseFields _) -> do
+      let fieldNames = M.keys fields' `union` M.keys baseFields
+      pushRecordToDerive fieldNames
+
+    _ -> do
+      let fieldNames = M.keys fields'
+      pushRecordToDerive fieldNames
+
   return $ TRecord fields' base'
 
 typingToType env _ (Src.Source _ _ (Src.TRTuple elems)) = do

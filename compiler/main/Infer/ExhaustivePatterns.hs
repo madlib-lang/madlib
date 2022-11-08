@@ -441,7 +441,7 @@ isExhaustive matrix n =
                           (Maybe.mapMaybe (specializeRowByRecordField fieldName) matrix)
                           n
                       fields' = map (\fieldName -> ((fieldName,) <$>) <$> filter (not . null) (isAltExhaustive fieldName)) fieldNames
-                  in  map (map (Record . Map.fromList)) fields'
+                  in  filter (not . null) $ map (map (Record . Map.fromList)) fields'
             else
               let alts@(ADTInfo numAlts ctorList) = snd (Map.findMin ctors)
               in  if numSeen < numAlts then
@@ -468,11 +468,8 @@ isMissing _ _ _ = undefined
 
 recoverCtor :: ADTInfo -> String -> Int -> [Pattern] -> [Pattern]
 recoverCtor union name arity patterns =
-  let
-    (args, rest) =
-      splitAt arity patterns
-  in
-  Ctor union name args : rest
+  let (args, rest) = splitAt arity patterns
+  in  Ctor union name args : rest
 
 
 
@@ -780,6 +777,8 @@ canonicalizeCtorName ctorName =
   else
     ctorName
 
+
+-- TODO: see if we can optimize this
 findTypeDeclByConstructorName :: Rock.MonadFetch Query m => Slv.AST -> String -> m (Maybe Slv.TypeDecl)
 findTypeDeclByConstructorName ast@Slv.AST { Slv.aimports } ctorName = do
   let searchInForeignModule _ = do
@@ -814,7 +813,12 @@ findTypeDeclByConstructorName ast@Slv.AST { Slv.aimports } ctorName = do
 
           Just importPath' -> do
             (ast', _) <- Rock.fetch $ SolvedASTWithEnv importPath'
-            return $ findTypeDeclInASTByConstructorName ast' realCtorName
+            case findTypeDeclInASTByConstructorName ast' realCtorName of
+              Just found ->
+                return $ Just found
+
+              Nothing ->
+                findTypeDeclByConstructorName ast' realCtorName
   let foundTypeDecl = findTypeDeclInASTByConstructorName ast ctorName
   case foundTypeDecl of
     Just found ->
