@@ -18,6 +18,10 @@
   #include <glob.h>
 #endif
 
+#ifdef __MINGW32__
+extern int putenv(char *);
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +72,7 @@ void __main__init__(int argc, char **argv) {
 
 void madlib__process__internal__initExtra() {
   GC_INIT();
-  setenv("UV_THREADPOOL_SIZE", "128", 1);
+  putenv((char*)"UV_THREADPOOL_SIZE=128");
   __args__ = madlib__list__empty();
 
   srand(time(NULL));
