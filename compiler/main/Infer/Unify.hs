@@ -40,18 +40,26 @@ instance Unify Type where
 
   unify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
     (Just tBase, Just tBase') -> do
-      s1 <- unify tBase' (TRecord (M.union fields fields') base)
+      newBase <- newTVar Star
+      -- s1 <- unify tBase' (TRecord (M.union fields fields') base)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
+          fieldsForLeft  = M.difference fields fields'
+          fieldsForRight = M.difference fields' fields
 
-      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s3 <- unify tBase tBase'
+      s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+      s2 <- unify (TRecord fieldsForLeft (Just newBase)) tBase'
+      s3 <- unify (TRecord fieldsForRight (Just newBase)) tBase
+      -- s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+      -- s3 <- unify tBase tBase'
 
-      return $ s3 `compose` s2 `compose` s1
+      return $ s1 `compose` s2 `compose` s3
 
     (Just tBase, Nothing) -> do
-      s1 <- unify tBase (TRecord fields' base)
+      let fieldsDiff = M.difference fields' fields
+      s1 <- unify tBase (TRecord fieldsDiff Nothing)
+
 
       unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -59,10 +67,11 @@ instance Unify Type where
           fieldsToCheck' = M.intersection fields' fields
       s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-      return $ s2 `compose` s1
+      return $ s1 `compose` s2
 
     (Nothing, Just tBase') -> do
-      s1 <- unify tBase' (TRecord fields base')
+      let fieldsDiff = M.difference fields fields'
+      s1 <- unify tBase' (TRecord fieldsDiff Nothing)
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -70,19 +79,19 @@ instance Unify Type where
           fieldsToCheck' = M.intersection fields' fields
       s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-      return $ s2 `compose` s1
+      return $ s1 `compose` s2
 
     _ -> do
       let extraFields  = M.difference fields fields'
           extraFields' = M.difference fields' fields
-      if extraFields' /= mempty || extraFields /= mempty
-        then throwError $ CompilationError (UnificationError r l) NoContext
-        else do
-          let updatedFields  = M.union fields extraFields'
-              updatedFields' = M.union fields' extraFields
-              types          = M.elems updatedFields
-              types'         = M.elems updatedFields'
-          unifyVars' M.empty types types'
+      if extraFields' /= mempty || extraFields /= mempty then
+        throwError $ CompilationError (UnificationError r l) NoContext
+      else do
+        let updatedFields  = M.union fields extraFields'
+            updatedFields' = M.union fields' extraFields
+            types          = M.elems updatedFields
+            types'         = M.elems updatedFields'
+        unifyVars' M.empty types types'
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t

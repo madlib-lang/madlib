@@ -496,18 +496,38 @@ inferRecord options env exp = do
   (recordType, extraSubst) <- do
     (s, extraFields, newBase) <- case base of
       Just tBase -> do
-        case tBase of
-          TRecord fields base -> do
-            s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
-            return (s, fields, base)
+        -- case tBase of
+        --   TRecord fields base -> do
+            baseVar <- newTVar Star
+            s <- unify (TRecord mempty (Just baseVar)) tBase
+            return (s, mempty, Just baseVar)
+            -- s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
+          --   return (s, mempty, Just baseVar)
 
-          _                   -> do
-            s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
-            return (s, mempty, base)
+          -- _                   -> do
+          --   s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
+          --   return (s, mempty, base)
 
       Nothing ->
         return (mempty, mempty, base)
     return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
+  -- (recordType, extraSubst) <- do
+  --   (s, extraFields, newBase) <- case base of
+  --     Just tBase -> do
+  --       case tBase of
+  --         TRecord fields base -> do
+  --           s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
+  --           return (s, fields, base)
+
+  --         _                   -> do
+  --           s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
+  --           return (s, mempty, base)
+
+  --     Nothing ->
+  --       return (mempty, mempty, base)
+  --   return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
+  -- let recordType = TRecord (M.fromList fieldTypes') base
+  -- let extraSubst = mempty
 
   let allPS = concat fieldPS
 
@@ -925,9 +945,13 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         if isLet then
           ftvForLetGen t'
         else
-            ftv t'
+          ftv t'
       fs  = ftv (apply s'' envWithVarsExcluded)
       gs  = vs \\ fs
+  -- liftIO $ putStrLn $ "envVars: " <> ppShow (envVars env'')
+  -- liftIO $ putStrLn $ "fs: " <> ppShow fs
+  -- liftIO $ putStrLn $ "fsPure: " <> ppShow (ftv $ apply s'' env)
+  -- liftIO $ putStrLn $ "s'': " <> ppShow s''
   (ds, rs, _) <- catchError
     (split False envWithVarsExcluded fs (ftv t') ps')
     (\case
@@ -955,7 +979,14 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   rs'' <- dedupePreds <$> getAllParentPreds env rs'
   let sFinal = sDefaults `compose` s''
-  let sc     = quantify gs $ apply sFinal (rs'' :=> t')
+  -- liftIO $ putStrLn $ "t: " <> ppShow t
+  -- liftIO $ putStrLn $ "ps: " <> ppShow ps
+  -- liftIO $ putStrLn $ "t': " <> ppShow t'
+  -- liftIO $ putStrLn $ "rs'': " <> ppShow rs''
+  -- liftIO $ putStrLn $ "sFInal: " <> ppShow sFinal
+  let sc     = apply sFinal $ quantify gs (rs'' :=> t')
+  -- liftIO $ putStrLn $ "gs: " <> ppShow gs
+  -- liftIO $ putStrLn $ "sc: " <> ppShow sc
 
   case Can.getExpName exp of
     Just n  ->

@@ -36,24 +36,40 @@ instance Substitutable t => Substitutable (Qual t) where
 
 instance Substitutable Type where
   apply _ tc@(TCon _ _   ) = tc
-  apply s t@( TVar a      ) = case M.findWithDefault t a s of
-    TRecord fields (Just t'@(TVar tv)) ->
-      let deepUpdateRecord initialFields base tyvar = 
-            case M.findWithDefault base tyvar s of
-              TRecord fields' newBase ->
-                TRecord (M.union initialFields fields') newBase
+  apply s t@( TVar a      ) = M.findWithDefault t a s
+    -- TRecord fields (Just t'@(TVar tv)) ->
+    --   let deepUpdateRecord initialFields base tyvar = 
+    --         case M.findWithDefault base tyvar s of
+    --           TRecord fields' newBase ->
+    --             TRecord (M.union initialFields fields') newBase
 
-              t'' ->
-                TRecord fields (Just t'')
+    --           t'' ->
+    --             TRecord fields (Just t'')
 
-      in  deepUpdateRecord fields t' tv
+    --   in  deepUpdateRecord fields t' tv
 
-    TRecord fields (Just base) ->
-      TRecord fields (Just base)
-
-    t'               -> t'
+    -- TRecord fields (Just base) ->
+    --   TRecord fields (Just base)
 
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
+  apply s (TRecord fields (Just (TVar tv))) = case M.lookup tv s of
+    Just newTV@(TVar _) ->
+      TRecord (apply s <$> fields) (Just newTV)
+
+    Just (TRecord fields' Nothing) ->
+      TRecord (apply s <$> (fields <> fields')) Nothing
+
+    Just (TRecord fields' base') ->
+      TRecord (apply s <$> (fields <> fields')) base'
+
+    Nothing ->
+      TRecord (apply s <$> fields) (Just (TVar tv))
+
+    Just (TGen x) ->
+       TRecord (apply s <$> fields) (Just $ TGen x)
+
+    bad ->
+      error $ "found: " <> ppShow bad
   apply s (TRecord fields base) =
     let appliedFields          = apply s <$> fields
         appliedBase            = apply s <$> base
@@ -89,6 +105,9 @@ instance Substitutable Env where
   apply s env = env { envVars = M.map (apply s) $ envVars env }
   ftv env = ftv $ M.elems $ envVars env
 
+-- compose :: Substitution -> Substitution -> Substitution
+-- compose s1 s2 = M.map (apply s1) $ s2 <> s1
+
 compose :: Substitution -> Substitution -> Substitution
 compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
  where
@@ -118,17 +137,10 @@ merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (M.keys s1 `intersect` M.keys s2)
 
+
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
   TVar (TV n _)   -> M.singleton (TV n Star) t
   TApp    l  r    -> M.union (buildVarSubsts l) (buildVarSubsts r)
   TRecord ts base -> foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
   _               -> mempty
-
-removeRecordTypes :: Substitution -> Substitution
-removeRecordTypes = M.filter notRecord
- where
-  notRecord :: Type -> Bool
-  notRecord t = case t of
-    TRecord _ _ -> False
-    _           -> True
