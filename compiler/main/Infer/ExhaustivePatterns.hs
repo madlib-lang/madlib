@@ -42,7 +42,6 @@ data Pattern
   = Anything
   | Literal Literal
   | Ctor ADTInfo String [Pattern]
-  | Record (Map.Map String Pattern)
   deriving(Eq)
 
 instance Show Pattern where
@@ -55,9 +54,6 @@ instance Show Pattern where
 
     Ctor _ name pats ->
       "Ctor " <> name <> show pats
-
-    Record fields ->
-      "Record " <> show fields
 
 data Literal
   = Chr Char
@@ -88,7 +84,12 @@ simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
 
           _ ->
             fields'
-    return $ Record allFields
+    -- return $ Record allFields
+
+    let pats = Map.elems allFields
+        adtInfo = ADTInfo 1 [Slv.Untyped emptyArea $ Slv.Constructor "__RECORD__" (replicate (length pats) (Slv.Untyped emptyArea (Slv.TRSingle "a"))) t]
+    return $ Ctor adtInfo "__RECORD__" pats
+
 
   -- TODO: Add this pattern
   -- Can.PUnit ->
@@ -357,8 +358,12 @@ showPattern pattern = case pattern of
       Num s ->
         s
 
-  Ctor _ name args ->
-    if name == "__Cons__" then
+  Ctor ai name args ->
+    if name == "__RECORD__" then
+      let (ADTInfo _ [Slv.Untyped _ (Slv.Constructor _ _ (TRecord fields _))]) = ai
+          fields' = zip (Map.keys fields) args
+      in  "{ " <> List.intercalate ", " (map (\(name, pat) -> name <> ": " <> showPattern pat) fields') <> " }"
+    else if name == "__Cons__" then
       case getConsArgs pattern of
         [] ->
           "[]"
@@ -390,9 +395,6 @@ showPattern pattern = case pattern of
       name <> "(" <> showArgs args <> ")"
     where
       showArgs as = List.intercalate ", " (showPattern <$> as)
-
-  Record fields ->
-    "{ " <> List.intercalate ", " (map (\(name, pat) -> name <> ": " <> showPattern pat) (Map.toList fields)) <> " }"
 
 
 getConsArgs :: Pattern -> [Pattern]
@@ -428,20 +430,8 @@ isExhaustive matrix n =
         let ctors   = collectCtors matrix
             numSeen = Map.size ctors
         in  if numSeen == 0 then
-              let maybeBaseRecord = extractRecordPatterns matrix
-              in  case maybeBaseRecord of
-                Nothing ->
-                  (:) Anything
-                    <$> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
-
-                Just baseRecord ->
-                  let fieldNames = Map.keys baseRecord
-                      isAltExhaustive fieldName =
-                        isExhaustive
-                          (Maybe.mapMaybe (specializeRowByRecordField fieldName) matrix)
-                          n
-                      fields' = map (\fieldName -> ((fieldName,) <$>) <$> filter (not . null) (isAltExhaustive fieldName)) fieldNames
-                  in  filter (not . null) $ map (map (Record . Map.fromList)) fields'
+              (:) Anything
+                <$> isExhaustive (Maybe.mapMaybe specializeRowByAnything matrix) (n - 1)
             else
               let alts@(ADTInfo numAlts ctorList) = snd (Map.findMin ctors)
               in  if numSeen < numAlts then
@@ -524,12 +514,6 @@ isUseful matrix vector =
                 (Maybe.mapMaybe (specializeRowByCtor name (length args)) matrix)
                 (args ++ patterns)
 
-            Record recordNamedPatterns ->
-              let recordBaseMap = collectRecordFieldsWithAnyPattern matrix
-              in  isUseful
-                    (Maybe.mapMaybe (specializeRowByRecord recordBaseMap) matrix)
-                    (Map.elems recordNamedPatterns ++ patterns)
-
             Anything ->
               -- check if all alts appear in matrix
               case isComplete matrix of
@@ -571,9 +555,6 @@ specializeRowByCtor ctorName arity row =
     Anything : patterns ->
       Just (replicate arity Anything ++ patterns)
 
-    Record _ : _ ->
-      Nothing
-
     Literal _ : _ ->
       error
         "Compiler bug! After type checking, constructors and literals\
@@ -601,11 +582,6 @@ specializeRowByLiteral literal row =
         "Compiler bug! After type checking, constructors and literals\
         \ should never align in pattern match exhaustiveness checks."
 
-    Record _ : _ ->
-      error
-        "Compiler bug! After type checking, records and literals\
-        \ should never align in pattern match exhaustiveness checks."
-
     [] ->
       error "Compiler error! Empty matrices should not get specialized."
 
@@ -618,9 +594,6 @@ specializeRowByAnything row =
       Nothing
 
     Ctor {} : _ ->
-      Nothing
-
-    Record _ : _ ->
       Nothing
 
     Anything : patterns ->
@@ -637,10 +610,6 @@ specializeRowByRecord baseMap row =
     Ctor{} : _ ->
       Nothing
 
-    Record namedPatterns : patterns ->
-      let specializedMap = Map.union namedPatterns baseMap
-      in  Just (Map.elems specializedMap ++ patterns)
-
     Anything : patterns ->
       Just (Map.elems baseMap ++ patterns)
 
@@ -653,22 +622,15 @@ specializeRowByRecord baseMap row =
       error "Compiler error! Empty matrices should not get specialized."
 
 -- INVARIANT: (length row == N) ==> (length result == arity + N - 1)
-specializeRowByRecordField :: String -> [Pattern] -> Maybe [Pattern]
-specializeRowByRecordField fieldName row =
+specializeRowByRecordField :: Int -> String -> [Pattern] -> Maybe [Pattern]
+specializeRowByRecordField fieldCount fieldName row =
   case row of
     Ctor{} : _ ->
       Nothing
 
     Anything : patterns ->
-      Just (Anything : patterns)
-
-    Record namedPatterns : patterns ->
-      case Map.lookup fieldName namedPatterns of
-        Just pattern ->
-          Just (pattern : patterns)
-
-        Nothing ->
-          Nothing
+      -- Just (Anything : patterns)
+      Just (replicate fieldCount Anything ++ patterns)
 
     Literal _ : _ ->
       error
@@ -718,43 +680,6 @@ collectCtorsHelp ctors row =
     _ ->
       ctors
 
-
--- COLLECT RECORD FIELDS
-
-extractRecordPatterns :: [[Pattern]] -> Maybe (Map.Map String Pattern)
-extractRecordPatterns matrix =
-  if containsRecord matrix then
-    Just $ collectRecordFieldsWithAnyPattern matrix
-  else
-    Nothing
-
-containsRecord :: [[Pattern]] -> Bool
-containsRecord matrix =
-  case matrix of
-    [] ->
-      False
-
-    (Record _ : _) : _ ->
-      True
-
-    _ : rest ->
-      containsRecord rest
-
-collectRecordFieldsWithAnyPattern :: [[Pattern]] -> Map.Map String Pattern
-collectRecordFieldsWithAnyPattern matrix =
-  let fieldNames = List.foldl' collectRecordFields Set.empty matrix
-   in Set.foldl' (\fields name -> Map.insert name Anything fields) Map.empty fieldNames
-
-collectRecordFields :: Set.Set String -> [Pattern] -> Set.Set String
-collectRecordFields nameCollection row =
-  case row of
-    Record namedPatterns : _ ->
-      Set.union
-        (Set.fromList (Map.keys namedPatterns))
-        nameCollection
-
-    _ ->
-      nameCollection
 
 
 findTypeDeclInASTByConstructorName :: Slv.AST -> String -> Maybe Slv.TypeDecl
