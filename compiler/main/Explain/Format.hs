@@ -1847,38 +1847,50 @@ gatherAllFnArgsForDiff t1 t2 = case (t1, t2) of
     [(t1, t2)]
 
 
-constructorAndFunctionArgsToDocsWithDiff :: (M.Map String Int, M.Map String Int) -> (M.Map String Int, M.Map String Int) -> [(Type, Type)] -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
-constructorAndFunctionArgsToDocsWithDiff vars1 vars2 ts = case ts of
+constructorAndFunctionArgsToDocsWithDiff :: Bool -> (M.Map String Int, M.Map String Int) -> (M.Map String Int, M.Map String Int) -> [(Type, Type)] -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
+constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1 vars2 ts = case ts of
   ((t1@(TApp _ _), t2@(TApp _ _)) : next) | not (isTuple t1 || isTuple t2) ->
     let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff vars1' vars2' next
+        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
     in  ( vars1''
         , vars2''
-        , Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
-        , Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
+        , if isFunctionArg && not (isFunctionType t1) then
+            t1' : next1
+          else
+            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
+        , if isFunctionArg&& not (isFunctionType t2) then
+            t2' : next2
+          else
+            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
         )
 
   ((t1@(TApp _ _), t2) : next) | not (isTuple t1) ->
     let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff vars1' vars2' next
+        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
     in  ( vars1''
         , vars2''
-        , Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
+        , if isFunctionArg && not (isFunctionType t1) then
+            t1' : next1
+          else
+            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
         , t2' : next2
         )
 
   ((t1, t2@(TApp _ _)) : next) | not (isTuple t2) ->
     let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff vars1' vars2' next
+        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
     in  ( vars1''
         , vars2''
         , t1' : next1
-        , Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
+        , if isFunctionArg && not (isFunctionType t2) then
+            t2' : next2
+          else
+            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
         )
 
   ((t1, t2) : next) ->
     let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff vars1' vars2' next
+        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
     in  (vars1'', vars2'', t1' : next1, t2' : next2)
 
   [] ->
@@ -1910,8 +1922,8 @@ predsToDocsWithDiff :: (M.Map String Int, M.Map String Int)
   -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
 predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) of
   (IsIn cls1 ts1 _ : more1, IsIn cls2 ts2 _ : more2) ->
-    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs (vars1, hkVars1) ts1
-        (vars2', hkVars2', ts2')             = constructorAndFunctionArgsToDocs (vars2, hkVars2) ts2
+    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts1
+        (vars2', hkVars2', ts2')             = constructorAndFunctionArgsToDocs False (vars2, hkVars2) ts2
         (allVars1, allVars2, more1', more2') = predsToDocsWithDiff (vars1', hkVars1') (vars2', hkVars2') more1 more2
         areEqual = cls1 == cls2 && ts1 == ts2
     in  ( allVars1
@@ -1937,7 +1949,7 @@ predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) 
         )
 
   (IsIn cls1 ts1 _ : more1, []) ->
-    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs (vars1, hkVars1) ts1
+    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts1
         (allVars1, allVars2, more1', _) = predsToDocsWithDiff (vars1', hkVars1') (vars2, hkVars2) more1 []
     in  ( allVars1
         , allVars2
@@ -1954,7 +1966,7 @@ predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) 
         )
 
   ([], IsIn cls2 ts2 _ : more2) ->
-    let (vars2', hkVars2', ts2')        = constructorAndFunctionArgsToDocs (vars1, hkVars1) ts2
+    let (vars2', hkVars2', ts2')        = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts2
         (allVars1, allVars2, _, more2') = predsToDocsWithDiff (vars1, hkVars1) (vars2', hkVars2') more2 []
     in  ( allVars1
         , allVars2
@@ -2038,7 +2050,7 @@ typesToDocWithDiff :: (M.Map String Int, M.Map String Int)
 typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
   (TApp (TApp (TCon (TC "(->)" _) _) _) _, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
     let allArgs = gatherAllFnArgsForDiff t1 t2
-        (vars1', vars2', ts1, ts2) = constructorAndFunctionArgsToDocsWithDiff vars1 vars2 allArgs
+        (vars1', vars2', ts1, ts2) = constructorAndFunctionArgsToDocsWithDiff True vars1 vars2 allArgs
     in  ( vars1'
         , vars2'
         , Pretty.hcat $ List.intersperse (Pretty.softline <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts1)
@@ -2391,7 +2403,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
 
   (TApp _ _, TApp _ _) ->
     let allArgs = gatherAllConstructorArgsForDiff t1 t2
-        (vars1', vars2', ctor1 : args1, ctor2 : args2) = constructorAndFunctionArgsToDocsWithDiff vars1 vars2 allArgs
+        (vars1', vars2', ctor1 : args1, ctor2 : args2) = constructorAndFunctionArgsToDocsWithDiff False vars1 vars2 allArgs
     in  ( vars1'
         , vars2'
         , Pretty.group (
@@ -2630,18 +2642,21 @@ gatherAllConstructorArgs t = case t of
     [t]
 
 
-constructorAndFunctionArgsToDocs :: (M.Map String Int, M.Map String Int) -> [Type] -> (M.Map String Int, M.Map String Int, [Pretty.Doc ann])
-constructorAndFunctionArgsToDocs (vars, hkVars) ts = case ts of
+constructorAndFunctionArgsToDocs :: Bool -> (M.Map String Int, M.Map String Int) -> [Type] -> (M.Map String Int, M.Map String Int, [Pretty.Doc ann])
+constructorAndFunctionArgsToDocs isFunctionArg (vars, hkVars) ts = case ts of
   (t@(TApp _ _) : next) | not (isTuple t) ->
     let (vars', hkVvars', t')     = typeToDoc (vars, hkVars) t
-        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs (vars', hkVvars') next
+        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs isFunctionArg (vars', hkVvars') next
     in  ( vars'', hkVars''
-        , Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t') <> Pretty.line' <> Pretty.rparen) : next'
+        , if isFunctionArg && not (isFunctionType t) then
+            t' : next'
+          else
+            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t') <> Pretty.line' <> Pretty.rparen) : next'
         )
 
   (t : next) ->
     let (vars', hkVars', t')      = typeToDoc (vars, hkVars) t
-        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs (vars', hkVars') next
+        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs isFunctionArg (vars', hkVars') next
     in  (vars'', hkVars'', t' : next')
 
   [] ->
@@ -2652,7 +2667,7 @@ constructorAndFunctionArgsToDocs (vars, hkVars) ts = case ts of
 predsToDocs :: (M.Map String Int, M.Map String Int) -> [Pred] -> (M.Map String Int, M.Map String Int, [Pretty.Doc ann])
 predsToDocs (vars, hkVars) ps = case ps of
   (IsIn cls ts _ : more) ->
-    let (vars', hkVars', ts')     = constructorAndFunctionArgsToDocs (vars, hkVars) ts
+    let (vars', hkVars', ts')     = constructorAndFunctionArgsToDocs False (vars, hkVars) ts
         (vars'', hkVars'', more') = predsToDocs (vars', hkVars') more
     in  ( vars''
         , hkVars''
@@ -2915,7 +2930,7 @@ typeToDoc (vars, hkVars) t = case t of
 
   (TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
     let allArgs = gatherAllFnArgs t
-        (vars', hkVars', args) = constructorAndFunctionArgsToDocs (vars, hkVars) allArgs
+        (vars', hkVars', args) = constructorAndFunctionArgsToDocs True (vars, hkVars) allArgs
     in  ( vars'
         , hkVars'
         , Pretty.hcat $ List.intersperse (Pretty.softline <> Pretty.pretty "-> ") args
@@ -2923,7 +2938,7 @@ typeToDoc (vars, hkVars) t = case t of
 
   (TApp _ _) ->
     let allArgs = gatherAllConstructorArgs t
-        (vars', hkVars', ctor : args) = constructorAndFunctionArgsToDocs (vars, hkVars) allArgs
+        (vars', hkVars', ctor : args) = constructorAndFunctionArgsToDocs False (vars, hkVars) allArgs
     in  ( vars'
         , hkVars'
         , Pretty.group (
