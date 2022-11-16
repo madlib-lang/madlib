@@ -193,11 +193,13 @@ createSimpleWarningDiagnostic _ _ warning = case warning of
     <> "Hint: Remove it or move it higher up so that it might be useful."
 
   TypedHoleFound t ->
-    "Typed hole\n\n"
-    <> "I found a typed hole with type:\n  " <> prettyPrintType True t
-    <> "\n\n"
-    <> "Note: This will crash at runtime if reached.\n"
-    <> "Hint: Replace it with a valid expression of that type."
+    let (renderedType, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t))
+        indentedType = unlines $ ("  "<>) <$> lines renderedType
+    in  "Typed hole\n\n"
+        <> "I found a typed hole with type:\n" <> indentedType
+        <> "\n\n"
+        <> "Note: This will crash at runtime if reached.\n"
+        <> "Hint: Replace it with a valid expression of that type."
 
 
 createWarningDiagnostic :: Bool -> Context -> WarningKind -> Diagnose.Report String
@@ -466,16 +468,18 @@ createWarningDiagnostic _ context warning = case warning of
   TypedHoleFound t ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Warn
-          Nothing
-          "Typed hole"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "I found a typed hole with type:\n  " <> prettyPrintType True t
-            )
-          ]
-          [ Diagnose.Note "This will crash at runtime if reached."
-          , Diagnose.Hint "Replace it with a valid expression of that type."
-          ]
+        let (renderedType, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t))
+            indentedType = unlines $ ("  "<>) <$> lines renderedType
+        in  Diagnose.Warn
+              Nothing
+              "Typed hole"
+              [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+                , Diagnose.This $ "I found a typed hole with type:\n  " <> indentedType
+                )
+              ]
+              [ Diagnose.Note "This will crash at runtime if reached."
+              , Diagnose.Hint "Replace it with a valid expression of that type."
+              ]
 
       NoContext ->
         Diagnose.Warn
@@ -580,8 +584,8 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
-        expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n  "
-        foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n  "
+        expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n"
+        foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
     in  "Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1''
 
   TypingHasWrongKind t expectedKind actualKind ->
@@ -2054,9 +2058,7 @@ schemesToDocWithDiff :: (M.Map String Int, M.Map String Int)
   -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
 schemesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) sc1 sc2 = case (sc1, sc2) of
   (Forall _ ([] :=> t1), Forall _ ([] :=> t2)) ->
-    let (vars1', hkVars1', t1') = typeToDoc (vars1, hkVars1) t1
-        (vars2', hkVars2', t2') = typeToDoc (vars2, hkVars2) t2
-    in  ((vars1', hkVars1'), (vars2', hkVars2'), t1', t2')
+    typesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) t1 t2
 
   (Forall _ (ps1 :=> t1), Forall _ (ps2 :=> t2)) ->
     let (vars1', vars2', ps1', ps2')  = predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) (dedupePreds ps1) (dedupePreds ps2)
@@ -2114,8 +2116,8 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
         (vars1', vars2', ts1, ts2) = constructorAndFunctionArgsToDocsWithDiff True vars1 vars2 allArgs
     in  ( vars1'
         , vars2'
-        , Pretty.hcat $ List.intersperse (Pretty.softline <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts1)
-        , Pretty.hcat $ List.intersperse (Pretty.softline <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts2)
+        , Pretty.group $ Pretty.hcat $ List.intersperse (Pretty.line <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts1)
+        , Pretty.group $ Pretty.hcat $ List.intersperse (Pretty.line <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts2)
         )
 
   (TApp (TApp (TCon (TC "(->)" _) _) _) _, _) ->
@@ -2521,7 +2523,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
         (finalVars1', formattedBase1)   = case base1 of
           Just t1  ->
             let (vars, hkVars, pretty) = typeToDoc (finalVars1, finalHkVars1) t1
-            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.pretty ", ")
+            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
 
           Nothing ->
             ((finalVars1, finalHkVars1), Pretty.emptyDoc)
@@ -2529,7 +2531,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
         (finalVars2'', formattedBase2)   = case base2 of
           Just t2  ->
             let (vars, hkVars, pretty) = typeToDoc (finalVars2', finalHkVars2') t2
-            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.pretty ", ")
+            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
 
           Nothing ->
             ((finalVars2', finalHkVars2'), Pretty.emptyDoc)

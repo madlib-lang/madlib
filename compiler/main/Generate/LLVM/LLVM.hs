@@ -1534,8 +1534,8 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, unboxed, Just ret)
 
   Core.Typed _ _ _ Core.TypedHole -> do
-    ret <- call typedHoleReached []
-    return (symbolTable, ret, Nothing)
+    call typedHoleReached []
+    return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
 
   Core.Typed (_ IT.:=> t) _ _ (Core.Literal (Core.LNum n)) -> case t of
     IT.TCon (IT.TC "Float" _) _ ->
