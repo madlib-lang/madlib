@@ -51,8 +51,6 @@ instance Unify Type where
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s2 <- unify (TRecord fieldsForLeft (Just newBase)) tBase'
       s3 <- unify (TRecord fieldsForRight (Just newBase)) tBase
-      -- s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      -- s3 <- unify tBase tBase'
 
       return $ s1 `compose` s2 `compose` s3
 

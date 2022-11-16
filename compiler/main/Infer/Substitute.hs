@@ -35,23 +35,15 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `union` ftv t
 
 instance Substitutable Type where
-  apply _ tc@(TCon _ _   ) = tc
-  apply s t@( TVar a      ) = M.findWithDefault t a s
-    -- TRecord fields (Just t'@(TVar tv)) ->
-    --   let deepUpdateRecord initialFields base tyvar = 
-    --         case M.findWithDefault base tyvar s of
-    --           TRecord fields' newBase ->
-    --             TRecord (M.union initialFields fields') newBase
+  apply _ tc@(TCon _ _) =
+    tc
 
-    --           t'' ->
-    --             TRecord fields (Just t'')
+  apply s t@(TVar a) =
+    M.findWithDefault t a s
 
-    --   in  deepUpdateRecord fields t' tv
+  apply s (t1 `TApp` t2) =
+    apply s t1 `TApp` apply s t2
 
-    -- TRecord fields (Just base) ->
-    --   TRecord fields (Just base)
-
-  apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s (TRecord fields (Just (TVar tv))) = case M.lookup tv s of
     Just newTV@(TVar _) ->
       TRecord (apply s <$> fields) (Just newTV)
@@ -66,23 +58,27 @@ instance Substitutable Type where
       TRecord (apply s <$> fields) (Just (TVar tv))
 
     Just (TGen x) ->
-       TRecord (apply s <$> fields) (Just $ TGen x)
+      TRecord (apply s <$> fields) (Just $ TGen x)
 
     bad ->
       error $ "found: " <> ppShow bad
-  apply s (TRecord fields base) =
-    let appliedFields          = apply s <$> fields
-        appliedBase            = apply s <$> base
-        (allFields', nextBase) = case appliedBase of
-          Just (TRecord fields' base') ->
-            (M.union appliedFields (apply s <$> fields'), base')
 
-          _                            ->
-            (appliedFields, appliedBase)
+  apply s (TRecord fields Nothing) =
+    TRecord (apply s <$> fields) Nothing
 
-        applied = TRecord allFields' nextBase
-    in  applied
-    -- in  if rec == applied then applied else apply s applied
+  -- apply s rec@(TRecord fields base) =
+  --   let appliedFields          = apply s <$> fields
+  --       appliedBase            = apply s <$> base
+  --       (allFields', nextBase) = case appliedBase of
+  --         Just (TRecord fields' base') ->
+  --           (M.union appliedFields (apply s <$> fields'), base')
+
+  --         _                            ->
+  --           (appliedFields, appliedBase)
+
+  --       applied = TRecord allFields' nextBase
+  --   -- in  applied
+  --   in  if rec == applied then applied else apply s applied
   apply _ t = t
 
   ftv TCon{}                       = []
@@ -105,11 +101,9 @@ instance Substitutable Env where
   apply s env = env { envVars = M.map (apply s) $ envVars env }
   ftv env = ftv $ M.elems $ envVars env
 
--- compose :: Substitution -> Substitution -> Substitution
--- compose s1 s2 = M.map (apply s1) $ s2 <> s1
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
+compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
@@ -131,7 +125,8 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
           tr'' = mergeTypes tr tr'
       in  TApp tl'' tr''
 
-    (_, t) -> t
+    (_, t) ->
+      t
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext

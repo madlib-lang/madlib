@@ -215,7 +215,8 @@ inferBody options env [e] = do
 inferBody options env (e : es) = do
   (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
   (sb, ps', tb, eb) <- inferBody options (apply s env') es
-  let finalS = s `compose` sb
+  let finalS = s `compose` (sb `compose` s)
+  -- let finalS = s `compose` sb-- `compose` s
 
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
@@ -488,7 +489,7 @@ inferRecord options env exp = do
     (s, newBase) <- case base of
       Just tBase -> do
         baseVar <- newTVar Star
-        s <- unify (TRecord mempty (Just baseVar)) tBase
+        s <- unify tBase (TRecord mempty (Just baseVar))
         return (s, Just baseVar)
 
       Nothing ->
@@ -575,7 +576,7 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
 
     s3                  <- contextualUnifyAccess env fa t1 (t2 `fn` tv)
 
-    let s      = s3 `compose` s2 `compose` s1
+    let s      = s1 `compose` s2 `compose` s3
     let t      = apply s tv
 
     let solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)

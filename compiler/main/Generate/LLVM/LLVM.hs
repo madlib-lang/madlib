@@ -1693,23 +1693,23 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> rType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
-    -- TRecord (M.Map Id Type) (Maybe Type)
-    nameOperand           <- buildStr fieldName
+  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
-    value <- case rType of
+    value <- case recordType of
       IT.TRecord fields Nothing -> do
+        recordOperand' <- safeBitcast recordOperand (Type.ptr $ Type.StructureType False [Type.i32, boxType])
         let fieldType = Type.StructureType False [stringType, boxType]
         let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
-        fieldsOperand <- gep recordOperand [i32ConstOp 0, i32ConstOp 1] -- i8**
-        fieldsOperand' <- load fieldsOperand 0 -- i8*
+        fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
+        fieldsOperand'  <- load fieldsOperand 0 -- i8*
         fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
-        field <- gep fieldsOperand'' [i32ConstOp index]
-        field' <- load field 0
-        value <- gep field' [i32ConstOp 0, i32ConstOp 1]
+        field           <- gep fieldsOperand'' [i32ConstOp index]
+        field'          <- load field 0
+        value           <- gep field' [i32ConstOp 0, i32ConstOp 1]
         load value 0
 
       _ -> do
+        nameOperand <- buildStr fieldName
         call selectField [(nameOperand, []), (recordOperand, [])]
 
     value' <- unbox env symbolTable qt value
