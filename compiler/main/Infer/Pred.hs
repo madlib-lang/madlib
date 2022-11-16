@@ -16,9 +16,8 @@ import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
 import qualified Data.Map                      as M
-import Debug.Trace
-import Text.Show.Pretty
 import Infer.EnvUtils
+import Utils.Record (generateRecordPredsAndType)
 
 
 getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
@@ -70,8 +69,27 @@ bySuper env p@(IsIn i ts maybeArea) =
     s      = M.fromList $ zip (sig env i) ts
 
 findInst :: Env -> Pred -> Infer (Maybe Instance)
-findInst env p@(IsIn interface t _) = do
-  catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
+findInst env p@(IsIn interface ts _) =
+  catchError
+    (Just <$> tryInsts (insts env interface))
+    (const $ case ts of
+      [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
+        let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
+            qp = fieldsPreds :=> IsIn interface [tRec] Nothing
+        return $ Just (Instance qp mempty)
+
+      _ ->
+        return Nothing
+    )
+  -- case ts of
+  --   -- This is needed as some instances for extensible records are added after type checking
+  --   [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
+  --     let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
+  --         qp = fieldsPreds :=> IsIn interface [tRec] Nothing
+  --     return $ Just (Instance qp mempty)
+
+  --   _ -> do
+  --     catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
  where
   tryInst i@(Instance (_ :=> h) _) = do
     isInstanceOf h p
@@ -79,9 +97,9 @@ findInst env p@(IsIn interface t _) = do
   tryInsts []          =
     case p of
         IsIn _ _ (Just area) ->
-          throwError $ CompilationError (NoInstanceFound interface t) (Context (envCurrentPath env) area)
+          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area)
         _ ->
-          throwError $ CompilationError (NoInstanceFound interface t) NoContext
+          throwError $ CompilationError (NoInstanceFound interface ts) NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\_ -> tryInsts is)
 
 gatherInstPreds :: Env -> Pred -> Infer [Pred]
@@ -132,24 +150,22 @@ isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
       match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
     else throwError $ CompilationError FatalError NoContext
 
--- isInstanceOf :: Pred -> Pred -> Infer Substitution
--- isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
---   if interface == interface'
---     then do
---       let r  = filter (\(t1, t2) -> not (isTVar t1)) (zip ts ts')
---       let r' = filter (\(t1, t2) -> isTVar t1) (zip ts ts')
---       s1 <- unify (IsIn interface (fst <$> r') Nothing) (IsIn interface (snd <$> r') Nothing)
---       s2 <- match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
---       return $ s1 <> s2
---     else throwError $ CompilationError FatalError NoContext
 
 byInst :: Env -> Pred -> Infer [Pred]
-byInst env p@(IsIn interface ts maybeArea) = tryInsts (insts env interface)
+byInst env p@(IsIn interface ts maybeArea) =
+  case ts of
+    -- This is needed as some instances for extensible records are added after type checking
+    [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
+      let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
+      u <- isInstanceOf (IsIn interface [ts'] Nothing) p
+      return $ apply u fieldsPreds
+
+    _ ->
+      tryInsts (insts env interface)
  where
   tryInst (Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
-    let ps' = apply u <$> ps
-    return ps'
+    return $ apply u <$> ps
   tryInsts [] =
     if all isConcrete $ predTypes p then
       case maybeArea of

@@ -780,6 +780,14 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "\n\n"
     <> "Hint: Add the missing interface constraints to the type annotation."
 
+  OverloadedMutation n _ ->
+    "Mutation in overloaded context\n\n"
+    <> "You are mutating the variable '" <> n <> "' in a function that has constraints"
+    <> "\n\n"
+    <> "Note: This will not work as it'll always generate a new reference for the closure\n"
+    <> "leading to the value not being changed.\n"
+    <> "Hint: Add or change type annotations to suppress the constraints."
+
   WrongAliasArgCount aliasName expected actual ->
     "Wrong alias argument count\n\n"
     <> "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
@@ -1577,6 +1585,29 @@ createErrorDiagnostic color context typeError = case typeError of
             )
           ]
           [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Context too weak"
+          []
+          [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+
+  OverloadedMutation n _ ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Mutation in overloaded context"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "You are mutating the variable '" <> n <> "' in a function that has constraints"
+            )
+          ]
+          [ Diagnose.Note $ "This will not work as it'll always generate a new reference for the closure\n"
+              <> "leading to the value not being changed."
+          , Diagnose.Hint "Add or change type annotations to suppress the constraints."
+          ]
 
       NoContext ->
         Diagnose.Err

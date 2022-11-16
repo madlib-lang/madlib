@@ -4,7 +4,7 @@ import { Just, Nothing } from "Maybe"
 import { loop, maybeLoop, while } from "./Control"
 
 
-test("while", (_) => {
+test("while", () => {
   x = 0
   while(() => {
     x = x + 1
@@ -14,14 +14,14 @@ test("while", (_) => {
   return assertEquals(x, 5)
 })
 
-test("loop", (_) => {
+test("loop", () => {
   expected = 16
   actual = loop(1, (x) => x < 10, (x) => x * 2)
 
   return assertEquals(actual, expected)
 })
 
-test("maybeLoop", (_) => {
+test("maybeLoop", () => {
   expected = 16
   actual = maybeLoop(
     1,

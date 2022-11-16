@@ -86,6 +86,9 @@ setInstanceMethods env p@(IsIn cls _ _) methods = do
     Just (Instance qp _) -> do
       return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods : is)) (envInterfaces env) }
 
+    _ ->
+      return env
+
 
 findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)
 findM f = runMaybeT . msum . map (MaybeT . f)

@@ -499,3 +499,24 @@ isPlaceholderExp exp = case exp of
 
   _ ->
     False
+
+getListItemExp :: ListItem -> Exp
+getListItemExp li = case li of
+  Typed _ _ (ListItem e) ->
+    e
+
+  Typed _ _ (ListSpread e) ->
+    e
+
+getFieldExp :: Field -> Exp
+getFieldExp li = case li of
+  Typed _ _ (Field (_, e)) ->
+    e
+
+  Typed _ _ (FieldSpread e) ->
+    e
+
+getIsExpression :: Is -> Exp
+getIsExpression is = case is of
+  Typed _ _ (Is _ exp) ->
+    exp
