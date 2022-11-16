@@ -503,13 +503,6 @@ inferRecord options env exp = do
 
   let allPS = concat fieldPS
 
-  case apply extraSubst recordType of
-    TRecord allFields _ | isJust base ->
-      pushExtensibleRecordToDerive $ M.keys allFields
-
-    _ ->
-      return ()
-
   return (subst `compose` extraSubst, allPS, recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
 
 

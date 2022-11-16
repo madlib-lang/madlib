@@ -275,6 +275,9 @@ export unsafeGetValidationValue = where {
 
   ValidationError(_, _, Just(a)) =>
     a
+
+  _ =>
+    ???
 }
 
 getValidationValue :: Validate a -> Maybe a

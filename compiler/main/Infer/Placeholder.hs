@@ -522,7 +522,14 @@ updatePlaceholders options env push s fullExp@(Slv.Typed qt a e) = case e of
 
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields
-    return $ Slv.Typed (apply s qt) a $ Slv.Record fields'
+    let appliedQt = apply s qt
+    case appliedQt of
+      _ :=> TRecord fieldTypes _ ->
+        pushExtensibleRecordToDerive $ M.keys fieldTypes
+
+      _ ->
+        return ()
+    return $ Slv.Typed appliedQt a $ Slv.Record fields'
 
   Slv.TypedHole -> do
     let qt'@(_ :=> t) = apply s qt
