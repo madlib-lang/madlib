@@ -19,9 +19,8 @@ import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
 import           Infer.Instantiate
-import LLVM.AST.Instruction (Instruction(cleanup))
-import Run.Options
-import Data.Maybe
+import           Run.Options
+import           Data.Maybe
 
 
 {-
@@ -254,8 +253,11 @@ getCanonicalPlaceholderTypes :: Env -> Pred -> Infer [Type]
 getCanonicalPlaceholderTypes env p@(IsIn _ ts _) = do
   inst <- findInst env p
   return $ case inst of
-    Just (Instance (_ :=> (IsIn _ ts'' _)) _) -> ts''
-    Nothing -> ts
+    Just (Instance (_ :=> (IsIn _ ts'' _)) _) ->
+      ts''
+
+    Nothing ->
+      ts
 
 
 updateMethodPlaceholder :: Options -> Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp

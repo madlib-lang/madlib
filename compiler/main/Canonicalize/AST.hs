@@ -311,12 +311,12 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
       derivedEqInstances        =
         if optGenerateDerivedInstances options then
-          mapMaybe (deriveEqInstance env'') typeDeclarationsToDerive'
+          mapMaybe (deriveEqInstance astPath) typeDeclarationsToDerive'
         else
           []
       derivedInspectInstances   =
         if optGenerateDerivedInstances options then
-          mapMaybe (deriveInspectInstance env'') typeDeclarationsToDerive'
+          mapMaybe (deriveInspectInstance astPath) typeDeclarationsToDerive'
         else
           []
   

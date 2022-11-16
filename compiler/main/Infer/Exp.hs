@@ -30,6 +30,7 @@ import           Infer.Typing
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
+import           Infer.Mutation
 import           Infer.Scheme                   ( quantify )
 import           Infer.Pattern
 import           Infer.Pred
@@ -37,11 +38,11 @@ import           Infer.Placeholder
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
 import qualified Control.Monad                 as CM
-import Debug.Trace
-import Text.Show.Pretty
-import AST.Solved (getType)
+import           Debug.Trace
+import           Text.Show.Pretty
+import           AST.Solved (getType)
 import qualified Data.Set as Set
-import Run.Options
+import           Run.Options
 import qualified Data.List as List
 
 
@@ -212,21 +213,11 @@ inferBody options env [e] = do
   return (s, ps, t, [e'])
 
 inferBody options env (e : es) = do
-  (s, (returnPreds, _), env', e') <- case e of
-    Can.Canonical _ Can.TypedExp{} -> do
-      (s, ps, env', e') <- inferExplicitlyTyped options True env e
-      return (s, (ps, ps), env', e')
-
-    _ -> do
-      (s, allPreds, env, e') <- inferImplicitlyTyped options True env e
-      return (s, allPreds, env, e')
-
-  let e'' = e'
+  (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
   (sb, ps', tb, eb) <- inferBody options (apply s env') es
-
   let finalS = s `compose` sb
 
-  return (finalS, apply finalS $ returnPreds ++ ps', tb, e'' : eb)
+  return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
 
 postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
@@ -494,42 +485,24 @@ inferRecord options env exp = do
         _       -> Nothing
 
   (recordType, extraSubst) <- do
-    (s, extraFields, newBase) <- case base of
+    (s, newBase) <- case base of
       Just tBase -> do
-        -- case tBase of
-        --   TRecord fields base -> do
-            baseVar <- newTVar Star
-            s <- unify (TRecord mempty (Just baseVar)) tBase
-            return (s, mempty, Just baseVar)
-            -- s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
-          --   return (s, mempty, Just baseVar)
-
-          -- _                   -> do
-          --   s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
-          --   return (s, mempty, base)
+        baseVar <- newTVar Star
+        s <- unify (TRecord mempty (Just baseVar)) tBase
+        return (s, Just baseVar)
 
       Nothing ->
-        return (mempty, mempty, base)
-    return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
-  -- (recordType, extraSubst) <- do
-  --   (s, extraFields, newBase) <- case base of
-  --     Just tBase -> do
-  --       case tBase of
-  --         TRecord fields base -> do
-  --           s <- contextualUnify env exp (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
-  --           return (s, fields, base)
-
-  --         _                   -> do
-  --           s <- contextualUnify env exp tBase (TRecord (M.fromList fieldTypes') base)
-  --           return (s, mempty, base)
-
-  --     Nothing ->
-  --       return (mempty, mempty, base)
-  --   return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
-  -- let recordType = TRecord (M.fromList fieldTypes') base
-  -- let extraSubst = mempty
+        return (mempty, base)
+    return (TRecord (M.fromList fieldTypes') newBase, s)
 
   let allPS = concat fieldPS
+
+  case apply extraSubst recordType of
+    TRecord allFields _ | isJust base ->
+      pushExtensibleRecordToDerive $ M.keys allFields
+
+    _ ->
+      return ()
 
   return (subst `compose` extraSubst, allPS, recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
 
@@ -877,9 +850,6 @@ ftvForLetGen t = case t of
     []
 
 
-foldM' :: (Foldable t, Monad m) => t a -> b -> (b -> a -> m b) -> m b
-foldM' a b c = foldM c b a
-
 
 inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
@@ -930,7 +900,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   -- some point!
   (s2, ps, t, e) <- infer options (apply s1 env''') exp
   let s = s1 `compose` s2
-  -- let (s, ps, t, e) = (s1, ps1, t1, e1)
 
   let env'' = apply s env'''
 
@@ -948,10 +917,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
           ftv t'
       fs  = ftv (apply s'' envWithVarsExcluded)
       gs  = vs \\ fs
-  -- liftIO $ putStrLn $ "envVars: " <> ppShow (envVars env'')
-  -- liftIO $ putStrLn $ "fs: " <> ppShow fs
-  -- liftIO $ putStrLn $ "fsPure: " <> ppShow (ftv $ apply s'' env)
-  -- liftIO $ putStrLn $ "s'': " <> ppShow s''
+
   (ds, rs, _) <- catchError
     (split False envWithVarsExcluded fs (ftv t') ps')
     (\case
@@ -979,14 +945,10 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   rs'' <- dedupePreds <$> getAllParentPreds env rs'
   let sFinal = sDefaults `compose` s''
-  -- liftIO $ putStrLn $ "t: " <> ppShow t
-  -- liftIO $ putStrLn $ "ps: " <> ppShow ps
-  -- liftIO $ putStrLn $ "t': " <> ppShow t'
-  -- liftIO $ putStrLn $ "rs'': " <> ppShow rs''
-  -- liftIO $ putStrLn $ "sFInal: " <> ppShow sFinal
   let sc     = apply sFinal $ quantify gs (rs'' :=> t')
-  -- liftIO $ putStrLn $ "gs: " <> ppShow gs
-  -- liftIO $ putStrLn $ "sc: " <> ppShow sc
+
+  unless isLet $
+    verifyMutations env [] Nothing False [updateQualType e (apply sFinal $ rs'' :=> t')]
 
   case Can.getExpName exp of
     Just n  ->
@@ -1058,6 +1020,8 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
             extendVars env' (n, sc'')
           Nothing ->
             env'
+
+    verifyMutations env [] Nothing False [Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc)]
 
     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 

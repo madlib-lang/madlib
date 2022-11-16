@@ -43,6 +43,8 @@ import qualified Rock
 import Explain.Location (emptyArea)
 import Run.Options
 import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
+import Utils.List (removeDuplicates)
+import Canonicalize.Derive (deriveEqInstance, deriveInspectInstance)
 
 
 {-|
@@ -437,6 +439,24 @@ verifyTopLevelExp astPath exp = case exp of
     throwError $ CompilationError NotADefinition (Context astPath (Slv.getArea exp))
 
 
+deriveExtra :: Options -> Env -> [InstanceToDerive] -> Set.Set InstanceToDerive -> Infer (Env, [Slv.Instance])
+deriveExtra options env derivedTypes extra = do
+  let typeDeclarationsToDerive' = removeDuplicates $ S.toList extra \\ derivedTypes
+      derivedEqInstances        =
+        if optGenerateDerivedInstances options then
+          mapMaybe (deriveEqInstance (envCurrentPath env)) typeDeclarationsToDerive'
+        else
+          []
+      derivedInspectInstances   =
+        if optGenerateDerivedInstances options then
+          mapMaybe (deriveInspectInstance (envCurrentPath env)) typeDeclarationsToDerive'
+        else
+          []
+      allInstances = derivedEqInstances ++ derivedInspectInstances
+
+  resolveInstances options env allInstances
+
+
 inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
 inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
   let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive
@@ -449,6 +469,10 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
   fullEnv                             <- populateTopLevelTypings initialEnv (Can.aexps ast)
   (inferredExps, env'             )   <- inferExps options fullEnv aexps
   (env''        , inferredInstances)  <- resolveInstances options env' ainstances
+
+  extraToDerive <- gets extensibleRecordsToDerive
+  (_, extraDerivedInstances) <- deriveExtra options env'' instancesToDerive extraToDerive
+
   let updatedInterfaces = updateInterface <$> ainterfaces
   updatedADTs <- mapM updateADT atypedecls
 
@@ -476,7 +500,7 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
               )
               aimports
           , Slv.ainterfaces = updatedInterfaces
-          , Slv.ainstances  = inferredInstances
+          , Slv.ainstances  = extraDerivedInstances ++ inferredInstances
           }
 
   checkAST initialEnv ast'

@@ -13,6 +13,7 @@ import           Data.ByteString.Char8 (intersperse)
 import qualified Data.List                              as List
 import qualified Canonicalize.Env as Can
 import Utils.Hash
+import Utils.Record (generateRecordPredsAndType)
 
 
 searchTypeInConstructor :: Id -> Type -> Maybe Type
@@ -113,8 +114,8 @@ buildFieldConditions =
     (ec $ LBool "true")
 
 
-deriveEqInstance :: Can.Env -> InstanceToDerive -> Maybe Instance
-deriveEqInstance env toDerive = case toDerive of
+deriveEqInstance :: FilePath -> InstanceToDerive -> Maybe Instance
+deriveEqInstance astPath toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
@@ -148,11 +149,7 @@ deriveEqInstance env toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let moduleHash = generateHashFromPath (Can.envCurrentPath env)
-        fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
-        recordType         = TRecord fields Nothing
-        instPreds          = (\var -> IsIn "Eq" [var] Nothing) <$> Map.elems fields
+    let (instPreds, recordType) = generateRecordPredsAndType astPath "Eq" (Set.toList fieldNames)
     in  Just $ ec (Instance "Eq" instPreds (IsIn "Eq" [recordType] Nothing) (
           Map.singleton
           "=="
@@ -198,8 +195,8 @@ buildConstructorIsForInspect ctor = case ctor of
       ec $ Is (ec $ PCon name (ec . PVar <$> vars)) inspected
 
 
-deriveInspectInstance :: Can.Env -> InstanceToDerive -> Maybe Instance
-deriveInspectInstance env toDerive = case toDerive of
+deriveInspectInstance :: FilePath -> InstanceToDerive -> Maybe Instance
+deriveInspectInstance astPath toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
@@ -230,11 +227,7 @@ deriveInspectInstance env toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let moduleHash = generateHashFromPath (Can.envCurrentPath env)
-        fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
-        recordType         = TRecord fields Nothing
-        instPreds          = (\var -> IsIn "Inspect" [var] Nothing) <$> Map.elems fields
+    let (instPreds, recordType) = generateRecordPredsAndType astPath "Inspect" (Set.toList fieldNames)
     in  Just $ ec (Instance "Inspect" instPreds (IsIn "Inspect" [recordType] Nothing) (
           Map.singleton
           "inspect"

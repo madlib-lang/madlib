@@ -49,6 +49,7 @@ data TypeError
   | ASTHasNoPath
   | Error
   | ImportCycle [FilePath]
+  | OverloadedMutation String [Pred]
   | NoMain
   | NotADefinition
   deriving (Show, Eq, Ord)
