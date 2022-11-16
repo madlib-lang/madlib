@@ -45,14 +45,18 @@ instance Substitutable Type where
     apply s t1 `TApp` apply s t2
 
   apply s (TRecord fields (Just (TVar tv))) = case M.lookup tv s of
-    Just newTV@(TVar _) ->
-      TRecord (apply s <$> fields) (Just newTV)
+    Just newBase@(TVar _) ->
+      TRecord (apply s <$> fields) (Just newBase)
 
     Just (TRecord fields' Nothing) ->
       TRecord (apply s <$> (fields <> fields')) Nothing
 
     Just (TRecord fields' base') ->
-      TRecord (apply s <$> (fields <> fields')) base'
+      let appliedBase = apply s <$> base'
+      in  if appliedBase /= base' then
+            apply s $ TRecord (fields <> fields') appliedBase
+          else
+            TRecord (apply s <$> (fields <> fields')) appliedBase
 
     Nothing ->
       TRecord (apply s <$> fields) (Just (TVar tv))
@@ -63,22 +67,12 @@ instance Substitutable Type where
     bad ->
       error $ "found: " <> ppShow bad
 
+  apply s (TRecord fields (Just (TRecord fields' base))) =
+    apply s $ TRecord (fields <> fields') base
+
   apply s (TRecord fields Nothing) =
     TRecord (apply s <$> fields) Nothing
 
-  -- apply s rec@(TRecord fields base) =
-  --   let appliedFields          = apply s <$> fields
-  --       appliedBase            = apply s <$> base
-  --       (allFields', nextBase) = case appliedBase of
-  --         Just (TRecord fields' base') ->
-  --           (M.union appliedFields (apply s <$> fields'), base')
-
-  --         _                            ->
-  --           (appliedFields, appliedBase)
-
-  --       applied = TRecord allFields' nextBase
-  --   -- in  applied
-  --   in  if rec == applied then applied else apply s applied
   apply _ t = t
 
   ftv TCon{}                       = []
