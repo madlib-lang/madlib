@@ -69,7 +69,8 @@ instance Unify Type where
 
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
-      s1 <- unify tBase' (TRecord fieldsDiff Nothing)
+      newBase <- newTVar Star
+      s1 <- unify tBase' (TRecord fieldsDiff (Just newBase))
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -179,7 +180,7 @@ contextualUnifyAccess :: Env -> Can.Canonical a -> Type -> Type -> Infer Substit
 contextualUnifyAccess env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    (CompilationError (UnificationError _ _) ctx) -> do
+    (CompilationError (UnificationError t1 t2) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
           hasNotChanged = t2' == t2 || t1' == t1
@@ -198,7 +199,7 @@ contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    (CompilationError (UnificationError _ _) ctx) -> do
+    (CompilationError (UnificationError t1 t2) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
           hasNotChanged = t2' == t2 || t1' == t1
@@ -286,7 +287,7 @@ gentleUnify (l `TApp` r) (l' `TApp` r') = do
   s2 <- gentleUnify (apply s1 r) (apply s1 r')
   return $ compose s1 s2
 
-gentleUnify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
+gentleUnify (TRecord fields base) (TRecord fields' base') = case (base, base') of
   (Just tBase, Just tBase') -> do
     s1 <- gentleUnify tBase' (TRecord (M.union fields fields') base)
 
@@ -322,16 +323,7 @@ gentleUnify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base
       return $ s2 `compose` s1
 
   _ -> do
-    let extraFields  = M.difference fields fields'
-        extraFields' = M.difference fields' fields
-    if extraFields' /= mempty || extraFields /= mempty
-      then throwError $ CompilationError (UnificationError r l) NoContext
-      else do
-        let updatedFields  = M.union fields extraFields'
-            updatedFields' = M.union fields' extraFields
-            types          = M.elems updatedFields
-            types'         = M.elems updatedFields'
-        gentleUnifyVars M.empty types types'
+    gentleUnifyVars M.empty (M.elems fields) (M.elems fields')
 
 gentleUnify (TVar tv) t         = return $ M.singleton tv t
 gentleUnify t         (TVar tv) = return $ M.singleton tv t
