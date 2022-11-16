@@ -168,6 +168,8 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.LUnit             -> return $ Core.Typed qt area [] (Core.Literal Core.LUnit)
 
+    Slv.TypedHole         -> return $ Core.Typed qt area [] Core.TypedHole
+
     Slv.TemplateString es -> do
       es' <- mapM (toCore enabled) es
       return $ templateStringToCalls es'

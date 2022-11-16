@@ -89,7 +89,6 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
         let t' = tListOf listType
         return (Slv.Typed ([] :=> t') spreadArea (Slv.PSpread (Slv.Typed ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
 
-      -- TODO: we might need to unify with a list type here?
       _ -> inferPattern env pat
 
   Can.PRecord pats -> do

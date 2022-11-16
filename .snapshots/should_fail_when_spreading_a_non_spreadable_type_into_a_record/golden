@@ -72,11 +72,7 @@
 , []
 , [ CompilationError
       (NoInstanceFound
-         "Number"
-         [ TRecord
-             (fromList [ ( "x" , TVar (TV "d3" Star) ) ])
-             (Just (TVar (TV "c2" Star)))
-         ])
+         "Number" [ TRecord (fromList []) (Just (TVar (TV "e4" Star))) ])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 15 1 16) (Loc 29 1 30)

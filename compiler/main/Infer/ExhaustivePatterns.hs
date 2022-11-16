@@ -301,6 +301,9 @@ checkExp ast env (Slv.Typed _ area expression) =
     Slv.JSExp _ ->
       return ()
 
+    Slv.TypedHole ->
+      return ()
+
     Slv.TemplateString exps ->
       mapM_ (checkExp ast env) exps
 

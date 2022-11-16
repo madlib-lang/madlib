@@ -82,6 +82,11 @@ void madlib__process__internal__initExtra() {
   }
 }
 
+void madlib__process__internal__typedHoleReached() {
+  printf("Typed hole reached, exiting.\n");
+  exit(1);
+}
+
 madlib__list__Node_t *madlib__process__internal__getArgs() {
   return __args__;
 }

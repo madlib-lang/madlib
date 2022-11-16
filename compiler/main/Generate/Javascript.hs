@@ -167,6 +167,9 @@ instance Compilable Exp where
         Literal LUnit ->
           "({ __constructor: \"Unit\", __args: [] })"
 
+        TypedHole ->
+          "(() => { throw 'Typed hole reached, exiting.' })()"
+
         Call (Typed _ _ _ (Var "++" _)) [left, right] ->
           compile env config left <> " + " <> compile env config right
 

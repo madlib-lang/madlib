@@ -182,6 +182,7 @@ data Exp_
   | Where Exp [Is]
   | Placeholder (PlaceholderRef, String) Exp
   | Extern (Ty.Qual Ty.Type) Name Name
+  | TypedHole
   deriving(Eq, Show, Generic, Hashable)
 
 type Name = String

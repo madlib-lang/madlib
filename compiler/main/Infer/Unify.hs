@@ -41,8 +41,6 @@ instance Unify Type where
   unify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
-      -- s1 <- unify tBase' (TRecord (M.union fields fields') base)
-
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
           fieldsForLeft  = M.difference fields fields'

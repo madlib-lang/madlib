@@ -169,6 +169,10 @@ initExtra :: Operand
 initExtra =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__initExtra"))
 
+typedHoleReached :: Operand
+typedHoleReached =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__typedHoleReached"))
+
 initEventLoop :: Operand
 initEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__initEventLoop__"))
@@ -1528,6 +1532,10 @@ generateExp env symbolTable exp = case exp of
     ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
     unboxed <- unbox env symbolTable qt ret
     return (symbolTable, unboxed, Just ret)
+
+  Core.Typed _ _ _ Core.TypedHole -> do
+    ret <- call typedHoleReached []
+    return (symbolTable, ret, Nothing)
 
   Core.Typed (_ IT.:=> t) _ _ (Core.Literal (Core.LNum n)) -> case t of
     IT.TCon (IT.TC "Float" _) _ ->
@@ -4332,10 +4340,11 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   symbolTable  <- generateInstances env symbolTableWithDefaults (ainstances ast)
   symbolTable' <- generateTopLevelFunctions env symbolTable (topLevelFunctions $ aexps ast)
 
-  externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+  externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+  externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
+  extern (AST.mkName "madlib__process__internal__typedHoleReached")  [] Type.void
 
   extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
-  externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
   extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1

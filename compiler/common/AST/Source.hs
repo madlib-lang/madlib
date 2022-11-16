@@ -175,6 +175,7 @@ data Exp_
   | IfTarget SourceTarget
   | ElseIfTarget SourceTarget
   | EndIfTarget
+  | TypedHole
   deriving(Eq, Show, Generic, Hashable)
 
 

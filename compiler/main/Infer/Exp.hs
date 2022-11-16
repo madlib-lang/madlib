@@ -77,6 +77,10 @@ infer options env lexp = do
     Can.NameExport       _    -> inferNameExport env lexp
     Can.If{}                  -> inferIf options env lexp
     Can.Extern{}              -> inferExtern env lexp
+    Can.TypedHole             -> do
+      t <- newTVar Star
+      return (M.empty, [], t, Slv.Typed ([] :=> t) area Slv.TypedHole)
+
     Can.JSExp c               -> do
       t <- newTVar Star
       return (M.empty, [], t, Slv.Typed ([] :=> t) area (Slv.JSExp c))
@@ -311,7 +315,7 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
         else
           arg
 
-  s3 <- catchError (contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)) flipUnificationError
+  s3 <- contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
 

@@ -94,6 +94,7 @@ import Text.Show.Pretty
   'jsx<'      { Token _ _ TokenJsxTagOpenStart }
   'jsx</'     { Token _ _ TokenJsxTagOpenEnd }
   'jsx<1'     { Token _ _ TokenJsxTagOpenSingle }
+  '???'       { Token _ _ TokenTypedHole }
 
   '>='        { Token _ _ TokenRightChevronEq }
   '<='        { Token _ _ TokenLeftChevronEq }
@@ -335,6 +336,7 @@ exp :: { Src.Exp }
   | listConstructor                                          %shift { $1 }
   | extern                                                   %shift { $1 }
   | typedExp                                                 %shift { $1 }
+  | '???'                                                    %shift { Src.Source (tokenArea $1) (tokenTarget $1) Src.TypedHole }
   | js                                                       %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.JSExp (strV $1)) }
   | '#' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $2) (Src.Var $ '#' : strV $2) }
   | name                                                     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }

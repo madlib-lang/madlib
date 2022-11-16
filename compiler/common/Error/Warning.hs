@@ -1,6 +1,7 @@
 module Error.Warning where
 
 import           Error.Context
+import           Infer.Type
 
 
 data CompilationWarning = CompilationWarning WarningKind Context deriving(Eq, Ord, Show)
@@ -19,6 +20,7 @@ data WarningKind
   | MissingMethods [String]
   | IncompletePattern [String]
   | RedundantPattern
+  | TypedHoleFound Type
   deriving(Eq, Show, Ord)
 
 
