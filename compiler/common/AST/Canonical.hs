@@ -165,6 +165,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | JSExp String
           | Extern Ty.Scheme Name Name
+          | TypedHole
           deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Name = String

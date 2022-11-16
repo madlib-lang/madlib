@@ -192,6 +192,13 @@ createSimpleWarningDiagnostic _ _ warning = case warning of
     <> "Note: This pattern will never be reached.\n"
     <> "Hint: Remove it or move it higher up so that it might be useful."
 
+  TypedHoleFound t ->
+    "Typed hole\n\n"
+    <> "I found a typed hole with type:\n  " <> prettyPrintType True t
+    <> "\n\n"
+    <> "Note: This will crash at runtime if reached.\n"
+    <> "Hint: Replace it with a valid expression of that type."
+
 
 createWarningDiagnostic :: Bool -> Context -> WarningKind -> Diagnose.Report String
 createWarningDiagnostic _ context warning = case warning of
@@ -454,6 +461,29 @@ createWarningDiagnostic _ context warning = case warning of
           []
           [ Diagnose.Note "This pattern will never be reached."
           , Diagnose.Hint "Remove it or move it higher up so that it might be useful."
+          ]
+
+  TypedHoleFound t ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Warn
+          Nothing
+          "Typed hole"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "I found a typed hole with type:\n  " <> prettyPrintType True t
+            )
+          ]
+          [ Diagnose.Note "This will crash at runtime if reached."
+          , Diagnose.Hint "Replace it with a valid expression of that type."
+          ]
+
+      NoContext ->
+        Diagnose.Warn
+          Nothing
+          "Typed hole"
+          []
+          [ Diagnose.Note "This will crash at runtime if reached."
+          , Diagnose.Hint "Replace it with a valid expression of that type."
           ]
 
 

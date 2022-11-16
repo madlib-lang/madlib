@@ -990,6 +990,9 @@ expToDoc comments exp =
         Source _ _ LUnit ->
           (Pretty.pretty "{}", comments')
 
+        Source _ _ TypedHole ->
+          (Pretty.pretty "???", comments')
+
         Source _ _ (Var n) ->
           let n' =
                 case n of

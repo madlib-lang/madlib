@@ -21,6 +21,7 @@ import           Error.Context
 import           Infer.Instantiate
 import           Run.Options
 import           Data.Maybe
+import           Error.Warning
 
 
 {-
@@ -522,6 +523,11 @@ updatePlaceholders options env push s fullExp@(Slv.Typed qt a e) = case e of
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields
     return $ Slv.Typed (apply s qt) a $ Slv.Record fields'
+
+  Slv.TypedHole -> do
+    let qt'@(_ :=> t) = apply s qt
+    pushWarning $ CompilationWarning (TypedHoleFound t) (Context (envCurrentPath env) a)
+    return $ Slv.Typed qt' a Slv.TypedHole
 
   _ -> return $ Slv.Typed (apply s qt) a e
 

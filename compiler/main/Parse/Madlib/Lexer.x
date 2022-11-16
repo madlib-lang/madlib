@@ -97,6 +97,7 @@ tokens :-
   <0> interface                                                                               { mapToken (\_ -> TokenInterface ) }
   <0> instance                                                                                { mapToken (\_ -> TokenInstance ) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> pipe                                { mapToken (\_ -> TokenPipeKeyword) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\?\?\?                        { mapToken (\_ -> TokenTypedHole) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> return                              { mapToken (\_ -> TokenReturnKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> is                                  { mapToken (\_ -> TokenIs) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=$tail?             { mapToken (\_ -> TokenEq) }
@@ -699,6 +700,7 @@ data TokenClass
  | TokenMacroIfTarget
  | TokenMacroElseIf
  | TokenMacroEndIf
+ | TokenTypedHole
  deriving (Eq, Show)
 
 

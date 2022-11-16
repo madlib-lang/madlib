@@ -290,6 +290,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       scheme  <- typingToScheme env typing
       return $ Can.Canonical area (Can.Extern scheme name originalName)
 
+    Src.TypedHole ->
+      return $ Can.Canonical area Can.TypedHole
+
     _ ->
       error $ "unhandled node type\n" <> ppShow fullExp
 

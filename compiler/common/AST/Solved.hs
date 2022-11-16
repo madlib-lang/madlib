@@ -160,6 +160,7 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           | Extern (Ty.Qual Ty.Type) Name Name
+          | TypedHole
           deriving(Eq, Show, Ord, Generic, Hashable)
 
 
