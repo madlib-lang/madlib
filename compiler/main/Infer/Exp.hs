@@ -311,7 +311,7 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
         else
           arg
 
-  s3 <- contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)
+  s3 <- catchError (contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)) flipUnificationError
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
 
@@ -489,7 +489,8 @@ inferRecord options env exp = do
     (s, newBase) <- case base of
       Just tBase -> do
         baseVar <- newTVar Star
-        s <- unify tBase (TRecord mempty (Just baseVar))
+        s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar))
+        -- s <- unify (TRecord mempty (Just baseVar)) tBase
         return (s, Just baseVar)
 
       Nothing ->

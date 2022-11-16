@@ -2474,7 +2474,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
 
                       Nothing ->
                         let (vars1', hkVars1', pretty1) = typeToDoc allVars1 fieldType1
-                        in  ((vars1', hkVars1'), allVars2, compiledFields1' ++ [Pretty.pretty fieldName <> Pretty.pretty " :: " <> Pretty.annotate (Terminal.color Terminal.Red) pretty1], compiledFields2')
+                        in  ((vars1', hkVars1'), allVars2, compiledFields1' ++ [Pretty.annotate (Terminal.color Terminal.Red) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty1], compiledFields2')
                 )
                 (vars1, vars2, [], [])
               $ M.toList allFields1
@@ -2484,7 +2484,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
             foldl'
                 (\(allVars2, compiledFields2') (fieldName, fieldType2) ->
                     let (vars2', hkVars2', pretty2) = typeToDoc allVars2 fieldType2
-                    in  ((vars2', hkVars2'), compiledFields2' ++ [Pretty.pretty fieldName <> Pretty.pretty " :: " <> Pretty.annotate (Terminal.color Terminal.Green) pretty2])
+                    in  ((vars2', hkVars2'), compiledFields2' ++ [Pretty.annotate (Terminal.color Terminal.Green) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty2])
                 )
                 ((finalVars2, finalHkVars2), [])
               $ M.toList missingFields
