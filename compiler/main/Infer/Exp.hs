@@ -489,17 +489,17 @@ inferRecord options env exp = do
         (x : _) -> Just x
         _       -> Nothing
 
-  (recordType, extraSubst) <- do
-    (s, newBase) <- case base of
-      Just tBase -> do
-        baseVar <- newTVar Star
-        s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar))
-        -- s <- unify (TRecord mempty (Just baseVar)) tBase
-        return (s, Just baseVar)
+  (recordType, extraSubst) <- case base of
+    Just (TRecord fields baseBase) ->
+      return (TRecord (M.fromList fieldTypes' <> fields) baseBase, mempty)
 
-      Nothing ->
-        return (mempty, base)
-    return (TRecord (M.fromList fieldTypes') newBase, s)
+    Just tBase -> do
+      baseVar <- newTVar Star
+      s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar))
+      return (TRecord (M.fromList fieldTypes') (Just baseVar), s)
+
+    Nothing ->
+      return (TRecord (M.fromList fieldTypes') Nothing, mempty)
 
   let allPS = concat fieldPS
 
@@ -598,7 +598,7 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
   (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s1 `compose` s2) env) falsy
 
-  s4                          <- contextualUnify env falsy tfalsy ttruthy
+  s4                          <- catchError (contextualUnify env falsy tfalsy ttruthy) flipUnificationError
   s5                          <- contextualUnify env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1

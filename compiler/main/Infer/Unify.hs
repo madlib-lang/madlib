@@ -54,7 +54,9 @@ instance Unify Type where
 
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
-      s1 <- unify tBase (TRecord fieldsDiff Nothing)
+      newBase <- newTVar Star
+      s1 <- unify tBase (TRecord fieldsDiff (Just newBase))
+      -- s1 <- unify tBase (TRecord fieldsDiff Nothing)
 
 
       unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
@@ -69,6 +71,7 @@ instance Unify Type where
       let fieldsDiff = M.difference fields fields'
       newBase <- newTVar Star
       s1 <- unify tBase' (TRecord fieldsDiff (Just newBase))
+      -- s1 <- unify tBase' (TRecord fieldsDiff Nothing)
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -84,11 +87,7 @@ instance Unify Type where
       if extraFields' /= mempty || extraFields /= mempty then
         throwError $ CompilationError (UnificationError r l) NoContext
       else do
-        let updatedFields  = M.union fields extraFields'
-            updatedFields' = M.union fields' extraFields
-            types          = M.elems updatedFields
-            types'         = M.elems updatedFields'
-        unifyVars' M.empty types types'
+        unifyVars' M.empty (M.elems fields) (M.elems fields')
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
@@ -166,7 +165,7 @@ instance Match Type where
     -- Not complete but that's all we need for now as we don't support userland
     -- record instances. An instance for a record would be matched for all records.
     unify (TRecord fields1 Nothing) (TRecord fields2 Nothing)
-  match t1 t2 = throwError $ CompilationError (UnificationError t1 t2) NoContext
+  match t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 instance Match t => Match [t] where
   match ts ts' = do
@@ -178,7 +177,7 @@ contextualUnifyAccess :: Env -> Can.Canonical a -> Type -> Type -> Infer Substit
 contextualUnifyAccess env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    (CompilationError (UnificationError t1 t2) ctx) -> do
+    (CompilationError (UnificationError _ _) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
           hasNotChanged = t2' == t2 || t1' == t1
@@ -197,7 +196,7 @@ contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    (CompilationError (UnificationError t1 t2) ctx) -> do
+    (CompilationError (UnificationError _ _) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
           hasNotChanged = t2' == t2 || t1' == t1
@@ -321,7 +320,9 @@ gentleUnify (TRecord fields base) (TRecord fields' base') = case (base, base') o
       return $ s2 `compose` s1
 
   _ -> do
-    gentleUnifyVars M.empty (M.elems fields) (M.elems fields')
+    let fieldsToCheck  = M.intersection fields fields'
+        fieldsToCheck' = M.intersection fields' fields
+    gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
 gentleUnify (TVar tv) t         = return $ M.singleton tv t
 gentleUnify t         (TVar tv) = return $ M.singleton tv t
