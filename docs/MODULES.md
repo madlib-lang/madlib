@@ -1,4 +1,4 @@
-Modules allow to organize code and put together code that share functionalities or relates to common concepts. It is usually a good start to organize modules around types.
+Modules allow you to organize and combine code which share functionality or commonality. It is usually a good idea to organize modules around types.
 
 
 ## Syntax
@@ -6,47 +6,53 @@ Modules allow to organize code and put together code that share functionalities 
 ### Definition
 A module consists of a madlib source file. A module can export types, functions or values.
 
-Here is how expressions and types are exported:
+This example frames the various ways that expressions and types can be exported:
 ```madlib
 // inline type export
 export type MyType = Constructor
 
-// type export
 type MyType = Constructor
-// Note that the constructor is not exported in this case and needs to be exported separately
+// post-definition type export
 export type MyType
+// Note that the constructor is not exported in this case and needs to be exported separately
 
 // inline expression export
 export CONSTANT = "some constant"
 export inc = (x) => x + 1
 
-// expression export
+// post-expression export
 CONSTANT = "some constant"
 export CONSTANT
 ```
 
 ### Importing from a module
-To import something from another module that is in the same project, `./` prefix must be used.
+To import something from another module within the same project, a `./` prefix should be used. (See [import aliases](#tbd-where-does-this-live) for elegant alternatives)
 
-Given:
-- /User.mad
-- /Address.mad
+Given two files:
+- User.mad
+- Address.mad
 
-To import Address in `User.mad` you would do:
+To import Address in `User.mad` you can do:
 ```madlib
 import { Address } from "./Address"
-
-// now Address is available
+// ^-- now Address is available
 ```
-Note that you can define import aliases and it is recommended to do all imports relative to the root of your source folder. For more information on import aliases refer to the documentation of packages, describing the format of `madlib.json` files.
 
-To import something from an installed package you must simply use the name of the package. To import from the markdown parser one would do:
+*Note*: You can define [import aliases](#tbd-where-does-this-live) and we recommend defining imports relative to the root of your source folder.
+
+To import something from an [installed package](#how-to-install-a-package) use the name of the package in the format:
+```madlib
+import { memberValue } from "module-name"
+```
+
+For example, to import from the markdown parser:
 ```madlib
 import { parse } from "MarkdownParser"
 
 parse("# some markdown")
 ```
-Note that the same applies to standard library modules. For example to write a file to disk you'd import File like this:
+
+*Note*: This applies to standard library modules. For example, in order to write a file to disk you can `import File` like this:
 ```madlib
 import File from "File"
 import IO from "IO"

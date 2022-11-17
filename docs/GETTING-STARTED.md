@@ -1,10 +1,12 @@
 # Introduction to Madlib
 
-*Madlib* is a functional language which is a combination of [JavaScript](https://www.javascript.com) and [Haskell](https://www.haskell.org/). It is similar in nature to [PureScript](https://www.purescript.org/), [ReasonML](https://reasonml.github.io) and [Elm](https://elm-lang.org/).
+_Madlib_ is a functional language which is a combination of [JavaScript](https://www.javascript.com) and [Haskell](https://www.haskell.org/). It is similar in nature to [PureScript](https://www.purescript.org/), [ReasonML](https://reasonml.github.io) and [Elm](https://elm-lang.org/).
 
 It compiles to both Javascript and native binary executables. It is primarily designed for the web and can be used for client and server applications as well as scripting.
 
-Its main goal is to enable users to write reliable code that can be easily tested and robust in a playful way. The playfulness and succint syntax is achieved via tacit ( aka pointfree ) notation and the `pipe` utility to compose functions. Here is a small example that displays some user files after reading them from disk, all in parallel:
+Its main goal is to enable users to write robust, reliable code that is expressive and easily tested. It uses an expressive and terse syntax that uses tacit (point-free) notation and `pipe` composition to combine functions in an easy and idiomatic way.
+
+Here's an example which facilitates displaying user files after reading them from disk, in parallel:
 
 ```madlib
 import type { Wish } from "Wish"

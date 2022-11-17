@@ -5,12 +5,12 @@ A madlib package consists of:
 - a main module
 
 ### Example
-A fictive MadServer library to build http servers could be defined as follows:
+A fictitious MadServer library to build http-based servers could be defined with the following structure:
 
-{projectRoot}/madlib.json
-{projectRoot}/src/Main.mad
+- {projectRoot}/madlib.json
+- {projectRoot}/src/Main.mad
 
-with a madlib.json with the following content:
+Given a `madlib.json` with the following content:
 ```json
 {
   "name": "MadServer",
