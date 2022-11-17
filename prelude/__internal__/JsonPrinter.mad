@@ -20,7 +20,7 @@ import {
 // --------------
 
 jsonToDoc :: JsonValue -> PP.Doc
-jsonToDoc = (value) => where(value) {
+export jsonToDoc = (value) => where(value) {
   JsonString(s) =>
     pipe(
       escapeString,

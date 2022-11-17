@@ -5,7 +5,7 @@
 [![Discord](https://img.shields.io/discord/530598289813536771?label=discord%20madlib%20channel)](https://discord.com/channels/530598289813536771/932841899914571787)
 
 # madlib
-> madlib is a general purpose language that compiles to Javascript.
+> madlib is a general purpose language that compiles to native binaries and Javascript.
 
 ## How to install
 There are currently two ways to install the madlib compiler.

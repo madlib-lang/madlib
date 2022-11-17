@@ -19,6 +19,7 @@ import           Data.List                      ( nub
 
 import Debug.Trace
 import Text.Show.Pretty
+import Control.Applicative
 
 
 class Substitutable a where
@@ -97,15 +98,12 @@ instance Substitutable Env where
 
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
+compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
     (TRecord fields1 base1, TRecord fields2 base2) ->
-      let base = case (base1, base2) of
-            (Just tBase1, _          ) -> Just tBase1
-            (_          , Just tBase2) -> Just tBase2
-            _                          -> Nothing
+      let base = base1 <|> base2
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base
 
     (TRecord fields _, TVar _) ->

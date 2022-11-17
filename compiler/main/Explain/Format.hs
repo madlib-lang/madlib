@@ -2543,7 +2543,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
                 <> formattedBase1
                 <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) (Pretty.annotate (Terminal.color Terminal.Black) <$> compiledFields1))
               )
-              <> Pretty.line
+              <> (if null compiledFields1 then Pretty.emptyDoc else Pretty.line)
               <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rbrace
             )
         compiled2 = Pretty.annotate (Terminal.color Terminal.Black) $
@@ -2553,7 +2553,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
                 <> formattedBase2
                 <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) (Pretty.annotate (Terminal.color Terminal.Black) <$> (compiledFields2 ++ compiledMissingFields')))
               )
-              <> Pretty.line
+              <> (if null compiledFields2 then Pretty.emptyDoc else Pretty.line)
               <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rbrace
             )
     in  (finalVars1', finalVars2'', compiled1, compiled2)

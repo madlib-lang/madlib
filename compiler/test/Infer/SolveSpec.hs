@@ -798,6 +798,37 @@ spec = do
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer record params that are partially used in abstractions" actual
 
+    it "should infer extensible records with typed holes" $ do
+      let code   = unlines
+                    [ "type DateTime = DateTime"
+                    , ""
+                    , "now :: a -> DateTime"
+                    , "now = #--#"
+                    , ""
+                    , "toISOString :: DateTime -> String"
+                    , "toISOString = #--#"
+                    , ""
+                    , "log :: String -> {}"
+                    , "log = #--#"
+                    , ""
+                    , "addFourthDimension :: { ...a, } -> { ...a, time :: DateTime, }"
+                    , "addFourthDimension = (input) => ({ ...input, time: now() })"
+                    , ""
+                    , "main = () => {"
+                    , "  pipe("
+                    , "    ???,"
+                    , "    addFourthDimension,"
+                    , "    ???,"
+                    , "    (fourD) => ({ ...fourD, time: toISOString(fourD.time) }),"
+                    , "    ???,"
+                    , "    log"
+                    , "  )({ x: 11, y: 7, z: 9 })"
+                    , "}"
+                    ]
+
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer extensible records with typed holes" actual
+
     ---------------------------------------------------------------------------
 
 

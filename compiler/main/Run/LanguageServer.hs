@@ -384,7 +384,6 @@ findNodeAtLoc _ _ (Slv.Untyped _ _) =
   Nothing
 
 
--- TODO: Add search in type declarations
 findNodeInAst :: Loc -> Src.AST -> Slv.AST -> Maybe Node
 findNodeInAst loc srcAst slvAst =
   findNodeInExps loc (Slv.aexps slvAst ++ Slv.getAllMethods slvAst)
@@ -405,12 +404,10 @@ findNodeInImport loc imp =
       Src.Source _ _ (Src.DefaultImport _ _ filepath) ->
         Just $ DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath
 
-      -- TODO: check names and return a node for the named import if area match
       Src.Source _ _ (Src.NamedImport names _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath NamedImportNode <$> names)
         <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
 
-      -- TODO: check type names and return a node for the named type import if area match
       Src.Source _ _ (Src.TypeImport typeNames _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath TypeImportNode <$> typeNames)
         <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
@@ -1022,9 +1019,9 @@ definitionLocationTask loc path = do
   if hasCycle then
     return Nothing
   else do
-    (typedAst, _)     <- Rock.fetch $ Query.SolvedASTWithEnv path
+    (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
     (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
-    srcAst            <- Rock.fetch $ Query.ParsedAST path
+    srcAst         <- Rock.fetch $ Query.ParsedAST path
 
     let foundNode = findNodeInAst loc srcAst typedAst
     case findNameInNode foundNode of

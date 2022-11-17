@@ -138,7 +138,7 @@ jsonObject = do {
 
 
 jsonValue :: Parse.Parser JsonValue
-jsonValue = do {
+export jsonValue = do {
   _ <- alt(spaces, pure([]))
 
   return choice([jsonFloat, jsonInteger, jsonNull, jsonBoolean, jsonString, jsonArray, jsonObject,])

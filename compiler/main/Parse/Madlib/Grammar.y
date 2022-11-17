@@ -282,7 +282,7 @@ typing :: { Src.Typing }
   | '(' typings ')'                                          %shift { $2 }
   | '{' rets recordTypingArgs maybeComma '}'                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRRecord $3 Nothing) }
   | '{' rets '...' name ','  recordTypingArgs maybeComma '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.TRRecord $6 (Just (Src.Source (mergeAreas (tokenArea $3) (tokenArea $4)) (tokenTarget $1) (Src.TRSingle $ strV $4)))) }
-  | '{' rets '...' name '}'                                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.TRRecord mempty (Just (Src.Source (mergeAreas (tokenArea $3) (tokenArea $4)) (tokenTarget $1) (Src.TRSingle $ strV $4)))) }
+  | '{' rets '...' name maybeComma '}'                       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.TRRecord mempty (Just (Src.Source (mergeAreas (tokenArea $3) (tokenArea $4)) (tokenTarget $1) (Src.TRSingle $ strV $4)))) }
   | '#[' tupleTypings ']'                                    %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }

@@ -55,9 +55,8 @@ instance Unify Type where
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
       -- newBase <- newTVar Star
-      -- s1 <- unify tBase (TRecord fieldsDiff (Just newBase))
+      -- s1 <- unify (TRecord mempty (Just tBase)) (TRecord fieldsDiff (Just newBase))
       s1 <- unify tBase (TRecord fieldsDiff Nothing)
-
 
       unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -70,7 +69,7 @@ instance Unify Type where
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
       newBase <- newTVar Star
-      s1 <- unify tBase' (TRecord fieldsDiff (Just newBase))
+      s1 <- unify (TRecord mempty (Just tBase')) (TRecord fieldsDiff (Just newBase))
       -- s1 <- unify tBase' (TRecord fieldsDiff Nothing)
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
