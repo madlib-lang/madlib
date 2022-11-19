@@ -202,7 +202,7 @@ madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
   int skipCount = 0;
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
 
-  while ((*s != '\0' || skipCount != 0) && length < n) {
+  while (*s != '\0' && (skipCount != 0 || length < n)) {
     if (skipCount > 0) {
       skipCount--;
     } else {
@@ -255,7 +255,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
 
   int charsToTake = end - start;
 
-  while ((*s != '\0' || skipCount != 0) && start > 0) {
+  while ((*s != '\0') && (skipCount != 0 || start > 0)) {
     if (skipCount > 0) {
       skipCount--;
     } else {
@@ -287,7 +287,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
 
   int bytesToCopy = 0;
   skipCount = 0;
-  while ((*s != '\0' || skipCount != 0) && charsToTake > 0) {
+  while (*s != '\0' && (skipCount != 0 || charsToTake > 0)) {
     bytesToCopy++;
     if (skipCount > 0) {
       skipCount--;
@@ -313,7 +313,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
 }
 
 char *madlib__string__pushChar(int32_t c, char* s) {
-  char *encoded = utf8Encode(c);
+  char *encoded = utf8EncodeChar(c);
   size_t encodedLength = strlen(encoded);
   size_t stringLength = strlen(s);
   char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (stringLength + encodedLength + 1));
@@ -324,7 +324,7 @@ char *madlib__string__pushChar(int32_t c, char* s) {
 }
 
 char *madlib__string__appendChar(int32_t c, char* s) {
-  char *encoded = utf8Encode(c);
+  char *encoded = utf8EncodeChar(c);
   size_t encodedLength = strlen(encoded);
   size_t stringLength = strlen(s);
   char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (stringLength + encodedLength + 1));
@@ -456,7 +456,7 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
   int j = 0;
   size_t fullLength = 0;
   for (int j = 0; j < i; j++) {
-    char *encoded = utf8Encode(chars[j]);
+    char *encoded = utf8EncodeChar(chars[j]);
     fullLength += strlen(encoded);
     encodedChars[j] = encoded;
   }
@@ -499,7 +499,7 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
   size_t fullLength = 0;
 
   while (list->value != NULL) {
-    char *encoded = utf8Encode((int32_t)(int64_t)list->value);
+    char *encoded = utf8EncodeChar((int32_t)(int64_t)list->value);
     fullLength += strlen(encoded);
     encodedChars[j] = encoded;
     j++;
@@ -509,9 +509,11 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
   char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (fullLength + 1));
   size_t offset = 0;
   for (int i = 0; i < charCount; i++) {
-    size_t sizeOfChar = strlen(encodedChars[i]);
-    memcpy(result + offset, encodedChars[i], sizeOfChar);
-    offset += sizeOfChar;
+    if (encodedChars[i] != NULL) {
+      size_t sizeOfChar = strlen(encodedChars[i]);
+      memcpy(result + offset, encodedChars[i], sizeOfChar);
+      offset += sizeOfChar;
+    }
   }
 
   result[offset] = '\0';

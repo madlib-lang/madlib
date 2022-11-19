@@ -19,7 +19,7 @@ int64_t madlib__char__compare(int32_t c1, int32_t c2);
 int32_t madlib__char__toLower(int32_t c);
 int32_t madlib__char__toUpper(int32_t c);
 
-char *utf8Encode(int32_t unicode);
+char *utf8EncodeChar(int32_t cp);
 
 int32_t *utf8Decode(char *str);
 int32_t utf8DecodeChar(const char *str, int *i);

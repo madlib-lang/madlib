@@ -4,7 +4,8 @@ import List from "List"
 import {} from "Char"
 
 // inspired from: https://hackage.haskell.org/package/wl-pprint-1.2.1/docs/src/Text.PrettyPrint.Leijen.html
-
+// Check: https://github.com/kfl/wpp
+// https://github.com/the-sett/elm-pretty-printer/tree/3.0.0
 
 export type Doc
   = EmptyDoc
@@ -12,7 +13,7 @@ export type Doc
   | TextDoc(Integer, String)
   | LineDoc(Boolean)
   | CatDoc(Doc, Doc)
-  | NestDoc(Integer, Doc)
+  | NestDoc(Integer, {} -> Doc)
   | UnionDoc(Doc, Doc)
   | ColumnDoc(Integer -> Doc)
   | NestingDoc(Integer -> Doc)
@@ -21,7 +22,7 @@ export type Doc
 export type SimpleDoc
   = SEmpty
   | SChar(Char, SimpleDoc)
-  | SText(Integer, String, SimpleDoc)
+  | SText(Integer, String, {} -> SimpleDoc)
   | SLine(Integer, SimpleDoc)
 
 
@@ -119,7 +120,7 @@ export flatten = (doc) => where(doc) {
     CatDoc(flatten(x), flatten(y))
 
   NestDoc(i, x) =>
-    NestDoc(i, flatten(x))
+    NestDoc(i, () => flatten(x()))
 
   LineDoc(break) =>
     break
@@ -171,7 +172,7 @@ export sepBy = (separator, docs) => pipe(
 
 
 nest :: Integer -> Doc -> Doc
-export nest = (i, x) => NestDoc(i, x)
+export nest = (i, x) => NestDoc(i, () => x)
 
 
 column :: (Integer -> Doc) -> Doc
@@ -187,13 +188,13 @@ export renderPretty = (_, w, doc) => {
   // r = Math.max(0, min(w, round(fromIntegral(w) * rfrac)))
   r = w
 
-  nicest :: Integer -> Integer -> SimpleDoc -> SimpleDoc -> SimpleDoc
+  nicest :: Integer -> Integer -> SimpleDoc -> ({} -> SimpleDoc) -> SimpleDoc
   nicest = (n, k, x, y) => {
     width = Math.min(w - k, r - k + n)
 
     return fits(width, x)
       ? x
-      : y
+      : y()
   }
 
   best :: Integer -> Integer -> List #[Integer, Doc] -> SimpleDoc
@@ -210,7 +211,7 @@ export renderPretty = (_, w, doc) => {
           SChar(c, best(n, k + 1, ds))
 
         TextDoc(l, s) =>
-          SText(l, s, best(n, k + l, ds))
+          SText(l, s, () => best(n, k + l, ds))
 
         LineDoc(_) =>
           SLine(i, best(i, i, ds))
@@ -219,10 +220,10 @@ export renderPretty = (_, w, doc) => {
           best(n, k, [#[i, x], #[i, y], ...ds])
 
         NestDoc(j, x) =>
-          best(n, k, [#[i + j, x], ...ds])
+          best(n, k, [#[i + j, x()], ...ds])
 
         UnionDoc(x, y) =>
-          nicest(n, k, best(n, k, [#[i, x], ...ds]), best(n, k, [#[i, y], ...ds]))
+          nicest(n, k, best(n, k, [#[i, x], ...ds]), () => best(n, k, [#[i, y], ...ds]))
 
         ColumnDoc(f) =>
           best(n, k, [#[i, f(k)], ...ds])
@@ -248,7 +249,7 @@ fits = (w, simpleDoc) =>
         fits(w - 1, x)
 
       SText(l, _, x) =>
-        fits(w - l, x)
+        fits(w - l, x())
 
       SLine(_, _) =>
         true
@@ -272,7 +273,7 @@ export prettyPrint = (width, doc) => {
       helper(pretty ++ show(c), next)
 
     SText(_, s, next) =>
-      helper(pretty ++ s, next)
+      helper(pretty ++ s, next())
 
     SLine(i, next) =>
       helper(pretty ++ "\n" ++ indentation(i), next)

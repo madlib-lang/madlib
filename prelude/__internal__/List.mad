@@ -652,7 +652,16 @@ export sortDesc = sortBy((a, b) => compare(a, b) * -1)
  * @since 0.0.5
  */
 flatten :: List (List a) -> List a
-export flatten = reduceLeft(concat, [])
+export flatten = (list) => where(list) {
+  [] =>
+    []
+
+  [[], ...vs] =>
+    flatten(vs)
+
+  [[x, ...xs], ...vs] =>
+    [x, ...flatten([xs, ...vs])]
+}
 
 
 /**

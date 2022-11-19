@@ -2,6 +2,8 @@ import { test, assertEquals } from "Test"
 import { EQUAL, LESS, MORE, eq } from "Compare"
 import {} from "Char"
 
+import { Just } from "Maybe"
+
 import String from "./String"
 
 
@@ -138,4 +140,12 @@ test("appendChar", (_) => assertEquals(String.appendChar('c', "ab"), "abc"))
 
 test("reverse", (_) =>
   assertEquals(String.reverse("abc"), "cba")
+)
+
+test("charAt", (_) =>
+  assertEquals(String.charAt(3, "abüc"), Just('c'))
+)
+
+test("charAt - utf8", (_) =>
+  assertEquals(String.charAt(2, "abüc"), Just('ü'))
 )

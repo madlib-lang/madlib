@@ -785,15 +785,11 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
 generateDiagnostics :: Bool -> State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics invalidatePath state uri fileUpdates = do
   let path = uriToPath uri
-  (jsWarnings, jsErrors) <- runTypeCheck invalidatePath state TNode path fileUpdates
-
-  -- sendDiagnosticsForWarningsAndErrors jsWarnings jsErrors
-
+  (jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
   (llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
   let allWarnings = jsWarnings `List.union` llvmWarnings
-  let allErrors = jsErrors `List.union` llvmErrors
+  let allErrors   = jsErrors `List.union` llvmErrors
 
-  -- flushDiagnosticsBySource 20 (Just "Madlib")
   sendDiagnosticsForWarningsAndErrors allWarnings allErrors
 
 

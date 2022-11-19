@@ -89,27 +89,46 @@ export jsonToDoc = (value) => where(value) {
 
 
 escapeString :: String -> String
-escapeString = (s) => pipe(
-  String.toList,
-  chain(where {
-    '"' =>
-      ['\\', '"']
+escapeString = (s) => {
+  go :: List Char -> List Char
+  go = (chars) => where(chars) {
+    ['\\', '"', ...cs] =>
+      ['\\', '"', ...go(cs)]
 
-    '\n' =>
-      ['\\', 'n']
+    ['"', ...cs] =>
+      ['\\', '"', ...go(cs)]
 
-    '\t' =>
-      ['\\', 't']
+    ['\\', 'n', ...cs] =>
+      ['\\', 'n', ...go(cs)]
 
-    '\r' =>
-      ['\\', 'r']
+    ['\n', ...cs] =>
+      ['\\', 'n', ...go(cs)]
 
-    or =>
-      [or]
-  }),
-  String.fromList
-)(s)
+    ['\\', 't', ...cs] =>
+      ['\\', 't', ...go(cs)]
 
+    ['\t', ...cs] =>
+      ['\\', 't', ...go(cs)]
+
+    ['\\', 'r', ...cs] =>
+      ['\\', 'r', ...go(cs)]
+
+    ['\r', ...cs] =>
+      ['\\', 'r', ...go(cs)]
+
+    [c, ...cs] =>
+      [c, ...go(cs)]
+
+    [] =>
+      []
+  }
+
+  return pipe(
+    String.toList,
+    go,
+    String.fromList
+  )(s)
+}
 
 // Printer Public API
 // ------------------
