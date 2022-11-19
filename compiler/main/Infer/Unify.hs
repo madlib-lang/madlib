@@ -152,7 +152,7 @@ class Match t where
 instance Match Type where
   match (TApp l r) (TApp l' r') = do
     sl <- match l l'
-    sr <- match r r'
+    sr <- match (apply sl r) (apply sl r')
     merge sl sr
   match (TVar u) t | kind u == kind t =
     return $ M.singleton u t

@@ -40,7 +40,11 @@ instance Substitutable Type where
     tc
 
   apply s t@(TVar a) =
-    M.findWithDefault t a s
+    let t' = M.findWithDefault t a s
+    in  if occursCheck a t' then
+          t
+        else
+          t'
 
   apply s (t1 `TApp` t2) =
     apply s t1 `TApp` apply s t2
@@ -95,6 +99,12 @@ instance Substitutable a => Substitutable [a] where
 instance Substitutable Env where
   apply s env = env { envVars = M.map (apply s) $ envVars env }
   ftv env = ftv $ M.elems $ envVars env
+
+
+-- protect against infinite types
+occursCheck :: TVar -> Type -> Bool
+occursCheck tv t =
+  tv `elem` ftv t
 
 
 compose :: Substitution -> Substitution -> Substitution

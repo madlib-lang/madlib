@@ -19,6 +19,7 @@ import           Error.Context
 import           Error.Error
 import           Control.Monad.Except
 import           Data.Foldable
+import qualified Data.Maybe as Maybe
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Slv.Pattern], [Pred], Vars, [Type])
@@ -46,6 +47,8 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
   Can.PVar  i -> do
     v <- newTVar Star
+    when (Maybe.isJust $ M.lookup i (envVars env)) $
+      throwError $ CompilationError (NameAlreadyDefined i) (Context (envCurrentPath env) area)
     return (Slv.Typed ([] :=> v) area (Slv.PVar i), [], M.singleton i (toScheme v), v)
 
   Can.PAny -> do
