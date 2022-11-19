@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use list comprehension" #-}
+{-# HLINT ignore "Use guards" #-}
 module Format.Format where
 
 import           Data.List
@@ -97,6 +98,13 @@ emptyLine =
   Pretty.nesting (\i -> Pretty.nest (-i) Pretty.line')
 
 
+trailingCommaOrEmpty :: Pretty.Doc ann
+trailingCommaOrEmpty = Pretty.flatAlt (Pretty.comma <> Pretty.hardline) Pretty.emptyDoc
+
+trailingCommaOrSpace :: Pretty.Doc ann
+trailingCommaOrSpace = Pretty.flatAlt (Pretty.comma <> Pretty.hardline) Pretty.space
+
+
 argsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 argsToDoc comments args = case args of
   [exp] ->
@@ -105,7 +113,7 @@ argsToDoc comments args = case args of
   (exp : more) ->
     let (arg, comments')    = expToDoc comments exp
         (more', comments'') = argsToDoc comments' more
-    in  (arg <> Pretty.pretty "," <> Pretty.line <> more', comments'')
+    in  (arg <> Pretty.comma <> Pretty.line <> more', comments'')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -132,22 +140,22 @@ listItemsToDoc comments nodes = case nodes of
   (Source _ _ (ListItem exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
-        line =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
-    in  (item <> Pretty.pretty "," <> line <> more', comments'')
+            Pretty.comma <> Pretty.line
+    in  (item <> after <> more', comments'')
 
   (Source _ _ (ListSpread exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
-        line =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
-    in  (Pretty.pretty "..." <> item <> Pretty.pretty "," <> line <> more', comments'')
+            Pretty.comma <> Pretty.line
+    in  (Pretty.pretty "..." <> item <> after <> more', comments'')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -159,39 +167,39 @@ fieldsToDoc comments fields = case fields of
     let (commentsDoc, comments') = insertComments False area comments
         name'                    = Pretty.pretty name
         (value, _)      = expToDoc comments' exp
-        line  =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
+            Pretty.comma <> Pretty.line
         (more', comments''') = fieldsToDoc comments' more
-    in  ( commentsDoc <> name' <> Pretty.pretty ": " <> value <> Pretty.pretty "," <> line <> more'
+    in  ( commentsDoc <> name' <> Pretty.pretty ": " <> value <> after <> more'
         , comments'''
         )
 
   (Source area _ (FieldSpread exp) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         (item, comments'')       = expToDoc comments' exp
-        line =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
+            Pretty.comma <> Pretty.line
         (more', comments''') = fieldsToDoc comments'' more
-    in  ( commentsDoc <> Pretty.pretty "..." <> item <> Pretty.pretty "," <> line <> more'
+    in  ( commentsDoc <> Pretty.pretty "..." <> item <> after <> more'
         , comments'''
         )
 
   (Source area _ (FieldShorthand name) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         item = Pretty.pretty name
-        line =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
+            Pretty.comma <> Pretty.line
         (more', comments'') = fieldsToDoc comments' more
-    in  ( commentsDoc <> item <> Pretty.pretty "," <> line <> more'
+    in  ( commentsDoc <> item <> after <> more'
         , comments''
         )
 
@@ -205,12 +213,12 @@ dictItemsToDoc comments fields = case fields of
     let (key', comments')    = expToDoc comments key
         (value', comments'') = expToDoc comments' value
         (more', comments''') = dictItemsToDoc comments'' more
-        line =
+        after =
           if null more then
             Pretty.emptyDoc
           else
-            Pretty.line
-    in  ( key' <> Pretty.pretty ": " <> value' <> Pretty.pretty "," <> line <> more'
+            Pretty.comma <> Pretty.line
+    in  ( key' <> Pretty.pretty ": " <> value' <> after <> more'
         , comments'''
         )
 
@@ -294,7 +302,7 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.pretty n
 
   PChar c ->
-    Pretty.pretty $ '\'':c:'\'':""
+    Pretty.pretty $ show c
 
   PStr s ->
     Pretty.pretty s
@@ -310,15 +318,15 @@ patternToDoc (Source _ _ pat) = case pat of
 
   PCon (Source _ _ name) args ->
     let name' = Pretty.pretty name
-        args' = Pretty.hcat $ Pretty.punctuate (Pretty.pretty ", ") (patternToDoc <$> args)
+        args' = Pretty.group (Pretty.nest indentSize (Pretty.line' <> Pretty.hcat (Pretty.punctuate (Pretty.comma <> Pretty.line) (patternToDoc <$> args))) <> trailingCommaOrEmpty)
     in  name' <> Pretty.lparen <> args' <> Pretty.rparen
 
   PList ps ->
     Pretty.group
       (
         Pretty.pretty "["
-        <> Pretty.nest indentSize (Pretty.line' <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternToDoc <$> ps)) <> Pretty.comma)
-        <> Pretty.line'
+        <> Pretty.nest indentSize (Pretty.line' <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternToDoc <$> ps)))
+        <> trailingCommaOrEmpty
         <> Pretty.pretty "]"
       )
 
@@ -327,7 +335,7 @@ patternToDoc (Source _ _ pat) = case pat of
       (
         Pretty.pretty "#["
         <> Pretty.nest indentSize (Pretty.line' <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternToDoc <$> ps)))
-        <> Pretty.line'
+        <> trailingCommaOrEmpty
         <> Pretty.pretty "]"
       )
 
@@ -335,8 +343,8 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.group
       (
         Pretty.pretty "{"
-        <> Pretty.nest indentSize (Pretty.line <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternFieldToDoc <$> fields)) <> Pretty.comma)
-        <> Pretty.line
+        <> Pretty.nest indentSize (Pretty.line <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternFieldToDoc <$> fields)))
+        <> trailingCommaOrSpace
         <> Pretty.pretty "}"
       )
 
@@ -417,7 +425,7 @@ accessToDocs comments exp = case exp of
         (args', comments'') = argsToDoc comments' args
         args'' =
           if shouldNestApp args then
-            Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> Pretty.line' <> Pretty.rparen)
+            Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> trailingCommaOrEmpty <> Pretty.rparen)
           else
             Pretty.lparen <> args' <> Pretty.rparen
         fn'' = case fn of
@@ -439,7 +447,7 @@ accessAsFNToDoc comments access args =
       (args', comments'')  = argsToDoc comments' args
       args'' =
         if shouldNestApp args then
-          Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> Pretty.line' <> Pretty.rparen)
+          Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> trailingCommaOrEmpty <> Pretty.rparen)
         else
           Pretty.lparen <> args' <> Pretty.rparen
   in  ( Pretty.group (Pretty.nest indentSize (Pretty.hcat access' <> args''))
@@ -496,7 +504,7 @@ recordFieldTypingsToDoc canBreak comments fields = case fields of
         (typing', comments'') = typingToDoc canBreak comments' typing
         (more', comments''')  = recordFieldTypingsToDoc canBreak comments'' more
         comma
-          | null more = Pretty.comma
+          | null more = Pretty.emptyDoc
           | not canBreak = Pretty.pretty ", "
           | otherwise = Pretty.comma <> Pretty.line
     in  (commentsDoc <> Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> comma <> more', comments''')
@@ -592,11 +600,12 @@ typingToDoc canBreak comments typing = case typing of
   Source _ _ (TRTuple typings) ->
     let (typings', comments') = typingListToDoc canBreak comments typings
         sep = if canBreak then Pretty.line' else Pretty.emptyDoc
+        sepEnd = if canBreak then trailingCommaOrEmpty else Pretty.emptyDoc
     in  ( Pretty.group
             (
               Pretty.pretty "#["
               <> Pretty.nest indentSize (sep <> typings')
-              <> sep
+              <> sepEnd
             )
             <> Pretty.pretty "]"
         , comments'
@@ -605,10 +614,22 @@ typingToDoc canBreak comments typing = case typing of
   Source _ _ (TRRecord fields maybeExt) ->
     let (typings', comments')   = recordFieldTypingsToDoc canBreak comments (Map.toList (snd <$> fields))
         sep = if canBreak then Pretty.line else Pretty.space
+        afterSpread =
+          if Map.null fields && canBreak then
+            trailingCommaOrEmpty
+          else if Map.null fields then
+            Pretty.emptyDoc
+          else
+            Pretty.comma <> sep
+        after =
+          if canBreak then
+            trailingCommaOrSpace
+          else
+            sep
         (maybeExt', comments'') = case maybeExt of
           Just ext ->
             let (ext', comments''') = typingToDoc canBreak comments' ext
-            in  (Pretty.pretty "..." <> ext' <> Pretty.pretty "," <> sep, comments''')
+            in  (Pretty.pretty "..." <> ext' <> afterSpread, comments''')
 
           Nothing ->
             (Pretty.emptyDoc, comments')
@@ -616,7 +637,7 @@ typingToDoc canBreak comments typing = case typing of
             (
               Pretty.lbrace
               <> Pretty.nest indentSize (sep <> maybeExt' <> typings')
-              <> sep
+              <> after
             )
             <> Pretty.rbrace
         , comments''
@@ -711,7 +732,7 @@ expToDoc comments exp =
                   (args', comments'''') = argsToDoc comments''' args
                   args'' =
                     if shouldNestApp args then
-                      Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> Pretty.line' <> Pretty.rparen)
+                      Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> trailingCommaOrEmpty <> Pretty.rparen)
                     else
                       Pretty.lparen <> args' <> Pretty.rparen
               in  (rec' <> field' <> args'', comments'''')
@@ -721,7 +742,7 @@ expToDoc comments exp =
               (args', comments''') = argsToDoc comments'' args
               args'' =
                 if shouldNestApp args then
-                  Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> Pretty.line' <> Pretty.rparen)
+                  Pretty.group (Pretty.lparen <> Pretty.nest indentSize (Pretty.line' <> args') <> trailingCommaOrEmpty <> Pretty.rparen)
                 else
                   Pretty.lparen <> args' <> Pretty.rparen
           in  ( fn' <> args''
@@ -890,7 +911,7 @@ expToDoc comments exp =
                   (
                     Pretty.lbrace
                     <> Pretty.nest indentSize (Pretty.line <> fields')
-                    <> Pretty.line
+                    <> trailingCommaOrSpace
                   )
                 <> Pretty.rbrace
               , comments''
@@ -902,7 +923,7 @@ expToDoc comments exp =
                   (
                     Pretty.pretty "{{"
                     <> Pretty.nest indentSize (Pretty.line <> fields')
-                    <> Pretty.line
+                    <> trailingCommaOrSpace
                   )
                 <> Pretty.pretty "}}"
               , comments''
@@ -915,8 +936,8 @@ expToDoc comments exp =
                   (
                     Pretty.lbracket
                     <> Pretty.nest indentSize (Pretty.line' <> items')
+                    <> trailingCommaOrEmpty
                     <> commentsDoc
-                    <> Pretty.line'
                   )
                 <> Pretty.rbracket
               , comments'''
@@ -929,8 +950,8 @@ expToDoc comments exp =
                   (
                     Pretty.pretty "#["
                     <> Pretty.nest indentSize (Pretty.line' <> items')
+                    <> trailingCommaOrEmpty
                     <> commentsDoc
-                    <> Pretty.line'
                   )
                 <> Pretty.pretty "]"
               , comments''
@@ -940,8 +961,9 @@ expToDoc comments exp =
           let (exps', comments'') = argsToDoc comments' exps
           in  ( Pretty.pretty "pipe("
                   <> Pretty.nest indentSize (Pretty.hardline <> exps')
+                  <> Pretty.comma
                   <> Pretty.hardline
-                  <> Pretty.pretty ")"
+                  <> Pretty.rparen
               , comments''
               )
 
@@ -1177,12 +1199,17 @@ importToDoc comments imp = case imp of
             Pretty.emptyDoc
           else
             Pretty.line
+        trailing =
+          if null names then
+            Pretty.emptyDoc
+          else
+            trailingCommaOrSpace
     in  ( Pretty.group
             (
               commentDoc
               <> Pretty.pretty "import " <> Pretty.lbrace
               <> Pretty.nest indentSize (lineDoc <> namesDoc)
-              <> lineDoc <> Pretty.rbrace
+              <> trailing <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
         , comments''
@@ -1192,12 +1219,22 @@ importToDoc comments imp = case imp of
     let (commentDoc, comments') = insertComments False area comments
         (nameDocs, comments'')  = importNamesToDoc comments' (sortBy (\a b -> compare (getSourceContent a) (getSourceContent b)) names)
         namesDoc                = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
+        lineDoc  =
+          if null names then
+            Pretty.emptyDoc
+          else
+            Pretty.line
+        trailing =
+          if null names then
+            Pretty.emptyDoc
+          else
+            trailingCommaOrSpace
     in  ( Pretty.group
             (
               commentDoc
               <> Pretty.pretty "import type " <> Pretty.lbrace
-              <> Pretty.nest indentSize (Pretty.line <> namesDoc)
-              <> Pretty.line <> Pretty.rbrace
+              <> Pretty.nest indentSize (lineDoc <> namesDoc)
+              <> trailing <> Pretty.rbrace
               <> Pretty.pretty " from " <> Pretty.pretty ("\"" ++ path ++ "\"")
             )
         , comments''
@@ -1230,7 +1267,7 @@ constructorsToDoc comments ctors = case ctors of
               (
                 Pretty.lparen
                 <> Pretty.nest indentSize (Pretty.line' <> args')
-                <> Pretty.line'
+                <> trailingCommaOrEmpty
               )
               <> Pretty.rparen
         (more', comments''') = constructorsToDoc comments'' more

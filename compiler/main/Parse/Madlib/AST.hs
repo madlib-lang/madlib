@@ -26,8 +26,8 @@ import           Data.List
 import           Parse.Madlib.TargetMacro
 import           Parse.Madlib.Dictionary
 import           Run.Options
-import Text.Read (readMaybe)
-import Text.Show.Pretty (ppShow)
+import           Text.Read (readMaybe)
+import           Text.Show.Pretty (ppShow)
 
 
 
@@ -92,6 +92,7 @@ buildAST options path code = case parse code of
                   "Syntax error"
                 else
                   unlines (tail . tail $ split)
+
     case (line, col) of
       (Just line', Just col') ->
         return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
@@ -99,8 +100,22 @@ buildAST options path code = case parse code of
       (Just line', Nothing) ->
         return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
 
-      _ ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 100000 1)))
+      _ -> do
+        -- then we try to parse this: "lexical error at line 2, column 11"
+        let split' = words e
+        let line = (readMaybe $ init $ split' !! 4) :: Maybe Int
+            col  = (readMaybe $ split' !! 6) :: Maybe Int
+            text = "Syntax error"
+
+        case (line, col) of
+          (Just line', Just col') ->
+            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
+
+          (Just line', Nothing) ->
+            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
+
+          _ ->
+            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 1 1)))
 
 
 setPath :: AST -> FilePath -> AST

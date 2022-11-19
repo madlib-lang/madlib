@@ -502,7 +502,7 @@ mapCharToken inputData@(posn, prevChar, pending, input) len = do
   let charData   = take len input
       parser     = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
       parsed     = fst $ last $ parser charData
-      charData'  = parsed !! 1
+      charData'  = parsed !! 1 -- 1 because we check after the first '
       token      = TokenChar charData'
 
   if length parsed == 3 then do

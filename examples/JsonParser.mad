@@ -7,7 +7,7 @@ import { Just } from "Maybe"
 
 
 
-type Parsed = Parsed({ field1 :: Maybe Parsed, field2 :: Boolean, })
+type Parsed = Parsed({ field1 :: Maybe Parsed, field2 :: Boolean })
 
 input :: String
 input = `
@@ -27,14 +27,14 @@ input = `
 
 parser :: J.Parser Parsed
 parser = J.map2(
-  (field1, field2) => Parsed({ field1: field1, field2: field2, }),
+  (field1, field2) => Parsed({ field1: field1, field2: field2 }),
   J.field("field1", J.maybe(J.lazy((_) => parser))),
-  J.field("field2", J.boolean)
+  J.field("field2", J.boolean),
 )
 
 main = () => {
   where(J.parse(parser, input)) {
-    Right(Parsed({ field1: Just(Parsed(choco)), })) =>
+    Right(Parsed({ field1: Just(Parsed(choco)) })) =>
       IO.log(choco)
 
     or =>

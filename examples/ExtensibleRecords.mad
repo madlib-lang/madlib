@@ -1,13 +1,15 @@
 import Date from "Date"
 import IO from "IO"
 
-addFourthDimension :: { ...a, } -> { ...a, time :: Date.DateTime, }
+
+
+addFourthDimension :: { ...a } -> { ...a, time :: Date.DateTime }
 addFourthDimension = (input) => ({ ...input, time: Date.now() })
 
 main = () => {
   pipe(
     addFourthDimension,
     (fourD) => ({ ...fourD, time: Date.toISOString(fourD.time) }),
-    IO.log
+    IO.log,
   )({ x: 11, y: 7, z: 9 })
 }
