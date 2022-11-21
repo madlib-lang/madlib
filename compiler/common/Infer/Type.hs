@@ -14,6 +14,7 @@ import           Explain.Location
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
 import           Control.Applicative ((<|>))
+import           Text.Show.Pretty
 
 
 
@@ -28,7 +29,9 @@ data Type
   | TCon TCon FilePath -- Constructor type - FilePath of where that type is defined
   | TGen Int
   | TApp Type Type              -- Arrow type
-  | TRecord (M.Map Id Type) (Maybe Type) -- Maybe Type is the extended record type, most likely a type variable
+  | TRecord (M.Map Id Type) (Maybe Type) (M.Map Id Type)
+  -- ^ Maybe Type is the extended record type, most likely a type variable
+  -- and the last Map is the optional fields due to unifying extensible with non extensible records
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   deriving (Show, Eq, Ord, Generic, Hashable)
 
@@ -374,7 +377,7 @@ isTVar t = case t of
 
 isRecordType :: Type -> Bool
 isRecordType t = case t of
-  TRecord _ _ ->
+  TRecord _ _ _ ->
     True
 
   _ ->
@@ -382,7 +385,7 @@ isRecordType t = case t of
 
 getTRecordFieldNames :: Type -> [String]
 getTRecordFieldNames t = case t of
-  TRecord fields _ ->
+  TRecord fields _ _ ->
     M.keys fields
 
   _ ->
@@ -394,12 +397,20 @@ baseToList maybeBase = case maybeBase of
   Just t  -> [t]
   Nothing -> []
 
+
 collectVars :: Type -> [TVar]
 collectVars t = case t of
-  TVar tv         -> [tv]
-  TApp    l  r    -> collectVars l `union` collectVars r
-  TRecord fs base -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
-  _               -> []
+  TVar tv         ->
+    [tv]
+
+  TApp l r ->
+    collectVars l `union` collectVars r
+
+  TRecord fs base _ ->
+    nub $ concat $ collectVars <$> M.elems fs <> baseToList base
+
+  _ ->
+    []
 
 
 collectPredVars :: Pred -> [TVar]
@@ -414,7 +425,7 @@ getConstructorCon t = case t of
   TApp l _ ->
     getConstructorCon l
 
-  TRecord _ _ ->
+  TRecord _ _ _ ->
     t
 
   _ ->
@@ -423,11 +434,14 @@ getConstructorCon t = case t of
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1, TRecord fields2 _) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
+  (TRecord fields1 base1 _, TRecord fields2 _ _) ->
+    TRecord (M.unionWith mergeRecords fields1 fields2) base1 mempty
 
-  (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
+  (TApp l r, TApp l' r') ->
+    TApp (mergeRecords l l') (mergeRecords r r')
 
-  _ -> t2
+  _ ->
+    t1
 
 
 isFunctionType :: Type -> Bool
@@ -518,10 +532,18 @@ dropNFirstParamTypes n t = case t of
 
 getTypeVarsInType :: Type -> [Type]
 getTypeVarsInType t = case t of
-  TVar _           -> [t]
-  TApp l r         -> getTypeVarsInType l ++ getTypeVarsInType r
-  TRecord fields _ -> concat $ getTypeVarsInType <$> M.elems fields
-  _                -> []
+  TVar _ ->
+    [t]
+
+  TApp l r ->
+    getTypeVarsInType l ++ getTypeVarsInType r
+
+  TRecord fields _ _ ->
+    concat $ getTypeVarsInType <$> M.elems fields
+
+  _ ->
+    []
+
 
 
 getParamTypeOrSame :: Type -> Type
@@ -563,9 +585,10 @@ findTypeVarInType tvName t = case t of
   TVar (TV n _) | n == tvName ->
     Just t
 
-  TRecord fields base ->
+  TRecord fields base optionalFields ->
     (foldl (<|>) Nothing $ findTypeVarInType tvName <$> (M.elems fields))
-    <|> base >>= findTypeVarInType tvName
+    <|> (base >>= findTypeVarInType tvName)
+    <|> (foldl (<|>) Nothing $ findTypeVarInType tvName <$> (M.elems optionalFields))
 
   _ ->
     Nothing

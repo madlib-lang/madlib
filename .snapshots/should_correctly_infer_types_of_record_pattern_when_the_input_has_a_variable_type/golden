@@ -11,7 +11,8 @@
                           [ ( "x" , TVar (TV "m12" Star) )
                           , ( "z" , TVar (TV "m12" Star) )
                           ])
-                       (Just (TVar (TV "q16" Star)))))
+                       (Just (TVar (TV "q16" Star)))
+                       (fromList [])))
                  (TVar (TV "m12" Star)))
             (Area (Loc 0 1 1) (Loc 57 4 2))
             (Assignment
@@ -26,7 +27,8 @@
                                 [ ( "x" , TVar (TV "m12" Star) )
                                 , ( "z" , TVar (TV "m12" Star) )
                                 ])
-                             (Just (TVar (TV "q16" Star)))))
+                             (Just (TVar (TV "q16" Star)))
+                             (fromList [])))
                        (TVar (TV "m12" Star)))
                   (Area (Loc 6 1 7) (Loc 57 4 2))
                   (Abs
@@ -37,7 +39,8 @@
                                 [ ( "x" , TVar (TV "m12" Star) )
                                 , ( "z" , TVar (TV "m12" Star) )
                                 ])
-                             (Just (TVar (TV "q16" Star))))
+                             (Just (TVar (TV "q16" Star)))
+                             (fromList []))
                         (Area (Loc 7 1 8) (Loc 8 1 9))
                         "a")
                      [ Typed
@@ -51,7 +54,8 @@
                                        [ ( "x" , TVar (TV "m12" Star) )
                                        , ( "z" , TVar (TV "m12" Star) )
                                        ])
-                                    (Just (TVar (TV "q16" Star))))
+                                    (Just (TVar (TV "q16" Star)))
+                                    (fromList []))
                                (Area (Loc 19 1 20) (Loc 20 1 21))
                                (Var "a" False))
                             [ Typed
@@ -64,7 +68,8 @@
                                               [ ( "x" , TVar (TV "m12" Star) )
                                               , ( "z" , TVar (TV "m12" Star) )
                                               ])
-                                           (Just (TVar (TV "q16" Star)))))
+                                           (Just (TVar (TV "q16" Star)))
+                                           (fromList [])))
                                      (TVar (TV "m12" Star)))
                                 (Area (Loc 26 2 3) (Loc 39 2 16))
                                 (Is
@@ -75,7 +80,8 @@
                                               [ ( "x" , TVar (TV "m12" Star) )
                                               , ( "z" , TVar (TV "m12" Star) )
                                               ])
-                                           (Just (TVar (TV "q16" Star))))
+                                           (Just (TVar (TV "q16" Star)))
+                                           (fromList []))
                                       (Area (Loc 26 2 3) (Loc 34 2 11))
                                       (PRecord
                                          (fromList
@@ -100,7 +106,8 @@
                                               [ ( "x" , TVar (TV "m12" Star) )
                                               , ( "z" , TVar (TV "m12" Star) )
                                               ])
-                                           (Just (TVar (TV "q16" Star)))))
+                                           (Just (TVar (TV "q16" Star)))
+                                           (fromList [])))
                                      (TVar (TV "m12" Star)))
                                 (Area (Loc 42 3 3) (Loc 55 3 16))
                                 (Is
@@ -111,7 +118,8 @@
                                               [ ( "x" , TVar (TV "m12" Star) )
                                               , ( "z" , TVar (TV "m12" Star) )
                                               ])
-                                           (Just (TVar (TV "q16" Star))))
+                                           (Just (TVar (TV "q16" Star)))
+                                           (fromList []))
                                       (Area (Loc 42 3 3) (Loc 50 3 11))
                                       (PRecord
                                          (fromList

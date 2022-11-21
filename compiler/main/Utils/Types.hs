@@ -61,7 +61,7 @@ getTypeHeadName t = case t of
   TApp l _ ->
     getTypeHeadName l
 
-  TRecord fields _ ->
+  TRecord fields _ _ ->
     let fields'   = Map.map getTypeHeadName fields
         fieldsStr = List.intercalate "_" $ uncurry (++) <$> Map.toList fields'
     in  "Record" <> "_" <> fieldsStr

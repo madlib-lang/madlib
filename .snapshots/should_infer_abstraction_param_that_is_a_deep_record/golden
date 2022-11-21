@@ -21,19 +21,24 @@
                                                        , TRecord
                                                            (fromList
                                                               [ ( "e" , TVar (TV "s18" Star) ) ])
-                                                           (Just (TVar (TV "p41" Star)))
+                                                           (Just (TVar (TV "q42" Star)))
+                                                           (fromList [])
                                                        )
                                                      ])
-                                                  (Just (TVar (TV "o40" Star)))
+                                                  (Just (TVar (TV "p41" Star)))
+                                                  (fromList [])
                                               )
                                             ])
-                                         (Just (TVar (TV "n39" Star)))
+                                         (Just (TVar (TV "o40" Star)))
+                                         (fromList [])
                                      )
                                    ])
-                                (Just (TVar (TV "m38" Star)))
+                                (Just (TVar (TV "n39" Star)))
+                                (fromList [])
                             )
                           ])
-                       (Just (TVar (TV "l37" Star)))))
+                       (Just (TVar (TV "m38" Star)))
+                       (fromList [])))
                  (TVar (TV "s18" Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
@@ -59,19 +64,24 @@
                                                                  (fromList
                                                                     [ ( "e" , TVar (TV "s18" Star) )
                                                                     ])
-                                                                 (Just (TVar (TV "e4" Star)))
+                                                                 (Just (TVar (TV "q42" Star)))
+                                                                 (fromList [])
                                                              )
                                                            ])
-                                                        (Just (TVar (TV "o40" Star)))
+                                                        (Just (TVar (TV "p41" Star)))
+                                                        (fromList [])
                                                     )
                                                   ])
-                                               (Just (TVar (TV "n39" Star)))
+                                               (Just (TVar (TV "o40" Star)))
+                                               (fromList [])
                                            )
                                          ])
-                                      (Just (TVar (TV "m38" Star)))
+                                      (Just (TVar (TV "n39" Star)))
+                                      (fromList [])
                                   )
                                 ])
-                             (Just (TVar (TV "l37" Star)))))
+                             (Just (TVar (TV "m38" Star)))
+                             (fromList [])))
                        (TVar (TV "s18" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
@@ -93,19 +103,24 @@
                                                                  (fromList
                                                                     [ ( "e" , TVar (TV "s18" Star) )
                                                                     ])
-                                                                 (Just (TVar (TV "e4" Star)))
+                                                                 (Just (TVar (TV "q42" Star)))
+                                                                 (fromList [])
                                                              )
                                                            ])
-                                                        (Just (TVar (TV "o40" Star)))
+                                                        (Just (TVar (TV "p41" Star)))
+                                                        (fromList [])
                                                     )
                                                   ])
-                                               (Just (TVar (TV "n39" Star)))
+                                               (Just (TVar (TV "o40" Star)))
+                                               (fromList [])
                                            )
                                          ])
-                                      (Just (TVar (TV "m38" Star)))
+                                      (Just (TVar (TV "n39" Star)))
+                                      (fromList [])
                                   )
                                 ])
-                             (Just (TVar (TV "l37" Star))))
+                             (Just (TVar (TV "m38" Star)))
+                             (fromList []))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
                      [ Typed
@@ -116,7 +131,8 @@
                                ([] :=>
                                   TRecord
                                     (fromList [ ( "e" , TVar (TV "s18" Star) ) ])
-                                    (Just (TVar (TV "e4" Star))))
+                                    (Just (TVar (TV "l37" Star)))
+                                    (fromList []))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
                                   (Typed
@@ -126,10 +142,12 @@
                                              [ ( "d"
                                                , TRecord
                                                    (fromList [ ( "e" , TVar (TV "s18" Star) ) ])
-                                                   (Just (TVar (TV "u20" Star)))
+                                                   (Just (TVar (TV "l37" Star)))
+                                                   (fromList [])
                                                )
                                              ])
-                                          (Just (TVar (TV "k36" Star))))
+                                          (Just (TVar (TV "k36" Star)))
+                                          (fromList []))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
                                         (Typed
@@ -146,13 +164,16 @@
                                                                        , TVar (TV "s18" Star)
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "u20" Star)))
+                                                                  (Just (TVar (TV "l37" Star)))
+                                                                  (fromList [])
                                                               )
                                                             ])
                                                          (Just (TVar (TV "k36" Star)))
+                                                         (fromList [])
                                                      )
                                                    ])
-                                                (Just (TVar (TV "j35" Star))))
+                                                (Just (TVar (TV "j35" Star)))
+                                                (fromList []))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
                                               (Typed
@@ -178,18 +199,22 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "u20"
+                                                                                          "l37"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "k36" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "j35" Star)))
+                                                               (fromList [])
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "i34" Star))))
+                                                      (Just (TVar (TV "i34" Star)))
+                                                      (fromList []))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
                                                     (Typed
@@ -218,8 +243,10 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "u20"
+                                                                                                         "l37"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -227,18 +254,22 @@
                                                                                              (TV
                                                                                                 "k36"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  ])
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
                                                                                        "j35" Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "i34" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "h33" Star))))
+                                                            (Just (TVar (TV "h33" Star)))
+                                                            (fromList []))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x" False))
                                                     (Typed
@@ -274,8 +305,10 @@
                                                                                                       (Just
                                                                                                          (TVar
                                                                                                             (TV
-                                                                                                               "u20"
+                                                                                                               "l37"
                                                                                                                Star)))
+                                                                                                      (fromList
+                                                                                                         [])
                                                                                                   )
                                                                                                 ])
                                                                                              (Just
@@ -283,6 +316,8 @@
                                                                                                    (TV
                                                                                                       "k36"
                                                                                                       Star)))
+                                                                                             (fromList
+                                                                                                [])
                                                                                          )
                                                                                        ])
                                                                                     (Just
@@ -290,14 +325,17 @@
                                                                                           (TV
                                                                                              "j35"
                                                                                              Star)))
+                                                                                    (fromList [])
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
                                                                                  (TV "i34" Star)))
+                                                                           (fromList [])
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "l37" Star)))))
+                                                                  (Just (TVar (TV "m38" Star)))
+                                                                  (fromList [])))
                                                             (TRecord
                                                                (fromList
                                                                   [ ( "b"
@@ -319,8 +357,10 @@
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "u20"
+                                                                                                   "l37"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     ])
                                                                                  (Just
@@ -328,13 +368,16 @@
                                                                                        (TV
                                                                                           "k36"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "j35" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "i34" Star)))))
+                                                               (Just (TVar (TV "i34" Star)))
+                                                               (fromList [])))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a" False))))
                                               (Typed
@@ -365,20 +408,24 @@
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "u20"
+                                                                                                "l37"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  ])
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
                                                                                        "k36" Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "j35" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "m38" Star)))))
+                                                            (Just (TVar (TV "n39" Star)))
+                                                            (fromList [])))
                                                       (TRecord
                                                          (fromList
                                                             [ ( "c"
@@ -394,13 +441,16 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "u20" Star)))
+                                                                                 (TV "l37" Star)))
+                                                                           (fromList [])
                                                                        )
                                                                      ])
                                                                   (Just (TVar (TV "k36" Star)))
+                                                                  (fromList [])
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "j35" Star)))))
+                                                         (Just (TVar (TV "j35" Star)))
+                                                         (fromList [])))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b" False))))
                                         (Typed
@@ -423,23 +473,28 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "u20" Star)))
+                                                                           (TVar (TV "l37" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "k36" Star)))
+                                                               (fromList [])
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "n39" Star)))))
+                                                      (Just (TVar (TV "o40" Star)))
+                                                      (fromList [])))
                                                 (TRecord
                                                    (fromList
                                                       [ ( "d"
                                                         , TRecord
                                                             (fromList
                                                                [ ( "e" , TVar (TV "s18" Star) ) ])
-                                                            (Just (TVar (TV "u20" Star)))
+                                                            (Just (TVar (TV "l37" Star)))
+                                                            (fromList [])
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "k36" Star)))))
+                                                   (Just (TVar (TV "k36" Star)))
+                                                   (fromList [])))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c" False))))
                                   (Typed
@@ -454,13 +509,16 @@
                                                      , TRecord
                                                          (fromList
                                                             [ ( "e" , TVar (TV "s18" Star) ) ])
-                                                         (Just (TVar (TV "u20" Star)))
+                                                         (Just (TVar (TV "l37" Star)))
+                                                         (fromList [])
                                                      )
                                                    ])
-                                                (Just (TVar (TV "o40" Star)))))
+                                                (Just (TVar (TV "p41" Star)))
+                                                (fromList [])))
                                           (TRecord
                                              (fromList [ ( "e" , TVar (TV "s18" Star) ) ])
-                                             (Just (TVar (TV "u20" Star)))))
+                                             (Just (TVar (TV "l37" Star)))
+                                             (fromList [])))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d" False))))
                             (Typed
@@ -470,7 +528,8 @@
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
                                           (fromList [ ( "e" , TVar (TV "s18" Star) ) ])
-                                          (Just (TVar (TV "u20" Star)))))
+                                          (Just (TVar (TV "q42" Star)))
+                                          (fromList [])))
                                     (TVar (TV "s18" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e" False)))

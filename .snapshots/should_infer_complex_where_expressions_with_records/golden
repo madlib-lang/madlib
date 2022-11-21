@@ -414,7 +414,8 @@
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TRecord
                        (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                       (Just (TVar (TV "t45" Star)))))
+                       (Just (TVar (TV "t45" Star)))
+                       (fromList [])))
                  (TCon (TC "String" Star) "prelude"))
             (Area (Loc 656 32 1) (Loc 708 32 53))
             (Assignment
@@ -426,7 +427,8 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "t45" Star)))))
+                             (Just (TVar (TV "t45" Star)))
+                             (fromList [])))
                        (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 671 32 16) (Loc 708 32 53))
                   (Abs
@@ -434,7 +436,8 @@
                         ([] :=>
                            TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "t45" Star))))
+                             (Just (TVar (TV "t45" Star)))
+                             (fromList []))
                         (Area (Loc 0 0 0) (Loc 0 0 0))
                         "__x__")
                      [ Typed
@@ -445,7 +448,8 @@
                                ([] :=>
                                   TRecord
                                     (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                    (Just (TVar (TV "t45" Star))))
+                                    (Just (TVar (TV "t45" Star)))
+                                    (fromList []))
                                (Area (Loc 0 0 0) (Loc 0 0 0))
                                (Var "__x__" False))
                             [ Typed
@@ -456,7 +460,8 @@
                                         (TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "t45" Star)))))
+                                           (Just (TVar (TV "t45" Star)))
+                                           (fromList [])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 679 32 24) (Loc 706 32 51))
                                 (Is
@@ -465,7 +470,8 @@
                                          TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "t45" Star))))
+                                           (Just (TVar (TV "t45" Star)))
+                                           (fromList []))
                                       (Area (Loc 679 32 24) (Loc 680 32 25))
                                       (PVar "f"))
                                    (Typed
@@ -520,7 +526,8 @@
                                                             , TCon (TC "String" Star) "prelude"
                                                             )
                                                           ])
-                                                       (Just (TVar (TV "s44" Star))))
+                                                       (Just (TVar (TV "s44" Star)))
+                                                       (fromList []))
                                                   (Area (Loc 700 32 45) (Loc 701 32 46))
                                                   (Var "f" False))
                                                (Typed
@@ -538,7 +545,8 @@
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "t45" Star)))))
+                                                             (Just (TVar (TV "t45" Star)))
+                                                             (fromList [])))
                                                        (TCon (TC "String" Star) "prelude"))
                                                   (Area (Loc 702 32 47) (Loc 706 32 51))
                                                   (Var ".name" False))))
@@ -576,16 +584,20 @@
                                                              )
                                                            ])
                                                         (Just (TVar (TV "d211" Star)))
+                                                        (fromList [])
                                                     )
                                                   ])
                                                (Just (TVar (TV "c210" Star)))
+                                               (fromList [])
                                            )
                                          , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                          ])
-                                      (Just (TVar (TV "b209" Star))))
+                                      (Just (TVar (TV "b209" Star)))
+                                      (fromList []))
                                )
                              ])
-                          (Just (TVar (TV "a208" Star))))))
+                          (Just (TVar (TV "a208" Star)))
+                          (fromList []))))
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TCon (TC "String" Star) "prelude")))
@@ -653,16 +665,20 @@
                                                                    )
                                                                  ])
                                                               (Just (TVar (TV "d211" Star)))
+                                                              (fromList [])
                                                           )
                                                         ])
                                                      (Just (TVar (TV "c210" Star)))
+                                                     (fromList [])
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "b209" Star))))
+                                            (Just (TVar (TV "b209" Star)))
+                                            (fromList []))
                                      )
                                    ])
-                                (Just (TVar (TV "a208" Star))))))
+                                (Just (TVar (TV "a208" Star)))
+                                (fromList []))))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TCon (TC "String" Star) "prelude")))
@@ -726,16 +742,20 @@
                                                                    )
                                                                  ])
                                                               (Just (TVar (TV "d211" Star)))
+                                                              (fromList [])
                                                           )
                                                         ])
                                                      (Just (TVar (TV "c210" Star)))
+                                                     (fromList [])
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "b209" Star))))
+                                            (Just (TVar (TV "b209" Star)))
+                                            (fromList []))
                                      )
                                    ])
-                                (Just (TVar (TV "a208" Star)))))
+                                (Just (TVar (TV "a208" Star)))
+                                (fromList [])))
                         (Area (Loc 733 33 25) (Loc 736 33 28))
                         "_P_")
                      [ Typed
@@ -805,13 +825,16 @@
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "d211" Star)))
+                                                               (fromList [])
                                                            )
                                                          ])
                                                       (Just (TVar (TV "c210" Star)))
+                                                      (fromList [])
                                                   )
                                                 , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                 ])
-                                             (Just (TVar (TV "b209" Star))))))
+                                             (Just (TVar (TV "b209" Star)))
+                                             (fromList []))))
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                        (TCon (TC "String" Star) "prelude")))
@@ -862,15 +885,18 @@
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "z207" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "y206" Star)))
+                                                               (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star)))))
+                                                      (Just (TVar (TV "x205" Star)))
+                                                      (fromList [])))
                                                 (TCon (TC "String" Star) "prelude")))
                                           (TApp
                                              (TApp
@@ -909,15 +935,18 @@
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "z207" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "y206" Star)))
+                                                               (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star))))))
+                                                      (Just (TVar (TV "x205" Star)))
+                                                      (fromList []))))
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TCon (TC "String" Star) "prelude"))))
@@ -979,15 +1008,18 @@
                                                                                     (TV
                                                                                        "z207"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "y206" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star)))))
+                                                            (Just (TVar (TV "x205" Star)))
+                                                            (fromList [])))
                                                       (TCon (TC "String" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -1034,15 +1066,18 @@
                                                                                     (TV
                                                                                        "z207"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "y206" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star))))))
+                                                            (Just (TVar (TV "x205" Star)))
+                                                            (fromList []))))
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                       (TCon (TC "String" Star) "prelude"))))
@@ -1081,15 +1116,18 @@
                                                                        )
                                                                      ])
                                                                   (Just (TVar (TV "d211" Star)))
+                                                                  (fromList [])
                                                               )
                                                             ])
                                                          (Just (TVar (TV "c210" Star)))
+                                                         (fromList [])
                                                      )
                                                    , ( "tchouk"
                                                      , TCon (TC "String" Star) "prelude"
                                                      )
                                                    ])
-                                                (Just (TVar (TV "b209" Star)))))
+                                                (Just (TVar (TV "b209" Star)))
+                                                (fromList [])))
                                           (TCon (TC "String" Star) "prelude"))
                                      (Area (Loc 1215 43 7) (Loc 1227 43 19))
                                      (Var "FunctionLink" False))
@@ -1145,13 +1183,16 @@
                                                               )
                                                             ])
                                                          (Just (TVar (TV "d211" Star)))
+                                                         (fromList [])
                                                      )
                                                    ])
                                                 (Just (TVar (TV "c210" Star)))
+                                                (fromList [])
                                             )
                                           , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                           ])
-                                       (Just (TVar (TV "b209" Star)))))
+                                       (Just (TVar (TV "b209" Star)))
+                                       (fromList [])))
                                (Area (Loc 733 33 25) (Loc 1207 42 5))
                                (App
                                   (Typed
@@ -1213,15 +1254,18 @@
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "d211" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                ])
                                                             (Just (TVar (TV "c210" Star)))
+                                                            (fromList [])
                                                         )
                                                       , ( "tchouk"
                                                         , TCon (TC "String" Star) "prelude"
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "b209" Star))))))
+                                                   (Just (TVar (TV "b209" Star)))
+                                                   (fromList []))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TRecord
@@ -1247,15 +1291,18 @@
                                                                        )
                                                                      ])
                                                                   (Just (TVar (TV "d211" Star)))
+                                                                  (fromList [])
                                                               )
                                                             ])
                                                          (Just (TVar (TV "c210" Star)))
+                                                         (fromList [])
                                                      )
                                                    , ( "tchouk"
                                                      , TCon (TC "String" Star) "prelude"
                                                      )
                                                    ])
-                                                (Just (TVar (TV "b209" Star))))))
+                                                (Just (TVar (TV "b209" Star)))
+                                                (fromList []))))
                                      (Area (Loc 764 35 3) (Loc 1207 42 5))
                                      (App
                                         (Typed
@@ -1307,15 +1354,18 @@
                                                                                     (TV
                                                                                        "z207"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "y206" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star)))))
+                                                            (Just (TVar (TV "x205" Star)))
+                                                            (fromList [])))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -1363,17 +1413,20 @@
                                                                                        (TV
                                                                                           "z207"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "y206" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star)))))
+                                                               (Just (TVar (TV "x205" Star)))
+                                                               (fromList [])))
                                                          (TCon (TC "Integer" Star) "prelude"))))
                                                 (TApp
                                                    (TApp
@@ -1420,15 +1473,18 @@
                                                                                     (TV
                                                                                        "z207"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "y206" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star))))))
+                                                            (Just (TVar (TV "x205" Star)))
+                                                            (fromList []))))
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                       (TRecord
@@ -1466,15 +1522,18 @@
                                                                            (Just
                                                                               (TVar
                                                                                  (TV "z207" Star)))
+                                                                           (fromList [])
                                                                        )
                                                                      ])
                                                                   (Just (TVar (TV "y206" Star)))
+                                                                  (fromList [])
                                                               )
                                                             , ( "tchouk"
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "x205" Star)))))))
+                                                         (Just (TVar (TV "x205" Star)))
+                                                         (fromList [])))))
                                            (Area (Loc 764 35 3) (Loc 770 35 9))
                                            (Var "sortBy" False))
                                         (Typed
@@ -1538,15 +1597,18 @@
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "d211" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "c210" Star)))
+                                                               (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "b209" Star)))))
+                                                      (Just (TVar (TV "b209" Star)))
+                                                      (fromList [])))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -1587,15 +1649,18 @@
                                                                            (Just
                                                                               (TVar
                                                                                  (TV "d211" Star)))
+                                                                           (fromList [])
                                                                        )
                                                                      ])
                                                                   (Just (TVar (TV "c210" Star)))
+                                                                  (fromList [])
                                                               )
                                                             , ( "tchouk"
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "b209" Star)))))
+                                                         (Just (TVar (TV "b209" Star)))
+                                                         (fromList [])))
                                                    (TCon (TC "Integer" Star) "prelude")))
                                            (Area (Loc 771 35 10) (Loc 1206 42 4))
                                            (Abs
@@ -1658,15 +1723,18 @@
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "d211" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "c210" Star)))
+                                                               (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "b209" Star))))
+                                                      (Just (TVar (TV "b209" Star)))
+                                                      (fromList []))
                                                  (Area (Loc 772 35 11) (Loc 773 35 12))
                                                  "a")
                                               [ Typed
@@ -1744,16 +1812,19 @@
                                                                                      (TV
                                                                                         "d211"
                                                                                         Star)))
+                                                                               (fromList [])
                                                                            )
                                                                          ])
                                                                       (Just (TVar (TV "c210" Star)))
+                                                                      (fromList [])
                                                                   )
                                                                 , ( "tchouk"
                                                                   , TCon
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "b209" Star)))))
+                                                             (Just (TVar (TV "b209" Star)))
+                                                             (fromList [])))
                                                        (TCon (TC "Integer" Star) "prelude"))
                                                   (Area (Loc 771 35 10) (Loc 1206 42 4))
                                                   (Abs
@@ -1838,16 +1909,19 @@
                                                                                      (TV
                                                                                         "d211"
                                                                                         Star)))
+                                                                               (fromList [])
                                                                            )
                                                                          ])
                                                                       (Just (TVar (TV "c210" Star)))
+                                                                      (fromList [])
                                                                   )
                                                                 , ( "tchouk"
                                                                   , TCon
                                                                       (TC "String" Star) "prelude"
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "b209" Star))))
+                                                             (Just (TVar (TV "b209" Star)))
+                                                             (fromList []))
                                                         (Area (Loc 775 35 14) (Loc 776 35 15))
                                                         "b")
                                                      [ Typed
@@ -1954,6 +2028,8 @@
                                                                                                   (TV
                                                                                                      "d211"
                                                                                                      Star)))
+                                                                                            (fromList
+                                                                                               [])
                                                                                         )
                                                                                       ])
                                                                                    (Just
@@ -1961,6 +2037,7 @@
                                                                                          (TV
                                                                                             "c210"
                                                                                             Star)))
+                                                                                   (fromList [])
                                                                                )
                                                                              , ( "tchouk"
                                                                                , TCon
@@ -1971,7 +2048,8 @@
                                                                              ])
                                                                           (Just
                                                                              (TVar
-                                                                                (TV "b209" Star)))))
+                                                                                (TV "b209" Star)))
+                                                                          (fromList [])))
                                                                     (TRecord
                                                                        (fromList
                                                                           [ ( "ik"
@@ -2015,6 +2093,8 @@
                                                                                                (TV
                                                                                                   "d211"
                                                                                                   Star)))
+                                                                                         (fromList
+                                                                                            [])
                                                                                      )
                                                                                    ])
                                                                                 (Just
@@ -2022,6 +2102,7 @@
                                                                                       (TV
                                                                                          "c210"
                                                                                          Star)))
+                                                                                (fromList [])
                                                                             )
                                                                           , ( "tchouk"
                                                                             , TCon
@@ -2030,7 +2111,8 @@
                                                                             )
                                                                           ])
                                                                        (Just
-                                                                          (TVar (TV "b209" Star)))))
+                                                                          (TVar (TV "b209" Star)))
+                                                                       (fromList [])))
                                                                (Area
                                                                   (Loc 787 35 26) (Loc 794 35 33))
                                                                (TupleConstructor
@@ -2085,6 +2167,8 @@
                                                                                                    (TV
                                                                                                       "z207"
                                                                                                       Star)))
+                                                                                             (fromList
+                                                                                                [])
                                                                                          )
                                                                                        ])
                                                                                     (Just
@@ -2092,6 +2176,7 @@
                                                                                           (TV
                                                                                              "y206"
                                                                                              Star)))
+                                                                                    (fromList [])
                                                                                 )
                                                                               , ( "tchouk"
                                                                                 , TCon
@@ -2103,7 +2188,8 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "x205" Star))))
+                                                                                 (TV "x205" Star)))
+                                                                           (fromList []))
                                                                       (Area
                                                                          (Loc 789 35 28)
                                                                          (Loc 790 35 29))
@@ -2159,6 +2245,8 @@
                                                                                                    (TV
                                                                                                       "z207"
                                                                                                       Star)))
+                                                                                             (fromList
+                                                                                                [])
                                                                                          )
                                                                                        ])
                                                                                     (Just
@@ -2166,6 +2254,7 @@
                                                                                           (TV
                                                                                              "y206"
                                                                                              Star)))
+                                                                                    (fromList [])
                                                                                 )
                                                                               , ( "tchouk"
                                                                                 , TCon
@@ -2177,7 +2266,8 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "x205" Star))))
+                                                                                 (TV "x205" Star)))
+                                                                           (fromList []))
                                                                       (Area
                                                                          (Loc 792 35 31)
                                                                          (Loc 793 35 32))
@@ -2264,6 +2354,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -2271,6 +2363,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -2284,7 +2378,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -2334,6 +2429,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -2341,6 +2438,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -2354,7 +2452,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -2423,6 +2522,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -2430,6 +2531,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -2443,7 +2546,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -2493,6 +2597,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -2500,6 +2606,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -2513,7 +2620,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 802 36 5)
                                                                          (Loc 837 36 40))
@@ -2569,6 +2677,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -2576,6 +2686,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -2589,7 +2701,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 804 36 7)
                                                                                 (Loc 819 36 22))
@@ -2685,6 +2798,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -2692,6 +2807,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -2705,7 +2822,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 821 36 24)
                                                                                 (Loc 836 36 39))
@@ -3076,6 +3194,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -3083,6 +3203,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -3096,7 +3218,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -3146,6 +3269,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -3153,6 +3278,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -3166,7 +3292,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -3235,6 +3362,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -3242,6 +3371,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -3255,7 +3386,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -3305,6 +3437,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -3312,6 +3446,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -3325,7 +3460,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 867 37 5)
                                                                          (Loc 900 37 38))
@@ -3381,6 +3517,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -3388,6 +3526,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -3401,7 +3541,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 869 37 7)
                                                                                 (Loc 884 37 22))
@@ -3497,6 +3638,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -3504,6 +3647,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -3517,7 +3662,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 886 37 24)
                                                                                 (Loc 899 37 37))
@@ -3888,6 +4034,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -3895,6 +4043,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -3908,7 +4058,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -3958,6 +4109,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -3965,6 +4118,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -3978,7 +4132,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -4047,6 +4202,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -4054,6 +4211,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -4067,7 +4226,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -4117,6 +4277,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -4124,6 +4286,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -4137,7 +4300,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 930 38 5)
                                                                          (Loc 967 38 42))
@@ -4193,6 +4357,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -4200,6 +4366,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -4213,7 +4381,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 932 38 7)
                                                                                 (Loc 949 38 24))
@@ -4309,6 +4478,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -4316,6 +4487,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -4329,7 +4502,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 951 38 26)
                                                                                 (Loc 966 38 41))
@@ -4700,6 +4874,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -4707,6 +4883,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -4720,7 +4898,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -4770,6 +4949,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -4777,6 +4958,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -4790,7 +4972,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -4859,6 +5042,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -4866,6 +5051,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -4879,7 +5066,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -4929,6 +5117,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -4936,6 +5126,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -4949,7 +5140,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 997 39 5)
                                                                          (Loc 1031 39 39))
@@ -5005,6 +5197,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -5012,6 +5206,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -5025,7 +5221,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 999 39 7)
                                                                                 (Loc 1014 39 22))
@@ -5121,6 +5318,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -5128,6 +5327,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -5141,7 +5342,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1016 39 24)
                                                                                 (Loc 1030 39 38))
@@ -5518,6 +5720,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -5525,6 +5729,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -5538,7 +5744,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -5588,6 +5795,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -5595,6 +5804,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -5608,7 +5818,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -5677,6 +5888,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -5684,6 +5897,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -5697,7 +5912,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -5747,6 +5963,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -5754,6 +5972,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -5767,7 +5986,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 1061 40 5)
                                                                          (Loc 1104 40 48))
@@ -5823,6 +6043,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -5830,6 +6052,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -5843,7 +6067,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1063 40 7)
                                                                                 (Loc 1078 40 22))
@@ -5939,6 +6164,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -5946,6 +6173,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -5959,7 +6188,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1080 40 24)
                                                                                 (Loc 1103 40 47))
@@ -5993,13 +6223,17 @@
                                                                                                              (TV
                                                                                                                 "d211"
                                                                                                                 Star)))
+                                                                                                       (fromList
+                                                                                                          [])
                                                                                                    )
                                                                                                  ])
                                                                                               (Just
                                                                                                  (TVar
                                                                                                     (TV
                                                                                                        "c210"
-                                                                                                       Star))))
+                                                                                                       Star)))
+                                                                                              (fromList
+                                                                                                 []))
                                                                                          (Area
                                                                                             (Loc
                                                                                                1086
@@ -6035,7 +6269,9 @@
                                                                                                              (TVar
                                                                                                                 (TV
                                                                                                                    "d211"
-                                                                                                                   Star))))
+                                                                                                                   Star)))
+                                                                                                          (fromList
+                                                                                                             []))
                                                                                                      (Area
                                                                                                         (Loc
                                                                                                            1092
@@ -6422,6 +6658,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -6429,6 +6667,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -6442,7 +6682,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -6492,6 +6733,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -6499,6 +6742,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -6512,7 +6756,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star))))))
+                                                                                       Star)))
+                                                                              (fromList []))))
                                                                      (TCon
                                                                         (TC "Integer" Star)
                                                                         "prelude"))
@@ -6581,6 +6826,8 @@
                                                                                                          (TV
                                                                                                             "d211"
                                                                                                             Star)))
+                                                                                                   (fromList
+                                                                                                      [])
                                                                                                )
                                                                                              ])
                                                                                           (Just
@@ -6588,6 +6835,8 @@
                                                                                                 (TV
                                                                                                    "c210"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     , ( "tchouk"
                                                                                       , TCon
@@ -6601,7 +6850,8 @@
                                                                                     (TVar
                                                                                        (TV
                                                                                           "b209"
-                                                                                          Star)))))
+                                                                                          Star)))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "ik"
@@ -6651,6 +6901,8 @@
                                                                                                       (TV
                                                                                                          "d211"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -6658,6 +6910,7 @@
                                                                                              (TV
                                                                                                 "c210"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -6671,7 +6924,8 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "b209"
-                                                                                       Star)))))
+                                                                                       Star)))
+                                                                              (fromList [])))
                                                                       (Area
                                                                          (Loc 1134 41 5)
                                                                          (Loc 1177 41 48))
@@ -6727,6 +6981,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -6734,6 +6990,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -6747,7 +7005,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1136 41 7)
                                                                                 (Loc 1159 41 30))
@@ -6781,13 +7040,17 @@
                                                                                                              (TV
                                                                                                                 "d211"
                                                                                                                 Star)))
+                                                                                                       (fromList
+                                                                                                          [])
                                                                                                    )
                                                                                                  ])
                                                                                               (Just
                                                                                                  (TVar
                                                                                                     (TV
                                                                                                        "c210"
-                                                                                                       Star))))
+                                                                                                       Star)))
+                                                                                              (fromList
+                                                                                                 []))
                                                                                          (Area
                                                                                             (Loc
                                                                                                1142
@@ -6823,7 +7086,9 @@
                                                                                                              (TVar
                                                                                                                 (TV
                                                                                                                    "d211"
-                                                                                                                   Star))))
+                                                                                                                   Star)))
+                                                                                                          (fromList
+                                                                                                             []))
                                                                                                      (Area
                                                                                                         (Loc
                                                                                                            1148
@@ -6929,6 +7194,8 @@
                                                                                                           (TV
                                                                                                              "d211"
                                                                                                              Star)))
+                                                                                                    (fromList
+                                                                                                       [])
                                                                                                 )
                                                                                               ])
                                                                                            (Just
@@ -6936,6 +7203,8 @@
                                                                                                  (TV
                                                                                                     "c210"
                                                                                                     Star)))
+                                                                                           (fromList
+                                                                                              [])
                                                                                        )
                                                                                      , ( "tchouk"
                                                                                        , TCon
@@ -6949,7 +7218,8 @@
                                                                                      (TVar
                                                                                         (TV
                                                                                            "b209"
-                                                                                           Star))))
+                                                                                           Star)))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1161 41 32)
                                                                                 (Loc 1176 41 47))
@@ -7298,13 +7568,16 @@
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "d211" Star)))
+                                                               (fromList [])
                                                            )
                                                          ])
                                                       (Just (TVar (TV "c210" Star)))
+                                                      (fromList [])
                                                   )
                                                 , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                 ])
-                                             (Just (TVar (TV "b209" Star)))))
+                                             (Just (TVar (TV "b209" Star)))
+                                             (fromList [])))
                                      (Area (Loc 733 33 25) (Loc 760 34 22))
                                      (App
                                         (Typed
@@ -7366,6 +7639,7 @@
                                                                                              (TV
                                                                                                 "z207"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  ])
                                                                               (Just
@@ -7373,6 +7647,7 @@
                                                                                     (TV
                                                                                        "y206"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         , ( "tchouk"
                                                                           , TCon
@@ -7380,10 +7655,12 @@
                                                                               "prelude"
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "x205" Star))))
+                                                                     (Just (TVar (TV "x205" Star)))
+                                                                     (fromList []))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "a208" Star))))))
+                                                         (Just (TVar (TV "a208" Star)))
+                                                         (fromList []))))
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TRecord
@@ -7416,15 +7693,18 @@
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "z207" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   ])
                                                                (Just (TVar (TV "y206" Star)))
+                                                               (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star))))))
+                                                      (Just (TVar (TV "x205" Star)))
+                                                      (fromList []))))
                                            (Area (Loc 741 34 3) (Loc 760 34 22))
                                            (App
                                               (Typed
@@ -7499,6 +7779,8 @@
                                                                                                       (TV
                                                                                                          "z207"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -7506,6 +7788,7 @@
                                                                                              (TV
                                                                                                 "y206"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -7519,10 +7802,12 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "x205"
-                                                                                       Star))))
+                                                                                       Star)))
+                                                                              (fromList []))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "w204" Star)))))
+                                                                  (Just (TVar (TV "w204" Star)))
+                                                                  (fromList [])))
                                                             (TApp
                                                                (TCon
                                                                   (TC "List" (Kfun Star Star))
@@ -7570,11 +7855,13 @@
                                                                                           (TV
                                                                                              "z207"
                                                                                              Star)))
+                                                                                    (fromList [])
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
                                                                                  (TV "y206" Star)))
+                                                                           (fromList [])
                                                                        )
                                                                      , ( "tchouk"
                                                                        , TCon
@@ -7582,7 +7869,8 @@
                                                                            "prelude"
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "x205" Star)))))))
+                                                                  (Just (TVar (TV "x205" Star)))
+                                                                  (fromList [])))))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -7652,6 +7940,8 @@
                                                                                                       (TV
                                                                                                          "z207"
                                                                                                          Star)))
+                                                                                                (fromList
+                                                                                                   [])
                                                                                             )
                                                                                           ])
                                                                                        (Just
@@ -7659,6 +7949,7 @@
                                                                                              (TV
                                                                                                 "y206"
                                                                                                 Star)))
+                                                                                       (fromList [])
                                                                                    )
                                                                                  , ( "tchouk"
                                                                                    , TCon
@@ -7672,10 +7963,12 @@
                                                                                  (TVar
                                                                                     (TV
                                                                                        "x205"
-                                                                                       Star))))
+                                                                                       Star)))
+                                                                              (fromList []))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "w204" Star))))))
+                                                                  (Just (TVar (TV "w204" Star)))
+                                                                  (fromList []))))
                                                          (TApp
                                                             (TCon
                                                                (TC "List" (Kfun Star Star))
@@ -7720,17 +8013,20 @@
                                                                                        (TV
                                                                                           "z207"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "y206" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star)))))))
+                                                               (Just (TVar (TV "x205" Star)))
+                                                               (fromList [])))))
                                                  (Area (Loc 741 34 3) (Loc 746 34 8))
                                                  (Var "chain" False))
                                               (Typed
@@ -7790,6 +8086,8 @@
                                                                                                 (TV
                                                                                                    "z207"
                                                                                                    Star)))
+                                                                                          (fromList
+                                                                                             [])
                                                                                       )
                                                                                     ])
                                                                                  (Just
@@ -7797,6 +8095,7 @@
                                                                                        (TV
                                                                                           "y206"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            , ( "tchouk"
                                                                              , TCon
@@ -7805,10 +8104,12 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "x205" Star))))
+                                                                           (TVar (TV "x205" Star)))
+                                                                        (fromList []))
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "a208" Star)))))
+                                                            (Just (TVar (TV "a208" Star)))
+                                                            (fromList [])))
                                                       (TApp
                                                          (TCon
                                                             (TC "List" (Kfun Star Star)) "prelude")
@@ -7849,15 +8150,18 @@
                                                                                     (TV
                                                                                        "z207"
                                                                                        Star)))
+                                                                              (fromList [])
                                                                           )
                                                                         ])
                                                                      (Just (TVar (TV "y206" Star)))
+                                                                     (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star))))))
+                                                            (Just (TVar (TV "x205" Star)))
+                                                            (fromList []))))
                                                  (Area (Loc 747 34 9) (Loc 759 34 21))
                                                  (Var ".expressions" False))
                                               True))
@@ -7912,20 +8216,24 @@
                                                                                        (TV
                                                                                           "z207"
                                                                                           Star)))
+                                                                                 (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
                                                                            (TVar (TV "y206" Star)))
+                                                                        (fromList [])
                                                                     )
                                                                   , ( "tchouk"
                                                                     , TCon
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star))))
+                                                               (Just (TVar (TV "x205" Star)))
+                                                               (fromList []))
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "a208" Star)))))
+                                                   (Just (TVar (TV "a208" Star)))
+                                                   (fromList [])))
                                            (Area (Loc 733 33 25) (Loc 736 33 28))
                                            (Var "_P_" False))
                                         True))

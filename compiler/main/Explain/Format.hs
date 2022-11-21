@@ -2485,14 +2485,14 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TRecord fields1 base1, TRecord fields2 base2) ->
+  (TRecord fields1 base1 _, TRecord fields2 base2 _) ->
     let allFields1 = case base1 of
-          Just (TRecord fields _) ->
+          Just (TRecord fields _ _) ->
             fields <> fields1
           _ ->
             fields1
         allFields2 = case base2 of
-          Just (TRecord fields _) ->
+          Just (TRecord fields _ _) ->
             fields <> fields2
           _ ->
             fields2
@@ -2652,7 +2652,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
   -- TODO: Add spreads display
-  TRecord fields base ->
+  TRecord fields base _ ->
     let (finalVars, finalHkVars, compiledFields) =
             foldl'
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
@@ -3013,7 +3013,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TRecord fields base ->
+  TRecord fields base _ ->
     let (finalVars, finalHkVars, compiledFields) =
             foldl'
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->

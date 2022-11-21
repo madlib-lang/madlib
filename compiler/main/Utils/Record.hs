@@ -13,6 +13,6 @@ generateRecordPredsAndType astPath interfaceName fieldNames =
   let moduleHash = generateHashFromPath astPath
       fieldNamesWithVars = zip fieldNames chars
       fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
-      recordType         = TRecord fields Nothing
+      recordType         = TRecord fields Nothing mempty
       instPreds          = (\var -> IsIn interfaceName [var] Nothing) <$> Map.elems fields
   in  (instPreds, recordType)

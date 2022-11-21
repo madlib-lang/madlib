@@ -281,7 +281,7 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
 
-  IT.TRecord _ _ -> do
+  IT.TRecord _ _ _ -> do
     recordType
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
@@ -407,7 +407,7 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     -- load ptr 0
     safeBitcast what listType
 
-  IT.TRecord _ _ -> do
+  IT.TRecord _ _ _ -> do
     safeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
@@ -1704,7 +1704,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- case recordType of
-      IT.TRecord fields Nothing -> do
+      IT.TRecord fields Nothing _ -> do
         recordOperand' <- safeBitcast recordOperand (Type.ptr $ Type.StructureType False [Type.i32, boxType])
         let fieldType = Type.StructureType False [stringType, boxType]
         let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))

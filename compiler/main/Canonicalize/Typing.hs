@@ -230,7 +230,7 @@ typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
   base'   <- mapM (typingToType env (KindRequired Star)) base
 
   case base' of
-    Just (TRecord baseFields _) -> do
+    Just (TRecord baseFields _ _) -> do
       let fieldNames = M.keys fields' `union` M.keys baseFields
       pushRecordToDerive fieldNames
 
@@ -238,7 +238,7 @@ typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
       let fieldNames = M.keys fields'
       pushRecordToDerive fieldNames
 
-  return $ TRecord fields' base'
+  return $ TRecord fields' base' mempty
 
 typingToType env _ (Src.Source _ _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env (KindRequired Star)) elems
@@ -270,23 +270,28 @@ updateAliasVars t args = do
   case t of
     TAlias _ _ vars t' ->
       let instArgs = M.fromList $ zip vars args
-
           update :: Type -> CanonicalM Type
           update ty = case ty of
-            TVar tv -> case M.lookup tv instArgs of
-              Just x  -> return x
-              Nothing -> case tv of
-                TV _ k -> return $ TVar (TV "p" k)
+            TVar tv ->
+              case M.lookup tv instArgs of
+                Just x  ->
+                  return x
+
+                Nothing -> case tv of
+                  TV _ k -> return $ TVar (TV "p" k)
 
             TApp l r -> do
               l' <- update l
               r' <- update r
               return $ TApp l' r'
-            TCon    _  _    -> return ty
-            TRecord fs base -> do
+
+            TCon _ _ ->
+              return ty
+
+            TRecord fs base _ -> do
               fs'   <- mapM update fs
               base' <- mapM update base
-              return $ TRecord fs' base'
+              return $ TRecord fs' base' mempty
             _ -> undefined
       in  update t'
 

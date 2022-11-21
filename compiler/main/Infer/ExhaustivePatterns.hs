@@ -77,7 +77,7 @@ simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
   Slv.PRecord fields -> do
     fields' <- mapM (simplify ast env) fields
     let allFields = case t of
-          TRecord fieldTypes _ ->
+          TRecord fieldTypes _ _ ->
             Map.union
               fields'
               (Map.map (const Anything) fieldTypes)
@@ -363,7 +363,7 @@ showPattern pattern = case pattern of
 
   Ctor ai name args ->
     if name == "__RECORD__" then
-      let (ADTInfo _ [Slv.Untyped _ (Slv.Constructor _ _ (TRecord fields _))]) = ai
+      let (ADTInfo _ [Slv.Untyped _ (Slv.Constructor _ _ (TRecord fields _ _))]) = ai
           fields' = zip (Map.keys fields) args
       in  "{ " <> List.intercalate ", " (map (\(name, pat) -> name <> ": " <> showPattern pat) fields') <> " }"
     else if name == "__Cons__" then

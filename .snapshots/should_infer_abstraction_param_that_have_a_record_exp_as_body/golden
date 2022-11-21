@@ -8,13 +8,15 @@
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TRecord
                        (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                       (Just (TVar (TV "o14" Star)))))
+                       (Just (TVar (TV "o14" Star)))
+                       (fromList [])))
                  (TRecord
                     (fromList
                        [ ( "x" , TCon (TC "String" Star) "prelude" )
                        , ( "y" , TVar (TV "h7" Star) )
                        ])
-                    (Just (TVar (TV "o14" Star)))))
+                    (Just (TVar (TV "o14" Star)))
+                    (fromList [])))
             (Area (Loc 0 1 1) (Loc 55 1 56))
             (Assignment
                "addTodo"
@@ -25,20 +27,23 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TRecord
                              (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                             (Just (TVar (TV "o14" Star)))))
+                             (Just (TVar (TV "o14" Star)))
+                             (fromList [])))
                        (TRecord
                           (fromList
                              [ ( "x" , TCon (TC "String" Star) "prelude" )
                              , ( "y" , TVar (TV "h7" Star) )
                              ])
-                          (Just (TVar (TV "o14" Star)))))
+                          (Just (TVar (TV "o14" Star)))
+                          (fromList [])))
                   (Area (Loc 10 1 11) (Loc 55 1 56))
                   (Abs
                      (Typed
                         ([] :=>
                            TRecord
                              (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                             (Just (TVar (TV "o14" Star))))
+                             (Just (TVar (TV "o14" Star)))
+                             (fromList []))
                         (Area (Loc 11 1 12) (Loc 16 1 17))
                         "state")
                      [ Typed
@@ -48,7 +53,8 @@
                                  [ ( "x" , TCon (TC "String" Star) "prelude" )
                                  , ( "y" , TVar (TV "h7" Star) )
                                  ])
-                              (Just (TVar (TV "o14" Star))))
+                              (Just (TVar (TV "o14" Star)))
+                              (fromList []))
                          (Area (Loc 22 1 23) (Loc 54 1 55))
                          (Record
                             [ Typed
@@ -59,7 +65,8 @@
                                       ([] :=>
                                          TRecord
                                            (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                                           (Just (TVar (TV "m12" Star))))
+                                           (Just (TVar (TV "m12" Star)))
+                                           (fromList []))
                                       (Area (Loc 27 1 28) (Loc 32 1 33))
                                       (Var "state" False)))
                             , Typed
@@ -85,7 +92,8 @@
                                              ([] :=>
                                                 TRecord
                                                   (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                                                  (Just (TVar (TV "m12" Star))))
+                                                  (Just (TVar (TV "m12" Star)))
+                                                  (fromList []))
                                              (Area (Loc 45 1 46) (Loc 50 1 51))
                                              (Var "state" False))
                                           (Typed
@@ -97,7 +105,8 @@
                                                         "prelude")
                                                      (TRecord
                                                         (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
-                                                        (Just (TVar (TV "j9" Star)))))
+                                                        (Just (TVar (TV "j9" Star)))
+                                                        (fromList [])))
                                                   (TVar (TV "h7" Star)))
                                              (Area (Loc 51 1 52) (Loc 52 1 53))
                                              (Var ".y" False)))
@@ -129,6 +138,7 @@
                          , ( "y" , TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -143,7 +153,11 @@
                                         [ ( "x" , TVar (TV "a26" Star) )
                                         , ( "y" , TVar (TV "m38" Star) )
                                         ])
-                                     (Just (TVar (TV "t45" Star)))))
+                                     Nothing
+                                     (fromList
+                                        [ ( "x" , TVar (TV "a26" Star) )
+                                        , ( "y" , TVar (TV "m38" Star) )
+                                        ])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -152,7 +166,11 @@
                                            [ ( "x" , TVar (TV "a26" Star) )
                                            , ( "y" , TVar (TV "m38" Star) )
                                            ])
-                                        (Just (TVar (TV "v47" Star)))))
+                                        Nothing
+                                        (fromList
+                                           [ ( "x" , TVar (TV "a26" Star) )
+                                           , ( "y" , TVar (TV "m38" Star) )
+                                           ])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -167,7 +185,11 @@
                                               [ ( "x" , TVar (TV "a26" Star) )
                                               , ( "y" , TVar (TV "m38" Star) )
                                               ])
-                                           (Just (TVar (TV "t45" Star)))))
+                                           Nothing
+                                           (fromList
+                                              [ ( "x" , TVar (TV "a26" Star) )
+                                              , ( "y" , TVar (TV "m38" Star) )
+                                              ])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -176,7 +198,11 @@
                                                  [ ( "x" , TVar (TV "a26" Star) )
                                                  , ( "y" , TVar (TV "m38" Star) )
                                                  ])
-                                              (Just (TVar (TV "v47" Star)))))
+                                              Nothing
+                                              (fromList
+                                                 [ ( "x" , TVar (TV "a26" Star) )
+                                                 , ( "y" , TVar (TV "m38" Star) )
+                                                 ])))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
@@ -192,7 +218,11 @@
                                                     [ ( "x" , TVar (TV "a26" Star) )
                                                     , ( "y" , TVar (TV "m38" Star) )
                                                     ])
-                                                 (Just (TVar (TV "t45" Star)))))
+                                                 Nothing
+                                                 (fromList
+                                                    [ ( "x" , TVar (TV "a26" Star) )
+                                                    , ( "y" , TVar (TV "m38" Star) )
+                                                    ])))
                                            (TApp
                                               (TApp
                                                  (TCon
@@ -203,7 +233,11 @@
                                                        [ ( "x" , TVar (TV "a26" Star) )
                                                        , ( "y" , TVar (TV "m38" Star) )
                                                        ])
-                                                    (Just (TVar (TV "v47" Star)))))
+                                                    Nothing
+                                                    (fromList
+                                                       [ ( "x" , TVar (TV "a26" Star) )
+                                                       , ( "y" , TVar (TV "m38" Star) )
+                                                       ])))
                                               (TCon (TC "Boolean" Star) "prelude")))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
@@ -222,7 +256,8 @@
                                                           [ ( "x" , TVar (TV "a26" Star) )
                                                           , ( "y" , TVar (TV "m38" Star) )
                                                           ])
-                                                       Nothing))
+                                                       Nothing
+                                                       (fromList [])))
                                                  (TApp
                                                     (TApp
                                                        (TCon
@@ -233,7 +268,8 @@
                                                              [ ( "x" , TVar (TV "a26" Star) )
                                                              , ( "y" , TVar (TV "m38" Star) )
                                                              ])
-                                                          Nothing))
+                                                          Nothing
+                                                          (fromList [])))
                                                     (TCon (TC "Boolean" Star) "prelude")))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
@@ -252,7 +288,11 @@
                                                           [ ( "x" , TVar (TV "a26" Star) )
                                                           , ( "y" , TVar (TV "m38" Star) )
                                                           ])
-                                                       (Just (TVar (TV "t45" Star))))
+                                                       Nothing
+                                                       (fromList
+                                                          [ ( "x" , TVar (TV "a26" Star) )
+                                                          , ( "y" , TVar (TV "m38" Star) )
+                                                          ]))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
                                                [ Typed
@@ -277,7 +317,11 @@
                                                                  [ ( "x" , TVar (TV "a26" Star) )
                                                                  , ( "y" , TVar (TV "m38" Star) )
                                                                  ])
-                                                              (Just (TVar (TV "v47" Star)))))
+                                                              Nothing
+                                                              (fromList
+                                                                 [ ( "x" , TVar (TV "a26" Star) )
+                                                                 , ( "y" , TVar (TV "m38" Star) )
+                                                                 ])))
                                                         (TCon (TC "Boolean" Star) "prelude"))
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    (Abs
@@ -296,7 +340,11 @@
                                                                  [ ( "x" , TVar (TV "a26" Star) )
                                                                  , ( "y" , TVar (TV "m38" Star) )
                                                                  ])
-                                                              (Just (TVar (TV "v47" Star))))
+                                                              Nothing
+                                                              (fromList
+                                                                 [ ( "x" , TVar (TV "a26" Star) )
+                                                                 , ( "y" , TVar (TV "m38" Star) )
+                                                                 ]))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          "__$b__")
                                                       [ Typed
@@ -581,11 +629,21 @@
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "t45"
-                                                                                                      Star))))
+                                                                                             Nothing
+                                                                                             (fromList
+                                                                                                [ ( "x"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "a26"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                , ( "y"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "m38"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                ]))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -624,11 +682,21 @@
                                                                                                                Star)
                                                                                                         )
                                                                                                       ])
-                                                                                                   (Just
-                                                                                                      (TVar
-                                                                                                         (TV
-                                                                                                            "t45"
-                                                                                                            Star)))))
+                                                                                                   Nothing
+                                                                                                   (fromList
+                                                                                                      [ ( "x"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "a26"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      , ( "y"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "m38"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      ])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    "a26"
@@ -677,11 +745,21 @@
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "v47"
-                                                                                                Star))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "x"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "a26"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          , ( "y"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "m38"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ]))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -716,11 +794,21 @@
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "v47"
-                                                                                                      Star)))))
+                                                                                             Nothing
+                                                                                             (fromList
+                                                                                                [ ( "x"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "a26"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                , ( "y"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "m38"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                ])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              "a26"
@@ -1050,11 +1138,21 @@
                                                                                                                Star)
                                                                                                         )
                                                                                                       ])
-                                                                                                   (Just
-                                                                                                      (TVar
-                                                                                                         (TV
-                                                                                                            "t45"
-                                                                                                            Star))))
+                                                                                                   Nothing
+                                                                                                   (fromList
+                                                                                                      [ ( "x"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "a26"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      , ( "y"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "m38"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      ]))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     0
@@ -1095,11 +1193,21 @@
                                                                                                                      Star)
                                                                                                               )
                                                                                                             ])
-                                                                                                         (Just
-                                                                                                            (TVar
-                                                                                                               (TV
-                                                                                                                  "t45"
-                                                                                                                  Star)))))
+                                                                                                         Nothing
+                                                                                                         (fromList
+                                                                                                            [ ( "x"
+                                                                                                              , TVar
+                                                                                                                  (TV
+                                                                                                                     "a26"
+                                                                                                                     Star)
+                                                                                                              )
+                                                                                                            , ( "y"
+                                                                                                              , TVar
+                                                                                                                  (TV
+                                                                                                                     "m38"
+                                                                                                                     Star)
+                                                                                                              )
+                                                                                                            ])))
                                                                                                    (TVar
                                                                                                       (TV
                                                                                                          "m38"
@@ -1161,11 +1269,21 @@
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "v47"
-                                                                                                      Star))))
+                                                                                             Nothing
+                                                                                             (fromList
+                                                                                                [ ( "x"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "a26"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                , ( "y"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "m38"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                ]))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -1204,11 +1322,21 @@
                                                                                                                Star)
                                                                                                         )
                                                                                                       ])
-                                                                                                   (Just
-                                                                                                      (TVar
-                                                                                                         (TV
-                                                                                                            "v47"
-                                                                                                            Star)))))
+                                                                                                   Nothing
+                                                                                                   (fromList
+                                                                                                      [ ( "x"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "a26"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      , ( "y"
+                                                                                                        , TVar
+                                                                                                            (TV
+                                                                                                               "m38"
+                                                                                                               Star)
+                                                                                                        )
+                                                                                                      ])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    "m38"
@@ -1252,12 +1380,16 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ]) Nothing))
+                                     (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ])
+                                     Nothing
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
-                                        (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ]) Nothing))
+                                        (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ])
+                                        Nothing
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -1283,6 +1415,7 @@
                          , ( "y" , TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -1294,10 +1427,14 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "x" , TVar (TV "c54" Star) )
-                                        , ( "y" , TVar (TV "j61" Star) )
+                                        [ ( "x" , TVar (TV "y50" Star) )
+                                        , ( "y" , TVar (TV "f57" Star) )
                                         ])
-                                     (Just (TVar (TV "p67" Star)))))
+                                     Nothing
+                                     (fromList
+                                        [ ( "x" , TVar (TV "y50" Star) )
+                                        , ( "y" , TVar (TV "f57" Star) )
+                                        ])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -1309,14 +1446,18 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "x" , TVar (TV "c54" Star) )
-                                              , ( "y" , TVar (TV "j61" Star) )
+                                              [ ( "x" , TVar (TV "y50" Star) )
+                                              , ( "y" , TVar (TV "f57" Star) )
                                               ])
-                                           (Just (TVar (TV "p67" Star)))))
+                                           Nothing
+                                           (fromList
+                                              [ ( "x" , TVar (TV "y50" Star) )
+                                              , ( "y" , TVar (TV "f57" Star) )
+                                              ])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "j61" Star) ] )
+                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "f57" Star) ] )
                                    (Typed
                                       ([] :=>
                                          TApp
@@ -1325,19 +1466,23 @@
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TRecord
                                                  (fromList
-                                                    [ ( "x" , TVar (TV "c54" Star) )
-                                                    , ( "y" , TVar (TV "j61" Star) )
+                                                    [ ( "x" , TVar (TV "y50" Star) )
+                                                    , ( "y" , TVar (TV "f57" Star) )
                                                     ])
-                                                 (Just (TVar (TV "p67" Star)))))
+                                                 Nothing
+                                                 (fromList
+                                                    [ ( "x" , TVar (TV "y50" Star) )
+                                                    , ( "y" , TVar (TV "f57" Star) )
+                                                    ])))
                                            (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
                                          ( ClassRef "Inspect" [] False True
-                                         , [ TVar (TV "c54" Star) ]
+                                         , [ TVar (TV "y50" Star) ]
                                          )
                                          (Typed
-                                            ([ IsIn "Inspect" [ TVar (TV "c54" Star) ] Nothing
-                                             , IsIn "Inspect" [ TVar (TV "j61" Star) ] Nothing
+                                            ([ IsIn "Inspect" [ TVar (TV "y50" Star) ] Nothing
+                                             , IsIn "Inspect" [ TVar (TV "f57" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -1346,29 +1491,34 @@
                                                        "prelude")
                                                     (TRecord
                                                        (fromList
-                                                          [ ( "x" , TVar (TV "c54" Star) )
-                                                          , ( "y" , TVar (TV "j61" Star) )
+                                                          [ ( "x" , TVar (TV "y50" Star) )
+                                                          , ( "y" , TVar (TV "f57" Star) )
                                                           ])
-                                                       Nothing))
+                                                       Nothing
+                                                       (fromList [])))
                                                  (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
                                                (Typed
                                                   ([ IsIn
                                                        "Inspect"
-                                                       [ TVar (TV "c54" Star) ]
+                                                       [ TVar (TV "y50" Star) ]
                                                        (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                    , IsIn
                                                        "Inspect"
-                                                       [ TVar (TV "j61" Star) ]
+                                                       [ TVar (TV "f57" Star) ]
                                                        (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                    ] :=>
                                                      TRecord
                                                        (fromList
-                                                          [ ( "x" , TVar (TV "c54" Star) )
-                                                          , ( "y" , TVar (TV "j61" Star) )
+                                                          [ ( "x" , TVar (TV "y50" Star) )
+                                                          , ( "y" , TVar (TV "f57" Star) )
                                                           ])
-                                                       (Just (TVar (TV "p67" Star))))
+                                                       Nothing
+                                                       (fromList
+                                                          [ ( "x" , TVar (TV "y50" Star) )
+                                                          , ( "y" , TVar (TV "f57" Star) )
+                                                          ]))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
                                                [ Typed
@@ -1382,7 +1532,7 @@
                                                       , Typed
                                                           ([ IsIn
                                                                "Inspect"
-                                                               [ TVar (TV "c54" Star) ]
+                                                               [ TVar (TV "y50" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
@@ -1455,7 +1605,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "c54" Star) ]
+                                                                     [ TVar (TV "y50" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -1467,7 +1617,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "c54" Star) ]
+                                                                           [ TVar (TV "y50" Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -1482,7 +1632,7 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "c54" Star)))
+                                                                                 (TV "y50" Star)))
                                                                            (TCon
                                                                               (TC "String" Star)
                                                                               "prelude"))
@@ -1492,13 +1642,13 @@
                                                                              "Inspect"
                                                                              "inspect"
                                                                              True
-                                                                         , [ TVar (TV "c54" Star) ]
+                                                                         , [ TVar (TV "y50" Star) ]
                                                                          )
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
-                                                                                     (TV "c54" Star)
+                                                                                     (TV "y50" Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -1515,7 +1665,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "c54"
+                                                                                          "y50"
                                                                                           Star)))
                                                                                  (TCon
                                                                                     (TC
@@ -1529,13 +1679,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "c54" Star) ]
+                                                                           [ TVar (TV "y50" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV "c54" Star))
+                                                                         TVar (TV "y50" Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -1545,21 +1695,31 @@
                                                                                     [ ( "x"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "c54"
+                                                                                             "y50"
                                                                                              Star)
                                                                                       )
                                                                                     , ( "y"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "j61"
+                                                                                             "f57"
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "p67"
-                                                                                          Star))))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "x"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "y50"
+                                                                                             Star)
+                                                                                      )
+                                                                                    , ( "y"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "f57"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ]))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1582,18 +1742,20 @@
                                                                                           [ ( "x"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   "c54"
+                                                                                                   "y50"
                                                                                                    Star)
                                                                                             )
                                                                                           ])
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "e56"
-                                                                                                Star)))))
+                                                                                                "a52"
+                                                                                                Star)))
+                                                                                       (fromList
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "c54" Star)))
+                                                                                       "y50" Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1607,7 +1769,7 @@
                                                       , Typed
                                                           ([ IsIn
                                                                "Inspect"
-                                                               [ TVar (TV "j61" Star) ]
+                                                               [ TVar (TV "f57" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
@@ -1680,7 +1842,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "j61" Star) ]
+                                                                     [ TVar (TV "f57" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -1692,7 +1854,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "j61" Star) ]
+                                                                           [ TVar (TV "f57" Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -1707,7 +1869,7 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "j61" Star)))
+                                                                                 (TV "f57" Star)))
                                                                            (TCon
                                                                               (TC "String" Star)
                                                                               "prelude"))
@@ -1717,13 +1879,13 @@
                                                                              "Inspect"
                                                                              "inspect"
                                                                              True
-                                                                         , [ TVar (TV "j61" Star) ]
+                                                                         , [ TVar (TV "f57" Star) ]
                                                                          )
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
-                                                                                     (TV "j61" Star)
+                                                                                     (TV "f57" Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -1740,7 +1902,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "j61"
+                                                                                          "f57"
                                                                                           Star)))
                                                                                  (TCon
                                                                                     (TC
@@ -1754,13 +1916,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "j61" Star) ]
+                                                                           [ TVar (TV "f57" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV "j61" Star))
+                                                                         TVar (TV "f57" Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -1770,21 +1932,31 @@
                                                                                     [ ( "x"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "c54"
+                                                                                             "y50"
                                                                                              Star)
                                                                                       )
                                                                                     , ( "y"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "j61"
+                                                                                             "f57"
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "p67"
-                                                                                          Star))))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "x"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "y50"
+                                                                                             Star)
+                                                                                      )
+                                                                                    , ( "y"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "f57"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ]))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1807,18 +1979,28 @@
                                                                                           [ ( "y"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   "j61"
+                                                                                                   "f57"
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "p67"
-                                                                                                Star)))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "x"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "y50"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          , ( "y"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "f57"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ])))
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "j61" Star)))
+                                                                                       "f57" Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1840,7 +2022,9 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ]) Nothing))
+                                     (fromList [ ( "x" , TGen 0 ) , ( "y" , TGen 1 ) ])
+                                     Nothing
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )

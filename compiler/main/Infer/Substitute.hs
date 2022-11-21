@@ -17,9 +17,8 @@ import           Data.List                      ( nub
                                                 , intersect
                                                 )
 
-import Debug.Trace
-import Text.Show.Pretty
-import Control.Applicative
+import           Control.Applicative
+import           Text.Show.Pretty
 
 
 class Substitutable a where
@@ -49,43 +48,57 @@ instance Substitutable Type where
   apply s (t1 `TApp` t2) =
     apply s t1 `TApp` apply s t2
 
-  apply s (TRecord fields (Just (TVar tv))) = case M.lookup tv s of
+  apply s (TRecord fields (Just (TVar tv)) optionalFields) = case M.lookup tv s of
     Just newBase@(TVar _) ->
-      TRecord (apply s <$> fields) (Just newBase)
+      TRecord (apply s <$> fields) (Just newBase) (apply s <$> optionalFields)
 
-    Just (TRecord fields' Nothing) ->
-      TRecord (apply s <$> (fields <> fields')) Nothing
+    Just (TRecord fields' Nothing optionalFields') ->
+      TRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
 
-    Just (TRecord fields' base') ->
+    Just (TRecord fields' base' optionalFields') ->
       let appliedBase = apply s <$> base'
       in  if appliedBase /= base' then
-            apply s $ TRecord (fields <> fields') appliedBase
+            apply s $ TRecord (fields <> fields') appliedBase (optionalFields <> optionalFields')
           else
-            TRecord (apply s <$> (fields <> fields')) appliedBase
+            TRecord (apply s <$> (fields <> fields')) appliedBase (apply s <$> (optionalFields <> optionalFields'))
 
     Nothing ->
-      TRecord (apply s <$> fields) (Just (TVar tv))
+      TRecord (apply s <$> fields) (Just (TVar tv)) optionalFields
 
     Just (TGen x) ->
-      TRecord (apply s <$> fields) (Just $ TGen x)
+      TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
 
     bad ->
       error $ "found: " <> ppShow bad
 
-  apply s (TRecord fields (Just (TRecord fields' base))) =
-    apply s $ TRecord (fields <> fields') base
+  apply s (TRecord fields (Just (TRecord fields' base optionalFields')) optionalFields) =
+    apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
-  apply s (TRecord fields Nothing) =
-    TRecord (apply s <$> fields) Nothing
+  apply s (TRecord fields Nothing optionalFields) =
+    TRecord (apply s <$> fields) Nothing (apply s <$> optionalFields)
 
   apply _ t = t
 
-  ftv TCon{}                       = []
-  ftv (TVar a                    ) = [a]
-  ftv (t1      `TApp` t2         ) = ftv t1 `union` ftv t2
-  ftv (TRecord fields Nothing    ) = foldr (\v s -> union s $ ftv v) [] (M.elems fields)
-  ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) `union` ftv base
-  ftv _                            = []
+  ftv TCon{} =
+    []
+
+  ftv (TVar a) =
+    [a]
+
+  ftv (t1 `TApp` t2) =
+    ftv t1 `union` ftv t2
+
+  ftv (TRecord fields Nothing optionalFields) =
+    foldr (\v s -> union s $ ftv v) [] (M.elems fields)
+    `union` foldr (\v s -> union s $ ftv v) [] (M.elems optionalFields)
+
+  ftv (TRecord fields (Just base) optionalFields) =
+    foldr (\v s -> union s $ ftv v) [] (M.elems fields)
+    `union` ftv base
+    `union` foldr (\v s -> union s $ ftv v) [] (M.elems optionalFields)
+
+  ftv _ =
+    []
 
 
 instance Substitutable Scheme where
@@ -112,15 +125,15 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 base1, TRecord fields2 base2) ->
+    (TRecord fields1 base1 optionalFields1, TRecord fields2 base2 optionalFields2) ->
       let base = base1 <|> base2
-      in  TRecord (M.unionWith mergeTypes fields1 fields2) base
+      in  TRecord (M.unionWith mergeTypes fields1 fields2) base (optionalFields1 <> optionalFields2)
 
-    (TRecord fields _, TVar _) ->
-      TRecord fields (Just t2)
+    (TRecord fields _ optionalFields, TVar _) ->
+      TRecord fields (Just t2) optionalFields
 
-    (TVar _, TRecord fields _) ->
-      TRecord fields (Just t1)
+    (TVar _, TRecord fields _ optionalFields) ->
+      TRecord fields (Just t1) optionalFields
 
     (TApp tl tr, TApp tl' tr') ->
       let tl'' = mergeTypes tl tl'
@@ -137,7 +150,14 @@ merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError
 
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
-  TVar (TV n _)   -> M.singleton (TV n Star) t
-  TApp    l  r    -> M.union (buildVarSubsts l) (buildVarSubsts r)
-  TRecord ts base -> foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
-  _               -> mempty
+  TVar (TV n _) ->
+    M.singleton (TV n Star) t
+
+  TApp l r ->
+    M.union (buildVarSubsts l) (buildVarSubsts r)
+
+  TRecord fields base optionalFields ->
+    foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems fields <> baseToList base <> M.elems optionalFields)
+
+  _ ->
+    mempty

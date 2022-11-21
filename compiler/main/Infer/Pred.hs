@@ -73,7 +73,7 @@ findInst env p@(IsIn interface ts _) =
   catchError
     (Just <$> tryInsts (insts env interface))
     (const $ case ts of
-      [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
+      [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
         let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
             qp = fieldsPreds :=> IsIn interface [tRec] Nothing
         return $ Just (Instance qp mempty)
@@ -134,7 +134,7 @@ isConcrete t = case t of
   TApp l _ ->
     isConcrete l
 
-  TRecord _ _ ->
+  TRecord _ _ _ ->
     True
 
   _ ->
@@ -155,7 +155,7 @@ byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts maybeArea) =
   case ts of
     -- This is needed as some instances for extensible records are added after type checking
-    [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
+    [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
       let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
       u <- isInstanceOf (IsIn interface [ts'] Nothing) p
       return $ apply u fieldsPreds

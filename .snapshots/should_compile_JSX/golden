@@ -11,7 +11,7 @@ let OnMouseOut = (a => ({ __constructor: "OnMouseOut", __args: [ a ] }));
 global.Show = {};
 global.Functor = {};
 Inspect['Wish_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Wish_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d341) => (Inspect_f343) => (__$a__ => ((__x__) => {
+Inspect['Wish_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v333) => (Inspect_x335) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -26,7 +26,7 @@ Inspect['Wish_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d34
   }
 })(__$a__));
 Inspect['Element_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Element_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_q354) => (__$a__ => ((__x__) => {
+Inspect['Element_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_i346) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Element") {
     return `Element`;
   }
@@ -54,7 +54,7 @@ Inspect['Event_568c75136c0c369c440814a7af59434a']['inspect'] = () => (__$a__ => 
   }
 })(__$a__));
 Inspect['Attribute_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Attribute_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d367) => (__$a__ => ((__x__) => {
+Inspect['Attribute_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v359) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "AttributeId" && true) {
     let a0 = __x__.__args[0];
     return `AttributeId(` + Inspect.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;

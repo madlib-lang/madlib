@@ -381,7 +381,7 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
   RecordToDerive fieldNames ->
     let fieldNamesWithVars = zip (Set.toList fieldNames) chars
         fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
-        recordType         = TRecord fields Nothing
+        recordType         = TRecord fields Nothing mempty
         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
         inspectInstPreds = instPreds "Inspect"
         eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty

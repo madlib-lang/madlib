@@ -31,10 +31,18 @@ instantiate (Forall ks qt) = do
 class Instantiate t where
   inst  :: [Type] -> t -> t
 instance Instantiate Type where
-  inst ts (TApp l r           ) = TApp (inst ts l) (inst ts r)
-  inst ts (TGen n             ) = ts !! n
-  inst ts (TRecord fields base) = TRecord (M.map (inst ts) fields) (inst ts <$> base)
-  inst _  t                     = t
+  inst ts (TApp l r) =
+    TApp (inst ts l) (inst ts r)
+
+  inst ts (TGen n) =
+    ts !! n
+
+  inst ts (TRecord fields base optionalFields) =
+    TRecord (M.map (inst ts) fields) (inst ts <$> base) (M.map (inst ts) optionalFields)
+
+  inst _  t                     =
+    t
+
 
 instance Instantiate a => Instantiate [a] where
   inst ts = map (inst ts)

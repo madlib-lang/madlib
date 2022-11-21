@@ -19,10 +19,10 @@ import qualified AST.Canonical                 as Can
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t@(TRecord fields (Just base))
+varBind tv t@(TRecord fields (Just base) optionalFields)
   | tv == TV "__NO_ARG__" Star = return M.empty
   | tv `elem` concat (ftv <$> fields) && tv /= TV "__NO_ARG__" Star = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base))
+  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv      = return M.empty
              | tv == TV "__NO_ARG__" Star = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
@@ -38,7 +38,7 @@ instance Unify Type where
     s2 <- unify (apply s1 r) (apply s1 r')
     return $ compose s1 s2
 
-  unify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
+  unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
       let fieldsToCheck  = M.intersection fields fields'
@@ -47,16 +47,17 @@ instance Unify Type where
           fieldsForRight = M.difference fields' fields
 
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s2 <- unify (TRecord fieldsForLeft (Just newBase)) tBase'
-      s3 <- unify (TRecord fieldsForRight (Just newBase)) tBase
+      s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'
+      s3 <- unify (TRecord fieldsForRight (Just newBase) mempty) tBase
 
       return $ s1 `compose` s2 `compose` s3
 
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
+          commonFields = M.intersection fields fields'
       -- newBase <- newTVar Star
       -- s1 <- unify (TRecord mempty (Just tBase)) (TRecord fieldsDiff (Just newBase))
-      s1 <- unify tBase (TRecord fieldsDiff Nothing)
+      s1 <- unify tBase (TRecord fieldsDiff Nothing commonFields)
 
       unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -68,9 +69,10 @@ instance Unify Type where
 
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
-      newBase <- newTVar Star
-      s1 <- unify (TRecord mempty (Just tBase')) (TRecord fieldsDiff (Just newBase))
-      -- s1 <- unify tBase' (TRecord fieldsDiff Nothing)
+          commonFields = M.intersection fields' fields
+      -- newBase <- newTVar Star
+      -- s1 <- unify (TRecord mempty (Just tBase')) (TRecord fieldsDiff (Just newBase))
+      s1 <- unify tBase' (TRecord fieldsDiff Nothing commonFields)
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -81,8 +83,8 @@ instance Unify Type where
       return $ s1 `compose` s2
 
     _ -> do
-      let extraFields  = M.difference fields fields'
-          extraFields' = M.difference fields' fields
+      let extraFields  = M.difference fields (fields' <> optionalFields')
+          extraFields' = M.difference fields' (fields <> optionalFields)
       if extraFields' /= mempty || extraFields /= mempty then
         throwError $ CompilationError (UnificationError r l) NoContext
       else do
@@ -96,17 +98,16 @@ instance Unify Type where
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
 
-  unify (TCon (TC tNameA _) _) t2@(TApp (TCon (TC tNameB k) fpb) _)
-    | tNameA == "String" && tNameB == "Element" = do
-        tv <- newTVar Star
-        unify (TApp (TCon (TC "Element" k) fpb) tv) t2
+  unify (TCon (TC tNameA _) _) (TApp (TCon (TC tNameB _) _) _)
+    | tNameA == "String" && tNameB == "Element" =
+        return mempty
 
-  unify t1@(TApp (TCon (TC tNameB k) fpb) _) (TCon (TC tNameA _) _)
-    | tNameB == "Element" && tNameA == "String" = do
-        tv <- newTVar Star
-        unify (TApp (TCon (TC "Element" k) fpb) tv) t1
+  unify (TApp (TCon (TC tNameB _) _) _) (TCon (TC tNameA _) _)
+    | tNameB == "Element" && tNameA == "String" =
+        return mempty
 
-  unify t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
+  unify t1 t2 =
+    throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 
 
@@ -160,10 +161,10 @@ instance Match Type where
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
     | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
-  match (TRecord fields1 _) (TRecord fields2 _) =
+  match (TRecord fields1 _ optionalFields1) (TRecord fields2 _ optionalFields2) =
     -- Not complete but that's all we need for now as we don't support userland
     -- record instances. An instance for a record would be matched for all records.
-    unify (TRecord fields1 Nothing) (TRecord fields2 Nothing)
+    unify (TRecord fields1 Nothing optionalFields1) (TRecord fields2 Nothing optionalFields2)
   match t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 instance Match t => Match [t] where
@@ -246,8 +247,8 @@ improveRecordErrorTypes t1 t2 = do
 
 cleanBase :: Type -> Type
 cleanBase t = case t of
-  TRecord fields (Just (TRecord extraFields _)) ->
-    TRecord (extraFields <> fields) Nothing
+  TRecord fields (Just (TRecord extraFields _ _)) _ ->
+    TRecord (extraFields <> fields) Nothing mempty
 
   TApp l r ->
     TApp (cleanBase l) (cleanBase r)
@@ -257,11 +258,11 @@ cleanBase t = case t of
 
 skipBase :: Type -> Type
 skipBase t = case t of
-  TRecord fields (Just (TRecord extraFields _)) ->
-    TRecord (extraFields <> fields) Nothing
+  TRecord fields (Just (TRecord extraFields _ _)) _ ->
+    TRecord (extraFields <> fields) Nothing mempty
 
-  TRecord fields _ ->
-    TRecord fields Nothing
+  TRecord fields _ _ ->
+    TRecord fields Nothing mempty
 
   TApp l r ->
     TApp (skipBase l) (skipBase r)
@@ -283,9 +284,9 @@ gentleUnify (l `TApp` r) (l' `TApp` r') = do
   s2 <- gentleUnify (apply s1 r) (apply s1 r')
   return $ compose s1 s2
 
-gentleUnify (TRecord fields base) (TRecord fields' base') = case (base, base') of
+gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base') of
   (Just tBase, Just tBase') -> do
-    s1 <- gentleUnify tBase' (TRecord (M.union fields fields') base)
+    s1 <- gentleUnify tBase' (TRecord (M.union fields fields') base mempty)
 
     let fieldsToCheck  = M.intersection fields fields'
         fieldsToCheck' = M.intersection fields' fields
@@ -296,7 +297,7 @@ gentleUnify (TRecord fields base) (TRecord fields' base') = case (base, base') o
     return $ s3 `compose` s2 `compose` s1
 
   (Just tBase, Nothing) -> do
-    s1 <- gentleUnify tBase (TRecord fields' base)
+    s1 <- gentleUnify tBase (TRecord fields' base mempty)
 
     if not $ M.null (M.difference fields fields') then
       return M.empty
@@ -308,7 +309,7 @@ gentleUnify (TRecord fields base) (TRecord fields' base') = case (base, base') o
       return $ s2 `compose` s1
 
   (Nothing, Just tBase') -> do
-    s1 <- gentleUnify tBase' (TRecord fields base')
+    s1 <- gentleUnify tBase' (TRecord fields base' mempty)
 
     if not $ M.null (M.difference fields' fields) then
       return M.empty
@@ -330,16 +331,6 @@ gentleUnify (TCon a fpa) (TCon b fpb)
   | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
   | a /= b               = return M.empty
   | fpa /= fpb           = return M.empty
-
-gentleUnify (TCon (TC tNameA _) _) t2@(TApp (TCon (TC tNameB k) fpb) _)
-  | tNameA == "String" && tNameB == "Element" = do
-      tv <- newTVar Star
-      gentleUnify (TApp (TCon (TC "Element" k) fpb) tv) t2
-
-gentleUnify t1@(TApp (TCon (TC tNameB k) fpb) _) (TCon (TC tNameA _) _)
-  | tNameB == "Element" && tNameA == "String" = do
-      tv <- newTVar Star
-      gentleUnify (TApp (TCon (TC "Element" k) fpb) tv) t1
 
 gentleUnify _ _ = return M.empty
 

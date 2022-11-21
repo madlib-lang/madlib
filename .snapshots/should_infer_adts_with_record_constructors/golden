@@ -64,7 +64,8 @@
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      Nothing))
+                                                      Nothing
+                                                      (fromList [])))
                                                 (TCon (TC "Result" Star) "Module.mad"))
                                            (Area (Loc 101 3 13) (Loc 108 3 20))
                                            (Var "Success" True))
@@ -74,7 +75,8 @@
                                                 (fromList
                                                    [ ( "value" , TCon (TC "String" Star) "prelude" )
                                                    ])
-                                                Nothing)
+                                                Nothing
+                                                (fromList []))
                                            (Area (Loc 109 3 21) (Loc 124 3 36))
                                            (Record
                                               [ Typed
@@ -118,7 +120,8 @@
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      Nothing))
+                                                      Nothing
+                                                      (fromList [])))
                                                 (TCon (TC "Result" Star) "Module.mad"))
                                            (Area (Loc 138 4 13) (Loc 143 4 18))
                                            (Var "Error" True))
@@ -130,7 +133,8 @@
                                                      , TCon (TC "String" Star) "prelude"
                                                      )
                                                    ])
-                                                Nothing)
+                                                Nothing
+                                                (fromList []))
                                            (Area (Loc 144 4 19) (Loc 162 4 37))
                                            (Record
                                               [ Typed
@@ -478,7 +482,8 @@
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
                                   (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                  Nothing))
+                                  Nothing
+                                  (fromList [])))
                             (TCon (TC "Result" Star) "Module.mad")))
                   , Untyped
                       (Area (Loc 45 1 46) (Loc 73 1 74))
@@ -502,7 +507,8 @@
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
                                   (fromList [ ( "message" , TCon (TC "String" Star) "prelude" ) ])
-                                  Nothing))
+                                  Nothing
+                                  (fromList [])))
                             (TCon (TC "Result" Star) "Module.mad")))
                   ]
               , adtType = TCon (TC "Result" Star) "Module.mad"
@@ -529,6 +535,7 @@
                            )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -540,13 +547,15 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                     (Just (TVar (TV "m38" Star)))))
+                                     Nothing
+                                     (fromList [ ( "value" , TVar (TV "h33" Star) ) ])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                        (Just (TVar (TV "o40" Star)))))
+                                        Nothing
+                                        (fromList [ ( "value" , TVar (TV "h33" Star) ) ])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -558,13 +567,15 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                           (Just (TVar (TV "m38" Star)))))
+                                           Nothing
+                                           (fromList [ ( "value" , TVar (TV "h33" Star) ) ])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
                                               (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                              (Just (TVar (TV "o40" Star)))))
+                                              Nothing
+                                              (fromList [ ( "value" , TVar (TV "h33" Star) ) ])))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
@@ -577,7 +588,8 @@
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TRecord
                                                  (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                                 Nothing))
+                                                 Nothing
+                                                 (fromList [])))
                                            (TApp
                                               (TApp
                                                  (TCon
@@ -586,7 +598,8 @@
                                                  (TRecord
                                                     (fromList
                                                        [ ( "value" , TVar (TV "h33" Star) ) ])
-                                                    Nothing))
+                                                    Nothing
+                                                    (fromList [])))
                                               (TCon (TC "Boolean" Star) "prelude")))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
@@ -598,7 +611,8 @@
                                              ] :=>
                                                TRecord
                                                  (fromList [ ( "value" , TVar (TV "h33" Star) ) ])
-                                                 (Just (TVar (TV "m38" Star))))
+                                                 Nothing
+                                                 (fromList [ ( "value" , TVar (TV "h33" Star) ) ]))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
@@ -615,7 +629,9 @@
                                                      (TRecord
                                                         (fromList
                                                            [ ( "value" , TVar (TV "h33" Star) ) ])
-                                                        (Just (TVar (TV "o40" Star)))))
+                                                        Nothing
+                                                        (fromList
+                                                           [ ( "value" , TVar (TV "h33" Star) ) ])))
                                                   (TCon (TC "Boolean" Star) "prelude"))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Abs
@@ -628,7 +644,9 @@
                                                       TRecord
                                                         (fromList
                                                            [ ( "value" , TVar (TV "h33" Star) ) ])
-                                                        (Just (TVar (TV "o40" Star))))
+                                                        Nothing
+                                                        (fromList
+                                                           [ ( "value" , TVar (TV "h33" Star) ) ]))
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    "__$b__")
                                                 [ Typed
@@ -860,11 +878,15 @@
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "m38"
-                                                                                                Star))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "value"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "h33"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ]))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -893,11 +915,15 @@
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "m38"
-                                                                                                      Star)))))
+                                                                                             Nothing
+                                                                                             (fromList
+                                                                                                [ ( "value"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "h33"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                ])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              "h33"
@@ -932,11 +958,15 @@
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "o40"
-                                                                                          Star))))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "value"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "h33"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ]))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -963,11 +993,15 @@
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "o40"
-                                                                                                Star)))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "value"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "h33"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ])))
                                                                                  (TVar
                                                                                     (TV
                                                                                        "h33" Star)))
@@ -995,11 +1029,13 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord (fromList [ ( "value" , TGen 0 ) ]) Nothing))
+                                  (TRecord
+                                     (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord (fromList [ ( "value" , TGen 0 ) ]) Nothing))
+                                     (TRecord
+                                        (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -1022,6 +1058,7 @@
                            )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -1032,14 +1069,16 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                     (Just (TVar (TV "f57" Star)))))
+                                     (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                     Nothing
+                                     (fromList [ ( "message" , TVar (TV "w48" Star) ) ])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
-                                        (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                        (Just (TVar (TV "h59" Star)))))
+                                        (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                        Nothing
+                                        (fromList [ ( "message" , TVar (TV "w48" Star) ) ])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -1050,27 +1089,30 @@
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
-                                           (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                           (Just (TVar (TV "f57" Star)))))
+                                           (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                           Nothing
+                                           (fromList [ ( "message" , TVar (TV "w48" Star) ) ])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                              (Just (TVar (TV "h59" Star)))))
+                                              (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                              Nothing
+                                              (fromList [ ( "message" , TVar (TV "w48" Star) ) ])))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Eq" [] False True , [ TVar (TV "a52" Star) ] )
+                                   ( ClassRef "Eq" [] False True , [ TVar (TV "w48" Star) ] )
                                    (Typed
-                                      ([ IsIn "Eq" [ TVar (TV "a52" Star) ] Nothing ] :=>
+                                      ([ IsIn "Eq" [ TVar (TV "w48" Star) ] Nothing ] :=>
                                          TApp
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TRecord
-                                                 (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                                 Nothing))
+                                                 (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                                 Nothing
+                                                 (fromList [])))
                                            (TApp
                                               (TApp
                                                  (TCon
@@ -1078,26 +1120,29 @@
                                                     "prelude")
                                                  (TRecord
                                                     (fromList
-                                                       [ ( "message" , TVar (TV "a52" Star) ) ])
-                                                    Nothing))
+                                                       [ ( "message" , TVar (TV "w48" Star) ) ])
+                                                    Nothing
+                                                    (fromList [])))
                                               (TCon (TC "Boolean" Star) "prelude")))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
                                          (Typed
                                             ([ IsIn
                                                  "Eq"
-                                                 [ TVar (TV "a52" Star) ]
+                                                 [ TVar (TV "w48" Star) ]
                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                              ] :=>
                                                TRecord
-                                                 (fromList [ ( "message" , TVar (TV "a52" Star) ) ])
-                                                 (Just (TVar (TV "f57" Star))))
+                                                 (fromList [ ( "message" , TVar (TV "w48" Star) ) ])
+                                                 Nothing
+                                                 (fromList
+                                                    [ ( "message" , TVar (TV "w48" Star) ) ]))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV "a52" Star) ]
+                                                  [ TVar (TV "w48" Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TApp
@@ -1107,27 +1152,33 @@
                                                         "prelude")
                                                      (TRecord
                                                         (fromList
-                                                           [ ( "message" , TVar (TV "a52" Star) ) ])
-                                                        (Just (TVar (TV "h59" Star)))))
+                                                           [ ( "message" , TVar (TV "w48" Star) ) ])
+                                                        Nothing
+                                                        (fromList
+                                                           [ ( "message" , TVar (TV "w48" Star) )
+                                                           ])))
                                                   (TCon (TC "Boolean" Star) "prelude"))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Abs
                                                 (Typed
                                                    ([ IsIn
                                                         "Eq"
-                                                        [ TVar (TV "a52" Star) ]
+                                                        [ TVar (TV "w48" Star) ]
                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                     ] :=>
                                                       TRecord
                                                         (fromList
-                                                           [ ( "message" , TVar (TV "a52" Star) ) ])
-                                                        (Just (TVar (TV "h59" Star))))
+                                                           [ ( "message" , TVar (TV "w48" Star) ) ])
+                                                        Nothing
+                                                        (fromList
+                                                           [ ( "message" , TVar (TV "w48" Star) )
+                                                           ]))
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    "__$b__")
                                                 [ Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV "a52" Star) ]
+                                                         [ TVar (TV "w48" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "Boolean" Star) "prelude")
@@ -1136,7 +1187,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV "a52" Star) ]
+                                                               [ TVar (TV "w48" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
@@ -1187,7 +1238,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV "a52" Star) ]
+                                                                     [ TVar (TV "w48" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -1199,7 +1250,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV "a52" Star) ]
+                                                                           [ TVar (TV "w48" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -1217,7 +1268,7 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "a52" Star)))
+                                                                                 (TV "w48" Star)))
                                                                            (TCon
                                                                               (TC "Boolean" Star)
                                                                               "prelude"))
@@ -1227,7 +1278,7 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV "a52" Star)
+                                                                                     (TV "w48" Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -1244,7 +1295,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "a52"
+                                                                                          "w48"
                                                                                           Star)))
                                                                                  (TApp
                                                                                     (TApp
@@ -1259,7 +1310,7 @@
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "a52"
+                                                                                             "w48"
                                                                                              Star)))
                                                                                     (TCon
                                                                                        (TC
@@ -1273,7 +1324,7 @@
                                                                                ( MethodRef
                                                                                    "Eq" "==" True
                                                                                , [ TVar
-                                                                                     (TV "a52" Star)
+                                                                                     (TV "w48" Star)
                                                                                  ]
                                                                                )
                                                                                (Typed
@@ -1281,7 +1332,7 @@
                                                                                        "Eq"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              "a52"
+                                                                                              "w48"
                                                                                               Star)
                                                                                        ]
                                                                                        Nothing
@@ -1299,7 +1350,7 @@
                                                                                              "prelude")
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "a52"
+                                                                                                "w48"
                                                                                                 Star)))
                                                                                        (TApp
                                                                                           (TApp
@@ -1314,7 +1365,7 @@
                                                                                                 "prelude")
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "a52"
+                                                                                                   "w48"
                                                                                                    Star)))
                                                                                           (TCon
                                                                                              (TC
@@ -1330,14 +1381,14 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV "a52" Star)
+                                                                                     (TV "w48" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc 0 0 0)
                                                                                        (Loc 0 0 0)))
                                                                              ] :=>
-                                                                               TVar (TV "a52" Star))
+                                                                               TVar (TV "w48" Star))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1349,15 +1400,19 @@
                                                                                           [ ( "message"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   "a52"
+                                                                                                   "w48"
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "f57"
-                                                                                                Star))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "message"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "w48"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ]))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -1382,18 +1437,22 @@
                                                                                                 [ ( "message"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         "a52"
+                                                                                                         "w48"
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "f57"
-                                                                                                      Star)))))
+                                                                                             Nothing
+                                                                                             (fromList
+                                                                                                [ ( "message"
+                                                                                                  , TVar
+                                                                                                      (TV
+                                                                                                         "w48"
+                                                                                                         Star)
+                                                                                                  )
+                                                                                                ])))
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "a52"
+                                                                                             "w48"
                                                                                              Star)))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
@@ -1405,13 +1464,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV "a52" Star) ]
+                                                                           [ TVar (TV "w48" Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV "a52" Star))
+                                                                         TVar (TV "w48" Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -1421,15 +1480,19 @@
                                                                                     [ ( "message"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "a52"
+                                                                                             "w48"
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "h59"
-                                                                                          Star))))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "message"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "w48"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ]))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1452,18 +1515,22 @@
                                                                                           [ ( "message"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   "a52"
+                                                                                                   "w48"
                                                                                                    Star)
                                                                                             )
                                                                                           ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                "h59"
-                                                                                                Star)))))
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [ ( "message"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   "w48"
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ])))
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "a52" Star)))
+                                                                                       "w48" Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1474,7 +1541,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV "a52" Star) ]
+                                                               [ TVar (TV "w48" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -1489,11 +1556,15 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord (fromList [ ( "message" , TGen 0 ) ]) Nothing))
+                                  (TRecord
+                                     (fromList [ ( "message" , TGen 0 ) ]) Nothing (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord (fromList [ ( "message" , TGen 0 ) ]) Nothing))
+                                     (TRecord
+                                        (fromList [ ( "message" , TGen 0 ) ])
+                                        Nothing
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -1541,6 +1612,7 @@
                                                   [ ( "value" , TCon (TC "String" Star) "prelude" )
                                                   ])
                                                Nothing
+                                               (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
@@ -1552,6 +1624,7 @@
                                                     )
                                                   ])
                                                Nothing
+                                               (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -1566,6 +1639,7 @@
                                                    [ ( "value" , TCon (TC "String" Star) "prelude" )
                                                    ])
                                                 Nothing
+                                                (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
@@ -1577,6 +1651,7 @@
                                                      )
                                                    ])
                                                 Nothing
+                                                (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
@@ -1599,6 +1674,7 @@
                                                            )
                                                          ])
                                                       Nothing
+                                                      (fromList [])
                                                   ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               , IsIn
@@ -1610,6 +1686,7 @@
                                                            )
                                                          ])
                                                       Nothing
+                                                      (fromList [])
                                                   ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
@@ -1626,6 +1703,7 @@
                                                             )
                                                           ])
                                                        Nothing
+                                                       (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
@@ -1637,6 +1715,7 @@
                                                             )
                                                           ])
                                                        Nothing
+                                                       (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -1678,6 +1757,7 @@
                                                                    )
                                                                  ])
                                                               Nothing
+                                                              (fromList [])
                                                           ]
                                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                       ] :=>
@@ -1744,6 +1824,7 @@
                                                                                        )
                                                                                      ])
                                                                                   Nothing
+                                                                                  (fromList [])
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -1760,7 +1841,8 @@
                                                                                        "prelude"
                                                                                    )
                                                                                  ])
-                                                                              Nothing)
+                                                                              Nothing
+                                                                              (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "a0")
@@ -1787,6 +1869,7 @@
                                                                                        )
                                                                                      ])
                                                                                   Nothing
+                                                                                  (fromList [])
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -1803,7 +1886,8 @@
                                                                                        "prelude"
                                                                                    )
                                                                                  ])
-                                                                              Nothing)
+                                                                              Nothing
+                                                                              (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "b0")
@@ -1821,6 +1905,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -1841,6 +1926,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -1918,6 +2004,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                             (Just
                                                                                (Area
@@ -1944,6 +2031,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -1972,7 +2060,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing))
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           [])))
                                                                                   (TCon
                                                                                      (TC
                                                                                         "Boolean"
@@ -1996,6 +2086,8 @@
                                                                                                  )
                                                                                                ])
                                                                                             Nothing
+                                                                                            (fromList
+                                                                                               [])
                                                                                         ]
                                                                                         Nothing
                                                                                     ] :=>
@@ -2020,7 +2112,9 @@
                                                                                                        "prelude"
                                                                                                    )
                                                                                                  ])
-                                                                                              Nothing))
+                                                                                              Nothing
+                                                                                              (fromList
+                                                                                                 [])))
                                                                                         (TApp
                                                                                            (TApp
                                                                                               (TCon
@@ -2042,7 +2136,9 @@
                                                                                                           "prelude"
                                                                                                       )
                                                                                                     ])
-                                                                                                 Nothing))
+                                                                                                 Nothing
+                                                                                                 (fromList
+                                                                                                    [])))
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "Boolean"
@@ -2078,6 +2174,8 @@
                                                                                                        )
                                                                                                      ])
                                                                                                   Nothing
+                                                                                                  (fromList
+                                                                                                     [])
                                                                                               ]
                                                                                               Nothing
                                                                                           ] :=>
@@ -2102,7 +2200,9 @@
                                                                                                              "prelude"
                                                                                                          )
                                                                                                        ])
-                                                                                                    Nothing))
+                                                                                                    Nothing
+                                                                                                    (fromList
+                                                                                                       [])))
                                                                                               (TApp
                                                                                                  (TApp
                                                                                                     (TCon
@@ -2124,7 +2224,9 @@
                                                                                                                 "prelude"
                                                                                                             )
                                                                                                           ])
-                                                                                                       Nothing))
+                                                                                                       Nothing
+                                                                                                       (fromList
+                                                                                                          [])))
                                                                                                  (TCon
                                                                                                     (TC
                                                                                                        "Boolean"
@@ -2154,6 +2256,8 @@
                                                                                                        )
                                                                                                      ])
                                                                                                   Nothing
+                                                                                                  (fromList
+                                                                                                     [])
                                                                                               ]
                                                                                             )
                                                                                             (Typed
@@ -2170,6 +2274,8 @@
                                                                                                              )
                                                                                                            ])
                                                                                                         Nothing
+                                                                                                        (fromList
+                                                                                                           [])
                                                                                                     ]
                                                                                                     Nothing
                                                                                                 ] :=>
@@ -2194,7 +2300,9 @@
                                                                                                                    "prelude"
                                                                                                                )
                                                                                                              ])
-                                                                                                          Nothing))
+                                                                                                          Nothing
+                                                                                                          (fromList
+                                                                                                             [])))
                                                                                                     (TApp
                                                                                                        (TApp
                                                                                                           (TCon
@@ -2216,7 +2324,9 @@
                                                                                                                       "prelude"
                                                                                                                   )
                                                                                                                 ])
-                                                                                                             Nothing))
+                                                                                                             Nothing
+                                                                                                             (fromList
+                                                                                                                [])))
                                                                                                        (TCon
                                                                                                           (TC
                                                                                                              "Boolean"
@@ -2248,6 +2358,8 @@
                                                                                                  )
                                                                                                ])
                                                                                             Nothing
+                                                                                            (fromList
+                                                                                               [])
                                                                                         ]
                                                                                         (Just
                                                                                            (Area
@@ -2270,7 +2382,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing)
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           []))
                                                                                    (Area
                                                                                       (Loc 0 0 0)
                                                                                       (Loc 0 0 0))
@@ -2290,6 +2404,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -2307,7 +2422,8 @@
                                                                                            "prelude"
                                                                                        )
                                                                                      ])
-                                                                                  Nothing)
+                                                                                  Nothing
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
@@ -2327,6 +2443,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -2349,6 +2466,7 @@
                                                                    )
                                                                  ])
                                                               Nothing
+                                                              (fromList [])
                                                           ]
                                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                       ] :=>
@@ -2415,6 +2533,7 @@
                                                                                        )
                                                                                      ])
                                                                                   Nothing
+                                                                                  (fromList [])
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -2431,7 +2550,8 @@
                                                                                        "prelude"
                                                                                    )
                                                                                  ])
-                                                                              Nothing)
+                                                                              Nothing
+                                                                              (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "a0")
@@ -2458,6 +2578,7 @@
                                                                                        )
                                                                                      ])
                                                                                   Nothing
+                                                                                  (fromList [])
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -2474,7 +2595,8 @@
                                                                                        "prelude"
                                                                                    )
                                                                                  ])
-                                                                              Nothing)
+                                                                              Nothing
+                                                                              (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "b0")
@@ -2492,6 +2614,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -2512,6 +2635,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -2589,6 +2713,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                             (Just
                                                                                (Area
@@ -2615,6 +2740,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -2643,7 +2769,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing))
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           [])))
                                                                                   (TCon
                                                                                      (TC
                                                                                         "Boolean"
@@ -2667,6 +2795,8 @@
                                                                                                  )
                                                                                                ])
                                                                                             Nothing
+                                                                                            (fromList
+                                                                                               [])
                                                                                         ]
                                                                                         Nothing
                                                                                     ] :=>
@@ -2691,7 +2821,9 @@
                                                                                                        "prelude"
                                                                                                    )
                                                                                                  ])
-                                                                                              Nothing))
+                                                                                              Nothing
+                                                                                              (fromList
+                                                                                                 [])))
                                                                                         (TApp
                                                                                            (TApp
                                                                                               (TCon
@@ -2713,7 +2845,9 @@
                                                                                                           "prelude"
                                                                                                       )
                                                                                                     ])
-                                                                                                 Nothing))
+                                                                                                 Nothing
+                                                                                                 (fromList
+                                                                                                    [])))
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "Boolean"
@@ -2749,6 +2883,8 @@
                                                                                                        )
                                                                                                      ])
                                                                                                   Nothing
+                                                                                                  (fromList
+                                                                                                     [])
                                                                                               ]
                                                                                               Nothing
                                                                                           ] :=>
@@ -2773,7 +2909,9 @@
                                                                                                              "prelude"
                                                                                                          )
                                                                                                        ])
-                                                                                                    Nothing))
+                                                                                                    Nothing
+                                                                                                    (fromList
+                                                                                                       [])))
                                                                                               (TApp
                                                                                                  (TApp
                                                                                                     (TCon
@@ -2795,7 +2933,9 @@
                                                                                                                 "prelude"
                                                                                                             )
                                                                                                           ])
-                                                                                                       Nothing))
+                                                                                                       Nothing
+                                                                                                       (fromList
+                                                                                                          [])))
                                                                                                  (TCon
                                                                                                     (TC
                                                                                                        "Boolean"
@@ -2825,6 +2965,8 @@
                                                                                                        )
                                                                                                      ])
                                                                                                   Nothing
+                                                                                                  (fromList
+                                                                                                     [])
                                                                                               ]
                                                                                             )
                                                                                             (Typed
@@ -2841,6 +2983,8 @@
                                                                                                              )
                                                                                                            ])
                                                                                                         Nothing
+                                                                                                        (fromList
+                                                                                                           [])
                                                                                                     ]
                                                                                                     Nothing
                                                                                                 ] :=>
@@ -2865,7 +3009,9 @@
                                                                                                                    "prelude"
                                                                                                                )
                                                                                                              ])
-                                                                                                          Nothing))
+                                                                                                          Nothing
+                                                                                                          (fromList
+                                                                                                             [])))
                                                                                                     (TApp
                                                                                                        (TApp
                                                                                                           (TCon
@@ -2887,7 +3033,9 @@
                                                                                                                       "prelude"
                                                                                                                   )
                                                                                                                 ])
-                                                                                                             Nothing))
+                                                                                                             Nothing
+                                                                                                             (fromList
+                                                                                                                [])))
                                                                                                        (TCon
                                                                                                           (TC
                                                                                                              "Boolean"
@@ -2919,6 +3067,8 @@
                                                                                                  )
                                                                                                ])
                                                                                             Nothing
+                                                                                            (fromList
+                                                                                               [])
                                                                                         ]
                                                                                         (Just
                                                                                            (Area
@@ -2941,7 +3091,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing)
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           []))
                                                                                    (Area
                                                                                       (Loc 0 0 0)
                                                                                       (Loc 0 0 0))
@@ -2961,6 +3113,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -2978,7 +3131,8 @@
                                                                                            "prelude"
                                                                                        )
                                                                                      ])
-                                                                                  Nothing)
+                                                                                  Nothing
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
@@ -2998,6 +3152,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -3093,6 +3248,7 @@
                            )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -3103,8 +3259,9 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "value" , TVar (TV "n91" Star) ) ])
-                                     (Just (TVar (TV "s96" Star)))))
+                                     (fromList [ ( "value" , TVar (TV "f83" Star) ) ])
+                                     Nothing
+                                     (fromList [ ( "value" , TVar (TV "f83" Star) ) ])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -3115,33 +3272,36 @@
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
-                                           (fromList [ ( "value" , TVar (TV "n91" Star) ) ])
-                                           (Just (TVar (TV "s96" Star)))))
+                                           (fromList [ ( "value" , TVar (TV "f83" Star) ) ])
+                                           Nothing
+                                           (fromList [ ( "value" , TVar (TV "f83" Star) ) ])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "n91" Star) ] )
+                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "f83" Star) ] )
                                    (Typed
-                                      ([ IsIn "Inspect" [ TVar (TV "n91" Star) ] Nothing ] :=>
+                                      ([ IsIn "Inspect" [ TVar (TV "f83" Star) ] Nothing ] :=>
                                          TApp
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TRecord
-                                                 (fromList [ ( "value" , TVar (TV "n91" Star) ) ])
-                                                 Nothing))
+                                                 (fromList [ ( "value" , TVar (TV "f83" Star) ) ])
+                                                 Nothing
+                                                 (fromList [])))
                                            (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
                                          (Typed
                                             ([ IsIn
                                                  "Inspect"
-                                                 [ TVar (TV "n91" Star) ]
+                                                 [ TVar (TV "f83" Star) ]
                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                              ] :=>
                                                TRecord
-                                                 (fromList [ ( "value" , TVar (TV "n91" Star) ) ])
-                                                 (Just (TVar (TV "s96" Star))))
+                                                 (fromList [ ( "value" , TVar (TV "f83" Star) ) ])
+                                                 Nothing
+                                                 (fromList [ ( "value" , TVar (TV "f83" Star) ) ]))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
@@ -3155,7 +3315,7 @@
                                                 , Typed
                                                     ([ IsIn
                                                          "Inspect"
-                                                         [ TVar (TV "n91" Star) ]
+                                                         [ TVar (TV "f83" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -3218,7 +3378,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Inspect"
-                                                               [ TVar (TV "n91" Star) ]
+                                                               [ TVar (TV "f83" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
@@ -3227,7 +3387,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "n91" Star) ]
+                                                                     [ TVar (TV "f83" Star) ]
                                                                      Nothing
                                                                  ] :=>
                                                                    TApp
@@ -3239,7 +3399,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "n91" Star)))
+                                                                        (TVar (TV "f83" Star)))
                                                                      (TCon
                                                                         (TC "String" Star)
                                                                         "prelude"))
@@ -3247,12 +3407,12 @@
                                                                 (Placeholder
                                                                    ( MethodRef
                                                                        "Inspect" "inspect" True
-                                                                   , [ TVar (TV "n91" Star) ]
+                                                                   , [ TVar (TV "f83" Star) ]
                                                                    )
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "n91" Star) ]
+                                                                           [ TVar (TV "f83" Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -3267,7 +3427,7 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "n91" Star)))
+                                                                                 (TV "f83" Star)))
                                                                            (TCon
                                                                               (TC "String" Star)
                                                                               "prelude"))
@@ -3276,12 +3436,12 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "n91" Star) ]
+                                                                     [ TVar (TV "f83" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV "n91" Star))
+                                                                   TVar (TV "f83" Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
@@ -3290,12 +3450,16 @@
                                                                            (fromList
                                                                               [ ( "value"
                                                                                 , TVar
-                                                                                    (TV "n91" Star)
+                                                                                    (TV "f83" Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar
-                                                                                 (TV "s96" Star))))
+                                                                           Nothing
+                                                                           (fromList
+                                                                              [ ( "value"
+                                                                                , TVar
+                                                                                    (TV "f83" Star)
+                                                                                )
+                                                                              ]))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$a__" False))
                                                                    (Typed
@@ -3316,16 +3480,20 @@
                                                                                     [ ( "value"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "n91"
+                                                                                             "f83"
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "s96"
-                                                                                          Star)))))
-                                                                           (TVar (TV "n91" Star)))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "value"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "f83"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ])))
+                                                                           (TVar (TV "f83" Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".value" False))))
                                                              True))
@@ -3342,7 +3510,8 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord (fromList [ ( "value" , TGen 0 ) ]) Nothing))
+                                  (TRecord
+                                     (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )
@@ -3365,6 +3534,7 @@
                            )
                          ])
                       Nothing
+                      (fromList [])
                   ]
                   Nothing)
                (fromList
@@ -3375,8 +3545,9 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "message" , TVar (TV "z103" Star) ) ])
-                                     (Just (TVar (TV "e108" Star)))))
+                                     (fromList [ ( "message" , TVar (TV "p93" Star) ) ])
+                                     Nothing
+                                     (fromList [ ( "message" , TVar (TV "p93" Star) ) ])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -3387,35 +3558,37 @@
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
-                                           (fromList [ ( "message" , TVar (TV "z103" Star) ) ])
-                                           (Just (TVar (TV "e108" Star)))))
+                                           (fromList [ ( "message" , TVar (TV "p93" Star) ) ])
+                                           Nothing
+                                           (fromList [ ( "message" , TVar (TV "p93" Star) ) ])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "z103" Star) ] )
+                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "p93" Star) ] )
                                    (Typed
-                                      ([ IsIn "Inspect" [ TVar (TV "z103" Star) ] Nothing ] :=>
+                                      ([ IsIn "Inspect" [ TVar (TV "p93" Star) ] Nothing ] :=>
                                          TApp
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TRecord
-                                                 (fromList
-                                                    [ ( "message" , TVar (TV "z103" Star) ) ])
-                                                 Nothing))
+                                                 (fromList [ ( "message" , TVar (TV "p93" Star) ) ])
+                                                 Nothing
+                                                 (fromList [])))
                                            (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
                                          (Typed
                                             ([ IsIn
                                                  "Inspect"
-                                                 [ TVar (TV "z103" Star) ]
+                                                 [ TVar (TV "p93" Star) ]
                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                              ] :=>
                                                TRecord
+                                                 (fromList [ ( "message" , TVar (TV "p93" Star) ) ])
+                                                 Nothing
                                                  (fromList
-                                                    [ ( "message" , TVar (TV "z103" Star) ) ])
-                                                 (Just (TVar (TV "e108" Star))))
+                                                    [ ( "message" , TVar (TV "p93" Star) ) ]))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
@@ -3429,7 +3602,7 @@
                                                 , Typed
                                                     ([ IsIn
                                                          "Inspect"
-                                                         [ TVar (TV "z103" Star) ]
+                                                         [ TVar (TV "p93" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -3492,7 +3665,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Inspect"
-                                                               [ TVar (TV "z103" Star) ]
+                                                               [ TVar (TV "p93" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
@@ -3501,7 +3674,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "z103" Star) ]
+                                                                     [ TVar (TV "p93" Star) ]
                                                                      Nothing
                                                                  ] :=>
                                                                    TApp
@@ -3513,7 +3686,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "z103" Star)))
+                                                                        (TVar (TV "p93" Star)))
                                                                      (TCon
                                                                         (TC "String" Star)
                                                                         "prelude"))
@@ -3521,12 +3694,12 @@
                                                                 (Placeholder
                                                                    ( MethodRef
                                                                        "Inspect" "inspect" True
-                                                                   , [ TVar (TV "z103" Star) ]
+                                                                   , [ TVar (TV "p93" Star) ]
                                                                    )
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV "z103" Star) ]
+                                                                           [ TVar (TV "p93" Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -3541,7 +3714,7 @@
                                                                                           Star)))
                                                                                  "prelude")
                                                                               (TVar
-                                                                                 (TV "z103" Star)))
+                                                                                 (TV "p93" Star)))
                                                                            (TCon
                                                                               (TC "String" Star)
                                                                               "prelude"))
@@ -3550,12 +3723,12 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "z103" Star) ]
+                                                                     [ TVar (TV "p93" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV "z103" Star))
+                                                                   TVar (TV "p93" Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
@@ -3564,12 +3737,16 @@
                                                                            (fromList
                                                                               [ ( "message"
                                                                                 , TVar
-                                                                                    (TV "z103" Star)
+                                                                                    (TV "p93" Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar
-                                                                                 (TV "e108" Star))))
+                                                                           Nothing
+                                                                           (fromList
+                                                                              [ ( "message"
+                                                                                , TVar
+                                                                                    (TV "p93" Star)
+                                                                                )
+                                                                              ]))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$a__" False))
                                                                    (Typed
@@ -3590,16 +3767,20 @@
                                                                                     [ ( "message"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             "z103"
+                                                                                             "p93"
                                                                                              Star)
                                                                                       )
                                                                                     ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          "e108"
-                                                                                          Star)))))
-                                                                           (TVar (TV "z103" Star)))
+                                                                                 Nothing
+                                                                                 (fromList
+                                                                                    [ ( "message"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             "p93"
+                                                                                             Star)
+                                                                                      )
+                                                                                    ])))
+                                                                           (TVar (TV "p93" Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".message" False))))
                                                              True))
@@ -3616,7 +3797,8 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord (fromList [ ( "message" , TGen 0 ) ]) Nothing))
+                                  (TRecord
+                                     (fromList [ ( "message" , TGen 0 ) ]) Nothing (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )
@@ -3656,6 +3838,7 @@
                                                   [ ( "value" , TCon (TC "String" Star) "prelude" )
                                                   ])
                                                Nothing
+                                               (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
@@ -3667,6 +3850,7 @@
                                                     )
                                                   ])
                                                Nothing
+                                               (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -3681,6 +3865,7 @@
                                                    [ ( "value" , TCon (TC "String" Star) "prelude" )
                                                    ])
                                                 Nothing
+                                                (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
@@ -3692,6 +3877,7 @@
                                                      )
                                                    ])
                                                 Nothing
+                                                (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
@@ -3712,6 +3898,7 @@
                                                             )
                                                           ])
                                                        Nothing
+                                                       (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -3741,6 +3928,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -3753,7 +3941,8 @@
                                                                          "prelude"
                                                                      )
                                                                    ])
-                                                                Nothing)
+                                                                Nothing
+                                                                (fromList []))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        ]))
@@ -3768,6 +3957,7 @@
                                                                   )
                                                                 ])
                                                              Nothing
+                                                             (fromList [])
                                                          ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -3791,6 +3981,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -3811,6 +4002,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       Nothing
                                                                   ] :=>
@@ -3833,7 +4025,8 @@
                                                                                      "prelude"
                                                                                  )
                                                                                ])
-                                                                            Nothing))
+                                                                            Nothing
+                                                                            (fromList [])))
                                                                       (TCon
                                                                          (TC "String" Star)
                                                                          "prelude"))
@@ -3860,6 +4053,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                             Nothing
                                                                         ] :=>
@@ -3884,7 +4078,8 @@
                                                                                            "prelude"
                                                                                        )
                                                                                      ])
-                                                                                  Nothing))
+                                                                                  Nothing
+                                                                                  (fromList [])))
                                                                             (TCon
                                                                                (TC "String" Star)
                                                                                "prelude"))
@@ -3905,6 +4100,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                           )
                                                                           (Typed
@@ -3921,6 +4117,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   Nothing
                                                                               ] :=>
@@ -3945,7 +4142,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing))
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           [])))
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
@@ -3970,6 +4169,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -3984,7 +4184,8 @@
                                                                                "prelude"
                                                                            )
                                                                          ])
-                                                                      Nothing)
+                                                                      Nothing
+                                                                      (fromList []))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (Var "a0" False))
                                                               True)
@@ -4004,6 +4205,7 @@
                                                             )
                                                           ])
                                                        Nothing
+                                                       (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -4033,6 +4235,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -4045,7 +4248,8 @@
                                                                          "prelude"
                                                                      )
                                                                    ])
-                                                                Nothing)
+                                                                Nothing
+                                                                (fromList []))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        ]))
@@ -4060,6 +4264,7 @@
                                                                   )
                                                                 ])
                                                              Nothing
+                                                             (fromList [])
                                                          ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -4083,6 +4288,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
+                                                                    (fromList [])
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -4103,6 +4309,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       Nothing
                                                                   ] :=>
@@ -4125,7 +4332,8 @@
                                                                                      "prelude"
                                                                                  )
                                                                                ])
-                                                                            Nothing))
+                                                                            Nothing
+                                                                            (fromList [])))
                                                                       (TCon
                                                                          (TC "String" Star)
                                                                          "prelude"))
@@ -4152,6 +4360,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                             Nothing
                                                                         ] :=>
@@ -4176,7 +4385,8 @@
                                                                                            "prelude"
                                                                                        )
                                                                                      ])
-                                                                                  Nothing))
+                                                                                  Nothing
+                                                                                  (fromList [])))
                                                                             (TCon
                                                                                (TC "String" Star)
                                                                                "prelude"))
@@ -4197,6 +4407,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
+                                                                                (fromList [])
                                                                             ]
                                                                           )
                                                                           (Typed
@@ -4213,6 +4424,7 @@
                                                                                            )
                                                                                          ])
                                                                                       Nothing
+                                                                                      (fromList [])
                                                                                   ]
                                                                                   Nothing
                                                                               ] :=>
@@ -4237,7 +4449,9 @@
                                                                                                  "prelude"
                                                                                              )
                                                                                            ])
-                                                                                        Nothing))
+                                                                                        Nothing
+                                                                                        (fromList
+                                                                                           [])))
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
@@ -4262,6 +4476,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
+                                                                          (fromList [])
                                                                       ]
                                                                       (Just
                                                                          (Area
@@ -4276,7 +4491,8 @@
                                                                                "prelude"
                                                                            )
                                                                          ])
-                                                                      Nothing)
+                                                                      Nothing
+                                                                      (fromList []))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (Var "a0" False))
                                                               True)

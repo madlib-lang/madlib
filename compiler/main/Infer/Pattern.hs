@@ -102,7 +102,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     let vars   = foldr (<>) M.empty ((\(_, _, a, _) -> a) <$> fields)
     let pats'  = (\(a, _, _, _) -> a) <$> fields
 
-    let t = TRecord ts (Just tv)
+    let t = TRecord ts (Just tv) mempty
 
     return (Slv.Typed ([] :=> t) area (Slv.PRecord pats'), ps, vars, t)
 

@@ -149,7 +149,7 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 inferVar :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferVar options env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
-    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) `fn` TGen 0)
+    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) mempty `fn` TGen 0)
     (ps :=> t) <- instantiate s
     return (M.empty, ps, t, Slv.Typed (ps :=> t) area $ Slv.Var n False)
 
@@ -402,7 +402,7 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
           Just t''' ->
             (, pickJSXChild t''' t'') <$> contextualUnify env elem (apply s' t''') t''
 
-        let s''' = s `compose` s' `compose` s''
+        let s''' = s'' `compose` s' `compose` s
         return (s''', pss ++ ps', Just $ apply s''' tr, lis ++ [li])
       )
       (mempty, [], Nothing, [])
@@ -411,7 +411,7 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
     let (Just t'') = t'
 
     s'' <- contextualUnify env listExp tv t''
-    let s''' = s' `compose` s''
+    let s''' = s'' `compose` s'
 
     let t = tListOf (apply s''' tv)
 
@@ -437,7 +437,7 @@ inferListItem options env _ (Can.Canonical area li) = case li of
 pickJSXChild :: Type -> Type -> Type
 pickJSXChild t1 t2 = case (t1, t2) of
   (TApp (TCon (TC "Element" _) _) _, TCon (TC "String" _) _) ->
-    t1
+    t2
 
   _ ->
     t2
@@ -452,7 +452,7 @@ inferTupleConstructor options env (Can.Canonical area (Can.TupleConstructor elem
     foldM
       (\(s, ps, ts, es) e -> do
           (s', ps', t', e') <- infer options (apply s env) e
-          return (s `compose` s', ps ++ ps', ts ++ [t'], es ++ [e'])
+          return (s' `compose` s, ps ++ ps', ts ++ [t'], es ++ [e'])
       ) (M.empty, [], [], []) elems
 
   let s         = (\(s, _, _, _) -> s) inferredElems
@@ -490,16 +490,16 @@ inferRecord options env exp = do
         _       -> Nothing
 
   (recordType, extraSubst) <- case base of
-    Just (TRecord fields baseBase) ->
-      return (TRecord (M.fromList fieldTypes' <> fields) baseBase, mempty)
+    Just (TRecord fields baseBase optionalFields) ->
+      return (TRecord (M.fromList fieldTypes' <> fields) baseBase optionalFields, mempty)
 
     Just tBase -> do
       baseVar <- newTVar Star
-      s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar))
-      return (TRecord (M.fromList fieldTypes') (Just baseVar), s)
+      s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar) mempty)
+      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
 
     Nothing ->
-      return (TRecord (M.fromList fieldTypes') Nothing, mempty)
+      return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
 
   let allPS = concat fieldPS
 
@@ -515,10 +515,10 @@ inferRecordField options env (Can.Canonical area field) = case field of
   Can.FieldSpread exp -> do
     (s, ps, t, e) <- infer options env exp
     case t of
-      TRecord _ _ ->
+      TRecord{} ->
         return (s, ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
 
-      TVar _      ->
+      TVar _ ->
         return (s, ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
 
       _ ->
@@ -566,7 +566,7 @@ inferNamespaceAccess _ _ _ = throwError $ CompilationError FatalError NoContext
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs@(Can.Canonical _ (Can.Var ('.' : _)))))
+inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs))
   = do
     tv                  <- newTVar Star
     (s1, _  , t1, eabs) <- infer options env abs
@@ -574,7 +574,8 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
 
     s3                  <- contextualUnifyAccess env fa t1 (t2 `fn` tv)
 
-    let s      = s1 `compose` s2 `compose` s3
+    let s      = s3 `compose` s2 `compose` s1
+    -- let s      = s1 `compose` s2 `compose` s3
     let t      = apply s tv
 
     let solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)
@@ -720,7 +721,7 @@ updateRecordUpdatePreds ps = updateRecordUpdatePreds' ps ps
 -- Preds for record with a base should be resolved by the base directly
 updateRecordUpdatePreds' :: [Pred] -> [Pred] -> [Pred]
 updateRecordUpdatePreds' allPreds ps = case ps of
-  IsIn cls [tRec@(TRecord _ (Just base@(TVar _)))] maybeArea : next
+  IsIn cls [tRec@(TRecord _ (Just base@(TVar _)) _)] maybeArea : next
     | not (hasPredForType "Number" tRec allPreds)
     && not (hasPredForType "Bits" tRec allPreds)
     && not (hasPredForType "Number" base allPreds)
@@ -842,7 +843,7 @@ ftvForLetGen t = case t of
   TApp t1 t2 ->
     ftvForLetGen t1 `List.union` ftvForLetGen t2
 
-  TRecord fields _ ->
+  TRecord fields _ _ ->
     M.elems fields >>= ftvForLetGen
 
   _ ->
