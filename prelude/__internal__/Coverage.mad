@@ -465,11 +465,11 @@ renderPercentage = (input) =>
     where(scan(String.dropLast(1, input))) {
       Just(num) =>
         if (num > 90) {
-          IO.green(input)
+          IO.text.brightGreen(input)
         } else if (num > 75) {
-          IO.yellow(input)
+          IO.text.brightYellow(input)
         } else {
-          IO.red(input)
+          IO.text.brightRed(input)
         }
 
       Nothing =>

@@ -25,17 +25,17 @@ IS_COLOR_ENABLED = do {
 
 PREFIX_RUNS :: String
 PREFIX_RUNS = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGYellow], " RUNS ")
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightYellow], " RUNS ")
   : "RUNS "
 
 PREFIX_PASS :: String
 PREFIX_PASS = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGGreen], " PASS ")
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightGreen], " PASS ")
   : "PASS "
 
 PREFIX_FAIL :: String
 PREFIX_FAIL = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGRed], " FAIL ")
+  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightRed], " FAIL ")
   : "FAIL "
 
 CHAR_CHECK :: String
@@ -154,15 +154,15 @@ export assertEquals = (actual, expected) => actual == expected
 test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   (run) => run(description),
-  map((_) => IO.green(`${CHAR_CHECK} ${description}\n`)),
+  map((_) => IO.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
   Wish.mapRej(
     where {
       AssertionError(expected, actual) => 
         IO.red(`${CHAR_CROSS} ${description}`)
         ++ "\n  expected:\n    "
-        ++ IO.green(inspect(expected))
+        ++ IO.text.brightGreen(inspect(expected))
         ++ "\n  actual:\n    "
-        ++ IO.red(inspect(actual))
+        ++ IO.text.brightRed(inspect(actual))
         ++ "\n"
 
       ErrorWithMessage(message) =>
@@ -242,8 +242,8 @@ printSuiteResults = (results) => {
             coloredCounts =
               if (IS_COLOR_ENABLED) {
                 failed > 0
-                ? IO.red(counts)
-                : IO.green(counts)
+                  ? IO.text.brightRed(counts)
+                  : IO.text.brightGreen(counts)
               } else {
                 counts
               }
