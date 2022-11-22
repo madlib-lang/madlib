@@ -2,14 +2,19 @@
 #include <random>
 #include <ctime>
 
-static const int SEED = time(0);
 
-
-double madlib__math__random__cpp() {
+std::default_random_engine __makeGenerator__() {
+  int SEED = time(0);
   std::default_random_engine generator;
   generator.seed(SEED);
+  return generator;
+}
+
+static std::default_random_engine __generator__ = __makeGenerator__();
+
+double madlib__math__random__cpp() {
   std::uniform_real_distribution<double> unif(0, 1);
-  return  unif(generator);
+  return  unif(__generator__);
 }
 
 #ifdef __cplusplus

@@ -92,26 +92,14 @@ escapeString :: String -> String
 escapeString = (s) => {
   go :: List Char -> List Char
   go = (chars) => where(chars) {
-    ['\\', '"', ...cs] =>
-      ['\\', '"', ...go(cs)]
-
     ['"', ...cs] =>
       ['\\', '"', ...go(cs)]
-
-    ['\\', 'n', ...cs] =>
-      ['\\', '\\', 'n', ...go(cs)]
 
     ['\n', ...cs] =>
       ['\\', 'n', ...go(cs)]
 
-    ['\\', 't', ...cs] =>
-      ['\\', '\\', 't', ...go(cs)]
-
     ['\t', ...cs] =>
       ['\\', 't', ...go(cs)]
-
-    ['\\', 'r', ...cs] =>
-      ['\\', '\\', 'r', ...go(cs)]
 
     ['\r', ...cs] =>
       ['\\', 'r', ...go(cs)]

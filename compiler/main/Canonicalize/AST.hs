@@ -284,7 +284,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   let env'' = env'
             { envCurrentPath = astPath
             , envFromDictionaryListName = findDictionaryFromListName dictionaryModulePath (Src.aimports sourceAst)
-            , envIsMainModule = astPath == optEntrypoint options
+            , envIsMainModule = astPath == optEntrypoint options && optMustHaveMain options
             }
 
   foldM_ (verifyExport env'') [] (Src.aexps sourceAst)
