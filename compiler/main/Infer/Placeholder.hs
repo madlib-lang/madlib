@@ -78,55 +78,48 @@ insertVarPlaceholders options env exp@(Slv.Typed t a e) (p : ps) =
 insertClassPlaceholders :: Options -> Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 insertClassPlaceholders _ _   exp []       = return exp
 insertClassPlaceholders options env exp (p : ps) = do
-  if optInsertInstancePlaholders options then do
-    insert <- shouldInsert env p
-    if not insert then
-      insertClassPlaceholders options env exp ps
-    else case exp of
-      Slv.Typed a t (Slv.Assignment n e) ->
-        let exp' = Slv.Typed a t
-              $ Slv.Assignment
-                  n
-                  (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
-        in  insertClassPlaceholders options env exp' ps
+  insert <- shouldInsert env p
+  if not insert then
+    insertClassPlaceholders options env exp ps
+  else case exp of
+    Slv.Typed a t (Slv.Assignment n e) ->
+      let exp' = Slv.Typed a t
+            $ Slv.Assignment
+                n
+                (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
+      in  insertClassPlaceholders options env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n e)) typing sc) ->
-        let exp' = Slv.Typed a t (Slv.TypedExp 
-                      (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)))
-                      typing
-                      sc
-                    )
-        in  insertClassPlaceholders options env exp' ps
+    Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment n e)) typing sc) ->
+      let exp' = Slv.Typed a t (Slv.TypedExp 
+                    (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)))
+                    typing
+                    sc
+                  )
+      in  insertClassPlaceholders options env exp' ps
 
-      Slv.Typed a t (Slv.Export (Slv.Typed a' t' (Slv.Assignment n e))) ->
-        let exp' = Slv.Typed a t $ Slv.Export
-              (Slv.Typed
-                a'
-                t'
-                (Slv.Assignment
-                  n
-                  (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
-                )
+    Slv.Typed a t (Slv.Export (Slv.Typed a' t' (Slv.Assignment n e))) ->
+      let exp' = Slv.Typed a t $ Slv.Export
+            (Slv.Typed
+              a'
+              t'
+              (Slv.Assignment
+                n
+                (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
               )
-        in  insertClassPlaceholders options env exp' ps
+            )
+      in  insertClassPlaceholders options env exp' ps
 
-      Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n e)))) typing sc) ->
-        let exp' = Slv.Typed a t (Slv.TypedExp
-                      (Slv.Typed a t (Slv.Export
-                        (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e))
-                      )))
-                      typing
-                      sc
-                    )
-        in  insertClassPlaceholders options env exp' ps
+    Slv.Typed a t (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment n e)))) typing sc) ->
+      let exp' = Slv.Typed a t (Slv.TypedExp
+                    (Slv.Typed a t (Slv.Export
+                      (Slv.Typed a t (Slv.Assignment n (Slv.Typed a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e))
+                    )))
+                    typing
+                    sc
+                  )
+      in  insertClassPlaceholders options env exp' ps
 
-      _ -> return exp
-  else
-    return exp
-
-any' :: [a] -> (a -> Bool) -> Bool
-any' = flip any
-
+    _ -> return exp
 
 
 removePlaceholders :: [Int] -> Int -> Bool -> Slv.Exp -> Slv.Exp
@@ -346,9 +339,9 @@ getPlaceholderExp ph = case ph of
 
 updateClassPlaceholder :: Options -> Env -> Maybe String ->  Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
 updateClassPlaceholder options env _ push s ph =
-  if optInsertInstancePlaholders options then
-    case ph of
-      Slv.Typed qt a (Slv.Placeholder (Slv.ClassRef cls _ call var, instanceTypes) exp) -> do
+  case ph of
+    Slv.Typed qt a (Slv.Placeholder ref@(Slv.ClassRef cls _ call var, instanceTypes) exp) -> do
+      if optInsertInstancePlaholders options then do
         let instanceTypes' = apply s instanceTypes
         types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
         var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
@@ -361,10 +354,12 @@ updateClassPlaceholder options env _ push s ph =
             return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
         else
           return $ Slv.Typed (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-      _ ->
-        undefined
-  else
-    return ph
+      else do
+        exp' <- updatePlaceholders options env push s exp
+        return $ Slv.Typed (apply s qt) a (Slv.Placeholder ref exp')
+
+    _ ->
+      undefined
 
 
 

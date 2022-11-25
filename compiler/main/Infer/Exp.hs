@@ -947,9 +947,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   let sFinal = sDefaults `compose` s''
   let sc     = apply sFinal $ quantify gs (rs'' :=> t')
 
-  unless isLet $
-    verifyMutations env [] Nothing False [updateQualType e (apply sFinal $ rs'' :=> t')]
-
   case Can.getExpName exp of
     Just n  ->
       return (sFinal, (ds', rs''), extendVars env (n, sc), updateQualType e (apply sFinal $ rs'' :=> t'))
@@ -1021,8 +1018,6 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
           Nothing ->
             env'
 
-    verifyMutations env [] Nothing False [Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc)]
-
     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ = undefined
@@ -1057,6 +1052,8 @@ inferExp options env e = do
 
   e''  <- insertClassPlaceholders options env' e' placeholderPreds
   e''' <- updatePlaceholders options env' False s e''
+
+  verifyMutations env [] Nothing False [e''']
 
   return (Just e''', env')
 
