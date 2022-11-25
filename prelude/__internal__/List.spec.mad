@@ -1,195 +1,238 @@
-import { test, assertEquals } from "Test"
+// We need the instance Show Boolean
+import {} from "Boolean"
+import { Just, Nothing } from "Maybe"
+import {} from "String"
+import { assertEquals, test } from "Test"
 
 import {
   append,
   concat,
+  contains,
   drop,
   dropLast,
   dropWhile,
+  endsWith,
   filter,
   find,
   first,
   init,
   intercalate,
   intersperse,
+  intersperseWithIndex,
   last,
   length,
+  mapMaybe,
   mapWithIndex,
   nth,
   range,
+  reduce,
   reject,
   reverse,
-  reduce,
   singleton,
   sort,
   sortDesc,
+  startsWith,
+  tail,
+  tails,
   take,
   takeLast,
   takeWhile,
-  uniqueBy
+  uniqueBy,
 } from "./List"
-import {} from "Boolean" // We need the instance Show Boolean
-import { Just, Nothing } from "Maybe"
-import {} from "String"
 
 
 
-test("map should apply a function to all items of a list", (_) =>
-  assertEquals(map((x) => x * 2, [1, 2, 3]), [2, 4, 6])
+test(
+  "map should apply a function to all items of a list",
+  () => assertEquals(map((x) => x * 2, [1, 2, 3]), [2, 4, 6]),
 )
 
-test("reduce - sum", (_) => {
-  add = (a, b) => a + b
-  return assertEquals(reduce(add, 0, [1, 2, 3]), 6)
-})
-
-test("reduce - all", (_) =>
-  assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false)
+test(
+  "reduce - sum",
+  () => {
+    add = (a, b) => a + b
+    return assertEquals(reduce(add, 0, [1, 2, 3]), 6)
+  },
 )
 
-test("length - 3", (_) => assertEquals(length([1, 2, 3]), 3))
+test("reduce - all", () => assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false))
 
-test("length - empty list", (_) => assertEquals(length([]), 0))
+test("length - 3", () => assertEquals(length([1, 2, 3]), 3))
 
-test("assoc should concatenate two lists together", (_) =>
-  assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+test("length - empty list", () => assertEquals(length([]), 0))
+
+test(
+  "assoc should concatenate two lists together",
+  () => assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"]),
 )
 
-test("mconcat should join two lists together", (_) =>
-  assertEquals(mconcat(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+test(
+  "mconcat should join two lists together",
+  () => assertEquals(mconcat(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"]),
 )
 
-test("mempty should return an empty list", (_) => assertEquals(mempty, []))
+test("mempty should return an empty list", () => assertEquals(mempty, []))
 
-test("sort Number", (_) => assertEquals(sort([3, 1, 2]), [1, 2, 3]))
+test("sort Number", () => assertEquals(sort([3, 1, 2]), [1, 2, 3]))
 
-test("sortDesc Number", (_) => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
+test("sortDesc Number", () => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
 
 
-test("pure should wrap a value in a list", (_) =>
-  assertEquals(pure(true), [true])
-)
+test("pure should wrap a value in a list", () => assertEquals(pure(true), [true]))
 
 test(
   "ap should apply a list of functions to a list of items and return a list of all results",
-  (_) => assertEquals(ap([(x) => x + 1, (x) => x * 2], [1, 2, 3]), [2, 3, 4, 2, 4, 6])
+  () => assertEquals(ap([(x) => x + 1, (x) => x * 2], [1, 2, 3]), [2, 3, 4, 2, 4, 6]),
 )
 
-test("of should wrap a value in a List", (_) =>
-  assertEquals(of(#[1, true]), [#[1, true]])
-)
+test("of should wrap a value in a List", () => assertEquals(of(#[1, true]), [#[1, true]]))
 
 test(
   "chain should apply transformation functions that return a list to a list of function and returned a flattened List",
-  (_) => assertEquals(chain((x) => [x + 1, x * 2], [1, 2, 3]), [2, 2, 3, 4, 4, 6])
+  () => assertEquals(chain((x) => [x + 1, x * 2], [1, 2, 3]), [2, 2, 3, 4, 4, 6]),
 )
 
-test("singleton should wrap a value in a list", (_) =>
-  assertEquals(singleton("one value"), ["one value"])
+test(
+  "singleton should wrap a value in a list",
+  () => assertEquals(singleton("one value"), ["one value"]),
 )
 
-test("intersperse should add an given value between all elements of a list", (_) =>
-  assertEquals(intersperse("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
+test(
+  "intersperse should add an given value between all elements of a list",
+  () => assertEquals(intersperse("and", ["cats", "dogs"]), ["cats", "and", "dogs"]),
 )
 
-test("intercalate", (_) =>
-  assertEquals(intercalate(["and"], ["cats", "dogs", "rats"]), ["cats", "and", "dogs", "and", "rats"])
+test(
+  "intersperseWithIndex",
+  () => assertEquals(intersperseWithIndex(inspect, ["cats", "dogs"]), ["cats", "0", "dogs"]),
 )
 
-test("mapWithIndex", (_) =>
-  assertEquals(mapWithIndex((x, i) => x ++ inspect(i), ["a", "b", "c"]), ["a0", "b1", "c2"])
+test(
+  "intercalate",
+  () => assertEquals(
+    intercalate(["and"], [["cats"], ["dogs"], ["rats"]]),
+    ["cats", "and", "dogs", "and", "rats"],
+  ),
 )
 
-test("concat", (_) => assertEquals(concat([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5, 6]))
-
-test("append", (_) => assertEquals(append(2, [1]), [1, 2]))
-
-test("last with empty list", (_) => assertEquals(last([]), Nothing))
-test("last with existing item", (_) => assertEquals(last([1, 2, 3]), Just(3)))
-
-test("first with existing item", (_) => assertEquals(first([1, 2, 3]), Just(1)))
-test("first with empty list", (_) => assertEquals(first([]), Nothing))
-
-test("init with items", (_) => assertEquals(init([1, 2, 3]), [1, 2]))
-test("init without items", (_) => assertEquals(init([]), []))
-
-test("nth with existing element", (_) => assertEquals(nth(1, [1, 2, 3]), Just(2)))
-test("nth out of bound", (_) => assertEquals(nth(3, [1, 2, 3]), Nothing))
-
-test("filter - even numbers", (_) =>
-  assertEquals(filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [2, 4, 6])
+test(
+  "mapWithIndex",
+  () => assertEquals(mapWithIndex((x, i) => x ++ inspect(i), ["a", "b", "c"]), ["a0", "b1", "c2"]),
 )
 
-test("find - first even number", (_) =>
-  assertEquals(find((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), Just(2))
+test(
+  "mapMaybe",
+  () => assertEquals(mapMaybe((i) => i % 2 == 0 ? Just(i) : Nothing, [1, 2, 3, 4]), [2, 4]),
 )
 
-test("find - Nothing", (_) =>
-  assertEquals(find((a) => a == 0, [1, 2, 3, 4, 5, 6]), Nothing)
+test("concat", () => assertEquals(concat([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5, 6]))
+
+test("append", () => assertEquals(append(2, [1]), [1, 2]))
+
+test("last with empty list", () => assertEquals(last([]), Nothing))
+test("last with existing item", () => assertEquals(last([1, 2, 3]), Just(3)))
+
+test("first with existing item", () => assertEquals(first([1, 2, 3]), Just(1)))
+test("first with empty list", () => assertEquals(first([]), Nothing))
+
+test("init with items", () => assertEquals(init([1, 2, 3]), [1, 2]))
+test("init without items", () => assertEquals(init([]), []))
+
+test("nth with existing element", () => assertEquals(nth(1, [1, 2, 3]), Just(2)))
+test("nth out of bound", () => assertEquals(nth(3, [1, 2, 3]), Nothing))
+
+test(
+  "filter - even numbers",
+  () => assertEquals(filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [2, 4, 6]),
 )
 
-test("find - John", (_) =>
-  assertEquals(
+test(
+  "find - first even number",
+  () => assertEquals(find((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), Just(2)),
+)
+
+test("find - Nothing", () => assertEquals(find((a) => a == 0, [1, 2, 3, 4, 5, 6]), Nothing))
+
+test(
+  "find - John",
+  () => assertEquals(
     find(
       (a) => a.id == 1,
       [
         { id: 1, name: "John" },
         { id: 2, name: "Paul" },
         { id: 3, name: "George" },
-        { id: 4, name: "Ringo" }
-      ]
+        { id: 4, name: "Ringo" },
+      ],
     ),
-    Just({ id: 1, name: "John" })
-  )
+    Just({ id: 1, name: "John" }),
+  ),
 )
 
-test("reject - odd numbers", (_) =>
-  assertEquals(reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [1, 3, 5])
+test(
+  "reject - odd numbers",
+  () => assertEquals(reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [1, 3, 5]),
 )
 
-test("uniqueBy", (_) =>
-  assertEquals(
+test(
+  "uniqueBy",
+  () => assertEquals(
     uniqueBy(
       (a, b) => a.id == b.id,
       [
         { id: 1, name: "John" },
         { id: 2, name: "Paul" },
         { id: 1, name: "George" },
-        { id: 4, name: "Ringo" }
-      ]
+        { id: 4, name: "Ringo" },
+      ],
     ),
-    [
-      { id: 1, name: "John" },
-      { id: 2, name: "Paul" },
-      { id: 4, name: "Ringo" }
-    ]
-  )
+    [{ id: 1, name: "John" }, { id: 2, name: "Paul" }, { id: 4, name: "Ringo" }],
+  ),
 )
 
 
-test("sort String", (_) =>
-  assertEquals(sort(["John", "Paul", "James"]), ["James", "John", "Paul"])
+test("sort String", () => assertEquals(sort(["John", "Paul", "James"]), ["James", "John", "Paul"]))
+
+test(
+  "sortDesc String",
+  () => assertEquals(sortDesc(["John", "Paul", "James"]), ["Paul", "John", "James"]),
 )
 
-test("sortDesc String", (_) =>
-  assertEquals(sortDesc(["John", "Paul", "James"]), ["Paul", "John", "James"])
-)
+test("drop", () => assertEquals(drop(2, [1, 2, 3, 4, 5, 6]), [3, 4, 5, 6]))
+test("drop - empty", () => assertEquals(drop(2, []), []))
 
-test("drop", (_) => assertEquals(drop(2, [1, 2, 3, 4, 5, 6]), [3, 4, 5, 6]))
-test("drop - empty", (_) => assertEquals(drop(2, []), []))
+test("dropLast", () => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
-test("dropLast", (_) => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
+test("take", () => assertEquals(take(2, [1, 2, 3, 4, 5, 6]), [1, 2]))
 
-test("take", (_) => assertEquals(take(2, [1, 2, 3, 4, 5, 6]), [1, 2]))
+test("takeLast", () => assertEquals(takeLast(2, [1, 2, 3, 4, 5, 6]), [5, 6]))
 
-test("takeLast", (_) => assertEquals(takeLast(2, [1, 2, 3, 4, 5, 6]), [5, 6]))
+test("dropWhile", () => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
 
-test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
+test("takeWhile", () => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
-test("takeWhile", (_) => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
+test("reverse", () => assertEquals(reverse([1, 2, 3]), [3, 2, 1]))
 
-test("reverse", (_) => assertEquals(reverse([1, 2, 3]), [3, 2, 1]))
+test("range", () => assertEquals(range(3, 7), [3, 4, 5, 6]))
 
-test("range", (_) => assertEquals(range(3, 7), [3, 4, 5, 6]))
+test("range - same start and end", () => assertEquals(range(3, 3), []))
 
-test("range - same start and end", (_) => assertEquals(range(3, 3), []))
+test("tail", () => assertEquals(tail([1, 2, 3]), [2, 3]))
+test("tail - empty", () => assertEquals(tail([]), []))
+
+test("startsWith - true", () => assertEquals(startsWith([1, 2, 3], [1, 2, 3, 4, 5, 6]), true))
+test("startsWith - false", () => assertEquals(startsWith([2, 3, 4], [1, 2, 3, 4, 5, 6]), false))
+test("startsWith - nowhere", () => assertEquals(startsWith([2, 4, 5], [1, 2, 3, 4, 5, 6]), false))
+test("startsWith - same start", () => assertEquals(startsWith([1, 4], [1, 2, 3, 4, 5, 6]), false))
+test("startsWith - empty", () => assertEquals(startsWith([1, 4], []), false))
+
+test("contains - true", () => assertEquals(contains([2, 3, 4], [1, 2, 3, 4, 5, 6]), true))
+test("contains - false", () => assertEquals(contains([2, 8, 5], [1, 2, 3, 4, 5, 6]), false))
+
+test("endsWith - true", () => assertEquals(endsWith([4, 5, 6], [1, 2, 3, 4, 5, 6]), true))
+test("endsWith - false", () => assertEquals(endsWith([4, 5], [1, 2, 3, 4, 5, 6]), false))
+test("endsWith - nowhere", () => assertEquals(endsWith([8, -1], [1, 2, 3, 4, 5, 6]), false))
+test("endsWith - same end", () => assertEquals(endsWith([4, 6], [1, 2, 3, 4, 5, 6]), false))
+test("endsWith - empty", () => assertEquals(endsWith([4, 6], []), false))
+
+test("tails", () => assertEquals(tails([1, 2, 3]), [[1, 2, 3], [2, 3], [3], []]))

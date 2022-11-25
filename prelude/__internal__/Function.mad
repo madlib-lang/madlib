@@ -122,12 +122,12 @@ export flip = (f) => ((b, a) => f(a, b))
  * any((x) => x < 10, [1, 2, 3]) // true
  */
 any :: (a -> Boolean) -> List a -> Boolean
-export any = (predicate, list) => where(list) {
-  [,] =>
+export any = (pred, list) => where(list) {
+  [] =>
     false
 
-  [x, ...xs,] =>
-    predicate(x) ? true : any(predicate, xs)
+  [x, ...xs] =>
+    pred(x) || any(pred, xs)
 }
 
 
@@ -142,11 +142,11 @@ export any = (predicate, list) => where(list) {
  */
 all :: (a -> Boolean) -> List a -> Boolean
 export all = (predicate, list) => where(list) {
-  [,] =>
+  [] =>
     true
 
   [x, ...xs,] =>
-    !predicate(x) ? false : all(predicate, xs)
+    predicate(x) && all(predicate, xs)
 }
 
 /**

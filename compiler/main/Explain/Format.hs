@@ -2516,14 +2516,14 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
             foldl'
                 (\(allVars2, compiledFields2') (fieldName, fieldType2) ->
                     let (vars2', hkVars2', pretty2) = typeToDoc allVars2 fieldType2
-                    in  ((vars2', hkVars2'), compiledFields2' ++ [Pretty.annotate (Terminal.color Terminal.Green) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty2])
+                    in  ((vars2', hkVars2'), compiledFields2' ++ [pushAnnotation (Terminal.color Terminal.Green) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty2])
                 )
                 ((finalVars2, finalHkVars2), [])
               $ M.toList missingFields
         (finalVars1', formattedBase1)   = case base1 of
           Just t1  ->
             let (vars, hkVars, pretty) = typeToDoc (finalVars1, finalHkVars1) t1
-            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
+            in ((vars, hkVars), pushAnnotation (Terminal.color Terminal.Red) $ Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
 
           Nothing ->
             ((finalVars1, finalHkVars1), Pretty.emptyDoc)
@@ -2531,7 +2531,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
         (finalVars2'', formattedBase2)   = case base2 of
           Just t2  ->
             let (vars, hkVars, pretty) = typeToDoc (finalVars2', finalHkVars2') t2
-            in ((vars, hkVars), Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
+            in ((vars, hkVars), pushAnnotation (Terminal.color Terminal.Green) $ Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
 
           Nothing ->
             ((finalVars2', finalHkVars2'), Pretty.emptyDoc)

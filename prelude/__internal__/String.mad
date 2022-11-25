@@ -370,9 +370,75 @@ export appendChar = extern "madlib__string__appendChar"
 #endif
 
 
+/**
+ * Reverses the given string.
+ *
+ * @since 0.5.0
+ * @example
+ * reverse("abc") // "cba"
+ */
 reverse :: String -> String
 export reverse = (s) => pipe(
   toList,
   List.reverse,
   fromList
+)(s)
+
+
+/**
+ * Returns true if the given character is in the given string.
+ *
+ * @since 0.18.6
+ * @example
+ * includes('b', "abüc") // true
+ */
+includes :: Char -> String -> Boolean
+export includes = (c, s) => pipe(
+  toList,
+  List.includes(c)
+)(s)
+
+
+/**
+ * Returns true if the second string starts with the second one.
+ *
+ * @since 0.18.6
+ * @example
+ * startsWith("ab", "abüc") // true
+ * startsWith("bü", "abüc") // false
+ */
+startsWith :: String -> String -> Boolean
+export startsWith = (subset, s) => pipe(
+  toList,
+  List.startsWith(toList(subset))
+)(s)
+
+
+/**
+ * Returns true if the first string is contained in the second one.
+ *
+ * @since 0.18.6
+ * @example
+ * contains("b", "abüc")  // true
+ * contains("aü", "abüc") // false
+ */
+contains :: String -> String -> Boolean
+export contains = (subset, s) => pipe(
+  toList,
+  List.contains(toList(subset))
+)(s)
+
+
+/**
+ * Returns true if the second string ends with the first one.
+ *
+ * @since 0.18.6
+ * @example
+ * endsWith("c", "abüc")  // true
+ * endsWith("bü", "abüc") // false
+ */
+endsWith :: String -> String -> Boolean
+export endsWith = (subset, s) => pipe(
+  toList,
+  List.endsWith(toList(subset))
 )(s)

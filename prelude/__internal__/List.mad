@@ -1,12 +1,14 @@
-import {} from "Monoid"
-
 import type { ComparisonResult } from "Compare"
 import type { Maybe } from "Maybe"
-import {} from "Show"
-import {} from "Monad"
-import Fun from "Function"
+
 import { MORE } from "Compare"
+import Function from "Function"
 import { Just, Nothing } from "Maybe"
+import {} from "Monad"
+import {} from "Monoid"
+import {} from "Show"
+
+
 
 /**
  * List utility functions.
@@ -32,6 +34,14 @@ instance Functor List {
 }
 
 
+/**
+ * Given a mapping function that returns a Maybe, returns a list of mapped
+ * elements, where Nothing values are discarded.
+ *
+ * @since 0.5.0
+ * @example
+ * mapMaybe((i) => i % 2 == 0 ? Just(i) : Nothing, [1, 2, 3, 4]) // [2, 4]
+ */
 mapMaybe :: (a -> Maybe b) -> List a -> List b
 export mapMaybe = (f, list) => where(list) {
   [a, ...xs] =>
@@ -48,19 +58,28 @@ export mapMaybe = (f, list) => where(list) {
 }
 
 
+/**
+ * Creates a list containing a value n times.
+ *
+ * @since 0.5.0
+ * @example
+ * repeat('a', 3) // ['a', 'b', 'c']
+ */
 repeat :: a -> Integer -> List a
-export repeat = (a, count) =>
-  count <= 0
-    ? []
-    : [a, ...repeat(a, count - 1)]
+export repeat = (a, count) => count <= 0 ? [] : [a, ...repeat(a, count - 1)]
 
 
+/**
+ * Creates a list containing n times the value returned by the mapping function,
+ * which takes the index of the current element as parameter
+ *
+ * @since 0.5.0
+ * @example
+ * repeatWith((i) => inspect(i), 3) // ["0", "1", "2"]
+ */
 repeatWith :: (Integer -> a) -> Integer -> List a
 export repeatWith = (f, count) => {
-  helper = (index) =>
-    index >= count
-      ? []
-      : [f(index), ...helper(index + 1)]
+  helper = (index) => index >= count ? [] : [f(index), ...helper(index + 1)]
 
   return helper(0)
 }
@@ -76,58 +95,54 @@ export repeatWith = (f, count) => {
  * range(3, 5) // [3, 4]
  */
 range :: Integer -> Integer -> List Integer
-export range = (start, end) =>
-  repeatWith((i) => i + start, end - start)
+export range = (start, end) => repeatWith((i) => i + start, end - start)
 
 
 instance Applicative List {
-  pure = (x) => [x]
-
   ap = (mf, ma) => pipe(
     map((f) => map(f, ma)),
-    flatten
+    flatten,
   )(mf)
+
+  pure = (x) => [x]
 }
 
 instance Monad List {
-  of = pure
-
   chain = (f, xs) => pipe(
     map(f),
-    flatten
+    flatten,
   )(xs)
+
+  of = pure
 }
 
 instance Semigroup (List a) {
   assoc = (list1, list2) => where(list1) {
     [item, ...more] =>
       [item, ...assoc(more, list2)]
-  
+
     [] =>
       list2
   }
 }
 
 instance Monoid (List a) {
-  mempty = []
   mconcat = assoc
+
+  mempty = []
 }
 
-// instance Show a => Show (List a) {
-//   show = pipe(
-//     map(show),
-//     intercalate(", "),
-//     reduceL(mconcat, ""),
-//     (x) => `[${x}]`
-//   )
-// }
-
-
+/**
+ * Maps a list with a function returning an Applicative and returns an
+ * Applicative containing the List of all the transformed values.
+ *
+ * @since 0.11.0
+ */
 mapM :: Applicative m => (a -> m b) -> List a -> m (List b)
 export mapM = (f, list) => {
   helper = (x, result) => pipe(
     map($, f(x)),
-    ap($, result)
+    ap($, result),
   )((x_, result_) => [x_, ...result_])
 
   return reduceRight(helper, pure([]), list)
@@ -146,17 +161,26 @@ singleton :: a -> List a
 export singleton = pure
 
 
-intercalate :: List a -> List a -> List a
+/**
+ * Inserts the given list between all the lists contained in the second
+ * parameter.
+ *
+ * @since 0.11.0
+ * @example
+ * intercalate(["and"], [["cats"], ["dogs"], ["rats"]])
+ * // ["cats", "and", "dogs", "and", "rats"]
+ */
+intercalate :: List a -> List (List a) -> List a
 export intercalate = (sep, list) => {
   helper = (acc, l) => where(l) {
     [a] =>
-      append(a, acc)
+      concat(acc, a)
 
     [] =>
       acc
 
-    [a, ...xs] =>
-      helper(concat(acc, [a, ...sep]), xs)
+    [x, ...xs] =>
+      helper(concat(acc, concat(x, sep)), xs)
   }
 
   return helper([], list)
@@ -175,7 +199,7 @@ export intersperse = (a, xs) => where(xs) {
   [] =>
     []
 
-  [one,] =>
+  [one] =>
     [one]
 
   [one, two] =>
@@ -186,16 +210,33 @@ export intersperse = (a, xs) => where(xs) {
 }
 
 
-_intercalateWithIndex :: Integer -> (Integer -> a) -> List a -> List a
-_intercalateWithIndex = (i, f, xs) => where(xs) {
-  [] => []
-  [one] => [one]
-  [one, two] => [one, f(i), two]
-  [one, ...rest] => [one, f(i), ..._intercalateWithIndex(i + 1, f, rest)]
-}
+/**
+ * Inserts the result of the given function applied to the current element's index
+ * between each element of the given list.
+ *
+ * @since 0.11.0
+ * @example
+ * intersperseWithIndex(inspect, ["cats", "dogs"]) // ["cats", "0", "dogs"]
+ */
+intersperseWithIndex :: (Integer -> a) -> List a -> List a
+export intersperseWithIndex = (f, list) => {
+  go :: Integer -> List a -> List a
+  go = (i, xs) => where(xs) {
+    [] =>
+      []
 
-intercalateWithIndex :: (Integer -> a) -> List a -> List a
-export intercalateWithIndex = _intercalateWithIndex(0)
+    [one] =>
+      [one]
+
+    [one, two] =>
+      [one, f(i), two]
+
+    [one, ...rest] =>
+      [one, f(i), ...go(i + 1, rest)]
+  }
+
+  return go(0, list)
+}
 
 
 
@@ -308,6 +349,13 @@ export init = (list) => where(list) {
     [a, ...init(xs)]
 }
 
+/**
+ * Removes the first element of a list.
+ * @since 0.0.5
+ * @example
+ * tail([1, 2, 3]) // [2, 3]
+ * tail([])        // []
+ */
 tail :: List a -> List a
 export tail = (list) => where(list) {
   [] =>
@@ -332,9 +380,7 @@ export nth = (i, list) => where(list) {
     Nothing
 
   [a, ...xs] =>
-    i == 0
-      ? Just(a)
-      : nth(i - 1, xs)
+    i == 0 ? Just(a) : nth(i - 1, xs)
 }
 
 
@@ -350,7 +396,7 @@ export nth = (i, list) => where(list) {
 reduceRight :: (a -> b -> b) -> b -> List a -> b
 export reduceRight = (f, acc, list) => pipe(
   reverse,
-  reduceLeft((a, b) => f(b, a), acc)
+  reduceLeft((a, b) => f(b, a), acc),
 )(list)
 
 
@@ -390,6 +436,12 @@ reduce :: (a -> b -> a) -> a -> List b -> a
 export reduce = reduceLeft
 
 
+/**
+ * Reduces a list of values with a reducer function that returns a
+ * Monad, and returns a Monad of that value.
+ *
+ * @since 0.11.0
+ */
 reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
 export reduceM = (f, acc, list) => where(list) {
   [] =>
@@ -398,20 +450,6 @@ export reduceM = (f, acc, list) => where(list) {
   [a, ...xs] =>
     chain((v) => reduceM(f, v, xs), f(acc, a))
 }
-
-
-// reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
-// export reduceM = (fn, initial, xs) => pipe(
-//   loop(
-//     $,
-//     pipe(snd, Fun.complement(isEmpty)),
-//     where {
-//       #[initialM, [h, ...rest]] => #[chain(fn($, h), initialM), rest]
-//     }
-//   ),
-//   fst
-// )(#[of(initial), xs])
-
 
 
 /**
@@ -427,9 +465,7 @@ export filter = (predicate, list) => where(list) {
     []
 
   [a, ...xs] =>
-    predicate(a)
-      ? [a, ...filter(predicate, xs)]
-      : filter(predicate, xs)
+    predicate(a) ? [a, ...filter(predicate, xs)] : filter(predicate, xs)
 }
 
 
@@ -441,8 +477,8 @@ export filter = (predicate, list) => where(list) {
  * @example
  * reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [1, 3, 5]
  */
- reject :: (a -> Boolean) -> List a -> List a
- export reject = (predicate, list) => filter(Fun.complement(predicate), list)
+reject :: (a -> Boolean) -> List a -> List a
+export reject = (predicate, list) => filter(Function.complement(predicate), list)
 
 
 /**
@@ -460,9 +496,7 @@ export find = (predicate, list) => where(list) {
     Nothing
 
   [a, ...xs] =>
-    predicate(a)
-      ? Just(a)
-      : find(predicate, xs)
+    predicate(a) ? Just(a) : find(predicate, xs)
 }
 
 
@@ -498,24 +532,14 @@ export slice = (start, end, list) => {
       []
 
     [a, ...xs] =>
-      if (start_ == 0 && end_ > 0) {
-        [a, ...helper(0, end_ - 1, xs)]
-      } else if (start_ > 0) {
-        helper(start_ - 1, end_ - 1, xs)
-      } else {
-        []
+      if (start_ == 0 && end_ > 0) { [a, ...helper(0, end_ - 1, xs)] } else {
+        if (start_ > 0) { helper(start_ - 1, end_ - 1, xs) } else { [] }
       }
   }
 
-  realStart = start < 0
-    ? start + length(list)
-    : start
+  realStart = start < 0 ? start + length(list) : start
 
-  realEnd = end == 0
-    ? length(list)
-    : end < 0
-      ? end + length(list)
-      : end
+  realEnd = end == 0 ? length(list) : end < 0 ? end + length(list) : end
 
   return helper(realStart, realEnd, list)
 }
@@ -555,7 +579,7 @@ export uniqueBy = (f) => reduce(
     Nothing =>
       append(elem, result)
   },
-  []
+  [],
 )
 
 descending :: (a -> a -> ComparisonResult) -> a -> List a -> List a -> List (List a)
@@ -594,15 +618,17 @@ sequences = (compareFn, list) => where(list) {
 }
 
 
-
+/**
+ * Sorts a list based on a comparison function.
+ *
+ * @since 0.11.0
+ */
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
 export sortBy = (compareFn, list) => {
   merge :: List a -> List a -> List a
   merge = (listA, listB) => where(#[listA, listB]) {
     #[[a, ...as], [b, ...bs]] =>
-      compareFn(a, b) == MORE
-        ? [b, ...merge(listA, bs)]
-        : [a, ...merge(as, listB)]
+      compareFn(a, b) == MORE ? [b, ...merge(listA, bs)] : [a, ...merge(as, listB)]
 
     #[[], bs] =>
       bs
@@ -631,17 +657,40 @@ export sortBy = (compareFn, list) => {
 
   return pipe(
     sequences(compareFn),
-    mergeAll
+    mergeAll,
   )(list)
 }
 
 
+/**
+ * Sorts a list of Comparable values in ascendant order.
+ *
+ * @since 0.11.0
+ * @example
+ * sort([3, 1, 2]) // [1, 2, 3]
+ */
 sort :: Comparable a => List a -> List a
 export sort = sortBy(compare)
 
+
+/**
+ * Sorts a list of Comparable values in ascendant order.
+ *
+ * @since 0.11.0
+ * @example
+ * sortAsc([3, 1, 2]) // [1, 2, 3]
+ */
 sortAsc :: Comparable a => List a -> List a
 export sortAsc = sort
 
+
+/**
+ * Sorts a list of Comparable values in descendant order.
+ *
+ * @since 0.11.0
+ * @example
+ * sortDesc([3, 1, 2]) // [3, 2, 1]
+ */
 sortDesc :: Comparable a => List a -> List a
 export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
@@ -681,8 +730,9 @@ export zip = (as, bs) => where(#[as, bs]) {
     []
 }
 
+
 /**
- * Test a given List to see whether it contains a given static value.
+ * Returns true if the given list contains the given element.
  *
  * @since 0.6.0
  */
@@ -692,50 +742,99 @@ export includes = (x, list) => where(list) {
     false
 
   [a, ...xs] =>
-    a == x
-      ? true
-      : includes(x, xs)
+    a == x ? true : includes(x, xs)
 }
 
 
+/**
+ * Drops n items from the given list.
+ *
+ * @since 0.11.0
+ * @example
+ * drop(2, [1, 2, 3, 4, 5, 6]) // [3, 4, 5, 6]
+ */
 drop :: Integer -> List a -> List a
 export drop = (n, list) => slice(n, 0, list)
 
 
+/**
+ * Drops n last items from the given list.
+ *
+ * @since 0.11.0
+ * @example
+ * dropLast(2, [1, 2, 3, 4, 5, 6]) // [1, 2, 3, 4]
+ */
 dropLast :: Integer -> List a -> List a
 export dropLast = (n, list) => slice(0, -n, list)
 
 
+/**
+ * Takes n items from the given list.
+ *
+ * @since 0.11.0
+ * @example
+ * take(2, [1, 2, 3, 4, 5, 6]) // [1, 2]
+ */
 take :: Integer -> List a -> List a
 export take = (n, list) => slice(0, n, list)
 
 
+/**
+ * Takes n last items from the given list.
+ *
+ * @since 0.11.0
+ * @example
+ * takeLast(2, [1, 2, 3, 4, 5, 6]) // [5, 6]
+ */
 takeLast :: Integer -> List a -> List a
 export takeLast = (n, list) => slice(-n, 0, list)
 
 
+/**
+ * Returns a list without all items from the start of the given list
+ * for which the predicate evaluates to true until it returns false.
+ *
+ * @since 0.11.0
+ * @example
+ * dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6])
+ */
 dropWhile :: (a -> Boolean) -> List a -> List a
 export dropWhile = (predicate, list) => where(list) {
   [] =>
     []
 
   [a, ...xs] =>
-    predicate(a)
-      ? dropWhile(predicate, xs)
-      : [a, ...xs]
+    predicate(a) ? dropWhile(predicate, xs) : [a, ...xs]
 }
 
+
+/**
+ * Returns a list containing all items from the start of the given list
+ * for which the predicate evaluates to true until it returns false and
+ * skips all items after.
+ *
+ * @since 0.11.0
+ * @example
+ * takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]) // [1, 2, 3, 4]
+ */
 takeWhile :: (a -> Boolean) -> List a -> List a
 export takeWhile = (predicate, list) => where(list) {
   [] =>
     []
 
   [a, ...xs] =>
-    predicate(a)
-      ? [a, ...takeWhile(predicate, xs)]
-      : []
+    predicate(a) ? [a, ...takeWhile(predicate, xs)] : []
 }
 
+
+/**
+ * Reverses the given list.
+ *
+ * @since 0.5.0
+ * @example
+ * reverse([1, 2, 3])       // [3, 2, 1]
+ * reverse(reverse(a)) == a // true
+ */
 reverse :: List a -> List a
 export reverse = (list) => {
   helper :: List a -> List a -> List a
@@ -748,4 +847,105 @@ export reverse = (list) => {
   }
 
   return helper([], list)
+}
+
+
+/**
+ * Returns a list of all the tails for the given list
+ *
+ * @since 0.18.6
+ * @example
+ * tails([1, 2, 3]) // [[1, 2, 3], [2, 3], [3], []]
+ */
+tails :: List a -> List (List a)
+export tails = (list) => where(list) {
+  [] =>
+    [[]]
+
+  [x, ...xs] =>
+    [list, ...tails(xs)]
+}
+
+
+/**
+ * Returns true if the second list starts with the first one.
+ *
+ * @since 0.18.6
+ * @example
+ * startsWith([1, 2, 3], [1, 2, 3, 4, 5, 6]) // true
+ * startsWith([2, 3, 4], [1, 2, 3, 4, 5, 6]) // false
+ */
+startsWith :: Eq a => List a -> List a -> Boolean
+export startsWith = (subset, list) => where(#[subset, list]) {
+  #[[], _] =>
+    true
+
+  #[_, []] =>
+    false
+
+  #[[x, ...xs], [y, ...ys]] =>
+    x == y && startsWith(xs, ys)
+}
+
+
+/**
+ * Returns true if the first list is contained in the second one.
+ *
+ * @since 0.18.6
+ * @example
+ * contains([2, 3, 4], [1, 2, 3, 4, 5, 6]) // true
+ * contains([2, 8, 5], [1, 2, 3, 4, 5, 6]) // false
+ */
+contains :: Eq a => List a -> List a -> Boolean
+export contains = (needle, haystack) => Function.any(startsWith(needle), tails(haystack))
+
+
+dropLength :: List a -> List b -> List b
+dropLength = (listA, listB) => where(#[listA, listB]) {
+  #[[], ys] =>
+    ys
+
+  #[_, []] =>
+    []
+
+  #[[_, ...xs], [_, ...ys]] =>
+    dropLength(xs, ys)
+}
+
+
+/**
+ * A version of dropLength that returns Nothing if the second list runs out of
+ * elements before the first.
+ * 
+ * >>> dropLengthMaybe [1..] [1,2,3]
+ * Nothing
+ */
+dropLengthMaybe :: List a -> List b -> Maybe (List b)
+dropLengthMaybe = (listA, listB) => where(#[listA, listB]) {
+  #[[], ys] =>
+    Just(ys)
+
+  #[_, []] =>
+    Nothing
+
+  #[[_, ...xs], [_, ...ys]] =>
+    dropLengthMaybe(xs, ys)
+}
+
+
+/**
+ * Returns true if the second list ends with the first one.
+ *
+ * @since 0.18.6
+ * @example
+ * endsWith([4, 5, 6], [1, 2, 3, 4, 5, 6]) // true
+ * endsWith([4, 5], [1, 2, 3, 4, 5, 6])    // false
+ */
+endsWith :: Eq a => List a -> List a -> Boolean
+export endsWith = (subset, list) => where(dropLengthMaybe(subset, list)) {
+  Just(delta) =>
+    subset == dropLength(delta, list)
+
+  _ =>
+    false
 }

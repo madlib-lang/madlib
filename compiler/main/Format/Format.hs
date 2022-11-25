@@ -302,7 +302,7 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.pretty n
 
   PChar c ->
-    Pretty.pretty $ show c
+    Pretty.pretty $ '\'':c:'\'':[]
 
   PStr s ->
     Pretty.pretty s
@@ -1001,7 +1001,7 @@ expToDoc comments exp =
           (Pretty.pretty n, comments')
 
         Source _ _ (LChar c) ->
-          (Pretty.pretty $ show c, comments')
+          (Pretty.pretty $ '\'':c:'\'':[], comments')
 
         Source _ _ (LStr s) ->
           (Pretty.pretty s, comments')

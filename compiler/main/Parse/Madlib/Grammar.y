@@ -152,9 +152,9 @@ importDecl :: { Src.Import }
   -- | 'import' str rets                                   { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.ImportAll (sanitizeImportPath $ strV $2) (sanitizeImportPath $ strV $2)) }
 
 importNames :: { [Src.Source Src.Name] }
-  : importNames ',' name %shift { $1 <> [Src.Source (tokenArea $3) (tokenTarget $3) (strV $3)] }
-  | name                 %shift { [Src.Source (tokenArea $1) (tokenTarget $1) (strV $1)] }
-  | {- empty -}          %shift { [] }
+  : importNames ',' rets name %shift { $1 <> [Src.Source (tokenArea $4) (tokenTarget $4) (strV $4)] }
+  | name                      %shift { [Src.Source (tokenArea $1) (tokenTarget $1) (strV $1)] }
+  | {- empty -}               %shift { [] }
 
 
 interface :: { Src.Interface }
@@ -235,9 +235,10 @@ adtConstructorArgs :: { [Src.Typing] }
 
 
 constrainedTyping :: { Src.Typing }
-  : constraint '=>' typings      %shift { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.getSourceTarget $1) (Src.TRConstrained [$1] $3) }
-  | '(' constraints ')' '=>' typings      %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $5)) (tokenTarget $1) (Src.TRConstrained $2 $5) }
-  | typings  %shift { $1 }
+  : constraint '=>' typings          %shift { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.getSourceTarget $1) (Src.TRConstrained [$1] $3) }
+  -- | '(' constraint ')' '=>' typings  %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $5)) (tokenTarget $1) (Src.TRConstrained [$2] $5) }
+  | '(' constraints ')' '=>' typings %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $5)) (tokenTarget $1) (Src.TRConstrained $2 $5) }
+  | typings                          %shift { $1 }
 
 instanceConstraints :: { [Src.Typing] }
   : instanceConstraint                                  { [$1] }

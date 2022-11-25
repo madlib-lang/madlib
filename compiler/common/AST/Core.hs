@@ -24,6 +24,8 @@ data RecursionKind
   = PlainRecursion
   | ListRecursion RecursionDirection
   | ConstructorRecursion (Maybe ConstructorRecursionInfo)
+  | BooleanAndRecursion
+  | BooleanOrRecursion
   | NotOptimizable
   deriving(Eq, Show, Ord, Generic, Hashable)
 

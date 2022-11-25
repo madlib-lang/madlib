@@ -1,10 +1,10 @@
-import { test, assertEquals } from "Test"
-import { EQUAL, LESS, MORE, eq } from "Compare"
 import {} from "Char"
-
+import { EQUAL, LESS, MORE, eq } from "Compare"
 import { Just } from "Maybe"
+import { assertEquals, test } from "Test"
 
 import String from "./String"
+
 
 
 test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE))
@@ -14,104 +14,96 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 
 test(
   "replace should replace parts of a string given some regex and replacement string",
-  (_) => assertEquals(String.replace("a", "b", "abc"), "bbc")
+  (_) => assertEquals(String.replace("a", "b", "abc"), "bbc"),
 )
 
 test(
   "replace should replace utf8 characters",
-  (_) => assertEquals(String.replace(".", "b", "äbc"), "bbb")
+  (_) => assertEquals(String.replace(".", "b", "äbc"), "bbb"),
 )
 
 test(
   "replace should replace characters that make the string way bigger",
-  (_) => assertEquals(String.replace(".", "like a lot more than just abc", "äbc"), "like a lot more than just abclike a lot more than just abclike a lot more than just abc")
+  (_) => assertEquals(
+    String.replace(".", "like a lot more than just abc", "äbc"),
+    "like a lot more than just abclike a lot more than just abclike a lot more than just abc",
+  ),
 )
 
 test(
   "replace - capture groups",
-  (_) => assertEquals(String.replace("(a+)", "{$1}", "aaa lot of aaas"), "{aaa} lot of {aaa}s")
+  (_) => assertEquals(String.replace("(a+)", "{$1}", "aaa lot of aaas"), "{aaa} lot of {aaa}s"),
 )
+
+test("match should match utf8 characters", (_) => assertEquals(String.match(".", "ä"), true))
 
 test(
-  "match should match utf8 characters",
-  (_) => assertEquals(String.match(".", "ä"), true)
+  "mapChars should map the characters of a String",
+  (_) => {
+    mapper = (char) => char == 'o' ? 'a' : char
+    return assertEquals(String.mapChars(mapper, "Hello World"), "Hella Warld")
+  },
 )
 
-test("mapChars should map the characters of a String", (_) => {
-  mapper = (char) => char == 'o' ? 'a' : char
-  return assertEquals(String.mapChars(mapper, "Hello World"), "Hella Warld")
-})
+test("fromList", (_) => assertEquals(String.fromList(['H', 'e', 'l', 'l', 'o']), "Hello"))
+
+test("toList", (_) => assertEquals(String.toList("Hello"), ['H', 'e', 'l', 'l', 'o']))
 
 test(
-  "fromList",
-  (_) => assertEquals(String.fromList(['H', 'e', 'l', 'l', 'o']), "Hello")
-)
-
-test(
-  "toList",
-  (_) => assertEquals(String.toList("Hello"), ['H', 'e', 'l', 'l', 'o'])
-)
-
-test("join should transform a list into a string by intercalating a value between the elements of the list", (_) =>
-  assertEquals(String.join(" and ", ["cats", "dogs"]), "cats and dogs")
+  "join should transform a list into a string by intercalating a value between the elements of the list",
+  (_) => assertEquals(String.join(" and ", ["cats", "dogs"]), "cats and dogs"),
 )
 
 test(
   "lines should split a string by line returns",
-  (_) => assertEquals(String.lines("line1\nline2"), ["line1", "line2"])
+  (_) => assertEquals(String.lines("line1\nline2"), ["line1", "line2"]),
 )
 
-test("unlines should take a list of strings and return a string with \\n characters", (_) =>
-  assertEquals(String.unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
+test(
+  "unlines should take a list of strings and return a string with \\n characters",
+  (_) => assertEquals(String.unlines(["line1", "line2", "line3"]), "line1\nline2\nline3"),
 )
 
 test(
   "words should split a string by spaces",
-  (_) => assertEquals(String.words("word1 word2"), ["word1", "word2"])
+  (_) => assertEquals(String.words("word1 word2"), ["word1", "word2"]),
 )
 
-test("unwords should take a list of strings and return a string with spaced words", (_) =>
-  assertEquals(String.unwords(["word1", "word2", "word3"]), "word1 word2 word3")
+test(
+  "unwords should take a list of strings and return a string with spaced words",
+  (_) => assertEquals(String.unwords(["word1", "word2", "word3"]), "word1 word2 word3"),
 )
 
-test("drop", (_) =>
-  assertEquals(String.drop(3, "abcde"), "de")
+test("drop", (_) => assertEquals(String.drop(3, "abcde"), "de"))
+
+test("dropLast", (_) => assertEquals(String.dropLast(3, "abcde"), "ab"))
+
+test("dropWhile", (_) => assertEquals(String.dropWhile((c) => c != '.', "Namespace.name"), ".name"))
+
+test(
+  "dropWhile - no match",
+  (_) => assertEquals(String.dropWhile((c) => c != ':', "Namespace.name"), ""),
 )
 
-test("dropLast", (_) =>
-  assertEquals(String.dropLast(3, "abcde"), "ab")
+test("take", (_) => assertEquals(String.take(3, "abcde"), "abc"))
+
+test("takeLast", (_) => assertEquals(String.takeLast(3, "abcde"), "cde"))
+
+test(
+  "takeWhile",
+  (_) => assertEquals(String.takeWhile((c) => c != '.', "Namespace.name"), "Namespace"),
 )
 
-test("dropWhile", (_) =>
-  assertEquals(String.dropWhile((c) => c != '.', "Namespace.name"), ".name")
+test(
+  "takeWhile - no match",
+  (_) => assertEquals(String.takeWhile((c) => c != ':', "Namespace.name"), "Namespace.name"),
 )
 
-test("dropWhile - no match", (_) =>
-  assertEquals(String.dropWhile((c) => c != ':', "Namespace.name"), "")
-)
+test("filterChars", (_) => assertEquals(String.filterChars(eq('a'), "aAbAaba"), "aaa"))
 
-test("take", (_) =>
-  assertEquals(String.take(3, "abcde"), "abc")
-)
-
-test("takeLast", (_) =>
-  assertEquals(String.takeLast(3, "abcde"), "cde")
-)
-
-test("takeWhile", (_) =>
-  assertEquals(String.takeWhile((c) => c != '.', "Namespace.name"), "Namespace")
-)
-
-test("takeWhile - no match", (_) =>
-  assertEquals(String.takeWhile((c) => c != ':', "Namespace.name"), "Namespace.name")
-)
-
-test("filterChars", (_) =>
-  assertEquals(String.filterChars(eq('a'), "aAbAaba"), "aaa")
-)
-
-test("reduceChars", (_) =>
-  assertEquals(
+test(
+  "reduceChars",
+  (_) => assertEquals(
     String.reduceChars(
       (total, char) => where(char) {
         'a' =>
@@ -124,10 +116,10 @@ test("reduceChars", (_) =>
           0
       },
       0,
-      "abaaba"
+      "abaaba",
     ),
-    10
-  )
+    10,
+  ),
 )
 
 test("repeat", (_) => assertEquals(String.repeat('a', 10), "aaaaaaaaaa"))
@@ -138,14 +130,26 @@ test("toLower", (_) => assertEquals(String.toLower("ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"
 test("pushChar", (_) => assertEquals(String.pushChar('a', "bc"), "abc"))
 test("appendChar", (_) => assertEquals(String.appendChar('c', "ab"), "abc"))
 
-test("reverse", (_) =>
-  assertEquals(String.reverse("abc"), "cba")
-)
+test("reverse", (_) => assertEquals(String.reverse("abc"), "cba"))
 
-test("charAt", (_) =>
-  assertEquals(String.charAt(3, "abüc"), Just('c'))
-)
+test("charAt", (_) => assertEquals(String.charAt(3, "abüc"), Just('c')))
 
-test("charAt - utf8", (_) =>
-  assertEquals(String.charAt(2, "abüc"), Just('ü'))
-)
+test("charAt - utf8", (_) => assertEquals(String.charAt(2, "abüc"), Just('ü')))
+
+test("includes - true", (_) => assertEquals(String.includes('b', "abüc"), true))
+
+test("includes - utf8", (_) => assertEquals(String.includes('ü', "abüc"), true))
+
+test("includes - false", (_) => assertEquals(String.includes('d', "abüc"), false))
+
+test("startsWith - true", (_) => assertEquals(String.startsWith("ab", "abüc"), true))
+test("startsWith - utf8", (_) => assertEquals(String.startsWith("abü", "abüc"), true))
+test("startsWith - false", (_) => assertEquals(String.startsWith("bü", "abüc"), false))
+
+test("contains - true", (_) => assertEquals(String.contains("b", "abüc"), true))
+test("contains - utf8", (_) => assertEquals(String.contains("bü", "abüc"), true))
+test("contains - false", (_) => assertEquals(String.contains("aü", "abüc"), false))
+
+test("endsWith - true", (_) => assertEquals(String.endsWith("c", "abüc"), true))
+test("endsWith - utf8", (_) => assertEquals(String.endsWith("üc", "abüc"), true))
+test("endsWith - false", (_) => assertEquals(String.endsWith("bü", "abüc"), false))
