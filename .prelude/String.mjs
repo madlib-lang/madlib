@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/String.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/String.mad
 import {} from "./../__internals__.mjs"
 import { Just, Nothing } from "./Maybe.mjs";
 import { MORE, LESS, EQUAL } from "./Compare.mjs";
@@ -85,4 +85,8 @@ export let replace = (regex => replacing => input =>
 export let pushChar = (c => s =>  c + s );
 export let appendChar = (c => s =>  s + c );
 export let reverse = (s => (_P_ => fromList(List.reverse(toList(_P_))))(s));
-export default { toLower, toUpper, split, join, lines, unlines, words, unwords, toList, fromList, mapChars, filterChars, reduceChars, slice, isEmpty, drop, dropLast, dropWhile, take, takeLast, takeWhile, charAt, firstChar, lastChar, trim, trimStart, trimEnd, _$_length_$_, repeat, match, replace, pushChar, appendChar, reverse };
+export let includes = (c => s => (_P_ => List.includes(c)(toList(_P_)))(s));
+export let startsWith = (subset => s => (_P_ => List.startsWith(toList(subset))(toList(_P_)))(s));
+export let contains = (subset => s => (_P_ => List.contains(toList(subset))(toList(_P_)))(s));
+export let endsWith = (subset => s => (_P_ => List.endsWith(toList(subset))(toList(_P_)))(s));
+export default { toLower, toUpper, split, join, lines, unlines, words, unwords, toList, fromList, mapChars, filterChars, reduceChars, slice, isEmpty, drop, dropLast, dropWhile, take, takeLast, takeWhile, charAt, firstChar, lastChar, trim, trimStart, trimEnd, _$_length_$_, repeat, match, replace, pushChar, appendChar, reverse, includes, startsWith, contains, endsWith };

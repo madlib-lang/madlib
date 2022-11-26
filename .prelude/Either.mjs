@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Either.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Either.mad
 import {} from "./../__internals__.mjs"
 import {  } from "./Bifunctor.mjs";
 import {  } from "./Monad.mjs";
@@ -6,8 +6,8 @@ import {  } from "./Show.mjs";
 
 export let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 export let Right = (a => ({ __constructor: "Right", __args: [ a ] }));
-Inspect['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Inspect['Either_88dfc5fae454efa68111a9c9bd5112d2']['inspect'] = () => (Inspect_l115) => (Inspect_o118) => (__$a__ => ((__x__) => {
+Inspect['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Inspect['Either_651c79f49e941df22f23aa6ad4c094c2']['inspect'] = () => (Inspect_l115) => (Inspect_o118) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
     return `Left(` + Inspect_l115.inspect()(a0) + `)`;
@@ -25,8 +25,8 @@ Inspect['Either_88dfc5fae454efa68111a9c9bd5112d2']['inspect'] = () => (Inspect_l
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Functor['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Functor['Either_88dfc5fae454efa68111a9c9bd5112d2']['map'] = () => (f => __x__ => ((__x__) => {
+Functor['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Functor['Either_651c79f49e941df22f23aa6ad4c094c2']['map'] = () => (f => __x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return Right(f(a));
@@ -41,15 +41,15 @@ Functor['Either_88dfc5fae454efa68111a9c9bd5112d2']['map'] = () => (f => __x__ =>
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Applicative['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Applicative['Either_88dfc5fae454efa68111a9c9bd5112d2']['ap'] = () => (mf => m => ((__x__) => {
+Applicative['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Applicative['Either_651c79f49e941df22f23aa6ad4c094c2']['ap'] = () => (mf => m => ((__x__) => {
   if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
     return Left(e);
   }
   else if (__x__.__constructor === "Right" && true) {
     let f = __x__.__args[0];
-    return Functor.Either_88dfc5fae454efa68111a9c9bd5112d2.map()(f)(m);
+    return Functor.Either_651c79f49e941df22f23aa6ad4c094c2.map()(f)(m);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -57,9 +57,9 @@ Applicative['Either_88dfc5fae454efa68111a9c9bd5112d2']['ap'] = () => (mf => m =>
     throw 'non exhaustive patterns!';
   }
 })(mf));
-Applicative['Either_88dfc5fae454efa68111a9c9bd5112d2']['pure'] = () => Right;
-Monad['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Monad['Either_88dfc5fae454efa68111a9c9bd5112d2']['chain'] = () => (f => __x__ => ((__x__) => {
+Applicative['Either_651c79f49e941df22f23aa6ad4c094c2']['pure'] = () => Right;
+Monad['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Monad['Either_651c79f49e941df22f23aa6ad4c094c2']['chain'] = () => (f => __x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return f(a);
@@ -74,9 +74,9 @@ Monad['Either_88dfc5fae454efa68111a9c9bd5112d2']['chain'] = () => (f => __x__ =>
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Monad['Either_88dfc5fae454efa68111a9c9bd5112d2']['of'] = () => Applicative.Either_88dfc5fae454efa68111a9c9bd5112d2.pure();
-Bifunctor['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Bifunctor['Either_88dfc5fae454efa68111a9c9bd5112d2']['bimap'] = () => (leftF => rightF => __x__ => ((__x__) => {
+Monad['Either_651c79f49e941df22f23aa6ad4c094c2']['of'] = () => Applicative.Either_651c79f49e941df22f23aa6ad4c094c2.pure();
+Bifunctor['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Bifunctor['Either_651c79f49e941df22f23aa6ad4c094c2']['bimap'] = () => (leftF => rightF => __x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return Right(rightF(a));
@@ -91,10 +91,10 @@ Bifunctor['Either_88dfc5fae454efa68111a9c9bd5112d2']['bimap'] = () => (leftF => 
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Bifunctor['Either_88dfc5fae454efa68111a9c9bd5112d2']['mapFirst'] = () => mapLeft;
-Bifunctor['Either_88dfc5fae454efa68111a9c9bd5112d2']['mapSecond'] = () => Functor.Either_88dfc5fae454efa68111a9c9bd5112d2.map();
-Show['Either_88dfc5fae454efa68111a9c9bd5112d2'] = {};
-Show['Either_88dfc5fae454efa68111a9c9bd5112d2']['show'] = () => (Show_m272) => (Show_p275) => (__x__ => ((__x__) => {
+Bifunctor['Either_651c79f49e941df22f23aa6ad4c094c2']['mapFirst'] = () => mapLeft;
+Bifunctor['Either_651c79f49e941df22f23aa6ad4c094c2']['mapSecond'] = () => Functor.Either_651c79f49e941df22f23aa6ad4c094c2.map();
+Show['Either_651c79f49e941df22f23aa6ad4c094c2'] = {};
+Show['Either_651c79f49e941df22f23aa6ad4c094c2']['show'] = () => (Show_m272) => (Show_p275) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return `Right ` + Show_m272.show()(a);
@@ -109,7 +109,7 @@ Show['Either_88dfc5fae454efa68111a9c9bd5112d2']['show'] = () => (Show_m272) => (
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-export let mapRight = Functor.Either_88dfc5fae454efa68111a9c9bd5112d2.map();
+export let mapRight = Functor.Either_651c79f49e941df22f23aa6ad4c094c2.map();
 export let mapLeft = (f => m => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];

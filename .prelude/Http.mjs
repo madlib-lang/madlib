@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Http.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Http.mad
 import {} from "./../__internals__.mjs"
 import { isJust } from "./Maybe.mjs";
 import { fulfill } from "./Wish.mjs";
@@ -40,8 +40,8 @@ export let UnresolvedProxy = ({ __constructor: "UnresolvedProxy", __args: [  ] }
 export let UnsupportedProtocol = ({ __constructor: "UnsupportedProtocol", __args: [  ] });
 export let BadResponse = (a => ({ __constructor: "BadResponse", __args: [ a ] }));
 export let ClientError = (a => ({ __constructor: "ClientError", __args: [ a ] }));
-Inspect['Header_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['Header_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Header_f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['Header_f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Header" && true && true) {
     let a0 = __x__.__args[0];
     let a1 = __x__.__args[1];
@@ -56,8 +56,8 @@ Inspect['Header_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Method_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['Method_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Method_f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['Method_f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "CONNECT") {
     return `CONNECT`;
   }
@@ -94,10 +94,10 @@ Inspect['Method_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ =>
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_m428) => (Inspect_f421) => (Inspect_y414) => (__$a__ => `{ ` + `body: ` + Inspect_y414.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_f421.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_m428.inspect()(__$a__.status) + ` }`);
-Inspect['ClientError_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['ClientError_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a__ => ((__x__) => {
+Inspect['Record_bodyf_0f17c8605a23705315ad6ec8e76ea07f7_headersf_1f17c8605a23705315ad6ec8e76ea07f7_statusf_2f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['Record_bodyf_0f17c8605a23705315ad6ec8e76ea07f7_headersf_1f17c8605a23705315ad6ec8e76ea07f7_statusf_2f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (Inspect_w438) => (Inspect_p431) => (Inspect_i424) => (__$a__ => `{ ` + `body: ` + Inspect_i424.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_p431.inspect()(__$a__.headers) + `, ` + `status: ` + Inspect_w438.inspect()(__$a__.status) + ` }`);
+Inspect['ClientError_f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['ClientError_f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "AccessDenied") {
     return `AccessDenied`;
   }
@@ -162,15 +162,15 @@ Inspect['ClientError_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (__$a
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Error_e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['Error_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_w464) => (__$a__ => ((__x__) => {
+Inspect['Error_f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['Error_f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (Inspect_g474) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "BadResponse" && true) {
     let a0 = __x__.__args[0];
-    return `BadResponse(` + Inspect.Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_statusf_2e12fd0e5657b374d6d8faca6bf3fb291.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_e12fd0e5657b374d6d8faca6bf3fb291]))(Inspect_w464)(a0) + `)`;
+    return `BadResponse(` + Inspect.Record_bodyf_0f17c8605a23705315ad6ec8e76ea07f7_headersf_1f17c8605a23705315ad6ec8e76ea07f7_statusf_2f17c8605a23705315ad6ec8e76ea07f7.inspect()(Inspect.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Inspect.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, [Inspect.Header_f17c8605a23705315ad6ec8e76ea07f7]))(Inspect_g474)(a0) + `)`;
   }
   else if (__x__.__constructor === "ClientError" && true) {
     let a0 = __x__.__args[0];
-    return `ClientError(` + Inspect.ClientError_e12fd0e5657b374d6d8faca6bf3fb291.inspect()(a0) + `)`;
+    return `ClientError(` + Inspect.ClientError_f17c8605a23705315ad6ec8e76ea07f7.inspect()(a0) + `)`;
   }
   else if (true) {
     return `Unknown`;
@@ -181,8 +181,8 @@ Inspect['Error_e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_w4
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_methodf_2e12fd0e5657b374d6d8faca6bf3fb291_urlf_3e12fd0e5657b374d6d8faca6bf3fb291'] = {};
-Inspect['Record_bodyf_0e12fd0e5657b374d6d8faca6bf3fb291_headersf_1e12fd0e5657b374d6d8faca6bf3fb291_methodf_2e12fd0e5657b374d6d8faca6bf3fb291_urlf_3e12fd0e5657b374d6d8faca6bf3fb291']['inspect'] = () => (Inspect_k504) => (Inspect_d497) => (Inspect_w490) => (Inspect_p483) => (__$a__ => `{ ` + `body: ` + Inspect_p483.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_w490.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_d497.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_k504.inspect()(__$a__.url) + ` }`);
+Inspect['Record_bodyf_0f17c8605a23705315ad6ec8e76ea07f7_headersf_1f17c8605a23705315ad6ec8e76ea07f7_methodf_2f17c8605a23705315ad6ec8e76ea07f7_urlf_3f17c8605a23705315ad6ec8e76ea07f7'] = {};
+Inspect['Record_bodyf_0f17c8605a23705315ad6ec8e76ea07f7_headersf_1f17c8605a23705315ad6ec8e76ea07f7_methodf_2f17c8605a23705315ad6ec8e76ea07f7_urlf_3f17c8605a23705315ad6ec8e76ea07f7']['inspect'] = () => (Inspect_u514) => (Inspect_n507) => (Inspect_g500) => (Inspect_z493) => (__$a__ => `{ ` + `body: ` + Inspect_z493.inspect()(__$a__.body) + `, ` + `headers: ` + Inspect_g500.inspect()(__$a__.headers) + `, ` + `method: ` + Inspect_n507.inspect()(__$a__.method) + `, ` + `url: ` + Inspect_u514.inspect()(__$a__.url) + ` }`);
 
 
 ;

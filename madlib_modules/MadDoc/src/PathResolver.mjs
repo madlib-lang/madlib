@@ -59,6 +59,8 @@ Inspect['PathResult_b34400a9a78f179ffe0f3c51f401cc20']['inspect'] = () => (__$a_
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
+Inspect['Record_namef_0b34400a9a78f179ffe0f3c51f401cc20'] = {};
+Inspect['Record_namef_0b34400a9a78f179ffe0f3c51f401cc20']['inspect'] = () => (Inspect_o586) => (__$a__ => `{ ` + `name: ` + Inspect_o586.inspect()(__$a__.name) + ` }`);
 let filterByPath = (path => {
     let canPath = canonicalizePath(path);
     return List.filter((module => (_P_ => ifElse(isRootPathOf(drop(1)(toLower(canPath))))(always(!(List.isEmpty(module.expressions)) || !(List.isEmpty(module.typeDeclarations)) || !(List.isEmpty(module.aliases)) || !(List.isEmpty(module.interfaces)) || !(List.isEmpty(module.instances))))((_P_ => any(isRootPathOf(drop(1)(toLower(canPath))))(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((_P_ => toLower(Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(module.name + `/`)(_P_))))(always((__listCtorSpread__(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()(getName)(module.expressions), __listCtorSpread__(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((__R__ => __R__.name))(module.typeDeclarations), __listCtorSpread__(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((__R__ => __R__.name))(module.aliases), __listCtorSpread__(Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((__R__ => __R__.name))(module.interfaces), Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((__R__ => __R__.declaration))(module.instances)))))))(_P_)))))(toLower((__R__ => __R__.name)(_P_))))(module)));

@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Function.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Function.mad
 import {} from "./../__internals__.mjs"
 export let complement = (fn => x => !(fn(x)));
 export let always = (a => _ => a);
@@ -10,14 +10,14 @@ export let when = (predicate => truthy => value => ifElse(predicate)(truthy)(alw
 export let not = (b => !(b));
 export let noop = (_ => ({ __constructor: "Unit", __args: [] }));
 export let flip = (f => b => a => f(a)(b));
-export let any = (predicate => list => {
+export let any = (pred => list => {
     let $_result_;
     let $_continue_ = true;
-    let $$predicate = predicate;
+    let $$pred = pred;
     let $$list = list;
 
     while($_continue_) {
-      let $predicate = $$predicate;
+      let $pred = $$pred;
       let $list = $$list;
 
         $_continue_ = false;
@@ -27,7 +27,7 @@ export let any = (predicate => list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: x, n: xs } = __x__;
-    ($predicate(x) ? ($_result_ = true) : ($$predicate = $predicate, $$list = xs, $_continue_ = true));
+    ($pred(x) ? ($_result_ = true) : ($$pred = $pred, $$list = xs, $_continue_ = true));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -55,7 +55,7 @@ export let all = (predicate => list => {
   }
   else if (__x__ !== null && true && true) {
     let { v: x, n: xs } = __x__;
-    (!($predicate(x)) ? ($_result_ = false) : ($$predicate = $predicate, $$list = xs, $_continue_ = true));
+    ($predicate(x) ? ($$predicate = $predicate, $$list = xs, $_continue_ = true) : ($_result_ = false));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

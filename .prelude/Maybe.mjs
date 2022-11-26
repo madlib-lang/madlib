@@ -1,12 +1,12 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Maybe.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/Maybe.mad
 import {} from "./../__internals__.mjs"
 import {  } from "./Monad.mjs";
 import {  } from "./Show.mjs";
 
 export let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe_eadd07e55d46112f77467431f86f5e2d'] = {};
-Inspect['Maybe_eadd07e55d46112f77467431f86f5e2d']['inspect'] = () => (Inspect_t45) => (__$a__ => ((__x__) => {
+Inspect['Maybe_b0e37fa389e368279491caac0c654a84'] = {};
+Inspect['Maybe_b0e37fa389e368279491caac0c654a84']['inspect'] = () => (Inspect_t45) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
     return `Just(` + Inspect_t45.inspect()(a0) + `)`;
@@ -23,8 +23,8 @@ Inspect['Maybe_eadd07e55d46112f77467431f86f5e2d']['inspect'] = () => (Inspect_t4
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Functor['Maybe_eadd07e55d46112f77467431f86f5e2d'] = {};
-Functor['Maybe_eadd07e55d46112f77467431f86f5e2d']['map'] = () => (f => __x__ => ((__x__) => {
+Functor['Maybe_b0e37fa389e368279491caac0c654a84'] = {};
+Functor['Maybe_b0e37fa389e368279491caac0c654a84']['map'] = () => (f => __x__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let x = __x__.__args[0];
     return Just(f(x));
@@ -38,11 +38,11 @@ Functor['Maybe_eadd07e55d46112f77467431f86f5e2d']['map'] = () => (f => __x__ => 
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Applicative['Maybe_eadd07e55d46112f77467431f86f5e2d'] = {};
-Applicative['Maybe_eadd07e55d46112f77467431f86f5e2d']['ap'] = () => (mf => mx => ((__x__) => {
+Applicative['Maybe_b0e37fa389e368279491caac0c654a84'] = {};
+Applicative['Maybe_b0e37fa389e368279491caac0c654a84']['ap'] = () => (mf => mx => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
     let [{ __args: [f]},{ __args: [x]}] = __x__;
-    return Applicative.Maybe_eadd07e55d46112f77467431f86f5e2d.pure()(f(x));
+    return Applicative.Maybe_b0e37fa389e368279491caac0c654a84.pure()(f(x));
   }
   else if (true) {
     return Nothing;
@@ -53,9 +53,9 @@ Applicative['Maybe_eadd07e55d46112f77467431f86f5e2d']['ap'] = () => (mf => mx =>
     throw 'non exhaustive patterns!';
   }
 })(([mf, mx])));
-Applicative['Maybe_eadd07e55d46112f77467431f86f5e2d']['pure'] = () => Just;
-Monad['Maybe_eadd07e55d46112f77467431f86f5e2d'] = {};
-Monad['Maybe_eadd07e55d46112f77467431f86f5e2d']['chain'] = () => (f => m => ((__x__) => {
+Applicative['Maybe_b0e37fa389e368279491caac0c654a84']['pure'] = () => Just;
+Monad['Maybe_b0e37fa389e368279491caac0c654a84'] = {};
+Monad['Maybe_b0e37fa389e368279491caac0c654a84']['chain'] = () => (f => m => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let x = __x__.__args[0];
     return f(x);
@@ -69,9 +69,9 @@ Monad['Maybe_eadd07e55d46112f77467431f86f5e2d']['chain'] = () => (f => m => ((__
     throw 'non exhaustive patterns!';
   }
 })(m));
-Monad['Maybe_eadd07e55d46112f77467431f86f5e2d']['of'] = () => Applicative.Maybe_eadd07e55d46112f77467431f86f5e2d.pure();
-Show['Maybe_eadd07e55d46112f77467431f86f5e2d'] = {};
-Show['Maybe_eadd07e55d46112f77467431f86f5e2d']['show'] = () => (Show_p119) => (__x__ => ((__x__) => {
+Monad['Maybe_b0e37fa389e368279491caac0c654a84']['of'] = () => Applicative.Maybe_b0e37fa389e368279491caac0c654a84.pure();
+Show['Maybe_b0e37fa389e368279491caac0c654a84'] = {};
+Show['Maybe_b0e37fa389e368279491caac0c654a84']['show'] = () => (Show_p119) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
     return `Just ` + Show_p119.show()(a);

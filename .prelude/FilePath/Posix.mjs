@@ -1,4 +1,4 @@
-// file: /opt/hostedtoolcache/node/14.20.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/FilePath/Posix.mad
+// file: /opt/hostedtoolcache/node/14.21.1/x64/lib/node_modules/@madlib-lang/madlib/node_modules/binary-install/node_modules/.bin/prelude/__internal__/FilePath/Posix.mad
 import {} from "./../../__internals__.mjs"
 import String from "./../String.mjs";
 import {  } from "./../Char.mjs";
@@ -78,5 +78,5 @@ export let takeFileName = (_P_ => (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__))(last(splitPath(_P_))));
-export let takeExtension = (_P_ => fromMaybe(``)(Functor.Maybe_eadd07e55d46112f77467431f86f5e2d.map()(ifElse(String.isEmpty)(identity)(Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(`.`)))(last(String.split(`.`)(takeFileName(_P_))))));
+export let takeExtension = (_P_ => fromMaybe(``)(Functor.Maybe_b0e37fa389e368279491caac0c654a84.map()(ifElse(String.isEmpty)(identity)(Monoid.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.mconcat()(`.`)))(last(String.split(`.`)(takeFileName(_P_))))));
 export default { dropTrailingPathSeparator, splitPath, joinPath, canonicalizePath, dropPathSegments, parentPath, isRootPathOf, takeFileName, takeExtension };

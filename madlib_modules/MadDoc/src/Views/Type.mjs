@@ -12,7 +12,7 @@ import { Example } from "./Example.mjs";
 import {  } from "./../Parser/Documentation.mjs";
 
 Inspect['Record_hasJSf_08676e862654b892c9c43f99085b0b684_hasLLVMf_18676e862654b892c9c43f99085b0b684_isAvailablef_28676e862654b892c9c43f99085b0b684'] = {};
-Inspect['Record_hasJSf_08676e862654b892c9c43f99085b0b684_hasLLVMf_18676e862654b892c9c43f99085b0b684_isAvailablef_28676e862654b892c9c43f99085b0b684']['inspect'] = () => (Inspect_z259) => (Inspect_s252) => (Inspect_l245) => (__$a__ => `{ ` + `hasJS: ` + Inspect_l245.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_s252.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_z259.inspect()(__$a__.isAvailable) + ` }`);
+Inspect['Record_hasJSf_08676e862654b892c9c43f99085b0b684_hasLLVMf_18676e862654b892c9c43f99085b0b684_isAvailablef_28676e862654b892c9c43f99085b0b684']['inspect'] = () => (Inspect_u254) => (Inspect_n247) => (Inspect_g240) => (__$a__ => `{ ` + `hasJS: ` + Inspect_g240.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_n247.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_u254.inspect()(__$a__.isAvailable) + ` }`);
 export let Type = (moduleName => typeDefinition => {
     let constructors = typeDefinition.constructors;
     let manyCtors = _$_length_$_(constructors) > 1;

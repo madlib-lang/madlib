@@ -9,6 +9,8 @@ import { div, h3, p, li, link, to, className, text, span, ul } from "./../../../
 import {  } from "./../../../../.prelude/Compare.mjs";
 import { getName } from "./../Parser/Documentation.mjs";
 
+Inspect['Record_namef_097d53dcb699021c98e36243437ded9ac'] = {};
+Inspect['Record_namef_097d53dcb699021c98e36243437ded9ac']['inspect'] = () => (Inspect_j399) => (__$a__ => `{ ` + `name: ` + Inspect_j399.inspect()(__$a__.name) + ` }`);
 let ModuleLink = (module => li(({ v: className(`side-menu__link-item`), n: null }))(({ v: link(({ v: className(`side-menu__link`), n: { v: to(`/` + module.name), n: null } }))(({ v: span(({ v: className(`side-menu__link-name`), n: null }))(({ v: module.name, n: null })), n: null })), n: null })));
 let MenuLink = (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {

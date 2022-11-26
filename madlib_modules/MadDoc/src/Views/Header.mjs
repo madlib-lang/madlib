@@ -5,10 +5,12 @@ import { button, className, div, onClick, onInput, input, placeholder, InputEven
 import String from "./../../../../.prelude/String.mjs";
 import { always } from "./../../../../.prelude/Function.mjs";
 
+Inspect['Record_modulesf_03d0d1cdeaf9161c56a62a8cc2431e329_pathf_13d0d1cdeaf9161c56a62a8cc2431e329_searchf_23d0d1cdeaf9161c56a62a8cc2431e329_targetf_33d0d1cdeaf9161c56a62a8cc2431e329'] = {};
+Inspect['Record_modulesf_03d0d1cdeaf9161c56a62a8cc2431e329_pathf_13d0d1cdeaf9161c56a62a8cc2431e329_searchf_23d0d1cdeaf9161c56a62a8cc2431e329_targetf_33d0d1cdeaf9161c56a62a8cc2431e329']['inspect'] = () => (Inspect_s174) => (Inspect_l167) => (Inspect_e160) => (Inspect_x153) => (__$a__ => `{ ` + `modules: ` + Inspect_x153.inspect()(__$a__.modules) + `, ` + `path: ` + Inspect_e160.inspect()(__$a__.path) + `, ` + `search: ` + Inspect_l167.inspect()(__$a__.search) + `, ` + `target: ` + Inspect_s174.inspect()(__$a__.target) + ` }`);
 let handleInput = (state => event => ((__x__) => {
   if (__x__.__constructor === "InputEvent" && true) {
     let e = __x__.__args[0];
-    return ({ v: Monad.Wish_48e4c68256950cf75b1d1da053be4dfb.of()(always(({ ...state, search: String.toLower(e.target.value) }))), n: null });
+    return ({ v: Monad.Wish_a42e274f9391b247f6eb25b247963687.of()(always(({ ...state, search: String.toLower(e.target.value) }))), n: null });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

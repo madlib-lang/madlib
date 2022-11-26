@@ -6,7 +6,7 @@ import { JSTarget, BothTargets, LLVMTarget } from "./../Parser/Documentation.mjs
 import { LLVM, JS } from "./../State.mjs";
 
 Inspect['Record_hasJSf_059c0648b0200e5d96a19498b14e81296_hasLLVMf_159c0648b0200e5d96a19498b14e81296_isAvailablef_259c0648b0200e5d96a19498b14e81296'] = {};
-Inspect['Record_hasJSf_059c0648b0200e5d96a19498b14e81296_hasLLVMf_159c0648b0200e5d96a19498b14e81296_isAvailablef_259c0648b0200e5d96a19498b14e81296']['inspect'] = () => (Inspect_t97) => (Inspect_m90) => (Inspect_f83) => (__$a__ => `{ ` + `hasJS: ` + Inspect_f83.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_m90.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_t97.inspect()(__$a__.isAvailable) + ` }`);
+Inspect['Record_hasJSf_059c0648b0200e5d96a19498b14e81296_hasLLVMf_159c0648b0200e5d96a19498b14e81296_isAvailablef_259c0648b0200e5d96a19498b14e81296']['inspect'] = () => (Inspect_x101) => (Inspect_q94) => (Inspect_j87) => (__$a__ => `{ ` + `hasJS: ` + Inspect_j87.inspect()(__$a__.hasJS) + `, ` + `hasLLVM: ` + Inspect_q94.inspect()(__$a__.hasLLVM) + `, ` + `isAvailable: ` + Inspect_x101.inspect()(__$a__.isAvailable) + ` }`);
 export let TargetedItem = (target => targeted => cardView => ((__x__) => {
   if (__x__.__constructor === "JSTarget" && true) {
     let js = __x__.__args[0];
