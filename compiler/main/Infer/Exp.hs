@@ -575,7 +575,6 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
     s3                  <- contextualUnifyAccess env fa t1 (t2 `fn` tv)
 
     let s      = s3 `compose` s2 `compose` s1
-    -- let s      = s1 `compose` s2 `compose` s3
     let t      = apply s tv
 
     let solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)
@@ -943,7 +942,9 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     else do
       return (ds, rs, mempty)
 
-  rs'' <- dedupePreds <$> getAllParentPreds env rs'
+  rsWithParentPreds <- getAllParentPreds env rs'
+  rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
+  let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
   let sFinal = sDefaults `compose` s''
   let sc     = apply sFinal $ quantify gs (rs'' :=> t')
 
@@ -964,7 +965,8 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
           -- We convert say Applicative f => .. to (Functor f, Applicative f) => ..
           -- so that we generate the right dictionary placeholders.
           psWithParents <- getAllParentPreds env (dedupePreds qs)
-          let scWithParents = quantify (ftv qt) (psWithParents :=> t')
+          psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents
+          let scWithParents = quantify (ftv qt) ((psWithParents ++ concat psWithInstancePreds) :=> t')
           return $ extendVars env (n, scWithParents)
 
         Nothing ->
@@ -1000,7 +1002,9 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
         throwError $ CompilationError e c
     )
 
-  qs'' <- dedupePreds <$> getAllParentPreds env (dedupePreds qs')
+  psWithParents <- getAllParentPreds env (dedupePreds qs')
+  psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents
+  let qs'' = dedupePreds (psWithParents ++ concat psWithInstancePreds)
 
   let scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   if sc /= scCheck then

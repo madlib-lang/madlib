@@ -32,6 +32,7 @@ pushWarning warning = do
   s <- get
   put s { warnings = warnings s <> [warning] }
 
+
 pushExtensibleRecordToDerive :: [String] -> Infer ()
 pushExtensibleRecordToDerive fieldNames = do
   s <- get

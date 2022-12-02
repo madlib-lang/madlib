@@ -43,7 +43,8 @@
                               (Area (Loc 339 19 1) (Loc 339 19 1))
                               "_")
                            [ Typed
-                               ([] :=> TCon (TC "String" Star) "prelude")
+                               ([ IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ] Nothing ] :=>
+                                  TCon (TC "String" Star) "prelude")
                                (Area (Loc 321 18 3) (Loc 338 18 20))
                                (App
                                   (Typed

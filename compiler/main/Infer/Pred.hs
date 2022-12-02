@@ -28,12 +28,17 @@ getParentPreds env p@(IsIn cls ts maybeArea) = do
   (Interface tvs ps _) <- lookupInterface env cls
 
   s <- unify (TVar <$> tvs) ts
-
   let ps' = (\(IsIn cls ts' _) -> IsIn cls (apply s ts') maybeArea) <$> ps
-
   nextPreds <- mapM (getParentPreds env) ps'
 
   return $ [p] `union` ps' `union` concat nextPreds
+
+
+getAllInstancePreds :: Env -> Pred -> Infer [Pred]
+getAllInstancePreds env p = do
+  ps <- catchError (byInst env p) (const $ return [])
+  more <- mapM (getAllInstancePreds env) ps
+  return $ ps ++ concat more
 
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
@@ -48,18 +53,30 @@ instance Match Pred where
 
 sig :: Env -> Id -> [TVar]
 sig env i = case M.lookup i (envInterfaces env) of
-  Just (Interface vs _ _) -> vs
-  Nothing                 -> []
+  Just (Interface vs _ _) ->
+    vs
+
+  Nothing ->
+    []
+
 
 super :: Env -> Id -> [Pred]
 super env i = case M.lookup i (envInterfaces env) of
-  Just (Interface _ is _) -> is
-  Nothing                 -> []
+  Just (Interface _ is _) ->
+    is
+
+  Nothing ->
+    []
+
 
 insts :: Env -> Id -> [Instance]
 insts env i = case M.lookup i (envInterfaces env) of
-  Just (Interface _ _ insts) -> insts
-  Nothing                    -> []
+  Just (Interface _ _ insts) ->
+    insts
+
+  Nothing ->
+    []
+
 
 bySuper :: Env -> Pred -> [Pred]
 bySuper env p@(IsIn i ts maybeArea) =
@@ -67,6 +84,7 @@ bySuper env p@(IsIn i ts maybeArea) =
   where
     supers = apply s (super env i)
     s      = M.fromList $ zip (sig env i) ts
+
 
 findInst :: Env -> Pred -> Infer (Maybe Instance)
 findInst env p@(IsIn interface ts _) =
@@ -81,15 +99,6 @@ findInst env p@(IsIn interface ts _) =
       _ ->
         return Nothing
     )
-  -- case ts of
-  --   -- This is needed as some instances for extensible records are added after type checking
-  --   [TRecord fields _] | interface == "Eq" || interface == "Inspect" -> do
-  --     let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
-  --         qp = fieldsPreds :=> IsIn interface [tRec] Nothing
-  --     return $ Just (Instance qp mempty)
-
-  --   _ -> do
-  --     catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
  where
   tryInst i@(Instance (_ :=> h) _) = do
     isInstanceOf h p
@@ -122,6 +131,7 @@ specialMatch (IsIn cls ts _) (IsIn cls' ts' _) = do
       foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
     else throwError $ CompilationError FatalError NoContext
 
+
 specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
 specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
 
@@ -141,7 +151,6 @@ isConcrete t = case t of
     False
 
 
-
 isInstanceOf :: Pred -> Pred -> Infer Substitution
 isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
   if interface == interface'
@@ -153,15 +162,18 @@ isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
 
 byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts maybeArea) =
-  case ts of
-    -- This is needed as some instances for extensible records are added after type checking
-    [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
-      let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
-      u <- isInstanceOf (IsIn interface [ts'] Nothing) p
-      return $ apply u fieldsPreds
+  catchError
+    (tryInsts (insts env interface))
+    (\err -> case ts of
+      [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
+        pushExtensibleRecordToDerive (M.keys fields)
+        let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
+        u <- isInstanceOf (IsIn interface [ts'] Nothing) p
+        return $ apply u fieldsPreds
 
-    _ ->
-      tryInsts (insts env interface)
+      _ ->
+        throwError err
+    )
  where
   tryInst (Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
