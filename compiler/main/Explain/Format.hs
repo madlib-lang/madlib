@@ -863,6 +863,19 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   ASTHasNoPath ->
     "A module could not be found or loaded"
 
+  ConstructorAccessBadIndex typeName constructorName arity index ->
+    "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
+    <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+
+  ConstructorAccessNoConstructorFound typeName ->
+    "No constructor found for the type '" <> typeName <> "'."
+
+
+  ConstructorAccessTooManyConstructors typeName _ ->
+    "You can't access a value from the constructor of the type '" <> typeName <> "' because it has more than one constructor."
+
+
+
 
 createErrorDiagnostic :: Bool -> Context -> TypeError -> Diagnose.Report String
 createErrorDiagnostic color context typeError = case typeError of
@@ -945,6 +958,47 @@ createErrorDiagnostic color context typeError = case typeError of
           [ Diagnose.Note "Top level expressions are not allowed in Madlib."
           , Diagnose.Hint "You may want to assign it to a top level variable."
           ]
+
+  ConstructorAccessBadIndex typeName constructorName arity index ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Constructor access - bad index"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
+                <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+            )
+          ]
+          [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
+
+  ConstructorAccessNoConstructorFound typeName ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Constructor not found"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "No constructor found for the type '" <> typeName <> "'."
+            )
+          ]
+          []
+
+  ConstructorAccessTooManyConstructors typeName _ ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Constructor access - too many constructors"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "You can't access a value from the constructor of the type '"
+                <> typeName <> "'\nbecause it has more than one constructor."
+            )
+          ]
+          []
 
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t

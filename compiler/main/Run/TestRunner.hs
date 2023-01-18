@@ -211,8 +211,12 @@ generateTestSuiteImport (index, path) =
 generateTestSuiteItemExp :: Int -> FilePath -> ListItem
 generateTestSuiteItemExp index testSuitePath =
   let testsAccess = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".__tests__")))
+      beforeAll = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".beforeAll")))
+      afterAll = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".afterAll")))
   in  Source emptyArea TargetAll (ListItem (Source emptyArea TargetAll (TupleConstructor [
         Source emptyArea TargetAll (LStr $ "\"" <> testSuitePath <> "\""),
+        beforeAll,
+        afterAll,
         testsAccess
       ])))
 

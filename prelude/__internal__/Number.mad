@@ -34,19 +34,19 @@ instance Show Float {
 
 import { Just, Nothing } from "Maybe"
 
-scanInteger :: Number a => String -> Maybe a
+scanInteger :: String -> Maybe Integer
 scanInteger = (str) => (#- {
   const n = parseInt(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
-scanFloat :: Number a => String -> Maybe a
+scanFloat :: String -> Maybe Float
 scanFloat = (str) => (#- {
   const n = parseFloat(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
-scanByte :: Number a => String -> Maybe a
+scanByte :: String -> Maybe Byte
 scanByte = (str) => (#- {
   const n = parseInt(str)
   return isNaN(n) ? Nothing : Just(n)

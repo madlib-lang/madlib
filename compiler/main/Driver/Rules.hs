@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# LANGUAGE LambdaCase #-}
+{-# HLINT ignore "Use list comprehension" #-}
 module Driver.Rules where
 
 import qualified Rock
@@ -63,6 +63,7 @@ import MadlibDotJson.MadlibVersion
 import Paths_madlib (version)
 import System.Environment
 import qualified Canonicalize.Coverage as Coverage
+import AST.Source (SourceTarget(TargetAll))
 
 
 
@@ -103,10 +104,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ File path
     ast    <- liftIO $ buildAST options path source
-          
+    wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
+
     case ast of
       Right ast ->
-        return (addTestEmptyExports ast, (mempty, mempty))
+        return (addTestEmptyExports wishModulePath ast, (mempty, mempty))
 
       Left err ->
         return (emptySrcAST, (mempty, [err]))
@@ -150,6 +152,15 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   ForeignADTType modulePath typeName -> nonInput $ do
     (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
     case Map.lookup typeName (CanEnv.envTypeDecls canEnv) of
+      Just found ->
+        return (Just found, (mempty, mempty))
+
+      Nothing ->
+        return (Nothing, (mempty, mempty))
+
+  ForeignConstructorInfos modulePath typeName -> nonInput $ do
+    (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+    case Map.lookup typeName (CanEnv.envConstructorInfos canEnv) of
       Just found ->
         return (Just found, (mempty, mempty))
 
@@ -470,16 +481,84 @@ input = fmap ((, mempty) . (, Rock.Input))
 
 -- Test runner
 
-addTestEmptyExports :: Src.AST -> Src.AST
-addTestEmptyExports ast@Src.AST{ Src.apath = Just apath } =
+makeEmptyHook :: String -> Src.Exp
+makeEmptyHook hookName = Src.Source emptyArea TargetAll (Src.Export (Src.Source emptyArea TargetAll (Src.Assignment hookName (Src.Source emptyArea TargetAll (Src.Abs [Src.Source emptyArea TargetAll "_"] [Src.Source emptyArea TargetAll (Src.App (Src.Source emptyArea TargetAll (Src.Var "of")) [Src.Source emptyArea TargetAll Src.LUnit])])))))
+
+
+updateHooks :: Bool -> Bool -> [Src.Exp] -> [Src.Exp]
+updateHooks foundBeforeAll foundAfterAll exps = case exps of
+  (exp@(Src.Source _ _ (Src.Export (Src.Source _ _ (Src.Assignment name _)))) : more) ->
+    if name == "beforeAll" then
+      exp : updateHooks True foundAfterAll more
+    else if name == "afterAll" then
+      exp : updateHooks foundBeforeAll True more
+    else
+      exp : updateHooks foundBeforeAll foundAfterAll more
+
+  (exp@(Src.Source _ _ (Src.Assignment name _)) : more) ->
+    if name == "beforeAll" then
+      Src.Source emptyArea TargetAll (Src.Export exp) :  updateHooks True foundAfterAll more
+    else if name == "afterAll" then
+      Src.Source emptyArea TargetAll (Src.Export exp) :  updateHooks foundBeforeAll True more
+    else
+      exp : updateHooks foundBeforeAll foundAfterAll more
+
+  (exp@(Src.Source _ _ (Src.NamedTypedExp name (Src.Source _ _ (Src.Export _)) _)) : more) ->
+    if name == "beforeAll" then
+      exp : updateHooks True foundAfterAll more
+    else if name == "afterAll" then
+      exp : updateHooks foundBeforeAll True more
+    else
+      exp : updateHooks foundBeforeAll foundAfterAll more
+
+  (exp@(Src.Source _ _ (Src.NamedTypedExp name e typing)) : more) ->
+    if name == "beforeAll" then
+      Src.Source emptyArea TargetAll (Src.NamedTypedExp "beforeAll" (Src.Source emptyArea TargetAll (Src.Export e)) typing) :  updateHooks True foundAfterAll more
+    else if name == "afterAll" then
+      Src.Source emptyArea TargetAll (Src.NamedTypedExp "afterAll" (Src.Source emptyArea TargetAll (Src.Export e)) typing) :  updateHooks foundBeforeAll True more
+    else
+      exp : updateHooks foundBeforeAll foundAfterAll more
+
+  (exp : more) ->
+    exp : updateHooks foundBeforeAll foundAfterAll more
+
+  [] ->
+    if not foundBeforeAll && not foundAfterAll then
+      [makeEmptyHook "beforeAll", makeEmptyHook "afterAll"]
+    else if not foundBeforeAll then
+      [makeEmptyHook "beforeAll"]
+    else if not foundAfterAll then
+      [makeEmptyHook "afterAll"]
+    else
+      []
+
+
+addWishImport :: FilePath -> [Src.Import] -> [Src.Import]
+addWishImport wishModulePath imports = case imports of
+  (i : is) ->
+    let (_, p) = Src.getImportPath i
+    in  if p == "Wish" then
+          i : is
+        else
+          i : addWishImport wishModulePath is
+
+  [] ->
+    [Src.Source emptyArea TargetAll (Src.NamedImport [] "Wish" wishModulePath)]
+
+
+addTestEmptyExports :: FilePath -> Src.AST -> Src.AST
+addTestEmptyExports wishModulePath ast@Src.AST{ Src.apath = Just apath } =
   if ".spec.mad" `List.isSuffixOf` apath then
     let exps             = Src.aexps ast
+        imports          = Src.aimports ast
+        exps'            = updateHooks False False exps
+        imports'         = addWishImport wishModulePath imports
         -- that export is needed for type checking or else we get an error that the name is not exported
         testsExport      = Src.Source emptyArea Src.TargetAll (Src.Export (Src.Source emptyArea Src.TargetAll (Src.Assignment "__tests__" (Src.Source emptyArea Src.TargetAll (Src.ListConstructor [])))))
-    in  ast { Src.aexps = exps ++ [testsExport] }
+    in  ast { Src.aexps = exps' ++ [testsExport], Src.aimports = imports' }
   else
     ast
-addTestEmptyExports ast =
+addTestEmptyExports _ ast =
   ast
 
 
@@ -575,7 +654,6 @@ addTestsToSuite wishPath currentTests assignments = case assignments of
 listImport :: FilePath -> Slv.Import
 listImport listModulePath =
   Slv.Untyped emptyArea (Slv.DefaultImport (Slv.Untyped emptyArea "__List__") "List" listModulePath)
-
 
 
 updateTestExports :: FilePath -> FilePath -> Slv.AST -> Slv.AST
