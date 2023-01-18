@@ -29,6 +29,7 @@ import qualified Data.Set as Set
 import           Error.Warning
 import           Error.Context
 import Text.Regex.TDFA ((=~))
+import           Error.Error
 
 
 class Canonicalizable a b where
@@ -292,6 +293,43 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.TypedHole ->
       return $ Can.Canonical area Can.TypedHole
+
+    Src.ConstructorAccess typeName index value -> do
+      value' <- canonicalize env target value
+      let ctorNamePrefix =
+            if '.' `elem` typeName then
+              takeWhile (/= '.') typeName <> "."
+            else
+              ""
+      constructorInfos <- EnvUtils.lookupConstructorInfos env typeName
+      case constructorInfos of
+        Just [Env.ConstructorInfo constructorName paramLength] -> do
+          let index' = read index
+              pats =
+                map
+                  (\i ->
+                    if i == index' then
+                      Can.Canonical emptyArea (Can.PVar "__X__")
+                    else Can.Canonical emptyArea Can.PAny
+                  )
+                  [0..(paramLength - 1)]
+          if index' >= paramLength then
+            throwError $ CompilationError (ConstructorAccessBadIndex typeName constructorName paramLength index') (Context (Env.envCurrentPath env) area)
+          else
+            return $ Can.Canonical area (Can.Where value' [
+                  Can.Canonical area
+                    (
+                      Can.Is
+                        (Can.Canonical emptyArea (Can.PCon (ctorNamePrefix <> constructorName) pats))
+                        (Can.Canonical emptyArea (Can.Var "__X__"))
+                    )
+                ])
+
+        Just constructorInfos ->
+          throwError $ CompilationError (ConstructorAccessTooManyConstructors typeName (length constructorInfos)) (Context (Env.envCurrentPath env) area)
+
+        Nothing ->
+          throwError $ CompilationError (ConstructorAccessNoConstructorFound typeName) (Context (Env.envCurrentPath env) area)
 
     _ ->
       error $ "unhandled node type\n" <> ppShow fullExp

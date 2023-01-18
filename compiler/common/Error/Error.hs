@@ -52,6 +52,9 @@ data TypeError
   | OverloadedMutation String [Pred]
   | NoMain
   | NotADefinition
+  | ConstructorAccessBadIndex String String Int Int
+  | ConstructorAccessNoConstructorFound String
+  | ConstructorAccessTooManyConstructors String Int
   deriving (Show, Eq, Ord)
 
 

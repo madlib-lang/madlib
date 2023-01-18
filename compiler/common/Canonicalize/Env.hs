@@ -11,6 +11,7 @@ import           Control.Monad.Except
 import qualified Data.Map                      as M
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
+import qualified AST.Canonical                 as Can
 
 
 
@@ -18,7 +19,12 @@ data Interface
   = Interface [TVar] [Pred] [String]
   deriving(Eq, Show, Generic, Hashable)
 
+data ConstructorInfo
+  = ConstructorInfo String Int
+  deriving(Eq, Show, Generic, Hashable)
+
 type TypeDecls = M.Map String Type
+type ConstructorInfos = M.Map String [ConstructorInfo]
 type Interfaces = M.Map String Interface
 
 data ImportType
@@ -39,9 +45,10 @@ data ImportInfo
 
 data Env
   = Env
-    { envImportInfo  :: [ImportInfo]
-    , envTypeDecls   :: TypeDecls
-    , envInterfaces  :: Interfaces
+    { envImportInfo :: [ImportInfo]
+    , envTypeDecls :: TypeDecls
+    , envConstructorInfos :: ConstructorInfos
+    , envInterfaces :: Interfaces
     , envCurrentPath :: FilePath
     , envFromDictionaryListName :: String
     , envIsMainModule :: Bool
@@ -53,6 +60,7 @@ data Env
 
 initialEnv :: Env
 initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary), ("Array", tArray), ("ByteArray", tByteArray)]
+                 , envConstructorInfos = M.empty
                  , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] [] ["=="]), ("Inspect", Interface [TV "a" Star] [] ["inspect"])]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""

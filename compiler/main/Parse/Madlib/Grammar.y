@@ -347,7 +347,10 @@ exp :: { Src.Exp }
   | app                                                      %shift { $1 }
   | absOrParenthesizedName                                   %shift { $1 }
   | '(' exp ')'                                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Parenthesized (tokenArea $1) $2 (tokenArea $3)) }
-  | exp '.' name                                             %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
+  | exp '.' name                                                    { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
+  | name '.' name                                                   { access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $1) (Src.Var $ "." <> strV $3)) }
+  | constructorAccess                                               { $1 }
+  -- | name '.' number '(' exp ')'                               { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.ConstructorAccess (strV $1) (strV $3) $5) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $17)) (tokenTarget $1) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet
@@ -366,6 +369,11 @@ exp :: { Src.Exp }
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.getSourceTarget $1) (Src.Ternary $1 $4 $8) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.getSourceTarget $1) (Src.Ternary $1 $4 $8) }
+
+
+constructorAccess :: { Src.Exp }
+  : name '[' number ']' '(' exp ')'          { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.ConstructorAccess (strV $1) (strV $3) $6) }
+  | name '.' name '[' number ']' '(' exp ')' { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.ConstructorAccess (strV $1 <> "." <> strV $3) (strV $5) $8) }
 
 
 absOrParenthesizedName :: { Src.Exp }

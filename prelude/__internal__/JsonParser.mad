@@ -172,7 +172,7 @@ getParserFn = (parser) => where(parser) {
  * parse(string, `"Json string"`) // Right("Json string")
  * parse(string, `3`) // Left("Error parsing string")
  */
-parse :: Parser b -> String -> Either String b
+parse :: Parser a -> String -> Either String a
 export parse = (parser, input) => pipe(
   runParser(jsonValue),
   where {
@@ -186,6 +186,13 @@ export parse = (parser, input) => pipe(
       }
   }
 )(input)
+
+
+parseJsonValue :: Parser a -> JsonValue -> Either String a
+export parseJsonValue = (parser, input) => where(parser) {
+  Parser(parserFn) =>
+    parserFn(input)
+}
 
 
 /**

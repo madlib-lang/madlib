@@ -298,8 +298,8 @@ updateSuiteResult = (suitePath, result, a) => {
 }
 
 
-runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
-runTestSuite = (suitePath, testsInSuite) => pipe(
+runTestSuite :: (Inspect e, Inspect f) => String -> ({} -> Wish e a) -> ({} -> Wish f b) -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
+runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   (tests) => {
     pipe(
       Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0)),
@@ -310,6 +310,12 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
   },
   map(Wish.bichain(pipe(updateSuiteResult(suitePath, Failure), failureReport, of), pipe(updateSuiteResult(suitePath, Success), successReport, of))),
   Wish.parallel,
+  (testsWish) => Wish.bichain(pipe(IO.log, () => Wish.bad({})), () => testsWish, beforeAll()),
+  (testsWish) => do {
+    result <- testsWish
+    _ <- Wish.bichain(pipe(IO.log, () => Wish.bad({})), () => of({}), afterAll())
+    return of(result)
+  },
   map(
     pipe(
       List.reduce(mergeReports, EMPTY_REPORT),
@@ -329,9 +335,11 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
 )(testsInSuite)
 
 
-runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> {}
+runAllTestSuites :: (Inspect e, Inspect f) => List #[String, ({} -> Wish e a), ({} -> Wish f b), List (Wish.Wish String String)] -> {}
 export runAllTestSuites = (testSuites) => pipe(
-  map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
+  map(where {
+    #[path, beforeAll, afterAll, tests] =>
+      runTestSuite(path, beforeAll, afterAll, tests)}),
   (suites) => {
     if (IS_COLOR_ENABLED) {
       printSuiteResults(collector.getResults())
