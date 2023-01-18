@@ -128,7 +128,11 @@ runFormatter width fix path code = do
   astsWithComments <-
     if code == "--EMPTY--" then do
       filesToFormat <- getFilesToCompile False path
-      parseASTsToFormat filesToFormat
+      if null filesToFormat then do
+        putStrLn $ "No file to format found, verify that the directory or file '" <> path <> "' exists!"
+        exitFailure
+      else
+        parseASTsToFormat filesToFormat
     else
       parseCodeToFormat code
 
