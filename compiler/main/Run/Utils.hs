@@ -72,14 +72,18 @@ getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
     return []
 
   _          -> do
-    paths <- getDirectoryContents entrypoint
-    let fullPaths =
-          (\file -> joinPath [entrypoint, file])
-            <$> filter (\p -> p /= "." && p /= ".." && not (any (`isSuffixOf` p) compilationBlackList)) paths
-    let filtered = if not testsOnly
-          then filter ((== ".mad") . takeExtension) fullPaths
-          else filter (isSuffixOf ".spec.mad") fullPaths
+    isThere <- doesDirectoryExist entrypoint
+    if isThere then do
+      paths <- getDirectoryContents entrypoint
+      let fullPaths =
+            (\file -> joinPath [entrypoint, file])
+              <$> filter (\p -> p /= "." && p /= ".." && not (any (`isSuffixOf` p) compilationBlackList)) paths
+      let filtered = if not testsOnly
+            then filter ((== ".mad") . takeExtension) fullPaths
+            else filter (isSuffixOf ".spec.mad") fullPaths
 
-    subFolders <- filterM doesDirectoryExist fullPaths
-    next       <- mapM (getFilesToCompile testsOnly) subFolders
-    return $ filtered ++ concat next
+      subFolders <- filterM doesDirectoryExist fullPaths
+      next       <- mapM (getFilesToCompile testsOnly) subFolders
+      return $ filtered ++ concat next
+    else
+      return []
