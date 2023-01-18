@@ -3,6 +3,7 @@ import           System.Exit
 import           System.FilePath                ( takeExtension )
 import qualified System.Directory               as Directory
 import           Prelude                 hiding ( readFile )
+import qualified Prelude
 import           Control.Exception              ( IOException
                                                 , try
                                                 )
@@ -21,6 +22,7 @@ import           Parse.Madlib.Grammar (parse)
 import           Data.Either.Combinators (mapLeft)
 import           Run.Options
 import           Run.Target
+import Explain.Format (formatError)
 
 
 
@@ -68,7 +70,7 @@ parseASTsToFormat  (fp : fps)   = do
                 Left _ ->
                   Left $ CompilationError Error NoContext
 
-        let astWithComments = (,) <$> ((\a -> a {apath = Just ""}) <$> ast') <*> comments
+        let astWithComments = (,) <$> ((\a -> a { apath = Just canonicalEntrypoint }) <$> ast') <*> comments
 
         return $ (:) <$> astWithComments <*> next
 
@@ -102,7 +104,7 @@ parseCodeToFormat code = do
 
           Left _ ->
             Left $ CompilationError Error NoContext
-  return $ (\a cs -> [(a, cs)]) <$> ((\a -> a {apath = Just ""}) <$> ast') <*> comments
+  return $ (\a cs -> [(a, cs)]) <$> ((\a -> a { apath = Just "" }) <$> ast') <*> comments
 
 
 processAST :: Int -> Bool -> AST -> [Comment] -> IO String
@@ -134,7 +136,8 @@ runFormatter width fix path code = do
     Right asts' -> do
       mapM_ (uncurry (processAST width fix)) asts'
     Left err -> do
-      putStrLn $ ppShow err
+      formattedErr <- formatError Prelude.readFile False err
+      putStrLn formattedErr
       exitFailure
 
   return ()

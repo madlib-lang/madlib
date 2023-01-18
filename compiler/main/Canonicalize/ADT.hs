@@ -55,11 +55,12 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
       Nothing -> do
         verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
-        let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
-            vars = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
-            t'   = foldl1 TApp (t : vars)
-            env' = addADT env (Src.adtname adt) t'
-        canonicalizeConstructors env' astPath td
+        let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
+            vars  = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
+            t'    = foldl1 TApp (t : vars)
+            env'  = addADT env (Src.adtname adt) t'
+            env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
+        canonicalizeConstructors env'' astPath td
 
   alias@Src.Alias{} -> do
     verifyTypeVars area astPath (Src.aliasname alias) (Src.aliasparams alias)

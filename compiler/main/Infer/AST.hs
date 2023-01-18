@@ -435,8 +435,11 @@ verifyTopLevelExp astPath exp = case exp of
   Slv.Typed _ _ (Slv.TypeExport _) ->
     return ()
 
-  _ ->
+  _ | not $ ".spec.mad" `isSuffixOf` astPath ->
     throwError $ CompilationError NotADefinition (Context astPath (Slv.getArea exp))
+
+  _ ->
+    return ()
 
 
 deriveExtra :: Options -> Env -> [InstanceToDerive] -> Set.Set InstanceToDerive -> Infer (Env, [Slv.Instance])
