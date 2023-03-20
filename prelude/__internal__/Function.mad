@@ -1,3 +1,5 @@
+import {} from "Compare"
+
 /**
  * Wraps a predicate function and make it return the inverse. So if for a value
  * the function would normally return true, after "complemented" it would return
@@ -178,19 +180,21 @@ export both = (predA, predB, x) => predA(x) && predB(x)
 #iftarget js
 
 #-
-const nativeMemoize = (fn) => {
-  let cache = {};
-  return (a) => {
-    const key = JSON.stringify(a)
-    if (!cache[key]) {
-      cache[key] = fn.apply(this, [a])
-    }
-    return cache[key]
+const nativeMemoize = (fn, map = new Map()) => arg => {
+  let fromCache = map.get(arg)
+
+  if (!fromCache) {
+      const value = fn(arg)
+      fromCache = typeof value === 'function' ? nativeMemoize(value, new Map()) : value
+
+      map.set(arg, fromCache)
   }
+
+  return fromCache
 }
 -#
 
 memoize :: (a -> b) -> a -> b
-export memoize = (fn) => #- nativeMemoize(fn) -#
+export memoize = #- nativeMemoize -#
 
 #endif

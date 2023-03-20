@@ -743,6 +743,7 @@ runTypeCheck invalidatePath state target path fileUpdates = do
           changedFiles
           fileUpdates
           (Driver.detectCyleTask path)
+
         return (warnings, errors)
 
       Right (_, warnings, errors) ->
@@ -768,7 +769,7 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
     )
     $ Map.toList warnsByModule
 
-  flushDiagnosticsBySource 20 (Just "Madlib")
+  flushDiagnosticsBySource 100 (Just "Madlib")
 
   let allDiagnostics =
         Map.toList $ Map.unionWith
@@ -779,7 +780,7 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
   forM_ allDiagnostics $ \(modulePath, diagnostics) -> do
     let moduleUri = pathToUri modulePath
     let diagnosticsBySource = partitionBySource diagnostics
-    publishDiagnostics 20 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
+    publishDiagnostics 100 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
 
 
 generateDiagnostics :: Bool -> State -> Uri -> Map.Map FilePath String -> LspM () ()
@@ -854,13 +855,13 @@ warningsForModule errs path =
 groupErrsByModule :: [CompilationError] -> Map.Map FilePath [CompilationError]
 groupErrsByModule errs =
   let errs' = filter ((/= NoContext) . Error.getContext) errs
-  in  Map.fromList $ (\errs -> (Error.getPath $ head errs, errs)) <$> List.groupBy areErrorsFromSameModule errs'
+  in  Map.fromListWith (<>) $ (\errs -> (Error.getPath $ head errs, errs)) <$> List.groupBy areErrorsFromSameModule errs'
 
 
 groupWarnsByModule :: [CompilationWarning] -> Map.Map FilePath [CompilationWarning]
 groupWarnsByModule warnings =
   let warnings' = filter ((/= NoContext) . Warning.getContext) warnings
-  in  Map.fromList $ (\warnings -> (Warning.getPath $ head warnings, warnings)) <$> List.groupBy areWarningsFromSameModule warnings'
+  in  Map.fromListWith (<>) $ (\warnings -> (Warning.getPath $ head warnings, warnings)) <$> List.groupBy areWarningsFromSameModule warnings'
 
 
 

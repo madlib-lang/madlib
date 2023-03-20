@@ -182,9 +182,9 @@ bool madlib__list__internal__hasLength(int64_t l, madlib__list__Node_t *list) {
 
 madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
                                            madlib__list__Node_t *b) {
-  if (a->value == NULL) {
+  if (a->value == NULL && a->next == NULL) {
     return b;
-  } else if (b->value == NULL) {
+  } else if (b->value == NULL && b->next == NULL) {
     return a;
   } else {
     madlib__list__Node_t *newList =
