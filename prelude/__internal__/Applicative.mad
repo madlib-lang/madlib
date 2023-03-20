@@ -1,5 +1,4 @@
 import {} from "Functor"
-import { always } from "Function"
 
 
 
@@ -29,7 +28,7 @@ interface Functor m => Applicative m {
  * @since 0.2.0
  */
 apL :: Applicative m => m a -> m b -> m a
-export apL = (a, b) => ap(map(always, a), b)
+export apL = (a, b) => ap(map((x, _) => x, a), b)
 
 
 /**

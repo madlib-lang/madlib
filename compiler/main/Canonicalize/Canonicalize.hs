@@ -294,6 +294,21 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.TypedHole ->
       return $ Can.Canonical area Can.TypedHole
 
+    Src.ConstructorAccessAbs typeName index -> do
+      canonicalize
+        env
+        target
+        (
+          Src.Source
+            area
+            Src.TargetAll
+            (
+              Src.Abs
+                [Src.Source emptyArea Src.TargetAll "__Y__"]
+                [Src.Source area Src.TargetAll (Src.ConstructorAccess typeName index (Src.Source emptyArea Src.TargetAll (Src.Var "__Y__")))]
+            )
+        )
+
     Src.ConstructorAccess typeName index value -> do
       value' <- canonicalize env target value
       let ctorNamePrefix =
@@ -328,8 +343,45 @@ instance Canonicalizable Src.Exp Can.Exp where
         Just constructorInfos ->
           throwError $ CompilationError (ConstructorAccessTooManyConstructors typeName (length constructorInfos)) (Context (Env.envCurrentPath env) area)
 
-        Nothing ->
-          throwError $ CompilationError (ConstructorAccessNoConstructorFound typeName) (Context (Env.envCurrentPath env) area)
+        Nothing -> do
+          let buildTupleWhere size = do
+                let index' = read index
+                    pats =
+                      map
+                        (\i ->
+                          if i == index' then
+                            Can.Canonical emptyArea (Can.PVar "__X__")
+                          else Can.Canonical emptyArea Can.PAny
+                        )
+                        [0..(size - 1)]
+                return $ Can.Canonical area (Can.Where value' [
+                      Can.Canonical area
+                        (
+                          Can.Is
+                            (Can.Canonical emptyArea (Can.PTuple pats))
+                            (Can.Canonical emptyArea (Can.Var "__X__"))
+                        )
+                    ])
+          if typeName == "(,)" then
+            buildTupleWhere 2
+          else if typeName == "(,,)" then
+            buildTupleWhere 3
+          else if typeName == "(,,,)" then
+            buildTupleWhere 4
+          else if typeName == "(,,,,)" then
+            buildTupleWhere 5
+          else if typeName == "(,,,,,)" then
+            buildTupleWhere 6
+          else if typeName == "(,,,,,,)" then
+            buildTupleWhere 7
+          else if typeName == "(,,,,,,,)" then
+            buildTupleWhere 8
+          else if typeName == "(,,,,,,,,)" then
+            buildTupleWhere 9
+          else if typeName == "(,,,,,,,,,)" then
+            buildTupleWhere 10
+          else
+            throwError $ CompilationError (ConstructorAccessNoConstructorFound typeName) (Context (Env.envCurrentPath env) area)
 
     _ ->
       error $ "unhandled node type\n" <> ppShow fullExp

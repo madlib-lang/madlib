@@ -176,6 +176,7 @@ data Exp_
   | ElseIfTarget SourceTarget
   | EndIfTarget
   | ConstructorAccess Name Name Exp
+  | ConstructorAccessAbs Name Name
   | TypedHole
   deriving(Eq, Show, Generic, Hashable)
 
