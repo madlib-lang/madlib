@@ -228,20 +228,20 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 }
 
 void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback) {
-  uv_process_t *childReq = (uv_process_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_process_t));
-  uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_process_options_t));
-  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_pipe_t));
-  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_pipe_t));
+  uv_process_t *childReq = (uv_process_t*)GC_MALLOC(sizeof(uv_process_t));
+  uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC(sizeof(uv_process_options_t));
+  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
+  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
 
-  ExecData_t *data = (ExecData_t*)GC_MALLOC_UNCOLLECTABLE(sizeof(ExecData_t));
+  ExecData_t *data = (ExecData_t*)GC_MALLOC(sizeof(ExecData_t));
   data->callback = callback;
   data->options = options;
   data->stdoutSize = 0;
   data->stderrSize = 0;
   data->stdoutOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
-  *data->stdoutOutput = '\0';
+  (data->stdoutOutput)[0] = '\0';
   data->stderrOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
-  *data->stderrOutput = '\0';
+  (data->stderrOutput)[0] = '\0';
   data->stdoutPipe = (uv_stream_t *)stdoutPipe;
   data->stderrPipe = (uv_stream_t *)stderrPipe;
 
@@ -298,23 +298,25 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   madlib__dictionary__Dictionary_t *envFromOptions = (madlib__dictionary__Dictionary_t *) madlib__record__internal__selectField((char*)"env", commandOptions);
   madlib__list__Node_t *envItems = envFromOptions->items;
   int itemCount = madlib__list__length(envItems);
-  char **env = (char**)GC_MALLOC_ATOMIC(sizeof(char*) * (itemCount + 1));
+  char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
   int index = 0;
-  while (envItems->next != NULL) {
+  while (envItems->value != NULL && envItems->next != NULL) {
+    printf("index: %d\n", index);
     char *key = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->first;
     size_t keyLength = strlen(key);
     char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
     size_t valueLength = strlen(value);
 
-    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength +valueLength + 2);
+    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength + valueLength + 2);
     memcpy(env[index], key, keyLength);
     env[index][keyLength] = '=';
     memcpy(env[index] + keyLength + 1, value, valueLength);
     env[index][keyLength + 1 + valueLength] = '\0';
+
     envItems = envItems->next;
+    index += 1;
   }
   env[itemCount] = 0; // must be null terminated from libuv docs
-
 
   options->exit_cb = onChildExit;
   options->file = command;
@@ -334,14 +336,16 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   if (spawnResult) {
     int64_t *boxedStatus = (int64_t*)1;
 
-    char *stdoutOutput = data->stdoutOutput;
-    char *stderrOutput = data->stderrOutput;
+    size_t stdoutLength = strlen(data->stdoutOutput);
+    size_t stderrLength = strlen(data->stderrOutput);
 
-    GC_FREE(data->stdoutPipe);
-    GC_FREE(data->stderrPipe);
-    GC_FREE(childReq);
-    GC_FREE(options);
-    GC_FREE(data);
+    char *stdoutOutput = (char*) GC_MALLOC_ATOMIC(stdoutLength + 1);
+    char *stderrOutput = (char*) GC_MALLOC_ATOMIC(stderrLength + 1);
+
+    memcpy(stdoutOutput, data->stdoutOutput, stdoutLength);
+    stdoutOutput[stdoutLength] = '\0';
+    memcpy(stderrOutput, data->stderrOutput, stderrLength);
+    stderrOutput[stderrLength] = '\0';
 
     __applyPAP__(callback, 3, boxedStatus, stdoutOutput, stderrOutput);
   } else {
@@ -350,7 +354,6 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   }
 
 }
-
 
 
 // thread

@@ -184,7 +184,7 @@ export exec = (command, args, options) => Wish((bad, good) =>
   execFFI(
     command,
     args,
-    options,
+    { cwd: options.cwd, env: Dictionary.merge(Env, options.env) },
     (exitCode, stdout, stderr) =>
       exitCode != 0
         ? bad(makeCommandResult(exitCode, stdout, stderr))
