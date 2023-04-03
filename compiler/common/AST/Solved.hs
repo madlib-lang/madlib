@@ -232,6 +232,25 @@ getDefaultImportNames ast =
         imports
 
 
+findForeignModuleForImportedName :: String -> AST -> Maybe FilePath
+findForeignModuleForImportedName expName ast =
+  let imports = aimports ast
+      found = List.find
+                (\case
+                  Untyped _ (DefaultImport (Untyped _ n) _ _) | n == expName ->
+                    True
+
+                  Untyped _ (NamedImport names _ _) ->
+                    if expName `elem` (map getValue names) then
+                      True
+                    else
+                      False
+                )
+                imports
+  in  getImportAbsolutePath <$> found
+        
+
+
 getADTConstructors :: TypeDecl -> Maybe [Constructor]
 getADTConstructors td = case td of
   Untyped _ ADT { adtconstructors } ->
@@ -521,3 +540,13 @@ getIsExpression :: Is -> Exp
 getIsExpression is = case is of
   Typed _ _ (Is _ exp) ->
     exp
+
+-- Get fn and args as a list
+collectAppArgs :: Bool -> Exp -> (Exp, [Exp])
+collectAppArgs isFirst app = case app of
+  Typed _ _ (App next arg isFinal) | not isFinal || isFirst ->
+    let (nextFn, nextArgs) = collectAppArgs False next
+    in  (nextFn, nextArgs <> [arg])
+
+  b ->
+    (b, [])

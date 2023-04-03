@@ -64,6 +64,7 @@ import Paths_madlib (version)
 import System.Environment
 import qualified Canonicalize.Coverage as Coverage
 import AST.Source (SourceTarget(TargetAll))
+import qualified Infer.Monomorphize as MM
 
 
 
@@ -251,7 +252,24 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
            , (mempty, mempty)
            )
 
+  MonomorphizedAST path -> nonInput $ do
+    mainFn <- MM.findExpByName (optEntrypoint options) "main"
+    -- liftIO $ putStrLn $ ppShow mainFn
+    case mainFn of
+      Just (fn, modulePath) -> do
+        mo <- MM.monomorphize MM.Env { MM.envCurrentModulePath = optEntrypoint options } fn
+        liftIO $ putStrLn $ "MONOMORPHIZED"
+        liftIO $ putStrLn $ ppShow mo
+        return ""
+
+    -- TODO: placeholder for now:
+    (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
+    return (ast, (mempty, mempty))
+
+    -- undefined
+
   CoreAST path -> nonInput $ do
+    Rock.fetch $ MonomorphizedAST path
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
     case optTarget options of
       TLLVM -> do

@@ -238,8 +238,8 @@ addContext env (Can.Canonical area _) (CompilationError err _) =
 
 improveRecordErrorTypes :: Type -> Type -> Infer (Type, Type)
 improveRecordErrorTypes t1 t2 = do
-  s1 <- gentleUnify t1 t2
-  s2 <- gentleUnify t2 t1
+  let s1 = gentleUnify t1 t2
+  let s2 = gentleUnify t2 t1
   let t1' = cleanBase $ apply (s1 `compose` s2) t1
   let t2' = cleanBase $ apply (s1 `compose` s2) t2
   return (t1', t2')
@@ -271,66 +271,62 @@ skipBase t = case t of
     t
 
 
-gentleUnifyVars :: Substitution -> [Type] -> [Type] -> Infer Substitution
-gentleUnifyVars s (tp : xs) (tp' : xs') = do
-  s1 <- gentleUnify tp tp'
-  gentleUnifyVars (compose s s1) xs xs'
-gentleUnifyVars s _ _  = return s
+gentleUnifyVars :: Substitution -> [Type] -> [Type] -> Substitution
+gentleUnifyVars s (tp : xs) (tp' : xs') =
+  let s1 = gentleUnify tp tp'
+  in  gentleUnifyVars (compose s s1) xs xs'
+gentleUnifyVars s _ _  = s
 
 
-gentleUnify :: Type -> Type -> Infer Substitution
-gentleUnify (l `TApp` r) (l' `TApp` r') = do
-  s1 <- gentleUnify l l'
-  s2 <- gentleUnify (apply s1 r) (apply s1 r')
-  return $ compose s1 s2
+gentleUnify :: Type -> Type -> Substitution
+gentleUnify (l `TApp` r) (l' `TApp` r') =
+  let s1 = gentleUnify l l'
+      s2 = gentleUnify (apply s1 r) (apply s1 r')
+  in  compose s1 s2
 
 gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base') of
-  (Just tBase, Just tBase') -> do
-    s1 <- gentleUnify tBase' (TRecord (M.union fields fields') base mempty)
-
-    let fieldsToCheck  = M.intersection fields fields'
+  (Just tBase, Just tBase') ->
+    let s1 = gentleUnify tBase' (TRecord (M.union fields fields') base mempty)
+        fieldsToCheck  = M.intersection fields fields'
         fieldsToCheck' = M.intersection fields' fields
 
-    s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-    s3 <- gentleUnify tBase tBase'
+        s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+        s3 = gentleUnify tBase tBase'
 
-    return $ s3 `compose` s2 `compose` s1
+    in  s3 `compose` s2 `compose` s1
 
-  (Just tBase, Nothing) -> do
-    s1 <- gentleUnify tBase (TRecord fields' base mempty)
+  (Just tBase, Nothing) ->
+    let s1 = gentleUnify tBase (TRecord fields' base mempty)
+    in  if not $ M.null (M.difference fields fields') then
+          M.empty
+        else
+          let fieldsToCheck  = M.intersection fields fields'
+              fieldsToCheck' = M.intersection fields' fields
+              s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          in  s2 `compose` s1
 
-    if not $ M.null (M.difference fields fields') then
-      return M.empty
-    else do
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-      s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+  (Nothing, Just tBase') ->
+    let s1 = gentleUnify tBase' (TRecord fields base' mempty)
+    in  if not $ M.null (M.difference fields' fields) then
+          M.empty
+        else
+          let fieldsToCheck  = M.intersection fields fields'
+              fieldsToCheck' = M.intersection fields' fields
+              s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          in  s2 `compose` s1
 
-      return $ s2 `compose` s1
-
-  (Nothing, Just tBase') -> do
-    s1 <- gentleUnify tBase' (TRecord fields base' mempty)
-
-    if not $ M.null (M.difference fields' fields) then
-      return M.empty
-    else do
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-      s2 <- gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      return $ s2 `compose` s1
-
-  _ -> do
+  _ ->
     let fieldsToCheck  = M.intersection fields fields'
         fieldsToCheck' = M.intersection fields' fields
-    gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+    in  gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-gentleUnify (TVar tv) t         = return $ M.singleton tv t
-gentleUnify t         (TVar tv) = return $ M.singleton tv t
+gentleUnify (TVar tv) t         = M.singleton tv t
+gentleUnify t         (TVar tv) = M.singleton tv t
 gentleUnify (TCon a fpa) (TCon b fpb)
-  | a == b && fpa == fpb = return M.empty
-  | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
-  | a /= b               = return M.empty
-  | fpa /= fpb           = return M.empty
+  | a == b && fpa == fpb = M.empty
+  | a == b && (fpa == "JSX" || fpb == "JSX") = M.empty
+  | a /= b               = M.empty
+  | fpa /= fpb           = M.empty
 
-gentleUnify _ _ = return M.empty
+gentleUnify _ _ = M.empty
 
