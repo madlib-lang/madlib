@@ -45,7 +45,7 @@ export exec = (command, args, options) => Wish((bad, good) => #- {
     __listToJSArray__(args),
     {
       cwd: options.cwd,
-      env: envItems.length > 0 ? env : process.env,
+      env: { ...process.env, ...env },
     }
   )
 
