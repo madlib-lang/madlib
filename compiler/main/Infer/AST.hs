@@ -51,11 +51,6 @@ import Canonicalize.Derive (deriveEqInstance, deriveInspectInstance)
 Module      : AST
 Description : Type checking for AST and Table data types
 License     : BSD-3
-
-High level type checking. The main function is solveTable, which takes a
-Canonical AST table and returns a Solved AST table. To do this it also
-requires an AST which is the AST of the entrypoint, where the whole compilation
-actually starts.
 -}
 
 

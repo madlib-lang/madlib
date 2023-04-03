@@ -1,0 +1,76 @@
+import {} from "Compare"
+import Dictionary from "Dictionary"
+import { Just } from "Maybe"
+import IO from "IO"
+
+memoize :: (Inspect b, Comparable a) => (a -> b) -> a -> b
+export memoize = (f) => {
+  IO.putLine("memoize")
+  cache = {{}}
+
+  return (a) => {
+    return where (Dictionary.get(a, cache)) {
+      Just(cached) =>
+        IO.trace("cached", cached)
+
+      _ =>
+        do {
+          IO.putLine("exec")
+          result = f(a)
+
+          _ = (() => {
+            cache = Dictionary.insert(a, result, cache)
+          })()
+
+          return result
+        }
+    }
+  }
+}
+
+// counter :: Integer -> {} -> Integer
+counter = (initialValue) => {
+  value = initialValue
+
+  return () => {
+    value = value + 1
+    return value
+  }
+}
+
+counter2 = () => {
+  value = 0
+
+  return () => {
+    value = value + 1
+    return value
+  }
+}
+
+main = () => {
+  count = 0
+
+  // add :: Integer -> Integer
+  add = (a) => {
+    count = count + 1
+    return a
+  }
+  
+  f = memoize(add)
+
+  f(1)
+  f(1)
+  f(1)
+
+  c = counter((0 :: Integer))
+  c()
+  c()
+  c()
+  IO.log(c())
+
+  c2 = (counter2() :: {} -> Integer)
+  c2()
+  c2()
+  c2()
+  IO.log(c2())
+}

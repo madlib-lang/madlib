@@ -67,16 +67,6 @@ getTypeShortname enabled n
       Nothing -> generateTypeShortname n
 
 
-collectAppArgs :: Bool -> Slv.Exp -> (Slv.Exp, [Slv.Exp])
-collectAppArgs isFirst app = case app of
-  Slv.Typed _ _ (Slv.App next arg isFinal) | not isFinal || isFirst ->
-    let (nextFn, nextArgs) = collectAppArgs False next
-    in  (nextFn, nextArgs <> [arg])
-
-  b ->
-    (b, [])
-
-
 collectAbsParams :: Slv.Exp -> ([String], [Slv.Exp])
 collectAbsParams abs = case abs of
   Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) [body]) ->
@@ -177,7 +167,7 @@ instance Processable Slv.Exp Core.Exp where
     Slv.JSExp js         -> return $ Core.Typed qt area [] (Core.JSExp js)
 
     Slv.App{} -> do
-      let (fn', args) = collectAppArgs True fullExp
+      let (fn', args) = Slv.collectAppArgs True fullExp
       fn''  <- toCore enabled fn'
       args' <- mapM (toCore enabled) args
       return $ Core.Typed qt area [] (Core.Call fn'' args')
