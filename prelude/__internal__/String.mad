@@ -42,17 +42,45 @@ instance Comparable String {
 
 #iftarget js
 
+/**
+ * Lowercase a string
+ *
+ * @since 0.0.5
+ * @example
+ * toLower("COOL") // "cool"
+ */
 toLower :: String -> String
 export toLower = (s) => #- s.toLowerCase() -#
 
+/**
+ * Uppercase a string
+ *
+ * @since 0.0.5
+ * @example
+ * toUpper("nice") // "NICE"
+ */
 toUpper :: String -> String
 export toUpper = (s) => #- s.toUpperCase() -#
 
 #elseif llvm
 
+/**
+ * Lowercase a string
+ *
+ * @since 0.0.5
+ * @example
+ * toLower("COOL") // "cool"
+ */
 toLower :: String -> String
 export toLower = extern "madlib__string__toLower"
 
+/**
+ * Uppercase a string
+ *
+ * @since 0.0.5
+ * @example
+ * toUpper("nice") // "NICE"
+ */
 toUpper :: String -> String
 export toUpper = extern "madlib__string__toUpper"
 
@@ -60,6 +88,13 @@ export toUpper = extern "madlib__string__toUpper"
 
 #iftarget js
 
+/**
+ * Split a string given another string
+ *
+ * @since 0.0.5
+ * @example
+ * split("x", `axbxcxd`) // ["a", "b", "c", "d"]
+ */
 split :: String -> String -> List String
 export split = (separator, str) => #- {
   const items = str.split(separator)
@@ -81,6 +116,13 @@ export split = (separator, str) => #- {
 
 #elseif llvm
 
+/**
+ * Split a string given another string
+ *
+ * @since 0.0.5
+ * @example
+ * split("x", `axbxcxd`) // ["a", "b", "c", "d"]
+ */
 split :: String -> String -> List String
 export split = extern "madlib__string__split"
 
@@ -107,13 +149,20 @@ export join = (a, xs) => pipe(
   List.reduce(mconcat, "")
 )(xs)
 
-
+/**
+ * Split a string by newlines
+ *
+ * @since 0.0.5
+ * @example
+ * lines(`line1
+ * line2
+ * line3`) // ["line1", "line2", "line3"]
+ */
 lines :: String -> List String
 export lines = split("\n")
 
 /**
- * Transform a List of Strings into a single String,
- * by adding newlines between each item in the List.
+ * Join a list of strings by newlines
  *
  * @since 0.0.5
  * @example
@@ -122,16 +171,27 @@ export lines = split("\n")
 unlines :: List String -> String
 export unlines = join("\n")
 
-
+/**
+ * Split a string by spaces
+ * @since 0.18.7
+ */
 words :: String -> List String
 export words = split(" ")
 
+/**
+ * Join a list of strings by spaces
+ * @since 0.18.7
+ */
 unwords :: List String -> String
 export unwords = join(" ")
 
 
 #iftarget js
 
+/**
+ * Convert a string into a list of characters
+ * @since 0.18.7
+ */
 toList :: String -> List Char
 export toList = (str) => #- {
   if (str.length === 0) {
@@ -146,7 +206,10 @@ export toList = (str) => #- {
   return result.n
 } -#
 
-
+/**
+ * Convert a list of characters to a string
+ * @since 0.18.7
+ */
 fromList :: List Char -> String
 export fromList = (list) => #- {
   let chars = []
@@ -159,10 +222,17 @@ export fromList = (list) => #- {
 
 #elseif llvm
 
+/**
+ * Convert a string into a list of characters
+ * @since 0.18.7
+ */
 toList :: String -> List Char
 export toList = extern "madlib__string__toList"
 
-
+/**
+ * Convert a list of characters to a string
+ * @since 0.18.7
+ */
 fromList :: List Char -> String
 export fromList = extern "madlib__string__fromList"
 
@@ -177,7 +247,7 @@ export mapChars = (f, s) => #- s.split("").map(f).join("") -#
 #elseif llvm
 
 /**
- * maps the chars of a String
+ * `map` the characters in a string
  * @since 0.12.0
  */
 mapChars :: (Char -> Char) -> String -> String
@@ -185,7 +255,10 @@ export mapChars = extern "madlib__string__mapChars"
 
 #endif
 
-
+/**
+ * `filter` the characters in a string
+ * @since 0.18.7
+ */
 filterChars :: (Char -> Boolean) -> String -> String
 export filterChars = (predicate, s) => pipe(
   toList,
@@ -193,7 +266,10 @@ export filterChars = (predicate, s) => pipe(
   fromList
 )(s)
 
-
+/**
+ * `reduce` over a list of characters
+ * @since 0.18.7
+ */
 reduceChars :: (a -> Char -> a) -> a -> String -> a
 export reduceChars = (f, initial, s) => pipe(
   toList,
@@ -203,28 +279,49 @@ export reduceChars = (f, initial, s) => pipe(
 
 #iftarget js
 
+/**
+ * Cut a segment from a string
+ * @since 0.18.7
+ */
 slice :: Integer -> Integer -> String -> String
 export slice = (start, end, s) => #- s.slice(start, end === 0 ? s.length : end) -#
 
 #elseif llvm
 
+/**
+ * Cut a segment from string
+ * @since 0.18.7
+ */
 slice :: Integer -> Integer -> String -> String
 export slice = extern "madlib__string__slice"
 
 #endif
 
+/**
+ * Test whether a string is empty / zero-length
+ * @since 0.18.7
+ */
 isEmpty :: String -> Boolean
 export isEmpty = (s) => s == ""
 
-
+/**
+ * Drop characters at the beginning of the string
+ * @since 0.18.7
+ */
 drop :: Integer -> String -> String
 export drop = (n, s) => slice(n, 0, s)
 
-
+/**
+ * Drop characters at the end of the string
+ * @since 0.18.7
+ */
 dropLast :: Integer -> String -> String
 export dropLast = (n, s) => slice(0, -n, s)
 
-
+/**
+ * Drop characters which match a predicate function
+ * @since 0.18.7
+ */
 dropWhile :: (Char -> Boolean) -> String -> String
 export dropWhile = (predicate, s) => pipe(
   toList,
@@ -232,15 +329,24 @@ export dropWhile = (predicate, s) => pipe(
   fromList
 )(s)
 
-
+/**
+ * Take characters from the beginning of the string
+ * @since 0.18.7
+ */
 take :: Integer -> String -> String
 export take = (n, s) => slice(0, n, s)
 
-
+/**
+ * Take characters from the end of the string
+ * @since 0.18.7
+ */
 takeLast :: Integer -> String -> String
 export takeLast = (n, s) => slice(-n, 0, s)
 
-
+/**
+ * Take characters which match a predicate function
+ * @since 0.18.7
+ */
 takeWhile :: (Char -> Boolean) -> String -> String
 export takeWhile = (predicate, s) => pipe(
   toList,
@@ -251,6 +357,10 @@ export takeWhile = (predicate, s) => pipe(
 
 #iftarget js
 
+/**
+ * Return the character at a given index
+ * @since 0.18.7
+ */
 charAt :: Integer -> String -> Maybe Char
 export charAt = (n, s) => #-{
   const c = s[n]
@@ -259,36 +369,72 @@ export charAt = (n, s) => #-{
 
 #elseif llvm
 
+/**
+ * Return the character at a given index
+ * @since 0.18.7
+ */
 charAt :: Integer -> String -> Maybe Char
 export charAt = extern "madlib__string__charAt"
 
 #endif
 
+/**
+ * Return the first character in a string
+ * @since 0.18.7
+ */
 firstChar :: String -> Maybe Char
 export firstChar = charAt(0)
 
+/**
+ * Return the last character in a string
+ * @since 0.18.7
+ */
 lastChar :: String -> Maybe Char
 export lastChar = (s) => charAt(length(s) - 1, s)
 
 #iftarget js
 
+/**
+ * Trim the leading and trailing whitespace
+ * @since 0.18.7
+ */
 trim :: String -> String
 export trim = (s) => #- s.trim() -#
 
+/**
+ * Trim the leading whitespace
+ * @since 0.18.7
+ */
 trimStart :: String -> String
 export trimStart = (s) => #- s.trimStart() -#
 
+/**
+ * Trim the trailing whitespace
+ * @since 0.18.7
+ */
 trimEnd :: String -> String
 export trimEnd = (s) => #- s.trimEnd() -#
 
 #elseif llvm
 
+/**
+ * Trim the leading and trailing whitespace
+ * @since 0.18.7
+ */
 trim :: String -> String
 export trim = extern "madlib__string__trim"
 
+/**
+ * Trim the leading whitespace
+ * @since 0.18.7
+ */
 trimStart :: String -> String
 export trimStart = extern "madlib__string__trimStart"
 
+/**
+ * Trim the trailing whitespace
+ * @since 0.18.7
+ */
 trimEnd :: String -> String
 export trimEnd = extern "madlib__string__trimEnd"
 
@@ -297,16 +443,28 @@ export trimEnd = extern "madlib__string__trimEnd"
 
 #iftarget js
 
+/**
+ * Return the length of a string
+ * @since 0.18.7
+ */
 length :: String -> Integer
 export length = (s) => #- s.length -#
 
 #elseif llvm
 
+/**
+ * Return the length of a string
+ * @since 0.18.7
+ */
 length :: String -> Integer
 export length = extern "madlib__string__length"
 
 #endif
 
+/**
+ * Repeat a character a certain number of times
+ * @since 0.18.7
+ */
 repeat :: Char -> Integer -> String
 export repeat = (c, n) => pipe(
   List.repeat(c),
@@ -316,9 +474,17 @@ export repeat = (c, n) => pipe(
 
 #iftarget js
 
+/**
+ * Test whether a string matches a given regular expression
+ * @since 0.18.7
+ */
 match :: String -> String -> Boolean
 export match = (regex, input) => #- input.match(regex) !== null -#
 
+/**
+ * Replace part of a string given a regular expression
+ * @since 0.18.7
+ */
 replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex, "g"), replacing)
@@ -326,9 +492,17 @@ export replace = (regex, replacing, input) => (#-
 
 #elseif llvm
 
+/**
+ * Test whether a string matches a given regular expression
+ * @since 0.18.7
+ */
 match :: String -> String -> Boolean
 export match = extern "madlib__string__match"
 
+/**
+ * Replace part of a string given a regular expression
+ * @since 0.12.0
+ */
 replace :: String -> String -> String -> String
 export replace = extern "madlib__string__replace"
 
@@ -338,14 +512,14 @@ export replace = extern "madlib__string__replace"
 #iftarget js
 
 /**
- * pushes a char at the beginning of a String
+ * Pushes a char at the beginning of a String
  * @since 0.12.0
  */
 pushChar :: Char -> String -> String
 export pushChar = (c, s) => #- c + s -#
 
 /**
- * appends a char at the end of a String
+ * Appends a char at the end of a String
  * @since 0.12.0
  */
 appendChar :: Char -> String -> String
