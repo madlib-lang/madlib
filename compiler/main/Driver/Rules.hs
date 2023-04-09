@@ -36,6 +36,7 @@ import qualified Data.Map                      as Map
 import qualified Data.Set                      as Set
 import           Control.Monad.State
 import           Control.Monad.Except
+import           Data.IORef
 import Text.Show.Pretty (ppShow)
 import Run.Options
 import Data.Bifunctor (first)
@@ -65,6 +66,7 @@ import System.Environment
 import qualified Canonicalize.Coverage as Coverage
 import AST.Source (SourceTarget(TargetAll))
 import qualified Infer.Monomorphize as MM
+import           Infer.MonomorphizationState
 
 
 
@@ -253,24 +255,34 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
            )
 
   MonomorphizedAST path -> nonInput $ do
-    mainFn <- MM.findExpByName (optEntrypoint options) "main"
-    -- liftIO $ putStrLn $ ppShow mainFn
-    case mainFn of
-      Just (fn, modulePath) -> do
-        mo <- MM.monomorphize MM.Env { MM.envCurrentModulePath = optEntrypoint options } fn
-        liftIO $ putStrLn $ "MONOMORPHIZED"
-        liftIO $ putStrLn $ ppShow mo
-        return ""
+    state <- liftIO $ readIORef monomorphizationState
 
-    -- TODO: placeholder for now:
+    -- We should move all that to a separate Query and reset the state before
+    -- running it, so that it would happen again only if a source AST has
+    -- changed
+    when (Map.null state) $ do
+      mainFn <- MM.findExpByName (optEntrypoint options) "main"
+      case mainFn of
+        Just (fn, modulePath) -> do
+          MM.monomorphizeDefinition
+            True
+            MM.Env { MM.envCurrentModulePath = modulePath, MM.envSubstitution = mempty }
+            "main"
+            (Slv.getType fn)
+
+        _ ->
+          return ""
+
+      return ()
+
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
-    return (ast, (mempty, mempty))
+    merged <- liftIO $ MM.mergeResult ast
 
-    -- undefined
+    return (merged, (mempty, mempty))
 
   CoreAST path -> nonInput $ do
-    Rock.fetch $ MonomorphizedAST path
-    (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
+    slvAst <- Rock.fetch $ MonomorphizedAST path
+    -- (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
     case optTarget options of
       TLLVM -> do
         let coreAst          = astToCore False slvAst

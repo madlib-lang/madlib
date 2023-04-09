@@ -245,6 +245,9 @@ findForeignModuleForImportedName expName ast =
                       True
                     else
                       False
+
+                  _ ->
+                    False
                 )
                 imports
   in  getImportAbsolutePath <$> found

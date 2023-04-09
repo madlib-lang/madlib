@@ -17,7 +17,7 @@ data MonomorphizationRequest
   { mrIndex :: Int
   , mrResult :: Maybe Exp
   }
-  deriving(Eq, Ord)
+  deriving(Eq, Ord, Show)
 
 data FunctionId
   = FunctionId
@@ -25,13 +25,13 @@ data FunctionId
   , fiModulePath :: FilePath
   , fiMonomorphicType :: Type
   }
-  deriving(Eq, Ord)
+  deriving(Eq, Ord, Show)
 
-newtype MonomorphizationState
-  = MonomorphizationState
-  { msRequests :: Map.Map FunctionId MonomorphizationRequest
-  }
-  deriving(Eq, Ord)
+
+buildMonomorphizedName :: String -> Int -> String
+buildMonomorphizedName fnName index =
+  fnName ++ "__" ++ show index
+
 
 makeMonomorphizedName :: String -> FilePath -> Type -> IO String
 makeMonomorphizedName fnName modulePath t = do
@@ -39,7 +39,7 @@ makeMonomorphizedName fnName modulePath t = do
   let fnId = FunctionId fnName modulePath t
   case Map.lookup fnId state of
     Just MonomorphizationRequest { mrIndex } ->
-      return $ fnName ++ "__" ++ show mrIndex
+      return $ buildMonomorphizedName fnName mrIndex
 
     Nothing ->
       return fnName
