@@ -136,6 +136,9 @@ templateStringToCalls exps = case exps of
   [last] ->
     last
 
+  [] ->
+    Core.Typed ([] :=> tStr) emptyArea [] (Core.Literal $ Core.LStr "")
+
 
 
 class Processable a b where
