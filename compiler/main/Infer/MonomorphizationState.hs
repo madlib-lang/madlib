@@ -12,6 +12,21 @@ monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
 monomorphizationState = unsafePerformIO $ newIORef Map.empty
 
+data ScopeState
+  = ScopeState
+      { ssRequests :: Map.Map FunctionId MonomorphizationRequest
+      , ssDefinitions :: Map.Map String Exp
+      }
+      deriving(Eq, Ord, Show)
+
+-- State for local functions that need to be monomorphized
+-- Each item in the list is a full state for a given scope
+-- the last one is the current scope and the first one is
+-- the one in the highest level in the function body.
+makeLocalMonomorphizationState :: () -> IORef [ScopeState]
+{-# NOINLINE makeLocalMonomorphizationState #-}
+makeLocalMonomorphizationState _ = unsafePerformIO $ newIORef []
+
 data MonomorphizationRequest
   = MonomorphizationRequest
   { mrIndex :: Int
