@@ -42,6 +42,7 @@ data Env
   = Env
   { envCurrentModulePath :: FilePath
   , envSubstitution :: Substitution
+  , envLocalState :: IORef [ScopeState]
   }
 
 
@@ -104,7 +105,14 @@ monomorphizeDefinition isMain env@Env{ envCurrentModulePath } fnName typeItIsCal
                   else
                     monomorphicName
 
-            monomorphized <- monomorphize env{ envSubstitution = s, envCurrentModulePath = fnModulePath } (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
+            monomorphized <-
+              monomorphize
+                env
+                  { envSubstitution = s
+                  , envCurrentModulePath = fnModulePath
+                  , envLocalState = makeLocalMonomorphizationState ()
+                  }
+                (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
             liftIO $ setRequestResult fnName fnModulePath typeItIsCalledWith monomorphized
 
             return nameToUse
@@ -151,6 +159,40 @@ monomorphizeApp env@Env{ envSubstitution } exp = case exp of
     return (e', False)
 
 
+monomorphizeBodyExp :: Env -> Exp -> Monomorphize Exp
+monomorphizeBodyExp env exp = case exp of
+  Typed (_ :=> t) _ (Assignment n _) | isFunctionType t -> do
+    localState <- liftIO $ readIORef $ envLocalState env
+    let currentScopeState = last localState
+    let withNewDefinition =
+          currentScopeState
+            { ssDefinitions = Map.insert n exp (ssDefinitions currentScopeState) }
+    let updatedLocalState = init localState <> [withNewDefinition]
+    liftIO $ writeIORef (envLocalState env) updatedLocalState
+
+    -- Do we need to monomorphize this at this point? It should probably be done at the time
+    -- we find a request.
+    -- monomorphize env exp
+    return exp
+
+  or ->
+    monomorphize env or
+
+
+pushNewScopeState :: Env -> Monomorphize ()
+pushNewScopeState env = do
+  localState <- liftIO $ readIORef $ envLocalState env
+  let withNewScope = localState <> [ScopeState mempty mempty]
+  liftIO $ writeIORef (envLocalState env) withNewScope
+
+popScopeState :: Env -> Monomorphize ScopeState
+popScopeState env = do
+  localState <- liftIO $ readIORef $ envLocalState env
+  let withPoppedScope = init localState
+  let poppedState = last localState
+  liftIO $ writeIORef (envLocalState env) withPoppedScope
+  return poppedState
+
 
 -- TODO: we need special handling for monomorphizing local functions
 monomorphize :: Env -> Exp -> Monomorphize Exp
@@ -175,7 +217,13 @@ monomorphize env@Env{ envSubstitution } exp = case exp of
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
 
   Typed qt area (Abs (Typed pQt pArea pName) es) -> do
-    es' <- mapM (monomorphize env) es
+    pushNewScopeState env
+    es' <- mapM (monomorphizeBodyExp env) es
+    poppedScopeState <- popScopeState env
+    -- TODO: look for monomorphization requests in the poppedScopeState and if there
+    -- is any, we need to go through es' again and introduce the monomorphic versions
+    liftIO $ putStrLn $ ppShow poppedScopeState
+
     return $
       Typed (applyAndCleanQt envSubstitution qt) area
         (Abs (Typed (applyAndCleanQt envSubstitution pQt) pArea pName) es')

@@ -264,9 +264,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       mainFn <- MM.findExpByName (optEntrypoint options) "main"
       case mainFn of
         Just (fn, modulePath) -> do
+          let localState = makeLocalMonomorphizationState ()
           MM.monomorphizeDefinition
             True
-            MM.Env { MM.envCurrentModulePath = modulePath, MM.envSubstitution = mempty }
+            MM.Env
+              { MM.envCurrentModulePath = modulePath
+              , MM.envSubstitution = mempty
+              , MM.envLocalState = localState
+              }
             "main"
             (Slv.getType fn)
 
