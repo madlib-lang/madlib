@@ -371,7 +371,8 @@ retrieveConstructorStructType env symbolTable t =
           Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
 
         e ->
-          error $ "type not found: "<>ppShow key<>"\nfound: "<>ppShow e<>"\nST: "<>ppShow symbolTable<>"\ncurrent module: "<>ppShow (envASTPath env)
+          boxType
+          -- error $ "type not found: "<>ppShow key<>"\nfound: "<>ppShow e<>"\nST: "<>ppShow symbolTable<>"\ncurrent module: "<>ppShow (envASTPath env)
 
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand -> m Operand
