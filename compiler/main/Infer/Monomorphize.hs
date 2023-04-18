@@ -16,8 +16,16 @@ import           Text.Show.Pretty
 import           Infer.Unify (gentleUnify)
 import           Infer.Type
 import           Infer.Substitute
+import qualified Data.List as List
+import qualified Data.Maybe as Maybe
+import qualified Data.Set as Set
+import Explain.Location (emptyArea)
 
+-- TODO: consider if monomorphizing local functions would have an impact
+-- with regards to mutations
+-- it does and we need to add value restriction
 
+-- TODO: move this to a Query!
 findExpByName :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m (Maybe (Exp, FilePath))
 findExpByName moduleWhereItsUsed expName = do
   maybeExp <- Rock.fetch $ ForeignExp moduleWhereItsUsed expName
@@ -27,7 +35,6 @@ findExpByName moduleWhereItsUsed expName = do
 
     Nothing -> do
       (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-      -- liftIO $ putStrLn $ ppShow $ aimports ast
       case findForeignModuleForImportedName expName ast of
         Just foreignModulePath -> do
           found <- Rock.fetch $ ForeignExp foreignModulePath expName
@@ -35,6 +42,57 @@ findExpByName moduleWhereItsUsed expName = do
 
         _ ->
           return Nothing
+
+findMethodByNameAndTypeInImports :: (Rock.MonadFetch Query m, MonadIO m) => [FilePath] -> String -> Type -> m (Maybe (Exp, FilePath))
+findMethodByNameAndTypeInImports importPaths methodName typeItsCalledWith = case importPaths of
+  [] ->
+    return Nothing
+
+  (modulePath : nextModulePaths) -> do
+    found <- findMethodByNameAndType modulePath methodName typeItsCalledWith
+    case found of
+      Just method ->
+        return $ Just method
+
+      Nothing ->
+        findMethodByNameAndTypeInImports nextModulePaths methodName typeItsCalledWith
+
+findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> Type -> m (Maybe (Exp, FilePath))
+findMethodByNameAndType moduleWhereItsUsed methodName typeItsCalledWith = do
+  maybeExp <- Rock.fetch $ ForeignMethod moduleWhereItsUsed methodName typeItsCalledWith
+  case maybeExp of
+    Just found ->
+      return $ Just (found, moduleWhereItsUsed)
+
+    Nothing -> do
+      (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+      let imports = map getImportAbsolutePath (aimports ast)
+      findMethodByNameAndTypeInImports imports methodName typeItsCalledWith
+
+findModulePathForInterfaceByMethodNameInImports :: (Rock.MonadFetch Query m, MonadIO m) => [FilePath] -> String -> m (Maybe FilePath)
+findModulePathForInterfaceByMethodNameInImports importPaths methodName = case importPaths of
+  [] ->
+    return Nothing
+
+  (modulePath : nextModulePaths) -> do
+    found <- findModulePathForInterfaceByMethodName modulePath methodName
+    case found of
+      Just realPath ->
+        return $ Just realPath
+
+      Nothing ->
+        findModulePathForInterfaceByMethodNameInImports nextModulePaths methodName
+
+findModulePathForInterfaceByMethodName :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m (Maybe FilePath)
+findModulePathForInterfaceByMethodName moduleWhereItsUsed methodName = do
+  isHere <- Rock.fetch $ DefinesInterfaceForMethod moduleWhereItsUsed methodName
+  if isHere then
+    return $ Just moduleWhereItsUsed
+  else do
+    (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+    let imports = map getImportAbsolutePath (aimports ast)
+    findModulePathForInterfaceByMethodNameInImports imports methodName
+
 
 type Monomorphize a = forall m . (Rock.MonadFetch Query m, MonadIO m) => m a
 
@@ -76,49 +134,144 @@ removeParameterPlaceholdersAndUpdateName newName fnDefinition = case fnDefinitio
 
 
 monomorphizeDefinition :: Bool -> Env -> String -> Type -> Monomorphize String
-monomorphizeDefinition isMain env@Env{ envCurrentModulePath } fnName typeItIsCalledWith = do
-  state <- liftIO $ readIORef monomorphizationState
-  foundExp <- findExpByName envCurrentModulePath fnName
+monomorphizeDefinition isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith = do
+  liftIO $ putStrLn $ "current def: " <> fnName
+  -- first we look in the local namespace
+  localState <- liftIO $ readIORef envLocalState
+  let flippedScopes = reverse localState
+  let foundScopeIndex = List.findIndex (\ScopeState { ssDefinitions } -> Map.member fnName ssDefinitions) flippedScopes
+  case foundScopeIndex of
+    Just index -> do
+      let ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
+      let (Just fnDefinition) = Map.lookup fnName ssDefinitions
+      let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
+      let fnId = FunctionId fnName envCurrentModulePath typeItIsCalledWith
+      let nextIndex = Map.size $ Map.filterWithKey (\FunctionId { fiFunctionName } _ -> fiFunctionName == fnName) ssRequests
+      let req = MonomorphizationRequest nextIndex Nothing
+      let withNewRequest = Map.insert fnId req ssRequests
+      let updatedScope = ScopeState { ssRequests = withNewRequest, ssDefinitions }
+      let monomorphicName = buildMonomorphizedName fnName nextIndex
+      let updatedScopes = List.reverse $ zipWith
+            (\scope i -> (if i == index then updatedScope else scope))
+            flippedScopes
+            [0..]
+      liftIO $ writeIORef envLocalState updatedScopes
+      monomorphized <-
+        monomorphize
+          env
+            { envSubstitution = s
+            }
+          (removeParameterPlaceholdersAndUpdateName monomorphicName fnDefinition)
+      -- TODO: set `monomorphized` for the request result
+      let updatedReq = MonomorphizationRequest nextIndex (Just monomorphized)
+      let withUpdatedRequest = Map.insert fnId updatedReq ssRequests
+      let updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions }
+      let updatedScopes2 = List.reverse $ zipWith
+            (\scope i -> (if i == index then updatedScope2 else scope))
+            flippedScopes
+            [0..]
+      liftIO $ writeIORef envLocalState updatedScopes2
 
-  liftIO $ putStrLn $ ppShow fnName
-  liftIO $ putStrLn $ ppShow $ foundExp /= Nothing
-  liftIO $ putStrLn ""
+      return monomorphicName
 
-  case foundExp of
-    Just (fnDefinition, fnModulePath) ->
-      if isExtern fnDefinition then
-        -- For now we skip externs completely
-        return fnName
-      else do
-        let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
-        let fnId = FunctionId fnName fnModulePath typeItIsCalledWith
+    Nothing -> do
+      -- then we look in the global namesapce if not found in local namespace
+      state <- liftIO $ readIORef monomorphizationState
+      foundExp <- findExpByName envCurrentModulePath fnName
 
-        case Map.lookup fnId state of
-          Just MonomorphizationRequest {} ->
-            liftIO $ makeMonomorphizedName fnName fnModulePath typeItIsCalledWith
+      -- liftIO $ putStrLn $ ppShow fnName
+      -- liftIO $ putStrLn $ ppShow $ foundExp /= Nothing
+      -- liftIO $ putStrLn ""
 
-          Nothing -> do
-            monomorphicName <- liftIO $ newRequest fnName fnModulePath typeItIsCalledWith
-            let nameToUse =
-                  if isMain then
-                    fnName
-                  else
-                    monomorphicName
+      case foundExp of
+        Just (fnDefinition, fnModulePath) ->
+          if isExtern fnDefinition then do
+            -- For now we skip externs completely
+            -- let fnId = FunctionId fnName fnModulePath (getType fnDefinition)
+            liftIO $ setRequestResult fnName fnModulePath (getType fnDefinition) fnDefinition
+            return fnName
+          else do
+            let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
+            let fnId = FunctionId fnName fnModulePath typeItIsCalledWith
 
-            monomorphized <-
-              monomorphize
-                env
-                  { envSubstitution = s
-                  , envCurrentModulePath = fnModulePath
-                  , envLocalState = makeLocalMonomorphizationState ()
-                  }
-                (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
-            liftIO $ setRequestResult fnName fnModulePath typeItIsCalledWith monomorphized
+            case Map.lookup fnId state of
+              Just MonomorphizationRequest {} ->
+                liftIO $ makeMonomorphizedName fnName fnModulePath typeItIsCalledWith
 
-            return nameToUse
+              Nothing -> do
+                monomorphicName <- liftIO $ newRequest fnName fnModulePath typeItIsCalledWith
+                let nameToUse =
+                      if isMain then
+                        fnName
+                      else
+                        monomorphicName
 
-    Nothing ->
-      return fnName
+                monomorphized <-
+                  monomorphize
+                    env
+                      { envSubstitution = s
+                      , envCurrentModulePath = fnModulePath
+                      , envLocalState = makeLocalMonomorphizationState ()
+                      }
+                    (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
+                liftIO $ setRequestResult fnName fnModulePath typeItIsCalledWith monomorphized
+
+                return nameToUse
+
+        Nothing -> do
+          -- Try for methods:
+          foundMethod <- findMethodByNameAndType envCurrentModulePath fnName typeItIsCalledWith
+          foundInterfaceModule <- findModulePathForInterfaceByMethodName envCurrentModulePath fnName
+
+          -- liftIO $ putStrLn $ "foundInterfaceModule:" <> ppShow foundInterfaceModule
+          -- liftIO $ putStrLn ""
+
+          case (foundMethod, foundInterfaceModule) of
+            (Just (methodExp@(Typed (ps :=> t) area (Assignment n method)), methodModulePath), Just interfaceModulePath) -> do
+              let s = gentleUnify typeItIsCalledWith (getType methodExp)
+              let fnId = FunctionId fnName interfaceModulePath typeItIsCalledWith
+
+              case Map.lookup fnId state of
+                Just MonomorphizationRequest {} ->
+                  liftIO $ makeMonomorphizedName fnName interfaceModulePath typeItIsCalledWith
+
+                Nothing -> do
+                  monomorphicName <- liftIO $ newRequest fnName interfaceModulePath typeItIsCalledWith
+
+                  -- Add import
+                  imports <- liftIO $ readIORef monomorphizationImports
+                  let importsForCurrentModule = Maybe.fromMaybe mempty $ Map.lookup envCurrentModulePath imports
+                  let withNewImport = Map.insertWith (<>) interfaceModulePath (Set.singleton monomorphicName) importsForCurrentModule
+                  let updatedImports = Map.insert envCurrentModulePath withNewImport imports
+                  liftIO $ writeIORef monomorphizationImports updatedImports
+
+                  let nameToUse =
+                        if isMain then
+                          fnName
+                        else
+                          monomorphicName
+
+                  let methodExp' =
+                        if isFunctionType t then
+                          methodExp
+                        else
+                          Typed (ps :=> t) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
+                  let methodExp'' = Typed (getQualType methodExp') (getArea methodExp') (Export methodExp')
+
+                  monomorphized <-
+                    monomorphize
+                      env
+                        { envSubstitution = s
+                        , envCurrentModulePath = methodModulePath
+                        , envLocalState = makeLocalMonomorphizationState ()
+                        }
+                      (removeParameterPlaceholdersAndUpdateName nameToUse methodExp'')
+                  liftIO $ setRequestResult fnName interfaceModulePath typeItIsCalledWith monomorphized
+
+                  return nameToUse
+
+            _ ->
+              return fnName
 
 
 monomorphizeApp :: Env -> Exp -> Monomorphize (Exp, Bool)
@@ -147,7 +300,8 @@ monomorphizeApp env@Env{ envSubstitution } exp = case exp of
   Typed qt area (Var fnName False) -> do
     -- TODO: handle case of Namespace.fnName?
     monomorphicName <- monomorphizeDefinition False env fnName (apply envSubstitution $ getQualified qt)
-    liftIO $ putStrLn $ "MONO NAME: " ++ monomorphicName
+    -- liftIO $ putStrLn $ "MONO NAME: " ++ monomorphicName
+    -- liftIO $ putStrLn $ "envSubstitution: " ++ ppShow envSubstitution
 
     return
       ( Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
@@ -161,7 +315,7 @@ monomorphizeApp env@Env{ envSubstitution } exp = case exp of
 
 monomorphizeBodyExp :: Env -> Exp -> Monomorphize Exp
 monomorphizeBodyExp env exp = case exp of
-  Typed (_ :=> t) _ (Assignment n _) | isFunctionType t -> do
+  Typed _ _ (Assignment n (Typed _ _ Abs{})) -> do
     localState <- liftIO $ readIORef $ envLocalState env
     let currentScopeState = last localState
     let withNewDefinition =
@@ -194,6 +348,22 @@ popScopeState env = do
   return poppedState
 
 
+replaceLocalFunctions :: Map.Map FunctionId MonomorphizationRequest -> Exp -> [Exp]
+replaceLocalFunctions requests exp = case getExpName exp of
+  Just name ->
+    let matchingRequests = Map.elems $ Map.filterWithKey (\fnId _ -> fiFunctionName fnId == name) requests
+    in  case matchingRequests of
+      [] ->
+        []
+        -- [exp]
+
+      reqs ->
+        map (Maybe.fromMaybe undefined . mrResult) reqs
+
+  Nothing ->
+    [exp]
+
+
 -- TODO: we need special handling for monomorphizing local functions
 monomorphize :: Env -> Exp -> Monomorphize Exp
 monomorphize env@Env{ envSubstitution } exp = case exp of
@@ -214,30 +384,48 @@ monomorphize env@Env{ envSubstitution } exp = case exp of
             return monomorphized
           else
             monomorphize env e
+    -- e' <- monomorphize env e
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
+
+  -- Look for nullary method access
+  Typed (_ :=> t) area (Var varName False) | not (isFunctionType t) -> do
+    found <- findMethodByNameAndType (envCurrentModulePath env) varName t
+    -- liftIO $ putStrLn "POTENTIAL NULLARY METHOD:"
+    -- liftIO $ putStrLn $ ppShow found
+    case found of
+      Just _ -> do
+        monomorphic <- monomorphizeApp env exp
+        let (Typed _ _ monomorphicVar, _) = monomorphic
+        return $ Typed ([] :=> t) area (App (Typed ([] :=> (tUnit `fn` t)) area monomorphicVar) (Typed ([] :=> tUnit) area LUnit) True)
+
+      _ ->
+        return exp
+    -- return exp
 
   Typed qt area (Abs (Typed pQt pArea pName) es) -> do
     pushNewScopeState env
     es' <- mapM (monomorphizeBodyExp env) es
     poppedScopeState <- popScopeState env
+    let requestsFromScope = ssRequests poppedScopeState
+
+    let es'' =
+          if not (Map.null requestsFromScope) then
+            es' >>= replaceLocalFunctions requestsFromScope
+          else
+            es'
     -- TODO: look for monomorphization requests in the poppedScopeState and if there
     -- is any, we need to go through es' again and introduce the monomorphic versions
-    liftIO $ putStrLn $ ppShow poppedScopeState
+    -- liftIO $ putStrLn $ ppShow poppedScopeState
 
     return $
       Typed (applyAndCleanQt envSubstitution qt) area
-        (Abs (Typed (applyAndCleanQt envSubstitution pQt) pArea pName) es')
+        (Abs (Typed (applyAndCleanQt envSubstitution pQt) pArea pName) es'')
 
   -- TODO: maybe remove as this should probably not happen?
   Typed qt area (Placeholder (ref, ts) e) -> do
-    e' <- monomorphize env e
-    -- let newRef = case ref of
-    --         ClassRef n preds call _ ->
-    --           ClassRef n preds call False
-
-    --         or ->
-    --           or
-    return $ Typed (applyAndCleanQt envSubstitution qt) area (Placeholder (ref, apply envSubstitution ts) e')
+    -- e' <- monomorphize env e
+    -- return $ Typed (applyAndCleanQt envSubstitution qt) area (Placeholder (ref, apply envSubstitution ts) e')
+    monomorphize env e
 
   Typed qt area e ->
     return $ Typed (applyAndCleanQt envSubstitution qt) area e
@@ -264,13 +452,14 @@ getMonomorphicFunctionNamesAndTypes fnName state =
   in  map (\(FunctionId name _ t, MonomorphizationRequest index _) -> (buildMonomorphizedName name index, t)) $ Map.toList monomorphicInstances
 
 
-replaceDefinitionWithMonomorphicOnes ::  Map.Map FunctionId MonomorphizationRequest -> Exp -> [Exp]
+replaceDefinitionWithMonomorphicOnes :: Map.Map FunctionId MonomorphizationRequest -> Exp -> [Exp]
 replaceDefinitionWithMonomorphicOnes state exp =
   case getExpName exp of
     Just n ->
       case getMonomorphicFunctions n state of
         [] ->
-          [exp]
+          []
+          -- [exp]
 
         monomorphicOnes ->
           -- TODO: at some point remove the original function, but for now keep
@@ -278,33 +467,35 @@ replaceDefinitionWithMonomorphicOnes state exp =
           if n == "main" then
             monomorphicOnes
           else
-            exp : monomorphicOnes
+            monomorphicOnes
+            -- exp : monomorphicOnes
 
     Nothing ->
       [exp]
 
+
+findMonomorphicMethods :: Map.Map FunctionId MonomorphizationRequest -> Interface -> [Exp]
+findMonomorphicMethods state interface = case interface of
+  Untyped _ (Interface _ _ _ methods _) ->
+    let methodNames = Map.keys methods
+        monomorphicMethods = concatMap (`getMonomorphicFunctions` state) methodNames
+    in  monomorphicMethods
+
+  _ ->
+    []
+
+
 replaceTypedNameWithMonomorphicOnes ::  Map.Map FunctionId MonomorphizationRequest -> Solved String -> [Solved String]
-replaceTypedNameWithMonomorphicOnes _ (Typed _ _ _) = undefined
+replaceTypedNameWithMonomorphicOnes _ Typed{} = undefined
 replaceTypedNameWithMonomorphicOnes state name@(Untyped area n) =
   let monomorphizedNamesAndTypes = getMonomorphicFunctionNamesAndTypes n state
-      mapped = map (\(monoName, t) -> Untyped area monoName) monomorphizedNamesAndTypes
-  in  if null mapped then
-        [name]
-      else
-        name : mapped
-  -- case getValue name of
-  --   Just n ->
-  --     case getMonomorphicFunctions n state of
-  --       [] ->
-  --         [exp]
+      mapped = map (\(monoName, _) -> Untyped area monoName) monomorphizedNamesAndTypes
+  in  mapped
+  -- in  if null mapped then
+  --       [name]
+  --     else
+  --       name : mapped
 
-  --       monomorphicOnes ->
-  --         -- TODO: at some point remove the original function, but for now keep
-  --         -- it
-  --         exp : monomorphicOnes
-
-  --   Nothing ->
-  --     [exp]
 
 filterMonomorphicFunctionsForModule :: Map.Map FunctionId MonomorphizationRequest -> FilePath -> Map.Map FunctionId MonomorphizationRequest
 filterMonomorphicFunctionsForModule state modulePath =
@@ -316,7 +507,11 @@ mergeResult :: AST -> IO AST
 mergeResult ast@AST{ apath = Just modulePath } = do
   state <- readIORef monomorphizationState
   let monomorphizedFunctionsForModule = filterMonomorphicFunctionsForModule state modulePath
-
+  let methodExps = ainterfaces ast >>= findMonomorphicMethods monomorphizedFunctionsForModule
+  -- liftIO $ putStrLn $ "module path: " <> modulePath
+  -- liftIO $ putStrLn $ ppShow $ ainterfaces ast
+  -- liftIO $ putStrLn $ ppShow methodExps
+  -- liftIO $ putStrLn $ ppShow monomorphizedFunctionsForModule
   let newExps = aexps ast >>= replaceDefinitionWithMonomorphicOnes monomorphizedFunctionsForModule
   let newImports =
         map
@@ -325,15 +520,22 @@ mergeResult ast@AST{ apath = Just modulePath } = do
               let monomorphizedFunctionsForImport = filterMonomorphicFunctionsForModule state abs
               in  Untyped area (NamedImport (names >>= replaceTypedNameWithMonomorphicOnes monomorphizedFunctionsForImport) rel abs)
 
-            -- Untyped area (DefaultImport name rel abs) ->
-            --   let monomorphizedFunctionsForImport = filterMonomorphicFunctionsForModule state abs
-            --   in  undefined
-
             or ->
               or
           )
           (aimports ast)
   
-  return ast { aexps = newExps, aimports = newImports }
+  allMethodImports <- liftIO $ readIORef monomorphizationImports
+  let importedMethods = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup modulePath allMethodImports
+  let importsForMethods =
+        map
+          (\(modulePath, names) ->
+              let solvedNames = map (Untyped emptyArea) (Set.toList names)
+              in  Untyped emptyArea (NamedImport solvedNames modulePath modulePath)
+          )
+          importedMethods
+
+
+  return ast { aexps = methodExps ++ newExps, aimports = importsForMethods ++ newImports, ainstances = [], ainterfaces = [] }
 mergeResult ast =
   return ast

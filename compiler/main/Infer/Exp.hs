@@ -220,7 +220,6 @@ inferBody options env (e : es) = do
   (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
   (sb, ps', tb, eb) <- inferBody options (apply s env') es
   let finalS = s `compose` (sb `compose` s)
-  -- let finalS = s `compose` sb-- `compose` s
 
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
@@ -911,6 +910,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       t'  = apply s'' tv
       vs  =
         if isLet then
+          -- ftv t'
           ftvForLetGen t'
         else
           ftv t'
@@ -946,7 +946,16 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
   let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
   let sFinal = sDefaults `compose` s''
-  let sc     = apply sFinal $ quantify gs (rs'' :=> t')
+  -- let sc     = apply sFinal $ quantify gs (rs'' :=> t')
+  -- let sc'     = apply sFinal $ quantify [] (rs'' :=> t')
+  let sc =
+        if isLet && not (Slv.isNamedAbs e) then
+          apply sFinal $ quantify [] (rs'' :=> t')
+        else
+          apply sFinal $ quantify gs (rs'' :=> t')
+
+  -- liftIO $ putStrLn $ "SC: " <> ppShow sc
+  -- liftIO $ putStrLn $ "SC': " <> ppShow sc'
 
   case Can.getExpName exp of
     Just n  ->
@@ -1057,7 +1066,7 @@ inferExp options env e = do
   e''  <- insertClassPlaceholders options env' e' placeholderPreds
   e''' <- updatePlaceholders options env' False s e''
 
-  verifyMutations env [] Nothing False [e''']
+  -- verifyMutations env [] Nothing False [e''']
 
   return (Just e''', env')
 

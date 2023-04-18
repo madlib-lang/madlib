@@ -268,6 +268,9 @@ instance Compilable Exp where
               else
                 "(" <> intercalate ", " updateParams <> ", $_continue_ = true)"
 
+        Call fn [Typed _ _ _ (Literal LUnit)] ->
+          compile env config fn <> "()"
+
         Call fn args ->
           let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
           in  compile env config fn <> concat compiledArgs

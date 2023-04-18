@@ -6,11 +6,18 @@ import qualified Data.Map as Map
 import Data.IORef
 import GHC.IO (unsafePerformIO)
 import AST.Solved
+import qualified Data.Set as Set
 
 
 monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
 monomorphizationState = unsafePerformIO $ newIORef Map.empty
+
+-- Outer Map is where the import is needed
+-- Inner Map is where the imported names come from and gives a list of names to be imported
+monomorphizationImports :: IORef (Map.Map FilePath (Map.Map FilePath (Set.Set String)))
+{-# NOINLINE monomorphizationImports #-}
+monomorphizationImports = unsafePerformIO $ newIORef Map.empty
 
 data ScopeState
   = ScopeState
@@ -44,6 +51,7 @@ data FunctionId
 
 
 buildMonomorphizedName :: String -> Int -> String
+buildMonomorphizedName fnName (-1) = fnName
 buildMonomorphizedName fnName index =
   fnName ++ "__" ++ show index
 
@@ -78,6 +86,6 @@ setRequestResult fnName modulePath t result = do
           req{ mrResult = Just result }
 
         Nothing ->
-          undefined
+          MonomorphizationRequest (-1) (Just result)
   let updatedState = Map.insert fnId updatedReq state
   writeIORef monomorphizationState updatedState

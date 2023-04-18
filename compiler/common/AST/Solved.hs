@@ -553,3 +553,14 @@ collectAppArgs isFirst app = case app of
 
   b ->
     (b, [])
+
+isNamedAbs :: Exp -> Bool
+isNamedAbs exp = case exp of
+  Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))) ->
+    True
+
+  Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))) _ _) ->
+    True
+
+  _ ->
+    False

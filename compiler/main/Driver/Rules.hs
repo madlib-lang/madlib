@@ -59,6 +59,7 @@ import Parse.Madlib.ImportCycle (detectCycle)
 import AST.Canonical (AST(atypedecls))
 import Explain.Location (emptyArea)
 import Infer.Type
+import qualified Infer.Unify as Unify
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 import MadlibDotJson.MadlibVersion
 import Paths_madlib (version)
@@ -180,6 +181,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       let ast'' = updateTestExports wishModulePath listModulePath ast'
       forM_ (Slv.aexps ast'') $ \e -> catchError (verifyTopLevelExp path e) (\err -> pushError err >> return ())
 
+      liftIO $ when (path == optEntrypoint options) $ do
+        putStrLn $ ppShow ast''
+
       return (ast'', env)
 
     case res of
@@ -238,6 +242,50 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         (_ : next) ->
           findExpByName name next
 
+  -- ForeignMethod :: FilePath -> String -> Type -> Query (Maybe Slv.Exp)
+  ForeignMethod modulePath methodName methodCallType -> nonInput $ do
+    (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    matchingMethods <-
+      mapM
+        (\(Slv.Untyped _ (Slv.Instance _ _ _ methods)) ->
+          case Map.lookup methodName methods of
+            Nothing ->
+              return []
+
+            Just (method, _) -> do
+              let t = Slv.getType method
+              unified <- runInfer (Unify.unify t methodCallType)
+              case unified of
+                Left _ ->
+                  return []
+
+                Right _ ->
+                  return [method]
+        )
+        (Slv.ainstances slvAst)
+
+    case concat matchingMethods of
+      [] ->
+        return (Nothing, (mempty, mempty))
+
+      (found : _) ->
+        return (Just found, (mempty, mempty))
+
+  DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
+    (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    matched <- mapM
+      (\(Slv.Untyped _ (Slv.Interface _ _ _ methods _)) ->
+        case Map.lookup methodName methods of
+          Nothing ->
+            return False
+
+          Just _ -> do
+            return True
+      )
+      (Slv.ainterfaces slvAst)
+
+    return (or matched, (mempty, mempty))
+
   ForeignConstructor modulePath name -> nonInput $ do
     (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     let allConstructors = concat $ Maybe.mapMaybe Slv.getADTConstructors atypedecls
@@ -257,6 +305,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   MonomorphizedAST path -> nonInput $ do
     state <- liftIO $ readIORef monomorphizationState
 
+    liftIO $ putStrLn $ "monomorphizing path: " <> path
+
+    -- TODO:
     -- We should move all that to a separate Query and reset the state before
     -- running it, so that it would happen again only if a source AST has
     -- changed
@@ -287,6 +338,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CoreAST path -> nonInput $ do
     slvAst <- Rock.fetch $ MonomorphizedAST path
+    
     -- (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
     case optTarget options of
       TLLVM -> do
@@ -298,9 +350,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (closureConverted, (mempty, mempty))
 
       _ -> do
-        let coreAst     = astToCore (optOptimized options) slvAst
-            strippedAst = stripAST coreAst
-        return (TCE.resolveAST strippedAst, (mempty, mempty))
+        let coreAst          = astToCore (optOptimized options) slvAst
+            strippedAst      = stripAST coreAst
+            tceResolved      = TCE.resolveAST strippedAst
+            -- closureConverted = ClosureConvert.convertAST tceResolved
+        return (tceResolved, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
     coreAst                           <- Rock.fetch $ CoreAST path
