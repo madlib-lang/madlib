@@ -271,6 +271,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       (found : _) ->
         return (Just found, (mempty, mempty))
 
+  SolvedMethodNode methodName methodCallType -> nonInput $ do
+    found <- findMethodByNameAndType (optEntrypoint options) methodName methodCallType
+    return (found, (mempty, mempty))
+
   DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     matched <- mapM
@@ -322,6 +326,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
               { MM.envCurrentModulePath = modulePath
               , MM.envSubstitution = mempty
               , MM.envLocalState = localState
+              , MM.envEntrypointPath = optEntrypoint options
               }
             "main"
             (Slv.getType fn)
@@ -554,6 +559,33 @@ findSlvInterface name paths = case paths of
             (Slv.AST { Slv.aimports }, _) <- Rock.fetch $ SolvedASTWithEnv path
             let importedModulePaths = Slv.getImportAbsolutePath <$> aimports
             findSlvInterface name importedModulePaths
+
+
+findMethodByNameAndTypeInImports :: (Rock.MonadFetch Query m, MonadIO m) => [FilePath] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
+findMethodByNameAndTypeInImports importPaths methodName typeItsCalledWith = case importPaths of
+  [] ->
+    return Nothing
+
+  (modulePath : nextModulePaths) -> do
+    found <- findMethodByNameAndType modulePath methodName typeItsCalledWith
+    case found of
+      Just method ->
+        return $ Just method
+
+      Nothing ->
+        findMethodByNameAndTypeInImports nextModulePaths methodName typeItsCalledWith
+
+findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
+findMethodByNameAndType moduleWhereItsUsed methodName typeItsCalledWith = do
+  maybeExp <- Rock.fetch $ ForeignMethod moduleWhereItsUsed methodName typeItsCalledWith
+  case maybeExp of
+    Just found ->
+      return $ Just (found, moduleWhereItsUsed)
+
+    Nothing -> do
+      (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+      let imports = map Slv.getImportAbsolutePath (Slv.aimports ast)
+      findMethodByNameAndTypeInImports imports methodName typeItsCalledWith
 
 
 noError :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)

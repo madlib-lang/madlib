@@ -54,6 +54,7 @@ data Query a where
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignExp :: FilePath -> String -> Query (Maybe Slv.Exp)
   ForeignMethod :: FilePath -> String -> Type -> Query (Maybe Slv.Exp)
+  SolvedMethodNode :: String -> Type -> Query (Maybe (Slv.Exp, FilePath))
   DefinesInterfaceForMethod :: FilePath -> String -> Query Bool
   ForeignConstructor :: FilePath -> String -> Query (Maybe Slv.Constructor)
   ForeignTypeDeclaration :: FilePath -> String -> Query (Maybe Slv.TypeDecl)
@@ -133,41 +134,44 @@ instance Hashable (Query a) where
     ForeignMethod modulePath methodName methodType ->
       hashWithSalt salt (modulePath, methodName, methodType, 15 :: Int)
 
+    SolvedMethodNode methodName methodType ->
+      hashWithSalt salt (methodName, methodType, 16 :: Int)
+
     DefinesInterfaceForMethod modulePath methodName ->
       hashWithSalt salt (modulePath, methodName, 17 :: Int)
 
     ForeignConstructor modulePath constructorName ->
-      hashWithSalt salt (modulePath <> "." <> constructorName, 17 :: Int)
+      hashWithSalt salt (modulePath <> "." <> constructorName, 18 :: Int)
 
     ForeignTypeDeclaration modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 18 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 19 :: Int)
 
     MonomorphizedAST path ->
-      hashWithSalt salt (path, 19 :: Int)
-
-    CoreAST path ->
       hashWithSalt salt (path, 20 :: Int)
 
-    BuiltObjectFile path ->
+    CoreAST path ->
       hashWithSalt salt (path, 21 :: Int)
 
+    BuiltObjectFile path ->
+      hashWithSalt salt (path, 22 :: Int)
+
     BuiltInBuiltObjectFile ->
-      hashWithSalt salt (22 :: Int)
+      hashWithSalt salt (23 :: Int)
 
     GeneratedJSModule path ->
-      hashWithSalt salt (path, 23 :: Int)
-
-    BuiltJSModule path ->
       hashWithSalt salt (path, 24 :: Int)
 
-    BuiltTarget path ->
+    BuiltJSModule path ->
       hashWithSalt salt (path, 25 :: Int)
 
-    StaticLibPathsToLink path ->
+    BuiltTarget path ->
       hashWithSalt salt (path, 26 :: Int)
 
+    StaticLibPathsToLink path ->
+      hashWithSalt salt (path, 27 :: Int)
+
     EnvVar name ->
-      hashWithSalt salt (name, 27 :: Int)
+      hashWithSalt salt (name, 28 :: Int)
 
 
 instance Hashable (Some Query) where
