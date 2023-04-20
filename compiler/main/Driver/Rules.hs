@@ -242,7 +242,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         (_ : next) ->
           findExpByName name next
 
-  -- ForeignMethod :: FilePath -> String -> Type -> Query (Maybe Slv.Exp)
   ForeignMethod modulePath methodName methodCallType -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     matchingMethods <-
@@ -333,6 +332,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
         _ ->
           return ""
+      state <- liftIO $ readIORef monomorphizationState
+      -- liftIO $ putStrLn $ ppShow state
 
       return ()
 
@@ -577,7 +578,34 @@ findMethodByNameAndTypeInImports importPaths methodName typeItsCalledWith = case
 
 findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
 findMethodByNameAndType moduleWhereItsUsed methodName typeItsCalledWith = do
-  maybeExp <- Rock.fetch $ ForeignMethod moduleWhereItsUsed methodName typeItsCalledWith
+  -- maybeExp <- Rock.fetch $ ForeignMethod moduleWhereItsUsed methodName typeItsCalledWith
+  (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+  matchingMethods <-
+    mapM
+      (\(Slv.Untyped _ (Slv.Instance _ _ _ methods)) ->
+        case Map.lookup methodName methods of
+          Nothing ->
+            return []
+
+          Just (method, _) -> do
+            let t = Slv.getType method
+            unified <- runInfer (Unify.unify t typeItsCalledWith)
+            case unified of
+              Left _ ->
+                return []
+
+              Right _ ->
+                return [method]
+      )
+      (Slv.ainstances slvAst)
+
+  let maybeExp = case concat matchingMethods of
+        [] ->
+          Nothing
+
+        (found : _) ->
+          Just found
+
   case maybeExp of
     Just found ->
       return $ Just (found, moduleWhereItsUsed)
