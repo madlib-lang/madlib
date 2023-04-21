@@ -181,9 +181,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       let ast'' = updateTestExports wishModulePath listModulePath ast'
       forM_ (Slv.aexps ast'') $ \e -> catchError (verifyTopLevelExp path e) (\err -> pushError err >> return ())
 
-      liftIO $ when (path == optEntrypoint options) $ do
-        putStrLn $ ppShow ast''
-
       return (ast'', env)
 
     case res of
@@ -308,7 +305,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   MonomorphizedAST path -> nonInput $ do
     state <- liftIO $ readIORef monomorphizationState
 
-    liftIO $ putStrLn $ "monomorphizing path: " <> path
+    -- liftIO $ putStrLn $ "monomorphizing path: " <> path
 
     -- TODO:
     -- We should move all that to a separate Query and reset the state before
@@ -332,13 +329,16 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
         _ ->
           return ""
-      state <- liftIO $ readIORef monomorphizationState
-      -- liftIO $ putStrLn $ ppShow state
 
       return ()
 
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
     merged <- liftIO $ MM.mergeResult ast
+
+
+    -- liftIO $ when ("__BUILTINS__.mad" `List.isSuffixOf` path) $ do
+    --   putStrLn $ ppShow ast
+      -- putStrLn $ ppShow merged
 
     return (merged, (mempty, mempty))
 

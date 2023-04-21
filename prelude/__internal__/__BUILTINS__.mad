@@ -1,0 +1,203 @@
+#iftarget js
+
+#-
+let globalObj
+
+{Node}
+globalObj = global
+{/Node}
+{Browser}
+globalObj = window
+{/Browser}
+
+globalObj.__eq__ = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+if (l === null && r !== null || l !== null && r === null) {
+  return false;
+}
+if (l === null && r === null) {
+  return true;
+}
+  if (typeof l === `object`) {
+    if (l.n && l.v) {
+      let result = true;
+      while (l !== null && result) {
+        result = __eq__(l.v, r.v);
+        l = l.n;
+        r = r.n;
+      }
+      return result && r === null;
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq__(l[k], r[k]), true);
+  }
+  return l === r;
+}
+
+const escapeChar = (c) => {
+  if (c === '\n') {
+    return `\\n`
+  } else if (c === '\t') {
+    return `\\t`
+  } else if (c === '\r') {
+    return `\\t`
+  } else {
+    return c
+  }
+}
+-#
+
+instance Inspect Byte {
+  inspect = (n) => #- {
+    n = n % 256
+    return ('0' + (n < 0 ? 256 + n : n).toString(16)).slice(-2).toUpperCase()
+  } -#
+}
+
+instance Inspect Integer {
+  inspect = (n) => #- "" + n -#
+}
+
+instance Inspect Float {
+  inspect = (n) => #- "" + n -#
+}
+
+instance Inspect Char {
+  inspect = (c) => #- {
+    if (c === '\n') {
+      return `'\\n'`;
+    } else if (c === '\t') {
+      return `'\\t'`;
+    } else if (c === '\r') {
+      return `'\\t'`;
+    } else if (c === '\c') {
+      return `'\\c'`;
+    } else {
+      return `'${c}'`;
+    }
+  } -#
+}
+
+instance Inspect String {
+  inspect = (s) => #- `"${s.split('').map(escapeChar).join('')}"` -#
+}
+
+#elseif llvm
+
+inspectByte :: Byte -> String
+inspectByte = extern "madlib__number__internal__inspectByte"
+
+inspectInteger :: Integer -> String
+inspectInteger = extern "madlib__number__internal__inspectInteger"
+
+inspectFloat :: Float -> String
+inspectFloat = extern "madlib__number__internal__inspectFloat"
+
+inspectChar :: Char -> String
+inspectChar = extern "madlib__char__internal__inspect"
+
+inspectString :: String -> String
+inspectString = extern "madlib__string__internal__inspect"
+
+instance Inspect Byte {
+  inspect = inspectByte
+}
+
+instance Inspect Integer {
+  inspect = inspectInteger
+}
+
+instance Inspect Float {
+  inspect = inspectFloat
+}
+
+instance Inspect Char {
+  inspect = inspectChar
+}
+
+instance Inspect String {
+  inspect = inspectString
+}
+
+#endif
+
+instance Inspect {} {
+  inspect = () => "{}"
+}
+
+instance Inspect Boolean {
+  inspect = (b) => b
+    ? "true"
+    : "false"
+}
+
+instance Inspect (a -> b) {
+  inspect = () => "[Function]"
+}
+
+instance Inspect a => Inspect (List a) {
+  inspect = (list) => {
+    inspectItems = (_list, acc) => where(_list) {
+      [] =>
+        acc
+
+      [last] =>
+        acc == ""
+          ? inspect(last)
+          : `${acc}, ${inspect(last)}`
+
+      [item, ...next] =>
+        acc == ""
+          ? inspectItems(next, inspect(item))
+          : inspectItems(next, `${acc}, ${inspect(item)}`)
+    }
+
+    return `[${inspectItems(list, "")}]`
+  }
+}
+
+#iftarget js
+
+Dictionary :: List #[k, v] -> Dictionary k v
+Dictionary = (items) => #- ({
+  __constructor: "Dictionary",
+  __args: [items],
+}) -#
+
+#elseif llvm
+
+Dictionary :: List #[k, v] -> Dictionary k v
+Dictionary = extern "madlib__dictionary__typeConstructor"
+
+#endif
+
+instance (Inspect a, Inspect b) => Inspect (Dictionary a b) {
+  inspect = (dict) => {
+    inspectItems = (items, acc) => where(items) {
+      [] =>
+        ""
+
+      [#[key, value]] =>
+        acc == ""
+          ? `${inspect(key)}: ${inspect(value)}`
+          : `${acc}, ${inspect(key)}: ${inspect(value)}`
+
+      [#[key, value], ...next] =>
+        acc == ""
+          ? inspectItems(next, `${inspect(key)}: ${inspect(value)}`)
+          : inspectItems(next, `${acc}, ${inspect(key)}: ${inspect(value)}`)
+          // : `${inspect(key)}: ${inspect(value)}, ${inspectItems(next)}`
+    }
+
+    return where(dict) {
+      Dictionary(items) =>
+        `{{ ${inspectItems(items, "")} }}`
+    }
+  }
+}

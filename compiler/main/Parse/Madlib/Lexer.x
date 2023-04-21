@@ -158,7 +158,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                            { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"                 { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \') \'  { mapCharToken }
-  <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
+  <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \% \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+                       ;
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> `                                             { beginStringTemplate }
@@ -198,6 +198,9 @@ constraintRegex = toRegex "\\`([^={]|\n)*(=>)[^}]*"
 -- Use for instance headers, the initial opening curly is already consumed
 recordTypeRegex :: Regex
 recordTypeRegex = toRegex "\\`[ \n\t]*(\\.\\.\\.[a-zA-Z0-9_]*(,)?|[a-zA-Z0-9_]*[ \n\t]*::)"
+
+unitTypeRegex :: Regex
+unitTypeRegex = toRegex "\\`}"
 
 isTokenExport :: Regex
 isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*)*[ \n\t]*="
@@ -524,7 +527,8 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
       if sc == instanceHeader then do
         let next        = BLU.fromString $ ((tail . (take 70)) input)
             matchRecord = match recordTypeRegex next :: Bool
-        if matchRecord then
+            matchUnit = match unitTypeRegex next :: Bool
+        if matchRecord || matchUnit then
           return TokenLeftCurly
         else do
           popStartCode
@@ -549,7 +553,9 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
 
 
   case token of
-    TokenInstance -> pushStartCode instanceHeader
+    TokenInstance ->
+      pushStartCode instanceHeader
+
     TokenRightCurly -> do
       sc           <- getStartCode
       previousCode <- getPreviousStartCode

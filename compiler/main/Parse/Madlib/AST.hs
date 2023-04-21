@@ -75,7 +75,13 @@ buildAST options path code = case parse code of
     let astWithPath = setPath ast path
     let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
     astWithDictImport          <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
-    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) astWithDictImport
+    let builtinsImport = Source emptyArea TargetAll $ NamedImport [] "__BUILTINS__" "__BUILTINS__"
+    let astWithBuiltinsImport =
+          if "__BUILTINS__.mad" `isSuffixOf` path then
+            astWithDictImport
+          else
+            astWithDictImport { aimports = builtinsImport : aimports astWithDictImport }
+    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) astWithBuiltinsImport
     case astWithAbsoluteImportPaths of
       Right astWithAbsoluteImportPaths' -> do
         astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
