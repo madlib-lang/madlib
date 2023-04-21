@@ -210,7 +210,11 @@ solveImport env imp = do
   importedVars <- extractImportedVars env' ast imp
   let constructorImports = extractImportedConstructors env' ast imp
   let env'' = mergeEnv' env env'
-  return env'' { envVars = envVars env'' <> importedVars <> constructorImports }
+  return
+    env''
+      { envVars = envVars env'' <> importedVars <> constructorImports
+      , envConstructors = envConstructors env <> M.keysSet constructorImports
+      }
 
 
 solveImports :: Env -> [Can.Import] -> Infer Env

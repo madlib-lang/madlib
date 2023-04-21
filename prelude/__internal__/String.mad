@@ -357,15 +357,14 @@ export takeWhile = (predicate, s) => pipe(
 
 #iftarget js
 
-/**
- * Return the character at a given index
- * @since 0.18.7
- */
-charAt :: Integer -> String -> Maybe Char
-export charAt = (n, s) => #-{
+_charAt :: Maybe Char -> (Char -> Maybe Char) -> Integer -> String -> Maybe Char
+_charAt = (nothing, just, n, s) => #- {
   const c = s[n]
-  return !!c ? Just(c) : Nothing
-}-#
+  return !!c ? just(c) : nothing
+} -#
+
+charAt :: Integer -> String -> Maybe Char
+export charAt = (n, s) => _charAt(Nothing, Just, n, s)
 
 #elseif llvm
 
