@@ -120,8 +120,13 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do
     (Interface tvs _ methodNames) <- lookupInterface env n
     let missingMethods = methodNames \\ M.keys methods
+        missingMethods' =
+          if n == "Eq" then
+            filter (/= "==") missingMethods
+          else
+            missingMethods
 
-    when (missingMethods /= []) $ do
+    when (missingMethods' /= []) $ do
       pushWarning $ CompilationWarning (MissingMethods missingMethods) (Context (envCurrentPath env) area)
 
     ts <- zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
@@ -148,5 +153,17 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
     let ps'     = apply subst' ps
     let p       = IsIn n (apply subst' ts) Nothing
     methods' <- mapM (canonicalize env target) methods
+    let methods'' =
+          if n == "Eq" then
+            M.mapKeys
+              (\methodName ->
+                  if methodName == "__EQ__" then
+                    "=="
+                  else
+                    methodName
+              )
+              methods'
+          else
+            methods'
 
-    return $ Can.Canonical area $ Can.Instance n ps' p methods'
+    return $ Can.Canonical area $ Can.Instance n ps' p methods''
