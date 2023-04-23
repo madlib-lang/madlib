@@ -317,6 +317,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         Just (fn, modulePath) -> do
           let localState = makeLocalMonomorphizationState ()
           MM.monomorphizeDefinition
+            (optTarget options)
             True
             MM.Env
               { MM.envCurrentModulePath = modulePath
@@ -334,7 +335,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
     merged <- liftIO $ MM.mergeResult ast
-
 
     -- liftIO $ when ("__BUILTINS__.mad" `List.isSuffixOf` path) $ do
     --   putStrLn $ ppShow ast

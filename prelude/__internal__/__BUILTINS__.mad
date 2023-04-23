@@ -1,3 +1,41 @@
+// Eq
+
+#iftarget llvm
+
+listLength :: List a -> Integer
+listLength = extern "madlib__list__length"
+
+instance Eq a => Eq (List a) {
+  __EQ__ = (a, b) => {
+    go = (listA, listB) => where(listA) {
+      [] =>
+        true
+
+      [valueA, ...xsa] =>
+        where (listB) {
+          [] =>
+            false
+
+          [valueB, ...xsb] =>
+            valueA == valueB
+              ? go(xsa, xsb)
+              : false
+        }
+    }
+
+    lengthA = listLength(a)
+    lengthB = listLength(b)
+
+    return if (lengthA != lengthB) {
+      false
+    } else {
+      go(a, b)
+    }
+  }
+}
+
+#endif
+
 #iftarget js
 
 #-
@@ -52,6 +90,8 @@ const escapeChar = (c) => {
   }
 }
 -#
+
+// Inspect
 
 instance Inspect Byte {
   inspect = (n) => #- {
@@ -192,7 +232,6 @@ instance (Inspect a, Inspect b) => Inspect (Dictionary a b) {
         acc == ""
           ? inspectItems(next, `${inspect(key)}: ${inspect(value)}`)
           : inspectItems(next, `${acc}, ${inspect(key)}: ${inspect(value)}`)
-          // : `${inspect(key)}: ${inspect(value)}, ${inspectItems(next)}`
     }
 
     return where(dict) {

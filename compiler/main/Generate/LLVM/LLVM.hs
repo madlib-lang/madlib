@@ -1046,52 +1046,49 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, output, Nothing)
 
   Core.Typed qt _ metadata (Core.Call fn args) -> case fn of
+    Core.Typed _ _ _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
+
     -- Calling a known method
     Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> case methodName of
-      "==" | typingStrWithoutHash typingStr `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"] ->
-        case typingStrWithoutHash typingStr of
-          "Integer" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-            return (symbolTable, result, Nothing)
-
-          "Byte" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-            return (symbolTable, result, Nothing)
-
-          "Char" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-            return (symbolTable, result, Nothing)
-
-          "Float" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
-            return (symbolTable, result, Nothing)
-
-          "String" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
-            return (symbolTable, result, Nothing)
-
-          "Boolean" -> do
-            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-            return (symbolTable, result, Nothing)
-
-          "Unit" -> do
-            return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
-
-          _ ->
-            undefined
-
       "<<" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
@@ -3755,167 +3752,9 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
 
   let inspectPred               = IT.IsIn "Inspect" [varType] Nothing
       inspectVarQualType        = [inspectPred] IT.:=> varType
-      stringInspectQualType     = [] IT.:=> (IT.tStr `IT.fn` IT.tStr)
-      integerInspectQualType    = [] IT.:=> (IT.tInteger `IT.fn` IT.tStr)
-      byteInspectQualType       = [] IT.:=> (IT.tByte `IT.fn` IT.tStr)
-      charInspectQualType       = [] IT.:=> (IT.tChar `IT.fn` IT.tStr)
-      floatInspectQualType      = [] IT.:=> (IT.tFloat `IT.fn` IT.tStr)
-      boolInspectQualType       = [] IT.:=> (IT.tBool `IT.fn` IT.tStr)
-      unitInspectQualType       = [] IT.:=> (IT.tUnit `IT.fn` IT.tStr)
       byteArrayInspectQualType  = [] IT.:=> (IT.tByteArray `IT.fn` IT.tStr)
       overloadedInspectType     = dictType `IT.fn` varType `IT.fn` IT.tStr
       overloadedInspectQualType = [inspectPred] IT.:=> overloadedInspectType
-      dictionaryInspectPreds    = [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing, IT.IsIn "Inspect" [IT.TVar (IT.TV "b" IT.Star)] Nothing]
-      dictionaryInspectType     = dictType `IT.fn` dictType `IT.fn` IT.tDictionaryOf (IT.TVar (IT.TV "a" IT.Star)) (IT.TVar (IT.TV "b" IT.Star)) `IT.fn` IT.tStr
-      dictionaryInspectQualType = dictionaryInspectPreds IT.:=> dictionaryInspectType
-
-      stringInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("String_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed stringInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed stringInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed stringInspectQualType emptyArea [] (Core.Var "madlib__string__internal__inspect" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] stringInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      integerInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Integer_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed integerInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed integerInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed integerInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectInteger" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] integerInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      byteInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Byte_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed byteInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed byteInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed byteInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectByte" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] byteInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      charInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Char_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed charInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed charInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed charInspectQualType emptyArea [] (Core.Var "madlib__char__internal__inspect" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] charInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      floatInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Float_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed floatInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed floatInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> IT.tFloat) emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed floatInspectQualType emptyArea [] (Core.Var "madlib__number__internal__inspectFloat" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] floatInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      boolInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Boolean_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed boolInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed boolInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed boolInspectQualType emptyArea [] (Core.Var "madlib__boolean__internal__inspectBoolean" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] boolInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      unitInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("Unit_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed unitInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "\"{}\"")
-                        ])
-                      ))
-                    , IT.Forall [] unitInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      fnInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "a_arr_b"
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed unitInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed unitInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "\"[Function]\"")
-                        ])
-                      ))
-                    , IT.Forall [] unitInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
 
       byteArrayInspectInstance =
         Core.Untyped emptyArea []
@@ -3930,26 +3769,6 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
                         ])
                       ))
                     , IT.Forall [] byteArrayInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      listInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("List_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDict", Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed overloadedInspectQualType emptyArea [] (Core.Var "madlib__list__internal__inspect" False)) [
-                              Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDict" False),
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] overloadedInspectQualType
                     )
                   )
                 ]
@@ -3976,169 +3795,11 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
               )
           )
 
-      dictionaryInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" dictionaryInspectPreds ("Dictionary_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
-                  , ( Core.Typed dictionaryInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed dictionaryInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDictB", Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDictA", Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed dictionaryInspectQualType emptyArea [] (Core.Var "madlib__dictionary__internal__inspect" False)) [
-                              Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDictA" False),
-                              Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDictB" False),
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] dictionaryInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
       tupleInspectInstances = buildTupleNInspectInstance <$> [2..10]
 
   let eqPred              = IT.IsIn "Eq" [varType] Nothing
       eqVarQualType       = [eqPred] IT.:=> varType
       eqOperationQualType = [eqPred] IT.:=> (varType `IT.fn` varType `IT.fn` IT.tBool)
-
-      integerEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Integer_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqInteger" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      byteEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Byte_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqByte" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      charEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Char_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__char__internal__eq" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      floatEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Float_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__number__internal__eqFloat" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      stringEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("String_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__string__internal__eq" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      booleanEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Boolean_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__boolean__internal__eq" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      unitEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("Unit_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Literal $ LBool "true")
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
 
       fnEqInstance =
         Core.Untyped emptyArea []
@@ -4160,27 +3821,6 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
 
       overloadedEqType     = dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
       overloadedEqQualType = [eqPred] IT.:=> overloadedEqType
-
-      listEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("List_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDict" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "madlib__list__internal__eq" False)) [
-                            Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDict" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
 
       arrayEqInstance =
         Core.Untyped emptyArea []
@@ -4252,15 +3892,6 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
 
       tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
-  generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" [Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] "$Eq$eqVar", Core.Typed eqVarQualType emptyArea [] "a", Core.Typed eqVarQualType emptyArea [] "b"] [
-      Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "!" False)) [
-        Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Placeholder (Core.MethodRef "Eq" "==" True, "eqVar") (Core.Typed eqOperationQualType emptyArea [] (Core.Var "==" False)))) [
-          Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-          Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-        ])
-      ])
-    ]
-
   generateInstances
     env
     symbolTableWithCBindings
@@ -4275,49 +3906,17 @@ buildDefaultInstancesModule env _ initialSymbolTable = do
       , integerBitsInstance
 
         -- Eq
-      , byteEqInstance
-      , charEqInstance
-      , integerEqInstance
-      , floatEqInstance
-      , stringEqInstance
-      , booleanEqInstance
-      , unitEqInstance
-      , listEqInstance
       , arrayEqInstance
       , byteArrayEqInstance
       , dictionaryEqInstance
       , fnEqInstance
 
         -- Inspect
-      , stringInspectInstance
-      , integerInspectInstance
-      , charInspectInstance
-      , byteInspectInstance
-      , floatInspectInstance
-      , boolInspectInstance
-      , unitInspectInstance
       , byteArrayInspectInstance
-      , listInspectInstance
       , arrayInspectInstance
-      , dictionaryInspectInstance
-      , fnInspectInstance
       ] ++ tupleEqInstances ++ tupleInspectInstances
     )
   return ()
-
-
--- makeDisplayPath :: FilePath -> FilePath -> FilePath
--- makeDisplayPath root path =
---   if "prelude/__internal__" `List.isInfixOf` path then
---     let parts = splitPath path
---         afterInternal = List.tail $ List.dropWhile (not . ("__internal__" `List.isInfixOf`)) parts
---     in  joinPath afterInternal
---   else if "madlib_modules" `List.isInfixOf` path then
---     let parts = splitPath path
---         afterModules = List.tail $ List.dropWhile (not . ("madlib_modules" `List.isInfixOf`)) parts
---     in  joinPath afterModules
---   else
---     makeRelative (dropFileName root) path
 
 
 generateLLVMModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()

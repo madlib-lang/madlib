@@ -119,6 +119,10 @@ instance Canonicalizable Src.Exp Can.Exp where
       buildApp env target area op [arg]
 
     Src.BinOp argL op argR -> case op of
+      Src.Source area srcTarget (Src.Var "!=") | target == TLLVM -> do
+        equalCheck <- buildApp env target area (Src.Source area srcTarget (Src.Var "==")) [argL, argR]
+        return $ Can.Canonical area (Can.App (Can.Canonical area (Can.Var "!")) equalCheck True)
+
       Src.Source _ _ (Src.Var "|>") ->
         buildApp env target area argR [argL]
 
@@ -138,6 +142,10 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.Return exp ->
       canonicalize env target exp
+
+    Src.Assignment "__EQ__" exp -> do
+      exp' <- canonicalize env target exp
+      return $ Can.Canonical area (Can.Assignment "==" exp')
 
     Src.Assignment name exp -> do
       exp' <- canonicalize env target exp
