@@ -97,27 +97,27 @@ export Argv = #-
 
 #-
 {Node}
-const buildEnvImpl = (dict) => {
+const buildEnvImpl = (dictFromList) => {
   let list = {}
   let start = list
   Object.keys(process.env).forEach((key) => {
     list = list.n = { v: [key, process.env[key]], n: null }
   }, {})
-  return Dictionary.fromList(dict)(start.n)
+  return dictFromList(start.n)
 }
 {/Node}
 {Browser}
-const buildEnvImpl = (dict) => {
-  Dictionary.fromList(dict)(null)
+const buildEnvImpl = (dictFromList) => {
+  dictFromList(null)
 }
 {/Browser}
 -#
 
-envFFI :: Comparable a => Dictionary a String
+envFFI :: Comparable k => (List #[k, v] -> Dictionary k v) -> Dictionary k String
 envFFI = extern "buildEnvImpl"
 
 Env :: Dictionary String String
-export Env = envFFI
+export Env = envFFI(Dictionary.fromList)
 
 
 

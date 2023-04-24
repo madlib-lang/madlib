@@ -404,8 +404,6 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
 
   -- boxed lists are { i8*, i8* }**
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
-    -- ptr <- safeBitcast what (Type.ptr listType)
-    -- load ptr 0
     safeBitcast what listType
 
   IT.TRecord _ _ _ -> do
@@ -969,51 +967,6 @@ generateExp env symbolTable exp = case exp of
     result                <- call strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result, Nothing)
 
-  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Placeholder _ (Core.Typed _ _ _ (Core.Var "!=" _)))) [leftOperand@(Core.Typed (_ IT.:=> t) _ _ _), rightOperand])
-    | t `List.elem`
-        [ IT.TCon (IT.TC "Byte" IT.Star) "prelude"
-        , IT.TCon (IT.TC "Integer" IT.Star) "prelude"
-        , IT.TCon (IT.TC "Float" IT.Star) "prelude"
-        , IT.TCon (IT.TC "Boolean" IT.Star) "prelude"
-        , IT.TCon (IT.TC "Unit" IT.Star) "prelude"
-        , IT.TCon (IT.TC "String" IT.Star) "prelude"
-        ] -> case t of
-              IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
-                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
-                return (symbolTable, result, Nothing)
-
-              IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
-                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
-                return (symbolTable, result, Nothing)
-
-              IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
-                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
-                return (symbolTable, result, Nothing)
-
-              IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
-                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-                result                <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
-                return (symbolTable, result, Nothing)
-
-              IT.TCon (IT.TC "Unit" IT.Star) "prelude" ->
-                return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
-
-              IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-                result                <- call areStringsNotEqual [(leftOperand', []), (rightOperand', [])]
-                return (symbolTable, result, Nothing)
-
-              _ ->
-                undefined
-
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     andLhs <- currentBlock
@@ -1046,6 +999,133 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, output, Nothing)
 
   Core.Typed qt _ metadata (Core.Call fn args) -> case fn of
+    Core.Typed _ _ _ (Var "+" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- fadd leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        -- Integer and Byte
+        _ -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- add leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "-" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- fsub leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        -- Integer and Byte
+        _ -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- sub leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "unary-minus" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- fmul leftOperand' (C.double (-1))
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- mul leftOperand' (i64ConstOp (-1))
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- mul leftOperand' (C.int8 (-1))
+          return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "*" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- fmul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        -- Integer and Byte
+        _ -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- mul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "/" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fdiv leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          leftOperand''         <- sitofp leftOperand' Type.double
+          rightOperand''        <- sitofp rightOperand' Type.double
+          result                <- fdiv leftOperand'' rightOperand''
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          leftOperand''         <- uitofp leftOperand' Type.double
+          rightOperand''        <- uitofp rightOperand' Type.double
+          result                <- fdiv leftOperand'' rightOperand''
+          return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "<<" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- shl leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var ">>" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- ashr leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var ">>>" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- lshr leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "|" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- Instruction.or leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "&" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- Instruction.and leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "^" False) -> do
+      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      result                <- Instruction.xor leftOperand' rightOperand'
+      return (symbolTable, result, Nothing)
+
+    Core.Typed _ _ _ (Var "~" False) -> do
+      (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
+      result           <- Instruction.xor operand' (i64ConstOp (-1))
+      return (symbolTable, result, Nothing)
+
     Core.Typed _ _ _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] ->
       case getType (List.head args) of
         IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
@@ -1087,326 +1167,97 @@ generateExp env symbolTable exp = case exp of
         IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
-    -- Calling a known method
-    Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> case methodName of
-      "<<" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- shl leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- shl leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      ">>" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- ashr leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- ashr leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      ">>>" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- lshr leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- lshr leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "|" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.or leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.or leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "&" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.and leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.and leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "^" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.xor leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- Instruction.xor leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "~" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
-          result           <- Instruction.xor operand' (i64ConstOp (-1))
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
-          result           <- Instruction.xor operand' (Operand.ConstantOperand (Constant.Int 8 (-1)))
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "+" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- add leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- add leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
-          result                <- fadd leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "-" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- sub leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- sub leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
-          result                <- fsub leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "*" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- mul leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- mul leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
-          result                <- fmul leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "/" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          leftOperand''         <- sitofp leftOperand' Type.double
-          rightOperand''        <- sitofp rightOperand' Type.double
-          result                <- fdiv leftOperand'' rightOperand''
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          leftOperand''         <- uitofp leftOperand' Type.double
-          rightOperand''        <- uitofp rightOperand' Type.double
-          result                <- fdiv leftOperand'' rightOperand''
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
-          result                <- fdiv leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      "unary-minus" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          result                <- mul leftOperand' (i64ConstOp (-1))
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          result                <- mul leftOperand' (C.int8 (-1))
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          result                <- fmul leftOperand' (C.double (-1))
-          return (symbolTable, result, Nothing)
-
-        _ ->
-          undefined
-
-      ">" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
-
-        "Float" -> do
+    Core.Typed _ _ _ (Var ">" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        _ ->
-          undefined
-
-      "<" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Byte" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Float" -> do
+    Core.Typed _ _ _ (Var "<" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        _ ->
-          undefined
-
-      ">=" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Byte" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Float" -> do
+    Core.Typed _ _ _ (Var ">=" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        _ ->
-          undefined
-
-      "<=" -> case typingStrWithoutHash typingStr of
-        "Integer" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Byte" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        "Float" -> do
+    Core.Typed _ _ _ (Var "<=" False) ->
+      case getType (List.head args) of
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+    -- TODO: remove this?
+    -- Calling a known method
+    Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> do
+      let dictName    = "$" <> interface <> "$" <> typingStr
+      let methodName' = dictName <> "$" <> methodName
+      case Map.lookup methodName' symbolTable of
+        Just (Symbol (MethodSymbol arity) fnOperand) ->
+          generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
+
         _ ->
-          undefined
-
-      _ -> do
-        let dictName    = "$" <> interface <> "$" <> typingStr
-        let methodName' = dictName <> "$" <> methodName
-        case Map.lookup methodName' symbolTable of
-          Just (Symbol (MethodSymbol arity) fnOperand) ->
-            generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
-
-          _ ->
-            error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
+          error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
     _ | Core.isPlainRecursiveCall metadata -> do
         let llvmType      = buildLLVMType env symbolTable (getQualType exp)
@@ -2651,1274 +2502,6 @@ callModuleFunctions allModulePaths = case allModulePaths of
     return ()
 
 
-tupleVars :: [String]
-tupleVars = (:"") <$> ['a'..]
-
-tupleNumbers :: [String]
-tupleNumbers = show <$> [1..]
-
-getTupleName :: Int -> String
-getTupleName arity = case arity of
-  2         ->
-    "Tuple_2"
-
-  3        ->
-    "Tuple_3"
-
-  4       ->
-    "Tuple_4"
-
-  5      ->
-    "Tuple_5"
-
-  6     ->
-    "Tuple_6"
-
-  7    ->
-    "Tuple_7"
-
-  8   ->
-    "Tuple_8"
-
-  9  ->
-    "Tuple_9"
-
-  10 ->
-    "Tuple_10"
-
-  _ ->
-    "Tuple_unknown"
-
-
--- generates AST for a tupleN instance. n must be >= 2
-buildTupleNEqInstance :: Int -> Core.Instance
-buildTupleNEqInstance n =
-  let tvarNames          = List.take n tupleVars
-      eqDictNames        = ("$Eq$" ++) <$> tvarNames
-      tvars              = (\name -> IT.TVar (IT.TV name IT.Star)) <$> tvarNames
-      dictTVars          = IT.TVar (IT.TV "eqDict" IT.Star) <$ eqDictNames
-      preds              = (\var -> IT.IsIn "Eq" [var] Nothing) <$> tvars
-      tupleName          = getTupleName n
-      tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ List.take 2 tvars))
-      tupleHeadType      = IT.getTupleCtor n
-      tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
-      whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
-      isQualType         = preds IT.:=> (IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType `IT.fn` IT.tBool)
-      leftTupleVarNames  = ("a" ++) <$> tupleNumbers
-      rightTupleVarNames = ("b" ++) <$> tupleNumbers
-      leftTuplePatterns  =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (PVar var)
-        ) <$> List.zip tvarNames leftTupleVarNames
-      rightTuplePatterns =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (PVar var)
-        ) <$> List.zip tvarNames rightTupleVarNames
-
-      leftVars =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (Core.Var var False)
-        ) <$> List.zip tvarNames leftTupleVarNames
-      rightVars =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (Core.Var var False)
-        ) <$> List.zip tvarNames rightTupleVarNames
-
-      eqMethods =
-        (\tvName ->
-          Core.Typed
-            ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tBool))
-            emptyArea
-            []
-            (Core.Placeholder (Core.MethodRef "Eq" "==" True, tvName) (
-              Core.Typed
-              ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tBool))
-              emptyArea
-              []
-              (Core.Var "==" False)
-            ))
-        ) <$> tvarNames
-
-      conditions = (\(method, leftVar, rightVar) -> Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call method [leftVar, rightVar])) <$> List.zip3 eqMethods leftVars rightVars
-      andApp = \left right -> Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed ([] IT.:=> (IT.tBool `IT.fn` IT.tBool `IT.fn` IT.tBool)) emptyArea [] (Core.Var "&&" False)) [left, right])
-      condition = List.foldr andApp (Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Literal $ LBool "true")) conditions
-
-  in  Core.Untyped emptyArea [] (Core.Instance
-        "Eq"
-        preds
-        tupleName
-        (Map.fromList
-          [ ( "=="
-            -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
-            , ( Core.Typed methodQualType emptyArea [] (Assignment "==" (
-                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse (Core.Typed ([] IT.:=> IT.tVar "eqDict") emptyArea [] <$> eqDictNames) ++ (Core.Typed tupleQualType emptyArea [] <$> ["a", "b"])) [
-                    Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Where (
-                      Core.Typed whereExpQualType emptyArea [] (TupleConstructor [
-                        Core.Typed tupleQualType emptyArea [] (Core.Var "a" False),
-                        Core.Typed tupleQualType emptyArea [] (Core.Var "b" False)
-                      ])
-                    ) [
-                      Core.Typed isQualType emptyArea [] (Is
-                        (Core.Typed whereExpQualType emptyArea [] (PTuple [
-                          Core.Typed tupleQualType emptyArea [] (PTuple leftTuplePatterns),
-                          Core.Typed tupleQualType emptyArea [] (PTuple rightTuplePatterns)
-                        ]))
-                        condition
-                      )
-                    ])
-                  ])
-                ))
-              , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-              )
-            )
-          ]
-        )
-      )
-
-
--- TODO: remove this once codegen is based on Core!!
-stringConcat :: Core.Exp
-stringConcat =
-  Core.Typed ([] IT.:=> (IT.tStr `IT.fn` IT.tStr `IT.fn` IT.tStr)) emptyArea [] (Core.Var "++" False)
-
-
-templateStringToCalls :: [Core.Exp] -> Core.Exp
-templateStringToCalls exps = case exps of
-  [e@(Core.Typed qt area _ _), e'@(Core.Typed qt' area' _ _)] ->
-    Core.Typed
-      ((IT.preds qt ++ IT.preds qt') IT.:=> IT.tStr)
-      (mergeAreas area area')
-      []
-      (Core.Call stringConcat [e, e'])
-
-  (e@(Core.Typed qt area _ _) : e'@(Core.Typed qt' area' _ _) : next) ->
-    let concatenated =
-          Core.Typed
-            ((IT.preds qt ++ IT.preds qt') IT.:=> IT.tStr)
-            (mergeAreas area area')
-            []
-            (Core.Call stringConcat [e, e'])
-        nextStr@(Core.Typed qt'' area'' _ _) = templateStringToCalls next
-    in  Core.Typed
-          ((IT.preds qt ++ IT.preds qt' ++ IT.preds qt'') IT.:=> IT.tStr)
-          (mergeAreas area area'')
-          []
-          (Core.Call stringConcat [concatenated, nextStr])
-
-  [last] ->
-    last
-
--- generates AST for a tupleN instance. n must be >= 2
-buildTupleNInspectInstance :: Int -> Core.Instance
-buildTupleNInspectInstance n =
-  let tvarNames          = List.take n tupleVars
-      inspectDictNames   = ("$Inspect$" ++) <$> tvarNames
-      tvars              = (\name -> IT.TVar (IT.TV name IT.Star)) <$> tvarNames
-      dictTVars          = IT.TVar (IT.TV "inspectDict" IT.Star) <$ inspectDictNames
-      preds              = (\var -> IT.IsIn "Inspect" [var] Nothing) <$> tvars
-      tupleName          = getTupleName n
-      tupleType          = List.foldl' IT.TApp tupleHeadType tvars
-      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ List.take 1 tvars))
-      tupleHeadType      = IT.getTupleCtor n
-      tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
-      whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
-      isQualType         = preds IT.:=> (IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType `IT.fn` IT.tStr)
-      tupleVarNames  = ("a" ++) <$> tupleNumbers
-      tuplePatterns  =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (PVar var)
-        ) <$> List.zip tvarNames tupleVarNames
-
-      vars =
-        (\(tvName, var) ->
-          Core.Typed ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea [] (Core.Var var False)
-        ) <$> List.zip tvarNames tupleVarNames
-
-      inspectMethods =
-        (\tvName ->
-          Core.Typed
-            ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tStr))
-            emptyArea
-            []
-            (Core.Placeholder (Core.MethodRef "Inspect" "inspect" True, tvName) (
-              Core.Typed
-              ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tStr))
-              emptyArea
-              []
-              (Core.Var "inspect" False)
-            ))
-        ) <$> tvarNames
-
-      inspectedItems = (\(method, var) -> Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call method [var])) <$> List.zip inspectMethods vars
-      commaSeparatedItems = List.intersperse (Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr ", ")) inspectedItems
-      wrappedItems = [Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "#[")] ++ commaSeparatedItems ++ [Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Literal $ LStr "]")]
-      inspectedTuple = templateStringToCalls wrappedItems
-
-  in  Core.Untyped emptyArea [] (Core.Instance
-        "Inspect"
-        preds
-        tupleName
-        (Map.fromList
-          [ ( "inspect"
-            -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
-            , ( Core.Typed methodQualType emptyArea [] (Core.Assignment "==" (
-                  Core.Typed methodQualType emptyArea [] (Core.Definition (List.reverse (Core.Typed ([] IT.:=> IT.tVar "inspectDict") emptyArea [] <$> inspectDictNames) ++ [Core.Typed tupleQualType emptyArea [] "tuple"]) [
-                    Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Where (
-                      Core.Typed whereExpQualType emptyArea [] (TupleConstructor [
-                        Core.Typed tupleQualType emptyArea [] (Core.Var "tuple" False)
-                      ])
-                    ) [
-                      Core.Typed isQualType emptyArea [] (Is
-                        (Core.Typed whereExpQualType emptyArea [] (PTuple [
-                          Core.Typed tupleQualType emptyArea [] (PTuple tuplePatterns)
-                        ]))
-                        inspectedTuple
-                      )
-                    ])
-                  ])
-                ))
-              , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-              )
-            )
-          ]
-        )
-      )
-
-
-buildDefaultInstancesModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
-buildDefaultInstancesModule env _ initialSymbolTable = do
-  let preludeHash = generateHashFromPath "prelude"
-  externVarArgs (AST.mkName "__applyPAP__")               [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc")                         [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc_atomic")                  [Type.i64] (Type.ptr Type.i8)
-
-  extern (AST.mkName "madlib__string__internal__concat")  [stringType, stringType] stringType
-
-  -- Inspect Integer
-  extern (AST.mkName "madlib__number__internal__inspectInteger")   [boxType] boxType
-  -- Inspect Byte
-  extern (AST.mkName "madlib__number__internal__inspectByte")      [boxType] boxType
-  -- Inspect Char
-  extern (AST.mkName "madlib__char__internal__inspect")            [boxType] boxType
-  -- Inspect String
-  extern (AST.mkName "madlib__string__internal__inspect")          [boxType] boxType
-  -- Inspect Float
-  extern (AST.mkName "madlib__number__internal__inspectFloat")     [boxType] boxType
-  -- Inspect Boolean
-  extern (AST.mkName "madlib__boolean__internal__inspectBoolean")  [boxType] boxType
-  -- Inspect ByteArray
-  extern (AST.mkName "madlib__bytearray__internal__inspect")       [boxType] boxType
-  -- Inspect List
-  extern (AST.mkName "madlib__list__internal__inspect")            [boxType, boxType] boxType
-  -- Inspect Array
-  extern (AST.mkName "madlib__array__internal__inspect")           [boxType, boxType] boxType
-  -- Inspect Dictionary
-  extern (AST.mkName "madlib__dictionary__internal__inspect")      [boxType, boxType, boxType] boxType
-
-  -- Number Integer
-  extern (AST.mkName "madlib__number__internal__addIntegers")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__substractIntegers") [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__multiplyIntegers")  [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__divideIntegers")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gtIntegers")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__ltIntegers")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gteIntegers")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__lteIntegers")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__numberToInteger")   [boxType] boxType
-  extern (AST.mkName "madlib__number__internal__negateInteger")     [boxType] boxType
-
-  -- Bits Integer
-  extern (AST.mkName "madlib__number__internal__andIntegers")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__orIntegers")         [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__xorIntegers")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__complementIntegers") [boxType] boxType
-  extern (AST.mkName "madlib__number__internal__leftShiftIntegers")  [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__rightShiftIntegers") [boxType, boxType] boxType
-
-  -- Number Byte
-  extern (AST.mkName "madlib__number__internal__addBytes")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__substractBytes") [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__multiplyBytes")  [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__divideBytes")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gtBytes")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__ltBytes")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gteBytes")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__lteBytes")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__numberToByte")   [boxType] boxType
-  extern (AST.mkName "madlib__number__internal__negateByte")     [boxType] boxType
-
-  -- Bits Byte
-  extern (AST.mkName "madlib__number__internal__andBytes")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__orBytes")         [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__xorBytes")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__complementBytes") [boxType] boxType
-  extern (AST.mkName "madlib__number__internal__leftShiftBytes")  [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__rightShiftBytes") [boxType, boxType] boxType
-
-  -- Number Float
-  extern (AST.mkName "madlib__number__internal__addFloats")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__substractFloats") [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__multiplyFloats")  [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__divideFloats")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gtFloats")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__ltFloats")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__gteFloats")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__lteFloats")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__numberToFloat")   [boxType] boxType
-  extern (AST.mkName "madlib__number__internal__negateFloat")     [boxType] boxType
-
-  -- Eq
-  extern (AST.mkName "madlib__number__internal__eqInteger") [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__eqByte")    [boxType, boxType] boxType
-  extern (AST.mkName "madlib__char__internal__eq")          [boxType, boxType] boxType
-  extern (AST.mkName "madlib__number__internal__eqFloat")   [boxType, boxType] boxType
-  extern (AST.mkName "madlib__string__internal__eq")        [boxType, boxType] boxType
-  extern (AST.mkName "madlib__boolean__internal__eq")       [boxType, boxType] boxType
-  extern (AST.mkName "madlib__list__internal__eq")          [boxType, boxType, boxType] boxType
-  extern (AST.mkName "madlib__array__internal__eq")         [boxType, boxType, boxType] boxType
-  extern (AST.mkName "madlib__bytearray__internal__eq")     [boxType, boxType] boxType
-  extern (AST.mkName "madlib__dictionary__internal__eq")    [boxType, boxType, boxType, boxType] boxType
-
-      -- Number Integer
-  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addIntegers")
-      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractIntegers")
-      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyIntegers")
-      divideIntegers    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideIntegers")
-      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtIntegers")
-      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltIntegers")
-      gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteIntegers")
-      lteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteIntegers")
-      numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToInteger")
-      negateInteger     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateInteger")
-
-      -- Bits Integer
-      andIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__andIntegers")
-      orIntegers         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__orIntegers")
-      xorIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__xorIntegers")
-      complementIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__complementIntegers")
-      leftShiftIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__leftShiftIntegers")
-      rightShiftIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__rightShiftIntegers")
-
-      -- Number Byte
-      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addBytes")
-      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractBytes")
-      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyBytes")
-      divideBytes       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideBytes")
-      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtBytes")
-      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltBytes")
-      gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteBytes")
-      lteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteBytes")
-      numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToByte")
-      negateByte        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateByte")
-
-      -- Bits Byte
-      andBytes        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__andBytes")
-      orBytes         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__orBytes")
-      xorBytes        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__xorBytes")
-      complementBytes = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__complementBytes")
-      leftShiftBytes  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__leftShiftBytes")
-      rightShiftBytes = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__rightShiftBytes")
-
-      -- Number Float
-      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addFloats")
-      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractFloats")
-      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyFloats")
-      divideFloats      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__divideFloats")
-      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtFloats")
-      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltFloats")
-      gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteFloats")
-      lteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteFloats")
-      numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToFloat")
-      negateFloat       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__negateFloat")
-
-      -- Eq Integer
-      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqInteger")
-
-      -- Eq Byte
-      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqByte")
-
-      -- Eq Char
-      eqChar            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__char__internal__eq")
-
-      -- Eq Float
-      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqFloat")
-
-      -- Eq String
-      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__string__internal__eq")
-
-      -- Eq Boolean
-      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__boolean__internal__eq")
-
-      -- Eq List
-      eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__list__internal__eq")
-
-      -- Eq Array
-      eqArray           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__array__internal__eq")
-
-      -- Eq ByteArray
-      eqByteArray       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__bytearray__internal__eq")
-
-      -- Eq Dictionary
-      eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "madlib__dictionary__internal__eq")
-
-      -- Inspect Integer
-      inspectInteger    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectInteger")
-
-      -- Inspect Byte
-      inspectByte       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectByte")
-
-      -- Inspect Char
-      inspectChar       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__char__internal__inspect")
-
-      -- Inspect String
-      inspectString       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__string__internal__inspect")
-
-      -- Inspect Float
-      inspectFloat      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectFloat")
-
-      -- Inspect Boolean
-      inspectBoolean    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__boolean__internal__inspectBoolean")
-
-      -- Inspect ByteArray
-      inspectByteArray  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__bytearray__internal__inspect")
-
-      -- Inspect List
-      inspectList       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__list__internal__inspect")
-
-      -- Inspect Array
-      inspectArray      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__array__internal__inspect")
-
-      -- Inspect Dictionary
-      inspectDictionary = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__dictionary__internal__inspect")
-
-
-      symbolTableWithCBindings =
-        -- Inspect Integer
-        Map.insert "madlib__number__internal__inspectInteger" (fnSymbol 1 inspectInteger)
-        -- Inspect Byte
-        $ Map.insert "madlib__number__internal__inspectByte" (fnSymbol 1 inspectByte)
-        -- Inspect Char
-        $ Map.insert "madlib__char__internal__inspect" (fnSymbol 1 inspectChar)
-        -- Inspect Char
-        $ Map.insert "madlib__string__internal__inspect" (fnSymbol 1 inspectString)
-        -- Inspect Float
-        $ Map.insert "madlib__number__internal__inspectFloat" (fnSymbol 1 inspectFloat)
-        -- Inspect Boolean
-        $ Map.insert "madlib__boolean__internal__inspectBoolean" (fnSymbol 1 inspectBoolean)
-        -- Inspect ByteArray
-        $ Map.insert "madlib__bytearray__internal__inspect" (fnSymbol 1 inspectByteArray)
-        -- Inspect List
-        $ Map.insert "madlib__list__internal__inspect" (fnSymbol 2 inspectList)
-        -- Inspect Array
-        $ Map.insert "madlib__array__internal__inspect" (fnSymbol 2 inspectArray)
-        -- Inspect Dictionary
-        $ Map.insert "madlib__dictionary__internal__inspect" (fnSymbol 3 inspectDictionary)
-        -- Number Float
-        $ Map.insert "madlib__number__internal__addFloats" (fnSymbol 2 addFloats)
-        $ Map.insert "madlib__number__internal__substractFloats" (fnSymbol 2 substractFloats)
-        $ Map.insert "madlib__number__internal__multiplyFloats" (fnSymbol 2 multiplyFloats)
-        $ Map.insert "madlib__number__internal__divideFloats" (fnSymbol 2 divideFloats)
-        $ Map.insert "madlib__number__internal__gtFloats" (fnSymbol 2 gtFloats)
-        $ Map.insert "madlib__number__internal__ltFloats" (fnSymbol 2 ltFloats)
-        $ Map.insert "madlib__number__internal__gteFloats" (fnSymbol 2 gteFloats)
-        $ Map.insert "madlib__number__internal__lteFloats" (fnSymbol 2 lteFloats)
-        $ Map.insert "madlib__number__internal__numberToFloat" (fnSymbol 1 numberToFloat)
-        $ Map.insert "madlib__number__internal__negateFloat" (fnSymbol 1 negateFloat)
-
-        -- Number Byte
-        $ Map.insert "madlib__number__internal__addBytes" (fnSymbol 2 addBytes)
-        $ Map.insert "madlib__number__internal__substractBytes" (fnSymbol 2 substractBytes)
-        $ Map.insert "madlib__number__internal__multiplyBytes" (fnSymbol 2 multiplyBytes)
-        $ Map.insert "madlib__number__internal__divideBytes" (fnSymbol 2 divideBytes)
-        $ Map.insert "madlib__number__internal__gtBytes" (fnSymbol 2 gtBytes)
-        $ Map.insert "madlib__number__internal__ltBytes" (fnSymbol 2 ltBytes)
-        $ Map.insert "madlib__number__internal__gteBytes" (fnSymbol 2 gteBytes)
-        $ Map.insert "madlib__number__internal__lteBytes" (fnSymbol 2 lteBytes)
-        $ Map.insert "madlib__number__internal__numberToByte" (fnSymbol 1 numberToByte)
-        $ Map.insert "madlib__number__internal__negateByte" (fnSymbol 1 negateByte)
-
-        -- Bits Byte
-        $ Map.insert "madlib__number__internal__andBytes" (fnSymbol 2 andBytes)
-        $ Map.insert "madlib__number__internal__orBytes" (fnSymbol 2 orBytes)
-        $ Map.insert "madlib__number__internal__xorBytes" (fnSymbol 2 xorBytes)
-        $ Map.insert "madlib__number__internal__complementBytes" (fnSymbol 1 complementBytes)
-        $ Map.insert "madlib__number__internal__leftShiftBytes" (fnSymbol 2 leftShiftBytes)
-        $ Map.insert "madlib__number__internal__rightShiftBytes" (fnSymbol 2 rightShiftBytes)
-
-        -- Number Integer
-        $ Map.insert "madlib__number__internal__numberToInteger" (fnSymbol 1 numberToInteger)
-        $ Map.insert "madlib__number__internal__addIntegers" (fnSymbol 2 addIntegers)
-        $ Map.insert "madlib__number__internal__substractIntegers" (fnSymbol 2 substractIntegers)
-        $ Map.insert "madlib__number__internal__multiplyIntegers" (fnSymbol 2 multiplyIntegers)
-        $ Map.insert "madlib__number__internal__divideIntegers" (fnSymbol 2 divideIntegers)
-        $ Map.insert "madlib__number__internal__gtIntegers" (fnSymbol 2 gtIntegers)
-        $ Map.insert "madlib__number__internal__ltIntegers" (fnSymbol 2 ltIntegers)
-        $ Map.insert "madlib__number__internal__gteIntegers" (fnSymbol 2 gteIntegers)
-        $ Map.insert "madlib__number__internal__lteIntegers" (fnSymbol 2 lteIntegers)
-        $ Map.insert "madlib__number__internal__negateInteger" (fnSymbol 1 negateInteger)
-
-        -- Bits Integer
-        $ Map.insert "madlib__number__internal__andIntegers" (fnSymbol 2 andIntegers)
-        $ Map.insert "madlib__number__internal__orIntegers" (fnSymbol 2 orIntegers)
-        $ Map.insert "madlib__number__internal__xorIntegers" (fnSymbol 2 xorIntegers)
-        $ Map.insert "madlib__number__internal__complementIntegers" (fnSymbol 1 complementIntegers)
-        $ Map.insert "madlib__number__internal__leftShiftIntegers" (fnSymbol 2 leftShiftIntegers)
-        $ Map.insert "madlib__number__internal__rightShiftIntegers" (fnSymbol 2 rightShiftIntegers)
-
-        -- Eq
-        $ Map.insert "madlib__number__internal__eqInteger" (fnSymbol 2 eqInteger)
-        $ Map.insert "madlib__number__internal__eqByte" (fnSymbol 2 eqByte)
-        $ Map.insert "madlib__char__internal__eq" (fnSymbol 2 eqChar)
-        $ Map.insert "madlib__number__internal__eqFloat" (fnSymbol 2 eqFloat)
-        $ Map.insert "madlib__string__internal__eq" (fnSymbol 2 eqString)
-        $ Map.insert "madlib__boolean__internal__eq" (fnSymbol 2 eqBoolean)
-        $ Map.insert "madlib__list__internal__eq" (fnSymbol 3 eqList)
-        $ Map.insert "madlib__array__internal__eq" (fnSymbol 3 eqArray)
-        $ Map.insert "madlib__bytearray__internal__eq" (fnSymbol 2 eqByteArray)
-        $ Map.insert "madlib__dictionary__internal__eq" (fnSymbol 4 eqDictionary) initialSymbolTable
-
-      numberType               = IT.TVar (IT.TV "a" IT.Star)
-      numberPred               = IT.IsIn "Number" [numberType] Nothing
-      numberQualType           = [numberPred] IT.:=> numberType
-      numberOperationQualType  = [numberPred] IT.:=> (numberType `IT.fn` numberType `IT.fn` numberType)
-      numberComparisonQualType = [numberPred] IT.:=> (numberType `IT.fn` numberType `IT.fn` IT.tBool)
-      coerceNumberQualType     = [numberPred] IT.:=> (numberType `IT.fn` numberType)
-
-  -- TODO: Add "unary-minus" method for number instances
-  let integerNumberInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] ("Integer_" <> preludeHash)
-              (Map.fromList
-                [ ( "+"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "+" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "-"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "-" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "*"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "*" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "/"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "*" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( ">="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">=" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<=" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "__coerceNumber__"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToInteger" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "unary-minus"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateInteger" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                ]
-              )
-          )
-
-  let integerBitsInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Bits" [] ("Integer_" <> preludeHash)
-              (Map.fromList
-                [ ( "&"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "|"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "^"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "~"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "<<"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">>"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">>>"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftIntegers" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                ]
-              )
-          )
-
-  let byteNumberInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] ("Byte_" <> preludeHash)
-              (Map.fromList
-                [ ( "+"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "-"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "*"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "/"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( ">="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "__coerceNumber__"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToByte" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "unary-minus"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateByte" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                ]
-              )
-          )
-
-
-  let byteBitsInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Bits" [] ("Byte_" <> preludeHash)
-              (Map.fromList
-                [ ( "&"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__andBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "|"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "|" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__orBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "^"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "^" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__xorBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "~"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "~" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__complementBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "<<"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "<<" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__leftShiftBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">>"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">>>"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment ">>>" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__rightShiftBytes" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                ]
-              )
-          )
-
-  let floatNumberInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] ("Float_" <> preludeHash)
-              (Map.fromList
-                [ ( "+"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__addFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "-"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__substractFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "*"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__multiplyFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "/"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberOperationQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed numberOperationQualType emptyArea [] (Core.Var "madlib__number__internal__divideFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( ">"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gtFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<"
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__ltFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( ">="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__gteFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "<="
-                  , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
-                        Core.Typed numberComparisonQualType emptyArea [] (Core.Definition (Core.Typed numberQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed numberComparisonQualType emptyArea [] (Core.Var "madlib__number__internal__lteFloats" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed numberQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                , ( "__coerceNumber__"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "__coerceNumber__" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__numberToFloat" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                , ( "unary-minus"
-                  , ( Core.Typed coerceNumberQualType emptyArea [] (Core.Assignment "unary-minus" (
-                        Core.Typed coerceNumberQualType emptyArea [] (Core.Definition [Core.Typed numberQualType emptyArea [] "a"] [
-                          Core.Typed numberQualType emptyArea [] (Core.Call (Core.Typed coerceNumberQualType emptyArea [] (Core.Var "madlib__number__internal__negateFloat" False)) [
-                            Core.Typed numberQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
-                    )
-                  )
-                ]
-              )
-          )
-
-  let varType  = IT.TVar (IT.TV "a" IT.Star)
-      dictType = IT.TVar (IT.TV "dict" IT.Star)
-
-  let inspectPred               = IT.IsIn "Inspect" [varType] Nothing
-      inspectVarQualType        = [inspectPred] IT.:=> varType
-      byteArrayInspectQualType  = [] IT.:=> (IT.tByteArray `IT.fn` IT.tStr)
-      overloadedInspectType     = dictType `IT.fn` varType `IT.fn` IT.tStr
-      overloadedInspectQualType = [inspectPred] IT.:=> overloadedInspectType
-
-      byteArrayInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] ("ByteArray_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed byteArrayInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed byteArrayInspectQualType emptyArea [] (Core.Definition [Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed byteArrayInspectQualType emptyArea [] (Core.Var "madlib__bytearray__internal__inspect" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [] byteArrayInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      arrayInspectInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("Array_" <> preludeHash)
-              (Map.fromList
-                [ ( "inspect"
-                  , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
-                        Core.Typed overloadedInspectQualType emptyArea [] (Core.Definition [Core.Typed ([] IT.:=> dictType) emptyArea [] "inspectDict", Core.Typed inspectVarQualType emptyArea [] "a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed overloadedInspectQualType emptyArea [] (Core.Var "madlib__array__internal__inspect" False)) [
-                              Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "inspectDict" False),
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] overloadedInspectQualType
-                    )
-                  )
-                ]
-              )
-          )
-
-      tupleInspectInstances = buildTupleNInspectInstance <$> [2..10]
-
-  let eqPred              = IT.IsIn "Eq" [varType] Nothing
-      eqVarQualType       = [eqPred] IT.:=> varType
-      eqOperationQualType = [eqPred] IT.:=> (varType `IT.fn` varType `IT.fn` IT.tBool)
-
-      fnEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "a_arr_b"
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Literal $ LBool "true")
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-
-      overloadedEqType     = dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
-      overloadedEqQualType = [eqPred] IT.:=> overloadedEqType
-
-      arrayEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("Array_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed overloadedEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDict" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "madlib__array__internal__eq" False)) [
-                            Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDict" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      byteArrayEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] ("ByteArray_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed eqOperationQualType emptyArea [] (Core.Definition (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"]) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed eqOperationQualType emptyArea [] (Core.Var "madlib__bytearray__internal__eq" False)) [
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      dictionaryEqPreds    = [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing, IT.IsIn "Eq" [IT.TVar (IT.TV "b" IT.Star)] Nothing]
-      dictionaryEqType     = dictType `IT.fn` dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
-      dictionaryEqQualType = dictionaryEqPreds IT.:=> dictionaryEqType
-
-      dictionaryEqInstance =
-        Core.Untyped emptyArea []
-          ( Core.Instance "Eq" dictionaryEqPreds ("Dictionary_" <> preludeHash)
-              (Map.fromList
-                [ ( "=="
-                  -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
-                  , ( Core.Typed dictionaryEqQualType emptyArea [] (Core.Assignment "==" (
-                        Core.Typed dictionaryEqQualType emptyArea [] (Core.Definition (Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDictB" : Core.Typed ([] IT.:=> dictType) emptyArea [] "eqDictA" : (Core.Typed eqVarQualType emptyArea [] <$> ["a", "b"])) [
-                          Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed dictionaryEqQualType emptyArea [] (Core.Var "madlib__dictionary__internal__eq" False)) [
-                            Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDictA" False),
-                            Core.Typed ([] IT.:=> dictType) emptyArea [] (Core.Var "eqDictB" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "a" False),
-                            Core.Typed eqVarQualType emptyArea [] (Core.Var "b" False)
-                          ])
-                        ])
-                      ))
-                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
-                    )
-                  )
-                ]
-              )
-          )
-
-      tupleEqInstances = buildTupleNEqInstance <$> [2..10]
-
-  generateInstances
-    env
-    symbolTableWithCBindings
-    (
-      -- Number
-      [ integerNumberInstance
-      , byteNumberInstance
-      , floatNumberInstance
-
-      -- Bits
-      , byteBitsInstance
-      , integerBitsInstance
-
-        -- Eq
-      , arrayEqInstance
-      , byteArrayEqInstance
-      , dictionaryEqInstance
-      , fnEqInstance
-
-        -- Inspect
-      , byteArrayInspectInstance
-      , arrayInspectInstance
-      ] ++ tupleEqInstances ++ tupleInspectInstances
-    )
-  return ()
-
-
 generateLLVMModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
 generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
@@ -4019,11 +2602,10 @@ generateModule options ast@AST{ apath = Just modulePath } = do
       importPaths                      = getImportAbsolutePath <$> imports
 
   symbolTablesWithEnvs <- mapM (Rock.fetch . Query.BuiltObjectFile) importPaths
-  defaultSymbolTableWithEnv <- Rock.fetch Query.BuiltInBuiltObjectFile
 
   let dropThird (table, env, _) = (table, env)
 
-  let allTablesAndEnvs = dropThird defaultSymbolTableWithEnv : (dropThird <$> symbolTablesWithEnvs)
+  let allTablesAndEnvs = dropThird <$> symbolTablesWithEnvs
 
   let symbolTable                  = mconcat $ fst <$> allTablesAndEnvs
   let dictionaryIndicesFromImports = mconcat $ dictionaryIndices . snd <$> allTablesAndEnvs
@@ -4056,25 +2638,6 @@ generateModule options ast@AST{ apath = Just modulePath } = do
 
 generateModule _ _ =
   undefined
-
-
-compileDefaultModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> m (SymbolTable, Env, ByteString)
-compileDefaultModule _ = do
-  let (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = defaultDictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] mempty)
-
-  objectContent <- liftIO $ buildObjectFile defaultInstancesModule
-
-  return
-    ( symbolTable'
-    , Env
-      { dictionaryIndices = defaultDictionaryIndices
-      , isLast = False
-      , isTopLevel = False
-      , recursionData = Nothing
-      , envASTPath = ""
-      }
-    , objectContent
-    )
 
 
 compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env, ByteString.ByteString)

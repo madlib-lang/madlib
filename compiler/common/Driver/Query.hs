@@ -67,7 +67,6 @@ data Query a where
 
   -- LLVM
   BuiltObjectFile :: FilePath -> Query (SymbolTable, LLVM.Env, ByteString.ByteString)
-  BuiltInBuiltObjectFile :: Query (SymbolTable, LLVM.Env, ByteString.ByteString)
 
   -- JS
   GeneratedJSModule :: FilePath -> Query String
@@ -155,23 +154,20 @@ instance Hashable (Query a) where
     BuiltObjectFile path ->
       hashWithSalt salt (path, 22 :: Int)
 
-    BuiltInBuiltObjectFile ->
-      hashWithSalt salt (23 :: Int)
-
     GeneratedJSModule path ->
-      hashWithSalt salt (path, 24 :: Int)
+      hashWithSalt salt (path, 23 :: Int)
 
     BuiltJSModule path ->
-      hashWithSalt salt (path, 25 :: Int)
+      hashWithSalt salt (path, 24 :: Int)
 
     BuiltTarget path ->
-      hashWithSalt salt (path, 26 :: Int)
+      hashWithSalt salt (path, 25 :: Int)
 
     StaticLibPathsToLink path ->
-      hashWithSalt salt (path, 27 :: Int)
+      hashWithSalt salt (path, 26 :: Int)
 
     EnvVar name ->
-      hashWithSalt salt (name, 28 :: Int)
+      hashWithSalt salt (name, 27 :: Int)
 
 
 instance Hashable (Some Query) where
