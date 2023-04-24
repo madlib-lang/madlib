@@ -100,9 +100,6 @@ safeBitcast op t = case (typeOf op, t) of
     bitcast op t
 
 
-
-
-
 varSymbol :: Operand -> Symbol
 varSymbol =
   Symbol VariableSymbol
@@ -119,10 +116,6 @@ fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
   Symbol (FunctionSymbol arity)
 
-methodSymbol :: Int -> Operand -> Symbol
-methodSymbol arity =
-  Symbol (MethodSymbol arity)
-
 topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
   Symbol TopLevelAssignment
@@ -134,24 +127,6 @@ constructorSymbol ctor id arity =
 adtSymbol :: Int -> Symbol
 adtSymbol maxArity =
   Symbol (ADTSymbol maxArity) (Operand.ConstantOperand (Constant.Null boxType))
-
-isMethodSymbol :: Symbol -> Bool
-isMethodSymbol symbol = case symbol of
-  Symbol (MethodSymbol _) _ ->
-    True
-
-  _ ->
-    False
-
-isDictSymbol :: Symbol -> Bool
-isDictSymbol symbol = case symbol of
-  Symbol (DictionarySymbol _) _ ->
-    True
-
-  _ ->
-    False
-
-
 
 
 stringToShortByteString :: String -> ShortByteString.ShortByteString
@@ -500,100 +475,6 @@ buildStr s = do
       return ()
 
 
-
--- (Core.Placeholder
-  --  ( ClassRef
-      --  "Applicative"
-      --  [ CRPNode "Semigroup" "List" False []
-      --  , CRPNode "Functor" "Identity" False []
-      --  ]
-      --  True
-      --  False
-  --  , "WriterT"
-  --  )
-collectCRPDicts :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> [Core.ClassRefPred] -> m [Operand.Operand]
-collectCRPDicts symbolTable crpNodes = case crpNodes of
-  (Core.CRPNode interfaceName typingStr _ subNodes : next) ->
-    let dictName = "$" <> interfaceName <> "$" <> typingStr
-    in  case Map.lookup dictName symbolTable of
-          Just (Symbol (DictionarySymbol methodIndices) dict) -> case subNodes of
-            [] -> do
-              nextNodes <- collectCRPDicts symbolTable next
-              return $ dict : nextNodes
-
-            subNodes' -> do
-              subNodeDicts <- collectCRPDicts symbolTable subNodes'
-              dict'        <- applyClassRefPreds symbolTable (Map.size methodIndices) dict subNodeDicts
-              nextNodes    <- collectCRPDicts symbolTable next
-              return $ dict' : nextNodes
-
-          -- this case may happen when the dict is coming from a parameter
-          -- at this point we have no info about it and it's already applied
-          -- but it might be necessary to apply it to another dict
-          Just (Symbol _ dict) -> do
-            nextNodes <- collectCRPDicts symbolTable next
-            return $ dict : nextNodes
-
-          _ ->
-            error $ "dict not found: "<>dictName<>"\n"<>ppShow (Map.lookup "$Inspect$e368" symbolTable)
-
-  [] ->
-    return []
-
-getMethodsInDict :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand -> m [Operand]
-getMethodsInDict symbolTable index dict = case index of
-  0 -> do
-    method  <- gep dict [i32ConstOp 0, i32ConstOp 0]
-    method' <- box method
-    return [method']
-
-  n -> do
-    method      <- gep dict [i32ConstOp 0, i32ConstOp (fromIntegral n)]
-    method'     <- box method
-    nextMethods <- getMethodsInDict symbolTable (index - 1) dict
-    return $ nextMethods ++ [method']
-
-applyClassRefPreds :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand -> [Operand] -> m Operand
-applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPreds of
-  [] ->
-    return dict
-
-  preds -> do
-    methods        <- getMethodsInDict symbolTable (methodCount - 1) dict
-
-    classRefPreds'  <- mapM box preds
-    appliedMethods  <- mapM (\m -> call applyPAP ([(m, []), (i32ConstOp (fromIntegral $ List.length classRefPreds'), [])] ++ ((,[]) <$> classRefPreds'))) methods
-    appliedMethods' <- mapM (`safeBitcast` papType) appliedMethods
-    appliedMethods'' <- mapM (`load` 0) appliedMethods'
-
-    let appliedDictType = Type.StructureType False (typeOf <$> appliedMethods'')
-    appliedDict  <- call gcMalloc [(Operand.ConstantOperand $ sizeof appliedDictType, [])]
-    appliedDict' <- safeBitcast appliedDict (Type.ptr appliedDictType)
-    Monad.foldM_ (storeItem appliedDict') () $ List.zip appliedMethods'' [0..]
-
-    return appliedDict'
-
-collectDictArgs :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Core.Exp -> m ([Operand.Operand], Core.Exp)
-collectDictArgs symbolTable exp = case exp of
-  Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef interfaceName classRefPreds True _, typingStr) exp') -> do
-    let dictName = "$" <> interfaceName <> "$" <> typingStr
-    crpNodes <- collectCRPDicts symbolTable classRefPreds
-    (nextArgs, nextExp) <- collectDictArgs  symbolTable exp'
-    case Map.lookup dictName symbolTable of
-      Just (Symbol (DictionarySymbol methodIndices) dict) -> do
-        dict' <- applyClassRefPreds symbolTable (Map.size methodIndices) dict crpNodes
-        return (dict' : nextArgs, nextExp)
-
-      Just (Symbol _ dict) ->
-        return (dict : nextArgs, nextExp)
-
-      _ ->
-        error $ "dict not found: '" <> dictName <> "'"
-
-  _ ->
-    return ([], exp)
-
-
 retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [[Core.Metadata]] -> [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
 retrieveArgs metadata exps =
   mapM
@@ -799,15 +680,6 @@ generateExp env symbolTable exp = case exp of
       Just (Symbol (FunctionSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
 
-      -- Just (Symbol (MethodSymbol 0) fnPtr) -> do
-      --   -- Handle special nullary cases like assignment methods or mempty
-      --   pap     <- call fnPtr []
-      --   unboxed <- unbox env symbolTable qt pap
-      --   return (symbolTable, unboxed, Just pap)
-
-      Just (Symbol (MethodSymbol arity) fnPtr) -> do
-        buildReferencePAP symbolTable arity fnPtr
-
       Just (Symbol TopLevelAssignment ptr) -> do
         loaded <- load ptr 0
         return (symbolTable, loaded, Nothing)
@@ -839,83 +711,6 @@ generateExp env symbolTable exp = case exp of
 
       Nothing ->
         error $ "Var not found " <> n <> "\nExp: " <> ppShow exp
-
-  -- (Core.Placeholder (ClassRef "Functor" [] False True , "b183")
-  Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef _ _ False True, _) _) -> do
-    let (dictNameParams, innerExp) = gatherAllPlaceholders exp
-    let wrapperType = [] IT.:=> List.foldr IT.fn (IT.tVar "a") (IT.tVar "a" <$ dictNameParams)
-    fnName <- freshName (stringToShortByteString "dictionaryWrapper")
-    let (Name fnName') = fnName
-    symbolTable' <-
-      generateFunction
-        env
-        symbolTable
-        False
-        []
-        wrapperType
-        (Char8.unpack (ShortByteString.fromShort fnName'))
-        (Core.Typed ([] IT.:=> IT.tVar "dict") emptyArea [] <$> dictNameParams)
-        [innerExp]
-    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName), Nothing)
-    where
-      gatherAllPlaceholders :: Core.Exp -> ([String], Core.Exp)
-      gatherAllPlaceholders ph = case ph of
-        Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef interface _ False True, typingStr) e) ->
-          let (nextDictParams, nextExp) = gatherAllPlaceholders e
-              dictParamName      = "$" <> interface <> "$" <> typingStr
-          in  (dictParamName : nextDictParams, nextExp)
-
-        _ ->
-          ([], ph)
-
-
-  -- (Core.Placeholder (Core.MethodRef "Show" "show" True, "j9")
-  Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName True, typingStr) _) -> do
-    let dictName = "$" <> interface <> "$" <> typingStr
-    case Map.lookup dictName symbolTable of
-      Just (Symbol _ dict) -> do
-        let interfaceMap   = case Map.lookup interface (dictionaryIndices env) of
-              Just indices ->
-                indices
-
-              Nothing ->
-                error $ "index table for interface '" <> interface <> "' not found"
-        let (index, arity) = Maybe.fromMaybe (0, 0) $ Map.lookup methodName interfaceMap
-        let papType        = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-        dict'      <- safeBitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
-        methodPAP  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
-
-        -- If arity is 0 ( ex: mempty ), we need to call the function and get the value as there will be
-        -- no call wrapping the Core.MethodRef. In other words that will never be called and a direct value is
-        -- expected
-        if arity == 0 then do
-          methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
-          methodFn'  <- safeBitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
-          methodFn'' <- load methodFn' 0
-          value      <- call methodFn'' []
-          return (symbolTable, value, Nothing)
-        else
-          return (symbolTable, methodPAP, Nothing)
-
-      _ ->
-        error $ "dict not found: '"<>dictName <>"\n\n"<>ppShow exp
-
-  -- Most likely a method that has to be applied some dictionaries
-  Core.Typed qt _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> do
-    let methodName' = "$" <> interface <> "$" <> typingStr <> "$" <> methodName
-    case Map.lookup methodName' symbolTable of
-      Just (Symbol (MethodSymbol 0) fnPtr) -> do
-        -- Handle special nullary cases like assignment methods or mempty
-        pap     <- call fnPtr []
-        unboxed <- unbox env symbolTable qt pap
-        return (symbolTable, unboxed, Nothing)
-        -- return (symbolTable, unboxed, Just pap)
-
-      Just (Symbol (MethodSymbol arity) fnOperand) -> do
-        buildReferencePAP symbolTable arity fnOperand
-
-      _ ->
-        error $ "method with name '" <> methodName' <> "' not found!"
 
   -- TODO: Export nodes are stripped from closure convertion currently, we'll need this back soon.
   -- Core.Typed _ _ _ (Core.Export e) -> do
@@ -1247,18 +1042,6 @@ generateExp env symbolTable exp = case exp of
           result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-    -- TODO: remove this?
-    -- Calling a known method
-    Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> do
-      let dictName    = "$" <> interface <> "$" <> typingStr
-      let methodName' = dictName <> "$" <> methodName
-      case Map.lookup methodName' symbolTable of
-        Just (Symbol (MethodSymbol arity) fnOperand) ->
-          generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
-
-        _ ->
-          error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
-
     _ | Core.isPlainRecursiveCall metadata -> do
         let llvmType      = buildLLVMType env symbolTable (getQualType exp)
         let Just continue = continueRef <$> recursionData env
@@ -1306,81 +1089,18 @@ generateExp env symbolTable exp = case exp of
       _ ->
         error $ "Function not found " <> functionName <> "\narea: " <> ppShow area <> "\nST: " <> ppShow symbolTable
 
-    _ -> case fn of
-      -- With this we enable tail call optimization for overloaded functions
-      -- because if we apply a PAP we loose the direct call and thus TCO.
-      Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef _ _ True _, _) _) -> do
-        (dictArgs, fn') <- collectDictArgs symbolTable fn
-        dictArgs'       <- mapM box dictArgs
+    _ -> do
+      (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
+      pap' <- safeBitcast pap boxType
 
-        args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
-        let allArgs = dictArgs' ++ boxedArgs
+      let argc = i32ConstOp (fromIntegral $ List.length args)
 
-        case fn' of
-          Core.Typed _ _ _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
-            Just (Symbol (FunctionSymbol arity) fnOperand) | arity == List.length allArgs -> do
-              ret <- call fnOperand ((,[]) <$> allArgs)
-              unboxed <- unbox env symbolTable qt ret
-              return (symbolTable, unboxed, Just ret)
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
-            _ -> do
-              (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
-
-              pap' <- safeBitcast pap boxType
-
-              let argc = i32ConstOp (fromIntegral $ List.length allArgs)
-              ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
-              unboxed <- unbox env symbolTable qt ret
-              return (symbolTable, unboxed, Just ret)
-
-          _ -> do
-            (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
-
-            pap' <- safeBitcast pap boxType
-
-            let argc = i32ConstOp (fromIntegral $ List.length allArgs)
-            ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
-            unboxed <- unbox env symbolTable qt ret
-            return (symbolTable, unboxed, Just ret)
-
-      Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef "Number" _ True, _) _) -> do
-        (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-        pap' <- safeBitcast pap boxType
-
-        let argc = i32ConstOp (fromIntegral $ List.length args)
-
-        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
-
-        ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        unboxed <- unbox env symbolTable qt ret
-        return (symbolTable, unboxed, Just ret)
-
-      _ -> do
-        (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-        pap' <- safeBitcast pap boxType
-
-        let argc = i32ConstOp (fromIntegral $ List.length args)
-
-        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
-
-        ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        unboxed <- unbox env symbolTable qt ret
-        return (symbolTable, unboxed, Just ret)
-
-  -- (Core.Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Core.Typed qt _ _ (Core.Placeholder (Core.ClassRef _ _ True _, _) _) -> do
-    (dictArgs, fn) <- collectDictArgs symbolTable exp
-    (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-    pap' <- safeBitcast pap boxType
-    let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
-    dictArgs' <- mapM box dictArgs
-    let dictArgs'' = (,[]) <$> dictArgs'
-    ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
-    unboxed <- unbox env symbolTable qt ret
-    return (symbolTable, unboxed, Just ret)
+      ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
+      unboxed <- unbox env symbolTable qt ret
+      return (symbolTable, unboxed, Just ret)
 
   Core.Typed _ _ _ Core.TypedHole -> do
     call typedHoleReached []
@@ -1936,8 +1656,8 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
-generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName coreParams body = do
+generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
+generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
       params'       = (boxType,) . makeParamName <$> (Core.getValue <$> coreParams)
       functionName' = AST.mkName functionName
@@ -2056,20 +1776,14 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName co
       boxed <- box generatedBody
       ret boxed
 
-  let symbolConstructor =
-        if isMethod then
-          methodSymbol
-        else
-          fnSymbol
-
-  Writer.tell $ Map.singleton functionName (symbolConstructor (List.length coreParams) function)
-  return $ Map.insert functionName (symbolConstructor (List.length coreParams) function) symbolTable
+  Writer.tell $ Map.singleton functionName (fnSymbol (List.length coreParams) function)
+  return $ Map.insert functionName (fnSymbol (List.length coreParams) function) symbolTable
 
 
 generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed qt _ metadata (Core.Definition params body))) -> do
-    generateFunction env symbolTable False metadata qt functionName params body
+    generateFunction env symbolTable metadata qt functionName params body
 
   Core.Typed _ _ _ (Core.Extern (ps IT.:=> t) name originalName) -> do
     let paramTypes  = IT.getParamTypes t
@@ -2218,144 +1932,6 @@ generateConstructors env symbolTable tds =
   Monad.foldM (generateConstructorsForADT env) symbolTable tds
 
 
-buildDictValues :: Env -> SymbolTable -> [(String, Core.Exp)] -> [Constant.Constant]
-buildDictValues env symbolTable methods = case methods of
-  ((methodName, methodExp) : ns) ->
-    let arity      = List.length $ IT.getParamTypes (Core.getType methodExp)
-        methodType =
-          case methodExp of
-            Core.Typed _ _ _ (Core.Assignment _ (Core.Typed _ _ _ (Core.Definition params _))) ->
-              Type.ptr $ Type.FunctionType boxType (List.replicate (List.length params) boxType) False
-
-            _ ->
-              if arity == 0 then
-                Type.ptr $ Type.FunctionType boxType [] False
-              else
-                Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-
-        methodRef  = Constant.GlobalReference methodType (AST.mkName methodName)
-        methodRef' = Constant.BitCast methodRef boxType
-        pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity), Constant.Undef boxType]
-        next       = buildDictValues env symbolTable ns
-    in  pap : next
-
-  [] ->
-    []
-
-
-generateMethod :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> String -> Core.Exp -> m SymbolTable
-generateMethod env symbolTable methodName exp = case exp of
-  -- TODO: handle overloaded methods that should be passed a dictionary
-  Core.Typed _ _ _ (Core.Assignment _ (Core.Typed qt _ metadata (Core.Definition params body))) ->
-    generateFunction env symbolTable True metadata qt methodName params body
-
-  -- TODO: reconsider this
-  Core.Typed (_ IT.:=> t) _ _ (Core.Assignment _ exp) -> do
-    let paramTypes  = IT.getParamTypes t
-        arity       = List.length paramTypes
-        params'     = (,NoParameterName) <$> (boxType <$ paramTypes)
-
-    f <- function (AST.mkName methodName) params' boxType $ \params -> do
-      block `named` "entry"
-      (_, exp', _) <- generateExp env symbolTable exp
-
-      retVal <-
-        if arity > 0 then do
-          pap <- safeBitcast exp' boxType
-          call applyPAP $ [(pap, []), (i32ConstOp (fromIntegral arity), [])] ++ ((,[]) <$> params)
-        else do
-          box exp'
-
-      ret retVal
-
-    Writer.tell $ Map.singleton methodName (methodSymbol arity f)
-    return $ Map.insert methodName (methodSymbol arity f) symbolTable
-
-  _ ->
-    undefined
-
-
-generateInstance :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Instance -> m SymbolTable
-generateInstance env symbolTable inst = case inst of
-  Core.Untyped _ _ (Core.Instance interface _ typingStr methods) -> do
-    let instanceName     = "$" <> interface <> "$" <> typingStr
-        prefixedMethods  = Map.mapKeys ((instanceName <> "$") <>) methods
-        prefixedMethods' = (\(name, method) -> (name, method)) <$> Map.toList prefixedMethods
-        -- for recursive types we need to have the current dict in the symbol table
-    let methodConstants = buildDictValues env symbolTable (Map.toList (fst <$> prefixedMethods))
-    dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
-    symbolTableWithDict <- return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict) symbolTable
-    symbolTable' <- Monad.foldM (\symbolTable (name, (method, _)) -> generateMethod env symbolTable name method) symbolTableWithDict prefixedMethods'
-
-
-    Writer.tell $ Map.singleton instanceName (Symbol (DictionarySymbol (Map.fromList $ List.zip (Map.keys methods) [0..])) dict)
-    return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict) symbolTable'
-
-  _ ->
-    undefined
-
-
-generateInstances :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Instance] -> m SymbolTable
-generateInstances env =
-  Monad.foldM (generateInstance env)
-
-
-addMethodToSymbolTable :: SymbolTable -> Core.Exp -> ([(String, Operand)], SymbolTable)
-addMethodToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
-  Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))) ->
-    let arity  = List.length params
-        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
-        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-    in  ([(functionName, fnRef)], Map.insert functionName (methodSymbol arity fnRef) symbolTable)
-
-  Core.Typed (_ IT.:=> t) _ _ (Core.Assignment name _) ->
-    let paramTypes  = IT.getParamTypes t
-        arity       = List.length paramTypes
-        paramTypes' = boxType <$ paramTypes
-        expType     = Type.ptr $ Type.FunctionType boxType paramTypes' False
-        globalRef   = Operand.ConstantOperand (Constant.GlobalReference expType (AST.mkName name))
-    in  ([(name, globalRef)], Map.insert name (methodSymbol arity globalRef) symbolTable)
-
-  _ ->
-    ([], symbolTable)
-
-
-updateMethodName :: Core.Exp -> String -> Core.Exp
-updateMethodName exp newName = case exp of
-  Core.Typed _ _ assignmentMetadata (Core.Assignment _ (Core.Typed t area definitionMetadata (Core.Definition params body))) ->
-    Core.Typed t area assignmentMetadata (Core.Assignment newName (Core.Typed t area definitionMetadata (Core.Definition params body)))
-
-  Core.Typed t area metadata (Core.Assignment _ exp) ->
-    Core.Typed t area metadata (Core.Assignment newName exp)
-
-  _ ->
-    undefined
-
-addInstanceToSymbolTable :: SymbolTable -> Core.Instance -> SymbolTable
-addInstanceToSymbolTable symbolTable inst = case inst of
-  Core.Untyped _ _ (Core.Instance interface _ typingStr methods) -> do
-    let instanceName = "$" <> interface <> "$" <> typingStr
-        prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
-        updatedMethods  = Map.elems $ Map.mapWithKey (\name (exp, _) -> updateMethodName exp name) prefixedMethods
-
-    let (methodOperands, symbolTable') =
-          List.foldl'
-            (\(currentMtds, currentTable) e ->
-                let (mtds, st') = addMethodToSymbolTable currentTable e
-                in  (currentMtds ++ mtds, st')
-            )
-            ([], symbolTable)
-            updatedMethods
-        dictType = Type.ptr $ Type.StructureType False (typeOf <$> (snd <$> methodOperands))
-        dict = Operand.ConstantOperand (Constant.GlobalReference dictType (AST.mkName instanceName))
-        dictInfo = Map.fromList $ List.zip (fst <$> methodOperands) [0..]
-
-    Map.insert instanceName (Symbol (DictionarySymbol dictInfo) dict) symbolTable'
-
-  _ ->
-    undefined
-
-
 expsForMain :: [Core.Exp] -> [Core.Exp]
 expsForMain =
   List.filter (not . \e -> isTopLevelFunction e || isExtern e)
@@ -2364,20 +1940,6 @@ expsForMain =
 topLevelFunctions :: [Core.Exp] -> [Core.Exp]
 topLevelFunctions =
   List.filter $ \e -> isTopLevelFunction e || isExtern e
-
-
-buildDictionaryIndices :: [Core.Interface] -> Map.Map String (Map.Map String (Int, Int))
-buildDictionaryIndices interfaces = case interfaces of
-  (Core.Untyped _ _ (Core.Interface name _ _ methods _) : next) ->
-    let nextMap   = buildDictionaryIndices next
-        methodMap = Map.fromList
-          $ (\((methodName, IT.Forall _ (_ IT.:=> t)), index) ->
-              (methodName, (index, List.length $ IT.getParamTypes t))
-            ) <$> List.zip (Map.toList methods) [0..]
-    in  Map.insert name methodMap nextMap
-
-  _ ->
-    Map.empty
 
 
 getLLVMParameterTypes :: Type.Type -> [Type.Type]
@@ -2406,13 +1968,6 @@ generateExternalForName symbolTable name = case Map.lookup name symbolTable of
     extern (AST.mkName name) paramTypes returnType
     return ()
 
-  Just (Symbol (MethodSymbol _) symbol) -> do
-    let t          = typeOf symbol
-        paramTypes = getLLVMParameterTypes t
-        returnType = getLLVMReturnType t
-    extern (AST.mkName name) paramTypes returnType
-    return ()
-
   Just (Symbol (ConstructorSymbol _ _) symbol) -> do
     let t          = typeOf symbol
         paramTypes = getLLVMParameterTypes t
@@ -2421,13 +1976,6 @@ generateExternalForName symbolTable name = case Map.lookup name symbolTable of
     return ()
 
   Just (Symbol TopLevelAssignment symbol) -> do
-    let (Type.PointerType t _) = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
-    let def = AST.GlobalDefinition g
-    emitDefn def
-    return ()
-
-  Just (Symbol (DictionarySymbol _) symbol) -> do
     let (Type.PointerType t _) = typeOf symbol
     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
@@ -2461,12 +2009,6 @@ generateImport symbolTable imp = case imp of
 
   _ ->
     undefined
-
-generateExternsForImportedInstances :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => SymbolTable -> m ()
-generateExternsForImportedInstances symbolTable = do
-  let dictsAndMethods    = Map.filter (\s -> isDictSymbol s || isMethodSymbol s) symbolTable
-      dictAndMethodNames = Map.keys dictsAndMethods
-  mapM_ (generateExternalForName symbolTable) (Set.toList $ Set.fromList dictAndMethodNames)
 
 
 generateHashFromPath :: FilePath -> String
@@ -2507,8 +2049,7 @@ generateLLVMModule _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
 generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
-      symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
-      symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
+      symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithTopLevel
 
   let moduleHash = hashModulePath ast
   let moduleFunctionName =
@@ -2518,10 +2059,8 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
           "__" <> moduleHash <> "__moduleFunction"
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
-  generateExternsForImportedInstances initialSymbolTable
 
-  symbolTable  <- generateInstances env symbolTableWithDefaults (ainstances ast)
-  symbolTable' <- generateTopLevelFunctions env symbolTable (topLevelFunctions $ aexps ast)
+  symbolTable <- generateTopLevelFunctions env symbolTableWithDefaults (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
@@ -2555,7 +2094,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   moduleFunction <-
     if isMain then do
       let getArgs     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [] False) "madlib__process__internal__getArgs")
-      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("__" <> moduleHash <> "__main") symbolTable'
+      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("__" <> moduleHash <> "__main") symbolTable
       -- this function starts the runtime with a fresh stack etc
       function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"
@@ -2564,7 +2103,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
 
         callModuleFunctions currentModulePaths
 
-        generateExps env symbolTable' (expsForMain $ aexps ast)
+        generateExps env symbolTable (expsForMain $ aexps ast)
         -- call user main that should be named like main_moduleHash
         mainArgs <- call getArgs []
         mainArgs' <- safeBitcast mainArgs boxType
@@ -2581,19 +2120,11 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
     else do
       function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
         block `named` "entry"
-        generateExps env symbolTable' (expsForMain $ aexps ast)
+        generateExps env symbolTable (expsForMain $ aexps ast)
         retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
   Writer.tell symbolTableWithDefaults
-
-defaultDictionaryIndices =
-  Map.fromList
-    [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("/", (3, 2)), ("<", (4, 2)), ("<=", (5, 2)), (">", (6, 2)), (">=", (7, 2)), ("__coerceNumber__", (8, 1)), ("unary-minus", (9, 1))])
-    , ("Bits", Map.fromList [("&", (0, 2)), ("<<", (1, 2)), (">>", (2, 2)), (">>>", (3, 2)), ("^", (4, 2)), ("|", (5, 2)), ("~", (6, 1))])
-    , ("Eq", Map.fromList [("==", (0, 2))])
-    , ("Inspect", Map.fromList [("inspect", (0, 1))])
-    ]
 
 
 generateModule :: (Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
@@ -2608,14 +2139,11 @@ generateModule options ast@AST{ apath = Just modulePath } = do
   let allTablesAndEnvs = dropThird <$> symbolTablesWithEnvs
 
   let symbolTable                  = mconcat $ fst <$> allTablesAndEnvs
-  let dictionaryIndicesFromImports = mconcat $ dictionaryIndices . snd <$> allTablesAndEnvs
-  let computedDictionaryIndices    = buildDictionaryIndices $ ainterfaces ast
 
   let isMain = optEntrypoint options == modulePath
   let envForAST =
         Env
-          { dictionaryIndices = computedDictionaryIndices <> dictionaryIndicesFromImports <> defaultDictionaryIndices
-          , isLast = False
+          { isLast = False
           , isTopLevel = False
           , recursionData = Nothing
           , envASTPath = modulePath

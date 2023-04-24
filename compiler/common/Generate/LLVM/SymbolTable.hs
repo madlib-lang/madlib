@@ -24,8 +24,6 @@ data SymbolType
   -- ^ operand is a ptr to the value for mutation
   | FunctionSymbol Int
   -- ^ arity
-  | MethodSymbol Int
-  -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
   | ADTSymbol Int
@@ -34,7 +32,6 @@ data SymbolType
   -- constructor of that type
   | TopLevelAssignment
   -- ^ amount of items in the env
-  | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show, Generic, Hashable)
 
 

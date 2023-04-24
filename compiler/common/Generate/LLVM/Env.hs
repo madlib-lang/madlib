@@ -36,9 +36,7 @@ data RecursionData
 
 data Env
   = Env
-  { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int))
-    -- ^ Map InterfaceName (Map MethodName (index, arity))
-  , isLast :: Bool
+  { isLast :: Bool
   , isTopLevel :: Bool
   , recursionData :: Maybe RecursionData
   , envASTPath :: String
@@ -47,8 +45,7 @@ data Env
 
 initialEnv :: Env
 initialEnv =
-  Env { dictionaryIndices = mempty
-      , isLast = True
+  Env { isLast = True
       , isTopLevel = True
       , recursionData = Nothing
       , envASTPath = ""

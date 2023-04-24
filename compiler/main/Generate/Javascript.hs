@@ -388,78 +388,11 @@ instance Compilable Exp where
               rewritten = varsRewritten env
           in  fromMaybe safeName (M.lookup safeName rewritten)
 
-        Placeholder (ClassRef{}, _) _ ->
-          insertPlaceholderArgs "" e
-
-         where
-          insertPlaceholderArgs :: String -> Exp -> String
-          insertPlaceholderArgs prev exp'' = case exp'' of
-            Core.Typed _ _ _ (Placeholder (ClassRef cls ps _ var, ts) exp''') ->
-              let dict  = generateRecordName optimized cls ts var
-                  dict' = partiallyApplySubDicts dict ps
-              in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
-
-            _ -> compile env config exp'' <> prev
-
-          partiallyApplySubDicts :: String -> [ClassRefPred] -> String
-          partiallyApplySubDicts dict ps = if not (null ps)
-            then
-              let
-                dicts =
-                  "["
-                    <> intercalate
-                         ", "
-                         (   (\(CRPNode cls' ts var subdicts) ->
-                               partiallyApplySubDicts (generateRecordName optimized cls' ts var) subdicts
-                             )
-                         <$> ps
-                         )
-                    <> "]"
-              in  applyDictsFnName optimized <> "(" <> dict <> ", " <> dicts <> ")"
-            else dict
-
-
-        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var _ _)) ->
-          generateRecordName optimized cls ts var <> "." <> method <> "()"
-
         Assignment name exp ->
-          let safeName                       = generateSafeName name
-              (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
+          let safeName = generateSafeName name
+              content = compile env config exp
               needsModifier = notElem safeName $ varsInScope env
-          in  if not (null dicts)
-                then
-                  (if needsModifier then "let " else "")
-                  <> safeName
-                  <> " = "
-                  <> placeholders
-                  <> content
-
-                  -- NB: this commented solution enables memoizing for overloaded functions
-                  -- but also it does weird things wrt concurrency and Wish, which led tests
-                  -- to use the wrong instance of Inspect to display diffs.
-                  -- (if needsModifier then "let " else "")
-                  -- <> safeName
-                  -- <> " = "
-                  -- <> placeholders
-                  -- <> "{"
-                  -- <> "\n  "
-                  -- <> intercalate
-                  --      "\n  "
-                  --      ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
-                  -- <> "\n\n"
-                  -- <> "  return "
-                  -- <> safeName
-                  -- <> "__ND__()"
-                  -- <> "\n};\n"
-                  -- <> "let "
-                  -- <> safeName
-                  -- <> "__ND__"
-                  -- <> " = "
-                  -- <> onceFnName optimized
-                  -- <> "(() => "
-                  -- <> content'
-                  -- <> ")"
-                else (if needsModifier then "let " else "") <> safeName <> " = " <> content
+          in  (if needsModifier then "let " else "") <> safeName <> " = " <> content
 
         Export     ass    -> "export " <> compile env config ass
 
@@ -840,80 +773,6 @@ instance Compilable Core.Interface where
   compile _ config (Untyped _ _ interface) = case interface of
     Core.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
-instance Compilable Core.Instance where
-  compile env config (Untyped _ _ inst) = case inst of
-    Core.Instance "Eq" _ _ _ -> ""
-
-    Core.Instance interface _ typings dict -> interface <> "['" <> typings <> "'] = {};\n" <> concat
-      (uncurry compileMethod <$> M.toList (M.map fst dict))
-     where
-      compileMethod :: Name -> Exp -> String
-      compileMethod n (Core.Typed _ _ _ (Core.Assignment _ exp)) =
-        let
-          (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
-          instRoot = interface <> "['" <> typings <> "']"
-          compiledMethod =
-            instRoot
-              <> "['"
-              <> n
-              <> "'] = () => "
-              <> placeholders
-              <> content
-              <> ";\n"
-        in
-          if not (null dicts)
-            then compiledMethod
-            else instRoot <> "['" <> n <> "'] = () => " <> content <> ";\n"
-      -- compileMethod :: Name -> Exp -> String
-      -- compileMethod n (Core.Typed t (Area (Loc _ line _) _) (Core.Assignment _ exp)) =
-      --   let
-      --     (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
-      --     content'                       = if cccoverage config && isFunctionType t
-      --       then "__hpFnWrap('" <> ccastPath config <> "', " <> show line <> ", '" <> n <> "')(" <> content <> ")"
-      --       else content
-      --     instRoot = interface <> "['" <> typings <> "']"
-      --     compiledNDMethod =
-      --       "let __"
-      --         <> interface
-      --         <> typings
-      --         <> n
-      --         <> " = "
-      --         <> onceFnName (ccoptimize config)
-      --         <> "(() => "
-      --         <> content'
-      --         <> ");\n"
-      --     compiledMethod =
-      --       instRoot
-      --         <> "['"
-      --         <> n
-      --         <> "'] = () => "
-      --         <> placeholders
-      --         <> "{\n  "
-      --         <> intercalate
-      --              "\n  "
-      --              ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
-      --         <> "\n  return __"
-      --         <> interface
-      --         <> typings
-      --         <> n
-      --         <> "();\n};\n"
-      --   in
-      --     if not (null dicts)
-      --       then compiledNDMethod <> compiledMethod
-      --       else instRoot <> "['" <> n <> "'] = () => " <> content' <> ";\n"
-
-
-compileAssignmentWithPlaceholder :: Env -> CompilationConfig -> Exp -> (String, [String], String)
-compileAssignmentWithPlaceholder env config fullExp@(Core.Typed _ _ _ exp) = case exp of
-  Placeholder (ClassRef cls _ call var, ts) e -> if not call
-    then
-      let dict                      = generateRecordName (ccoptimize config) cls ts var
-          (phs, dicts, compiledExp) = compileAssignmentWithPlaceholder env config e
-      in  ("(" <> dict <> ") => " <> phs, dicts <> [dict], compiledExp)
-    else ("", [], compile env config fullExp)
-
-  _ -> ("", [], compile env config fullExp)
-
 generateRecordName :: Bool -> String -> String -> Bool -> String
 generateRecordName optimized cls ts var =
   if var then if optimized then cls <> ts else cls <> "_" <> ts else cls <> "." <> ts
@@ -927,19 +786,12 @@ instance Compilable AST where
         path               = apath ast
         imports            = aimports ast
         interfaces         = ainterfaces ast
-        instances          = ainstances ast
-
 
         astPath            = fromMaybe "Unknown" path
-
         configWithASTPath  = updateASTPath astPath config
-
         infoComment        = "// file: " <> astPath <> "\n"
 
         compiledInterfaces = case interfaces of
-          [] -> ""
-          x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
-        compiledInstances = case instances of
           [] -> ""
           x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledAdts = case typeDecls of
@@ -958,7 +810,6 @@ instance Compilable AST where
           <> compiledImports
           <> compiledAdts
           <> compiledInterfaces
-          <> compiledInstances
           <> compiledExps
           <> defaultExport
    where
