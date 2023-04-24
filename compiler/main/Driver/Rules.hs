@@ -374,22 +374,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     return (builtModule, (mempty, mempty))
 
-  BuiltInBuiltObjectFile -> nonInput $ do
-    builtModule@(_, _, objectContent) <- LLVM.compileDefaultModule options
-
-    liftIO $ do
-      let defaultInstancesModulePath =
-              if takeExtension (optEntrypoint options) == "" then
-                joinPath [optEntrypoint options, "__default__instances__.mad"]
-              else
-                joinPath [takeDirectory (optEntrypoint options), "__default__instances__.mad"]
-      let outputFolder = takeDirectory (optOutputPath options)
-      let outputPath = Path.computeLLVMTargetPath outputFolder (optRootPath options) defaultInstancesModulePath
-      createDirectoryIfMissing True $ takeDirectory outputPath
-      ByteString.writeFile outputPath objectContent
-
-    return (builtModule, (mempty, mempty))
-
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path

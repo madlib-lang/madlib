@@ -23,7 +23,7 @@ instance Monoid String {
 #iftarget js
 
 instance Comparable String {
-  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
+  compare = (a, b) => #- a > b -# ? MORE : #- a === b -# ? EQUAL : LESS
 }
 
 #elseif llvm

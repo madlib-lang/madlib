@@ -33,7 +33,6 @@ import Run.Target (Target (TBrowser, TNode))
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
 findCtorForeignModulePath moduleWhereItsUsed ctorName = do
-  -- liftIO $ putStrLn $ "path: " <> moduleWhereItsUsed <> " - name: " <> ctorName
   (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
   case findForeignModuleForImportedName ctorName ast of
     Just foreignModulePath -> do
@@ -157,8 +156,6 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
   localState <- liftIO $ readIORef envLocalState
   let flippedScopes = reverse localState
   let foundScopeIndex = List.findIndex (\ScopeState { ssDefinitions } -> Map.member fnName ssDefinitions) flippedScopes
-  liftIO $ putStrLn $ "foundScopeIndex: '" <> ppShow foundScopeIndex <> "'"
-  liftIO $ putStrLn $ "typeItIsCalledWith: '" <> ppShow typeItIsCalledWith <> "'"
   case foundScopeIndex of
     Just index -> do
       let ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
@@ -263,8 +260,6 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
             else
               return Nothing
 
-          liftIO $ putStrLn $ "foundMethod: " <> ppShow foundMethod
-
           case foundMethod of
             Just (methodExp@(Typed (ps :=> t) area (Assignment n method)), methodModulePath) -> do
               let fnId = FunctionId fnName methodModulePath typeItIsCalledWith
@@ -305,12 +300,6 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                         }
                       (removeParameterPlaceholdersAndUpdateName nameToUse methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath typeItIsCalledWith monomorphized
-
-                  -- liftIO $ putStrLn $ "Monomorphized METHOD: " <> fnName
-                  -- liftIO $ putStrLn $ "subst: " <> ppShow s
-                  -- liftIO $ putStrLn $ "monomorphized: " <> ppShow monomorphized
-                  -- liftIO $ putStrLn "--------------------"
-                  -- liftIO $ putStrLn ""
 
                   return nameToUse
 
@@ -355,8 +344,8 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
     return (exp, False)
 
   -- TODO: this should probably only happen for the JS backend?
-  -- Typed qt area (Var "==" False) ->
-  --   return (Typed qt area (Var "==" False), False)
+  Typed qt area (Var "==" False) | target == TNode || target == TBrowser ->
+    return (Typed qt area (Var "==" False), False)
 
   -- Constructors
   Typed qt area (Var ctorName True) -> do
@@ -592,6 +581,10 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     falsy' <- monomorphize target env falsy
     return $ Typed (applyAndCleanQt envSubstitution qt) area (If cond' truthy' falsy')
 
+  Typed qt area (Access rec field) -> do
+    rec' <- monomorphize target env rec
+    return $ Typed qt area (Access rec' field)
+
   Typed qt area e ->
     return $ Typed (applyAndCleanQt envSubstitution qt) area e
 
@@ -724,13 +717,6 @@ mergeResult ast =
   return ast
 
 
--- compareEntries :: Entry -> Entry -> Ordering
--- compareEntries entry1 entry2
---   | null (dependencies entry1) = LT
---   | name entry1 `elem` dependencies entry2 = LT
---   | name entry2 `elem` dependencies entry1 = GT
---   | otherwise = EQ
-
 compareDependencies :: (String, [String]) -> (String, [String]) -> Ordering
 compareDependencies entry1 entry2
   | fst entry1 `elem` snd entry2 = LT
@@ -740,14 +726,6 @@ compareDependencies entry1 entry2
   | null (snd entry2) && not (null (snd entry1)) = GT
   | otherwise = EQ
   -- | otherwise = GT
-
-
--- sortByDependencies :: [(String, [String])] -> [String]
--- sortByDependencies entries =
---   let result = List.sortBy compareDependencies entries
---   in  if result == entries then
---         map fst result
---       else sortByDependencies result
 
 sortByDependencies :: [(String, [String])] -> [String]
 sortByDependencies entries = map fst $ List.sortBy compareDependencies entries
@@ -800,6 +778,23 @@ buildDependencies' localNames expName exp = case exp of
   Typed _ _ (App fn arg _) ->
     buildDependencies' localNames expName fn
     ++ buildDependencies' localNames expName arg
+
+  Typed _ _ (Record fields) ->
+    concatMap
+      (\case
+        Typed _ _ (Field (_, exp)) ->
+          buildDependencies' localNames expName exp
+
+        Typed _ _ (FieldSpread exp) ->
+          buildDependencies' localNames expName exp
+
+        _ ->
+          []
+      )
+      fields
+
+  Typed _ _ (Access rec _) ->
+    buildDependencies' localNames expName rec
 
   _ ->
     []

@@ -2,6 +2,20 @@
 
 #iftarget llvm
 
+arrayToList :: Array a -> List a
+arrayToList = extern "madlib__array__toList"
+
+instance Eq a => Eq (Array a) {
+  __EQ__ = (a, b) => arrayToList(a) == arrayToList(b)
+}
+
+eqByteArray :: ByteArray -> ByteArray -> Boolean
+eqByteArray = extern "madlib__bytearray__internal__eq"
+
+instance Eq ByteArray {
+  __EQ__ = eqByteArray
+}
+
 listLength :: List a -> Integer
 listLength = extern "madlib__list__length"
 
@@ -31,6 +45,112 @@ instance Eq a => Eq (List a) {
     } else {
       go(a, b)
     }
+  }
+}
+
+instance (Eq a, Eq b) => Eq (Dictionary a b) {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[Dictionary(itemsA), Dictionary(itemsB)] =>
+      itemsA == itemsB
+  }
+}
+
+instance (Eq a, Eq b) => Eq #[a, b] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2], #[b1, b2]] =>
+      a1 == b1 && a2 == b2
+  }
+}
+
+instance (Eq a, Eq b, Eq c) => Eq #[a, b, c] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3], #[b1, b2, b3]] =>
+      a1 == b1 && a2 == b2 && a3 == b3
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d) => Eq #[a, b, c, d] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4], #[b1, b2, b3, b4]] =>
+      a1 == b1 && a2 == b2 && a3 == b3 && a4 == b4
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq #[a, b, c, d, e] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5], #[b1, b2, b3, b4, b5]] =>
+      a1 == b1 && a2 == b2 && a3 == b3 && a4 == b4 && a5 == b5
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq #[a, b, c, d, e, f] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6], #[b1, b2, b3, b4, b5, b6]] =>
+      a1 == b1 && a2 == b2 && a3 == b3 && a4 == b4 && a5 == b5 && a6 == b6
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq #[a, b, c, d, e, f, g] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7], #[b1, b2, b3, b4, b5, b6, b7]] =>
+      a1 == b1
+      && a2 == b2
+      && a3 == b3
+      && a4 == b4
+      && a5 == b5
+      && a6 == b6
+      && a7 == b7
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => Eq #[a, b, c, d, e, f, g, h] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7, a8], #[b1, b2, b3, b4, b5, b6, b7, b8]] =>
+      a1 == b1
+      && a2 == b2
+      && a3 == b3
+      && a4 == b4
+      && a5 == b5
+      && a6 == b6
+      && a7 == b7
+      && a8 == b8
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => Eq #[a, b, c, d, e, f, g, h, i] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[
+      #[a1, a2, a3, a4, a5, a6, a7, a8, a9],
+      #[b1, b2, b3, b4, b5, b6, b7, b8, b9]
+    ] =>
+      a1 == b1
+      && a2 == b2
+      && a3 == b3
+      && a4 == b4
+      && a5 == b5
+      && a6 == b6
+      && a7 == b7
+      && a8 == b8
+      && a9 == b9
+  }
+}
+
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq #[a, b, c, d, e, f, g, h, i, j] {
+  __EQ__ = (a, b) => where(#[a, b]) {
+    #[
+      #[a1, a2, a3, a4, a5, a6, a7, a8, a9, a10],
+      #[b1, b2, b3, b4, b5, b6, b7, b8, b9, b10]
+    ] =>
+      a1 == b1
+      && a2 == b2
+      && a3 == b3
+      && a4 == b4
+      && a5 == b5
+      && a6 == b6
+      && a7 == b7
+      && a8 == b8
+      && a9 == b9
+      && a10 == b10
   }
 }
 
@@ -238,5 +358,152 @@ instance (Inspect a, Inspect b) => Inspect (Dictionary a b) {
       Dictionary(items) =>
         `{{ ${inspectItems(items, "")} }}`
     }
+  }
+}
+
+#iftarget js
+
+instance Inspect ByteArray {
+  inspect = (byteArray) => #- {
+    let s = ''
+    let h = '0123456789ABCDEF'
+    byteArray.forEach((v, index) => {
+      if ((index + 1) % 8 === 0) { s += ' ' }
+      s += h[v >> 4] + h[v & 15]
+    })
+    return `ByteArray(${s})`
+  } -#
+}
+
+#elseif llvm
+
+inspectByteArray :: ByteArray -> String
+inspectByteArray = extern "madlib__bytearray__internal__inspect"
+
+instance Inspect ByteArray {
+  inspect = inspectByteArray
+}
+
+#endif
+
+#iftarget js
+
+arrayToList :: Array a -> List a
+export arrayToList = (array) => #- {
+  let list = {}
+  let start = list
+
+  array.forEach(item => {
+    list = list.n = { v: item, n: null }
+  })
+
+  return start.n
+} -#
+
+instance Inspect a => Inspect (Array a) {
+  inspect = (array) => `Array(${inspect(arrayToList(array))})`
+}
+
+#elseif llvm
+
+instance Inspect a => Inspect (Array a) {
+  inspect = (array) => `Array(${inspect(arrayToList(array))})`
+}
+
+#endif
+
+instance (Inspect a, Inspect b) => Inspect #[a, b] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b] =>
+      `#[${inspect(a)}, ${inspect(b)}]`
+  }
+}
+
+instance (Inspect a, Inspect b, Inspect c) => Inspect #[a, b, c] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}]`
+  }
+}
+
+instance (Inspect a, Inspect b, Inspect c, Inspect d) => Inspect #[a, b, c, d] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}]`
+  }
+}
+
+instance (
+  Inspect a,
+  Inspect b,
+  Inspect c,
+  Inspect d,
+  Inspect e
+) => Inspect #[a, b, c, d, e] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d, e] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}]`
+  }
+}
+
+instance (
+  Inspect a,
+  Inspect b,
+  Inspect c,
+  Inspect d,
+  Inspect e,
+  Inspect f
+) => Inspect #[a, b, c, d, e, f] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d, e, f] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}]`
+  }
+}
+
+instance (
+  Inspect a,
+  Inspect b,
+  Inspect c,
+  Inspect d,
+  Inspect e,
+  Inspect f,
+  Inspect g
+) => Inspect #[a, b, c, d, e, f, g] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d, e, f, g] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}]`
+  }
+}
+
+instance (
+  Inspect a,
+  Inspect b,
+  Inspect c,
+  Inspect d,
+  Inspect e,
+  Inspect f,
+  Inspect g,
+  Inspect h
+) => Inspect #[a, b, c, d, e, f, g, h] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d, e, f, g, h] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}, ${inspect(h)}]`
+  }
+}
+
+instance (
+  Inspect a,
+  Inspect b,
+  Inspect c,
+  Inspect d,
+  Inspect e,
+  Inspect f,
+  Inspect g,
+  Inspect h,
+  Inspect i
+) => Inspect #[a, b, c, d, e, f, g, h, i] {
+  inspect = (tuple) => where(tuple) {
+    #[a, b, c, d, e, f, g, h, i] =>
+      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}, ${inspect(h)}, ${inspect(i)}]`
   }
 }

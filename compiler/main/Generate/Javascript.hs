@@ -769,9 +769,9 @@ instance Compilable Exp where
           compileCtorArg :: String -> String -> (Int, Pattern) -> String
           compileCtorArg scope _ (x, p) = compilePattern (scope <> ".__args[" <> show x <> "]") p
 
-        Extern (ps :=> t) name foreignName ->
+        Extern (_ :=> t) name foreignName ->
           let paramTypes = getParamTypes t
-              paramCount = length ps + length paramTypes
+              paramCount = length paramTypes
               params = take paramCount ((:"")<$> ['a' ..])
               compiledParams = concat $ (<> " => ") <$> params
               body = foreignName <> concat ((\arg -> "(" <> arg <> ")") <$> params)
