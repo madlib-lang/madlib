@@ -24,9 +24,6 @@ expandAST ast =
 
 isDefinition :: Exp -> Bool
 isDefinition exp = case exp of
-  Typed _ _ _ (Placeholder (ClassRef _ _ False True, _) wrapped) ->
-    isDefinition wrapped
-
   Typed _ _ _ (Definition _ _) ->
     True
 
@@ -48,26 +45,11 @@ buildExpandedBody argInfo exp =
         Typed qt area metadata (Var name isConstructor) ->
           Typed (ps :=> returnType) area [] (Call (Typed qt area metadata (Var name isConstructor)) args)
 
-        Typed _ area _ (Placeholder (MethodRef{}, _) _) ->
-          Typed (ps :=> returnType) area [] (Call exp args)
-
         Typed _ area metadata (Call fn args') ->
           Typed (ps :=> returnType) area metadata (Call fn (args' ++ args))
 
-        Typed qt area metadata (Placeholder ref@(ClassRef{}, _) wrapped) ->
-          Typed qt area metadata (Placeholder ref (buildExpandedBody argInfo wrapped))
-
         _ ->
           exp
-
-
-updatePlaceholderWrappedExp :: (Exp -> Exp) -> Exp -> Exp
-updatePlaceholderWrappedExp update ph = case ph of
-  Typed qt area metadata (Placeholder ref@(ClassRef{}, _) next) ->
-    Typed qt area metadata (Placeholder ref (updatePlaceholderWrappedExp update next))
-
-  _ ->
-    update ph
 
 
 expandIs :: Is -> Is
@@ -89,7 +71,7 @@ expand exp = case exp of
           paramQualTypes = (\t -> selectPredsForType (preds qt) t :=> t) <$> paramTypes
           paramNames     = makeParamNames (length paramTypes)
           params         = (\(n, paramQt) -> Typed paramQt emptyArea [] n) <$> zip paramNames paramQualTypes
-          definition     = updatePlaceholderWrappedExp (\e' -> Typed qt area [] (Definition params [buildExpandedBody (zip paramNames paramQualTypes) e'])) e
+          definition     = Typed qt area [] (Definition params [buildExpandedBody (zip paramNames paramQualTypes) e])
       in  Typed qt area metadata (Assignment name definition)
 
   Typed qt area metadata (Export e) ->
@@ -103,7 +85,7 @@ expand exp = case exp of
           paramQualTypes = (\t -> selectPredsForType (preds qt) t :=> t) <$> paramTypes
           paramNames     = makeParamNames (length paramTypes)
           params         = (\(n, paramQt) -> Typed paramQt emptyArea [] n) <$> zip paramNames paramQualTypes
-          definition     = updatePlaceholderWrappedExp (\e' -> Typed qt area [] (Definition params [buildExpandedBody (zip paramNames paramQualTypes) e'])) exp
+          definition     = Typed qt area [] (Definition params [buildExpandedBody (zip paramNames paramQualTypes) exp])
       in  definition
 
   Typed qt area metadata (Call fn args) ->
@@ -129,9 +111,6 @@ expand exp = case exp of
 
   Typed qt area metadata (Where exp iss) ->
     Typed qt area metadata (Where (expand exp) (expandIs <$> iss))
-
-  Typed qt area metadata (Placeholder ref exp) ->
-    Typed qt area metadata (Placeholder ref (expand exp))
 
   _ ->
     exp

@@ -53,27 +53,6 @@ strip exp = case exp of
   Typed qt area metadata (Where exp iss) ->
     Typed qt area metadata (Where (strip exp) (stripIs <$> iss))
 
-  Typed _ _ _ (Placeholder (ClassRef "Number" _ _ _, _) exp) ->
-    strip exp
-
-  Typed _ _ _ (Placeholder (MethodRef "Number" _ _, _) exp) ->
-    strip exp
-
-  Typed _ _ _ (Placeholder (ClassRef "Bits" _ _ _, _) exp) ->
-    strip exp
-
-  Typed _ _ _ (Placeholder (MethodRef "Bits" _ _, _) exp) ->
-    strip exp
-
-  Typed _ _ _ (Placeholder (ClassRef "Eq" _ _ _, _) exp) ->
-    strip exp
-
-  Typed _ _ _ (Placeholder (MethodRef "Eq" _ _, _) exp) ->
-    strip exp
-
-  Typed qt area metadata (Placeholder ref exp) ->
-    Typed qt area metadata (Placeholder ref (strip exp))
-
   _ ->
     exp
 

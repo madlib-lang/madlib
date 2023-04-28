@@ -349,6 +349,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     case optTarget options of
       TLLVM -> do
         let coreAst          = astToCore False slvAst
+            -- TODO: verify if we still need this
             renamedAst       = Rename.renameAST coreAst
             reducedAst       = EtaReduction.reduceAST renamedAst
             tceResolved      = TCE.resolveAST reducedAst

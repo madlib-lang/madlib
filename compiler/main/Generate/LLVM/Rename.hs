@@ -149,10 +149,6 @@ renameExp env what = case what of
         (renamedIss, env'') = renameBranches env' iss
     in  (Typed t area metadata (Where renamedExp renamedIss), env'')
 
-  Typed t area metadata (Placeholder ph exp) ->
-    let (renamedExp, env') = renameExp env exp
-    in  (Typed t area metadata (Placeholder ph renamedExp), env')
-
   _ ->
     (what, env)
 

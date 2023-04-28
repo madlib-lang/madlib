@@ -19,9 +19,6 @@ getAppName exp = case exp of
   Typed _ _ _ (Call fn _) ->
     getAppName fn
 
-  Typed _ _ _ (Placeholder _ e) ->
-    getAppName e
-
   _ ->
     Nothing
 
@@ -78,9 +75,6 @@ markDefinition env exp = case exp of
 
           Nothing ->
             Typed qt area metadata (Definition params (markDefinition env { envCurrentName = Nothing } <$> body))
-
-  Typed qt area metadata (Placeholder ref exp) ->
-    Typed qt area metadata (Placeholder ref (markDefinition env exp))
 
   _ ->
     exp
@@ -150,9 +144,6 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
   -- TODO: Probably we need to either mark the whole thing, or just the last expression of it
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (init exps ++ [markTRCCalls recursionKind fnType fnName (last exps)]))
-
-  Typed qt area metadata (Placeholder info exp) ->
-    Typed qt area metadata (Placeholder info (markTRCCalls recursionKind fnType fnName exp))
 
   Typed qt area metadata (ListConstructor [Typed qtLi areaLi metadataLi (ListItem li), Typed qtSpread areaSpread metadataSpread (ListSpread spread)]) ->
     -- we probably need to mark this node as being ListRecursion
@@ -238,9 +229,6 @@ findRecursionKind fnType fnName params exps = case exps of
     findRecursionKind fnType fnName params [last exps]
 
   [lastExp] -> case lastExp of
-    Typed _ _ _ (Placeholder _ e) ->
-      findRecursionKind fnType fnName params [e]
-
     Typed _ _ _ (Call (Typed _ _ _ (Var "&&" False)) [arg1, arg2]) ->
       case (containsRecursion True fnType fnName arg1, containsRecursion True fnType fnName arg2) of
         (True, False) ->
@@ -335,9 +323,6 @@ containsRecursion direct fnType fnName exp = case exp of
         containsRecursion direct fnType fnName exp
         || any (containsRecursion direct fnType fnName) (getIsExpression <$> iss)
       )
-
-  Typed _ _ _ (Placeholder _ exp) ->
-    containsRecursion direct fnType fnName exp
 
   _ ->
     False
