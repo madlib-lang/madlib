@@ -718,7 +718,6 @@ removeNamespace = reverse . takeWhile (/= '.') . reverse
 
 
 instance Compilable TypeDecl where
-  compile _ _ (Untyped _ _ Alias{}                     ) = ""
   compile _ _ (Untyped _ _ ADT { adtconstructors = [] }) = ""
   compile env config (Untyped _ _ adt) =
     let ctors    = adtconstructors adt
@@ -769,9 +768,6 @@ buildImportPath config absPath =
 updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
-instance Compilable Core.Interface where
-  compile _ config (Untyped _ _ interface) = case interface of
-    Core.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
 generateRecordName :: Bool -> String -> String -> Bool -> String
 generateRecordName optimized cls ts var =
@@ -785,15 +781,11 @@ instance Compilable AST where
         typeDecls          = atypedecls ast
         path               = apath ast
         imports            = aimports ast
-        interfaces         = ainterfaces ast
 
         astPath            = fromMaybe "Unknown" path
         configWithASTPath  = updateASTPath astPath config
         infoComment        = "// file: " <> astPath <> "\n"
 
-        compiledInterfaces = case interfaces of
-          [] -> ""
-          x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledAdts = case typeDecls of
           [] -> ""
           x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
@@ -809,7 +801,6 @@ instance Compilable AST where
           <> (if entrypointPath == astPath then "import {} from \"" <> internalsPath <> "\"\n" else "")
           <> compiledImports
           <> compiledAdts
-          <> compiledInterfaces
           <> compiledExps
           <> defaultExport
    where

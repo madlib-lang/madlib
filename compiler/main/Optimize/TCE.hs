@@ -23,20 +23,10 @@ getAppName exp = case exp of
     Nothing
 
 
-resolveTable :: Table -> Table
-resolveTable = (resolveAST <$>)
-
-
 resolveAST :: AST -> AST
 resolveAST ast =
-  let resolvedExps      = markDefinition (Env Nothing) <$> aexps ast
-      resolvedInstances =
-        (
-          \(Untyped area metadata (Instance name ps n methods)) ->
-             let resolvedMethods = Bifunctor.first (markDefinition (Env Nothing)) <$> methods
-             in  Untyped area metadata (Instance name ps n resolvedMethods)
-        ) <$> ainstances ast
-  in  ast { aexps = resolvedExps, ainstances = resolvedInstances }
+  let resolvedExps = markDefinition (Env Nothing) <$> aexps ast
+  in  ast { aexps = resolvedExps }
 
 
 markDefinition :: Env -> Exp -> Exp

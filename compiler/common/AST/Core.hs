@@ -56,8 +56,6 @@ data AST =
     { aimports    :: [Import]
     , aexps       :: [Exp]
     , atypedecls  :: [TypeDecl]
-    , ainterfaces :: [Interface]
-    , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
     deriving(Eq, Show, Generic, Hashable)
@@ -68,32 +66,17 @@ data Import_
   | DefaultImport (Core Name) FilePath FilePath
   deriving(Eq, Show, Generic, Hashable)
 
-type Interface = Core Interface_
-data Interface_
-  = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing)
-  deriving(Eq, Show, Generic, Hashable)
-
-type Instance = Core Instance_
-data Instance_
-  = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme))
-  deriving(Eq, Show, Generic, Hashable)
-
 type TypeDecl = Core TypeDecl_
 data TypeDecl_
   = ADT
-      { adtname :: Name
-      , adtparams :: [Name]
-      , adtconstructors :: [Constructor]
-      , adtexported :: Bool
-      }
-  | Alias
-      { aliasname :: Name
-      , aliasparams :: [Name]
-      , aliastype :: Typing
-      , aliasexported :: Bool
-      }
+    { adtname :: Name
+    , adtparams :: [Name]
+    , adtconstructors :: [Constructor]
+    , adtexported :: Bool
+    }
     deriving(Eq, Show, Generic, Hashable)
 
+-- TODO: remove typing
 type Constructor = Core Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
@@ -145,15 +128,6 @@ data ListItem_
   deriving(Eq, Show, Generic, Hashable)
 
 
-data ClassRefPred
-  = CRPNode String String Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show, Generic, Hashable)
-
-data PlaceholderRef
-  = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
-  | MethodRef String String Bool
-  deriving(Eq, Show, Generic, Hashable)
-
 data Literal
   = LNum String
   | LFloat String
@@ -187,10 +161,6 @@ data Exp_
   deriving(Eq, Show, Generic, Hashable)
 
 type Name = String
-
-
--- AST TABLE
-type Table = M.Map FilePath AST
 
 -- Functions
 

@@ -4,19 +4,10 @@ import           AST.Core
 import qualified Data.Bifunctor as Bifunctor
 
 
-stripTable :: Table -> Table
-stripTable table = stripAST <$> table
-
 stripAST :: AST -> AST
 stripAST ast =
   let strippedExps = strip <$> aexps ast
-      strippedInstances =
-        (
-          \(Untyped area metadata (Instance name ps n methods)) ->
-             let strippedMethods = Bifunctor.first strip <$> methods
-             in  Untyped area metadata (Instance name ps n strippedMethods)
-        ) <$> ainstances ast
-  in  ast { aexps = strippedExps, ainstances = strippedInstances }
+  in  ast { aexps = strippedExps }
 
 strip :: Exp -> Exp
 strip exp = case exp of

@@ -353,34 +353,12 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
                                           , Core.adtconstructors = ctors
                                           , Core.adtexported     = Slv.adtexported adt
                                           }
-
-    alias@Slv.Alias{} -> do
-      aliastype <- toCore enabled $ Slv.aliastype alias
-      return $ Core.Untyped area [] $ Core.Alias { Core.aliasname     = Slv.aliasname alias
-                                                 , Core.aliasparams   = Slv.aliasparams alias
-                                                 , Core.aliastype     = aliastype
-                                                 , Core.aliasexported = Slv.aliasexported alias
-                                                 }
    where
     optimizeConstructors :: Slv.Constructor -> PostProcess Core.Constructor
     optimizeConstructors (Slv.Untyped _ (Slv.Constructor name typings t)) = do
       typings' <- mapM (toCore enabled) typings
       return $ Core.Untyped area [] $ Core.Constructor name typings' t
 
-
-instance Processable Slv.Interface Core.Interface where
-  toCore enabled (Slv.Untyped area (Slv.Interface name constraints vars methods methodTypings)) = do
-    name'          <- getClassShortname enabled name
-    methodTypings' <- mapM (toCore enabled) methodTypings
-    return $ Core.Untyped area [] $ Core.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
-
-instance Processable Slv.Instance Core.Instance where
-  toCore enabled (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do
-    interface' <- getClassShortname enabled interface
-    let typingStr = intercalate "_" (Types.getTypeHeadName <$> predTypes pred)
-    typings' <- getTypeShortname enabled typingStr
-    methods' <- mapM (\(exp, scheme) -> (, scheme) <$> toCore enabled exp) methods
-    return $ Core.Untyped area [] $ Core.Instance interface' constraints typings' methods'
 
 instance Processable Slv.Import Core.Import where
   toCore _ (Slv.Untyped area imp) = case imp of
@@ -398,16 +376,12 @@ instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
     imports    <- mapM (toCore enabled) $ Slv.aimports ast
     exps       <- mapM (toCore enabled) $ Slv.aexps ast
-    typeDecls  <- mapM (toCore enabled) $ Slv.atypedecls ast
-    interfaces <- mapM (toCore enabled) $ Slv.ainterfaces ast
-    instances  <- mapM (toCore enabled) $ Slv.ainstances ast
+    typeDecls  <- mapM (toCore enabled) $ filter Slv.isADT (Slv.atypedecls ast)
 
     return $ Core.AST
               { Core.aimports    = imports
               , Core.aexps       = exps
               , Core.atypedecls  = typeDecls
-              , Core.ainterfaces = interfaces
-              , Core.ainstances  = instances
               , Core.apath       = Slv.apath ast
               }
 
@@ -415,12 +389,3 @@ instance Processable Slv.AST Core.AST where
 astToCore :: Bool -> Slv.AST -> Core.AST
 astToCore enabled ast =
   MonadState.evalState (toCore enabled ast) initialOptimizationState
-
-
--- I think at some point we might want to follow imports in the optimization
--- process in order to correctly reduce dictionaries in the right order and have
--- an env for optimization to keep track of what dictionaries have been removed.
-tableToCore :: Bool -> Slv.Table -> Core.Table
-tableToCore enabled table =
-  let core = mapM (toCore enabled) table
-  in  MonadState.evalState core initialOptimizationState

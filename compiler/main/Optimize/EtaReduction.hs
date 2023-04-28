@@ -3,20 +3,10 @@ import AST.Core
 import qualified Data.Bifunctor as Bifunctor
 
 
-reduceTable :: Table -> Table
-reduceTable = (reduceAST <$>)
-
-
 reduceAST :: AST -> AST
 reduceAST ast =
   let reducedExps = reduce blacklist <$> aexps ast
-      reducedInstances =
-        (
-          \(Untyped area metadata (Instance name ps n methods)) ->
-             let reducedMethods = Bifunctor.first (reduce blacklist) <$> methods
-             in  Untyped area metadata (Instance name ps n reducedMethods)
-        ) <$> ainstances ast
-  in  ast { aexps = reducedExps, ainstances = reducedInstances }
+  in  ast { aexps = reducedExps }
 
 
 reduceIs :: Is -> Is
