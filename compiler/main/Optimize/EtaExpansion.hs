@@ -6,20 +6,10 @@ import Explain.Location
 import qualified Data.Bifunctor as Bifunctor
 
 
-expandTable :: Table -> Table
-expandTable = (expandAST <$>)
-
-
 expandAST :: AST -> AST
 expandAST ast =
   let expandedExps = expand <$> aexps ast
-      expandedInstances =
-        (
-          \(Untyped area metadata (Instance name ps n methods)) ->
-             let expandedMethods = Bifunctor.first expand <$> methods
-             in  Untyped area metadata (Instance name ps n expandedMethods)
-        ) <$> ainstances ast
-  in  ast { aexps = expandedExps, ainstances = expandedInstances }
+  in  ast { aexps = expandedExps }
 
 
 isDefinition :: Exp -> Bool

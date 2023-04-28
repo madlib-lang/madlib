@@ -752,30 +752,12 @@ instance Convertable TypeDecl TypeDecl where
                                            , adtconstructors = ctors
                                            , adtexported     = adtexported adt
                                            }
-
-    alias@Alias{} -> do
-      aliastype <- convert env $ aliastype alias
-      return $ Untyped area metadata $ Alias { aliasname     = aliasname alias
-                                             , aliasparams   = aliasparams alias
-                                             , aliastype     = aliastype
-                                             , aliasexported = aliasexported alias
-                                             }
    where
     convertConstructors :: Constructor -> Convert Constructor
     convertConstructors (Untyped a metadata (Constructor name typings t)) = do
       typings' <- mapM (convert env) typings
       return $ Untyped a metadata $ Constructor name typings' t
 
-
-instance Convertable Interface Interface where
-  convert env (Untyped area metadata (Interface name constraints vars methods methodTypings)) = do
-    methodTypings' <- mapM (convert env) methodTypings
-    return $ Untyped area metadata $ Interface name constraints vars methods methodTypings'
-
-instance Convertable Instance Instance where
-  convert env (Untyped area metadata (Instance interface constraints pred methods)) = do
-    methods' <- mapM (\(exp, scheme) -> (, scheme) <$> convert env exp) methods
-    return $ Untyped area metadata $ Instance interface constraints pred methods'
 
 instance Convertable Import Import where
   convert _ (Untyped area metadata imp) = case imp of
@@ -789,10 +771,6 @@ instance Convertable Import Import where
 convertImportName :: Core String -> Core String
 convertImportName (Untyped area metadata name) = Untyped area metadata name
 
-getMethodNames :: Interface -> [String]
-getMethodNames interface = case interface of
-  Untyped _ _ (Interface _ _ _ methods _) ->
-    M.keys methods
 
 getConstructorNames :: [TypeDecl] -> [String]
 getConstructorNames typeDeclarations = case typeDeclarations of
@@ -836,25 +814,20 @@ instance Convertable AST AST where
   convert _ ast@AST{ apath = Nothing } = return ast
   convert env ast@AST{ apath = Just path } = do
     let globalVars         = mapMaybe getExpName (aexps ast) ++ defaultGlobals
-        globalMethods      = concatMap getMethodNames $ ainterfaces ast
         globalConstructors = getConstructorNames $ atypedecls ast
         globalsFromImports = getGlobalsFromImports $ aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
-        env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.hash (BLChar8.pack path) }
+        env' = env { freeVars = globalVars ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.hash (BLChar8.pack path) }
 
     imports    <- mapM (convert env') $ aimports ast
     exps       <- mapM (convert env') $ aexps ast
     typeDecls  <- mapM (convert env') $ atypedecls ast
-    interfaces <- mapM (convert env') $ ainterfaces ast
-    instances  <- mapM (convert env') $ ainstances ast
 
     defs <- getTopLevelExps
 
     return AST { aimports    = imports
                , aexps       = defs ++ exps
                , atypedecls  = typeDecls
-               , ainterfaces = interfaces
-               , ainstances  = instances
                , apath       = apath ast
                }
 

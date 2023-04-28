@@ -357,34 +357,6 @@ renameTypeDecls env typeDecls = case typeDecls of
     ([], env)
 
 
-renameInstance :: Env -> Instance -> (Instance, Env)
-renameInstance env inst = case inst of
-  Untyped area metadata (Instance name ps p methods) ->
-    let (renamedMethods, env') =
-          Map.foldrWithKey
-            (\methodName (method, sc) (renamedMethods, _) ->
-              let (renamedMethod, env'') = renameExp env method
-              in  ((methodName, (renamedMethod, sc)) : renamedMethods, env'')
-            )
-            ([], env)
-            methods
-        renamedMethods' = Map.fromList renamedMethods
-    in  (Untyped area metadata (Instance name ps p renamedMethods'), env')
-
-  _ ->
-    undefined
-
-renameInstances :: Env -> [Instance] -> ([Instance], Env)
-renameInstances env instances = case instances of
-  (inst : insts) ->
-    let (renamed, env') = renameInstance env inst
-        (next, env'') = renameInstances env' insts
-    in  (renamed : next, env'')
-
-  [] ->
-    ([], env)
-
-
 renamePostProcessedName :: Env -> String -> Core String -> (Core String, Env)
 renamePostProcessedName env hash solvedName = case solvedName of
   Untyped area metadata name ->
@@ -531,17 +503,10 @@ renameAST ast =
       (renamedImports, env'')      = renameImports env' $ aimports ast
       (renamedTypeDecls, env''')   = renameTypeDecls env'' $ atypedecls ast
       (_, env'''')                 = renameTopLevelExps env''' $ aexps ast
-      (_, env''''')                = renameInstances env'''' (ainstances ast)
 
       -- we need a second pass as we may need to rename references above the current top level expression
-      (renamedExps, _)             = renameTopLevelExps env''''' $ aexps ast
-      (renamedInstances, _)        = renameInstances env''''' (ainstances ast)
+      (renamedExps, _)             = renameTopLevelExps env'''' $ aexps ast
 
-      rewrittenImports             = rewriteDefaultImports env''''' renamedImports renamedImports
+      rewrittenImports             = rewriteDefaultImports env'''' renamedImports renamedImports
       dedupedImports               = dedupeNamedImports [] rewrittenImports
-  in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = dedupedImports }
-
-
-renameTable :: Table -> Table
-renameTable =
-  Map.map renameAST
+  in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, aimports = dedupedImports }
