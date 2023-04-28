@@ -59,9 +59,6 @@ usesParam name exp = case exp of
   Typed _ _ _ (Do exps) ->
     any (usesParam name) exps
 
-  Typed _ _ _ (Placeholder _ e) ->
-    usesParam name e
-
   _ ->
     False
 
@@ -91,12 +88,6 @@ isInBlacklist :: [String] -> Exp -> Bool
 isInBlacklist bl fn = case fn of
   Typed _ _ _ (Var name _) ->
     name `elem` bl
-
-  Typed _ _ _ (Placeholder (MethodRef _ name _, _) _) ->
-    name `elem` bl
-
-  Typed _ _ _ (Placeholder _ exp) ->
-    isInBlacklist bl exp
 
   _ ->
     False
@@ -142,9 +133,6 @@ reduce blacklist exp = case exp of
 
   Typed qt area metadata (Where exp iss) ->
     Typed qt area metadata (Where (reduce blacklist exp) (reduceIs <$> iss))
-
-  Typed qt area metadata (Placeholder ref exp) ->
-    Typed qt area metadata (Placeholder ref (reduce blacklist exp))
 
   _ ->
     exp

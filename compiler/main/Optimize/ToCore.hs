@@ -252,33 +252,6 @@ instance Processable Slv.Exp Core.Exp where
     Slv.Extern qt name foreignName ->
       return $ Core.Typed qt area [] (Core.Extern qt name foreignName)
 
-    Slv.Placeholder (placeholderRef, ts) exp -> do
-      exp'            <- toCore enabled exp
-      placeholderRef' <- optimizePlaceholderRef placeholderRef
-      let tsStr = Types.buildTypeStrForPlaceholder ts
-      ts' <- getTypeShortname enabled tsStr
-      return $ Core.Typed qt area [] (Core.Placeholder (placeholderRef', ts') exp')
-
-     where
-      optimizePlaceholderRef :: Slv.PlaceholderRef -> PostProcess Core.PlaceholderRef
-      optimizePlaceholderRef phr = case phr of
-        Slv.ClassRef cls ps call var -> do
-          ps'  <- mapM optimizeClassRefPred ps
-          cls' <- getClassShortname enabled cls
-          return $ Core.ClassRef cls' ps' call var
-
-        Slv.MethodRef cls mtd call -> do
-          cls' <- getClassShortname enabled cls
-          return $ Core.MethodRef cls' mtd call
-
-      optimizeClassRefPred :: Slv.ClassRefPred -> PostProcess Core.ClassRefPred
-      optimizeClassRefPred (Slv.CRPNode cls ts var ps) = do
-        ps'  <- mapM optimizeClassRefPred ps
-        cls' <- getClassShortname enabled cls
-        let tsStr = Types.buildTypeStrForPlaceholder ts
-        ts' <- getTypeShortname enabled tsStr
-        return $ Core.CRPNode cls' ts' var ps'
-
     other ->
       error $ "not implemented: " <> ppShow other
 

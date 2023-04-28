@@ -2226,13 +2226,7 @@ buildTarget options staticLibs entrypoint = do
 
   Rock.fetch $ Query.BuiltObjectFile entrypoint
 
-  let defaultInstancesModulePath =
-        if takeExtension entrypoint == "" then
-          joinPath [entrypoint, "__default__instances__.mad"]
-        else
-          joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
-
-  let objectFilePaths = Path.computeLLVMTargetPath outputFolder (optRootPath options) <$> (defaultInstancesModulePath : modulePaths)
+  let objectFilePaths = Path.computeLLVMTargetPath outputFolder (optRootPath options) <$> modulePaths
 
   compilerPath <- liftIO getExecutablePath
   let executablePath = makeExecutablePath (optOutputPath options)

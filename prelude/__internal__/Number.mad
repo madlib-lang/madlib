@@ -34,23 +34,29 @@ instance Show Float {
 
 import { Just, Nothing } from "Maybe"
 
-scanInteger :: String -> Maybe Integer
-scanInteger = (str) => (#- {
+_scanInteger :: (Integer -> Maybe Integer) -> Maybe Integer -> String -> Maybe Integer
+_scanInteger = (just, nothing, str) => (#- {
   const n = parseInt(str)
-  return isNaN(n) ? Nothing : Just(n)
+  return isNaN(n) ? nothing : just(n)
 } -#)
 
-scanFloat :: String -> Maybe Float
-scanFloat = (str) => (#- {
+scanInteger = _scanInteger(Just, Nothing)
+
+_scanFloat :: (Float -> Maybe Float) -> Maybe Float -> String -> Maybe Float
+_scanFloat = (just, nothing, str) => (#- {
   const n = parseFloat(str)
-  return isNaN(n) ? Nothing : Just(n)
+  return isNaN(n) ? nothing : just(n)
 } -#)
 
-scanByte :: String -> Maybe Byte
-scanByte = (str) => (#- {
+scanFloat = _scanFloat(Just, Nothing)
+
+_scanByte :: (Byte -> Maybe Byte) -> Maybe Byte -> String -> Maybe Byte
+_scanByte = (just, nothing, str) => (#- {
   const n = parseInt(str)
-  return isNaN(n) ? Nothing : Just(n)
+  return isNaN(n) ? nothing : just(n)
 } -#)
+
+scanByte = _scanByte(Just, Nothing)
 
 #elseif llvm
 
