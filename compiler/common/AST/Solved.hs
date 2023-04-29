@@ -568,17 +568,31 @@ isNamedAbs exp = case exp of
 
 isAbs :: Exp -> Bool
 isAbs exp = case exp of
-  Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))) ->
-    True
+  Typed _ _ (Placeholder _ e) ->
+    isAbs e
 
-  Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))))) ->
-    True
+  Typed _ _ (Assignment _ e) ->
+    isAbs e
 
-  Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))) _ _) ->
-    True
+  Typed _ _ (Export e) ->
+    isAbs e
 
-  Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))))) _ _) ->
+  Typed _ _ (TypedExp e _ _) ->
+    isAbs e
+
+  Typed _ _ (Abs _ _) ->
     True
+  -- Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))) ->
+  --   True
+
+  -- Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))))) ->
+  --   True
+
+  -- Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))) _ _) ->
+  --   True
+
+  -- Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))))) _ _) ->
+  --   True
 
   _ ->
     False

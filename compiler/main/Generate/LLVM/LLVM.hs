@@ -78,6 +78,7 @@ import           Debug.Trace
 import qualified Data.Functor.Constant         as Operand
 import qualified Utils.IO                      as IOUtils
 import Control.Monad.IO.Class
+import qualified Canonicalize.Env as CanEnv
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -2017,7 +2018,6 @@ generateExternalForName symbolTable name t importType = case importType of
             papType
           else
             buildLLVMType initialEnv symbolTable ([] IT.:=> t)
-            -- buildLLVMType env symbolTable ([] IT.:=> t)
     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = expType, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
     emitDefn def
@@ -2041,6 +2041,66 @@ generateImport symbolTable imp = case imp of
 
   _ ->
     undefined
+
+
+buildSymbolTableFromImportInfo :: (Rock.MonadFetch Query.Query m, MonadIO m) => Core ImportInfo -> m SymbolTable
+buildSymbolTableFromImportInfo importInfo = case importInfo of
+  Typed qt@(_ IT.:=> t) _ _ (ImportInfo name ExpressionImport) ->
+    -- TODO: build llvm type and ref and push that to the symbol table
+    if IT.isFunctionType t then do
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      return $ Map.singleton name (topLevelSymbol globalRef)
+    else do
+      -- TODO: fix args for buildLLVMType
+      let expType   = buildLLVMType initialEnv mempty qt
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      return $ Map.singleton name (topLevelSymbol globalRef)
+
+  Typed (_ IT.:=> t) _ _ (ImportInfo name DefinitionImport) -> do
+    let paramTypes = IT.getParamTypes t
+        arity  = List.length paramTypes
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
+    return $ Map.singleton name (fnSymbol arity fnRef)
+
+  Typed (_ IT.:=> t) _ _ (ImportInfo name ConstructorImport) -> do
+    -- we need the constructor symbol and the adt symbol
+    let paramTypes = IT.getParamTypes t
+        adtType = IT.getReturnType t
+        adtTypeName = IT.getTConName adtType
+        adtTypePath = IT.getTConPath adtType
+        arity  = List.length paramTypes
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
+
+    adt <- Rock.fetch (Query.ForeignConstructorInfos adtTypePath adtTypeName)
+    let constructorIndex = case adt of
+          Just infos ->
+            case List.findIndex (\(CanEnv.ConstructorInfo n _) -> ("__" <> generateHashFromPath adtTypePath <> "__" <> n) == name) infos of
+              Just index ->
+                index
+
+              _ ->
+                0
+
+          _ ->
+            0
+
+    return $ Map.singleton name (constructorSymbol fnRef constructorIndex arity)
+
+
+buildSymbolTableFromImport :: (Rock.MonadFetch Query.Query m, MonadIO m) => Import -> m SymbolTable
+buildSymbolTableFromImport imp = case imp of
+  Untyped _ _ (NamedImport infos _ _) -> do
+    results <- mapM buildSymbolTableFromImportInfo infos
+    return $ mconcat results
+
+
+buildSymbolTableFromImports :: (Rock.MonadFetch Query.Query m, MonadIO m) => [Import] -> m SymbolTable
+buildSymbolTableFromImports imports = do
+  results <- mapM buildSymbolTableFromImport imports
+  return $ mconcat results
 
 
 generateHashFromPath :: FilePath -> String
@@ -2162,15 +2222,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
 generateModule :: (MonadIO m, Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
 generateModule options ast@AST{ apath = Just modulePath } = do
   let imports                          = aimports ast
-      importPaths                      = getImportAbsolutePath <$> imports
-
-  symbolTablesWithEnvs <- mapM (Rock.fetch . Query.BuiltObjectFile) importPaths
-
-  let dropThird (table, env, _) = (table, env)
-
-  let allTablesAndEnvs = dropThird <$> symbolTablesWithEnvs
-
-  let symbolTable                  = mconcat $ fst <$> allTablesAndEnvs
+  symbolTable <- buildSymbolTableFromImports imports
 
   let isMain = optEntrypoint options == modulePath
   let envForAST =
@@ -2205,8 +2257,8 @@ compileModule _ Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, 
 compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   (astModule, table, env) <- generateModule options ast
 
-  let pretty = ppllvm astModule
-  liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
+  -- let pretty = ppllvm astModule
+  -- liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
 
   objectContent <- liftIO $ buildObjectFile astModule
 

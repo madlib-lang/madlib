@@ -367,18 +367,6 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
       return $ Core.Untyped area [] $ Core.Constructor name typings' t
 
 
--- instance Processable Slv.Import Core.Import where
---   toCore _ (Slv.Untyped area imp) = case imp of
---     Slv.NamedImport names relPath absPath ->
---       return $ Core.Untyped area [] $ Core.NamedImport (optimizeImportName <$> names) relPath absPath
-
---     -- Slv.DefaultImport namespace relPath absPath ->
---     --   return $ Core.Untyped area [] $ Core.DefaultImport (optimizeImportName namespace) relPath absPath
-
-
--- optimizeImportName :: Slv.Solved Slv.Name -> Core.Core Core.Name
--- optimizeImportName (Slv.Typed qt area name) = Core.Typed qt area [] name
-
 monoImportTypeToCore :: MonomorphizationState.ImportType -> Core.ImportType
 monoImportTypeToCore importType = case importType of
   MonomorphizationState.DefinitionImport ->
@@ -389,6 +377,7 @@ monoImportTypeToCore importType = case importType of
 
   MonomorphizationState.ExpressionImport ->
     Core.ExpressionImport
+
 
 generateImports :: FilePath -> PostProcess [Core.Import]
 generateImports modulePath = do
@@ -414,7 +403,6 @@ generateImports modulePath = do
 
 instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
-    -- imports    <- mapM (toCore enabled) $ Slv.aimports ast
     imports    <- generateImports (Maybe.fromMaybe "" $ Slv.apath ast)
     exps       <- mapM (toCore enabled) $ Slv.aexps ast
     typeDecls  <- mapM (toCore enabled) $ filter Slv.isADT (Slv.atypedecls ast)

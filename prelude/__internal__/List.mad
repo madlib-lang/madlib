@@ -742,7 +742,8 @@ export includes = (x, list) => where(list) {
     false
 
   [a, ...xs] =>
-    a == x ? true : includes(x, xs)
+    a == x || includes(x, xs)
+    // a == x ? true : includes(x, xs)
 }
 
 
