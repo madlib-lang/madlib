@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use list comprehension" #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# HLINT ignore "Use guards" #-}
 module Infer.Monomorphize where
 
 import qualified Data.Map                       as Map
@@ -25,6 +26,8 @@ import Explain.Location (emptyArea, Area)
 import qualified Infer.Env as Slv
 import qualified Control.Monad as Monad
 import Run.Target (Target (TBrowser, TNode))
+import Control.Monad (when)
+import Text.Show.Pretty (ppShow)
 
 -- TODO: consider if monomorphizing local functions would have an impact
 -- with regards to mutations
@@ -275,30 +278,26 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
               return Nothing
 
           case foundMethod of
-            Just (methodExp@(Typed (ps :=> t) area (Assignment n method)), methodModulePath) -> do
+            Just (methodExp@(Typed (_ :=> t) area (Assignment n method)), methodModulePath) -> do
               let fnId = FunctionId fnName methodModulePath typeItIsCalledWith
+              let (typeForImport, importType) =
+                    if isAbs methodExp then
+                      (typeItIsCalledWith, DefinitionImport)
+                    else if isFunctionType t then
+                      (typeItIsCalledWith, ExpressionImport)
+                    else
+                      (tUnit `fn` typeItIsCalledWith, DefinitionImport)
 
               case Map.lookup fnId state of
-                Just MonomorphizationRequest { mrIndex, mrResult} -> do
+                Just MonomorphizationRequest { mrIndex } -> do
                   let monomorphicName = buildMonomorphizedName fnName mrIndex
-                  let importType =
-                        case mrResult of
-                          Nothing ->
-                            DefinitionImport
-
-                          Just monomorphicExp ->
-                            if isAbs monomorphicExp then
-                              DefinitionImport
-                            else
-                              ExpressionImport
-                  addImport envCurrentModulePath methodModulePath monomorphicName typeItIsCalledWith importType
+                  addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
 
                   return monomorphicName
 
                 Nothing -> do
                   let s = gentleUnify typeItIsCalledWith (getType methodExp)
                   monomorphicName <- liftIO $ newRequest fnName methodModulePath typeItIsCalledWith
-
 
                   let nameToUse =
                         if isMain then
@@ -323,13 +322,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                         }
                       (removeParameterPlaceholdersAndUpdateName nameToUse methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath typeItIsCalledWith monomorphized
-
-                  let importType =
-                        if isAbs monomorphized then
-                          DefinitionImport
-                        else
-                          ExpressionImport
-                  addImport envCurrentModulePath methodModulePath monomorphicName typeItIsCalledWith importType
+                  addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
 
                   return nameToUse
 
@@ -349,24 +342,6 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
 
   Typed _ _ (Placeholder _ e) -> do
     monomorphizeApp target env e
-  -- Typed qt area (Placeholder (ref, ts) e) -> do
-  --   (e', wasPerformed) <- monomorphizeApp target env e
-
-  --   let applyCRPNodes node = case node of
-  --         CRPNode n ts _ subNodes ->
-  --           let subNodes' = map applyCRPNodes subNodes
-  --           in  CRPNode n (apply envSubstitution ts) False subNodes'
-
-  --   if wasPerformed then
-  --     return (e', True)
-  --   else do
-  --     let newRef = case ref of
-  --           ClassRef n preds call _ ->
-  --             ClassRef n (map applyCRPNodes preds) call False
-
-  --           MethodRef cls mtd _ ->
-  --             MethodRef cls mtd False
-  --     return (Typed (applyAndCleanQt envSubstitution qt) area (Placeholder (newRef, apply envSubstitution ts) e'), False)
 
   -- case of record field access
   Typed _ _ (Var ('.' : _) False) -> do
@@ -381,7 +356,16 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
   Typed qt area (Var ctorName True) -> do
     -- TODO: Handle case of constructors accessed via namespace
     foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) ctorName
-    addImport (envCurrentModulePath env) foreignModulePath ctorName (getQualified qt) ConstructorImport
+    ctor <- Rock.fetch $ ForeignConstructor foreignModulePath ctorName
+
+    case ctor of
+      Just (Untyped _ (Constructor _ _ t)) ->
+        addImport (envCurrentModulePath env) foreignModulePath ctorName t ConstructorImport
+
+      _ ->
+        addImport (envCurrentModulePath env) foreignModulePath ctorName (getQualified qt) ConstructorImport
+
+
     return (Typed (apply envSubstitution qt) area (Var ctorName True), False)
 
   Typed qt area (Var fnName False) -> do
@@ -422,37 +406,6 @@ monomorphizeBodyExp target env exp = case exp of
   Typed qt area (Assignment n e) -> do
     e' <- monomorphizeLocalAssignment target env qt area n e
     return $ Typed qt area (Assignment n e')
-
-  -- Typed _ _ (Assignment n (Typed _ _ (Placeholder _ (Typed _ _ Abs{})))) -> do
-  --   localState <- liftIO $ readIORef $ envLocalState env
-  --   let currentScopeState = last localState
-  --   let withNewDefinition =
-  --         currentScopeState
-  --           { ssDefinitions = Map.insert n exp (ssDefinitions currentScopeState) }
-  --   let updatedLocalState = init localState <> [withNewDefinition]
-  --   liftIO $ writeIORef (envLocalState env) updatedLocalState
-
-  --   -- Do we need to monomorphize this at this point? It should probably be done at the time
-  --   -- we find a request.
-  --   -- monomorphize env exp
-  --   return exp
-
-  -- Typed _ _ (Assignment n (Typed _ _ Abs{})) -> do
-  --   localState <- liftIO $ readIORef $ envLocalState env
-  --   let currentScopeState = last localState
-  --   let withNewDefinition =
-  --         currentScopeState
-  --           { ssDefinitions = Map.insert n exp (ssDefinitions currentScopeState) }
-  --   let updatedLocalState = init localState <> [withNewDefinition]
-  --   liftIO $ writeIORef (envLocalState env) updatedLocalState
-
-  --   -- Do we need to monomorphize this at this point? It should probably be done at the time
-  --   -- we find a request.
-  --   -- monomorphize env exp
-  --   return exp
-
-  -- Typed _ _ (Placeholder _ e) ->
-  --   monomorphizeBodyExp env e
 
   or ->
     monomorphize target env or
@@ -648,11 +601,51 @@ monomorphizeListItem target env field = case field of
   or ->
     return or
 
+
+monomorphizePattern :: Target -> Env -> Pattern -> Monomorphize Pattern
+monomorphizePattern target env pat = case pat of
+  Typed qt area (PCon n args) -> do
+    foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) n
+    ctor <- Rock.fetch $ ForeignConstructor foreignModulePath n
+
+    case ctor of
+      Just (Untyped _ (Constructor _ _ t)) ->
+        addImport (envCurrentModulePath env) foreignModulePath n t ConstructorImport
+
+      _ -> do
+        let argTypes = map getType args
+        let fullType = foldr fn (getQualified qt) argTypes
+        addImport (envCurrentModulePath env) foreignModulePath n fullType ConstructorImport
+
+    args' <- mapM (monomorphizePattern target env) args
+
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PCon n args')
+
+  Typed qt area (PRecord fields) -> do
+    fields' <- mapM (monomorphizePattern target env) fields
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PRecord fields')
+
+  Typed qt area (PList items) -> do
+    items' <- mapM (monomorphizePattern target env) items
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PList items')
+
+  Typed qt area (PTuple items) -> do
+    items' <- mapM (monomorphizePattern target env) items
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PTuple items')
+
+  Typed qt area p ->
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area p
+
+  _ ->
+    return pat
+
+
 monomorphizeIs :: Target -> Env -> Is -> Monomorphize Is
 monomorphizeIs target env is = case is of
-  Typed qt area (Is (Typed pQt pArea pat) exp) -> do
+  Typed qt area (Is pat exp) -> do
     exp' <- monomorphize target env exp
-    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (Is (Typed (applyAndCleanQt (envSubstitution env) pQt) pArea pat) exp')
+    pat' <- monomorphizePattern target env pat
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (Is pat' exp')
 
   or ->
     return or
