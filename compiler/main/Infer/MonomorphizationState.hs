@@ -8,6 +8,8 @@ import GHC.IO (unsafePerformIO)
 import AST.Solved
 import qualified Data.Set as Set
 
+data ImportType = DefinitionImport | ConstructorImport | ExpressionImport
+                deriving(Eq, Ord, Show)
 
 monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
@@ -15,7 +17,7 @@ monomorphizationState = unsafePerformIO $ newIORef Map.empty
 
 -- Outer Map is where the import is needed
 -- Inner Map is where the imported names come from and gives a list of names to be imported
-monomorphizationImports :: IORef (Map.Map FilePath (Map.Map FilePath (Set.Set String)))
+monomorphizationImports :: IORef (Map.Map FilePath (Map.Map FilePath (Set.Set (String, Type, ImportType))))
 {-# NOINLINE monomorphizationImports #-}
 monomorphizationImports = unsafePerformIO $ newIORef Map.empty
 

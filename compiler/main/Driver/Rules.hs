@@ -348,17 +348,16 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     -- (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
     case optTarget options of
       TLLVM -> do
-        let coreAst          = astToCore False slvAst
-            -- TODO: verify if we still need this
-            renamedAst       = Rename.renameAST coreAst
+        coreAst <- astToCore False slvAst
+        let renamedAst       = Rename.renameAST coreAst
             reducedAst       = EtaReduction.reduceAST renamedAst
             tceResolved      = TCE.resolveAST reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
         return (closureConverted, (mempty, mempty))
 
       _ -> do
-        let coreAst          = astToCore (optOptimized options) slvAst
-            strippedAst      = stripAST coreAst
+        coreAst <- astToCore (optOptimized options) slvAst
+        let strippedAst      = stripAST coreAst
             tceResolved      = TCE.resolveAST strippedAst
             -- closureConverted = ClosureConvert.convertAST tceResolved
         return (tceResolved, (mempty, mempty))

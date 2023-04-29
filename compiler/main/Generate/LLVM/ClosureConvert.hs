@@ -762,14 +762,11 @@ instance Convertable TypeDecl TypeDecl where
 instance Convertable Import Import where
   convert _ (Untyped area metadata imp) = case imp of
     NamedImport names relPath absPath ->
-      return $ Untyped area metadata $ NamedImport (convertImportName <$> names) relPath absPath
-
-    DefaultImport namespace relPath absPath ->
-      return $ Untyped area metadata $ DefaultImport (convertImportName namespace) relPath absPath
+      return $ Untyped area metadata $ NamedImport names relPath absPath
 
 
-convertImportName :: Core String -> Core String
-convertImportName (Untyped area metadata name) = Untyped area metadata name
+-- convertImportName :: Core ImportInfo -> Core ImportInfo
+-- convertImportName (Typed qt area metadata name) = Typed qt area metadata name
 
 
 getConstructorNames :: [TypeDecl] -> [String]
@@ -791,7 +788,7 @@ getGlobalsFromImports :: [Import] -> [String]
 getGlobalsFromImports imports = case imports of
   (imp : nextImports) -> case imp of
     Untyped _ _ (NamedImport names _ _) ->
-      (getValue <$> names) ++ getGlobalsFromImports nextImports
+      (getImportName <$> names) ++ getGlobalsFromImports nextImports
 
     _ ->
       getGlobalsFromImports nextImports

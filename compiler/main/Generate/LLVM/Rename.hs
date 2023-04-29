@@ -357,18 +357,20 @@ renameTypeDecls env typeDecls = case typeDecls of
     ([], env)
 
 
-renamePostProcessedName :: Env -> String -> Core String -> (Core String, Env)
+renamePostProcessedName :: Env -> String -> Core ImportInfo -> (Core ImportInfo, Env)
 renamePostProcessedName env hash solvedName = case solvedName of
-  Untyped area metadata name ->
+  -- Untyped area metadata name ->
+  --   let hashedName = addHashToName hash name
+  --       env'       = extendScope name hashedName env
+  --   in  (Untyped area metadata hashedName, env')
+
+  Typed qt area metadata (ImportInfo name t) ->
     let hashedName = addHashToName hash name
         env'       = extendScope name hashedName env
-    in  (Untyped area metadata hashedName, env')
-
-  _ ->
-    undefined
+    in  (Typed qt area metadata (ImportInfo hashedName t), env')
 
 
-renamePostProcessedNames :: Env -> String -> [Core String] -> ([Core String], Env)
+renamePostProcessedNames :: Env -> String -> [Core ImportInfo] -> ([Core ImportInfo], Env)
 renamePostProcessedNames env hash solvedNames = case solvedNames of
   (name : names) ->
     let (renamed, env')        = renamePostProcessedName env hash name
@@ -392,10 +394,10 @@ renameImport env imp = case imp of
     import { __hash_of_List__filter } from "List". Essentially we rewrite all default imports into
     named imports.
   -}
-  Untyped area metadata (DefaultImport n@(Untyped _ _ name) relPath absPath) ->
-    let moduleHash = generateHashFromPath absPath
-        env'       = addDefaultImportHash name moduleHash env
-    in  (Untyped area metadata (DefaultImport n relPath absPath), env')
+  -- Untyped area metadata (DefaultImport n@(Untyped _ _ name) relPath absPath) ->
+  --   let moduleHash = generateHashFromPath absPath
+  --       env'       = addDefaultImportHash name moduleHash env
+  --   in  (Untyped area metadata (DefaultImport n relPath absPath), env')
 
   _ ->
     undefined
@@ -442,7 +444,7 @@ findAlreadyImportedNamesFromModuleWithPath imports path = case imports of
   (Untyped _ _ (NamedImport names _ absPath) : next) ->
     let current =
           if absPath == path then
-            getValue <$> names
+            getImportName <$> names
           else
             []
     in  current ++ findAlreadyImportedNamesFromModuleWithPath next path
@@ -454,24 +456,24 @@ findAlreadyImportedNamesFromModuleWithPath imports path = case imports of
     []
 
 
-rewriteDefaultImports :: Env -> [Import] -> [Import] -> [Import]
-rewriteDefaultImports env allImports imports = case imports of
-  (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) relPath absPath) : next) ->
-    let alreadyImportedNames = findAlreadyImportedNamesFromModuleWithPath allImports absPath
-        usedNames            = Set.filter (`notElem` alreadyImportedNames) $ Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
-        hashFromModule       = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
-        hashedNames          = Set.map (addHashToName hashFromModule) usedNames
-        hashedNames'         = Set.filter (`notElem` alreadyImportedNames) hashedNames
-        importNames          = Set.toList $ Set.map (Untyped area' metadata') hashedNames'
-        rewrittenImport      = Untyped area metadata (NamedImport importNames relPath absPath)
-        next'                = rewriteDefaultImports env (rewrittenImport : allImports) next
-    in  rewrittenImport : next'
+-- rewriteDefaultImports :: Env -> [Import] -> [Import] -> [Import]
+-- rewriteDefaultImports env allImports imports = case imports of
+--   (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) relPath absPath) : next) ->
+--     let alreadyImportedNames = findAlreadyImportedNamesFromModuleWithPath allImports absPath
+--         usedNames            = Set.filter (`notElem` alreadyImportedNames) $ Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
+--         hashFromModule       = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
+--         hashedNames          = Set.map (addHashToName hashFromModule) usedNames
+--         hashedNames'         = Set.filter (`notElem` alreadyImportedNames) hashedNames
+--         importNames          = Set.toList $ Set.map (Untyped area' metadata') hashedNames'
+--         rewrittenImport      = Untyped area metadata (NamedImport importNames relPath absPath)
+--         next'                = rewriteDefaultImports env (rewrittenImport : allImports) next
+--     in  rewrittenImport : next'
 
-  (imp : next) ->
-    imp : rewriteDefaultImports env allImports next
+--   (imp : next) ->
+--     imp : rewriteDefaultImports env allImports next
 
-  [] ->
-    []
+--   [] ->
+--     []
 
 
 dedupeNamedImports :: [String] -> [Import] -> [Import]
@@ -479,8 +481,8 @@ dedupeNamedImports alreadyImported imports = case imports of
   (Untyped area metadata (NamedImport names relPath absPath) : next) ->
     -- TODO: we don't need to consider where the import comes from, because it's already hashed and its origin does not matter anymore
     -- as it's already got a unique name.
-    let current = Untyped area metadata (NamedImport (filter ((`notElem` alreadyImported) . getValue) names) relPath absPath)
-    in  current : dedupeNamedImports (alreadyImported ++ (getValue <$> names)) next
+    let current = Untyped area metadata (NamedImport (filter ((`notElem` alreadyImported) . getImportName) names) relPath absPath)
+    in  current : dedupeNamedImports (alreadyImported ++ (getImportName <$> names)) next
 
   (imp : next) ->
     imp : dedupeNamedImports alreadyImported next
@@ -507,6 +509,5 @@ renameAST ast =
       -- we need a second pass as we may need to rename references above the current top level expression
       (renamedExps, _)             = renameTopLevelExps env'''' $ aexps ast
 
-      rewrittenImports             = rewriteDefaultImports env'''' renamedImports renamedImports
-      dedupedImports               = dedupeNamedImports [] rewrittenImports
+      dedupedImports               = dedupeNamedImports [] renamedImports
   in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, aimports = dedupedImports }

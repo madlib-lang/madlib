@@ -1804,6 +1804,9 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
 -- At that point we'll have to process the commented Export expressions.
 addTopLevelFnToSymbolTable :: Env -> SymbolTable -> Core.Exp -> SymbolTable
 addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunction of
+  -- Core.Typed _ _ _ (Core.Export e) ->
+  --   addTopLevelFnToSymbolTable env symbolTable e
+
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))) ->
     let arity  = List.length params
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
@@ -1849,7 +1852,6 @@ generateBody env symbolTable exps = case exps of
   [exp] -> do
     (_, result, _) <- generateExp env { isLast = True } symbolTable exp
     return (result, Nothing)
-    -- return (result, boxed)
 
   (exp : es) -> do
     (symbolTable', _, _) <- generateExp env symbolTable exp
@@ -1959,44 +1961,74 @@ getLLVMReturnType t = case t of
     undefined
 
 
-generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
-generateExternalForName symbolTable name = case Map.lookup name symbolTable of
-  Just (Symbol (FunctionSymbol _) symbol) -> do
-    let t          = typeOf symbol
-        paramTypes = getLLVMParameterTypes t
-        returnType = getLLVMReturnType t
+-- generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
+-- generateExternalForName symbolTable name = case Map.lookup name symbolTable of
+--   Just (Symbol (FunctionSymbol _) symbol) -> do
+--     let t          = typeOf symbol
+--         paramTypes = getLLVMParameterTypes t
+--         returnType = getLLVMReturnType t
+--     extern (AST.mkName name) paramTypes returnType
+--     return ()
+
+--   Just (Symbol (ConstructorSymbol _ _) symbol) -> do
+--     let t          = typeOf symbol
+--         paramTypes = getLLVMParameterTypes t
+--         returnType = getLLVMReturnType t
+--     extern (AST.mkName name) paramTypes returnType
+--     return ()
+
+--   Just (Symbol TopLevelAssignment symbol) -> do
+--     let (Type.PointerType t _) = typeOf symbol
+--     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
+--     let def = AST.GlobalDefinition g
+--     emitDefn def
+--     return ()
+
+--   Just (Symbol _ symbol) -> do
+--     let t = typeOf symbol
+--     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
+--     let def = AST.GlobalDefinition g
+--     emitDefn def
+--     return ()
+
+--   _ ->
+--     error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
+
+
+generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> IT.Type -> Core.ImportType -> m ()
+generateExternalForName symbolTable name t importType = case importType of
+  Core.DefinitionImport -> do
+    let arity  = List.length $ IT.getParamTypes t
+        paramTypes = List.replicate arity boxType
+        returnType = boxType
     extern (AST.mkName name) paramTypes returnType
     return ()
 
-  Just (Symbol (ConstructorSymbol _ _) symbol) -> do
-    let t          = typeOf symbol
-        paramTypes = getLLVMParameterTypes t
-        returnType = getLLVMReturnType t
+  Core.ConstructorImport -> do
+    let arity  = List.length $ IT.getParamTypes t
+        paramTypes = List.replicate arity boxType
+        returnType = boxType
     extern (AST.mkName name) paramTypes returnType
     return ()
 
-  Just (Symbol TopLevelAssignment symbol) -> do
-    let (Type.PointerType t _) = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
+  Core.ExpressionImport -> do
+    let expType =
+          if IT.isFunctionType t then
+            papType
+          else
+            buildLLVMType initialEnv symbolTable ([] IT.:=> t)
+            -- buildLLVMType env symbolTable ([] IT.:=> t)
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = expType, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
     emitDefn def
     return ()
 
-  Just (Symbol _ symbol) -> do
-    let t = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
-    let def = AST.GlobalDefinition g
-    emitDefn def
-    return ()
 
-  _ ->
-    error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
-
-
-generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Core.Core String -> m ()
+generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Core.Core ImportInfo -> m ()
 generateExternForImportName symbolTable optimizedName = case optimizedName of
-  Core.Untyped _ _ name ->
-    generateExternalForName symbolTable name
+  Core.Typed (_ IT.:=> t) _ _ (Core.ImportInfo name importType) ->
+    generateExternalForName symbolTable name t importType
+    -- generateExternalForName symbolTable name
 
   _ ->
     undefined
@@ -2127,7 +2159,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
   Writer.tell symbolTableWithDefaults
 
 
-generateModule :: (Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
+generateModule :: (MonadIO m, Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
 generateModule options ast@AST{ apath = Just modulePath } = do
   let imports                          = aimports ast
       importPaths                      = getImportAbsolutePath <$> imports
@@ -2173,8 +2205,8 @@ compileModule _ Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, 
 compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   (astModule, table, env) <- generateModule options ast
 
-  -- let pretty = ppllvm astModule
-  -- liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
+  let pretty = ppllvm astModule
+  liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
 
   objectContent <- liftIO $ buildObjectFile astModule
 
