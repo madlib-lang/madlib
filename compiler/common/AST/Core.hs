@@ -60,10 +60,19 @@ data AST =
     }
     deriving(Eq, Show, Generic, Hashable)
 
+data ImportType
+  = DefinitionImport
+  | ConstructorImport
+  | ExpressionImport
+  deriving(Eq, Show, Generic, Hashable)
+
+data ImportInfo
+  = ImportInfo Name ImportType
+  deriving(Eq, Show, Generic, Hashable)
+
 type Import = Core Import_
 data Import_
-  = NamedImport [Core Name] FilePath FilePath
-  | DefaultImport (Core Name) FilePath FilePath
+  = NamedImport [Core ImportInfo] FilePath FilePath
   deriving(Eq, Show, Generic, Hashable)
 
 type TypeDecl = Core TypeDecl_
@@ -360,9 +369,6 @@ getImportAbsolutePath imp = case imp of
   Untyped _ _ (NamedImport   _ _ n) ->
     n
 
-  Untyped _ _ (DefaultImport _ _ n) ->
-    n
-
   _ ->
     undefined
 
@@ -439,3 +445,8 @@ isReferenceParameter = elem ReferenceParameter
 
 isReferenceArgument :: [Metadata] -> Bool
 isReferenceArgument = elem ReferenceArgument
+
+getImportName :: Core ImportInfo -> String
+getImportName info = case info of
+  Typed _ _ _ (ImportInfo n _) ->
+    n

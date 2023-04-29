@@ -748,11 +748,8 @@ compileImport :: CompilationConfig -> Import -> String
 compileImport config (Untyped _ _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
-    in  "import { " <> compileNames (generateSafeName . Core.getValue <$> names) <> " } from \"" <> importPath <> "\""
+    in  "import { " <> compileNames (generateSafeName . Core.getImportName <$> names) <> " } from \"" <> importPath <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
-  DefaultImport alias _ absPath ->
-    let importPath = buildImportPath config absPath
-    in  "import " <> Core.getValue alias <> " from \"" <> importPath <> "\""
 
 
 buildImportPath :: CompilationConfig -> FilePath -> FilePath

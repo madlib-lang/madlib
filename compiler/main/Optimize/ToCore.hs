@@ -8,7 +8,7 @@
 module Optimize.ToCore where
 
 import qualified Control.Monad.State           as MonadState
-import qualified Data.Map                      as M
+import qualified Data.Map                      as Map
 import           Data.List
 import qualified AST.Solved                    as Slv
 import qualified AST.Core                      as Core
@@ -16,19 +16,26 @@ import           Infer.Type
 import           Explain.Location
 import qualified Utils.Types                   as Types
 import           Text.Show.Pretty
+import qualified Rock
+import Driver.Query
+import qualified Data.Maybe as Maybe
+import qualified Infer.MonomorphizationState as MonomorphizationState
+import qualified Data.Set as Set
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import           Data.IORef
 
 
 data State
   = State { typeCount  :: Int
           , classCount :: Int
-          , typeMap    :: M.Map String String
-          , classMap   :: M.Map String String
+          , typeMap    :: Map.Map String String
+          , classMap   :: Map.Map String String
           }
 
 initialOptimizationState :: State
 initialOptimizationState = State { typeCount = 0, classCount = 0, typeMap = mempty, classMap = mempty }
 
-type PostProcess a = forall m . MonadState.MonadState State m => m a
+type PostProcess a = forall m . (MonadIO m, Rock.MonadFetch Query m, MonadState.MonadState State m) => m a
 
 numbers :: [String]
 numbers = show <$> [0 ..]
@@ -38,7 +45,7 @@ generateClassShortname "Eq" = return "Eq"
 generateClassShortname n = do
   s <- MonadState.get
   let shortName = 'Ι' : numbers !! (1 + classCount s)
-  MonadState.put s { classCount = classCount s + 1, classMap = M.insert n shortName (classMap s) }
+  MonadState.put s { classCount = classCount s + 1, classMap = Map.insert n shortName (classMap s) }
   return shortName
 
 getClassShortname :: Bool -> String -> PostProcess String
@@ -46,7 +53,7 @@ getClassShortname enabled n
   | not enabled = return n
   | otherwise = do
     s <- MonadState.get
-    case M.lookup n (classMap s) of
+    case Map.lookup n (classMap s) of
       Just x  -> return x
       Nothing -> generateClassShortname n
 
@@ -54,7 +61,7 @@ generateTypeShortname :: String -> PostProcess String
 generateTypeShortname n = do
   s <- MonadState.get
   let shortName = 'τ' : numbers !! (1 + typeCount s)
-  MonadState.put s { typeCount = typeCount s + 1, typeMap = M.insert n shortName (typeMap s) }
+  MonadState.put s { typeCount = typeCount s + 1, typeMap = Map.insert n shortName (typeMap s) }
   return shortName
 
 getTypeShortname :: Bool -> String -> PostProcess String
@@ -62,7 +69,7 @@ getTypeShortname enabled n
   | not enabled = return n
   | otherwise = do
     s <- MonadState.get
-    case M.lookup n (typeMap s) of
+    case Map.lookup n (typeMap s) of
       Just x  -> return x
       Nothing -> generateTypeShortname n
 
@@ -360,21 +367,55 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
       return $ Core.Untyped area [] $ Core.Constructor name typings' t
 
 
-instance Processable Slv.Import Core.Import where
-  toCore _ (Slv.Untyped area imp) = case imp of
-    Slv.NamedImport names relPath absPath ->
-      return $ Core.Untyped area [] $ Core.NamedImport (optimizeImportName <$> names) relPath absPath
+-- instance Processable Slv.Import Core.Import where
+--   toCore _ (Slv.Untyped area imp) = case imp of
+--     Slv.NamedImport names relPath absPath ->
+--       return $ Core.Untyped area [] $ Core.NamedImport (optimizeImportName <$> names) relPath absPath
 
-    Slv.DefaultImport namespace relPath absPath ->
-      return $ Core.Untyped area [] $ Core.DefaultImport (optimizeImportName namespace) relPath absPath
+--     -- Slv.DefaultImport namespace relPath absPath ->
+--     --   return $ Core.Untyped area [] $ Core.DefaultImport (optimizeImportName namespace) relPath absPath
 
 
-optimizeImportName :: Slv.Solved Slv.Name -> Core.Core Core.Name
-optimizeImportName (Slv.Untyped area name) = Core.Untyped area [] name
+-- optimizeImportName :: Slv.Solved Slv.Name -> Core.Core Core.Name
+-- optimizeImportName (Slv.Typed qt area name) = Core.Typed qt area [] name
+
+monoImportTypeToCore :: MonomorphizationState.ImportType -> Core.ImportType
+monoImportTypeToCore importType = case importType of
+  MonomorphizationState.DefinitionImport ->
+    Core.DefinitionImport
+
+  MonomorphizationState.ConstructorImport ->
+    Core.ConstructorImport
+
+  MonomorphizationState.ExpressionImport ->
+    Core.ExpressionImport
+
+generateImports :: FilePath -> PostProcess [Core.Import]
+generateImports modulePath = do
+  -- TODO: remove this and fetch from Rock
+  allImports <- liftIO $ readIORef MonomorphizationState.monomorphizationImports
+  let importedNames = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup modulePath allImports
+  let generatedImports =
+        map
+          (\(foreignModulePath, names) ->
+              let solvedNames =
+                    map
+                      (\(n, t, importType) ->
+                        Core.Typed ([] :=> t) emptyArea [] (Core.ImportInfo n (monoImportTypeToCore importType))
+                      )
+                      (Set.toList names)
+              in  Core.Untyped emptyArea [] (Core.NamedImport solvedNames foreignModulePath foreignModulePath)
+          )
+          (filter (\(foreignPath, _) -> foreignPath /= modulePath) importedNames)
+
+  liftIO $ putStrLn $ ppShow generatedImports
+
+  return generatedImports
 
 instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
-    imports    <- mapM (toCore enabled) $ Slv.aimports ast
+    -- imports    <- mapM (toCore enabled) $ Slv.aimports ast
+    imports    <- generateImports (Maybe.fromMaybe "" $ Slv.apath ast)
     exps       <- mapM (toCore enabled) $ Slv.aexps ast
     typeDecls  <- mapM (toCore enabled) $ filter Slv.isADT (Slv.atypedecls ast)
 
@@ -386,6 +427,6 @@ instance Processable Slv.AST Core.AST where
               }
 
 
-astToCore :: Bool -> Slv.AST -> Core.AST
+astToCore :: (MonadIO m, Rock.MonadFetch Query m) => Bool -> Slv.AST -> m Core.AST
 astToCore enabled ast =
-  MonadState.evalState (toCore enabled ast) initialOptimizationState
+  MonadState.evalStateT (toCore enabled ast) initialOptimizationState
