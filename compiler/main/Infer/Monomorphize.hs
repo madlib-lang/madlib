@@ -29,9 +29,6 @@ import Run.Target (Target (TBrowser, TNode))
 import Control.Monad (when)
 import Text.Show.Pretty (ppShow)
 
--- TODO: consider if monomorphizing local functions would have an impact
--- with regards to mutations
--- it does and we need to add value restriction
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
 findCtorForeignModulePath moduleWhereItsUsed ctorName = do
@@ -152,8 +149,6 @@ addImport localModule foreignModule monomorphicName t importType = do
 
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
 monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith = do
-  liftIO $ putStrLn $ "MONO: '" <> fnName <> "'"
-
   -- first we look in the local namespace
   localState <- liftIO $ readIORef envLocalState
   let flippedScopes = reverse localState
@@ -187,7 +182,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                 { envSubstitution = s
                 }
               (removeParameterPlaceholdersAndUpdateName monomorphicName fnDefinition)
-          -- TODO: set `monomorphized` for the request result
+
           let updatedReq = MonomorphizationRequest nextIndex (Just monomorphized)
           let withUpdatedRequest = Map.insert fnId updatedReq ssRequests
           let updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions }
@@ -299,12 +294,6 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                   let s = gentleUnify typeItIsCalledWith (getType methodExp)
                   monomorphicName <- liftIO $ newRequest fnName methodModulePath typeItIsCalledWith
 
-                  let nameToUse =
-                        if isMain then
-                          fnName
-                        else
-                          monomorphicName
-
                   let methodExp' =
                         if isFunctionType t then
                           methodExp
@@ -320,37 +309,32 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                         , envCurrentModulePath = methodModulePath
                         , envLocalState = makeLocalMonomorphizationState ()
                         }
-                      (removeParameterPlaceholdersAndUpdateName nameToUse methodExp'')
+                      (removeParameterPlaceholdersAndUpdateName monomorphicName methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath typeItIsCalledWith monomorphized
                   addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
 
-                  return nameToUse
+                  return monomorphicName
 
             _ ->
               return fnName
 
 
-monomorphizeApp :: Target -> Env -> Exp -> Monomorphize (Exp, Bool)
+monomorphizeApp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
   Typed qt area (App fn arg final) -> do
     arg' <- monomorphize target env arg
-    (fn', wasPerformed)  <- monomorphizeApp target env fn
-    return
-      ( Typed (applyAndCleanQt envSubstitution qt) area (App fn' arg' final)
-      , wasPerformed
-      )
+    fn'  <- monomorphizeApp target env fn
+    return $Typed (applyAndCleanQt envSubstitution qt) area (App fn' arg' final)
 
   Typed _ _ (Placeholder _ e) -> do
     monomorphizeApp target env e
 
   -- case of record field access
-  Typed _ _ (Var ('.' : _) False) -> do
-    -- TODO: update type
-    return (exp, False)
+  Typed qt area (Var ('.' : fieldName) False) -> do
+    return $ Typed (apply envSubstitution qt) area (Var ('.' : fieldName) False)
 
-  -- TODO: this should probably only happen for the JS backend?
   Typed qt area (Var "==" False) | target == TNode || target == TBrowser ->
-    return (Typed qt area (Var "==" False), False)
+    return $ Typed qt area (Var "==" False)
 
   -- Constructors
   Typed qt area (Var ctorName True) -> do
@@ -366,19 +350,15 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
         addImport (envCurrentModulePath env) foreignModulePath ctorName (getQualified qt) ConstructorImport
 
 
-    return (Typed (apply envSubstitution qt) area (Var ctorName True), False)
+    return $ Typed (apply envSubstitution qt) area (Var ctorName True)
 
   Typed qt area (Var fnName False) -> do
     monomorphicName <- monomorphizeDefinition target False env fnName (apply envSubstitution $ getQualified qt)
 
-    return
-      ( Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
-      , monomorphicName /= fnName
-      )
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
 
   e -> do
-    e' <- monomorphize target env e
-    return (e', False)
+    monomorphize target env e
 
 
 monomorphizeLocalAssignment :: Target -> Env -> Qual Type -> Area -> String -> Exp -> Monomorphize Exp
@@ -441,21 +421,18 @@ replaceLocalFunctions requests exp = case getExpName exp of
     [exp]
 
 
--- TODO: we need special handling for monomorphizing local functions
 monomorphize :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphize target env@Env{ envSubstitution } exp = case exp of
-  Typed _ _ (App (Typed _ _ (App (Typed _ _ (Var "==" _)) (Typed (_ :=> tArg) _ _) _)) _ _) -> do
+  Typed _ _ (App (Typed _ _ (App (Typed _ _ (Var "==" _)) _ _)) _ _) -> do
     -- TODO: don't monomorphize == for these types "Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"
     -- Or not at all for JS target
     if target == TBrowser || target == TNode then
       return exp
     else do
-      (monomorphized, _) <- monomorphizeApp target env exp
-      return monomorphized
+      monomorphizeApp target env exp
 
   Typed _ _ App{} -> do
-    (monomorphized, _) <- monomorphizeApp target env exp
-    return monomorphized
+    monomorphizeApp target env exp
 
   Typed qt area (Export e) -> do
     e' <- monomorphize target env e
@@ -464,13 +441,6 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
   Typed _ _ (TypedExp e _ _) -> do
     monomorphize target env e
 
-  -- Typed qt area (Assignment n e) -> do
-  --   e' <- if isFunctionType (apply envSubstitution $ getQualified qt) then do
-  --           (monomorphized, _) <- monomorphizeApp env e
-  --           return monomorphized
-  --         else
-  --           monomorphize env e
-  --   return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
   Typed qt area (Assignment n e) -> do
     e' <- monomorphize target env e
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
@@ -481,16 +451,14 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     let isMethod = Map.member varName (Slv.envMethods slvEnv)
     if isMethod then do
       monomorphic <- monomorphizeApp target env exp
-      let (Typed _ _ monomorphicVar, _) = monomorphic
-      return $ Typed ([] :=> t) area (App (Typed ([] :=> (tUnit `fn` t)) area monomorphicVar) (Typed ([] :=> tUnit) area LUnit) True)
+      let Typed qt _ monomorphicVar = monomorphic
+      return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t)) area monomorphicVar) (Typed ([] :=> tUnit) area LUnit) True)
     else do
-      (m, _) <- monomorphizeApp target env exp
-      return m
+      monomorphizeApp target env exp
 
   -- Look for simple function names as args, record field, list item etc
   Typed _ _ (Var _ _) -> do
-    (m, _) <- monomorphizeApp target env exp
-    return m
+    monomorphizeApp target env exp
 
   Typed qt area (Abs (Typed pQt pArea pName) es) -> do
     pushNewScopeState env
@@ -522,20 +490,9 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Do es'')
 
-  -- TODO: maybe remove as this should probably not happen?
-  -- BUT we possibly still need this for now in order to keep method calls for
-  -- not yet monomorphizable methods and in this case we'd need to keep the
-  -- Placeholder and not skip it like now.
-  Typed qt area (Placeholder ref e) -> do
+  -- TODO: remove asap
+  Typed _ _ (Placeholder _ e) -> do
     monomorphize target env e
-    -- case ref of
-    --   (MethodRef "Eq" _ _, _) -> do
-    --     return $ Typed qt area (Placeholder ref e)
-
-    --   -- TODO: got to keep some here
-
-    --   _ ->
-    --     monomorphize target env e
 
   Typed qt area (Record fields) -> do
     fields' <- mapM (monomorphizeField target env) fields
@@ -566,7 +523,7 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
 
   Typed qt area (Access rec field) -> do
     rec' <- monomorphize target env rec
-    return $ Typed qt area (Access rec' field)
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (Access rec' field)
 
   Typed qt area e ->
     return $ Typed (applyAndCleanQt envSubstitution qt) area e

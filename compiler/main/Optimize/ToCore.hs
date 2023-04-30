@@ -397,8 +397,6 @@ generateImports modulePath = do
           )
           (filter (\(foreignPath, _) -> foreignPath /= modulePath) importedNames)
 
-  liftIO $ putStrLn $ ppShow generatedImports
-
   return generatedImports
 
 instance Processable Slv.AST Core.AST where

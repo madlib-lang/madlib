@@ -79,6 +79,7 @@ import qualified Data.Functor.Constant         as Operand
 import qualified Utils.IO                      as IOUtils
 import Control.Monad.IO.Class
 import qualified Canonicalize.Env as CanEnv
+import qualified AST.Solved as Slv
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -1883,7 +1884,6 @@ internally it builds a struct to represent the constructor:
 the i64 is the type of constructor ( simply the index )
 the two i8* are the content of the created type
 -}
--- TODO: still need to generate closured constructors
 generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Int -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
 generateConstructor maxArity symbolTable (constructor, index) = case constructor of
   Core.Untyped _ _ (Core.Constructor constructorName _ t) -> do
@@ -1962,40 +1962,6 @@ getLLVMReturnType t = case t of
     undefined
 
 
--- generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
--- generateExternalForName symbolTable name = case Map.lookup name symbolTable of
---   Just (Symbol (FunctionSymbol _) symbol) -> do
---     let t          = typeOf symbol
---         paramTypes = getLLVMParameterTypes t
---         returnType = getLLVMReturnType t
---     extern (AST.mkName name) paramTypes returnType
---     return ()
-
---   Just (Symbol (ConstructorSymbol _ _) symbol) -> do
---     let t          = typeOf symbol
---         paramTypes = getLLVMParameterTypes t
---         returnType = getLLVMReturnType t
---     extern (AST.mkName name) paramTypes returnType
---     return ()
-
---   Just (Symbol TopLevelAssignment symbol) -> do
---     let (Type.PointerType t _) = typeOf symbol
---     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
---     let def = AST.GlobalDefinition g
---     emitDefn def
---     return ()
-
---   Just (Symbol _ symbol) -> do
---     let t = typeOf symbol
---     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
---     let def = AST.GlobalDefinition g
---     emitDefn def
---     return ()
-
---   _ ->
---     error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
-
-
 generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> IT.Type -> Core.ImportType -> m ()
 generateExternalForName symbolTable name t importType = case importType of
   Core.DefinitionImport -> do
@@ -2028,7 +1994,6 @@ generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Sy
 generateExternForImportName symbolTable optimizedName = case optimizedName of
   Core.Typed (_ IT.:=> t) _ _ (Core.ImportInfo name importType) ->
     generateExternalForName symbolTable name t importType
-    -- generateExternalForName symbolTable name
 
   _ ->
     undefined
@@ -2046,7 +2011,6 @@ generateImport symbolTable imp = case imp of
 buildSymbolTableFromImportInfo :: (Rock.MonadFetch Query.Query m, MonadIO m) => Core ImportInfo -> m SymbolTable
 buildSymbolTableFromImportInfo importInfo = case importInfo of
   Typed qt@(_ IT.:=> t) _ _ (ImportInfo name ExpressionImport) ->
-    -- TODO: build llvm type and ref and push that to the symbol table
     if IT.isFunctionType t then do
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
@@ -2074,20 +2038,30 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
 
-    adt <- Rock.fetch (Query.ForeignConstructorInfos adtTypePath adtTypeName)
-    let constructorIndex = case adt of
+    constructorInfos <- Rock.fetch (Query.ForeignConstructorInfos adtTypePath adtTypeName)
+    let constructorIndex = case constructorInfos of
           Just infos ->
-            case List.findIndex (\(CanEnv.ConstructorInfo n _) -> ("__" <> generateHashFromPath adtTypePath <> "__" <> n) == name) infos of
-              Just index ->
-                index
+            let sortedInfos = List.sortBy (\(CanEnv.ConstructorInfo a _) (CanEnv.ConstructorInfo b _) -> compare a b) infos
+            in  case List.findIndex (\(CanEnv.ConstructorInfo n _) -> ("__" <> generateHashFromPath adtTypePath <> "__" <> n) == name) sortedInfos of
+                  Just index ->
+                    index
 
-              _ ->
-                0
+                  _ ->
+                    0
 
           _ ->
             0
 
-    return $ Map.singleton name (constructorSymbol fnRef constructorIndex arity)
+    maybeADT <- Rock.fetch $ Query.ForeignTypeDeclaration adtTypePath adtTypeName
+    let adtSym = case maybeADT of
+          Nothing ->
+            Map.empty
+
+          Just (Slv.Untyped _ adt) ->
+            let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
+            in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
+
+    return $ Map.singleton name (constructorSymbol fnRef constructorIndex arity) <> adtSym
 
 
 buildSymbolTableFromImport :: (Rock.MonadFetch Query.Query m, MonadIO m) => Import -> m SymbolTable
