@@ -596,3 +596,15 @@ isAbs exp = case exp of
 
   _ ->
     False
+
+getConstructorArity :: Constructor -> Int
+getConstructorArity constructor = case constructor of
+  Typed _ _ (Constructor _ params _) ->
+    length params
+
+  Untyped _ (Constructor _ params _) ->
+    length params
+
+findMaximumConstructorArity :: [Constructor] -> Int
+findMaximumConstructorArity constructors =
+  List.foldr max 0 (getConstructorArity <$> constructors)

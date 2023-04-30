@@ -954,9 +954,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         else
           apply sFinal $ quantify gs (rs'' :=> t')
 
-  -- liftIO $ putStrLn $ "SC: " <> ppShow sc
-  -- liftIO $ putStrLn $ "SC': " <> ppShow sc'
-
   case Can.getExpName exp of
     Just n  ->
       return (sFinal, (ds', rs''), extendVars env (n, sc), updateQualType e (apply sFinal $ rs'' :=> t'))

@@ -68,6 +68,8 @@ import qualified Canonicalize.Coverage as Coverage
 import AST.Source (SourceTarget(TargetAll))
 import qualified Infer.Monomorphize as MM
 import           Infer.MonomorphizationState
+import GHC.IO.Handle (hFlush)
+import GHC.IO.Handle.FD (stdout)
 
 
 
@@ -312,6 +314,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     -- running it, so that it would happen again only if a source AST has
     -- changed
     when (Map.null state) $ do
+      liftIO $ putStr "Applying monomorphization..."
+      liftIO $ hFlush stdout
       mainFn <- MM.findExpByName (optEntrypoint options) "main"
       case mainFn of
         Just (fn, modulePath) -> do
@@ -328,8 +332,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             "main"
             (Slv.getType fn)
 
+          liftIO $ putStrLn "DONE"
+
         _ ->
-          return ""
+          return ()
 
       return ()
 
@@ -344,14 +350,13 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CoreAST path -> nonInput $ do
     slvAst <- Rock.fetch $ MonomorphizedAST path
-    
-    -- (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv path
+
     case optTarget options of
       TLLVM -> do
         coreAst <- astToCore False slvAst
         let renamedAst       = Rename.renameAST coreAst
-            reducedAst       = EtaReduction.reduceAST renamedAst
-            tceResolved      = TCE.resolveAST reducedAst
+            -- reducedAst       = EtaReduction.reduceAST renamedAst
+            tceResolved      = TCE.resolveAST renamedAst
             closureConverted = ClosureConvert.convertAST tceResolved
         return (closureConverted, (mempty, mempty))
 
