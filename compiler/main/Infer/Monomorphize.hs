@@ -140,11 +140,13 @@ removeParameterPlaceholdersAndUpdateName newName fnDefinition = case fnDefinitio
 addImport :: FilePath -> FilePath -> String -> Type -> ImportType -> Monomorphize ()
 addImport localModule foreignModule monomorphicName t importType = do
   Monad.when (localModule /= foreignModule) $ do
-    imports <- liftIO $ readIORef monomorphizationImports
-    let importsForCurrentModule = Maybe.fromMaybe mempty $ Map.lookup localModule imports
-    let withNewImport = Map.insertWith (<>) foreignModule (Set.singleton (monomorphicName, t, importType)) importsForCurrentModule
-    let updatedImports = Map.insert localModule withNewImport imports
-    liftIO $ writeIORef monomorphizationImports updatedImports
+    liftIO $ atomicModifyIORef
+      monomorphizationImports
+      (\imports ->
+        let importsForCurrentModule = Maybe.fromMaybe mempty $ Map.lookup localModule imports
+            withNewImport = Map.insertWith (<>) foreignModule (Set.singleton (monomorphicName, t, importType)) importsForCurrentModule
+        in  (Map.insert localModule withNewImport imports, ())
+      )
 
 
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
@@ -165,16 +167,24 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
 
         Nothing -> do
           let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
-          let nextIndex = Map.size $ Map.filterWithKey (\FunctionId { fiFunctionName } _ -> fiFunctionName == fnName) ssRequests
-          let req = MonomorphizationRequest nextIndex Nothing
-          let withNewRequest = Map.insert fnId req ssRequests
-          let updatedScope = ScopeState { ssRequests = withNewRequest, ssDefinitions }
-          let monomorphicName = buildMonomorphizedName fnName nextIndex
-          let updatedScopes = List.reverse $ zipWith
-                (\scope i -> (if i == index then updatedScope else scope))
-                flippedScopes
-                [0..]
-          liftIO $ writeIORef envLocalState updatedScopes
+          (monomorphicName, nextIndex) <- liftIO $ atomicModifyIORef
+            envLocalState
+            (\localState ->
+              let flippedScopes = reverse localState
+                  ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
+                  nextIndex = Map.size $ Map.filterWithKey (\FunctionId { fiFunctionName } _ -> fiFunctionName == fnName) ssRequests
+                  req = MonomorphizationRequest nextIndex Nothing
+                  withNewRequest = Map.insert fnId req ssRequests
+                  updatedScope = ScopeState { ssRequests = withNewRequest, ssDefinitions }
+                  monomorphicName = buildMonomorphizedName fnName nextIndex
+                  result =
+                    List.reverse $ zipWith
+                      (\scope i -> (if i == index then updatedScope else scope))
+                      flippedScopes
+                      [0..]
+              in  (result, (monomorphicName, nextIndex))
+            )
+
           monomorphized <-
             monomorphize
               target
@@ -183,14 +193,20 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                 }
               (removeParameterPlaceholdersAndUpdateName monomorphicName fnDefinition)
 
-          let updatedReq = MonomorphizationRequest nextIndex (Just monomorphized)
-          let withUpdatedRequest = Map.insert fnId updatedReq ssRequests
-          let updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions }
-          let updatedScopes2 = List.reverse $ zipWith
-                (\scope i -> (if i == index then updatedScope2 else scope))
-                flippedScopes
-                [0..]
-          liftIO $ writeIORef envLocalState updatedScopes2
+          liftIO $ atomicModifyIORef
+            envLocalState
+            (\localState ->
+              let flippedScopes = reverse localState
+                  ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
+                  updatedReq = MonomorphizationRequest nextIndex (Just monomorphized)
+                  withUpdatedRequest = Map.insert fnId updatedReq ssRequests
+                  updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions }
+                  updatedScopes2 = List.reverse $ zipWith
+                    (\scope i -> (if i == index then updatedScope2 else scope))
+                    flippedScopes
+                    [0..]
+              in  (updatedScopes2, ())
+            )
 
           return monomorphicName
 
@@ -367,13 +383,15 @@ monomorphizeLocalAssignment target env qt area name exp = case exp of
     monomorphizeLocalAssignment target env qt area name e
 
   Typed _ _ Abs{} -> do
-    localState <- liftIO $ readIORef $ envLocalState env
-    let currentScopeState = last localState
-    let withNewDefinition =
-          currentScopeState
-            { ssDefinitions = Map.insert name (Typed qt area (Assignment name exp)) (ssDefinitions currentScopeState) }
-    let updatedLocalState = init localState <> [withNewDefinition]
-    liftIO $ writeIORef (envLocalState env) updatedLocalState
+    liftIO $ atomicModifyIORef
+      (envLocalState env)
+      (\localState ->
+        let currentScopeState = last localState
+            withNewDefinition =
+              currentScopeState
+                { ssDefinitions = Map.insert name (Typed qt area (Assignment name exp)) (ssDefinitions currentScopeState) }
+        in  (init localState <> [withNewDefinition], ())
+      )
 
     return exp
 
@@ -383,6 +401,9 @@ monomorphizeLocalAssignment target env qt area name exp = case exp of
 
 monomorphizeBodyExp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeBodyExp target env exp = case exp of
+  Typed _ _ (TypedExp e _ _) -> do
+    monomorphizeBodyExp target env e
+
   Typed qt area (Assignment n e) -> do
     e' <- monomorphizeLocalAssignment target env qt area n e
     return $ Typed qt area (Assignment n e')
@@ -393,17 +414,22 @@ monomorphizeBodyExp target env exp = case exp of
 
 pushNewScopeState :: Env -> Monomorphize ()
 pushNewScopeState env = do
-  localState <- liftIO $ readIORef $ envLocalState env
-  let withNewScope = localState <> [ScopeState mempty mempty]
-  liftIO $ writeIORef (envLocalState env) withNewScope
+  liftIO $ atomicModifyIORef
+    (envLocalState env)
+    (\localState ->
+      (localState <> [ScopeState mempty mempty], ())
+    )
+
 
 popScopeState :: Env -> Monomorphize ScopeState
 popScopeState env = do
-  localState <- liftIO $ readIORef $ envLocalState env
-  let withPoppedScope = init localState
-  let poppedState = last localState
-  liftIO $ writeIORef (envLocalState env) withPoppedScope
-  return poppedState
+  liftIO $ atomicModifyIORef
+    (envLocalState env)
+    (\localState ->
+      let withPoppedScope = init localState
+          poppedState = last localState
+      in  (withPoppedScope, poppedState)
+    )
 
 
 replaceLocalFunctions :: Map.Map FunctionId MonomorphizationRequest -> Exp -> [Exp]

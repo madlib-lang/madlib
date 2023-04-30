@@ -71,23 +71,29 @@ makeMonomorphizedName fnName modulePath t = do
 
 newRequest :: String -> FilePath -> Type -> IO String
 newRequest fnName modulePath t = do
-  state <- readIORef monomorphizationState
-  let nextIndex = Map.size state
-  let fnId = FunctionId fnName modulePath t
-  let req = MonomorphizationRequest nextIndex Nothing
-  let newState = Map.insert fnId req state
-  writeIORef monomorphizationState newState
+  atomicModifyIORef
+    monomorphizationState
+    (\state ->
+      let nextIndex = Map.size state
+          fnId = FunctionId fnName modulePath t
+          req = MonomorphizationRequest nextIndex Nothing
+      in  (Map.insert fnId req state, ())
+    )
+
   makeMonomorphizedName fnName modulePath t
 
 setRequestResult :: String -> FilePath -> Type -> Exp -> IO ()
 setRequestResult fnName modulePath t result = do
-  state <- readIORef monomorphizationState
-  let fnId = FunctionId fnName modulePath t
-  let updatedReq = case Map.lookup fnId state of
-        Just req ->
-          req{ mrResult = Just result }
+  atomicModifyIORef
+    monomorphizationState
+    (\state ->
+      let fnId = FunctionId fnName modulePath t
+          updatedReq = case Map.lookup fnId state of
+            Just req ->
+              req{ mrResult = Just result }
 
-        Nothing ->
-          MonomorphizationRequest (-1) (Just result)
-  let updatedState = Map.insert fnId updatedReq state
-  writeIORef monomorphizationState updatedState
+            Nothing ->
+              MonomorphizationRequest (-1) (Just result)
+          updatedState = Map.insert fnId updatedReq state
+      in  (updatedState, ())
+    )
