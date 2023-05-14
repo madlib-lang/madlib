@@ -75,7 +75,6 @@ dependencies:
 - random == 1.2.1
 - diagnose
 - prettyprinter-ansi-terminal
-- farmhash == 0.1.0.5
 
 
 _exe-defs: &exe-defaults
@@ -99,6 +98,10 @@ _exe-defs: &exe-defaults
     - -Wunused-pattern-binds
     - -Wunused-top-binds
     - -Wunused-type-patterns
+
+    - -optcxx=-std=c++14
+    - -optcxx=-lstdc++
+    - -optcxx=-fno-rtti
 
 executables:
   madlib:

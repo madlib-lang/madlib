@@ -17,7 +17,6 @@ import           Control.Applicative ((<|>))
 import           Text.Show.Pretty
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.UTF8 as BSU
-import qualified FarmHash
 
 
 data TVar = TV Id Kind
@@ -36,34 +35,6 @@ data Type
   -- and the last Map is the optional fields due to unifying extensible with non extensible records
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   deriving (Show, Eq, Ord, Generic, Hashable)
-
-
--- hashType :: Type -> Word32
-hashType t = FarmHash.hash $ typeToByteString t
-  where
-    typeToByteString :: Type -> BS.ByteString
-    typeToByteString t = case t of
-      TVar _ ->
-        BS.singleton 1
-
-      TGen _ ->
-        BS.singleton 2
-
-      TAlias _ _ _ _ ->
-        BS.singleton 3
-
-      TCon (TC id _) path ->
-        BSU.fromString id <> BSU.fromString path
-
-      TApp t1 t2 ->
-        typeToByteString t1 <> typeToByteString t2
-
-      TRecord fields _ _ ->
-        let fields' =
-              map
-                (\(fieldName, fieldType) -> BSU.fromString fieldName <> typeToByteString fieldType)
-                (M.toList fields)
-        in  foldr (<>) BS.empty fields'
 
 
 infixr `TApp`

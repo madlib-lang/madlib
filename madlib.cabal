@@ -118,7 +118,7 @@ library
       Paths_madlib
   hs-source-dirs:
       compiler/main
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -144,7 +144,6 @@ library
     , either
     , exceptions
     , executable-path >=0.0.3.1
-    , farmhash ==0.1.0.5
     , filepath
     , fold-debounce ==0.2.0.9
     , fsnotify ==0.3.0.1
@@ -208,7 +207,7 @@ library common
       Paths_madlib
   hs-source-dirs:
       compiler/common
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -233,7 +232,6 @@ library common
     , either
     , exceptions
     , executable-path >=0.0.3.1
-    , farmhash ==0.1.0.5
     , filepath
     , fold-debounce ==0.2.0.9
     , fsnotify ==0.3.0.1
@@ -275,7 +273,7 @@ executable madlib
       Paths_madlib
   hs-source-dirs:
       compiler/app
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -300,7 +298,6 @@ executable madlib
     , either
     , exceptions
     , executable-path >=0.0.3.1
-    , farmhash ==0.1.0.5
     , filepath
     , fold-debounce ==0.2.0.9
     , fsnotify ==0.3.0.1
@@ -377,7 +374,6 @@ test-suite madlib-test
     , either
     , exceptions
     , executable-path >=0.0.3.1
-    , farmhash ==0.1.0.5
     , filepath
     , fold-debounce ==0.2.0.9
     , fsnotify ==0.3.0.1
