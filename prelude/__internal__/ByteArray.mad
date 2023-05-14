@@ -109,7 +109,7 @@ export reduce = extern "madlib__bytearray__reduce"
  * toString(fromList([90, 91, 92]))
  */
 toString :: ByteArray -> String
-export toString = (byteArray) => #- new TextDecoder().decode(byteArray) -#
+export toString = (byteArray) => #- { return new TextDecoder().decode(byteArray) } -#
 
 
 /**
@@ -120,7 +120,7 @@ export toString = (byteArray) => #- new TextDecoder().decode(byteArray) -#
  * fromString("abc")
  */
 fromString :: String -> ByteArray
-export fromString = (str) => #- new TextEncoder().encode(str) -#
+export fromString = (str) => #- { return new TextEncoder().encode(str) } -#
 
 
 /**
@@ -187,7 +187,7 @@ export concat = (byteArray1, byteArray2) => #- {
  * mapBytes(substract(10), fromString("pqr"))
  */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
-export mapBytes = (f, byteArray) => #- byteArray.map(f) -#
+export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
 
 
 /**
@@ -198,7 +198,7 @@ export mapBytes = (f, byteArray) => #- byteArray.map(f) -#
  * reduce(add, 0, fromList([1, 2, 3])) // 6
  */
 reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
-export reduce = (f, initialValue, byteArray) => #- byteArray.reduce((a, b) => f(a)(b), initialValue) -#
+export reduce = (f, initialValue, byteArray) => #- { return byteArray.reduce((a, b) => f(a)(b), initialValue) } -#
 
 
 /**
@@ -209,7 +209,7 @@ export reduce = (f, initialValue, byteArray) => #- byteArray.reduce((a, b) => f(
  * length(fromString("abc")) // 3
  */
 length :: ByteArray -> Integer
-export length = (byteArray) => #- byteArray.length -#
+export length = (byteArray) => #- { return byteArray.length } -#
 
 #endif
 

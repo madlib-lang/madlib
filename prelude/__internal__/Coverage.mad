@@ -160,40 +160,22 @@ stringifyLine = (line) => where(line){
 
 stringifySection :: LcovSection -> String
 stringifySection = (section) =>
- stringifyLine(section.tn)
- ++ stringifyLine(section.sf)
- ++ List.reduceLeft((fns, line) => fns ++ stringifyLine(line), "", section.fns)
- ++ List.reduceLeft((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
- ++ stringifyLine(section.fnf)
- ++ stringifyLine(section.fnh)
- ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
- ++ stringifyLine(section.lf)
- ++ stringifyLine(section.lh)
- ++ stringifyLine(section.brf)
- ++ stringifyLine(section.brh)
- ++ List.reduceLeft((brdas, line) => brdas ++ stringifyLine(line), "", section.brdas)
- ++ "end_of_record\n"
+  stringifyLine(section.tn)
+  ++ stringifyLine(section.sf)
+  ++ List.reduceLeft((fns, line) => fns ++ stringifyLine(line), "", section.fns)
+  ++ List.reduceLeft((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
+  ++ stringifyLine(section.fnf)
+  ++ stringifyLine(section.fnh)
+  ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
+  ++ stringifyLine(section.lf)
+  ++ stringifyLine(section.lh)
+  ++ stringifyLine(section.brf)
+  ++ stringifyLine(section.brh)
+  ++ List.reduceLeft((brdas, line) => brdas ++ stringifyLine(line), "", section.brdas)
+  ++ "end_of_record\n"
 
 stringify :: LcovInfo -> String
 export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
-
-
-// currently not used, possibly we want to move this to List but because of
-// cyclical imports we need to find a solution for private / public modules
-// in prelude
-// groupOn :: Comparable b => (a -> b) -> List a -> List (List a)
-// groupOn = (f) => {
-//   unpack = pipe(Dictionary.toList, map(Tuple.snd))
-//   fld = (m, a) => where(Dictionary.get(f(a), m)) {
-//     Nothing =>
-//       Dictionary.insert(f(a), [a], m)
-
-//     Just(as) =>
-//       Dictionary.insert(f(a), [a, ...as], m)
-//   }
-
-//   return pipe(List.reduceLeft(fld, Dictionary.empty), unpack)
-// }
 
 
 instance Comparable CoverableLine {
@@ -661,7 +643,7 @@ makeCoverageReporter = () => {
     return hitCounter
   }
 
-  generateReport :: a -> {}
+  generateReport :: {} -> {}
   generateReport = () => {
     pipe(
       generateLcov,
@@ -677,8 +659,9 @@ makeCoverageReporter = () => {
 
     if (Process.getEnv(COVERAGE_TEXT) == Just("ON")) {
       displayCoverageResults(coverageData)
-    } else { {} }
+    }
   }
+
   return { branchTracker, functionTracker, lineTracker, generateReport }
 }
 

@@ -13,10 +13,12 @@ import Tuple from "Tuple"
 #iftarget js // Dictionary
 
 Dictionary :: List #[k, v] -> Dictionary k v
-Dictionary = (items) => #- ({
-  __constructor: "Dictionary",
-  __args: [items],
-}) -#
+Dictionary = (items) => #- {
+  return ({
+    __constructor: "Dictionary",
+    __args: [items],
+  })
+} -#
 
 #elseif llvm
 

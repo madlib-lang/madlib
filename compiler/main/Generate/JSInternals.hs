@@ -18,9 +18,7 @@ preludeHash = generateHashFromPath "prelude"
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
-  aliasStringGlobal target
-    <> "\n"
-    <> eqFn target optimized
+  eqFn target optimized
     <> "\n"
     <> applyDictsFn target optimized
     <> "\n"
@@ -33,18 +31,6 @@ generateInternalsModuleContent target optimized coverage =
     <> listConstructorSpreadFn target
     <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
-
-
-aliasStringGlobal :: Target -> String
-aliasStringGlobal target =
-  let global = getGlobalForTarget target
-  in global <> ".__String = "<> global <> ".String;\n\n"
-
--- Do we need this?
-aliasMathGlobal :: Target -> String
-aliasMathGlobal target =
-  let global = getGlobalForTarget target
-  in global <> ".__Math = "<> global <> ".Math;\n\n"
 
 
 hpFnWrap :: String

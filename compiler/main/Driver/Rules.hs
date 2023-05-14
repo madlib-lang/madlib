@@ -27,6 +27,7 @@ import           Parse.Madlib.TargetMacro
 import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
 import qualified Optimize.EtaReduction         as EtaReduction
+import qualified Optimize.EtaExpansion         as EtaExpansion
 import qualified Optimize.TCE                  as TCE
 import qualified Generate.LLVM.Rename          as Rename
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
@@ -195,6 +196,16 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
 
+  AllSolvedASTsWithEnvs -> nonInput $ do
+    pathsToBuild <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    astTable <- mapM
+      (\path -> do
+        solved <- Rock.fetch $ SolvedASTWithEnv path
+        return (path, solved)
+      )
+      pathsToBuild
+    return (Map.fromList astTable, (mempty, mempty))
+
 
   SolvedInterface modulePath name -> nonInput $ do
     (Can.AST { Can.aimports }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -270,7 +281,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Just found, (mempty, mempty))
 
   SolvedMethodNode methodName methodCallType -> nonInput $ do
-    found <- findMethodByNameAndType (optEntrypoint options) methodName methodCallType
+    astTable <- Rock.fetch AllSolvedASTsWithEnvs
+    found <- findMethodByNameAndType astTable (optEntrypoint options) methodName methodCallType
     return (found, (mempty, mempty))
 
   DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
@@ -312,8 +324,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     -- running it, so that it would happen again only if a source AST has
     -- changed
     when (Map.null state) $ do
-      -- liftIO $ putStr "Monomorphization: "
-      -- liftIO $ hFlush stdout
       mainFn <- MM.findExpByName (optEntrypoint options) "main"
       case mainFn of
         Just (fn, modulePath) -> do
@@ -326,6 +336,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
               , MM.envSubstitution = mempty
               , MM.envLocalState = localState
               , MM.envEntrypointPath = optEntrypoint options
+              , MM.envLocalBindingsToExclude = mempty
               }
             "main"
             (Slv.getType fn)
@@ -340,6 +351,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
     merged <- liftIO $ MM.mergeResult ast
+
+    -- liftIO $ putStrLn $ ppShow ast
+    -- liftIO $ putStrLn $ ppShow merged
 
     return (merged, (mempty, mempty))
 
@@ -357,6 +371,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       _ -> do
         coreAst <- astToCore (optOptimized options) slvAst
+        -- let renamedAst       = Rename.renameAST coreAst
+            -- expanded       = EtaExpansion.expandAST renamedAst
         let strippedAst      = stripAST coreAst
             tceResolved      = TCE.resolveAST strippedAst
         return (tceResolved, (mempty, mempty))
@@ -545,57 +561,47 @@ findSlvInterface name paths = case paths of
             findSlvInterface name importedModulePaths
 
 
-findMethodByNameAndTypeInImports :: (Rock.MonadFetch Query m, MonadIO m) => [FilePath] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
-findMethodByNameAndTypeInImports importPaths methodName typeItsCalledWith = case importPaths of
+findMethodByNameAndTypeInImports :: (Rock.MonadFetch Query m, MonadIO m) => Map.Map FilePath (Slv.AST, SlvEnv.Env) -> [FilePath] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
+findMethodByNameAndTypeInImports table importPaths methodName typeItsCalledWith = case importPaths of
   [] ->
     return Nothing
 
   (modulePath : nextModulePaths) -> do
-    found <- findMethodByNameAndType modulePath methodName typeItsCalledWith
+    found <- findMethodByNameAndType table modulePath methodName typeItsCalledWith
     case found of
       Just method ->
         return $ Just method
 
       Nothing ->
-        findMethodByNameAndTypeInImports nextModulePaths methodName typeItsCalledWith
+        findMethodByNameAndTypeInImports table nextModulePaths methodName typeItsCalledWith
 
-findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
-findMethodByNameAndType moduleWhereItsUsed methodName typeItsCalledWith = do
-  -- maybeExp <- Rock.fetch $ ForeignMethod moduleWhereItsUsed methodName typeItsCalledWith
-  (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-  matchingMethods <-
-    mapM
-      (\(Slv.Untyped _ (Slv.Instance _ _ _ methods)) ->
-        case Map.lookup methodName methods of
-          Nothing ->
-            return []
+findMethod :: String -> Type -> [Slv.Instance] -> Maybe Slv.Exp
+findMethod methodName typeItsCalledWith instances = case instances of
+  (Slv.Untyped _ (Slv.Instance _ _ _ methods)) : next ->
+    case Map.lookup methodName methods of
+      Nothing ->
+        findMethod methodName typeItsCalledWith next
 
-          Just (method, _) -> do
-            let t = Slv.getType method
-            unified <- runInfer (Unify.unify t typeItsCalledWith)
-            case unified of
-              Left _ ->
-                return []
+      Just (method, _) ->
+        let t = Slv.getType method
+        in  if Unify.quickMatch t typeItsCalledWith then
+              Just method
+            else
+              findMethod methodName typeItsCalledWith next
 
-              Right _ ->
-                return [method]
-      )
-      (Slv.ainstances slvAst)
+  _ ->
+    Nothing
 
-  let maybeExp = case concat matchingMethods of
-        [] ->
-          Nothing
-
-        (found : _) ->
-          Just found
-
-  case maybeExp of
+findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => Map.Map FilePath (Slv.AST, SlvEnv.Env) -> FilePath -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
+findMethodByNameAndType table moduleWhereItsUsed methodName typeItsCalledWith = do
+  let (slvAst, _) = Maybe.fromMaybe undefined (Map.lookup moduleWhereItsUsed table)
+  case findMethod methodName typeItsCalledWith (Slv.ainstances slvAst) of
     Just found ->
       return $ Just (found, moduleWhereItsUsed)
 
     Nothing -> do
       let imports = map Slv.getImportAbsolutePath (Slv.aimports slvAst)
-      findMethodByNameAndTypeInImports imports methodName typeItsCalledWith
+      findMethodByNameAndTypeInImports table imports methodName typeItsCalledWith
 
 
 noError :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)

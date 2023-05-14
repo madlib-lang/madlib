@@ -339,8 +339,10 @@ runAllTestSuites :: (Inspect e, Inspect f) => List #[String, ({} -> Wish e a), (
 export runAllTestSuites = (testSuites) => pipe(
   map(where {
     #[path, beforeAll, afterAll, tests] =>
-      runTestSuite(path, beforeAll, afterAll, tests)}),
+      runTestSuite(path, beforeAll, afterAll, tests)}
+  ),
   (suites) => {
+    IO.log("tchou")
     if (IS_COLOR_ENABLED) {
       printSuiteResults(collector.getResults())
     }

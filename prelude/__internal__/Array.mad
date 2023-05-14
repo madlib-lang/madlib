@@ -128,7 +128,7 @@ export toList = (array) => #- {
  * length(fromList([1, 2, 3])) // 3
  */
 length :: Array a -> Integer
-export length = (array) => #- array.length -#
+export length = (array) => #- { return  array.length } -#
 
 
 /**

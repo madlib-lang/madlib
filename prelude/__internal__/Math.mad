@@ -48,22 +48,22 @@ export mod = (a, b) => (a % b)
  * @since 0.0.5
  */
 sqrt :: Float -> Float
-export sqrt = (n) => #- Math.sqrt(n) -#
+export sqrt = (n) => #- { return Math.sqrt(n) } -#
 
 round :: Float -> Float
-export round = (n) => #- Math.round(n) -#
+export round = (n) => #- { return Math.round(n) } -#
 
 ceil :: Float -> Float
-export ceil = (n) => #- Math.ceil(n) -#
+export ceil = (n) => #- { return Math.ceil(n) } -#
 
 floor :: Float -> Float
-export floor = (n) => #- Math.floor(n) -#
+export floor = (n) => #- { return Math.floor(n) } -#
 
 pow :: Float -> Float -> Float
-export pow = (a, b) => #- Math.pow(a, b) -#
+export pow = (a, b) => #- { return Math.pow(a, b) } -#
 
 random :: a -> Float
-export random = #- Math.random -#
+export random = #- { return Math.random } -#
 
 #elseif llvm
 

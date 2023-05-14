@@ -34,7 +34,6 @@ import           Explain.Location
 import           Infer.Type
 import           Generate.JSInternals
 import           Run.Target
-import           Generate.Utils
 import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
 import qualified Data.Maybe as Maybe
@@ -53,10 +52,21 @@ data RecursionData
   | ConstructorRecursionData { rdParams :: [String] }
   deriving(Eq, Show)
 
-data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData, varsRewritten :: M.Map String String } deriving(Eq, Show)
+data Env
+  = Env
+  { varsInScope :: S.Set String
+  , recursionData :: Maybe RecursionData
+  , varsRewritten :: M.Map String String
+  }
+  deriving(Eq, Show)
 
 initialEnv :: Env
-initialEnv = Env { varsInScope = S.empty, recursionData = Nothing, varsRewritten = M.empty }
+initialEnv =
+  Env
+    { varsInScope = S.empty
+    , recursionData = Nothing
+    , varsRewritten = M.empty
+    }
 
 allowedJSNames :: [String]
 allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break", "null"]
@@ -158,8 +168,7 @@ instance Compilable Exp where
           "`" <> escapeStringLiteral v <> "`"
 
         Literal (LChar v) ->
-          -- String is aliased to __String as people may use String as a default import
-          "__String.fromCharCode(" <> (show . fromEnum) v <> ")"
+          "String.fromCharCode(" <> (show . fromEnum) v <> ")"
 
         Literal (LBool v) ->
           v
@@ -394,7 +403,8 @@ instance Compilable Exp where
               needsModifier = notElem safeName $ varsInScope env
           in  (if needsModifier then "let " else "") <> safeName <> " = " <> content
 
-        Export     ass    -> "export " <> compile env config ass
+        Export e ->
+          "export " <> compile env config e
 
         NameExport name   -> "export { " <> generateSafeName name <> " }"
 
@@ -516,7 +526,7 @@ instance Compilable Exp where
             PAny    -> "true"
             PNum  n -> scope <> " === " <> n
             PStr  n -> scope <> " === " <> n
-            PChar n -> scope <> " === " <> "__String.fromCharCode(" <> (show . fromEnum) n <> ")"
+            PChar n -> scope <> " === " <> "String.fromCharCode(" <> (show . fromEnum) n <> ")"
             PBool n -> scope <> " === " <> n
             PCon n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
             PCon n ps ->
@@ -731,7 +741,9 @@ instance Compilable TypeDecl where
 instance Compilable Constructor where
   compile _ _ (Untyped _ _ (Constructor cname cparams _)) =
     case cparams of
-      [] -> "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
+      [] ->
+        "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
+
       _ ->
         "let " <> cname <> " = " <> "(" <> compileParams cparams <> " => " <> compileBody cname cparams <> ");\n"
    where

@@ -121,7 +121,7 @@ export Env = envFFI(Dictionary.fromList)
 
 
 getCurrentWorkingDirectory :: a -> String
-export getCurrentWorkingDirectory = () => #- process.cwd() -#
+export getCurrentWorkingDirectory = () => #- { return process.cwd() } -#
 
 
 exit :: Integer -> {}

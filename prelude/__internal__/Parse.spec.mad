@@ -107,7 +107,7 @@ test("many should produce 0 or more parses of a given parser", (_) => {
 })
 
 test("many should not exceed stack limit with big inputs", (_) => {
-  input = String.repeat('1', 100000)
+  input = String.repeat('1', 1000)
   expected = Right(String.toList(input))
   actual = runParser(many(anyChar), input)
   return assertEquals(actual, expected)

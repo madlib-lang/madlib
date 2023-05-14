@@ -50,7 +50,7 @@ instance Comparable String {
  * toLower("COOL") // "cool"
  */
 toLower :: String -> String
-export toLower = (s) => #- s.toLowerCase() -#
+export toLower = (s) => #- { return s.toLowerCase() } -#
 
 /**
  * Uppercase a string
@@ -60,7 +60,7 @@ export toLower = (s) => #- s.toLowerCase() -#
  * toUpper("nice") // "NICE"
  */
 toUpper :: String -> String
-export toUpper = (s) => #- s.toUpperCase() -#
+export toUpper = (s) => #- { return s.toUpperCase() } -#
 
 #elseif llvm
 
@@ -284,7 +284,7 @@ export reduceChars = (f, initial, s) => pipe(
  * @since 0.18.7
  */
 slice :: Integer -> Integer -> String -> String
-export slice = (start, end, s) => #- s.slice(start, end === 0 ? s.length : end) -#
+export slice = (start, end, s) => #- { return s.slice(start, end === 0 ? s.length : end) } -#
 
 #elseif llvm
 
@@ -398,21 +398,21 @@ export lastChar = (s) => charAt(length(s) - 1, s)
  * @since 0.18.7
  */
 trim :: String -> String
-export trim = (s) => #- s.trim() -#
+export trim = (s) => #- { return s.trim() } -#
 
 /**
  * Trim the leading whitespace
  * @since 0.18.7
  */
 trimStart :: String -> String
-export trimStart = (s) => #- s.trimStart() -#
+export trimStart = (s) => #- { return s.trimStart() } -#
 
 /**
  * Trim the trailing whitespace
  * @since 0.18.7
  */
 trimEnd :: String -> String
-export trimEnd = (s) => #- s.trimEnd() -#
+export trimEnd = (s) => #- { return s.trimEnd() } -#
 
 #elseif llvm
 
@@ -447,7 +447,7 @@ export trimEnd = extern "madlib__string__trimEnd"
  * @since 0.18.7
  */
 length :: String -> Integer
-export length = (s) => #- s.length -#
+export length = (s) => #- { return s.length } -#
 
 #elseif llvm
 
@@ -515,14 +515,14 @@ export replace = extern "madlib__string__replace"
  * @since 0.12.0
  */
 pushChar :: Char -> String -> String
-export pushChar = (c, s) => #- c + s -#
+export pushChar = (c, s) => #- { return c + s } -#
 
 /**
  * Appends a char at the end of a String
  * @since 0.12.0
  */
 appendChar :: Char -> String -> String
-export appendChar = (c, s) => #- s + c -#
+export appendChar = (c, s) => #- { return s + c } -#
 
 #elseif llvm
 

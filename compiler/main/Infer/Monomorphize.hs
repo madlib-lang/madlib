@@ -7,6 +7,7 @@
 {-# HLINT ignore "Use list comprehension" #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# HLINT ignore "Use guards" #-}
+{-# HLINT ignore "Fuse foldr/map" #-}
 module Infer.Monomorphize where
 
 import qualified Data.Map                       as Map
@@ -33,10 +34,35 @@ import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
 
 
+genUnify :: Type -> Type -> Substitution
+genUnify t1 t2 =
+  let s = gentleUnify t1 t2
+      tvs = ftv $ Map.elems s
+      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV ("G_" ++ show index) k))) [0..] tvs
+  in  Map.map (apply sWithGens) s
+
+genType :: Type -> Type
+genType t =
+  let tvs = ftv t
+      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV ("G_" ++ show index) k))) [0..] tvs
+  in  apply sWithGens t
+
+
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
 findCtorForeignModulePath moduleWhereItsUsed ctorName = do
   (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
   case findForeignModuleForImportedName ctorName ast of
+    Just foreignModulePath -> do
+      return foreignModulePath
+
+    _ ->
+      return moduleWhereItsUsed
+
+
+findNamespaceModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
+findNamespaceModulePath moduleWhereItsUsed namespace = do
+  (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+  case findForeignModuleForImportedName namespace ast of
     Just foreignModulePath -> do
       return foreignModulePath
 
@@ -83,6 +109,7 @@ data Env
   , envSubstitution :: Substitution
   , envLocalState :: IORef [ScopeState]
   , envEntrypointPath :: FilePath
+  , envLocalBindingsToExclude :: Set.Set String
   }
 
 
@@ -137,21 +164,22 @@ makeDefinitionType typeItIsCalledWith def =
   in  if null paramsAfter || null paramsBefore then
         typeItIsCalledWith
       else if length paramsBefore > 1 then
-        (foldr fn (last paramsBefore) (init paramsBefore)) `fn` (foldr fn returnType paramsAfter)
+        foldr1 fn paramsBefore `fn` foldr fn returnType paramsAfter
       else
-        head (paramsBefore) `fn` (foldr fn returnType paramsAfter)
+        head paramsBefore `fn` foldr fn returnType paramsAfter
         -- foldr fn (foldr fn returnType paramsAfter) paramsBefore
 
 
-
-
+-- TODO: split this monster in 3 sub functions
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
-monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith = do
-  liftIO $ saveCursor
-  liftIO $ clearLine
-  liftIO $ putStr ("Monomorphizing: " ++ fnName)
-  liftIO $ hFlush stdout
-  liftIO $ restoreCursor
+monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith' = do
+  -- liftIO $ saveCursor
+  -- liftIO $ clearLine
+  -- liftIO $ putStr ("Monomorphizing: " ++ fnName)
+  -- liftIO $ hFlush stdout
+  -- liftIO $ restoreCursor
+
+  let typeItIsCalledWith = genType typeItIsCalledWith'
 
   -- first we look in the local namespace
   localState <- liftIO $ readIORef envLocalState
@@ -190,9 +218,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
           monomorphized <-
             monomorphize
               target
-              env
-                { envSubstitution = s
-                }
+              env { envSubstitution = s }
               (removeParameterPlaceholdersAndUpdateName monomorphicName fnDefinition)
 
           liftIO $ atomicModifyIORef
@@ -267,6 +293,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                       { envSubstitution = s
                       , envCurrentModulePath = fnModulePath
                       , envLocalState = makeLocalMonomorphizationState ()
+                      , envLocalBindingsToExclude = mempty
                       }
                     (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
                 liftIO $ setRequestResult fnName' fnModulePath typeItIsCalledWith monomorphized
@@ -319,6 +346,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                         { envSubstitution = s
                         , envCurrentModulePath = methodModulePath
                         , envLocalState = makeLocalMonomorphizationState ()
+                        , envLocalBindingsToExclude = mempty
                         }
                       (removeParameterPlaceholdersAndUpdateName monomorphicName methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath typeItIsCalledWith monomorphized
@@ -326,9 +354,17 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
 
                   return monomorphicName
 
-            _ ->
+            _ -> do
               return fnName
 
+
+blackList :: [String]
+blackList =
+  [">", "<", ">=", "<=", "&&", "||", "+", "-", "*", "/", "!=", "++", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
+
+eqExcludeTypes :: [Type]
+eqExcludeTypes =
+  [tInteger, tByte, tFloat, tStr, tBool, tUnit, tChar]
 
 monomorphizeApp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
@@ -350,37 +386,57 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
   -- Constructors
   Typed qt area (Var ctorName True) -> do
     -- TODO: Handle case of constructors accessed via namespace
-    foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) ctorName
-    ctor <- Rock.fetch $ ForeignConstructor foreignModulePath ctorName
+    if "." `List.isInfixOf` ctorName then do
+      let namespace = takeWhile (/= '.') ctorName
+      let realCtorName = tail $ dropWhile (/= '.') ctorName
+      foreignModulePath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+      ctor <- Rock.fetch $ ForeignConstructor foreignModulePath realCtorName
+      case ctor of
+        Just (Untyped _ (Constructor _ _ t)) ->
+          addImport (envCurrentModulePath env) foreignModulePath realCtorName t ConstructorImport
 
-    case ctor of
-      Just (Untyped _ (Constructor _ _ t)) ->
-        addImport (envCurrentModulePath env) foreignModulePath ctorName t ConstructorImport
+        _ ->
+          addImport (envCurrentModulePath env) foreignModulePath realCtorName (getQualified qt) ConstructorImport
 
-      _ ->
-        addImport (envCurrentModulePath env) foreignModulePath ctorName (getQualified qt) ConstructorImport
+      return $ Typed (apply envSubstitution qt) area (Var realCtorName True)
+    else do
+      foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) ctorName
+      ctor <- Rock.fetch $ ForeignConstructor foreignModulePath ctorName
+
+      case ctor of
+        Just (Untyped _ (Constructor _ _ t)) ->
+          addImport (envCurrentModulePath env) foreignModulePath ctorName t ConstructorImport
+
+        _ ->
+          addImport (envCurrentModulePath env) foreignModulePath ctorName (getQualified qt) ConstructorImport
 
 
-    return $ Typed (apply envSubstitution qt) area (Var ctorName True)
+      return $ Typed (apply envSubstitution qt) area (Var ctorName True)
 
   Typed qt area (Var fnName False) -> do
-    monomorphicName <- monomorphizeDefinition target False env fnName (apply envSubstitution $ getQualified qt)
+    if
+      fnName `List.elem` blackList
+      || fnName `Set.member` envLocalBindingsToExclude env
+      || (fnName == "==" && head (getParamTypes $ apply envSubstitution $ getQualified qt) `List.elem` eqExcludeTypes)
+    then
+      return $ Typed (applyAndCleanQt envSubstitution qt) area (Var fnName False)
+    else do
+      monomorphicName <- monomorphizeDefinition target False env fnName (apply envSubstitution $ getQualified qt)
 
-    (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv (envCurrentModulePath env)
-    let isMethod = Map.member fnName (Slv.envMethods slvEnv)
-    if isMethod && monomorphicName /= fnName then do
-      let (_ :=> t') = (applyAndCleanQt envSubstitution qt)
-      return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t')) area (Var monomorphicName False)) (Typed ([] :=> tUnit) area LUnit) True)
-    else
-      return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
-
+      (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv (envCurrentModulePath env)
+      let isMethod = Map.member fnName (Slv.envMethods slvEnv)
+      if isMethod && monomorphicName /= fnName then do
+        let (_ :=> t') = applyAndCleanQt envSubstitution qt
+        return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t')) area (Var monomorphicName False)) (Typed ([] :=> tUnit) area LUnit) True)
+      else
+        return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
 
   e -> do
     monomorphize target env e
 
 
 monomorphizeLocalAssignment :: Target -> Env -> Qual Type -> Area -> String -> Exp -> Monomorphize Exp
-monomorphizeLocalAssignment target env qt area name exp = case exp of 
+monomorphizeLocalAssignment target env qt area name exp = case exp of
   Typed _ _ (Placeholder _ e) ->
     monomorphizeLocalAssignment target env qt area name e
 
@@ -449,11 +505,16 @@ replaceLocalFunctions requests exp = case getExpName exp of
     [exp]
 
 
+getScopeBindingsToExclude :: [Exp] -> Set.Set String
+getScopeBindingsToExclude exps =
+  let notFunctions = filter (not . isAbs) exps
+      bindings = Maybe.mapMaybe getExpName notFunctions
+  in  Set.fromList bindings
+
+
 monomorphize :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphize target env@Env{ envSubstitution } exp = case exp of
   Typed _ _ (App (Typed _ _ (App (Typed _ _ (Var "==" _)) _ _)) _ _) -> do
-    -- TODO: don't monomorphize == for these types "Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"
-    -- Or not at all for JS target
     if target == TBrowser || target == TNode then
       return exp
     else do
@@ -479,7 +540,9 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
 
   Typed qt area (Abs (Typed pQt pArea pName) es) -> do
     pushNewScopeState env
-    es' <- mapM (monomorphizeBodyExp target env) es
+    let localBindingsToExclude = getScopeBindingsToExclude es
+    let env' = env { envLocalBindingsToExclude = envLocalBindingsToExclude env <> Set.singleton pName <> localBindingsToExclude }
+    es' <- mapM (monomorphizeBodyExp target env') es
     poppedScopeState <- popScopeState env
     let requestsFromScope = ssRequests poppedScopeState
 
@@ -504,7 +567,7 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
             es' >>= replaceLocalFunctions requestsFromScope
           else
             es'
-    
+
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Do es'')
 
   -- TODO: remove asap
@@ -579,21 +642,35 @@ monomorphizeListItem target env field = case field of
 monomorphizePattern :: Target -> Env -> Pattern -> Monomorphize Pattern
 monomorphizePattern target env pat = case pat of
   Typed qt area (PCon n args) -> do
-    foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) n
-    ctor <- Rock.fetch $ ForeignConstructor foreignModulePath n
-
-    case ctor of
-      Just (Untyped _ (Constructor _ _ t)) ->
-        addImport (envCurrentModulePath env) foreignModulePath n t ConstructorImport
-
-      _ -> do
-        let argTypes = map getType args
-        let fullType = foldr fn (getQualified qt) argTypes
-        addImport (envCurrentModulePath env) foreignModulePath n fullType ConstructorImport
-
     args' <- mapM (monomorphizePattern target env) args
 
-    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PCon n args')
+    if "." `List.isInfixOf` n then do
+      let namespace = takeWhile (/= '.') n
+      let realCtorName = tail $ dropWhile (/= '.') n
+      foreignModulePath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+      ctor <- Rock.fetch $ ForeignConstructor foreignModulePath realCtorName
+      case ctor of
+        Just (Untyped _ (Constructor _ _ t)) ->
+          addImport (envCurrentModulePath env) foreignModulePath realCtorName t ConstructorImport
+
+        _ ->
+          addImport (envCurrentModulePath env) foreignModulePath realCtorName (getQualified qt) ConstructorImport
+
+      return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PCon realCtorName args')
+    else do
+      foreignModulePath <- findCtorForeignModulePath (envCurrentModulePath env) n
+      ctor <- Rock.fetch $ ForeignConstructor foreignModulePath n
+
+      case ctor of
+        Just (Untyped _ (Constructor _ _ t)) ->
+          addImport (envCurrentModulePath env) foreignModulePath n t ConstructorImport
+
+        _ -> do
+          let argTypes = map getType args
+          let fullType = foldr fn (getQualified qt) argTypes
+          addImport (envCurrentModulePath env) foreignModulePath n fullType ConstructorImport
+
+      return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PCon n args')
 
   Typed qt area (PRecord fields) -> do
     fields' <- mapM (monomorphizePattern target env) fields
@@ -614,11 +691,36 @@ monomorphizePattern target env pat = case pat of
     return pat
 
 
+varsInPattern :: Pattern -> Set.Set String
+varsInPattern pat = case pat of
+  Typed _ _ (PVar n) ->
+    Set.singleton n
+
+  Typed _ _ (PSpread p) ->
+    varsInPattern p
+
+  Typed _ _ (PCon _ args) -> do
+    foldr (<>) Set.empty (map varsInPattern args)
+
+  Typed _ _ (PRecord fields) -> do
+    foldr (<>) Set.empty (map varsInPattern (Map.elems fields))
+
+  Typed _ _ (PList items) -> do
+    foldr (<>) Set.empty (map varsInPattern items)
+
+  Typed _ _ (PTuple items) -> do
+    foldr (<>) Set.empty (map varsInPattern items)
+
+  _ ->
+    Set.empty
+
+
 monomorphizeIs :: Target -> Env -> Is -> Monomorphize Is
 monomorphizeIs target env is = case is of
   Typed qt area (Is pat exp) -> do
-    exp' <- monomorphize target env exp
     pat' <- monomorphizePattern target env pat
+    let vars = varsInPattern pat
+    exp' <- monomorphize target env { envLocalBindingsToExclude = envLocalBindingsToExclude env <> vars } exp
     return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (Is pat' exp')
 
   or ->

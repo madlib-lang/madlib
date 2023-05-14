@@ -7,6 +7,15 @@ import String from "String"
 import { MORE, LESS, EQUAL } from "Compare"
 
 
+_compare :: Comparable a => Integer -> Integer -> Integer -> a -> a -> Integer
+_compare = (more, less, equal, a, b) => #- {
+  return a > b
+    ? more
+    : a === b 
+      ? equal
+      : less
+} -#
+
 /**
  * Comparable implementation for characters
  *
@@ -17,7 +26,7 @@ import { MORE, LESS, EQUAL } from "Compare"
  * compare('a', 'a') // EQUAL
  */
 instance Comparable Char {
-  compare = (a, b) => #- a > b ? MORE : a === b ? EQUAL : LESS -#
+  compare = (a, b) => _compare(MORE, LESS, EQUAL, a, b)
 }
 
 #elseif llvm
@@ -111,7 +120,7 @@ export isLetter = (c) => pipe(
  * toLower('a') // 'a'
  */
 toLower :: Char -> Char
-export toLower = (c) => #- c.toLowerCase() -#
+export toLower = (c) => #- { return c.toLowerCase() } -#
 
 
 /**
@@ -122,7 +131,7 @@ export toLower = (c) => #- c.toLowerCase() -#
  * toLower('a') // 'A'
  */
 toUpper :: Char -> Char
-export toUpper = (c) => #- c.toUpperCase() -#
+export toUpper = (c) => #- { return c.toUpperCase() } -#
 
 #elseif llvm
 
