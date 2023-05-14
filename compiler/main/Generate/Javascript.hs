@@ -808,7 +808,6 @@ compileImport config (Untyped _ _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import { " <> compileNames (generateSafeName . Core.getImportName <$> names) <> " } from \"" <> importPath <> "\""
-    -- in  "import { " <> compileNames (generateSafeName . Core.getImportName <$> names) <> " } from \"" <> ccinternalsPath config <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
 
 
@@ -832,9 +831,7 @@ generateRecordName optimized cls ts var =
 
 instance Compilable AST where
   compile env config ast =
-    let entrypointPath     = ccentrypointPath config
-        internalsPath      = ccinternalsPath config
-        exps               = aexps ast
+    let exps               = aexps ast
         typeDecls          = atypedecls ast
         path               = apath ast
         imports            = aimports ast
@@ -855,7 +852,6 @@ instance Compilable AST where
           x  -> foldr1 (<>) (terminate . compileImport configWithASTPath <$> x) <> "\n"
         defaultExport = buildDefaultExport typeDecls exps
     in  infoComment
-          <> (if entrypointPath == astPath then "import {} from \"" <> internalsPath <> "\"\n" else "")
           <> compiledImports
           <> compiledAdts
           <> compiledExps
@@ -1045,10 +1041,6 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
           ast
     let moduleContent' = moduleContent <> generateMainCall options path
 
-    let rest = List.dropWhile (/= path) pathsToBuild
-    let total = List.length pathsToBuild
-    let curr = total - List.length rest + 1
-    let currStr = if curr < 10 then " " <> show curr else show curr
-    Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> path <> "'"
+    Prelude.putStrLn $ "[1 of 1] Compiled '" <> path <> "'"
 
     return moduleContent'

@@ -32,6 +32,7 @@ import Text.Show.Pretty (ppShow)
 import System.Console.ANSI
 import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
+import System.Environment (lookupEnv)
 
 
 genUnify :: Type -> Type -> Substitution
@@ -179,11 +180,13 @@ makeDefinitionType typeItIsCalledWith def =
 -- TODO: split this monster in 3 sub functions
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
 monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith' = do
-  -- liftIO $ saveCursor
-  -- liftIO $ clearLine
-  -- liftIO $ putStr ("Monomorphizing: " ++ fnName)
-  -- liftIO $ hFlush stdout
-  -- liftIO $ restoreCursor
+  noColor <- liftIO $ lookupEnv "NO_COLOR"
+  when (noColor == Just "" || noColor == Nothing) $ do
+    liftIO saveCursor
+    liftIO clearLine
+    liftIO $ putStr ("Monomorphizing: " ++ fnName)
+    liftIO $ hFlush stdout
+    liftIO restoreCursor
 
   let typeItIsCalledWith = genType typeItIsCalledWith'
 

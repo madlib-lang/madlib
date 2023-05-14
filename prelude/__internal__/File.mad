@@ -27,15 +27,15 @@ import prelude_file_fs from "fs"
 write :: String -> String -> Wish IOError {}
 export write = (path, content) => Wish(
   (bad, good) => #- {
-      prelude_file_fs.writeFile(path, content, (err) => {
-        if (err) {
-          bad(IOError.UnknownError);
-        }
-        else {
-          good(path)
-        }
-      })
-    } -#
+    prelude_file_fs.writeFile(path, content, (err) => {
+      if (err) {
+        bad({ __constructor: "UnknownError", __args: [] });
+      }
+      else {
+        good(path)
+      }
+    })
+  } -#
 )
 
 
@@ -51,15 +51,15 @@ export write = (path, content) => Wish(
 writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, bytes) => Wish(
   (bad, good) => #- {
-      prelude_file_fs.writeFile(path, bytes, (err) => {
-        if (err) {
-          bad(IOError.UnknownError);
-        }
-        else {
-          good(null)
-        }
-      })
-    } -#
+    prelude_file_fs.writeFile(path, bytes, (err) => {
+      if (err) {
+        bad({ __constructor: "UnknownError", __args: [] });
+      }
+      else {
+        good(null)
+      }
+    })
+  } -#
 )
 
 
@@ -97,7 +97,7 @@ export readBytes = (path) => Wish(
   (bad, good) => #- {
     prelude_file_fs.readFile(path, (err, d) => {
       if (err) {
-        bad(IOError.UnknownError);
+        bad({ __constructor: "UnknownError", __args: [] });
       }
       else {
         good(d)
@@ -231,6 +231,8 @@ existsFFI = extern "madlib__file__exists"
  * fulfill(always(IO.putLine("does not exist")), always(IO.putLine("exists")), exists("/"))
  */
 exists :: String -> Wish {} Boolean
-export exists = (path) => Wish((bad, good) => existsFFI(path, (g) => g ? good(true) : bad({})))
+export exists = (path) => Wish((bad, good) =>
+  existsFFI(path, (g) => g ? good(true) : bad({}))
+)
 
 #endif

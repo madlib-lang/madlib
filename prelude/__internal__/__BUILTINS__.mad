@@ -159,16 +159,16 @@ instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq #[a,
 #iftarget js
 
 #-
-let globalObj
+let prelude_globalObj
 
 {Node}
-globalObj = global
+prelude_globalObj = global
 {/Node}
 {Browser}
-globalObj = window
+prelude_globalObj = window
 {/Browser}
 
-globalObj.__eq__ = (l, r) => {
+prelude_globalObj.__eq__ = (l, r) => {
   if (l === r) {
     return true;
   }
@@ -197,6 +197,43 @@ if (l === null && r === null) {
   }
   return l === r;
 }
+
+prelude_globalObj.__listToJSArray__ = (list) => {
+  let res = []
+
+  while (list) {
+    res.push(list.v)
+    list = list.n
+  }
+
+  return res
+}
+
+prelude_globalObj.__jsArrayToList__ = (arr) => {
+  let res = null
+
+  for (let i = arr.length - 1; i >= 0; i--) {
+    let head = { v: arr[i], n: res }
+    res = head
+  }
+
+  return res
+}
+
+prelude_globalObj.__listCtorSpread__ = (_spread, _next) => {
+  if (_spread === null) {
+    return _next;
+  }
+
+  let head = _spread;
+  let result = _spread;
+  while (head.n !== null) {
+    head = head.n;
+  }
+  head.n = _next;
+  return result;
+}
+
 
 const escapeChar = (c) => {
   if (c === '\n') {
