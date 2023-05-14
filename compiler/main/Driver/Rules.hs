@@ -327,6 +327,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     mainFn <- MM.findExpByName (optEntrypoint options) "main"
     case mainFn of
       Just (fn, modulePath) -> do
+        liftIO $ putStrLn "Running monomorphization.."
         let localState = makeLocalMonomorphizationState ()
         MM.monomorphizeDefinition
           (optTarget options)
@@ -341,7 +342,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
           "main"
           (Slv.getType fn)
 
-        liftIO $ putStrLn "\nMonomorphization complete."
+        noColor <- liftIO $ lookupEnv "NO_COLOR"
+        when (noColor == Just "" || noColor == Nothing) $ do
+          liftIO $ putStrLn ""
+        liftIO $ putStrLn "Monomorphization complete."
 
       _ ->
         return ()
@@ -433,8 +437,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
         writeFile computedOutputPath jsModule
 
-
-      liftIO $ Javascript.generateInternalsModule options
+      -- liftIO $ Javascript.generateInternalsModule options
 
       when (optBundle options) $ do
         let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path

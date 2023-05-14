@@ -30,7 +30,7 @@ read :: String -> Wish IOError (List String)
 export read = (path) => Wish((bad, good) => #- {
   prelude_file_fs.readdir(path, (err, files) => {
     if (err) {
-      bad(IOError.UnknownError);
+      bad({ __constructor: "UnknownError", __args: [] })
     } else {
       if (files.length === 0) {
         good(null);

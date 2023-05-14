@@ -47,7 +47,10 @@ import           Run.Options
 import qualified Data.List as List
 
 
+mutationInterface :: String
 mutationInterface = "__MUTATION__"
+
+mutationPred :: Pred
 mutationPred = IsIn mutationInterface [] Nothing
 
 
@@ -207,7 +210,7 @@ inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.
 inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
-  (s, ps, t, es) <- inferBody options env' body
+  (s, ps, t, es) <- inferBody options env' { envInBody = True } body
   (s', es')      <- postProcessBody options env' s (tv `fn` t) es
 
   let t'        = apply s' (tv `fn` t)
@@ -223,12 +226,13 @@ inferBody options env [e] = do
 
 inferBody options env (e : es) = do
   (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
-  (sb, ps', tb, eb) <- inferBody options (apply s env' { envInBody = True }) es
+  (sb, ps', tb, eb) <- inferBody options (apply s env') es
   let finalS = s `compose` (sb `compose` s)
 
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
 
+-- TODO: find out and comment why we need this
 postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
 postProcessBody options env s expType es = do
   (es', s', _) <- foldM

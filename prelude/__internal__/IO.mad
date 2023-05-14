@@ -159,8 +159,7 @@ export grey = text.white
 
 #-
 {Node}
-import util from "util"
-import readline from "readline"
+import prelude_readline from "readline"
 {/Node}
 -#
 
@@ -220,7 +219,7 @@ export err = (e) => #- {
 getLine :: Wish IOError.IOError String
 export getLine = Wish((bad, good) => #- {
   {Node}
-    const rl = readline.createInterface({
+    const rl = prelude_readline.createInterface({
       input: process.stdin,
       output: process.stdout,
       terminal: false
@@ -247,7 +246,7 @@ export get = Wish((bad, good) => #- {
   {Node}
     const lines = [];
 
-    const rl = readline.createInterface({
+    const rl = prelude_readline.createInterface({
       input: process.stdin,
       output: process.stdout,
       terminal: false

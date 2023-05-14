@@ -22,7 +22,7 @@ export alias CommandOptions = {
 
 #iftarget js
 
-#- import { spawn as spawnJs } from "child_process" -#
+#- import { spawn as prelude_spawn } from "child_process" -#
 
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
 export exec = (command, args, options) => Wish((bad, good) => #- {
@@ -33,7 +33,7 @@ export exec = (command, args, options) => Wish((bad, good) => #- {
   const envItems = __listToJSArray__(options.env.__args[0]);
   envItems.forEach(([key, value]) => { env[key] = value; })
 
-  const proc = spawnJs(
+  const proc = prelude_spawn(
     command,
     __listToJSArray__(args),
     {

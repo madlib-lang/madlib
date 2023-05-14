@@ -1,5 +1,5 @@
 #iftarget js
-#- import { createHash } from "crypto" -#
+#- import { createHash as prelude_createHash } from "crypto" -#
 
 /**
  * Hash the input String with md5 algorithm
@@ -9,7 +9,7 @@
  * md5("rabbit") // "a51e47f646375ab6bf5dd2c42d3e6181"
  */
 md5 :: String -> String
-export md5 = (input) => #- { return createHash("md5").update(input).digest("hex") } -#
+export md5 = (input) => #- { return prelude_createHash("md5").update(input).digest("hex") } -#
 
 /**
  * Hash the input String with sha256 algorithm
@@ -19,7 +19,7 @@ export md5 = (input) => #- { return createHash("md5").update(input).digest("hex"
  * md5("rabbit") // "d37d96b42ad43384915e4513505c30c0b1c4e7c765b5577eda25b5dbd7f26d89"
  */
 sha256 :: String -> String
-export sha256 = (input) => #- { return createHash("sha256").update(input).digest("hex") } -#
+export sha256 = (input) => #- { return prelude_createHash("sha256").update(input).digest("hex") } -#
 
 #elseif llvm
 
