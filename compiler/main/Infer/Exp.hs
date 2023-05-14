@@ -918,8 +918,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       fs  = ftv (apply s'' envWithVarsExcluded)
       gs  = vs \\ fs
 
-  (ds, rs, _) <- catchError
-    (split False envWithVarsExcluded fs (ftv t') ps')
+  (ds, rs, sSplit) <- catchError
+    (split (not isLet) envWithVarsExcluded fs (ftv t') ps')
     (\case
       (CompilationError e NoContext) -> do
         throwError $ CompilationError e (Context (envCurrentPath env) area)
@@ -955,7 +955,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   rsWithParentPreds <- getAllParentPreds env rs'
   rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
   let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
-  let sFinal = sDefaults `compose` s''
+  let sFinal = sSplit `compose` sDefaults `compose` s''
 
   let mutPS = List.filter (\(IsIn cls _ _) -> cls == mutationInterface) ps
 
@@ -1031,6 +1031,8 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   when (not isLet && not (null mutPS) && not (null (ftv t''')) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
+  -- TODO: now that we don't generate placeholders anymore we should be able
+  -- to remove this
   psWithParents <- getAllParentPreds env (dedupePreds qs')
   psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents
   let qs'' = dedupePreds (psWithParents ++ concat psWithInstancePreds)
@@ -1076,16 +1078,17 @@ inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
   return (Nothing, env)
 inferExp options env e = do
   (s, _, env', e') <- upgradeContext env (Can.getArea e) $ case e of
-    Can.Canonical _ Can.TypedExp{} -> do
+    Can.Canonical _ Can.TypedExp{} ->
       inferExplicitlyTyped options False env e
 
     _ -> do
       (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
       return (s, placeholderPreds, env'', e')
 
-  e''' <- updateExpTypes options env' False s e'
 
-  return (Just e''', env')
+  e'' <- updateExpTypes options env' False s e'
+
+  return (Just e'', env')
 
 
 recordError :: Env -> Can.Exp -> CompilationError -> Infer (Maybe Slv.Exp, Env)
@@ -1100,5 +1103,8 @@ upgradeContext env area a = catchError a (throwError . upgradeContext' env area)
 
 upgradeContext' :: Env -> Area -> CompilationError -> CompilationError
 upgradeContext' env area err = case err of
-  (CompilationError e NoContext) -> CompilationError e $ Context (envCurrentPath env) area
-  (CompilationError e r        ) -> CompilationError e r
+  (CompilationError e NoContext) ->
+    CompilationError e $ Context (envCurrentPath env) area
+
+  (CompilationError e r) ->
+    CompilationError e r

@@ -46,6 +46,9 @@ replaceVarWith n replaceWith exp = case exp of
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If (replaceVarWith n replaceWith cond) (replaceVarWith n replaceWith truthy) (replaceVarWith n replaceWith falsy))
 
+  Typed qt area metadata (Access rec field) ->
+    Typed qt area metadata (Access (replaceVarWith n replaceWith rec) (replaceVarWith n replaceWith field))
+
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (replaceVarWith n replaceWith <$> exps))
 

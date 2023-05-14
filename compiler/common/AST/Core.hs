@@ -45,14 +45,14 @@ data Metadata
 data Core a
   = Typed (Ty.Qual Ty.Type) Area [Metadata] a
   | Untyped Area [Metadata] a
-  deriving(Eq, Ord, Generic, Hashable)
+  deriving(Eq, Ord, Show, Generic, Hashable)
 
-instance Show a => Show (Core a) where
-  show x = case x of
-    Typed _ _ _ a ->
-      show a
-    Untyped _ _ a ->
-      show a
+-- instance Show a => Show (Core a) where
+--   show x = case x of
+--     Typed _ _ _ a ->
+--       show a
+--     Untyped _ _ a ->
+--       show a
 
 data AST =
   AST

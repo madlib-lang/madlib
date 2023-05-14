@@ -19,6 +19,7 @@ instance Eq ByteArray {
 listLength :: List a -> Integer
 listLength = extern "madlib__list__length"
 
+// TODO: should we compare by reference here?
 instance Eq (a -> b) {
   __EQ__ = (_, _) => false
 }

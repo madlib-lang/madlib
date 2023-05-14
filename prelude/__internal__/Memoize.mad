@@ -17,9 +17,7 @@ export memoize = (f) => {
         IO.putLine("exec")
         result = f(a)
 
-        _ = (() => {
-          cache = Dictionary.insert(a, result, cache)
-        })()
+        cache = Dictionary.insert(a, result, cache)
 
         return result
       }
