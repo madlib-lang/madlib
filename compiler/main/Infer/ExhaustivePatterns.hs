@@ -226,9 +226,6 @@ checkExp ast env (Slv.Typed _ area expression) =
     Slv.NameExport _ ->
       return ()
 
-    Slv.Placeholder _ exp ->
-      checkExp ast env exp
-
     Slv.Access rec field -> do
       checkExp ast env rec
       checkExp ast env field

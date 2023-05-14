@@ -378,10 +378,10 @@ monoImportTypeToCore importType = case importType of
     Core.ExpressionImport
 
 
+-- TODO: remove first param
 generateImports :: [Slv.Import] -> FilePath -> PostProcess [Core.Import]
-generateImports imports modulePath = do
+generateImports _ modulePath = do
   -- TODO: remove this and fetch from Rock
-  -- let initialImportPaths = Set.toList $ Set.fromList $ map Slv.getImportAbsolutePath imports
   allImports <- liftIO $ readIORef MonomorphizationState.monomorphizationImports
   let importedNames = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup modulePath allImports
       importedNames' = filter (\(foreignPath, _) -> foreignPath /= modulePath) importedNames
@@ -397,22 +397,6 @@ generateImports imports modulePath = do
               in  Core.Untyped emptyArea [] (Core.NamedImport solvedNames foreignModulePath foreignModulePath)
           )
           importedNames'
-
-  -- let generatedImports =
-  --       map
-  --         (\path ->
-  --           let names = Maybe.maybe Set.empty snd $ find (\(importPath, _) -> path == importPath) importedNames'
-  --               solvedNames =
-  --                 map
-  --                   (\(n, t, importType) ->
-  --                     Core.Typed ([] :=> t) emptyArea [] (Core.ImportInfo n (monoImportTypeToCore importType))
-  --                   )
-  --                   (Set.toList names)
-  --           in  Core.Untyped emptyArea [] (Core.NamedImport solvedNames path path)
-  --         )
-  --         initialImportPaths
-
-  -- let generatedImports' = filter ((`elem` initialImportPaths) . Core.getImportAbsolutePath) generatedImports
 
   return generatedImports
 

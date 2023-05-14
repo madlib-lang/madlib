@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use list comprehension" #-}
 {-# HLINT ignore "Eta reduce" #-}
@@ -142,9 +141,6 @@ removeParameterPlaceholdersAndUpdateName newName fnDefinition = case fnDefinitio
   Typed qt area (Assignment _ e) ->
     Typed qt area (Assignment newName (removeParameterPlaceholdersAndUpdateName newName e))
 
-  Typed _ _ (Placeholder (ClassRef _ _ False _, _) e) ->
-    removeParameterPlaceholdersAndUpdateName newName e
-
   or ->
     or
 
@@ -248,7 +244,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
           return monomorphicName
 
     Nothing -> do
-      -- then we look in the global namesapce if not found in local namespace
+      -- then we look in the global namespace if not found in local namespace
       state <- liftIO $ readIORef monomorphizationState
       (fnName', foundExp) <-
         if "." `List.isInfixOf` fnName then do
@@ -388,9 +384,6 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
     fn'  <- monomorphizeApp target env fn
     return $Typed (applyAndCleanQt envSubstitution qt) area (App fn' arg' final)
 
-  Typed _ _ (Placeholder _ e) -> do
-    monomorphizeApp target env e
-
   -- case of record field access
   Typed qt area (Var ('.' : fieldName) False) -> do
     return $ Typed (apply envSubstitution qt) area (Var ('.' : fieldName) False)
@@ -452,9 +445,6 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
 
 monomorphizeLocalAssignment :: Target -> Env -> Qual Type -> Area -> String -> Exp -> Monomorphize Exp
 monomorphizeLocalAssignment target env qt area name exp = case exp of
-  Typed _ _ (Placeholder _ e) ->
-    monomorphizeLocalAssignment target env qt area name e
-
   Typed _ _ Abs{} -> do
     liftIO $ atomicModifyIORef
       (envLocalState env)
@@ -529,12 +519,6 @@ getScopeBindingsToExclude exps =
 
 monomorphize :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphize target env@Env{ envSubstitution } exp = case exp of
-  Typed _ _ (App (Typed _ _ (App (Typed _ _ (Var "==" _)) _ _)) _ _) -> do
-    if target == TBrowser || target == TNode then
-      return exp
-    else do
-      monomorphizeApp target env exp
-
   Typed _ _ App{} -> do
     monomorphizeApp target env exp
 
@@ -584,10 +568,6 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
             es'
 
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Do es'')
-
-  -- TODO: remove asap
-  Typed _ _ (Placeholder _ e) -> do
-    monomorphize target env e
 
   Typed qt area (Record fields) -> do
     fields' <- mapM (monomorphizeField target env) fields

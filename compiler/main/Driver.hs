@@ -306,7 +306,7 @@ watch root action = do
                 Unknown f _ _ ->
                   f
 
-          -- @TODO it would be better to not listen to these folders in the `watchTree` when available
+          -- TODO: it would be better to not listen to these folders in the `watchTree` when available
           -- https://github.com/haskell-fswatch/hfsnotify/issues/101
           shouldTrigger = ".mad" `List.isSuffixOf` f
 

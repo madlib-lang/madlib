@@ -940,18 +940,6 @@ createErrorDiagnostic color context typeError = case typeError of
       []
       [Diagnose.Hint "Add a main method"]
 
-    -- case context of
-    --   Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-    --     Diagnose.Err
-    --       Nothing
-    --       "Constructor access - bad index"
-    --       [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-    --         , Diagnose.This $
-    --             "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
-    --             <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
-    --         )
-    --       ]
-    --       [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
   MutationRestriction ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->

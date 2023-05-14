@@ -170,8 +170,6 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   (ds, rs, _) <- split True env fs gs ps'
 
-  withParents <- getAllParentPreds env qs'
-
   if sc /= sc'
     then throwError $ CompilationError (SignatureTooGeneral sc sc')
                                        (Context (envCurrentPath env) (Can.getArea m))
@@ -180,7 +178,7 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
         $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) (Can.getArea m))
       else do
         let e' = updateQualType e (qs :=> t'')
-        e''  <- insertClassPlaceholders options env (Slv.Typed (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
-        e''' <- updatePlaceholders options env True s' e''
+        let e'' = Slv.Typed (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e'
+        e''' <- updateExpTypes options env True s' e''
 
         return (mn, e''', sc)

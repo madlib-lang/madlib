@@ -359,15 +359,13 @@ renameTypeDecls env typeDecls = case typeDecls of
 
 renamePostProcessedName :: Env -> String -> Core ImportInfo -> (Core ImportInfo, Env)
 renamePostProcessedName env hash solvedName = case solvedName of
-  -- Untyped area metadata name ->
-  --   let hashedName = addHashToName hash name
-  --       env'       = extendScope name hashedName env
-  --   in  (Untyped area metadata hashedName, env')
-
   Typed qt area metadata (ImportInfo name t) ->
     let hashedName = addHashToName hash name
         env'       = extendScope name hashedName env
     in  (Typed qt area metadata (ImportInfo hashedName t), env')
+
+  _ ->
+    undefined
 
 
 renamePostProcessedNames :: Env -> String -> [Core ImportInfo] -> ([Core ImportInfo], Env)
@@ -387,17 +385,6 @@ renameImport env imp = case imp of
     let moduleHash           = generateHashFromPath absPath
         (renamedNames, env') = renamePostProcessedNames env moduleHash names
     in  (Untyped area metadata (NamedImport renamedNames relPath absPath), env')
-
-  {-
-    Here we just push the import hash to the env so that we can pull that information to rewrite say:
-    Var "List.filter" into Var "__hash_of_List__filter". Later this import will be rewritten as:
-    import { __hash_of_List__filter } from "List". Essentially we rewrite all default imports into
-    named imports.
-  -}
-  -- Untyped area metadata (DefaultImport n@(Untyped _ _ name) relPath absPath) ->
-  --   let moduleHash = generateHashFromPath absPath
-  --       env'       = addDefaultImportHash name moduleHash env
-  --   in  (Untyped area metadata (DefaultImport n relPath absPath), env')
 
   _ ->
     undefined
@@ -454,26 +441,6 @@ findAlreadyImportedNamesFromModuleWithPath imports path = case imports of
 
   [] ->
     []
-
-
--- rewriteDefaultImports :: Env -> [Import] -> [Import] -> [Import]
--- rewriteDefaultImports env allImports imports = case imports of
---   (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) relPath absPath) : next) ->
---     let alreadyImportedNames = findAlreadyImportedNamesFromModuleWithPath allImports absPath
---         usedNames            = Set.filter (`notElem` alreadyImportedNames) $ Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
---         hashFromModule       = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
---         hashedNames          = Set.map (addHashToName hashFromModule) usedNames
---         hashedNames'         = Set.filter (`notElem` alreadyImportedNames) hashedNames
---         importNames          = Set.toList $ Set.map (Untyped area' metadata') hashedNames'
---         rewrittenImport      = Untyped area metadata (NamedImport importNames relPath absPath)
---         next'                = rewriteDefaultImports env (rewrittenImport : allImports) next
---     in  rewrittenImport : next'
-
---   (imp : next) ->
---     imp : rewriteDefaultImports env allImports next
-
---   [] ->
---     []
 
 
 dedupeNamedImports :: [String] -> [Import] -> [Import]

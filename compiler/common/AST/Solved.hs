@@ -124,15 +124,6 @@ data ListItem_
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 
-data ClassRefPred
-  = CRPNode String [Ty.Type] Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show, Ord, Generic, Hashable)
-
-data PlaceholderRef
-  = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
-  | MethodRef String String Bool -- bool is isVar
-  deriving(Eq, Show, Ord, Generic, Hashable)
-
 type Exp = Solved Exp_
 data Exp_ = LNum String
           | LFloat String
@@ -158,7 +149,6 @@ data Exp_ = LNum String
           | If Exp Exp Exp
           | Do [Exp]
           | Where Exp [Is]
-          | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           | Extern (Ty.Qual Ty.Type) Name Name
           | TypedHole
           deriving(Eq, Show, Ord, Generic, Hashable)
@@ -516,14 +506,6 @@ getImportAbsolutePath imp = case imp of
     n
 
 
-isPlaceholderExp :: Exp -> Bool
-isPlaceholderExp exp = case exp of
-  Typed _ _ (Placeholder _ _) ->
-    True
-
-  _ ->
-    False
-
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
   Typed _ _ (ListItem e) ->
@@ -576,9 +558,6 @@ getFullAbsParamCount = getFullAbsParamCount' 0
 
 getFullAbsParamCount' :: Int -> Exp -> Int
 getFullAbsParamCount' count exp = case exp of
-  Typed _ _ (Placeholder _ e) ->
-    if count == 0 then getFullAbsParamCount' 0 e else count
-
   Typed _ _ (Assignment _ e) ->
     if count == 0 then getFullAbsParamCount' 0 e else count
 
@@ -600,9 +579,6 @@ getFullAbsParamCount' count exp = case exp of
 
 isAbs :: Exp -> Bool
 isAbs exp = case exp of
-  Typed _ _ (Placeholder _ e) ->
-    isAbs e
-
   Typed _ _ (Assignment _ e) ->
     isAbs e
 

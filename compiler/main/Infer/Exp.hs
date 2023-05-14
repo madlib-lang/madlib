@@ -31,7 +31,6 @@ import           Infer.Typing
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
-import           Infer.Mutation
 import           Infer.Scheme                   ( quantify )
 import           Infer.Pattern
 import           Infer.Pred
@@ -155,7 +154,7 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 -- INFER VAR
 
 inferVar :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferVar options env exp@(Can.Canonical area (Can.Var n)) = case n of
+inferVar _ env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) mempty `fn` TGen 0)
     (ps :=> t) <- instantiate s
@@ -166,13 +165,10 @@ inferVar options env exp@(Can.Canonical area (Can.Var n)) = case n of
     (ps :=> t) <- instantiate sc
 
     let ps' = dedupePreds ps
-
     let e = Slv.Typed (ps' :=> t) area $ Slv.Var n (isConstructor env n)
-    e' <- insertVarPlaceholders options env e ps'
-
     let ps'' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps'
 
-    return (M.empty, ps'', t, e')
+    return (M.empty, ps'', t, e)
 
 enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
 enhanceVarError env _ area (CompilationError e _) =
@@ -236,7 +232,7 @@ inferBody options env (e : es) = do
 postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
 postProcessBody options env s expType es = do
   (es', s', _) <- foldM
-    (\(results, accSubst, env'') fullExp@(Slv.Typed (ps' :=> t') area e) -> do
+    (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
       let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
@@ -286,22 +282,9 @@ postProcessBody options env s expType es = do
           return (ps'', mempty)
 
       let sFinal = substFromDefaulting `compose` accSubst
-      e' <- insertClassPlaceholders options env (Slv.Typed (apply sFinal $ ps''' :=> t') area e) (dedupePreds (apply sFinal ps'''))
-      psToRemove <- computeRemovedPsBecauseSolved env ps' (apply sFinal ps')
+      e' <- updateExpTypes options env False sFinal (Slv.Typed (apply sFinal $ ps''' :=> t') area e)
 
-      let env''' = case Slv.getExpName fullExp of
-            Just n ->
-              env'' { envPlaceholdersToDelete = M.insert n psToRemove (envPlaceholdersToDelete env'') }
-
-            Nothing ->
-              env''
-      let e'' =
-            if all null (envPlaceholdersToDelete env''') then
-              e'
-            else
-              cleanUpDeletedVarPlaceholders env''' e'
-
-      return (results ++ [e''], sFinal, apply sFinal env''')
+      return (results ++ [e'], sFinal, apply sFinal env'')
     )
     (mempty, s, env)
     es
@@ -565,7 +548,7 @@ inferAccess options env e@(Can.Canonical _ (Can.Access ns _)) =
 -- INFER NAMESPACE ACCESS
 
 inferNamespaceAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferNamespaceAccess options env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
+inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
   = do
     sc <-
       catchError
@@ -574,9 +557,8 @@ inferNamespaceAccess options env e@(Can.Canonical area (Can.Access (Can.Canonica
     (ps :=> t) <- instantiate sc
 
     let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field) (isConstructor env (ns <> field))
-    e' <- insertVarPlaceholders options env e ps
 
-    return (M.empty, ps, t, e')
+    return (M.empty, ps, t, e)
 inferNamespaceAccess _ _ _ = throwError $ CompilationError FatalError NoContext
 
 
@@ -1093,7 +1075,7 @@ inferExp :: Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
   return (Nothing, env)
 inferExp options env e = do
-  (s, placeholderPreds, env', e') <- upgradeContext env (Can.getArea e) $ case e of
+  (s, _, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ Can.TypedExp{} -> do
       inferExplicitlyTyped options False env e
 
@@ -1101,10 +1083,7 @@ inferExp options env e = do
       (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
       return (s, placeholderPreds, env'', e')
 
-  e''  <- insertClassPlaceholders options env' e' placeholderPreds
-  e''' <- updatePlaceholders options env' False s e''
-
-  -- verifyMutations env [] Nothing False [e''']
+  e''' <- updateExpTypes options env' False s e'
 
   return (Just e''', env')
 
