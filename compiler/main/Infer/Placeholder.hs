@@ -198,6 +198,9 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
         Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
           Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PVar n)
 
+        Slv.Typed (ps' :=> t') area (Slv.PNum n) ->
+          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PNum n)
+
         Slv.Typed (ps' :=> t') area p ->
           Slv.Typed (apply s ((ps ++ ps') :=> t')) area p
 
@@ -205,12 +208,12 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
     updateListItem s (Slv.Typed t area li) = case li of
       Slv.ListItem e ->
-        Slv.Typed t area . Slv.ListItem <$> updateExpTypes options env push s e
+        Slv.Typed (apply s t) area . Slv.ListItem <$> updateExpTypes options env push s e
 
       Slv.ListSpread e ->
-        Slv.Typed t area . Slv.ListSpread <$> updateExpTypes options env push s e
+        Slv.Typed (apply s t) area . Slv.ListSpread <$> updateExpTypes options env push s e
 
     updateField :: Substitution -> Slv.Field -> Infer Slv.Field
     updateField s (Slv.Typed t area field) = case field of
-      Slv.Field       (n, e) -> Slv.Typed t area . Slv.Field . (n, ) <$> updateExpTypes options env push s e
-      Slv.FieldSpread e      -> Slv.Typed t area . Slv.FieldSpread <$> updateExpTypes options env push s e
+      Slv.Field       (n, e) -> Slv.Typed (apply s t) area . Slv.Field . (n, ) <$> updateExpTypes options env push s e
+      Slv.FieldSpread e      -> Slv.Typed (apply s t) area . Slv.FieldSpread <$> updateExpTypes options env push s e

@@ -503,12 +503,18 @@
                                      (Area (Loc 87 5 3) (Loc 103 5 19))
                                      (ListConstructor
                                         [ Typed
-                                            ([ IsIn "Number" [ TVar (TV "s44" Star) ] Nothing
-                                             , IsIn "Number" [ TVar (TV "t45" Star) ] Nothing
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
                                              ] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                 (TVar (TV "t45" Star)))
+                                                 (TCon (TC "Integer" Star) "prelude"))
                                             (Area (Loc 88 5 4) (Loc 94 5 10))
                                             (ListItem
                                                (Typed
@@ -529,10 +535,10 @@
                                                      [ Typed
                                                          ([ IsIn
                                                               "Number"
-                                                              [ TVar (TV "s44" Star) ]
+                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                               Nothing
                                                           ] :=>
-                                                            TVar (TV "s44" Star))
+                                                            TCon (TC "Integer" Star) "prelude")
                                                          (Area (Loc 89 5 5) (Loc 90 5 6))
                                                          (ListItem
                                                             (Typed
@@ -551,10 +557,10 @@
                                                      , Typed
                                                          ([ IsIn
                                                               "Number"
-                                                              [ TVar (TV "t45" Star) ]
+                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                               Nothing
                                                           ] :=>
-                                                            TVar (TV "t45" Star))
+                                                            TCon (TC "Integer" Star) "prelude")
                                                          (Area (Loc 92 5 8) (Loc 93 5 9))
                                                          (ListItem
                                                             (Typed
@@ -572,12 +578,18 @@
                                                                (LNum "2")))
                                                      ])))
                                         , Typed
-                                            ([ IsIn "Number" [ TVar (TV "v47" Star) ] Nothing
-                                             , IsIn "Number" [ TVar (TV "w48" Star) ] Nothing
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
                                              ] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                 (TVar (TV "w48" Star)))
+                                                 (TCon (TC "Integer" Star) "prelude"))
                                             (Area (Loc 96 5 12) (Loc 102 5 18))
                                             (ListItem
                                                (Typed
@@ -598,10 +610,10 @@
                                                      [ Typed
                                                          ([ IsIn
                                                               "Number"
-                                                              [ TVar (TV "v47" Star) ]
+                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                               Nothing
                                                           ] :=>
-                                                            TVar (TV "v47" Star))
+                                                            TCon (TC "Integer" Star) "prelude")
                                                          (Area (Loc 97 5 13) (Loc 98 5 14))
                                                          (ListItem
                                                             (Typed
@@ -620,10 +632,10 @@
                                                      , Typed
                                                          ([ IsIn
                                                               "Number"
-                                                              [ TVar (TV "w48" Star) ]
+                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                               Nothing
                                                           ] :=>
-                                                            TVar (TV "w48" Star))
+                                                            TCon (TC "Integer" Star) "prelude")
                                                          (Area (Loc 100 5 16) (Loc 101 5 17))
                                                          (ListItem
                                                             (Typed

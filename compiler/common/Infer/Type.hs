@@ -134,6 +134,11 @@ tList = tListOf (TVar (TV "a" Star))
 tListOf :: Type -> Type
 tListOf = TApp (TCon (TC "List" (Kfun Star Star)) "prelude")
 
+listItemType :: Type -> Type
+listItemType t = case t of
+  TApp (TCon (TC "List" (Kfun Star Star)) "prelude") itemType ->
+    itemType
+
 
 tDictionary :: Type
 tDictionary = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") (TVar (TV "a" Star))) (TVar (TV "b" Star))

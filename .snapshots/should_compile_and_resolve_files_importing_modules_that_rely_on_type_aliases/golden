@@ -1,154 +1,11 @@
-// file: /root/project/prelude/__internal__/Wish.mad
-import {} from "./../__internals__.mjs"
-export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
-global.Functor = {};
-global.Applicative = {};
-global.Monad = {};
-Inspect['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Inspect['Wish_e92c71d0381357b7292e437c88b4ab9b']['inspect'] = () => (Inspect_n195) => (Inspect_p197) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let a0 = __x__.__args[0];
-    return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Functor['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Functor['Wish_e92c71d0381357b7292e437c88b4ab9b']['map'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let run = __x__.__args[0];
-    return run(badCB)((x => goodCB(f(x))));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m))));
-Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['ap'] = () => (mf => m => Wish((badCB => goodCB => ((__x__) => {
-  if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
-    let [{ __args: [runMF]},{ __args: [runM]}] = __x__;
-    return runM(badCB)((x => runMF(badCB)((f => goodCB(f(x))))));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(([mf, m])))));
-Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['pure'] = () => (a => Wish((_ => goodCB => goodCB(a))));
-Monad['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
-Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['chain'] = () => (f => m => Wish((badCB => goodCB => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let run = __x__.__args[0];
-    return run(badCB)((x => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let r = __x__.__args[0];
-    return r(badCB)(goodCB);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(f(x))));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m))));
-Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['of'] = () => Applicative.Wish_e92c71d0381357b7292e437c88b4ab9b.pure();
-export let mapRej = (f => m => Wish((badCB => goodCB => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let run = __x__.__args[0];
-    return run((x => badCB(f(x))))(goodCB);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m))));
-export let chainRej = (f => m => Wish((badCB => goodCB => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let run = __x__.__args[0];
-    return run((x => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let r = __x__.__args[0];
-    return r(badCB)(goodCB);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(f(x))))(good);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m))));
-export let good = (a => Wish((_ => goodCB => goodCB(a))));
-export let bad = (e => Wish((badCB => _ => badCB(e))));
-let getWishFn = (w => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let fn = __x__.__args[0];
-    return fn;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(w));
-export let parallel = (wishes => Wish((badCB => goodCB =>  {
-    const l = wishes.length
-    let ko = false;
-    let ok = 0;
-    const out = new Array(l);
-    const next = j => (j === l && goodCB(out));
-    const fork = (w, j) => (getWishFn(w)(
-      e => ko || (badCB(e), ko = true),
-      x => ko || (out[j] = x, next(++ok))
-    ));
-    wishes.forEach(fork);
-  } )));
-export let fulfill = (badCB => goodCB => m => {
-    ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let run = __x__.__args[0];
-    return run(badCB)(goodCB);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m);
-    return ({ __constructor: "Unit", __args: [] });
-});
-export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 // file: /root/project/src/Main.mad
 import {} from "./../__internals__.mjs"
-import W from "./../.prelude/Wish.mjs";
-
-let main = (_ => {
-    W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()((x * 3))))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
+let __8feea6ce806b7cafa9202cfec09ac2f8__main = ( => {
+    __W__fulfill(( => ({ __constructor: "Unit", __args: [] })))(( => ({ __constructor: "Unit", __args: [] })))(map(( => x + `!`))(chain(( => of(`finally a string`)))(chain(( => of((x * 3))))(map(( => x % 2))(of(3))))));
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};
-const makeArgs = () => {
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -159,4 +16,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__8feea6ce806b7cafa9202cfec09ac2f8__main(__makeArgs())

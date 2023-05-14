@@ -33,19 +33,20 @@ inferPatterns env pats = do
 
 inferPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
 inferPattern env p@(Can.Canonical area pat) = case pat of
-  Can.PNum  n ->
-    return (Slv.Typed qtNumber area (Slv.PNum n), [], M.empty, tNumber)
+  Can.PNum n -> do
+    numberType <- newTVar Star
+    return (Slv.Typed ([IsIn "Number" [numberType] Nothing] :=> numberType) area (Slv.PNum n), [IsIn "Number" [numberType] Nothing], M.empty, numberType)
 
   Can.PBool b ->
     return (Slv.Typed ([] :=> tBool) area (Slv.PBool b), [], M.empty, tBool)
 
-  Can.PStr  s ->
+  Can.PStr s ->
     return (Slv.Typed ([] :=> tStr) area (Slv.PStr s), [], M.empty, tStr)
 
-  Can.PChar  s ->
+  Can.PChar s ->
     return (Slv.Typed ([] :=> tChar) area (Slv.PChar s), [], M.empty, tChar)
 
-  Can.PVar  i -> do
+  Can.PVar i -> do
     v <- newTVar Star
     when (Maybe.isJust $ M.lookup i (envVars env)) $
       throwError $ CompilationError (NameAlreadyDefined i) (Context (envCurrentPath env) area)
@@ -68,7 +69,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     return (Slv.Typed ([] :=> t) area (Slv.PTuple pats'), ps, vars, t)
 
   Can.PList pats -> do
-    tv            <- newTVar Star
+    tv <- newTVar Star
 
     (pats, ps, vars, t) <- foldlM
       (\(pats, ps, vars, t) pat -> do
@@ -91,6 +92,11 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
       Can.PSpread (Can.Canonical varArea (Can.PVar i)) -> do
         let t' = tListOf listType
         return (Slv.Typed ([] :=> t') spreadArea (Slv.PSpread (Slv.Typed ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
+
+      Can.PSpread (Can.Canonical varArea (Can.PNum n)) -> do
+        let t' = tListOf listType
+        let itemType = listItemType t'
+        return (Slv.Typed ([IsIn "Number" [itemType] Nothing] :=> t') spreadArea (Slv.PSpread (Slv.Typed ([IsIn "Number" [itemType] Nothing] :=> t') varArea (Slv.PNum n))), [IsIn "Number" [itemType] Nothing], M.empty, listType)
 
       _ -> inferPattern env pat
 

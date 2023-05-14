@@ -1,18 +1,17 @@
 // file: ./ModuleA.mad
 import {} from "./__internals__.mjs"
-export let singleton = (a => ({ v: a, n: null }));
-export default { singleton };
+export let __adbded34e07388a4c5786a9b38369cb6__singleton__1 = (a => ({ v: a, n: null }));
+export default { __adbded34e07388a4c5786a9b38369cb6__singleton__1 };
 // file: ./ModuleB.mad
 import {} from "./__internals__.mjs"
-import L from "./ModuleA.mjs";
-import { singleton } from "./ModuleA.mjs";
+import { __adbded34e07388a4c5786a9b38369cb6__singleton__1 } from "./ModuleA.mjs";
 
-let main = (_ => {
-    L.singleton(3);
+let __d0d7e1bcacf13a52d892e2a971010f64__main = (_ => {
+    __adbded34e07388a4c5786a9b38369cb6__singleton__1(3);
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};
-const makeArgs = () => {
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -23,4 +22,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__d0d7e1bcacf13a52d892e2a971010f64__main(__makeArgs())
