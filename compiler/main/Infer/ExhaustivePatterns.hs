@@ -179,6 +179,8 @@ data Error
 check :: Env -> Slv.AST -> Infer ()
 check env ast@Slv.AST { Slv.aexps } = do
   checkExps ast env aexps
+  -- TODO: exclude instances for Eq and Inspect
+  checkExps ast env (Slv.getAllMethods ast)
 
 
 
@@ -484,9 +486,13 @@ toSimplifiedUsefulRows ast env checkedRows checkedPatterns uncheckedPatterns =
       if isUseful checkedRows nextRow then
         toSimplifiedUsefulRows ast env (nextRow : checkedRows) (pattern : checkedPatterns) rest
       else do
-        mapM_
-          (pushWarning . CompilationWarning RedundantPattern . Context (envCurrentPath env) . Slv.getArea)
-          [pattern]
+        forM_ [pattern] $ \pattern -> do
+          let area = Slv.getArea pattern
+          -- Quickfix for now that allows us to exclude derived
+          -- instances
+          when (area /= emptyArea) $
+            pushWarning $ CompilationWarning RedundantPattern $ Context (envCurrentPath env) area
+          
         toSimplifiedUsefulRows ast env (nextRow : checkedRows) (pattern : checkedPatterns) rest
 
 
