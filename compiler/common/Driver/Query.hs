@@ -30,7 +30,6 @@ import           Generate.LLVM.SymbolTable
 import qualified Generate.LLVM.Env          as LLVM
 import           Parse.DocString.DocString
 import qualified LLVM.AST                        as AST hiding (function)
-import qualified FarmHash
 import           Infer.MonomorphizationState
 
 
