@@ -1162,23 +1162,6 @@ expToDoc comments exp =
         Source _ _ EndIfTarget ->
           (Pretty.pretty "#endif", comments')
 
-        Source _ _ (ConstructorAccess typeName index exp) ->
-          let (exp', comments'') = expToDoc comments' exp
-          in  ( Pretty.group
-                  (
-                    Pretty.pretty (sanitizeConstructorAccessTypeName typeName) <> Pretty.lbracket <> Pretty.pretty index <> Pretty.rbracket
-                    <> Pretty.lparen
-                    <> Pretty.nest indentSize (Pretty.line' <> exp')
-                    <> Pretty.line'
-                    <> Pretty.rparen
-                  )
-              , comments''
-              )
-
-        Source _ _ (ConstructorAccessAbs typeName index) ->
-          ( Pretty.pretty (sanitizeConstructorAccessTypeName typeName) <> Pretty.lbracket <> Pretty.pretty index <> Pretty.rbracket
-          , comments'
-          )
   in  (commentsDoc <> exp', comments'')
 
 

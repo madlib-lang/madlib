@@ -1290,7 +1290,17 @@ generateExp env symbolTable exp = case exp of
         Core.Typed _ _ _ (Core.ListItem item) -> do
           item' <- generateExp env { isLast = False } symbolTable item
           items <- retrieveArgs [Core.getMetadata item] [item']
-          call madlistPush [(List.head items, []), (list', [])]
+
+          newHead <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+          newHead' <- bitcast newHead listType
+          nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          nextPtr' <- bitcast nextPtr (Type.ptr listType)
+          -- nextPtr' <- load nextPtr 0
+          store nextPtr' 0 list'
+          valuePtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+          -- valuePtr' <- load valuePtr 0
+          store valuePtr 0 (List.head items)
+          return newHead'
 
         Core.Typed _ _ _ (Core.ListSpread spread) -> do
           (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread

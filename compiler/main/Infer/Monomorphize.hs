@@ -487,7 +487,7 @@ monomorphizeBodyExp target env exp = case exp of
 
   Typed qt area (Assignment n e) -> do
     e' <- monomorphizeLocalAssignment target env qt area n e
-    return $ Typed qt area (Assignment n e')
+    return $ Typed (apply (envSubstitution env) qt) area (Assignment n e')
 
   or ->
     monomorphize target env or

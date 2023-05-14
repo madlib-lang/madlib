@@ -357,8 +357,6 @@ exp :: { Src.Exp }
   | absOrParenthesizedName                                   %shift { $1 }
   | '(' exp ')'                                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Parenthesized (tokenArea $1) $2 (tokenArea $3)) }
   | exp '.' name                                             %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
-  -- | name '.' name                                             { access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $1) (Src.Var $ "." <> strV $3)) }
-  | constructorAccess                                         %shift { $1 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $17)) (tokenTarget $1) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet
@@ -377,30 +375,6 @@ exp :: { Src.Exp }
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.getSourceTarget $1) (Src.Ternary $1 $4 $8) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.getSourceTarget $1) (Src.Ternary $1 $4 $8) }
-
--- namespaceConstructorAccessType :: { (String, String) }
---   : name '.' name { % }
-
-constructorAccess :: { Src.Exp }
-  : name '[' number ']' '(' rets exp rets ')'                       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.ConstructorAccess (strV $1) (strV $3) $7) }
-  | exp '[' number ']' '(' rets exp rets ')'                        %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $9)) (Src.getSourceTarget $1) (Src.ConstructorAccess ("strV $1" <> "." <> "strV $3") (strV $3) $7) }
-  | exp '[' number ']'                                              %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.ConstructorAccessAbs ("strV $1" <> "." <> "strV $3") (strV $3)) }
-  | '#[' nonNullCommaCount ']' '[' number ']' '(' rets exp rets ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $11)) (tokenTarget $1) (Src.ConstructorAccess ("(" <> replicate $2 ',' <> ")") (strV $5) $9) }
-  | name '[' number ']'                                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.ConstructorAccessAbs (strV $1) (strV $3)) }
-
-  -- : name '[' number ']' '(' exp ')'                                          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.ConstructorAccess (strV $1) (strV $3) $6) }
-  -- | name '.' name '[' number ']' '(' exp ')'                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.ConstructorAccess (strV $1 <> "." <> strV $3) (strV $5) $8) }
-  -- | '#[' ',' ']' '[' number ']' '(' exp ')'                                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.ConstructorAccess ("(,)") (strV $5) $8) }
-  -- | '#[' ',' ',' ']' '[' number ']' '(' exp ')'                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $10)) (tokenTarget $1) (Src.ConstructorAccess ("(,,)") (strV $6) $9) }
-  -- | '#[' ',' ',' ',' ']' '[' number ']' '(' exp ')'                          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $11)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,)") (strV $7) $10) }
-  -- | '#[' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'                      %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $12)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,)") (strV $8) $11) }
-  -- | '#[' ',' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'                  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $13)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,,)") (strV $9) $12) }
-  -- | '#[' ',' ',' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $14)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,,,)") (strV $10) $13) }
-  -- | '#[' ',' ',' ',' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $15)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,,,,)") (strV $11) $14) }
-  -- | '#[' ',' ',' ',' ',' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'      %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $16)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,,,,,)") (strV $12) $15) }
-  -- | '#[' ',' ',' ',' ',' ',' ',' ',' ',' ',' ']' '[' number ']' '(' exp ')'  %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $17)) (tokenTarget $1) (Src.ConstructorAccess ("(,,,,,,,,,)") (strV $13) $16) }
-  -- | name '[' number ']'                                                      %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.ConstructorAccessAbs (strV $1) (strV $3)) }
-  -- | name '.' name '[' number ']'                                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $6)) (tokenTarget $1) (Src.ConstructorAccessAbs (strV $1 <> "." <> strV $3) (strV $5)) }
 
 
 absOrParenthesizedName :: { Src.Exp }

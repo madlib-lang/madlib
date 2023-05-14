@@ -76,9 +76,9 @@ verifyMethodAccess env s ph@(Slv.Typed (ps :=> t) a (Slv.Var methodName _)) = do
 updateExpTypesForExpList :: Options -> Env -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
 updateExpTypesForExpList options env push s exps = case exps of
   (e : es) -> do
-    next <- updateExpTypesForExpList options env push s es
-    e'   <- updateExpTypes options env push s e
-    return (e' : next)
+    es' <- updateExpTypesForExpList options env push s es
+    e' <- updateExpTypes options env push s e
+    return (e' : es')
 
   [] ->
     return []
@@ -101,8 +101,6 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     return $ Slv.Typed (apply s qt) a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Typed paramType paramArea param) es -> do
-    -- Once we encountered an Abs we processed all the instance placeholders and we can then
-    -- strip the inner placeholders.
     es' <- updateExpTypesForExpList options env push s es
     let param' = Slv.Typed (apply s paramType) paramArea param
     return $ Slv.Typed (apply s qt) a $ Slv.Abs param' es'
@@ -167,7 +165,8 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     pushWarning $ CompilationWarning (TypedHoleFound t) (Context (envCurrentPath env) a)
     return $ Slv.Typed qt' a Slv.TypedHole
 
-  _ -> return $ Slv.Typed (apply s qt) a e
+  _ ->
+    return $ Slv.Typed (apply s qt) a e
 
   where
     updateIs :: Substitution -> Slv.Is -> Infer Slv.Is

@@ -411,11 +411,11 @@ export reduceRight = (f, acc, list) => pipe(
  */
 reduceLeft :: (a -> b -> a) -> a -> List b -> a
 export reduceLeft = (f, acc, list) => where(list) {
-  [] =>
-    acc
-
   [a, ...xs] =>
     reduceLeft(f, f(acc, a), xs)
+
+  [] =>
+    acc
 }
 
 
