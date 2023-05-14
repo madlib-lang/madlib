@@ -928,7 +928,16 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     )
 
   (ds', rs', sDefaults) <-
-    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) && not (isFunctionType t') then do
+    if
+      not isLet
+      && not (Slv.isExtern e)
+      && not (null (ds ++ rs))
+      && not (Can.isNamedAbs exp)
+      && not (isFunctionType t')
+      -- TODO: we need to update that and only default preds for values that aren't behind a function
+      -- So the record might still have direct values that should be defaulted ( like mempty )
+      && not (isRecordType t')
+    then do
       (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
@@ -952,6 +961,9 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         if isLet && not (Slv.isNamedAbs e) then
           apply sFinal $ quantify [] (rs'' :=> t')
         else
+          -- TODO: consider if the apply sFinal should not happen before quantifying
+          -- because right now we might miss the defaulted types in the generated
+          -- scheme
           apply sFinal $ quantify gs (rs'' :=> t')
 
   case Can.getExpName exp of

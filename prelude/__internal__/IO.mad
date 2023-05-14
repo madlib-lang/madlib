@@ -191,7 +191,7 @@ export put = (a) => #- {
  * putLine("Hello world")
  */
 putLine :: String -> {}
-export putLine = (a) => #- console.log(a) -#
+export putLine = (a) => #- { console.log(a) } -#
 
 
 /**

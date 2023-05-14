@@ -17,7 +17,6 @@ import           Explain.Location
 import qualified Utils.Types                   as Types
 import           Text.Show.Pretty
 import qualified Rock
-import Driver.Query
 import qualified Data.Maybe as Maybe
 import qualified Infer.MonomorphizationState as MonomorphizationState
 import qualified Data.Set as Set
@@ -35,7 +34,7 @@ data State
 initialOptimizationState :: State
 initialOptimizationState = State { typeCount = 0, classCount = 0, typeMap = mempty, classMap = mempty }
 
-type PostProcess a = forall m . (MonadIO m, Rock.MonadFetch Query m, MonadState.MonadState State m) => m a
+type PostProcess a = forall m . (MonadIO m, MonadState.MonadState State m) => m a
 
 numbers :: [String]
 numbers = show <$> [0 ..]
@@ -413,6 +412,6 @@ instance Processable Slv.AST Core.AST where
               }
 
 
-astToCore :: (MonadIO m, Rock.MonadFetch Query m) => Bool -> Slv.AST -> m Core.AST
+astToCore :: (MonadIO m) => Bool -> Slv.AST -> m Core.AST
 astToCore enabled ast =
   MonadState.evalStateT (toCore enabled ast) initialOptimizationState

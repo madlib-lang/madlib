@@ -21,6 +21,7 @@ import           Data.GADT.Show.TH (deriveGShow)
 import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
+import qualified Data.Map as Map
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.UTF8 as BSU
 import           Infer.Type
@@ -52,6 +53,7 @@ data Query a where
 
   -- Type checking
   SolvedASTWithEnv :: FilePath -> Query (Slv.AST, SlvEnv.Env)
+  AllSolvedASTsWithEnvs :: Query (Map.Map FilePath (Slv.AST, SlvEnv.Env))
   SolvedInterface :: FilePath -> String -> Query (Maybe SlvEnv.Interface)
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignExp :: FilePath -> String -> Query (Maybe Slv.Exp)
@@ -122,6 +124,9 @@ instance Hashable (Query a) where
 
     SolvedASTWithEnv path ->
       hashWithSalt salt (path, 11 :: Int)
+
+    AllSolvedASTsWithEnvs ->
+      hashWithSalt salt (101 :: Int)
 
     SolvedInterface path name ->
       hashWithSalt salt (path, name, 12 :: Int)

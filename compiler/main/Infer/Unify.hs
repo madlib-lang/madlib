@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant if" #-}
 module Infer.Unify where
 
 
@@ -329,4 +331,37 @@ gentleUnify (TCon a fpa) (TCon b fpb)
   | fpa /= fpb           = M.empty
 
 gentleUnify _ _ = M.empty
+
+
+-- Should that be called roughMatch?
+quickMatch :: Type -> Type -> Bool
+quickMatch (l `TApp` r) (l' `TApp` r') =
+  quickMatch l l' && quickMatch r r'
+
+quickMatch (TRecord fields _ _) (TRecord fields' _ _) =
+  let extraFields  = M.difference fields fields'
+      extraFields' = M.difference fields' fields
+  in  if extraFields' /= mempty || extraFields /= mempty then
+        False
+      else
+        any (uncurry quickMatch) $ zip (M.elems fields) (M.elems fields')
+
+quickMatch (TVar _) _ = True
+quickMatch _ (TVar _) = True
+quickMatch (TCon a fpa) (TCon b fpb)
+  | a == b && fpa == fpb = True
+  | a == b && (fpa == "JSX" || fpb == "JSX") = True
+  | a /= b = False
+  | fpa /= fpb = False
+
+quickMatch (TCon (TC tNameA _) _) (TApp (TCon (TC tNameB _) _) _)
+  | tNameA == "String" && tNameB == "Element" =
+      True
+
+quickMatch (TApp (TCon (TC tNameB _) _) _) (TCon (TC tNameA _) _)
+  | tNameB == "Element" && tNameA == "String" =
+      True
+
+quickMatch _ _ =
+  False
 

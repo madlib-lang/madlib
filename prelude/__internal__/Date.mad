@@ -93,8 +93,8 @@ toDateInfoFFI = (date) => #- {
 } -#
 
 fromDateInfoFFI :: DateInfo -> Integer
-fromDateInfoFFI = (dateInfo) => #-
-  Date.UTC(
+fromDateInfoFFI = (dateInfo) => #- {
+  return Date.UTC(
     dateInfo.year,
     dateInfo.month - 1,
     dateInfo.day,
@@ -103,7 +103,7 @@ fromDateInfoFFI = (dateInfo) => #-
     dateInfo.seconds,
     dateInfo.milliseconds
   )
--#
+} -#
 
 #endif
 

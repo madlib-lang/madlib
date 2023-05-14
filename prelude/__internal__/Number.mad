@@ -88,22 +88,22 @@ instance Scan Byte {
 #iftarget js
 
 integerToFloat :: Integer -> Float
-export integerToFloat = (a) => #- a -#
+export integerToFloat = (a) => #- { return a } -#
 
 integerToByte :: Integer -> Byte
-export integerToByte = (a) => #- Uint8Array.from([a])[0] -#
+export integerToByte = (a) => #- { return Uint8Array.from([a])[0] } -#
 
 byteToFloat :: Byte -> Float
-export byteToFloat = (a) => #- a -#
+export byteToFloat = (a) => #- { return a } -#
 
 byteToInteger :: Byte -> Integer
-export byteToInteger = (a) => #- a -#
+export byteToInteger = (a) => #- { return a } -#
 
 floatToInteger :: Float -> Integer
-export floatToInteger = #- Math.trunc -#
+export floatToInteger = (a) => #- { return Math.trunc(a) } -#
 
 floatToByte :: Float -> Byte
-export floatToByte = (a) => #- Uint8Array.from([Math.trunc(a)])[0] -#
+export floatToByte = (a) => #- { return Uint8Array.from([Math.trunc(a)])[0] } -#
 
 #elseif llvm
 
