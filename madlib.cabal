@@ -58,7 +58,6 @@ library
       Infer.Infer
       Infer.Instantiate
       Infer.Interface
-      Infer.MonomorphizationState
       Infer.Monomorphize
       Infer.Mutation
       Infer.Pattern
@@ -74,6 +73,7 @@ library
       MadlibDotJson.MadlibVersion
       Optimize.EtaExpansion
       Optimize.EtaReduction
+      Optimize.SortExpressions
       Optimize.StripNonJSInterfaces
       Optimize.TCE
       Optimize.ToCore
@@ -201,6 +201,7 @@ library common
       Generate.LLVM.SymbolTable
       Infer.ADTInfo
       Infer.Env
+      Infer.MonomorphizationState
       Infer.Type
       Parse.DocString.DocString
   other-modules:

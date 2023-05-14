@@ -43,6 +43,10 @@ import System.Process
 import System.Environment (getEnv)
 import Run.Options
 import qualified Data.List as List
+import Data.IORef
+import Infer.MonomorphizationState
+import qualified FarmHash as Hash
+import qualified Data.ByteString.Lazy.Char8 as BLChar8
 
 
 
@@ -57,6 +61,7 @@ data Env
   { varsInScope :: S.Set String
   , recursionData :: Maybe RecursionData
   , varsRewritten :: M.Map String String
+  , methodNames :: S.Set String
   }
   deriving(Eq, Show)
 
@@ -66,6 +71,7 @@ initialEnv =
     { varsInScope = S.empty
     , recursionData = Nothing
     , varsRewritten = M.empty
+    , methodNames = S.empty
     }
 
 allowedJSNames :: [String]
@@ -132,7 +138,10 @@ instance Compilable Exp where
           case getConstructorRecursionInfo metadata of
             Just (ConstructorRecursionInfo _ position) ->
               let Just params   = rdParams <$> recursionData env
-                  newValue = "$newValue = { __constructor: \""<>constructorName<>"\", __args: [] }"
+                  -- Based on the following input, we need to only use ConstructorName
+                  -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
+                  -- therefore we need to drop the first 36 characters
+                  newValue = "$newValue = { __constructor: \""<> drop 36  constructorName <>"\", __args: [] }"
                   compiledArgs =
                     (\(index, arg) ->
                       if index == position then
@@ -401,12 +410,22 @@ instance Compilable Exp where
           let safeName = generateSafeName name
               content = compile env config exp
               needsModifier = notElem safeName $ varsInScope env
-          in  (if needsModifier then "let " else "") <> safeName <> " = " <> content
+              assignment = (if needsModifier then "let " else "") <> safeName <> " = " <> content
+              methodGlobal =
+                if name `S.member` methodNames env then
+                  "\nglobal." <> name <> " = " <> name <> "\n"
+                else
+                  ""
+          in  assignment <> methodGlobal
 
         Export e ->
           "export " <> compile env config e
 
-        NameExport name   -> "export { " <> generateSafeName name <> " }"
+        NameExport _ ->
+          ""
+
+        -- NameExport name   ->
+        --   "export { " <> generateSafeName name <> " }"
 
         Record     fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
@@ -522,23 +541,48 @@ instance Compilable Exp where
 
           compilePattern :: String -> Pattern -> String
           compilePattern scope (Typed _ _ _ pat) = case pat of
-            PVar _  -> "true"
-            PAny    -> "true"
-            PNum  n -> scope <> " === " <> n
-            PStr  n -> scope <> " === " <> n
-            PChar n -> scope <> " === " <> "String.fromCharCode(" <> (show . fromEnum) n <> ")"
-            PBool n -> scope <> " === " <> n
-            PCon n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
+            PVar _ ->
+              "true"
+
+            PAny ->
+              "true"
+
+            PNum  n ->
+              scope <> " === " <> n
+
+            PStr  n ->
+              scope <> " === " <> n
+
+            PChar n ->
+              scope <> " === " <> "String.fromCharCode(" <> (show . fromEnum) n <> ")"
+
+            PBool n ->
+              scope <> " === " <> n
+
+            PCon n [] ->
+              scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\""
+
+            PCon "Dictionary" ps ->
+              let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope "Dictionary" <$> zip [0 ..] ps
+              in  scope <> ".__constructor === " <> "\"" <> "Dictionary" <> "\" && " <> args
+
             PCon n ps ->
               let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
-              in  scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\"" <> if not (null args)
+              in  scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\"" <> if not (null args)
                     then " && " <> args
                     else ""
-            PRecord m     -> intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
 
-            PSpread pat   -> compilePattern scope pat
-            PList   items -> compileListPattern scope items
-            PTuple  items -> compileTuplePattern scope items
+            PRecord m ->
+              intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
+
+            PSpread pat ->
+              compilePattern scope pat
+
+            PList items ->
+              compileListPattern scope items
+
+            PTuple items ->
+              compileTuplePattern scope items
 
           compileIs :: Is -> String
           compileIs (Typed _ _ _ (Is pat exp)) =
@@ -753,7 +797,10 @@ instance Compilable Constructor where
       let argNames = (: []) <$> take (length a) ['a' ..]
           args     = argNames
           argStr   = intercalate ", " args
-      in  "({ __constructor: \"" <> n <> "\", __args: [ " <> argStr <> " ] })"
+      -- Based on the following input, we need to only use ConstructorName
+      -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
+      -- therefore we need to drop the first 36 characters
+      in  "({ __constructor: \"" <> drop 36 n <> "\", __args: [ " <> argStr <> " ] })"
 
 
 compileImport :: CompilationConfig -> Import -> String
@@ -761,6 +808,7 @@ compileImport config (Untyped _ _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import { " <> compileNames (generateSafeName . Core.getImportName <$> names) <> " } from \"" <> importPath <> "\""
+    -- in  "import { " <> compileNames (generateSafeName . Core.getImportName <$> names) <> " } from \"" <> ccinternalsPath config <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
 
 
@@ -939,28 +987,35 @@ computeInternalsRelativePath outputPath astTargetPath =
   in  joinPath $ "./" : (".." <$ parts) ++ [takeFileName internalsPath]
 
 
+hashModulePath :: AST -> String
+hashModulePath ast =
+  generateHashFromPath $ Maybe.fromMaybe "" (apath ast)
+
+
 generateMainCall :: Options -> String -> String
 generateMainCall options astPath =
-  if astPath == optEntrypoint options then
-    if optTarget options == TNode then
-      unlines
-        [ "const makeArgs = () => {"
-        , "  let list = {}"
-        , "  let start = list"
-        , "  Object.keys(process.argv.slice(0)).forEach((key) => {"
-        , "    list = list.n = { v: process.argv[key], n: null }"
-        , "  }, {})"
-        , "  return {"
-        , "    n: start.n.n.n,"
-        , "    v: start.n.n.v"
-        , "  }"
-        , "}"
-        , "main(makeArgs())"
-        ]
-    else
-      "\nmain(null)\n"
-  else
-    ""
+  let moduleHash = generateHashFromPath astPath
+      mainName = "__" <> moduleHash <> "__main"
+  in  if astPath == optEntrypoint options then
+        if optTarget options == TNode then
+          unlines
+            [ "const __makeArgs = () => {"
+            , "  let list = {}"
+            , "  let start = list"
+            , "  Object.keys(process.argv.slice(0)).forEach((key) => {"
+            , "    list = list.n = { v: process.argv[key], n: null }"
+            , "  }, {})"
+            , "  return {"
+            , "    n: start.n.n.n,"
+            , "    v: start.n.n.v"
+            , "  }"
+            , "}"
+            , mainName <> "(__makeArgs())"
+            ]
+        else
+          "\n" <> mainName <> "(null)\n"
+      else
+        ""
 
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
@@ -972,8 +1027,11 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
         internalsPath      = convertWindowsSeparators $ computeInternalsRelativePath (optOutputPath options) computedOutputPath
         entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
 
+    -- TODO: move this to a Query as well?
+    monomorphicMethodNames <- readIORef monomorphicMethods
+
     let moduleContent = compile
-          initialEnv
+          initialEnv { methodNames = monomorphicMethodNames }
           (
             CompilationConfig
               rootPath

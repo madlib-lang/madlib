@@ -4,12 +4,12 @@ import { Just } from "Maybe"
 import Url from "./Url"
 
 
-// test("encode", (_) => assertEquals(
-//   Url.encode("http://www.domain.com?param1=value1&param2=value2"),
-//   Just("http%3A%2F%2Fwww.domain.com%3Fparam1%3Dvalue1%26param2%3Dvalue2"))
-// )
+test("encode", (_) => assertEquals(
+  Url.encode("http://www.domain.com?param1=value1&param2=value2"),
+  Just("http%3A%2F%2Fwww.domain.com%3Fparam1%3Dvalue1%26param2%3Dvalue2"))
+)
 
-// test("decode", (_) => assertEquals(
-//   Url.decode("http%3A%2F%2Fwww.domain.com%3Fparam1%3Dvalue1%26param2%3Dvalue2"),
-//   Just("http://www.domain.com?param1=value1&param2=value2"))
-// )
+test("decode", (_) => assertEquals(
+  Url.decode("http%3A%2F%2Fwww.domain.com%3Fparam1%3Dvalue1%26param2%3Dvalue2"),
+  Just("http://www.domain.com?param1=value1&param2=value2"))
+)

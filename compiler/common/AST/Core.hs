@@ -450,3 +450,19 @@ getImportName :: Core ImportInfo -> String
 getImportName info = case info of
   Typed _ _ _ (ImportInfo n _) ->
     n
+
+isJSExp :: Exp -> Bool
+isJSExp exp = case exp of
+  Typed _ _ _ (JSExp _) ->
+    True
+
+  _ ->
+    False
+
+getJSExpContent :: Exp -> String
+getJSExpContent exp = case exp of
+  Typed _ _ _ (JSExp js) ->
+    js
+
+  _ ->
+    ""

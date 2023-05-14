@@ -55,6 +55,7 @@ data TypeError
   | ConstructorAccessBadIndex String String Int Int
   | ConstructorAccessNoConstructorFound String
   | ConstructorAccessTooManyConstructors String Int
+  | MutationRestriction
   deriving (Show, Eq, Ord)
 
 

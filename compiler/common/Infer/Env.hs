@@ -45,6 +45,8 @@ data Env
     , envConstructors :: Set.Set String
     , envMethods :: Methods
     , envCurrentPath :: FilePath
+    , envInBody :: Bool
+    , envNamesInScope :: Set.Set String
     -- TODO: remove and use envImportInfo instead
     , envNamespacesInScope :: Set.Set String
     , envImportInfo :: [ImportInfo]

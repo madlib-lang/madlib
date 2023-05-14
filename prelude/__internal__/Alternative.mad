@@ -9,5 +9,5 @@ import {} from "Applicative"
  */
 interface Applicative f => Alternative f {
   aempty :: f a
-  alt   :: f a -> f a -> f a
+  alt :: f a -> f a -> f a
 }

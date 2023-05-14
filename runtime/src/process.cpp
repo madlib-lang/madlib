@@ -150,12 +150,7 @@ typedef struct ExecData {
 } ExecData_t;
 
 
-void onChildClose(uv_handle_t *handle) {
-  ExecData_t *data = (ExecData_t*)handle->data;
-  GC_FREE(data->options);
-  GC_FREE(data);
-  GC_FREE(handle);
-}
+void onChildClose(uv_handle_t *handle) {}
 
 
 void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
@@ -172,13 +167,11 @@ void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
 
 
 void allocExecBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
-  *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC_UNCOLLECTABLE(suggestedSize), suggestedSize);
+  *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC(suggestedSize), suggestedSize);
 }
 
 
-void onPipeClose(uv_handle_t *handle) {
-  GC_FREE(handle);
-}
+void onPipeClose(uv_handle_t *handle) {}
 
 
 void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
@@ -300,8 +293,8 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   int itemCount = madlib__list__length(envItems);
   char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
   int index = 0;
-  while (envItems->value != NULL && envItems->next != NULL) {
-    printf("index: %d\n", index);
+
+  while (envItems->next != NULL) {
     char *key = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->first;
     size_t keyLength = strlen(key);
     char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
@@ -339,15 +332,7 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
     size_t stdoutLength = strlen(data->stdoutOutput);
     size_t stderrLength = strlen(data->stderrOutput);
 
-    char *stdoutOutput = (char*) GC_MALLOC_ATOMIC(stdoutLength + 1);
-    char *stderrOutput = (char*) GC_MALLOC_ATOMIC(stderrLength + 1);
-
-    memcpy(stdoutOutput, data->stdoutOutput, stdoutLength);
-    stdoutOutput[stdoutLength] = '\0';
-    memcpy(stderrOutput, data->stderrOutput, stderrLength);
-    stderrOutput[stderrLength] = '\0';
-
-    __applyPAP__(callback, 3, boxedStatus, stdoutOutput, stderrOutput);
+    __applyPAP__(callback, 3, boxedStatus, data->stdoutOutput, data->stderrOutput);
   } else {
     int rout = uv_read_start((uv_stream_t *)stdoutPipe, allocExecBuffer, onExecStdoutRead);
     int rerr = uv_read_start((uv_stream_t *)stderrPipe, allocExecBuffer, onExecStderrRead);

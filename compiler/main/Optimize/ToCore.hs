@@ -378,11 +378,13 @@ monoImportTypeToCore importType = case importType of
     Core.ExpressionImport
 
 
-generateImports :: FilePath -> PostProcess [Core.Import]
-generateImports modulePath = do
+generateImports :: [Slv.Import] -> FilePath -> PostProcess [Core.Import]
+generateImports imports modulePath = do
   -- TODO: remove this and fetch from Rock
+  -- let initialImportPaths = Set.toList $ Set.fromList $ map Slv.getImportAbsolutePath imports
   allImports <- liftIO $ readIORef MonomorphizationState.monomorphizationImports
   let importedNames = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup modulePath allImports
+      importedNames' = filter (\(foreignPath, _) -> foreignPath /= modulePath) importedNames
   let generatedImports =
         map
           (\(foreignModulePath, names) ->
@@ -394,13 +396,29 @@ generateImports modulePath = do
                       (Set.toList names)
               in  Core.Untyped emptyArea [] (Core.NamedImport solvedNames foreignModulePath foreignModulePath)
           )
-          (filter (\(foreignPath, _) -> foreignPath /= modulePath) importedNames)
+          importedNames'
+
+  -- let generatedImports =
+  --       map
+  --         (\path ->
+  --           let names = Maybe.maybe Set.empty snd $ find (\(importPath, _) -> path == importPath) importedNames'
+  --               solvedNames =
+  --                 map
+  --                   (\(n, t, importType) ->
+  --                     Core.Typed ([] :=> t) emptyArea [] (Core.ImportInfo n (monoImportTypeToCore importType))
+  --                   )
+  --                   (Set.toList names)
+  --           in  Core.Untyped emptyArea [] (Core.NamedImport solvedNames path path)
+  --         )
+  --         initialImportPaths
+
+  -- let generatedImports' = filter ((`elem` initialImportPaths) . Core.getImportAbsolutePath) generatedImports
 
   return generatedImports
 
 instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
-    imports    <- generateImports (Maybe.fromMaybe "" $ Slv.apath ast)
+    imports    <- generateImports (Slv.aimports ast) (Maybe.fromMaybe "" $ Slv.apath ast)
     exps       <- mapM (toCore enabled) $ Slv.aexps ast
     typeDecls  <- mapM (toCore enabled) $ filter Slv.isADT (Slv.atypedecls ast)
 

@@ -625,7 +625,7 @@ specializeRowByRecord baseMap row =
 
 -- INVARIANT: (length row == N) ==> (length result == arity + N - 1)
 specializeRowByRecordField :: Int -> String -> [Pattern] -> Maybe [Pattern]
-specializeRowByRecordField fieldCount fieldName row =
+specializeRowByRecordField fieldCount _ row =
   case row of
     Ctor{} : _ ->
       Nothing

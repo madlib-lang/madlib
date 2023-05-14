@@ -8,6 +8,7 @@
 module Driver.Rules where
 
 import qualified Rock
+import Data.Graph
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import qualified Canonicalize.Env              as CanEnv
@@ -26,6 +27,7 @@ import           Run.Target
 import           Parse.Madlib.TargetMacro
 import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
+import qualified Optimize.SortExpressions as SortExpressions
 import qualified Optimize.EtaReduction         as EtaReduction
 import qualified Optimize.EtaExpansion         as EtaExpansion
 import qualified Optimize.TCE                  as TCE
@@ -71,6 +73,7 @@ import qualified Infer.Monomorphize as MM
 import           Infer.MonomorphizationState
 import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
+import qualified AST.Core as Core
 
 
 
@@ -316,64 +319,63 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
            , (mempty, mempty)
            )
 
-  MonomorphizedAST path -> nonInput $ do
+  MonomorphizedProgram -> nonInput $ do
+    liftIO $ atomicModifyIORef monomorphizationState (const (mempty, ()))
+    liftIO $ atomicModifyIORef monomorphizationImports (const (mempty, ()))
+    liftIO $ atomicModifyIORef monomorphicMethods (const (mempty, ()))
+
+    mainFn <- MM.findExpByName (optEntrypoint options) "main"
+    case mainFn of
+      Just (fn, modulePath) -> do
+        let localState = makeLocalMonomorphizationState ()
+        MM.monomorphizeDefinition
+          (optTarget options)
+          True
+          MM.Env
+            { MM.envCurrentModulePath = modulePath
+            , MM.envSubstitution = mempty
+            , MM.envLocalState = localState
+            , MM.envEntrypointPath = optEntrypoint options
+            , MM.envLocalBindingsToExclude = mempty
+            }
+          "main"
+          (Slv.getType fn)
+
+        liftIO $ putStrLn "\nMonomorphization complete."
+
+      _ ->
+        return ()
+
     state <- liftIO $ readIORef monomorphizationState
+    imports <- liftIO $ readIORef monomorphizationImports
+    methods <- liftIO $ readIORef monomorphicMethods
 
-    -- TODO:
-    -- We should move all that to a separate Query and reset the state before
-    -- running it, so that it would happen again only if a source AST has
-    -- changed
-    when (Map.null state) $ do
-      mainFn <- MM.findExpByName (optEntrypoint options) "main"
-      case mainFn of
-        Just (fn, modulePath) -> do
-          let localState = makeLocalMonomorphizationState ()
-          MM.monomorphizeDefinition
-            (optTarget options)
-            True
-            MM.Env
-              { MM.envCurrentModulePath = modulePath
-              , MM.envSubstitution = mempty
-              , MM.envLocalState = localState
-              , MM.envEntrypointPath = optEntrypoint options
-              , MM.envLocalBindingsToExclude = mempty
-              }
-            "main"
-            (Slv.getType fn)
+    return ((state, imports, methods), (mempty, mempty))
 
-          liftIO $ putStrLn "\nMonomorphization complete."
-
-
-        _ ->
-          return ()
-
-      return ()
-
+  MonomorphizedAST path -> nonInput $ do
+    Rock.fetch MonomorphizedProgram
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
     merged <- liftIO $ MM.mergeResult ast
-
-    -- liftIO $ putStrLn $ ppShow ast
-    -- liftIO $ putStrLn $ ppShow merged
 
     return (merged, (mempty, mempty))
 
   CoreAST path -> nonInput $ do
-    slvAst <- Rock.fetch $ MonomorphizedAST path
+    monomorphicAST <- Rock.fetch $ MonomorphizedAST path
 
     case optTarget options of
       TLLVM -> do
-        coreAst <- astToCore False slvAst
-        let renamedAst       = Rename.renameAST coreAst
+        coreAst <- astToCore False monomorphicAST
+        let sortedAST = SortExpressions.sortASTExpressions coreAst
+        let renamedAst       = Rename.renameAST sortedAST
             -- reducedAst       = EtaReduction.reduceAST renamedAst
             tceResolved      = TCE.resolveAST renamedAst
             closureConverted = ClosureConvert.convertAST tceResolved
         return (closureConverted, (mempty, mempty))
 
       _ -> do
-        coreAst <- astToCore (optOptimized options) slvAst
-        -- let renamedAst       = Rename.renameAST coreAst
-            -- expanded       = EtaExpansion.expandAST renamedAst
-        let strippedAst      = stripAST coreAst
+        coreAst <- astToCore (optOptimized options) monomorphicAST
+        let renamedAst       = Rename.renameAST coreAst
+        let strippedAst      = stripAST renamedAst
             tceResolved      = TCE.resolveAST strippedAst
         return (tceResolved, (mempty, mempty))
 
@@ -420,7 +422,18 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((), (globalWarnings, mempty))
 
     else do
-      forM_ paths $ Rock.fetch . BuiltJSModule
+      -- forM_ paths $ Rock.fetch . BuiltJSModule
+      mainAST <- mergedMainAST (optEntrypoint options)
+      let mainASTWithSortedExps = SortExpressions.sortASTExpressions mainAST
+      paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+      jsModule <- liftIO $ Javascript.generateJSModule options paths mainASTWithSortedExps
+      let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
+
+      liftIO $ do
+        createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
+        writeFile computedOutputPath jsModule
+
+
       liftIO $ Javascript.generateInternalsModule options
 
       when (optBundle options) $ do
@@ -492,6 +505,27 @@ emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], 
 runInfer :: StateT InferState (ExceptT e m) a -> m (Either e (a, InferState))
 runInfer a =
   runExceptT (runStateT a InferState { extensibleRecordsToDerive = mempty, count = 0, errors = [], Slv.warnings = [] })
+
+
+mergedMainAST :: Rock.MonadFetch Query m => FilePath -> m Core.AST
+mergedMainAST entrypoint = do
+  paths <- Rock.fetch $ ModulePathsToBuild entrypoint
+  let pathsWithoutMain = filter (/= entrypoint) paths
+  astsToMerge <- mapM (Rock.fetch . CoreAST) pathsWithoutMain
+  mainAST <- Rock.fetch $ CoreAST entrypoint
+  let mainAst =
+        foldr
+          (\input dist ->
+              dist
+                { Core.atypedecls = Core.atypedecls input ++ Core.atypedecls dist
+                , Core.aexps = Core.aexps input ++ Core.aexps dist
+                , Core.aimports = []
+                }
+          )
+          mainAST
+          astsToMerge
+
+  return mainAst
 
 
 runCanonicalM :: ExceptT e (StateT Can.CanonicalState m) a -> m (Either e a, Can.CanonicalState)

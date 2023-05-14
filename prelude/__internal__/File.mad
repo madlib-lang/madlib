@@ -10,7 +10,7 @@ import { Wish } from "Wish"
 
 #-
 {Node}
-import fs from "fs"
+import prelude_file_fs from "fs"
 {/Node}
 -#
 
@@ -27,7 +27,7 @@ import fs from "fs"
 write :: String -> String -> Wish IOError {}
 export write = (path, content) => Wish(
   (bad, good) => #- {
-      fs.writeFile(path, content, (err) => {
+      prelude_file_fs.writeFile(path, content, (err) => {
         if (err) {
           bad(IOError.UnknownError);
         }
@@ -51,7 +51,7 @@ export write = (path, content) => Wish(
 writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, bytes) => Wish(
   (bad, good) => #- {
-      fs.writeFile(path, bytes, (err) => {
+      prelude_file_fs.writeFile(path, bytes, (err) => {
         if (err) {
           bad(IOError.UnknownError);
         }
@@ -73,7 +73,7 @@ export writeBytes = (path, bytes) => Wish(
 read :: String -> Wish IOError String
 export read = (path) => Wish(
   (bad, good) => #- {
-    fs.readFile(path, "utf8", (err, d) => {
+    prelude_file_fs.readFile(path, "utf8", (err, d) => {
       if (err) {
         bad(IOError.UnknownError);
       }
@@ -95,7 +95,7 @@ export read = (path) => Wish(
 readBytes :: String -> Wish IOError ByteArray
 export readBytes = (path) => Wish(
   (bad, good) => #- {
-    fs.readFile(path, (err, d) => {
+    prelude_file_fs.readFile(path, (err, d) => {
       if (err) {
         bad(IOError.UnknownError);
       }
@@ -118,7 +118,7 @@ export readBytes = (path) => Wish(
 exists :: String -> Wish {} Boolean
 export exists = (path) => Wish(
   (bad, good) => #- {
-    fs.access(path, fs.constants.F_OK, (err) => {
+    prelude_file_fs.access(path, prelude_file_fs.constants.F_OK, (err) => {
       if (err) {
         bad(null);
       } else {

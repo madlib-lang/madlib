@@ -4,24 +4,31 @@ import type { Maybe } from "Maybe"
 #iftarget js
 import { Just, Nothing } from "Maybe"
 
-encode :: String -> Maybe String
-export encode = (url) => #- {
+_encode :: (String -> Maybe String) -> Maybe String -> String -> Maybe String
+_encode = (just, nothing, url) => #- {
   try {
-    return Just(encodeURIComponent(url))
+    return just(encodeURIComponent(url))
   } catch(e) {
-    return Nothing
+    return nothing
+  }
+} -#
+
+encode :: String -> Maybe String
+export encode = (url) => _encode(Just, Nothing, url)
+
+
+_decode :: (String -> Maybe String) -> Maybe String -> String -> Maybe String
+_decode = (just, nothing, url) => #- {
+  try {
+    return just(decodeURIComponent(url))
+  } catch(e) {
+    return nothing
   }
 } -#
 
 
 decode :: String -> Maybe String
-export decode = (url) => #- {
-    try {
-      return Just(decodeURIComponent(url))
-    } catch(e) {
-      return Nothing
-    }
-  } -#
+export decode = (url) => _decode(Just, Nothing, url)
 
 #elseif llvm
 

@@ -235,23 +235,24 @@ getDefaultImportNames ast =
 findForeignModuleForImportedName :: String -> AST -> Maybe FilePath
 findForeignModuleForImportedName expName ast =
   let imports = aimports ast
-      found = List.find
-                (\case
-                  Untyped _ (DefaultImport (Untyped _ n) _ _) | n == expName ->
-                    True
+      found =
+        List.find
+          (\case
+            Untyped _ (DefaultImport (Untyped _ n) _ _) | n == expName ->
+              True
 
-                  Untyped _ (NamedImport names _ _) ->
-                    if expName `elem` (map getValue names) then
-                      True
-                    else
-                      False
+            Untyped _ (NamedImport names _ _) ->
+              if expName `elem` (map getValue names) then
+                True
+              else
+                False
 
-                  _ ->
-                    False
-                )
-                imports
+            _ ->
+              False
+          )
+          imports
   in  getImportAbsolutePath <$> found
-        
+
 
 
 getADTConstructors :: TypeDecl -> Maybe [Constructor]
@@ -556,6 +557,9 @@ collectAppArgs isFirst app = case app of
 
 isNamedAbs :: Exp -> Bool
 isNamedAbs exp = case exp of
+  Typed _ _ (Export e) ->
+    isNamedAbs e
+
   Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))) ->
     True
 

@@ -599,7 +599,9 @@ hasNumberPred ps = case ps of
 selectPredsForType :: [Pred] -> Type -> [Pred]
 selectPredsForType ps t = case ps of
   (p@(IsIn _ ts _) : more) ->
-    if head ts == t then
+    if null ts then
+      selectPredsForType more t
+    else if head ts == t then
       p : selectPredsForType more t
     else
       selectPredsForType more t
