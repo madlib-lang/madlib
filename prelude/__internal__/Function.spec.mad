@@ -160,7 +160,7 @@ test("both - false", (_) => assertEquals(
   false
 ))
 
-test("memoize - should not called the memoized function if called with the same argument", (_) => {
+test("memoize - should not call the memoized function if called with the same argument", (_) => {
   count = 0
 
   add :: Integer -> Integer

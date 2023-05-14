@@ -80,6 +80,8 @@ import qualified Utils.IO                      as IOUtils
 import Control.Monad.IO.Class
 import qualified Canonicalize.Env as CanEnv
 import qualified AST.Solved as Slv
+import Control.Exception (try, SomeException (SomeException))
+import LLVM.Exception (EncodeException, VerifyException)
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -169,6 +171,14 @@ gcMallocAtomic =
 applyPAP :: Operand
 applyPAP =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
+
+applyPAP1 :: Operand
+applyPAP1 =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) (AST.mkName "__applyPAP1__"))
+
+applyPAP2 :: Operand
+applyPAP2 =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType, boxType] False) (AST.mkName "__applyPAP2__"))
 
 dictCtor :: Operand
 dictCtor =
@@ -349,6 +359,18 @@ retrieveConstructorStructType _ symbolTable t =
 
         _ ->
           boxType
+
+retrieveConstructorMaxArity :: SymbolTable -> IT.Type -> Int
+retrieveConstructorMaxArity symbolTable t =
+  let astPath = IT.getTConPath t
+      tName   = IT.getTConName t
+      key     = astPath <> "__" <> tName
+  in  case Map.lookup key symbolTable of
+        Just (Symbol (ADTSymbol maxArity) _) ->
+          maxArity
+
+        _ ->
+          1
           -- error $ "type not found: "<>ppShow key<>"\nfound: "<>ppShow e<>"\nST: "<>ppShow symbolTable<>"\ncurrent module: "<>ppShow (envASTPath env)
 
 
@@ -519,7 +541,14 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       remainingArgs'' <- retrieveArgs (Core.getMetadata <$> remainingArgs) remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
-      ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
+      ret <-
+        if List.length remainingArgs''' == 1 then
+          call applyPAP1 $ (pap, []) : remainingArgs'''
+        else if List.length remainingArgs''' == 2 then
+          call applyPAP2 $ (pap, []) : remainingArgs'''
+        else
+          call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
+
       unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
@@ -694,12 +723,17 @@ generateExp env symbolTable exp = case exp of
           loaded <- load ptr' 0
           return (symbolTable, loaded, Just ptr)
 
-      Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
-        let constructedType = retrieveConstructorStructType env symbolTable t
-        -- Nullary constructors need to be called directly to retrieve the value
-        constructed   <- call fnPtr []
-        constructed'  <- safeBitcast constructed constructedType
-        return (symbolTable, constructed', Nothing)
+      Just (Symbol (ConstructorSymbol index 0) _) -> do
+        let maxArity = retrieveConstructorMaxArity symbolTable t
+        let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+
+          -- allocate memory for the structure
+        structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+        structPtr'    <- safeBitcast structPtr $ Type.ptr structType
+
+        -- store the constructor data in the struct
+        Monad.foldM_ (storeItem structPtr') () [(i64ConstOp (fromIntegral index), 0)]
+        return (symbolTable, structPtr', Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -1061,9 +1095,27 @@ generateExp env symbolTable exp = case exp of
 
         return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
 
-    Core.Typed _ area _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
-      Just (Symbol (ConstructorSymbol _ arity) fnOperand) ->
-        generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
+    Core.Typed (_ IT.:=> t) area _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
+      Just (Symbol (ConstructorSymbol index arity) fnOperand) -> do
+        let constructorType = IT.getReturnType t
+        let maxArity = retrieveConstructorMaxArity symbolTable constructorType
+
+        if List.length args == maxArity then do
+          -- optimize known calls to constructors to simple allocations without function call
+          args'   <- mapM (generateExp env { isLast = False } symbolTable) args
+          args''  <- retrieveArgs (Core.getMetadata <$> args) args'
+
+          let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+
+            -- allocate memory for the structure
+          structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+          structPtr'    <- safeBitcast structPtr $ Type.ptr structType
+
+          -- store the constructor data in the struct
+          Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
+          return (symbolTable, structPtr', Nothing)
+        else
+          generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
 
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
         generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
@@ -1084,7 +1136,13 @@ generateExp env symbolTable exp = case exp of
         args'     <- mapM (generateExp env { isLast = False } symbolTable) args
         boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
-        ret       <- call applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
+        ret       <-
+          if argsApplied == 1 then
+            call applyPAP1 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
+          else if argsApplied == 2 then
+            call applyPAP2 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
+          else
+            call applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed   <- unbox env symbolTable qt ret
         return (symbolTable, unboxed, Just ret)
 
@@ -1100,7 +1158,13 @@ generateExp env symbolTable exp = case exp of
       args'  <- mapM (generateExp env { isLast = False } symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
-      ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
+      ret <-
+        if List.length args == 1 then
+            call applyPAP1 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
+        else if List.length args == 2 then
+            call applyPAP2 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
+        else
+          call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
       unboxed <- unbox env symbolTable qt ret
       return (symbolTable, unboxed, Just ret)
 
@@ -2127,6 +2191,8 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
 
   externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
+  extern (AST.mkName "__applyPAP2__")                                [boxType, boxType, boxType] boxType
+  extern (AST.mkName "__applyPAP1__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__process__internal__typedHoleReached")  [] Type.void
 
   extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
@@ -2251,8 +2317,11 @@ buildObjectFile astModule = do
           mod'' <-
             withPassManager
             defaultCuratedPassSetSpec
-              { optLevel                = Just 3
+              { optLevel = Just 3
               , useInlinerWithThreshold = Just 200
+              , simplifyLibCalls = Just True
+              , loopVectorize = Just True
+              , superwordLevelParallelismVectorize = Just True
               }
             $ \pm -> do
               runPassManager pm mod'
@@ -2295,7 +2364,7 @@ buildTarget options staticLibs entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
-        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
+        "clang++ -flto -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

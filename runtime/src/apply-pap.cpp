@@ -1,4 +1,4 @@
-// generated automatically on the 2023-04-29 at 21:31:32 UTC
+// generated automatically on the 2023-05-10 at 13:33:31 UTC
 #include <gc.h>
 #include "apply-pap.hpp"
 #include <cstdarg>
@@ -10,6 +10,61 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void *__applyPAP1__(PAP_t *pap, void *arg1) {
+  int32_t arity = pap->arity;
+  if (arity == 1) {
+    void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+    return fn(arg1);
+  }
+
+  int32_t ENV_SIZE = arity - pap->missingArgCount;
+  if (ENV_SIZE == 1 && arity == 2) {
+    void *(*fn)(void *, void *) = (void*(*)(void *, void *))pap->fn;
+    void **env = (void **)pap->env;
+    return fn(env[0], arg1);
+  }
+
+  if (ENV_SIZE == 2 && arity == 3) {
+    void *(*fn)(void *, void *, void *) = (void*(*)(void *, void *, void *))pap->fn;
+    void **env = (void **)pap->env;
+    return fn(env[0], env[1], arg1);
+  }
+
+  return __applyPAP__(pap, 1, arg1);
+}
+
+void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2) {
+  int32_t arity = pap->arity;
+  int32_t missingArgs = pap->missingArgCount;
+  if (missingArgs <= 2) {
+    if (arity == 1) {
+        void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+        return __applyPAP1__((PAP_t*) fn(arg1), arg2);
+    } 
+
+    int32_t ENV_SIZE = arity - missingArgs;
+    if (ENV_SIZE == 0 && arity == 2) {
+      void *(*fn)(void *, void *) = (void*(*)(void *, void *))pap->fn;
+      return fn(arg1, arg2);
+    }
+
+    if (ENV_SIZE == 1 && arity == 3) {
+      void *(*fn)(void *, void *, void *) = (void*(*)(void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], arg1, arg2);
+    }
+
+    if (ENV_SIZE == 2 && arity == 4) {
+      void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], env[1], arg1, arg2);
+    }
+  }
+
+  return __applyPAP__(pap, 2, arg1, arg2);
+}
+
 void *__applyPAP__(void *pap, int32_t argc, ...) {
   va_list argv;
   va_start(argv, argc);

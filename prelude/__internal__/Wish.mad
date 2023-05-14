@@ -10,7 +10,7 @@ import {} from "Number"
  * cold and will only be run when fulfilled.
  */
 
-export type Wish e a = Wish((e -> f) -> (a -> b) -> {})
+export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {})
 
 /**
  * The functor instance of Wish provides a way to map over the value it contains.
@@ -186,7 +186,7 @@ export discardError = (recover, wish) => Wish((_, goodCB) => where(wish) {
 
 #iftarget js
 
-fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
+fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
@@ -203,7 +203,7 @@ export after = (time, a) => Wish((_, goodCB) => #- {
 
 #elseif llvm
 
-fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
+fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) =>

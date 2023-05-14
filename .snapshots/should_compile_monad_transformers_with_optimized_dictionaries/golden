@@ -1,136 +1,25 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
-export let WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
-export let Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
-export let StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
-global.Ι6 = {};
-global.Ι5 = {};
-global.Ι3 = {};
-global.Ι2 = {};
-global.Ι1 = {};
-global.Ι9 = {};
-global.Ι4 = {};
-global.Ι8 = {};
-Ι10['τ12'] = {};
-Ι10['τ12']['inspect'] = () => (Ι10τ24) => (Ι10τ26) => (Ι10τ25) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "WriterT" && true) {
-    let a0 = __x__.__args[0];
-    return `WriterT(` + Ι10τ24.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Ι10['τ10'] = {};
-Ι10['τ10']['inspect'] = () => (Ι10τ27) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Identity" && true) {
-    let a0 = __x__.__args[0];
-    return `Identity(` + Ι10τ27.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Ι10['τ9'] = {};
-Ι10['τ9']['inspect'] = () => (Ι10τ30) => (Ι10τ29) => (Ι10τ28) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "StateT" && true) {
-    let a0 = __x__.__args[0];
-    return `StateT(` + Ι10.τ20.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Ι6['τ11'] = {};
-Ι6['τ11']['assoc'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
-Ι5['τ11'] = {};
-Ι5['τ11']['mappend'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
-Ι5['τ11']['mempty'] = () => (null);
-Ι3['τ12'] = {};
-Ι3['τ12']['map'] = () => (Ι3τ31) => (f => m => WriterT(Ι3τ31.map()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return ([f(a), w]);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(m))));
-Ι2['τ12'] = {};
-Ι2['τ12']['ap'] = () => (Ι6τ33) => (Ι5τ33) => (Ι3τ32) => (Ι2τ32) => (mf => mm => WriterT(liftA2(Ι3τ32)(Ι2τ32)((x1 => x2 => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [b,ww] = __x__;
-    return ([a(b), Ι5τ33.mappend()(w)(ww)]);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(x2);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(x1)))(runWriterT(mf))(runWriterT(mm))));
-Ι2['τ12']['pure'] = () => (Ι6τ35) => (Ι5τ35) => (Ι3τ34) => (Ι2τ34) => (x => WriterT(Ι2τ34.pure()(([x, Ι5τ35.mempty()]))));
-Ι1['τ12'] = {};
-Ι1['τ12']['chain'] = () => (Ι3τ36) => (Ι2τ36) => (Ι1τ36) => (Ι6τ37) => (Ι5τ37) => (f => m => WriterT(Ι1τ36.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return Ι1τ36.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [b,ww] = __x__;
-    return Ι1τ36.of()(([b, Ι5τ37.mappend()(w)(ww)]));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(f(a)));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(m))));
-Ι1['τ12']['of'] = () => (Ι3τ38) => (Ι2τ38) => (Ι1τ38) => (Ι6τ39) => (Ι5τ39) => Ι2.τ12.pure()(Ι6τ39)(Ι5τ39)(Ι3τ38)(Ι2τ38);
-Ι9['τ40'] = {};
-Ι9['τ40']['lift'] = () => (Ι6τ42) => (Ι5τ42) => (Ι3τ41) => (Ι2τ41) => (Ι1τ41) => (m => WriterT(Ι1τ41.chain()((a => Ι1τ41.of()(([a, Ι5τ42.mempty()]))))(m)));
-Ι3['τ10'] = {};
-Ι3['τ10']['map'] = () => (f => m => Identity(f(runIdentity(m))));
-Ι2['τ10'] = {};
-Ι2['τ10']['ap'] = () => (mf => mm => Identity(runIdentity(mf)(runIdentity(mm))));
-Ι2['τ10']['pure'] = () => Identity;
-Ι1['τ10'] = {};
-Ι1['τ10']['chain'] = () => (f => mm => f(runIdentity(mm)));
-Ι1['τ10']['of'] = () => Ι2.τ10.pure();
-Ι3['τ9'] = {};
-Ι3['τ9']['map'] = () => (Ι3τ43) => (f => m => StateT((s => Ι3τ43.map()((__x__ => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__of__1 = (a => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__of__2()(([a, s])))));
+export let __568c75136c0c369c440814a7af59434a__put__40 = (s => __568c75136c0c369c440814a7af59434a__StateT((_ => __568c75136c0c369c440814a7af59434a__of__23()(([({ __constructor: "Unit", __args: [] }), s])))));
+export let __568c75136c0c369c440814a7af59434a__mempty__4 = (_ => (null));
+export let __568c75136c0c369c440814a7af59434a__of__2 = (_ => __568c75136c0c369c440814a7af59434a__pure__3);
+export let __568c75136c0c369c440814a7af59434a__of__23 = (_ => __568c75136c0c369c440814a7af59434a__pure__24);
+export let __568c75136c0c369c440814a7af59434a__pure__21 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__20 = (_ => __568c75136c0c369c440814a7af59434a__pure__21());
+export let __568c75136c0c369c440814a7af59434a__pure__5 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__11 = (_ => __568c75136c0c369c440814a7af59434a__pure__5());
+export let __568c75136c0c369c440814a7af59434a__pure__25 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__29 = (_ => __568c75136c0c369c440814a7af59434a__pure__25());
+export let __568c75136c0c369c440814a7af59434a__mappend__10 = (xs1 => xs2 =>  xs1.concat(xs2) );
+export let __568c75136c0c369c440814a7af59434a__tell__18 = (_P_ => __568c75136c0c369c440814a7af59434a__lift__22(__568c75136c0c369c440814a7af59434a__tell__19(_P_)));
+export let __568c75136c0c369c440814a7af59434a__tell__19 = (v => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__of__20()(([({ __constructor: "Unit", __args: [] }), v]))));
+export let __568c75136c0c369c440814a7af59434a__pure__3 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__5()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__pure__24 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__25()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__map__14 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__map__15((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return ([f(a), ss]);
@@ -140,59 +29,176 @@ global.Ι8 = {};
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__)))(runStateT(m)(s)))));
-Ι2['τ9'] = {};
-Ι2['τ9']['ap'] = () => (Ι3τ44) => (Ι2τ44) => (Ι1τ44) => (mf => mm => StateT((s => Ι1τ44.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [f,ss] = __x__;
-    return Ι1τ44.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [m,sss] = __x__;
-    return Ι1τ44.of()(([f(m), sss]));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runStateT(mm)(ss));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runStateT(mf)(s)))));
-Ι2['τ9']['pure'] = () => (Ι3τ45) => (Ι2τ45) => (Ι1τ45) => (a => StateT((s => Ι1τ45.of()(([a, s])))));
-Ι1['τ9'] = {};
-Ι1['τ9']['chain'] = () => (Ι3τ46) => (Ι2τ46) => (Ι1τ46) => (f => m => StateT((s => Ι1τ46.chain()((__x__ => ((__x__) => {
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__6 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__8((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
-    return runStateT(f(a))(ss);
+    return __568c75136c0c369c440814a7af59434a__runStateT__7(f(a))(ss);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__)))(runStateT(m)(s)))));
-Ι1['τ9']['of'] = () => (Ι3τ47) => (Ι2τ47) => (Ι1τ47) => (a => StateT((s => Ι1τ47.of()(([a, s])))));
-Ι9['τ48'] = {};
-Ι9['τ48']['lift'] = () => (Ι3τ49) => (Ι2τ49) => (Ι1τ49) => (m => StateT((s => Ι1τ49.chain()((a => Ι1τ49.of()(([a, s]))))(m))));
-Ι4['τ13'] = {};
-Ι4['τ13']['tell'] = () => (Ι3τ50) => (Ι2τ50) => (Ι1τ50) => (Ι6τ51) => (Ι5τ51) => (v => WriterT(Ι1τ50.of()(([({ __constructor: "Unit", __args: [] }), v]))));
-Ι4['τ14'] = {};
-Ι4['τ14']['tell'] = () => (Ι3τ52) => (Ι2τ52) => (Ι6τ54) => (Ι1τ52) => (Ι5τ54) => (Ι4τ53) => (Ι3τ52) => (Ι2τ52) => (Ι1τ52) => (Ι6τ54) => (Ι5τ54) => (_P_ => Ι9.τ48.lift()(Ι3τ52)(Ι2τ52)(Ι1τ52)(Ι4τ53.tell()(_P_)));
-Ι8['τ15'] = {};
-Ι8['τ15']['get'] = () => (Ι3τ55) => (Ι2τ55) => (Ι1τ55) => StateT((s => Ι1τ55.of()(([s, s]))));
-Ι8['τ15']['modify'] = () => (Ι3τ56) => (Ι2τ56) => (Ι1τ56) => (f => StateT((s => Ι1τ56.of()(([({ __constructor: "Unit", __args: [] }), f(s)])))));
-Ι8['τ15']['put'] = () => (Ι3τ57) => (Ι2τ57) => (Ι1τ57) => (s => StateT((_ => Ι1τ57.of()(([({ __constructor: "Unit", __args: [] }), s])))));
-Ι8['τ58'] = {};
-Ι8['τ58']['get'] = () => (Ι3τ59) => (Ι2τ59) => (Ι1τ59) => (Ι8τ61) => (Ι3τ59) => (Ι2τ59) => (Ι1τ59) => (Ι6τ60) => (Ι5τ60) => Ι9.τ40.lift()(Ι6τ60)(Ι5τ60)(Ι3τ59)(Ι2τ59)(Ι1τ59)(Ι8τ61.get());
-Ι8['τ58']['modify'] = () => (Ι3τ62) => (Ι2τ62) => (Ι1τ62) => (Ι8τ64) => (Ι3τ62) => (Ι2τ62) => (Ι1τ62) => (Ι6τ63) => (Ι5τ63) => (_P_ => Ι9.τ40.lift()(Ι6τ63)(Ι5τ63)(Ι3τ62)(Ι2τ62)(Ι1τ62)(Ι8τ64.modify()(_P_)));
-Ι8['τ58']['put'] = () => (Ι3τ65) => (Ι2τ65) => (Ι1τ65) => (Ι8τ67) => (Ι3τ65) => (Ι2τ65) => (Ι1τ65) => (Ι6τ66) => (Ι5τ66) => (_P_ => Ι9.τ40.lift()(Ι6τ66)(Ι5τ66)(Ι3τ65)(Ι2τ65)(Ι1τ65)(Ι8τ67.put()(_P_)));
-export let andDo = (Ι3τ1) => (Ι2τ1) => (Ι1τ1) => (b => a => Ι1τ1.chain()((_ => b))(a));
-export let runWriterT = (__x__ => ((__x__) => {
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__34 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__36((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__42 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__43((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__7(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__38 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__39((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__26 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__32((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__27(m))));
+export let __568c75136c0c369c440814a7af59434a__map__15 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__map__16((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return ([f(a), w]);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__8 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__36 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__37((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__43 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__44((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__39 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__32 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__33(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__12 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__37 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
+export let __568c75136c0c369c440814a7af59434a__map__16 = (f => m => __568c75136c0c369c440814a7af59434a__Identity(f(__568c75136c0c369c440814a7af59434a__runIdentity__13(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__44 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__30 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
+export let __568c75136c0c369c440814a7af59434a__lift__22 = (m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__26((a => __568c75136c0c369c440814a7af59434a__of__23()(([a, s]))))(m))));
+export let __568c75136c0c369c440814a7af59434a__andDo__41 = (b => a => __568c75136c0c369c440814a7af59434a__chain__42((_ => b))(a));
+export let __568c75136c0c369c440814a7af59434a__runWriterT__27 = (__x__ => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let m = __x__.__args[0];
     return m;
@@ -203,8 +209,29 @@ export let runWriterT = (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-let liftA2 = (Ι3τ2) => (Ι2τ2) => (f => x1 => x2 => Ι2τ2.ap()(Ι3τ2.map()(f)(x1))(x2));
-export let runIdentity = (__x__ => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runWriterT__9 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "WriterT" && true) {
+    let m = __x__.__args[0];
+    return m;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runWriterT__28 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "WriterT" && true) {
+    let m = __x__.__args[0];
+    return m;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runIdentity__33 = (__x__ => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a = __x__.__args[0];
     return a;
@@ -215,7 +242,29 @@ export let runIdentity = (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-export let runStateT = (m => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runIdentity__13 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "Identity" && true) {
+    let a = __x__.__args[0];
+    return a;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runIdentity__31 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "Identity" && true) {
+    let a = __x__.__args[0];
+    return a;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runStateT__7 = (m => ((__x__) => {
   if (__x__.__constructor === "StateT" && true) {
     let f = __x__.__args[0];
     return (a => f(a));
@@ -226,15 +275,26 @@ export let runStateT = (m => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m));
-let hep = (Ι3τ5) => (Ι2τ5) => (Ι6τ4) => (Ι1τ5) => (Ι5τ4) => (Ι4τ3) => Ι4τ3.tell();
-let sumAndLog = (Ι3τ6) => (Ι2τ6) => (Ι1τ6) => (Ι4τ7) => (_P_ => Ι1τ6.chain()((x => andDo(Ι3τ6)(Ι2τ6)(Ι1τ6)(Ι1τ6.of()(x))(Ι4τ7.tell()(({ v: `Summed 18`, n: null })))))(Ι1τ6.chain()((x => Ι1τ6.of()(Ι7.τ8.+()(x)(18))))(Ι1τ6.of()(_P_))));
-let runStack = (x => _P_ => runIdentity(runWriterT((m => runStateT(m)(x))(_P_))));
-let main = (_ => {
-    runStack(37)(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))(sumAndLog(λ3(Ι3.τ9, [λ3(Ι3.τ12, [Ι3.τ10])]))(λ3(Ι2.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(λ3(Ι1.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(λ3(Ι4.τ14, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), Ι6.τ11, λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι5.τ11, λ3(Ι4.τ13, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι6.τ11, Ι5.τ11])))(andDo(λ3(Ι3.τ9, [λ3(Ι3.τ12, [Ι3.τ10])]))(λ3(Ι2.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(λ3(Ι1.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι1.τ9.of()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))(5))(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))((_ => hep(λ3(Ι3.τ9, [λ3(Ι3.τ12, [Ι3.τ10])]))(λ3(Ι2.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι6.τ11)(λ3(Ι1.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι5.τ11)(λ3(Ι4.τ14, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), Ι6.τ11, λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι5.τ11, λ3(Ι4.τ13, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι6.τ11, Ι5.τ11]))(({ v: `HAP`, n: null }))))(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))((_ => Ι8.τ15.put()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))(157)))(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))((_ => hep(λ3(Ι3.τ9, [λ3(Ι3.τ12, [Ι3.τ10])]))(λ3(Ι2.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι6.τ11)(λ3(Ι1.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι5.τ11)(λ3(Ι4.τ14, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), Ι6.τ11, λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι5.τ11, λ3(Ι4.τ13, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι6.τ11, Ι5.τ11]))(({ v: `HIP`, n: null }))))(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))((_ => hep(λ3(Ι3.τ9, [λ3(Ι3.τ12, [Ι3.τ10])]))(λ3(Ι2.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι6.τ11)(λ3(Ι1.τ9, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11])]))(Ι5.τ11)(λ3(Ι4.τ14, [λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), Ι6.τ11, λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι5.τ11, λ3(Ι4.τ13, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), λ3(Ι3.τ12, [Ι3.τ10]), λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]), λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]), Ι6.τ11, Ι5.τ11]))(({ v: `HOP`, n: null }))))(Ι3.τ9.map()(λ3(Ι3.τ12, [Ι3.τ10]))((x => Ι7.τ8.*()(x)(17)))(Ι1.τ9.chain()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))((x => Ι1.τ9.of()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))(Ι7.τ8.*()(29)(x))))(Ι1.τ9.of()(λ3(Ι3.τ12, [Ι3.τ10]))(λ3(Ι2.τ12, [Ι6.τ11, Ι5.τ11, Ι3.τ10, Ι2.τ10]))(λ3(Ι1.τ12, [Ι3.τ10, Ι2.τ10, Ι1.τ10, Ι6.τ11, Ι5.τ11]))(3))))))))));
+export let __568c75136c0c369c440814a7af59434a__runStateT__35 = (m => ((__x__) => {
+  if (__x__.__constructor === "StateT" && true) {
+    let f = __x__.__args[0];
+    return (a => f(a));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(m));
+let __568c75136c0c369c440814a7af59434a__hep__17 = __568c75136c0c369c440814a7af59434a__tell__18;
+let __568c75136c0c369c440814a7af59434a__sumAndLog__45 = (_P_ => __568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(x))(__568c75136c0c369c440814a7af59434a__tell__18(({ v: `Summed 18`, n: null })))))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((x + 18))))(__568c75136c0c369c440814a7af59434a__of__1(_P_))));
+let __568c75136c0c369c440814a7af59434a__runStack__46 = (x => _P_ => __568c75136c0c369c440814a7af59434a__runIdentity__13(__568c75136c0c369c440814a7af59434a__runWriterT__9(__568c75136c0c369c440814a7af59434a__runStateT__7(_P_)(x))));
+let __568c75136c0c369c440814a7af59434a__main = (_ => {
+    __568c75136c0c369c440814a7af59434a__runStack__46(37)(__568c75136c0c369c440814a7af59434a__chain__6(__568c75136c0c369c440814a7af59434a__sumAndLog__45)(__568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(5))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HAP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__put__40(157)))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HIP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__34((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HOP`, n: null }))))(__568c75136c0c369c440814a7af59434a__map__14((x => (x * 17)))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((29 * x))))(__568c75136c0c369c440814a7af59434a__of__1(3))))))))));
     return ({ __constructor: "Unit", __args: [] });
 });
-export default { andDo, runWriterT, runIdentity, runStateT, WriterT, Identity, StateT };
-const makeArgs = () => {
+export default { __568c75136c0c369c440814a7af59434a__of__1, __568c75136c0c369c440814a7af59434a__put__40, __568c75136c0c369c440814a7af59434a__mempty__4, __568c75136c0c369c440814a7af59434a__of__2, __568c75136c0c369c440814a7af59434a__of__23, __568c75136c0c369c440814a7af59434a__pure__21, __568c75136c0c369c440814a7af59434a__of__20, __568c75136c0c369c440814a7af59434a__pure__5, __568c75136c0c369c440814a7af59434a__of__11, __568c75136c0c369c440814a7af59434a__pure__25, __568c75136c0c369c440814a7af59434a__of__29, __568c75136c0c369c440814a7af59434a__mappend__10, __568c75136c0c369c440814a7af59434a__tell__18, __568c75136c0c369c440814a7af59434a__tell__19, __568c75136c0c369c440814a7af59434a__pure__3, __568c75136c0c369c440814a7af59434a__pure__24, __568c75136c0c369c440814a7af59434a__map__14, __568c75136c0c369c440814a7af59434a__chain__6, __568c75136c0c369c440814a7af59434a__chain__34, __568c75136c0c369c440814a7af59434a__chain__42, __568c75136c0c369c440814a7af59434a__chain__38, __568c75136c0c369c440814a7af59434a__chain__26, __568c75136c0c369c440814a7af59434a__map__15, __568c75136c0c369c440814a7af59434a__chain__8, __568c75136c0c369c440814a7af59434a__chain__36, __568c75136c0c369c440814a7af59434a__chain__43, __568c75136c0c369c440814a7af59434a__chain__39, __568c75136c0c369c440814a7af59434a__chain__32, __568c75136c0c369c440814a7af59434a__chain__12, __568c75136c0c369c440814a7af59434a__chain__37, __568c75136c0c369c440814a7af59434a__map__16, __568c75136c0c369c440814a7af59434a__chain__44, __568c75136c0c369c440814a7af59434a__chain__30, __568c75136c0c369c440814a7af59434a__lift__22, __568c75136c0c369c440814a7af59434a__andDo__41, __568c75136c0c369c440814a7af59434a__runWriterT__27, __568c75136c0c369c440814a7af59434a__runWriterT__9, __568c75136c0c369c440814a7af59434a__runWriterT__28, __568c75136c0c369c440814a7af59434a__runIdentity__33, __568c75136c0c369c440814a7af59434a__runIdentity__13, __568c75136c0c369c440814a7af59434a__runIdentity__31, __568c75136c0c369c440814a7af59434a__runStateT__7, __568c75136c0c369c440814a7af59434a__runStateT__35, __568c75136c0c369c440814a7af59434a__WriterT, __568c75136c0c369c440814a7af59434a__Identity, __568c75136c0c369c440814a7af59434a__StateT };
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -245,4 +305,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__568c75136c0c369c440814a7af59434a__main(__makeArgs())

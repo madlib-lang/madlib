@@ -37,19 +37,22 @@ data Metadata
   | ReferenceAllocation
   | ReferenceStore
   | ReferenceArgument
+  | MutatingFunctionRef
   deriving(Eq, Show, Ord, Generic, Hashable)
 
+-- TODO: remove Area, we don't care anymore at this stage
+-- And make qual types simple types
 data Core a
   = Typed (Ty.Qual Ty.Type) Area [Metadata] a
   | Untyped Area [Metadata] a
-  deriving(Eq, Show, Ord, Generic, Hashable)
+  deriving(Eq, Ord, Generic, Hashable)
 
--- instance Show a => Show (Core a) where
---   show x = case x of
---     Typed _ _ _ a ->
---       show a
---     Untyped _ _ a ->
---       show a
+instance Show a => Show (Core a) where
+  show x = case x of
+    Typed _ _ _ a ->
+      show a
+    Untyped _ _ a ->
+      show a
 
 data AST =
   AST
@@ -246,6 +249,14 @@ mapListItem f item = case item of
 
   _ ->
     item
+
+mapIs :: (Exp -> Exp) -> Is -> Is
+mapIs f is = case is of
+  Typed qt area metadata (Is pat e) ->
+    Typed qt area metadata (Is pat (f e))
+
+  _ ->
+    is
 
 mapRecordField :: (Exp -> Exp) -> Field -> Field
 mapRecordField f field = case field of
@@ -445,6 +456,9 @@ isReferenceParameter = elem ReferenceParameter
 
 isReferenceArgument :: [Metadata] -> Bool
 isReferenceArgument = elem ReferenceArgument
+
+isReferenceToMutatingFunction :: [Metadata] -> Bool
+isReferenceToMutatingFunction = elem MutatingFunctionRef
 
 getImportName :: Core ImportInfo -> String
 getImportName info = case info of

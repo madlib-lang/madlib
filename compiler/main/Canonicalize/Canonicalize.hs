@@ -43,6 +43,10 @@ mainTyping = Src.Source emptyArea Src.TargetAll (Src.TRArr (Src.Source emptyArea
 updateMainFunction :: Env.Env -> Target -> Area -> Src.Exp -> Src.Typing -> CanonicalM Can.Exp
 updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assignment mainName main)) typing = do
   sc        <- typingToScheme env typing
+  mainSC    <- typingToScheme env mainTyping
+
+  when (sc /= mainSC) $ throwError $ CompilationError MainInvalidTyping (Context (Env.envCurrentPath env) initialArea)
+
   canTyping <- canonicalizeTyping typing
   main'     <- canonicalize env target main
   if Src.isAbs main then

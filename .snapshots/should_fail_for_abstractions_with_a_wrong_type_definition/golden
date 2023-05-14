@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=> TVar (TV "-" Star))

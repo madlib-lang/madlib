@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -192,47 +199,7 @@
                                                                       (TC "Float" Star) "prelude"))
                                                                 (TCon (TC "Float" Star) "prelude")))
                                                         (Area (Loc 59 3 11) (Loc 60 3 12))
-                                                        (Placeholder
-                                                           ( MethodRef "Number" "+" False
-                                                           , [ TCon (TC "Float" Star) "prelude" ]
-                                                           )
-                                                           (Typed
-                                                              ([ IsIn
-                                                                   "Number"
-                                                                   [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                   Nothing
-                                                               ] :=>
-                                                                 TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "(->)"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "prelude")
-                                                                      (TCon
-                                                                         (TC "Float" Star)
-                                                                         "prelude"))
-                                                                   (TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "(->)"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun Star Star)))
-                                                                            "prelude")
-                                                                         (TCon
-                                                                            (TC "Float" Star)
-                                                                            "prelude"))
-                                                                      (TCon
-                                                                         (TC "Float" Star)
-                                                                         "prelude")))
-                                                              (Area (Loc 59 3 11) (Loc 60 3 12))
-                                                              (Var "+" False))))
+                                                        (Var "+" False))
                                                      (Typed
                                                         ([ IsIn
                                                              "Number"
@@ -315,47 +282,7 @@
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 83 4 21) (Loc 84 4 22))
-                                                        (Placeholder
-                                                           ( MethodRef "Number" ">" False
-                                                           , [ TCon (TC "Float" Star) "prelude" ]
-                                                           )
-                                                           (Typed
-                                                              ([ IsIn
-                                                                   "Number"
-                                                                   [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                   Nothing
-                                                               ] :=>
-                                                                 TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "(->)"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "prelude")
-                                                                      (TCon
-                                                                         (TC "Float" Star)
-                                                                         "prelude"))
-                                                                   (TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "(->)"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun Star Star)))
-                                                                            "prelude")
-                                                                         (TCon
-                                                                            (TC "Float" Star)
-                                                                            "prelude"))
-                                                                      (TCon
-                                                                         (TC "Boolean" Star)
-                                                                         "prelude")))
-                                                              (Area (Loc 83 4 21) (Loc 84 4 22))
-                                                              (Var ">" False))))
+                                                        (Var ">" False))
                                                      (Typed
                                                         ([ IsIn
                                                              "Number"
@@ -479,55 +406,7 @@
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 119 5 32) (Loc 120 5 33))
-                                                              (Placeholder
-                                                                 ( MethodRef "Number" "*" False
-                                                                 , [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                 )
-                                                                 (Typed
-                                                                    ([ IsIn
-                                                                         "Number"
-                                                                         [ TCon
-                                                                             (TC "Float" Star)
-                                                                             "prelude"
-                                                                         ]
-                                                                         Nothing
-                                                                     ] :=>
-                                                                       TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "(->)"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "prelude")
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude"))
-                                                                         (TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC "Float" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude")))
-                                                                    (Area
-                                                                       (Loc 119 5 32)
-                                                                       (Loc 120 5 33))
-                                                                    (Var "*" False))))
+                                                              (Var "*" False))
                                                            (Typed
                                                               ([ IsIn
                                                                    "Number"
@@ -627,55 +506,7 @@
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 129 5 42) (Loc 130 5 43))
-                                                              (Placeholder
-                                                                 ( MethodRef "Number" "/" False
-                                                                 , [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                 )
-                                                                 (Typed
-                                                                    ([ IsIn
-                                                                         "Number"
-                                                                         [ TCon
-                                                                             (TC "Float" Star)
-                                                                             "prelude"
-                                                                         ]
-                                                                         Nothing
-                                                                     ] :=>
-                                                                       TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "(->)"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "prelude")
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude"))
-                                                                         (TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC "Float" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude")))
-                                                                    (Area
-                                                                       (Loc 129 5 42)
-                                                                       (Loc 130 5 43))
-                                                                    (Var "/" False))))
+                                                              (Var "/" False))
                                                            (Typed
                                                               ([ IsIn
                                                                    "Number"
@@ -776,38 +607,7 @@
                                                              (TCon (TC "Float" Star) "prelude"))
                                                           (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 155 6 23) (Loc 157 6 25))
-                                                  (Placeholder
-                                                     ( MethodRef "Eq" "==" False
-                                                     , [ TCon (TC "Float" Star) "prelude" ]
-                                                     )
-                                                     (Typed
-                                                        ([ IsIn
-                                                             "Eq"
-                                                             [ TCon (TC "Float" Star) "prelude" ]
-                                                             Nothing
-                                                         ] :=>
-                                                           TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TCon (TC "Float" Star) "prelude"))
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TCon
-                                                                      (TC "Float" Star) "prelude"))
-                                                                (TCon
-                                                                   (TC "Boolean" Star) "prelude")))
-                                                        (Area (Loc 155 6 23) (Loc 157 6 25))
-                                                        (Var "==" False))))
+                                                  (Var "==" False))
                                                (Typed
                                                   ([ IsIn
                                                        "Eq"
@@ -890,62 +690,26 @@
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 151 6 19) (Loc 152 6 20))
-                                                              (Placeholder
-                                                                 ( MethodRef "Number" "/" False
-                                                                 , [ TCon
-                                                                       (TC "Float" Star) "prelude"
-                                                                   ]
-                                                                 )
-                                                                 (Typed
-                                                                    ([ IsIn
-                                                                         "Number"
-                                                                         [ TCon
-                                                                             (TC "Float" Star)
-                                                                             "prelude"
-                                                                         ]
-                                                                         Nothing
-                                                                     ] :=>
-                                                                       TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "(->)"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "prelude")
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude"))
-                                                                         (TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC "Float" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "Float" Star)
-                                                                               "prelude")))
-                                                                    (Area
-                                                                       (Loc 151 6 19)
-                                                                       (Loc 152 6 20))
-                                                                    (Var "/" False))))
+                                                              (Var "/" False))
                                                            (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 151 6 19)
+                                                                         (Loc 152 6 20)))
+                                                               , IsIn
+                                                                   "Number"
+                                                                   [ TCon
                                                                        (TC "Integer" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 142 6 10)
+                                                                         (Loc 150 6 18)))
                                                                ] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 142 6 10) (Loc 150 6 18))

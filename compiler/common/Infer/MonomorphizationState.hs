@@ -52,6 +52,7 @@ data MonomorphizationRequest
   = MonomorphizationRequest
   { mrIndex :: Int
   , mrResult :: Maybe Exp
+  , mrIsNullaryMethod :: Bool
   }
   deriving(Eq, Ord, Show, Generic, Hashable)
 
@@ -81,31 +82,31 @@ makeMonomorphizedName fnName modulePath t = do
     Nothing ->
       return fnName
 
-newRequest :: String -> FilePath -> Type -> IO String
-newRequest fnName modulePath t = do
+newRequest :: String -> FilePath -> Bool -> Type -> IO String
+newRequest fnName modulePath isNullaryMethod t = do
   atomicModifyIORef
     monomorphizationState
     (\state ->
       let nextIndex = Map.size state
           fnId = FunctionId fnName modulePath t
-          req = MonomorphizationRequest nextIndex Nothing
+          req = MonomorphizationRequest nextIndex Nothing isNullaryMethod
       in  (Map.insert fnId req state, ())
     )
 
   makeMonomorphizedName fnName modulePath t
 
-setRequestResult :: String -> FilePath -> Type -> Exp -> IO ()
-setRequestResult fnName modulePath t result = do
+setRequestResult :: String -> FilePath -> Bool -> Type -> Exp -> IO ()
+setRequestResult fnName modulePath isNullaryMethod t result = do
   atomicModifyIORef
     monomorphizationState
     (\state ->
       let fnId = FunctionId fnName modulePath t
           updatedReq = case Map.lookup fnId state of
             Just req ->
-              req{ mrResult = Just result }
+              req{ mrResult = Just result, mrIsNullaryMethod = isNullaryMethod }
 
             Nothing ->
-              MonomorphizationRequest (-1) (Just result)
+              MonomorphizationRequest (-1) (Just result) isNullaryMethod
           updatedState = Map.insert fnId updatedReq state
       in  (updatedState, ())
     )

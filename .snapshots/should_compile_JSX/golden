@@ -1,118 +1,27 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
-export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
-let Element = ({ __constructor: "Element", __args: [  ] });
-let Event = ({ __constructor: "Event", __args: [  ] });
-let AttributeId = (a => ({ __constructor: "AttributeId", __args: [ a ] }));
-let AttributeClass = (a => ({ __constructor: "AttributeClass", __args: [ a ] }));
-let OnClick = (a => ({ __constructor: "OnClick", __args: [ a ] }));
-let OnMouseOver = (a => ({ __constructor: "OnMouseOver", __args: [ a ] }));
-let OnMouseOut = (a => ({ __constructor: "OnMouseOut", __args: [ a ] }));
-global.Show = {};
-global.Functor = {};
-Inspect['Wish_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Wish_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v333) => (Inspect_x335) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Wish" && true) {
-    let a0 = __x__.__args[0];
-    return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Element_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Element_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_i346) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Element") {
-    return `Element`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Event_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Event_568c75136c0c369c440814a7af59434a']['inspect'] = () => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Event") {
-    return `Event`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Attribute_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Attribute_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_v359) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "AttributeId" && true) {
-    let a0 = __x__.__args[0];
-    return `AttributeId(` + Inspect.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
-  }
-  else if (__x__.__constructor === "AttributeClass" && true) {
-    let a0 = __x__.__args[0];
-    return `AttributeClass(` + Inspect.String_5b7ebeeaa5acfe1eeea5a9e9845b152d.inspect()(a0) + `)`;
-  }
-  else if (__x__.__constructor === "OnClick" && true) {
-    let a0 = __x__.__args[0];
-    return `OnClick(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (__x__.__constructor === "OnMouseOver" && true) {
-    let a0 = __x__.__args[0];
-    return `OnMouseOver(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (__x__.__constructor === "OnMouseOut" && true) {
-    let a0 = __x__.__args[0];
-    return `OnMouseOut(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
-Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (x =>  new Integer(x).toString() );
-Functor['List_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
-Functor['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['map'] = () => (f => xs =>  xs.map((x) => f(x)) );
-export let good = (a => Wish((_ => goodCB => goodCB(a))));
-export let id = AttributeId;
-export let className = AttributeClass;
-export let onClick = OnClick;
-export let onMouseOver = OnMouseOver;
-export let onMouseOut = OnMouseOut;
-export let text = (content =>  content );
-export let div = (attrs => children =>  h("div", objectifyAttrs(attrs), children) );
-export let span = (attrs => children =>  h("span", objectifyAttrs(attrs), children) );
-export let p = (attrs => children =>  h("p", objectifyAttrs(attrs), children) );
-export let input = (attrs => children =>  h("input", objectifyAttrs(attrs), children) );
-export let button = (attrs => children =>  h("button", objectifyAttrs(attrs), children) );
-let initialState = 0;
-let MyApp = (count => div(({ v: id(`id`), n: { v: className(`class`), n: null } }))(({ v: div((null))(({ v: `Current count is ` + Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d.show()(count), n: null })), n: { v: div((null))(({ v: button(({ v: onClick((state => event => ({ v: good((s => (s + 1))), n: null }))), n: null }))(({ v: `increment`, n: null })), n: null })), n: null } })));
-let main = (_ => {
-    div((null))(({ v: `Some text!`, n: null }));
-    div((null))(({ v: div((null))(({ v: span((null))((null)), n: null })), n: { v: div((null))(({ v: span((null))((null)), n: null })), n: null } }));
+export let __568c75136c0c369c440814a7af59434a__Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__Element = ({ __constructor: "Element", __args: [  ] });
+let __568c75136c0c369c440814a7af59434a__Event = ({ __constructor: "Event", __args: [  ] });
+let __568c75136c0c369c440814a7af59434a__AttributeId = (a => ({ __constructor: "AttributeId", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__AttributeClass = (a => ({ __constructor: "AttributeClass", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__OnClick = (a => ({ __constructor: "OnClick", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__OnMouseOver = (a => ({ __constructor: "OnMouseOver", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__OnMouseOut = (a => ({ __constructor: "OnMouseOut", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__map__3 = (f => xs =>  xs.map((x) => f(x)) );
+export let __568c75136c0c369c440814a7af59434a__div__1 = (attrs => children =>  h("div", objectifyAttrs(attrs), children) );
+export let __568c75136c0c369c440814a7af59434a__span__2 = (attrs => children =>  h("span", objectifyAttrs(attrs), children) );
+let __568c75136c0c369c440814a7af59434a__main = (_ => {
+    __568c75136c0c369c440814a7af59434a__div__1((null))(({ v: `Some text!`, n: null }));
+    __568c75136c0c369c440814a7af59434a__div__1((null))(({ v: __568c75136c0c369c440814a7af59434a__div__1((null))(({ v: __568c75136c0c369c440814a7af59434a__span__2((null))((null)), n: null })), n: { v: __568c75136c0c369c440814a7af59434a__div__1((null))(({ v: __568c75136c0c369c440814a7af59434a__span__2((null))((null)), n: null })), n: null } }));
     let methods = ({ v: `1`, n: { v: `2`, n: { v: `3`, n: null } } });
-    let childElems = Functor.List_5b7ebeeaa5acfe1eeea5a9e9845b152d.map()((method => div((null))(({ v: method, n: null }))))(methods);
-    div((null))((methods));
-    div((null))((childElems));
+    let childElems = __568c75136c0c369c440814a7af59434a__map__3((method => __568c75136c0c369c440814a7af59434a__div__1((null))(({ v: method, n: null }))))(methods);
+    __568c75136c0c369c440814a7af59434a__div__1((null))((methods));
+    __568c75136c0c369c440814a7af59434a__div__1((null))((childElems));
     return ({ __constructor: "Unit", __args: [] });
 });
-export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };
-const makeArgs = () => {
+export default { __568c75136c0c369c440814a7af59434a__map__3, __568c75136c0c369c440814a7af59434a__div__1, __568c75136c0c369c440814a7af59434a__span__2, __568c75136c0c369c440814a7af59434a__Wish };
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -123,4 +32,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__568c75136c0c369c440814a7af59434a__main(__makeArgs())

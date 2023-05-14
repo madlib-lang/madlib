@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=> TCon (TC "Integer" Star) "prelude")
@@ -54,21 +61,7 @@
                                       (TCon (TC "Integer" Star) "prelude"))
                                    (TCon (TC "Integer" Star) "prelude"))
                               (Area (Loc 71 4 15) (Loc 72 4 16))
-                              (Placeholder
-                                 ( MethodRef "Number" "unary-minus" False
-                                 , [ TCon (TC "Integer" Star) "prelude" ]
-                                 )
-                                 (Typed
-                                    ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                                     ] :=>
-                                       TApp
-                                         (TApp
-                                            (TCon
-                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TCon (TC "Integer" Star) "prelude"))
-                                         (TCon (TC "Integer" Star) "prelude"))
-                                    (Area (Loc 71 4 15) (Loc 72 4 16))
-                                    (Var "unary-minus" False))))
+                              (Var "unary-minus" False))
                            (Typed
                               ([ IsIn
                                    "Number"
@@ -526,7 +519,7 @@
                                                             , TCon (TC "String" Star) "prelude"
                                                             )
                                                           ])
-                                                       (Just (TVar (TV "s44" Star)))
+                                                       (Just (TVar (TV "t45" Star)))
                                                        (fromList []))
                                                   (Area (Loc 700 32 45) (Loc 701 32 46))
                                                   (Var "f" False))
@@ -884,18 +877,18 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "z207" Star)))
+                                                                           (TVar (TV "d211" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "y206" Star)))
+                                                               (Just (TVar (TV "c210" Star)))
                                                                (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star)))
+                                                      (Just (TVar (TV "b209" Star)))
                                                       (fromList [])))
                                                 (TCon (TC "String" Star) "prelude")))
                                           (TApp
@@ -934,155 +927,24 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "z207" Star)))
+                                                                           (TVar (TV "d211" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "y206" Star)))
+                                                               (Just (TVar (TV "c210" Star)))
                                                                (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star)))
+                                                      (Just (TVar (TV "b209" Star)))
                                                       (fromList []))))
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TCon (TC "String" Star) "prelude"))))
                                      (Area (Loc 1211 43 3) (Loc 1214 43 6))
-                                     (Placeholder
-                                        ( MethodRef "Functor" "map" False
-                                        , [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                        )
-                                        (Typed
-                                           ([ IsIn
-                                                "Functor"
-                                                [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                                Nothing
-                                            ] :=>
-                                              TApp
-                                                (TApp
-                                                   (TCon
-                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                      "prelude")
-                                                   (TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TRecord
-                                                            (fromList
-                                                               [ ( "ik"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "lui"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "name"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "po"
-                                                                 , TRecord
-                                                                     (fromList
-                                                                        [ ( "pi"
-                                                                          , TRecord
-                                                                              (fromList
-                                                                                 [ ( "nameC"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 , ( "nameD"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 ])
-                                                                              (Just
-                                                                                 (TVar
-                                                                                    (TV
-                                                                                       "z207"
-                                                                                       Star)))
-                                                                              (fromList [])
-                                                                          )
-                                                                        ])
-                                                                     (Just (TVar (TV "y206" Star)))
-                                                                     (fromList [])
-                                                                 )
-                                                               , ( "tchouk"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               ])
-                                                            (Just (TVar (TV "x205" Star)))
-                                                            (fromList [])))
-                                                      (TCon (TC "String" Star) "prelude")))
-                                                (TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "List" (Kfun Star Star)) "prelude")
-                                                         (TRecord
-                                                            (fromList
-                                                               [ ( "ik"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "lui"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "name"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               , ( "po"
-                                                                 , TRecord
-                                                                     (fromList
-                                                                        [ ( "pi"
-                                                                          , TRecord
-                                                                              (fromList
-                                                                                 [ ( "nameC"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 , ( "nameD"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 ])
-                                                                              (Just
-                                                                                 (TVar
-                                                                                    (TV
-                                                                                       "z207"
-                                                                                       Star)))
-                                                                              (fromList [])
-                                                                          )
-                                                                        ])
-                                                                     (Just (TVar (TV "y206" Star)))
-                                                                     (fromList [])
-                                                                 )
-                                                               , ( "tchouk"
-                                                                 , TCon (TC "String" Star) "prelude"
-                                                                 )
-                                                               ])
-                                                            (Just (TVar (TV "x205" Star)))
-                                                            (fromList []))))
-                                                   (TApp
-                                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                      (TCon (TC "String" Star) "prelude"))))
-                                           (Area (Loc 1211 43 3) (Loc 1214 43 6))
-                                           (Var "map" False))))
+                                     (Var "map" False))
                                   (Typed
                                      ([ IsIn
                                           "Functor"
@@ -1352,19 +1214,19 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "z207"
+                                                                                       "d211"
                                                                                        Star)))
                                                                               (fromList [])
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "y206" Star)))
+                                                                     (Just (TVar (TV "c210" Star)))
                                                                      (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star)))
+                                                            (Just (TVar (TV "b209" Star)))
                                                             (fromList [])))
                                                       (TApp
                                                          (TApp
@@ -1411,13 +1273,13 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "z207"
+                                                                                          "d211"
                                                                                           Star)))
                                                                                  (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "y206" Star)))
+                                                                           (TVar (TV "c210" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   , ( "tchouk"
@@ -1425,7 +1287,7 @@
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star)))
+                                                               (Just (TVar (TV "b209" Star)))
                                                                (fromList [])))
                                                          (TCon (TC "Integer" Star) "prelude"))))
                                                 (TApp
@@ -1471,19 +1333,19 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "z207"
+                                                                                       "d211"
                                                                                        Star)))
                                                                               (fromList [])
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "y206" Star)))
+                                                                     (Just (TVar (TV "c210" Star)))
                                                                      (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star)))
+                                                            (Just (TVar (TV "b209" Star)))
                                                             (fromList []))))
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -1521,18 +1383,18 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "z207" Star)))
+                                                                                 (TV "d211" Star)))
                                                                            (fromList [])
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "y206" Star)))
+                                                                  (Just (TVar (TV "c210" Star)))
                                                                   (fromList [])
                                                               )
                                                             , ( "tchouk"
                                                               , TCon (TC "String" Star) "prelude"
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "x205" Star)))
+                                                         (Just (TVar (TV "b209" Star)))
                                                          (fromList [])))))
                                            (Area (Loc 764 35 3) (Loc 770 35 9))
                                            (Var "sortBy" False))
@@ -2165,7 +2027,7 @@
                                                                                              (Just
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "z207"
+                                                                                                      "d211"
                                                                                                       Star)))
                                                                                              (fromList
                                                                                                 [])
@@ -2174,7 +2036,7 @@
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "y206"
+                                                                                             "c210"
                                                                                              Star)))
                                                                                     (fromList [])
                                                                                 )
@@ -2188,7 +2050,7 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "x205" Star)))
+                                                                                 (TV "b209" Star)))
                                                                            (fromList []))
                                                                       (Area
                                                                          (Loc 789 35 28)
@@ -2243,7 +2105,7 @@
                                                                                              (Just
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "z207"
+                                                                                                      "d211"
                                                                                                       Star)))
                                                                                              (fromList
                                                                                                 [])
@@ -2252,7 +2114,7 @@
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "y206"
+                                                                                             "c210"
                                                                                              Star)))
                                                                                     (fromList [])
                                                                                 )
@@ -2266,7 +2128,7 @@
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "x205" Star)))
+                                                                                 (TV "b209" Star)))
                                                                            (fromList []))
                                                                       (Area
                                                                          (Loc 792 35 31)
@@ -2728,6 +2590,60 @@
                                                                                                        848
                                                                                                        36
                                                                                                        51)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
                                                                                           ] :=>
                                                                                             TCon
                                                                                               (TC
@@ -2832,6 +2748,60 @@
                                                                                    [ ( "name"
                                                                                      , Typed
                                                                                          ([ IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       841
+                                                                                                       36
+                                                                                                       44)
+                                                                                                    (Loc
+                                                                                                       848
+                                                                                                       36
+                                                                                                       51)))
+                                                                                          , IsIn
                                                                                               "Comparable"
                                                                                               [ TCon
                                                                                                   (TC
@@ -2983,78 +2953,9 @@
                                                                                      (Loc 841 36 44)
                                                                                      (Loc
                                                                                         848 36 51))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              841
-                                                                                              36
-                                                                                              44)
-                                                                                           (Loc
-                                                                                              848
-                                                                                              36
-                                                                                              51))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -3568,6 +3469,60 @@
                                                                                                        911
                                                                                                        37
                                                                                                        49)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
                                                                                           ] :=>
                                                                                             TCon
                                                                                               (TC
@@ -3672,6 +3627,60 @@
                                                                                    [ ( "ik"
                                                                                      , Typed
                                                                                          ([ IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       904
+                                                                                                       37
+                                                                                                       42)
+                                                                                                    (Loc
+                                                                                                       911
+                                                                                                       37
+                                                                                                       49)))
+                                                                                          , IsIn
                                                                                               "Comparable"
                                                                                               [ TCon
                                                                                                   (TC
@@ -3823,78 +3832,9 @@
                                                                                      (Loc 904 37 42)
                                                                                      (Loc
                                                                                         911 37 49))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              904
-                                                                                              37
-                                                                                              42)
-                                                                                           (Loc
-                                                                                              911
-                                                                                              37
-                                                                                              49))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -4408,6 +4348,60 @@
                                                                                                        978
                                                                                                        38
                                                                                                        53)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
                                                                                           ] :=>
                                                                                             TCon
                                                                                               (TC
@@ -4512,6 +4506,60 @@
                                                                                    [ ( "name"
                                                                                      , Typed
                                                                                          ([ IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       971
+                                                                                                       38
+                                                                                                       46)
+                                                                                                    (Loc
+                                                                                                       978
+                                                                                                       38
+                                                                                                       53)))
+                                                                                          , IsIn
                                                                                               "Comparable"
                                                                                               [ TCon
                                                                                                   (TC
@@ -4663,78 +4711,9 @@
                                                                                      (Loc 971 38 46)
                                                                                      (Loc
                                                                                         978 38 53))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              971
-                                                                                              38
-                                                                                              46)
-                                                                                           (Loc
-                                                                                              978
-                                                                                              38
-                                                                                              53))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -5248,6 +5227,60 @@
                                                                                                        1042
                                                                                                        39
                                                                                                        50)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
                                                                                           ] :=>
                                                                                             TCon
                                                                                               (TC
@@ -5352,6 +5385,60 @@
                                                                                    [ ( "lui"
                                                                                      , Typed
                                                                                          ([ IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1035
+                                                                                                       39
+                                                                                                       43)
+                                                                                                    (Loc
+                                                                                                       1042
+                                                                                                       39
+                                                                                                       50)))
+                                                                                          , IsIn
                                                                                               "Comparable"
                                                                                               [ TCon
                                                                                                   (TC
@@ -5506,78 +5593,9 @@
                                                                                         1035 39 43)
                                                                                      (Loc
                                                                                         1042 39 50))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              1035
-                                                                                              39
-                                                                                              43)
-                                                                                           (Loc
-                                                                                              1042
-                                                                                              39
-                                                                                              50))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -6094,6 +6112,60 @@
                                                                                                        1115
                                                                                                        40
                                                                                                        59)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1108
+                                                                                                       40
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1115
+                                                                                                       40
+                                                                                                       59)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1108
+                                                                                                       40
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1115
+                                                                                                       40
+                                                                                                       59)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1108
+                                                                                                       40
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1115
+                                                                                                       40
+                                                                                                       59)))
                                                                                           ] :=>
                                                                                             TCon
                                                                                               (TC
@@ -6303,6 +6375,60 @@
                                                                                                                                1115
                                                                                                                                40
                                                                                                                                59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1108
+                                                                                                                               40
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1115
+                                                                                                                               40
+                                                                                                                               59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1108
+                                                                                                                               40
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1115
+                                                                                                                               40
+                                                                                                                               59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1108
+                                                                                                                               40
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1115
+                                                                                                                               40
+                                                                                                                               59)))
                                                                                                                   ] :=>
                                                                                                                     TCon
                                                                                                                       (TC
@@ -6444,78 +6570,9 @@
                                                                                         1108 40 52)
                                                                                      (Loc
                                                                                         1115 40 59))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              1108
-                                                                                              40
-                                                                                              52)
-                                                                                           (Loc
-                                                                                              1115
-                                                                                              40
-                                                                                              59))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -7120,6 +7177,60 @@
                                                                                                                                1188
                                                                                                                                41
                                                                                                                                59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1181
+                                                                                                                               41
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1188
+                                                                                                                               41
+                                                                                                                               59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1181
+                                                                                                                               41
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1188
+                                                                                                                               41
+                                                                                                                               59)))
+                                                                                                                  , IsIn
+                                                                                                                      "Comparable"
+                                                                                                                      [ TCon
+                                                                                                                          (TC
+                                                                                                                             "String"
+                                                                                                                             Star)
+                                                                                                                          "prelude"
+                                                                                                                      ]
+                                                                                                                      (Just
+                                                                                                                         (Area
+                                                                                                                            (Loc
+                                                                                                                               1181
+                                                                                                                               41
+                                                                                                                               52)
+                                                                                                                            (Loc
+                                                                                                                               1188
+                                                                                                                               41
+                                                                                                                               59)))
                                                                                                                   ] :=>
                                                                                                                     TCon
                                                                                                                       (TC
@@ -7228,6 +7339,60 @@
                                                                                    [ ( "name"
                                                                                      , Typed
                                                                                          ([ IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1181
+                                                                                                       41
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1188
+                                                                                                       41
+                                                                                                       59)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1181
+                                                                                                       41
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1188
+                                                                                                       41
+                                                                                                       59)))
+                                                                                          , IsIn
+                                                                                              "Comparable"
+                                                                                              [ TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude"
+                                                                                              ]
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       1181
+                                                                                                       41
+                                                                                                       52)
+                                                                                                    (Loc
+                                                                                                       1188
+                                                                                                       41
+                                                                                                       59)))
+                                                                                          , IsIn
                                                                                               "Comparable"
                                                                                               [ TCon
                                                                                                   (TC
@@ -7382,78 +7547,9 @@
                                                                                         1181 41 52)
                                                                                      (Loc
                                                                                         1188 41 59))
-                                                                                  (Placeholder
-                                                                                     ( MethodRef
-                                                                                         "Comparable"
-                                                                                         "compare"
-                                                                                         False
-                                                                                     , [ TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       ]
-                                                                                     )
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Comparable"
-                                                                                             [ TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "Integer"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              1181
-                                                                                              41
-                                                                                              52)
-                                                                                           (Loc
-                                                                                              1188
-                                                                                              41
-                                                                                              59))
-                                                                                        (Var
-                                                                                           "compare"
-                                                                                           False))))
+                                                                                  (Var
+                                                                                     "compare"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Comparable"
@@ -7637,7 +7733,7 @@
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "z207"
+                                                                                                "d211"
                                                                                                 Star)))
                                                                                        (fromList [])
                                                                                    )
@@ -7645,7 +7741,7 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "y206"
+                                                                                       "c210"
                                                                                        Star)))
                                                                               (fromList [])
                                                                           )
@@ -7655,7 +7751,7 @@
                                                                               "prelude"
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "x205" Star)))
+                                                                     (Just (TVar (TV "b209" Star)))
                                                                      (fromList []))
                                                               )
                                                             ])
@@ -7692,18 +7788,18 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "z207" Star)))
+                                                                           (TVar (TV "d211" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "y206" Star)))
+                                                               (Just (TVar (TV "c210" Star)))
                                                                (fromList [])
                                                            )
                                                          , ( "tchouk"
                                                            , TCon (TC "String" Star) "prelude"
                                                            )
                                                          ])
-                                                      (Just (TVar (TV "x205" Star)))
+                                                      (Just (TVar (TV "b209" Star)))
                                                       (fromList []))))
                                            (Area (Loc 741 34 3) (Loc 760 34 22))
                                            (App
@@ -7777,7 +7873,7 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "z207"
+                                                                                                         "d211"
                                                                                                          Star)))
                                                                                                 (fromList
                                                                                                    [])
@@ -7786,7 +7882,7 @@
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "y206"
+                                                                                                "c210"
                                                                                                 Star)))
                                                                                        (fromList [])
                                                                                    )
@@ -7801,12 +7897,12 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "x205"
+                                                                                       "b209"
                                                                                        Star)))
                                                                               (fromList []))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "w204" Star)))
+                                                                  (Just (TVar (TV "a208" Star)))
                                                                   (fromList [])))
                                                             (TApp
                                                                (TCon
@@ -7853,14 +7949,14 @@
                                                                                     (Just
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "z207"
+                                                                                             "d211"
                                                                                              Star)))
                                                                                     (fromList [])
                                                                                 )
                                                                               ])
                                                                            (Just
                                                                               (TVar
-                                                                                 (TV "y206" Star)))
+                                                                                 (TV "c210" Star)))
                                                                            (fromList [])
                                                                        )
                                                                      , ( "tchouk"
@@ -7869,7 +7965,7 @@
                                                                            "prelude"
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "x205" Star)))
+                                                                  (Just (TVar (TV "b209" Star)))
                                                                   (fromList [])))))
                                                       (TApp
                                                          (TApp
@@ -7938,7 +8034,7 @@
                                                                                                 (Just
                                                                                                    (TVar
                                                                                                       (TV
-                                                                                                         "z207"
+                                                                                                         "d211"
                                                                                                          Star)))
                                                                                                 (fromList
                                                                                                    [])
@@ -7947,7 +8043,7 @@
                                                                                        (Just
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "y206"
+                                                                                                "c210"
                                                                                                 Star)))
                                                                                        (fromList [])
                                                                                    )
@@ -7962,12 +8058,12 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "x205"
+                                                                                       "b209"
                                                                                        Star)))
                                                                               (fromList []))
                                                                        )
                                                                      ])
-                                                                  (Just (TVar (TV "w204" Star)))
+                                                                  (Just (TVar (TV "a208" Star)))
                                                                   (fromList []))))
                                                          (TApp
                                                             (TCon
@@ -8011,13 +8107,13 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "z207"
+                                                                                          "d211"
                                                                                           Star)))
                                                                                  (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "y206" Star)))
+                                                                           (TVar (TV "c210" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   , ( "tchouk"
@@ -8025,7 +8121,7 @@
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star)))
+                                                               (Just (TVar (TV "b209" Star)))
                                                                (fromList [])))))
                                                  (Area (Loc 741 34 3) (Loc 746 34 8))
                                                  (Var "chain" False))
@@ -8084,7 +8180,7 @@
                                                                                           (Just
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   "z207"
+                                                                                                   "d211"
                                                                                                    Star)))
                                                                                           (fromList
                                                                                              [])
@@ -8093,7 +8189,7 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "y206"
+                                                                                          "c210"
                                                                                           Star)))
                                                                                  (fromList [])
                                                                              )
@@ -8104,7 +8200,7 @@
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "x205" Star)))
+                                                                           (TVar (TV "b209" Star)))
                                                                         (fromList []))
                                                                  )
                                                                ])
@@ -8148,19 +8244,19 @@
                                                                               (Just
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "z207"
+                                                                                       "d211"
                                                                                        Star)))
                                                                               (fromList [])
                                                                           )
                                                                         ])
-                                                                     (Just (TVar (TV "y206" Star)))
+                                                                     (Just (TVar (TV "c210" Star)))
                                                                      (fromList [])
                                                                  )
                                                                , ( "tchouk"
                                                                  , TCon (TC "String" Star) "prelude"
                                                                  )
                                                                ])
-                                                            (Just (TVar (TV "x205" Star)))
+                                                            (Just (TVar (TV "b209" Star)))
                                                             (fromList []))))
                                                  (Area (Loc 747 34 9) (Loc 759 34 21))
                                                  (Var ".expressions" False))
@@ -8214,13 +8310,13 @@
                                                                                  (Just
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "z207"
+                                                                                          "d211"
                                                                                           Star)))
                                                                                  (fromList [])
                                                                              )
                                                                            ])
                                                                         (Just
-                                                                           (TVar (TV "y206" Star)))
+                                                                           (TVar (TV "c210" Star)))
                                                                         (fromList [])
                                                                     )
                                                                   , ( "tchouk"
@@ -8228,7 +8324,7 @@
                                                                         (TC "String" Star) "prelude"
                                                                     )
                                                                   ])
-                                                               (Just (TVar (TV "x205" Star)))
+                                                               (Just (TVar (TV "b209" Star)))
                                                                (fromList []))
                                                         )
                                                       ])
@@ -8511,59 +8607,7 @@
                                                                            "prelude")))
                                                                 (Area
                                                                    (Loc 214 12 25) (Loc 215 12 26))
-                                                                (Placeholder
-                                                                   ( MethodRef "Number" ">" False
-                                                                   , [ TCon
-                                                                         (TC "Integer" Star)
-                                                                         "prelude"
-                                                                     ]
-                                                                   )
-                                                                   (Typed
-                                                                      ([ IsIn
-                                                                           "Number"
-                                                                           [ TCon
-                                                                               (TC "Integer" Star)
-                                                                               "prelude"
-                                                                           ]
-                                                                           Nothing
-                                                                       ] :=>
-                                                                         TApp
-                                                                           (TApp
-                                                                              (TCon
-                                                                                 (TC
-                                                                                    "(->)"
-                                                                                    (Kfun
-                                                                                       Star
-                                                                                       (Kfun
-                                                                                          Star
-                                                                                          Star)))
-                                                                                 "prelude")
-                                                                              (TCon
-                                                                                 (TC "Integer" Star)
-                                                                                 "prelude"))
-                                                                           (TApp
-                                                                              (TApp
-                                                                                 (TCon
-                                                                                    (TC
-                                                                                       "(->)"
-                                                                                       (Kfun
-                                                                                          Star
-                                                                                          (Kfun
-                                                                                             Star
-                                                                                             Star)))
-                                                                                    "prelude")
-                                                                                 (TCon
-                                                                                    (TC
-                                                                                       "Integer"
-                                                                                       Star)
-                                                                                    "prelude"))
-                                                                              (TCon
-                                                                                 (TC "Boolean" Star)
-                                                                                 "prelude")))
-                                                                      (Area
-                                                                         (Loc 214 12 25)
-                                                                         (Loc 215 12 26))
-                                                                      (Var ">" False))))
+                                                                (Var ">" False))
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Number"
@@ -8698,65 +8742,7 @@
                                                                       (Area
                                                                          (Loc 229 12 40)
                                                                          (Loc 231 12 42))
-                                                                      (Placeholder
-                                                                         ( MethodRef "Eq" "==" False
-                                                                         , [ TCon
-                                                                               (TC "Integer" Star)
-                                                                               "prelude"
-                                                                           ]
-                                                                         )
-                                                                         (Typed
-                                                                            ([ IsIn
-                                                                                 "Eq"
-                                                                                 [ TCon
-                                                                                     (TC
-                                                                                        "Integer"
-                                                                                        Star)
-                                                                                     "prelude"
-                                                                                 ]
-                                                                                 Nothing
-                                                                             ] :=>
-                                                                               TApp
-                                                                                 (TApp
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "(->)"
-                                                                                          (Kfun
-                                                                                             Star
-                                                                                             (Kfun
-                                                                                                Star
-                                                                                                Star)))
-                                                                                       "prelude")
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "Integer"
-                                                                                          Star)
-                                                                                       "prelude"))
-                                                                                 (TApp
-                                                                                    (TApp
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "(->)"
-                                                                                             (Kfun
-                                                                                                Star
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   Star)))
-                                                                                          "prelude")
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "Integer"
-                                                                                             Star)
-                                                                                          "prelude"))
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "Boolean"
-                                                                                          Star)
-                                                                                       "prelude")))
-                                                                            (Area
-                                                                               (Loc 229 12 40)
-                                                                               (Loc 231 12 42))
-                                                                            (Var "==" False))))
+                                                                      (Var "==" False))
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"

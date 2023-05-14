@@ -487,12 +487,18 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
     functionName' <- generateLiftedName env functionName
 
     let paramsWithFreeVars = ((\(name, Typed qt _ _ _) -> Typed qt emptyArea [ReferenceParameter | name `elem` mutationsInScope env] name) <$> captured) ++ params
+    let hasMutation = any ((`elem` mutationsInScope env) . fst) captured
+    let metadataForFunctionNode =
+          if hasMutation then
+            [MutatingFunctionRef]
+          else
+            []
 
     body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env) body
 
     let liftedType   = foldr fn t (getType . snd <$> captured)
     let lifted'      = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
-    let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
+    let functionNode = Typed (ps :=> liftedType) area metadataForFunctionNode (Var functionName' False)
 
     addTopLevelExp lifted'
 

@@ -19,6 +19,10 @@ instance Eq ByteArray {
 listLength :: List a -> Integer
 listLength = extern "madlib__list__length"
 
+instance Eq (a -> b) {
+  __EQ__ = (_, _) => false
+}
+
 instance Eq a => Eq (List a) {
   __EQ__ = (a, b) => {
     go = (listA, listB) => where(listA) {

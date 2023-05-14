@@ -1,136 +1,25 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
-export let WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
-export let Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
-export let StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
-global.Semigroup = {};
-global.Monoid = {};
-global.Functor = {};
-global.Applicative = {};
-global.Monad = {};
-global.MonadTrans = {};
-global.MonadWriter = {};
-global.MonadState = {};
-Inspect['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['WriterT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_a390) => (Inspect_c392) => (Inspect_b391) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "WriterT" && true) {
-    let a0 = __x__.__args[0];
-    return `WriterT(` + Inspect_a390.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Identity_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Identity_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_m402) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Identity" && true) {
-    let a0 = __x__.__args[0];
-    return `Identity(` + Inspect_m402.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['StateT_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_z415) => (Inspect_y414) => (Inspect_a416) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "StateT" && true) {
-    let a0 = __x__.__args[0];
-    return `StateT(` + Inspect.a_arr_b.inspect()(a0) + `)`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Semigroup['List_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
-Semigroup['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['assoc'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
-Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
-Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['mappend'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
-Monoid['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['mempty'] = () => (null);
-Functor['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Functor['WriterT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_p457) => (f => m => WriterT(Functor_p457.map()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return ([f(a), w]);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(m))));
-Applicative['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Applicative['WriterT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Semigroup_c496) => (Monoid_c496) => (Functor_d497) => (Applicative_d497) => (mf => mm => WriterT(liftA2(Functor_d497)(Applicative_d497)((x1 => x2 => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [b,ww] = __x__;
-    return ([a(b), Monoid_c496.mappend()(w)(ww)]);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(x2);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(x1)))(runWriterT(mf))(runWriterT(mm))));
-Applicative['WriterT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Semigroup_t513) => (Monoid_t513) => (Functor_r511) => (Applicative_r511) => (x => WriterT(Applicative_r511.pure()(([x, Monoid_t513.mempty()]))));
-Monad['WriterT_568c75136c0c369c440814a7af59434a'] = {};
-Monad['WriterT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_l557) => (Applicative_l557) => (Monad_l557) => (Semigroup_k556) => (Monoid_k556) => (f => m => WriterT(Monad_l557.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [a,w] = __x__;
-    return Monad_l557.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [b,ww] = __x__;
-    return Monad_l557.of()(([b, Monoid_k556.mappend()(w)(ww)]));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(f(a)));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runWriterT(m))));
-Monad['WriterT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_w568) => (Applicative_w568) => (Monad_w568) => (Semigroup_v567) => (Monoid_v567) => Applicative.WriterT_568c75136c0c369c440814a7af59434a.pure()(Semigroup_v567)(Monoid_v567)(Functor_w568)(Applicative_w568);
-MonadTrans['m_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadTrans['m_WriterT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Semigroup_s590) => (Monoid_s590) => (Functor_q588) => (Applicative_q588) => (Monad_q588) => (m => WriterT(Monad_q588.chain()((a => Monad_q588.of()(([a, Monoid_s590.mempty()]))))(m)));
-Functor['Identity_568c75136c0c369c440814a7af59434a'] = {};
-Functor['Identity_568c75136c0c369c440814a7af59434a']['map'] = () => (f => m => Identity(f(runIdentity(m))));
-Applicative['Identity_568c75136c0c369c440814a7af59434a'] = {};
-Applicative['Identity_568c75136c0c369c440814a7af59434a']['ap'] = () => (mf => mm => Identity(runIdentity(mf)(runIdentity(mm))));
-Applicative['Identity_568c75136c0c369c440814a7af59434a']['pure'] = () => Identity;
-Monad['Identity_568c75136c0c369c440814a7af59434a'] = {};
-Monad['Identity_568c75136c0c369c440814a7af59434a']['chain'] = () => (f => mm => f(runIdentity(mm)));
-Monad['Identity_568c75136c0c369c440814a7af59434a']['of'] = () => Applicative.Identity_568c75136c0c369c440814a7af59434a.pure();
-Functor['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Functor['StateT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_n663) => (f => m => StateT((s => Functor_n663.map()((__x__ => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
+export let __568c75136c0c369c440814a7af59434a__of__1 = (a => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__of__2()(([a, s])))));
+export let __568c75136c0c369c440814a7af59434a__put__40 = (s => __568c75136c0c369c440814a7af59434a__StateT((_ => __568c75136c0c369c440814a7af59434a__of__23()(([({ __constructor: "Unit", __args: [] }), s])))));
+export let __568c75136c0c369c440814a7af59434a__mempty__4 = (_ => (null));
+export let __568c75136c0c369c440814a7af59434a__of__2 = (_ => __568c75136c0c369c440814a7af59434a__pure__3);
+export let __568c75136c0c369c440814a7af59434a__of__23 = (_ => __568c75136c0c369c440814a7af59434a__pure__24);
+export let __568c75136c0c369c440814a7af59434a__pure__21 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__20 = (_ => __568c75136c0c369c440814a7af59434a__pure__21());
+export let __568c75136c0c369c440814a7af59434a__pure__5 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__11 = (_ => __568c75136c0c369c440814a7af59434a__pure__5());
+export let __568c75136c0c369c440814a7af59434a__pure__25 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__29 = (_ => __568c75136c0c369c440814a7af59434a__pure__25());
+export let __568c75136c0c369c440814a7af59434a__mappend__10 = (xs1 => xs2 =>  xs1.concat(xs2) );
+export let __568c75136c0c369c440814a7af59434a__tell__18 = (_P_ => __568c75136c0c369c440814a7af59434a__lift__22(__568c75136c0c369c440814a7af59434a__tell__19(_P_)));
+export let __568c75136c0c369c440814a7af59434a__tell__19 = (v => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__of__20()(([({ __constructor: "Unit", __args: [] }), v]))));
+export let __568c75136c0c369c440814a7af59434a__pure__3 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__5()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__pure__24 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__25()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__map__14 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__map__15((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return ([f(a), ss]);
@@ -140,59 +29,176 @@ Functor['StateT_568c75136c0c369c440814a7af59434a']['map'] = () => (Functor_n663)
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__)))(runStateT(m)(s)))));
-Applicative['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Applicative['StateT_568c75136c0c369c440814a7af59434a']['ap'] = () => (Functor_h709) => (Applicative_h709) => (Monad_h709) => (mf => mm => StateT((s => Monad_h709.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [f,ss] = __x__;
-    return Monad_h709.chain()((__x__ => ((__x__) => {
-  if (__x__.length === 2 && true && true) {
-    let [m,sss] = __x__;
-    return Monad_h709.of()(([f(m), sss]));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runStateT(mm)(ss));
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__x__)))(runStateT(mf)(s)))));
-Applicative['StateT_568c75136c0c369c440814a7af59434a']['pure'] = () => (Functor_w724) => (Applicative_w724) => (Monad_w724) => (a => StateT((s => Monad_w724.of()(([a, s])))));
-Monad['StateT_568c75136c0c369c440814a7af59434a'] = {};
-Monad['StateT_568c75136c0c369c440814a7af59434a']['chain'] = () => (Functor_d757) => (Applicative_d757) => (Monad_d757) => (f => m => StateT((s => Monad_d757.chain()((__x__ => ((__x__) => {
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__6 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__8((__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
-    return runStateT(f(a))(ss);
+    return __568c75136c0c369c440814a7af59434a__runStateT__7(f(a))(ss);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__)))(runStateT(m)(s)))));
-Monad['StateT_568c75136c0c369c440814a7af59434a']['of'] = () => (Functor_s772) => (Applicative_s772) => (Monad_s772) => (a => StateT((s => Monad_s772.of()(([a, s])))));
-MonadTrans['m_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadTrans['m_StateT_568c75136c0c369c440814a7af59434a']['lift'] = () => (Functor_n793) => (Applicative_n793) => (Monad_n793) => (m => StateT((s => Monad_n793.chain()((a => Monad_n793.of()(([a, s]))))(m))));
-MonadWriter['w_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadWriter['w_WriterT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_a806) => (Applicative_a806) => (Monad_a806) => (Semigroup_u800) => (Monoid_u800) => (v => WriterT(Monad_a806.of()(([({ __constructor: "Unit", __args: [] }), v]))));
-MonadWriter['w_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadWriter['w_StateT_568c75136c0c369c440814a7af59434a']['tell'] = () => (Functor_n819) => (Applicative_n819) => (Semigroup_g812) => (Monad_n819) => (Monoid_g812) => (MonadWriter_g812_n819) => (Functor_n819) => (Applicative_n819) => (Monad_n819) => (Semigroup_g812) => (Monoid_g812) => (_P_ => MonadTrans.m_StateT_568c75136c0c369c440814a7af59434a.lift()(Functor_n819)(Applicative_n819)(Monad_n819)(MonadWriter_g812_n819.tell()(_P_)));
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a'] = {};
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_c834) => (Applicative_c834) => (Monad_c834) => StateT((s => Monad_c834.of()(([s, s]))));
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_p847) => (Applicative_p847) => (Monad_p847) => (f => StateT((s => Monad_p847.of()(([({ __constructor: "Unit", __args: [] }), f(s)])))));
-MonadState['s_StateT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_d861) => (Applicative_d861) => (Monad_d861) => (s => StateT((_ => Monad_d861.of()(([({ __constructor: "Unit", __args: [] }), s])))));
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a'] = {};
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['get'] = () => (Functor_o872) => (Applicative_o872) => (Monad_o872) => (MonadState_n871_o872) => (Functor_o872) => (Applicative_o872) => (Monad_o872) => (Semigroup_p873) => (Monoid_p873) => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_p873)(Monoid_p873)(Functor_o872)(Applicative_o872)(Monad_o872)(MonadState_n871_o872.get());
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['modify'] = () => (Functor_e888) => (Applicative_e888) => (Monad_e888) => (MonadState_d887_e888) => (Functor_e888) => (Applicative_e888) => (Monad_e888) => (Semigroup_f889) => (Monoid_f889) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_f889)(Monoid_f889)(Functor_e888)(Applicative_e888)(Monad_e888)(MonadState_d887_e888.modify()(_P_)));
-MonadState['s_WriterT_568c75136c0c369c440814a7af59434a']['put'] = () => (Functor_u904) => (Applicative_u904) => (Monad_u904) => (MonadState_n897_u904) => (Functor_u904) => (Applicative_u904) => (Monad_u904) => (Semigroup_v905) => (Monoid_v905) => (_P_ => MonadTrans.m_WriterT_568c75136c0c369c440814a7af59434a.lift()(Semigroup_v905)(Monoid_v905)(Functor_u904)(Applicative_u904)(Monad_u904)(MonadState_n897_u904.put()(_P_)));
-export let andDo = (Functor_c28) => (Applicative_c28) => (Monad_c28) => (b => a => Monad_c28.chain()((_ => b))(a));
-export let runWriterT = (__x__ => ((__x__) => {
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__34 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__36((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__42 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__43((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__7(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__38 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__39((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,ss] = __x__;
+    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__26 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__32((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__27(m))));
+export let __568c75136c0c369c440814a7af59434a__map__15 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__map__16((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return ([f(a), w]);
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__8 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__36 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__37((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__43 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__44((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__12((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__39 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [a,w] = __x__;
+    return __568c75136c0c369c440814a7af59434a__chain__30((__x__ => ((__x__) => {
+  if (__x__.length === 2 && true && true) {
+    let [b,ww] = __x__;
+    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__32 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__33(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__12 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__37 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
+export let __568c75136c0c369c440814a7af59434a__map__16 = (f => m => __568c75136c0c369c440814a7af59434a__Identity(f(__568c75136c0c369c440814a7af59434a__runIdentity__13(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__44 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__30 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
+export let __568c75136c0c369c440814a7af59434a__lift__22 = (m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__26((a => __568c75136c0c369c440814a7af59434a__of__23()(([a, s]))))(m))));
+export let __568c75136c0c369c440814a7af59434a__andDo__41 = (b => a => __568c75136c0c369c440814a7af59434a__chain__42((_ => b))(a));
+export let __568c75136c0c369c440814a7af59434a__runWriterT__27 = (__x__ => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let m = __x__.__args[0];
     return m;
@@ -203,8 +209,29 @@ export let runWriterT = (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-let liftA2 = (Functor_l63) => (Applicative_l63) => (f => x1 => x2 => Applicative_l63.ap()(Functor_l63.map()(f)(x1))(x2));
-export let runIdentity = (__x__ => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runWriterT__9 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "WriterT" && true) {
+    let m = __x__.__args[0];
+    return m;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runWriterT__28 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "WriterT" && true) {
+    let m = __x__.__args[0];
+    return m;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runIdentity__33 = (__x__ => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a = __x__.__args[0];
     return a;
@@ -215,7 +242,29 @@ export let runIdentity = (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-export let runStateT = (m => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runIdentity__13 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "Identity" && true) {
+    let a = __x__.__args[0];
+    return a;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runIdentity__31 = (__x__ => ((__x__) => {
+  if (__x__.__constructor === "Identity" && true) {
+    let a = __x__.__args[0];
+    return a;
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__));
+export let __568c75136c0c369c440814a7af59434a__runStateT__7 = (m => ((__x__) => {
   if (__x__.__constructor === "StateT" && true) {
     let f = __x__.__args[0];
     return (a => f(a));
@@ -226,15 +275,26 @@ export let runStateT = (m => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m));
-let hep = (Functor_p93) => (Applicative_p93) => (Semigroup_o92) => (Monad_p93) => (Monoid_o92) => (MonadWriter_o92_p93) => MonadWriter_o92_p93.tell();
-let sumAndLog = (Functor_z129) => (Applicative_z129) => (Monad_z129) => (MonadWriter_List_5b7ebeeaa5acfe1eeea5a9e9845b152d_z129) => (_P_ => Monad_z129.chain()((x => andDo(Functor_z129)(Applicative_z129)(Monad_z129)(Monad_z129.of()(x))(MonadWriter_List_5b7ebeeaa5acfe1eeea5a9e9845b152d_z129.tell()(({ v: `Summed 18`, n: null })))))(Monad_z129.chain()((x => Monad_z129.of()((x + 18))))(Monad_z129.of()(_P_))));
-let runStack = (x => _P_ => runIdentity(runWriterT((m => runStateT(m)(x))(_P_))));
-let main = (_ => {
-    runStack(37)(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(sumAndLog(__apMtdDicts__(Functor.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a])]))(__apMtdDicts__(Applicative.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(__apMtdDicts__(Monad.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(__apMtdDicts__(MonadWriter.w_StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(MonadWriter.w_WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), __apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])))(andDo(__apMtdDicts__(Functor.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a])]))(__apMtdDicts__(Applicative.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(__apMtdDicts__(Monad.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Monad.StateT_568c75136c0c369c440814a7af59434a.of()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(5))(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((_ => hep(__apMtdDicts__(Functor.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a])]))(__apMtdDicts__(Applicative.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Monad.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(MonadWriter.w_StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(MonadWriter.w_WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), __apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(({ v: `HAP`, n: null }))))(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((_ => MonadState.s_StateT_568c75136c0c369c440814a7af59434a.put()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(157)))(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((_ => hep(__apMtdDicts__(Functor.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a])]))(__apMtdDicts__(Applicative.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Monad.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(MonadWriter.w_StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(MonadWriter.w_WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), __apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(({ v: `HIP`, n: null }))))(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((_ => hep(__apMtdDicts__(Functor.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a])]))(__apMtdDicts__(Applicative.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(Monad.StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d])]))(Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d)(__apMtdDicts__(MonadWriter.w_StateT_568c75136c0c369c440814a7af59434a, [__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, __apMtdDicts__(MonadWriter.w_WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), __apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]), __apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]), Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(({ v: `HOP`, n: null }))))(Functor.StateT_568c75136c0c369c440814a7af59434a.map()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))((x => (x * 17)))(Monad.StateT_568c75136c0c369c440814a7af59434a.chain()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((x => Monad.StateT_568c75136c0c369c440814a7af59434a.of()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))((29 * x))))(Monad.StateT_568c75136c0c369c440814a7af59434a.of()(__apMtdDicts__(Functor.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Applicative.WriterT_568c75136c0c369c440814a7af59434a, [Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a]))(__apMtdDicts__(Monad.WriterT_568c75136c0c369c440814a7af59434a, [Functor.Identity_568c75136c0c369c440814a7af59434a, Applicative.Identity_568c75136c0c369c440814a7af59434a, Monad.Identity_568c75136c0c369c440814a7af59434a, Semigroup.List_5b7ebeeaa5acfe1eeea5a9e9845b152d, Monoid.List_5b7ebeeaa5acfe1eeea5a9e9845b152d]))(3))))))))));
+export let __568c75136c0c369c440814a7af59434a__runStateT__35 = (m => ((__x__) => {
+  if (__x__.__constructor === "StateT" && true) {
+    let f = __x__.__args[0];
+    return (a => f(a));
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(m));
+let __568c75136c0c369c440814a7af59434a__hep__17 = __568c75136c0c369c440814a7af59434a__tell__18;
+let __568c75136c0c369c440814a7af59434a__sumAndLog__45 = (_P_ => __568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(x))(__568c75136c0c369c440814a7af59434a__tell__18(({ v: `Summed 18`, n: null })))))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((x + 18))))(__568c75136c0c369c440814a7af59434a__of__1(_P_))));
+let __568c75136c0c369c440814a7af59434a__runStack__46 = (x => _P_ => __568c75136c0c369c440814a7af59434a__runIdentity__13(__568c75136c0c369c440814a7af59434a__runWriterT__9(__568c75136c0c369c440814a7af59434a__runStateT__7(_P_)(x))));
+let __568c75136c0c369c440814a7af59434a__main = (_ => {
+    __568c75136c0c369c440814a7af59434a__runStack__46(37)(__568c75136c0c369c440814a7af59434a__chain__6(__568c75136c0c369c440814a7af59434a__sumAndLog__45)(__568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(5))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HAP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__put__40(157)))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HIP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__34((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HOP`, n: null }))))(__568c75136c0c369c440814a7af59434a__map__14((x => (x * 17)))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((29 * x))))(__568c75136c0c369c440814a7af59434a__of__1(3))))))))));
     return ({ __constructor: "Unit", __args: [] });
 });
-export default { andDo, runWriterT, runIdentity, runStateT, WriterT, Identity, StateT };
-const makeArgs = () => {
+export default { __568c75136c0c369c440814a7af59434a__of__1, __568c75136c0c369c440814a7af59434a__put__40, __568c75136c0c369c440814a7af59434a__mempty__4, __568c75136c0c369c440814a7af59434a__of__2, __568c75136c0c369c440814a7af59434a__of__23, __568c75136c0c369c440814a7af59434a__pure__21, __568c75136c0c369c440814a7af59434a__of__20, __568c75136c0c369c440814a7af59434a__pure__5, __568c75136c0c369c440814a7af59434a__of__11, __568c75136c0c369c440814a7af59434a__pure__25, __568c75136c0c369c440814a7af59434a__of__29, __568c75136c0c369c440814a7af59434a__mappend__10, __568c75136c0c369c440814a7af59434a__tell__18, __568c75136c0c369c440814a7af59434a__tell__19, __568c75136c0c369c440814a7af59434a__pure__3, __568c75136c0c369c440814a7af59434a__pure__24, __568c75136c0c369c440814a7af59434a__map__14, __568c75136c0c369c440814a7af59434a__chain__6, __568c75136c0c369c440814a7af59434a__chain__34, __568c75136c0c369c440814a7af59434a__chain__42, __568c75136c0c369c440814a7af59434a__chain__38, __568c75136c0c369c440814a7af59434a__chain__26, __568c75136c0c369c440814a7af59434a__map__15, __568c75136c0c369c440814a7af59434a__chain__8, __568c75136c0c369c440814a7af59434a__chain__36, __568c75136c0c369c440814a7af59434a__chain__43, __568c75136c0c369c440814a7af59434a__chain__39, __568c75136c0c369c440814a7af59434a__chain__32, __568c75136c0c369c440814a7af59434a__chain__12, __568c75136c0c369c440814a7af59434a__chain__37, __568c75136c0c369c440814a7af59434a__map__16, __568c75136c0c369c440814a7af59434a__chain__44, __568c75136c0c369c440814a7af59434a__chain__30, __568c75136c0c369c440814a7af59434a__lift__22, __568c75136c0c369c440814a7af59434a__andDo__41, __568c75136c0c369c440814a7af59434a__runWriterT__27, __568c75136c0c369c440814a7af59434a__runWriterT__9, __568c75136c0c369c440814a7af59434a__runWriterT__28, __568c75136c0c369c440814a7af59434a__runIdentity__33, __568c75136c0c369c440814a7af59434a__runIdentity__13, __568c75136c0c369c440814a7af59434a__runIdentity__31, __568c75136c0c369c440814a7af59434a__runStateT__7, __568c75136c0c369c440814a7af59434a__runStateT__35, __568c75136c0c369c440814a7af59434a__WriterT, __568c75136c0c369c440814a7af59434a__Identity, __568c75136c0c369c440814a7af59434a__StateT };
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -245,4 +305,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__568c75136c0c369c440814a7af59434a__main(__makeArgs())

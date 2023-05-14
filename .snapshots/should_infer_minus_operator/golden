@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([ IsIn
@@ -34,141 +41,79 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "i8" Star)))
                           (TVar (TV "i8" Star))))
-                  (Area (Loc 0 1 1) (Loc 29 1 30))
-                  (Placeholder
-                     ( ClassRef "Number" [] False True , [ TVar (TV "i8" Star) ] )
+                  (Area (Loc 12 1 13) (Loc 29 1 30))
+                  (Abs
                      (Typed
                         ([ IsIn
                              "Number"
                              [ TVar (TV "i8" Star) ]
                              (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
                          ] :=>
-                           TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "i8" Star)))
-                             (TApp
-                                (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TVar (TV "i8" Star)))
-                                (TVar (TV "i8" Star))))
-                        (Area (Loc 12 1 13) (Loc 29 1 30))
-                        (Abs
-                           (Typed
-                              ([ IsIn
-                                   "Number"
-                                   [ TVar (TV "i8" Star) ]
-                                   (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
-                               ] :=>
-                                 TVar (TV "i8" Star))
-                              (Area (Loc 13 1 14) (Loc 14 1 15))
-                              "b")
-                           [ Typed
+                           TVar (TV "i8" Star))
+                        (Area (Loc 13 1 14) (Loc 14 1 15))
+                        "b")
+                     [ Typed
+                         ([ IsIn
+                              "Number"
+                              [ TVar (TV "i8" Star) ]
+                              (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
+                          ] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "i8" Star)))
+                              (TVar (TV "i8" Star)))
+                         (Area (Loc 12 1 13) (Loc 29 1 30))
+                         (Abs
+                            (Typed
                                ([ IsIn
                                     "Number"
                                     [ TVar (TV "i8" Star) ]
                                     (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
                                 ] :=>
-                                  TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "i8" Star)))
-                                    (TVar (TV "i8" Star)))
-                               (Area (Loc 12 1 13) (Loc 29 1 30))
-                               (Abs
-                                  (Typed
-                                     ([ IsIn
-                                          "Number"
-                                          [ TVar (TV "i8" Star) ]
-                                          (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
-                                      ] :=>
-                                        TVar (TV "i8" Star))
-                                     (Area (Loc 16 1 17) (Loc 17 1 18))
-                                     "c")
-                                  [ Typed
+                                  TVar (TV "i8" Star))
+                               (Area (Loc 16 1 17) (Loc 17 1 18))
+                               "c")
+                            [ Typed
+                                ([ IsIn
+                                     "Number"
+                                     [ TVar (TV "i8" Star) ]
+                                     (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
+                                 ] :=>
+                                   TVar (TV "i8" Star))
+                                (Area (Loc 23 1 24) (Loc 28 1 29))
+                                (App
+                                   (Typed
                                       ([ IsIn
                                            "Number"
                                            [ TVar (TV "i8" Star) ]
                                            (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
                                        ] :=>
-                                         TVar (TV "i8" Star))
+                                         TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TVar (TV "i8" Star)))
+                                           (TVar (TV "i8" Star)))
                                       (Area (Loc 23 1 24) (Loc 28 1 29))
                                       (App
                                          (Typed
-                                            ([ IsIn
-                                                 "Number"
-                                                 [ TVar (TV "i8" Star) ]
-                                                 (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
-                                             ] :=>
+                                            ([ IsIn "Number" [ TVar (TV "i8" Star) ] Nothing ] :=>
                                                TApp
                                                  (TApp
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TVar (TV "i8" Star)))
-                                                 (TVar (TV "i8" Star)))
-                                            (Area (Loc 23 1 24) (Loc 28 1 29))
-                                            (App
-                                               (Typed
-                                                  ([ IsIn "Number" [ TVar (TV "i8" Star) ] Nothing
-                                                   ] :=>
-                                                     TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "(->)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TVar (TV "i8" Star)))
-                                                       (TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(->)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TVar (TV "i8" Star)))
-                                                          (TVar (TV "i8" Star))))
-                                                  (Area (Loc 25 1 26) (Loc 27 1 28))
-                                                  (Placeholder
-                                                     ( MethodRef "Number" "-" True
-                                                     , [ TVar (TV "i8" Star) ]
-                                                     )
-                                                     (Typed
-                                                        ([ IsIn
-                                                             "Number"
-                                                             [ TVar (TV "i8" Star) ]
-                                                             Nothing
-                                                         ] :=>
-                                                           TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TVar (TV "i8" Star)))
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TVar (TV "i8" Star)))
-                                                                (TVar (TV "i8" Star))))
-                                                        (Area (Loc 25 1 26) (Loc 27 1 28))
-                                                        (Var "-" False))))
-                                               (Typed
-                                                  ([ IsIn
-                                                       "Number"
-                                                       [ TVar (TV "i8" Star) ]
-                                                       (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
-                                                   ] :=>
-                                                     TVar (TV "i8" Star))
-                                                  (Area (Loc 23 1 24) (Loc 24 1 25))
-                                                  (Var "b" False))
-                                               False))
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                          "prelude")
+                                                       (TVar (TV "i8" Star)))
+                                                    (TVar (TV "i8" Star))))
+                                            (Area (Loc 25 1 26) (Loc 27 1 28))
+                                            (Var "-" False))
                                          (Typed
                                             ([ IsIn
                                                  "Number"
@@ -176,11 +121,21 @@
                                                  (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
                                              ] :=>
                                                TVar (TV "i8" Star))
-                                            (Area (Loc 27 1 28) (Loc 28 1 29))
-                                            (Var "c" False))
-                                         True)
-                                  ])
-                           ])))))
+                                            (Area (Loc 23 1 24) (Loc 24 1 25))
+                                            (Var "b" False))
+                                         False))
+                                   (Typed
+                                      ([ IsIn
+                                           "Number"
+                                           [ TVar (TV "i8" Star) ]
+                                           (Just (Area (Loc 25 1 26) (Loc 27 1 28)))
+                                       ] :=>
+                                         TVar (TV "i8" Star))
+                                      (Area (Loc 27 1 28) (Loc 28 1 29))
+                                      (Var "c" False))
+                                   True)
+                            ])
+                     ])))
         ]
     , atypedecls = []
     , ainterfaces = []

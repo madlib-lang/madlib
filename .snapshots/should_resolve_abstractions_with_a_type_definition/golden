@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -123,40 +130,7 @@
                                                              (TCon (TC "Integer" Star) "prelude"))
                                                           (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 54 2 19) (Loc 56 2 21))
-                                                  (Placeholder
-                                                     ( MethodRef "Eq" "==" False
-                                                     , [ TCon (TC "Integer" Star) "prelude" ]
-                                                     )
-                                                     (Typed
-                                                        ([ IsIn
-                                                             "Eq"
-                                                             [ TCon (TC "Integer" Star) "prelude" ]
-                                                             Nothing
-                                                         ] :=>
-                                                           TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TCon
-                                                                   (TC "Integer" Star) "prelude"))
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TCon
-                                                                      (TC "Integer" Star)
-                                                                      "prelude"))
-                                                                (TCon
-                                                                   (TC "Boolean" Star) "prelude")))
-                                                        (Area (Loc 54 2 19) (Loc 56 2 21))
-                                                        (Var "==" False))))
+                                                  (Var "==" False))
                                                (Typed
                                                   ([ IsIn
                                                        "Eq"

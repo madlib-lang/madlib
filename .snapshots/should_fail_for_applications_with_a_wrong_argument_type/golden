@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([ IsIn
@@ -34,138 +41,79 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "h7" Star)))
                           (TCon (TC "Boolean" Star) "prelude")))
-                  (Area (Loc 0 1 1) (Loc 23 1 24))
-                  (Placeholder
-                     ( ClassRef "Eq" [] False True , [ TVar (TV "h7" Star) ] )
+                  (Area (Loc 5 1 6) (Loc 23 1 24))
+                  (Abs
                      (Typed
                         ([ IsIn
                              "Eq"
                              [ TVar (TV "h7" Star) ]
                              (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
                          ] :=>
-                           TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "h7" Star)))
-                             (TApp
-                                (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                   (TVar (TV "h7" Star)))
-                                (TCon (TC "Boolean" Star) "prelude")))
-                        (Area (Loc 5 1 6) (Loc 23 1 24))
-                        (Abs
-                           (Typed
-                              ([ IsIn
-                                   "Eq"
-                                   [ TVar (TV "h7" Star) ]
-                                   (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
-                               ] :=>
-                                 TVar (TV "h7" Star))
-                              (Area (Loc 6 1 7) (Loc 7 1 8))
-                              "a")
-                           [ Typed
+                           TVar (TV "h7" Star))
+                        (Area (Loc 6 1 7) (Loc 7 1 8))
+                        "a")
+                     [ Typed
+                         ([ IsIn
+                              "Eq"
+                              [ TVar (TV "h7" Star) ]
+                              (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
+                          ] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "h7" Star)))
+                              (TCon (TC "Boolean" Star) "prelude"))
+                         (Area (Loc 5 1 6) (Loc 23 1 24))
+                         (Abs
+                            (Typed
                                ([ IsIn
                                     "Eq"
                                     [ TVar (TV "h7" Star) ]
                                     (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
                                 ] :=>
-                                  TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "h7" Star)))
-                                    (TCon (TC "Boolean" Star) "prelude"))
-                               (Area (Loc 5 1 6) (Loc 23 1 24))
-                               (Abs
-                                  (Typed
-                                     ([ IsIn
-                                          "Eq"
-                                          [ TVar (TV "h7" Star) ]
-                                          (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
-                                      ] :=>
-                                        TVar (TV "h7" Star))
-                                     (Area (Loc 9 1 10) (Loc 10 1 11))
-                                     "b")
-                                  [ Typed
+                                  TVar (TV "h7" Star))
+                               (Area (Loc 9 1 10) (Loc 10 1 11))
+                               "b")
+                            [ Typed
+                                ([ IsIn
+                                     "Eq"
+                                     [ TVar (TV "h7" Star) ]
+                                     (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
+                                 ] :=>
+                                   TCon (TC "Boolean" Star) "prelude")
+                                (Area (Loc 16 1 17) (Loc 22 1 23))
+                                (App
+                                   (Typed
                                       ([ IsIn
                                            "Eq"
                                            [ TVar (TV "h7" Star) ]
                                            (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
                                        ] :=>
-                                         TCon (TC "Boolean" Star) "prelude")
+                                         TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TVar (TV "h7" Star)))
+                                           (TCon (TC "Boolean" Star) "prelude"))
                                       (Area (Loc 16 1 17) (Loc 22 1 23))
                                       (App
                                          (Typed
-                                            ([ IsIn
-                                                 "Eq"
-                                                 [ TVar (TV "h7" Star) ]
-                                                 (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
-                                             ] :=>
+                                            ([ IsIn "Eq" [ TVar (TV "h7" Star) ] Nothing ] :=>
                                                TApp
                                                  (TApp
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TVar (TV "h7" Star)))
-                                                 (TCon (TC "Boolean" Star) "prelude"))
-                                            (Area (Loc 16 1 17) (Loc 22 1 23))
-                                            (App
-                                               (Typed
-                                                  ([ IsIn "Eq" [ TVar (TV "h7" Star) ] Nothing ] :=>
-                                                     TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "(->)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TVar (TV "h7" Star)))
-                                                       (TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(->)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TVar (TV "h7" Star)))
-                                                          (TCon (TC "Boolean" Star) "prelude")))
-                                                  (Area (Loc 18 1 19) (Loc 20 1 21))
-                                                  (Placeholder
-                                                     ( MethodRef "Eq" "==" True
-                                                     , [ TVar (TV "h7" Star) ]
-                                                     )
-                                                     (Typed
-                                                        ([ IsIn "Eq" [ TVar (TV "h7" Star) ] Nothing
-                                                         ] :=>
-                                                           TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TVar (TV "h7" Star)))
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TVar (TV "h7" Star)))
-                                                                (TCon
-                                                                   (TC "Boolean" Star) "prelude")))
-                                                        (Area (Loc 18 1 19) (Loc 20 1 21))
-                                                        (Var "==" False))))
-                                               (Typed
-                                                  ([ IsIn
-                                                       "Eq"
-                                                       [ TVar (TV "h7" Star) ]
-                                                       (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
-                                                   ] :=>
-                                                     TVar (TV "h7" Star))
-                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
-                                                  (Var "a" False))
-                                               False))
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                          "prelude")
+                                                       (TVar (TV "h7" Star)))
+                                                    (TCon (TC "Boolean" Star) "prelude")))
+                                            (Area (Loc 18 1 19) (Loc 20 1 21))
+                                            (Var "==" False))
                                          (Typed
                                             ([ IsIn
                                                  "Eq"
@@ -173,11 +121,21 @@
                                                  (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
                                              ] :=>
                                                TVar (TV "h7" Star))
-                                            (Area (Loc 21 1 22) (Loc 22 1 23))
-                                            (Var "b" False))
-                                         True)
-                                  ])
-                           ])))))
+                                            (Area (Loc 16 1 17) (Loc 17 1 18))
+                                            (Var "a" False))
+                                         False))
+                                   (Typed
+                                      ([ IsIn
+                                           "Eq"
+                                           [ TVar (TV "h7" Star) ]
+                                           (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
+                                       ] :=>
+                                         TVar (TV "h7" Star))
+                                      (Area (Loc 21 1 22) (Loc 22 1 23))
+                                      (Var "b" False))
+                                   True)
+                            ])
+                     ])))
         , Typed
             ([] :=> TVar (TV "-" Star))
             (Area (Loc 24 2 1) (Loc 51 2 28))
