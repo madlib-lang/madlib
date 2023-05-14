@@ -426,7 +426,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((), (globalWarnings, mempty))
 
     else do
-      -- forM_ paths $ Rock.fetch . BuiltJSModule
       mainAST <- mergedMainAST (optEntrypoint options)
       let mainASTWithSortedExps = SortExpressions.sortASTExpressions mainAST
       paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
@@ -437,7 +436,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
         writeFile computedOutputPath jsModule
 
-      -- liftIO $ Javascript.generateInternalsModule options
+      liftIO $ Javascript.generateInternalsModule options
 
       when (optBundle options) $ do
         let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path

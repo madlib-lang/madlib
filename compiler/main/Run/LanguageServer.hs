@@ -330,9 +330,6 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             Slv.Assignment _ exp ->
               findNodeAtLoc False loc exp
 
-            Slv.Placeholder _ exp' ->
-              findNodeAtLoc False loc exp'
-
             Slv.If cond truthy falsy ->
               findNodeAtLoc False loc cond
               <|> findNodeAtLoc False loc truthy
@@ -370,9 +367,6 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             _ ->
               Nothing
     in  case deeper of
-          Nothing | Slv.isPlaceholderExp input ->
-            Nothing
-
           Nothing ->
             Just $ ExpNode topLevel input
 

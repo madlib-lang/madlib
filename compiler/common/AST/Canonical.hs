@@ -15,11 +15,6 @@ data Canonical a
   = Canonical Area a
   deriving(Eq, Show, Ord, Generic, Hashable)
 
--- data NameRef
---   = Local String
---   | Foreign FilePath String
---   | UnQualified String
-
 
 data AST =
   AST

@@ -831,7 +831,9 @@ generateRecordName optimized cls ts var =
 
 instance Compilable AST where
   compile env config ast =
-    let exps               = aexps ast
+    let entrypointPath     = ccentrypointPath config
+        internalsPath      = ccinternalsPath config
+        exps               = aexps ast
         typeDecls          = atypedecls ast
         path               = apath ast
         imports            = aimports ast
@@ -852,6 +854,7 @@ instance Compilable AST where
           x  -> foldr1 (<>) (terminate . compileImport configWithASTPath <$> x) <> "\n"
         defaultExport = buildDefaultExport typeDecls exps
     in  infoComment
+          <> (if entrypointPath == astPath then "import {} from \"" <> internalsPath <> "\"\n" else "")
           <> compiledImports
           <> compiledAdts
           <> compiledExps

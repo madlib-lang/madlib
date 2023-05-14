@@ -137,9 +137,10 @@ shouldSkip env e = isMethod env e || case e of
 
 hasAbs :: Exp -> Bool
 hasAbs e = case e of
-  Typed _ _ (Placeholder _ exp) -> hasAbs exp
-  Typed _ _ (Abs         _ _  ) -> True
-  _                              -> False
+  Typed _ _ (Abs _ _) ->
+    True
+  _ ->
+    False
 
 
 verifyScope :: Env -> [(String, Exp)] -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
@@ -206,10 +207,10 @@ isMethod :: Env -> Exp -> Bool
 isMethod _ (Untyped _ _)  = False
 isMethod env (Typed _ _ e) = case e of
   Var n _ ->
-    Just True == (M.lookup n (envMethods env) >> return True)
+    M.member n (envMethods env)
 
   Assignment n _ ->
-    Just True == (M.lookup n (envMethods env) >> return True)
+    M.member n (envMethods env)
 
   _ ->
     False
@@ -394,9 +395,6 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         )
         fields
       return $ foldr S.union S.empty fieldAccesses
-
-    (Typed _ _ (Placeholder _ exp)) ->
-      collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
     (Typed _ _ (NameExport name)) ->
       if name `S.member` globalScope then

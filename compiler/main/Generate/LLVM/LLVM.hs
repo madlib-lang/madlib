@@ -339,7 +339,7 @@ tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,
 
 
 retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
-retrieveConstructorStructType env symbolTable t =
+retrieveConstructorStructType _ symbolTable t =
   let astPath = IT.getTConPath t
       tName   = IT.getTConName t
       key     = astPath <> "__" <> tName
@@ -347,7 +347,7 @@ retrieveConstructorStructType env symbolTable t =
         Just (Symbol (ADTSymbol maxArity) _) ->
           Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
 
-        e ->
+        _ ->
           boxType
           -- error $ "type not found: "<>ppShow key<>"\nfound: "<>ppShow e<>"\nST: "<>ppShow symbolTable<>"\ncurrent module: "<>ppShow (envASTPath env)
 
@@ -383,7 +383,7 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
     safeBitcast what listType
 
-  IT.TRecord _ _ _ -> do
+  IT.TRecord{} -> do
     safeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
