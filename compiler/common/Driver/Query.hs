@@ -22,11 +22,13 @@ import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
 import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.UTF8 as BSU
 import           Infer.Type
 import           Generate.LLVM.SymbolTable
 import qualified Generate.LLVM.Env          as LLVM
 import           Parse.DocString.DocString
 import qualified LLVM.AST                        as AST hiding (function)
+import qualified FarmHash
 
 
 data Query a where
@@ -134,7 +136,7 @@ instance Hashable (Query a) where
       hashWithSalt salt (modulePath, methodName, methodType, 15 :: Int)
 
     SolvedMethodNode methodName methodType ->
-      hashWithSalt salt (methodName, methodType, 16 :: Int)
+      hashWithSalt salt (methodName, hashType methodType, 16 :: Int)
 
     DefinesInterfaceForMethod modulePath methodName ->
       hashWithSalt salt (modulePath, methodName, 17 :: Int)

@@ -369,8 +369,8 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
 
 monoImportTypeToCore :: MonomorphizationState.ImportType -> Core.ImportType
 monoImportTypeToCore importType = case importType of
-  MonomorphizationState.DefinitionImport ->
-    Core.DefinitionImport
+  MonomorphizationState.DefinitionImport definedArity ->
+    Core.DefinitionImport definedArity
 
   MonomorphizationState.ConstructorImport ->
     Core.ConstructorImport

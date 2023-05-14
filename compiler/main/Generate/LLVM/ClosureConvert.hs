@@ -102,6 +102,9 @@ findFreeVars env exp = do
     Typed _ _ _ (Var "+" _) ->
       return []
 
+    Typed _ _ _ (Var "unary-minus" _) ->
+      return []
+
     Typed _ _ _ (Var "++" _) ->
       return []
 

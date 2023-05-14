@@ -16,7 +16,7 @@ import           AST.Solved
 import qualified Rock
 import           Driver.Query
 import           Control.Monad.IO.Class (MonadIO (liftIO))
-import           Infer.Unify (gentleUnify)
+import           Infer.Unify (gentleUnify, Unify (unify))
 import           Infer.Type
 import           Infer.Substitute
 import qualified Data.List as List
@@ -28,6 +28,9 @@ import qualified Control.Monad as Monad
 import Run.Target (Target (TBrowser, TNode))
 import Control.Monad (when)
 import Text.Show.Pretty (ppShow)
+import System.Console.ANSI
+import GHC.IO.Handle (hFlush)
+import GHC.IO.Handle.FD (stdout)
 
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
@@ -70,31 +73,6 @@ findForeignExpByNameInNamespace moduleWhereItsUsed expName namespace = do
 
     _ ->
       return Nothing
-
-
-findModulePathForInterfaceByMethodNameInImports :: (Rock.MonadFetch Query m, MonadIO m) => [FilePath] -> String -> m (Maybe FilePath)
-findModulePathForInterfaceByMethodNameInImports importPaths methodName = case importPaths of
-  [] ->
-    return Nothing
-
-  (modulePath : nextModulePaths) -> do
-    found <- findModulePathForInterfaceByMethodName modulePath methodName
-    case found of
-      Just realPath ->
-        return $ Just realPath
-
-      Nothing ->
-        findModulePathForInterfaceByMethodNameInImports nextModulePaths methodName
-
-findModulePathForInterfaceByMethodName :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m (Maybe FilePath)
-findModulePathForInterfaceByMethodName moduleWhereItsUsed methodName = do
-  isHere <- Rock.fetch $ DefinesInterfaceForMethod moduleWhereItsUsed methodName
-  if isHere then
-    return $ Just moduleWhereItsUsed
-  else do
-    (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-    let imports = map getImportAbsolutePath (aimports ast)
-    findModulePathForInterfaceByMethodNameInImports imports methodName
 
 
 type Monomorphize a = forall m . (Rock.MonadFetch Query m, MonadIO m) => m a
@@ -149,8 +127,32 @@ addImport localModule foreignModule monomorphicName t importType = do
       )
 
 
+makeDefinitionType :: Type -> Exp -> Type
+makeDefinitionType typeItIsCalledWith def =
+  let definedParamCount = getFullAbsParamCount def
+      paramTypes = getParamTypes typeItIsCalledWith
+      returnType = getReturnType typeItIsCalledWith
+      paramsBefore = take definedParamCount paramTypes
+      paramsAfter = drop definedParamCount paramTypes
+  in  if null paramsAfter || null paramsBefore then
+        typeItIsCalledWith
+      else if length paramsBefore > 1 then
+        (foldr fn (last paramsBefore) (init paramsBefore)) `fn` (foldr fn returnType paramsAfter)
+      else
+        head (paramsBefore) `fn` (foldr fn returnType paramsAfter)
+        -- foldr fn (foldr fn returnType paramsAfter) paramsBefore
+
+
+
+
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
 monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith = do
+  liftIO $ saveCursor
+  liftIO $ clearLine
+  liftIO $ putStr ("Monomorphizing: " ++ fnName)
+  liftIO $ hFlush stdout
+  liftIO $ restoreCursor
+
   -- first we look in the local namespace
   localState <- liftIO $ readIORef envLocalState
   let flippedScopes = reverse localState
@@ -166,7 +168,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
           return monomorphicName
 
         Nothing -> do
-          let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
+          let s = gentleUnify (getType fnDefinition) typeItIsCalledWith
           (monomorphicName, nextIndex) <- liftIO $ atomicModifyIORef
             envLocalState
             (\localState ->
@@ -227,9 +229,8 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
         Just (fnDefinition, fnModulePath) ->
           if isExtern fnDefinition then do
             -- For now we skip externs completely
-            -- let fnId = FunctionId fnName fnModulePath (getType fnDefinition)
             liftIO $ setRequestResult fnName' fnModulePath (getType fnDefinition) fnDefinition
-            addImport envCurrentModulePath fnModulePath fnName' typeItIsCalledWith DefinitionImport
+            addImport envCurrentModulePath fnModulePath fnName' typeItIsCalledWith (DefinitionImport $ length $ getParamTypes typeItIsCalledWith)
             return fnName'
           else do
             let fnId = FunctionId fnName' fnModulePath typeItIsCalledWith
@@ -240,18 +241,18 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                 let importType =
                       case mrResult of
                         Nothing ->
-                          DefinitionImport
+                          DefinitionImport (getFullAbsParamCount fnDefinition)
 
                         Just monomorphicExp ->
                           if isAbs monomorphicExp then
-                            DefinitionImport
+                            DefinitionImport (getFullAbsParamCount fnDefinition)
                           else
                             ExpressionImport
                 addImport envCurrentModulePath fnModulePath monomorphicName typeItIsCalledWith importType
                 return monomorphicName
 
               Nothing -> do
-                let s = gentleUnify typeItIsCalledWith (getType fnDefinition)
+                let s = gentleUnify (getType fnDefinition) typeItIsCalledWith
                 monomorphicName <- liftIO $ newRequest fnName' fnModulePath typeItIsCalledWith
                 let nameToUse =
                       if isMain then
@@ -272,7 +273,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
 
                 let importType =
                       if isAbs monomorphized then
-                        DefinitionImport
+                        DefinitionImport (getFullAbsParamCount fnDefinition)
                       else
                         ExpressionImport
                 addImport envCurrentModulePath fnModulePath monomorphicName typeItIsCalledWith importType
@@ -293,11 +294,9 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
               let fnId = FunctionId fnName methodModulePath typeItIsCalledWith
               let (typeForImport, importType) =
                     if isAbs methodExp then
-                      (typeItIsCalledWith, DefinitionImport)
-                    else if isFunctionType t then
-                      (typeItIsCalledWith, ExpressionImport)
+                      (typeItIsCalledWith, DefinitionImport (getFullAbsParamCount methodExp + 1))
                     else
-                      (tUnit `fn` typeItIsCalledWith, DefinitionImport)
+                      (tUnit `fn` typeItIsCalledWith, DefinitionImport 1)
 
               case Map.lookup fnId state of
                 Just MonomorphizationRequest { mrIndex } -> do
@@ -307,14 +306,10 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                   return monomorphicName
 
                 Nothing -> do
-                  let s = gentleUnify typeItIsCalledWith (getType methodExp)
+                  let s = gentleUnify (getType methodExp) typeItIsCalledWith
                   monomorphicName <- liftIO $ newRequest fnName methodModulePath typeItIsCalledWith
 
-                  let methodExp' =
-                        if isFunctionType t then
-                          methodExp
-                        else
-                          Typed ([] :=> (tUnit `fn` t)) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
+                  let methodExp' = Typed ([] :=> (tUnit `fn` t)) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
                   let methodExp'' = Typed (getQualType methodExp') (getArea methodExp') (Export methodExp')
 
                   monomorphized <-
@@ -371,7 +366,14 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
   Typed qt area (Var fnName False) -> do
     monomorphicName <- monomorphizeDefinition target False env fnName (apply envSubstitution $ getQualified qt)
 
-    return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
+    (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv (envCurrentModulePath env)
+    let isMethod = Map.member fnName (Slv.envMethods slvEnv)
+    if isMethod && monomorphicName /= fnName then do
+      let (_ :=> t') = (applyAndCleanQt envSubstitution qt)
+      return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t')) area (Var monomorphicName False)) (Typed ([] :=> tUnit) area LUnit) True)
+    else
+      return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
+
 
   e -> do
     monomorphize target env e
@@ -470,17 +472,6 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
   Typed qt area (Assignment n e) -> do
     e' <- monomorphize target env e
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
-
-  -- Look for nullary method access
-  Typed (_ :=> t) area (Var varName False) | not (isFunctionType t) -> do
-    (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv (envCurrentModulePath env)
-    let isMethod = Map.member varName (Slv.envMethods slvEnv)
-    if isMethod then do
-      monomorphic <- monomorphizeApp target env exp
-      let Typed qt _ monomorphicVar = monomorphic
-      return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t)) area monomorphicVar) (Typed ([] :=> tUnit) area LUnit) True)
-    else do
-      monomorphizeApp target env exp
 
   -- Look for simple function names as args, record field, list item etc
   Typed _ _ (Var _ _) -> do
@@ -801,6 +792,26 @@ buildDependencies' localNames expName exp = case exp of
 
   Typed _ _ (Access rec _) ->
     buildDependencies' localNames expName rec
+
+  Typed _ _ (ListConstructor items) ->
+    concatMap
+      (\case
+        Typed _ _ (ListItem exp) ->
+          buildDependencies' localNames expName exp
+
+        Typed _ _ (ListSpread exp) ->
+          buildDependencies' localNames expName exp
+
+        _ ->
+          []
+      )
+      items
+
+  Typed _ _ (TupleConstructor items) ->
+    items >>= buildDependencies' localNames expName
+
+  Typed _ _ (TemplateString items) ->
+    items >>= buildDependencies' localNames expName
 
   _ ->
     []
