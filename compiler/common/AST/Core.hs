@@ -61,7 +61,7 @@ data AST =
     deriving(Eq, Show, Generic, Hashable)
 
 data ImportType
-  = DefinitionImport
+  = DefinitionImport Int
   | ConstructorImport
   | ExpressionImport
   deriving(Eq, Show, Generic, Hashable)

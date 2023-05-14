@@ -307,15 +307,13 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   MonomorphizedAST path -> nonInput $ do
     state <- liftIO $ readIORef monomorphizationState
 
-    -- liftIO $ putStrLn $ "monomorphizing path: " <> path
-
     -- TODO:
     -- We should move all that to a separate Query and reset the state before
     -- running it, so that it would happen again only if a source AST has
     -- changed
     when (Map.null state) $ do
-      liftIO $ putStr "Applying monomorphization..."
-      liftIO $ hFlush stdout
+      -- liftIO $ putStr "Monomorphization: "
+      -- liftIO $ hFlush stdout
       mainFn <- MM.findExpByName (optEntrypoint options) "main"
       case mainFn of
         Just (fn, modulePath) -> do
@@ -332,7 +330,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             "main"
             (Slv.getType fn)
 
-          liftIO $ putStrLn "DONE"
+          liftIO $ putStrLn "\nMonomorphization complete."
+
 
         _ ->
           return ()
@@ -341,10 +340,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
     merged <- liftIO $ MM.mergeResult ast
-
-    -- liftIO $ when ("__BUILTINS__.mad" `List.isSuffixOf` path) $ do
-    --   putStrLn $ ppShow ast
-      -- putStrLn $ ppShow merged
 
     return (merged, (mempty, mempty))
 
@@ -364,7 +359,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         coreAst <- astToCore (optOptimized options) slvAst
         let strippedAst      = stripAST coreAst
             tceResolved      = TCE.resolveAST strippedAst
-            -- closureConverted = ClosureConvert.convertAST tceResolved
         return (tceResolved, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
@@ -600,8 +594,7 @@ findMethodByNameAndType moduleWhereItsUsed methodName typeItsCalledWith = do
       return $ Just (found, moduleWhereItsUsed)
 
     Nothing -> do
-      (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-      let imports = map Slv.getImportAbsolutePath (Slv.aimports ast)
+      let imports = map Slv.getImportAbsolutePath (Slv.aimports slvAst)
       findMethodByNameAndTypeInImports imports methodName typeItsCalledWith
 
 

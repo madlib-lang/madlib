@@ -1275,7 +1275,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- case recordType of
-      IT.TRecord fields Nothing _ -> do
+      IT.TRecord fields _ _ -> do
         recordOperand' <- safeBitcast recordOperand (Type.ptr $ Type.StructureType False [Type.i32, boxType])
         let fieldType = Type.StructureType False [stringType, boxType]
         let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
@@ -1964,9 +1964,8 @@ getLLVMReturnType t = case t of
 
 generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> IT.Type -> Core.ImportType -> m ()
 generateExternalForName symbolTable name t importType = case importType of
-  Core.DefinitionImport -> do
-    let arity  = List.length $ IT.getParamTypes t
-        paramTypes = List.replicate arity boxType
+  Core.DefinitionImport arity -> do
+    let paramTypes = List.replicate arity boxType
         returnType = boxType
     extern (AST.mkName name) paramTypes returnType
     return ()
@@ -2021,10 +2020,8 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       return $ Map.singleton name (topLevelSymbol globalRef)
 
-  Typed (_ IT.:=> t) _ _ (ImportInfo name DefinitionImport) -> do
-    let paramTypes = IT.getParamTypes t
-        arity  = List.length paramTypes
-        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+  Typed (_ IT.:=> t) _ _ (ImportInfo name (DefinitionImport arity)) -> do
+    let fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
     return $ Map.singleton name (fnSymbol arity fnRef)
 

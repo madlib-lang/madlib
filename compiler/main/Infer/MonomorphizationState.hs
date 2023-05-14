@@ -8,8 +8,11 @@ import GHC.IO (unsafePerformIO)
 import AST.Solved
 import qualified Data.Set as Set
 
-data ImportType = DefinitionImport | ConstructorImport | ExpressionImport
-                deriving(Eq, Ord, Show)
+data ImportType
+  = DefinitionImport Int
+  | ConstructorImport
+  | ExpressionImport
+  deriving(Eq, Ord, Show)
 
 monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}

@@ -566,6 +566,34 @@ isNamedAbs exp = case exp of
     False
 
 
+getFullAbsParamCount :: Exp -> Int
+getFullAbsParamCount = getFullAbsParamCount' 0
+
+
+getFullAbsParamCount' :: Int -> Exp -> Int
+getFullAbsParamCount' count exp = case exp of
+  Typed _ _ (Placeholder _ e) ->
+    if count == 0 then getFullAbsParamCount' 0 e else count
+
+  Typed _ _ (Assignment _ e) ->
+    if count == 0 then getFullAbsParamCount' 0 e else count
+
+  Typed _ _ (TypedExp e _ _) ->
+    if count == 0 then getFullAbsParamCount' 0 e else count
+
+  Typed _ _ (Export e) ->
+    if count == 0 then getFullAbsParamCount' 0 e else count
+
+  Typed _ _ (Abs _ [e]) ->
+    getFullAbsParamCount' (count + 1) e
+
+  Typed _ _ (Abs _ _) ->
+    count + 1
+
+  _ ->
+    count
+
+
 isAbs :: Exp -> Bool
 isAbs exp = case exp of
   Typed _ _ (Placeholder _ e) ->
@@ -582,17 +610,6 @@ isAbs exp = case exp of
 
   Typed _ _ (Abs _ _) ->
     True
-  -- Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))) ->
-  --   True
-
-  -- Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _))))) ->
-  --   True
-
-  -- Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))) _ _) ->
-  --   True
-
-  -- Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ (Abs _ _)))))) _ _) ->
-  --   True
 
   _ ->
     False
