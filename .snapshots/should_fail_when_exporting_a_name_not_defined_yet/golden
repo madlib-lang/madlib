@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -97,33 +104,7 @@
                                                       (TCon (TC "Integer" Star) "prelude"))
                                                    (TCon (TC "Integer" Star) "prelude")))
                                            (Area (Loc 79 3 25) (Loc 80 3 26))
-                                           (Placeholder
-                                              ( MethodRef "Number" "+" False
-                                              , [ TCon (TC "Integer" Star) "prelude" ]
-                                              )
-                                              (Typed
-                                                 ([ IsIn
-                                                      "Number"
-                                                      [ TCon (TC "Integer" Star) "prelude" ]
-                                                      Nothing
-                                                  ] :=>
-                                                    TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TCon (TC "Integer" Star) "prelude"))
-                                                      (TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TCon (TC "Integer" Star) "prelude"))
-                                                         (TCon (TC "Integer" Star) "prelude")))
-                                                 (Area (Loc 79 3 25) (Loc 80 3 26))
-                                                 (Var "+" False))))
+                                           (Var "+" False))
                                         (Typed
                                            ([ IsIn
                                                 "Number"

@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -12,7 +19,10 @@
             (Assignment
                "g"
                (Typed
-                  ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                  ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                   , IsIn "__MUTATION__" [] Nothing
+                   , IsIn "__MUTATION__" [] (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
+                   ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -21,7 +31,10 @@
                   (Area (Loc 4 1 5) (Loc 33 4 2))
                   (Abs
                      (Typed
-                        ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                        ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                         , IsIn "__MUTATION__" [] Nothing
+                         , IsIn "__MUTATION__" [] (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
+                         ] :=>
                            TVar (TV "f5" Star))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
@@ -36,7 +49,7 @@
                                (Area (Loc 19 2 7) (Loc 20 2 8))
                                (LNum "2")))
                      , Typed
-                         ([] :=> TVar (TV "h7" Star))
+                         ([ IsIn "__MUTATION__" [] Nothing ] :=> TVar (TV "h7" Star))
                          (Area (Loc 30 3 10) (Loc 31 3 11))
                          (Var "a" False)
                      ])))

@@ -1,36 +1,11 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
-let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
-let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-Inspect['Maybe_568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Maybe_568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_x725) => (__$a__ => ((__x__) => {
-  if (__x__.__constructor === "Just" && true) {
-    let a0 = __x__.__args[0];
-    return `Just(` + Inspect_x725.inspect()(a0) + `)`;
-  }
-  else if (__x__.__constructor === "Nothing") {
-    return `Nothing`;
-  }
-  else if (true) {
-    return `Unknown`;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(__$a__));
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_carsf_0568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_m740) => (__$a__ => `{ ` + `cars: ` + Inspect_m740.inspect()(__$a__.cars) + ` }`);
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a'] = {};
-Inspect['Record_namef_0568c75136c0c369c440814a7af59434a_xf_1568c75136c0c369c440814a7af59434a']['inspect'] = () => (Inspect_d757) => (Inspect_w750) => (__$a__ => `{ ` + `name: ` + Inspect_w750.inspect()(__$a__.name) + `, ` + `x: ` + Inspect_d757.inspect()(__$a__.x) + ` }`);
-export let fn = (b => c => (b + c));
-let inc = (x => (x + 1));
-let dec = (x => (x - 1));
-let double = (x => (x * 2));
-let half = (x => (x / 2));
-let main = (_ => {
-    double(half(3));
+let __568c75136c0c369c440814a7af59434a__Just = (a => ({ __constructor: "Just", __args: [ a ] }));
+let __568c75136c0c369c440814a7af59434a__Nothing = ({ __constructor: "Nothing", __args: [  ] });
+let __568c75136c0c369c440814a7af59434a__double__2 = (x => (x * 2));
+let __568c75136c0c369c440814a7af59434a__half__1 = (x => (x / 2));
+let __568c75136c0c369c440814a7af59434a__main = (_ => {
+    __568c75136c0c369c440814a7af59434a__double__2(__568c75136c0c369c440814a7af59434a__half__1(3));
     __eq__(3, 5);
     let carResponse = ({ cars: (null) });
     ((__x__) => {
@@ -78,7 +53,7 @@ let main = (_ => {
   }
 })(true);
     (true ? `OK` : `NOT OK`);
-    let might = Just(3);
+    let might = __568c75136c0c369c440814a7af59434a__Just(3);
     let q = ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
@@ -203,77 +178,11 @@ let main = (_ => {
     throw 'non exhaustive patterns!';
   }
 })(([1, 2]));
-    fst(([1, 2]));
-    snd(([1, 2]));
+    __568c75136c0c369c440814a7af59434a__fst__3(([1, 2]));
+    __568c75136c0c369c440814a7af59434a__snd__4(([1, 2]));
     return ({ __constructor: "Unit", __args: [] });
 });
-let log = (a =>  { console.log(a); return a; } );
-let mapMaybe = (f => m => ((__x__) => {
-  if (__x__.__constructor === "Just" && true) {
-    let a = __x__.__args[0];
-    return Just(f(a));
-  }
-  else if (__x__.__constructor === "Nothing") {
-    return Nothing;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(m));
-export let mapList = (f => xs => {
-    let $_result_;
-    let $_continue_ = true;
-    let $_start_ = {};
-    let $_end_ = $_start_;
-    let $$f = f;
-    let $$xs = xs;
-
-    while($_continue_) {
-      let $f = $$f;
-      let $xs = $$xs;
-
-        $_continue_ = false;
-        ((__x__) => {
-  if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n !== null && true && __x__.n.n.n === null) {
-    let { v: a, n: { v: b, n: { v: c } } } = __x__;
-    ($_end_ = $_end_.n = { v: $f(a) }, $$f = $f, $$xs = ({ v: b, n: { v: c, n: null } }), $_continue_ = true);
-  }
-  else if (__x__ !== null && true && __x__.n !== null && true && __x__.n.n === null) {
-    let { v: a, n: { v: b } } = __x__;
-    ($_end_ = $_end_.n = { v: $f(a) }, $$f = $f, $$xs = ({ v: b, n: null }), $_continue_ = true);
-  }
-  else if (__x__ !== null && true && __x__.n === null) {
-    let { v: a } = __x__;
-    ($_end_.n = ({ v: $f(a), n: null }), $_result_ = $_start_.n);
-  }
-  else if (__x__ === null) {
-    ($_end_.n = (null), $_result_ = $_start_.n);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})($xs)
-    }
-    return $_result_;
-});
-let addXAndY = (r => ((__x__) => {
-  if (true && true) {
-    let { y: y, x: x1 } = __x__;
-    return (x1 + y);
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(r));
-let fnTCHOU = (x => x.a.b.c.d.e);
-let fn2 = (a => ([a, a]));
-let fst = (tuple => ((__x__) => {
+let __568c75136c0c369c440814a7af59434a__fst__3 = (tuple => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,] = __x__;
     return a;
@@ -284,7 +193,7 @@ let fst = (tuple => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(tuple));
-let snd = (tuple => {
+let __568c75136c0c369c440814a7af59434a__snd__4 = (tuple => {
     let b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [,b1] = __x__;
@@ -298,8 +207,8 @@ let snd = (tuple => {
 })(tuple);
     return b;
 });
-export default { fn, mapList };
-const makeArgs = () => {
+export default {};
+const __makeArgs = () => {
   let list = {}
   let start = list
   Object.keys(process.argv.slice(0)).forEach((key) => {
@@ -310,4 +219,4 @@ const makeArgs = () => {
     v: start.n.n.v
   }
 }
-main(makeArgs())
+__568c75136c0c369c440814a7af59434a__main(__makeArgs())
