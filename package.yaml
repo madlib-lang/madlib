@@ -99,10 +99,6 @@ _exe-defs: &exe-defaults
     - -Wunused-top-binds
     - -Wunused-type-patterns
 
-    - -optcxx=-std=c++14
-    - -optcxx=-lstdc++
-    - -optcxx=-fno-rtti
-
 executables:
   madlib:
     <<: *exe-defaults
