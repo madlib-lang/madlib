@@ -73,8 +73,11 @@ export fail = aempty
  */
 instance Functor Parser {
   map = (f, m) => Parser((s, l) => where(parse(m, s, l)) {
-    #[[#[a, b]], loc] => #[[#[f(a), b]], loc]
-    #[[], loc] => #[[], loc]
+    #[[#[a, b]], loc] =>
+      #[[#[f(a), b]], loc]
+
+    #[_, loc] =>
+      #[[], loc]
   })
 }
 
@@ -96,17 +99,17 @@ instance Applicative Parser {
 
   ap = (parserA, parserB) => Parser((s, l) =>
     where(parse(parserA, s, l)) {
-      #[[], l1] =>
-        #[[], l1]
-
       #[[#[f, s1]], l1] =>
         where(parse(parserB, s1, l1)) {
           #[[#[a, s2]], l2] =>
             #[[#[f(a), s2]], l2]
 
-          #[[], l2] =>
+          #[_, l2] =>
             #[[], l2]
         }
+
+      #[_, l1] =>
+        #[[], l1]
     }
   )
 }
@@ -123,11 +126,11 @@ instance Monad Parser {
 
   chain = (f, m) => Parser((s, l) =>
     where(parse(m, s, l)) {
-      #[[], ll] =>
-        #[[], ll]
-
       #[[#[a, s1]], l1] =>
         parse(f(a), s1, l1)
+
+      #[_, ll] =>
+        #[[], ll]
     }
   )
 }
