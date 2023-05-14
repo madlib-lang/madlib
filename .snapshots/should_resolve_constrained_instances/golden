@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -73,128 +80,7 @@
                                                 (TCon (TC "Boolean" Star) "prelude")))
                                           (TCon (TC "String" Star) "prelude"))
                                      (Area (Loc 321 18 3) (Loc 325 18 7))
-                                     (Placeholder
-                                        ( ClassRef "Show" [] True False
-                                        , [ TCon (TC "Boolean" Star) "prelude" ]
-                                        )
-                                        (Typed
-                                           ([ IsIn
-                                                "Show"
-                                                [ TApp
-                                                    (TApp
-                                                       (TCon
-                                                          (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                          "prelude")
-                                                       (TCon (TC "Integer" Star) "prelude"))
-                                                    (TCon (TC "Boolean" Star) "prelude")
-                                                ]
-                                                Nothing
-                                            ] :=>
-                                              TApp
-                                                (TApp
-                                                   (TCon
-                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                      "prelude")
-                                                   (TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TCon (TC "Integer" Star) "prelude"))
-                                                      (TCon (TC "Boolean" Star) "prelude")))
-                                                (TCon (TC "String" Star) "prelude"))
-                                           (Area (Loc 321 18 3) (Loc 325 18 7))
-                                           (Placeholder
-                                              ( ClassRef "Show" [] True False
-                                              , [ TCon (TC "Integer" Star) "prelude" ]
-                                              )
-                                              (Typed
-                                                 ([ IsIn
-                                                      "Show"
-                                                      [ TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(,)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TCon (TC "Integer" Star) "prelude"))
-                                                          (TCon (TC "Boolean" Star) "prelude")
-                                                      ]
-                                                      Nothing
-                                                  ] :=>
-                                                    TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TApp
-                                                            (TApp
-                                                               (TCon
-                                                                  (TC
-                                                                     "(,)"
-                                                                     (Kfun Star (Kfun Star Star)))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude"))
-                                                            (TCon (TC "Boolean" Star) "prelude")))
-                                                      (TCon (TC "String" Star) "prelude"))
-                                                 (Area (Loc 321 18 3) (Loc 325 18 7))
-                                                 (Placeholder
-                                                    ( MethodRef "Show" "show" False
-                                                    , [ TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(,)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TVar (TV "a" Star)))
-                                                          (TVar (TV "b" Star))
-                                                      ]
-                                                    )
-                                                    (Typed
-                                                       ([ IsIn
-                                                            "Show"
-                                                            [ TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(,)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TCon
-                                                                      (TC "Integer" Star)
-                                                                      "prelude"))
-                                                                (TCon (TC "Boolean" Star) "prelude")
-                                                            ]
-                                                            Nothing
-                                                        ] :=>
-                                                          TApp
-                                                            (TApp
-                                                               (TCon
-                                                                  (TC
-                                                                     "(->)"
-                                                                     (Kfun Star (Kfun Star Star)))
-                                                                  "prelude")
-                                                               (TApp
-                                                                  (TApp
-                                                                     (TCon
-                                                                        (TC
-                                                                           "(,)"
-                                                                           (Kfun
-                                                                              Star
-                                                                              (Kfun Star Star)))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude"))
-                                                                  (TCon
-                                                                     (TC "Boolean" Star)
-                                                                     "prelude")))
-                                                            (TCon (TC "String" Star) "prelude"))
-                                                       (Area (Loc 321 18 3) (Loc 325 18 7))
-                                                       (Var "show" False))))))))
+                                     (Var "show" False))
                                   (Typed
                                      ([ IsIn
                                           "Show"
@@ -426,7 +312,9 @@
                           (Assignment
                              "show"
                              (Typed
-                                ([] :=>
+                                ([ IsIn "Show" [ TVar (TV "q16" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "r17" Star) ] Nothing
+                                 ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -437,95 +325,201 @@
                                               (TVar (TV "q16" Star)))
                                            (TVar (TV "r17" Star))))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 231 14 3) (Loc 300 14 72))
-                                (Placeholder
-                                   ( ClassRef "Show" [] False True , [ TVar (TV "r17" Star) ] )
+                                (Area (Loc 238 14 10) (Loc 300 14 72))
+                                (Abs
                                    (Typed
-                                      ([] :=>
+                                      ([ IsIn
+                                           "Show"
+                                           [ TVar (TV "q16" Star) ]
+                                           (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                       , IsIn
+                                           "Show"
+                                           [ TVar (TV "r17" Star) ]
+                                           (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                       ] :=>
                                          TApp
                                            (TApp
                                               (TCon
-                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TApp
-                                                 (TApp
-                                                    (TCon
-                                                       (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                       "prelude")
-                                                    (TVar (TV "q16" Star)))
-                                                 (TVar (TV "r17" Star))))
-                                           (TCon (TC "String" Star) "prelude"))
-                                      (Area (Loc 231 14 3) (Loc 300 14 72))
-                                      (Placeholder
-                                         ( ClassRef "Show" [] False True
-                                         , [ TVar (TV "q16" Star) ]
-                                         )
-                                         (Typed
-                                            ([ IsIn "Show" [ TVar (TV "q16" Star) ] Nothing
-                                             , IsIn "Show" [ TVar (TV "r17" Star) ] Nothing
-                                             ] :=>
-                                               TApp
-                                                 (TApp
-                                                    (TCon
-                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                       "prelude")
-                                                    (TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TVar (TV "q16" Star)))
-                                                       (TVar (TV "r17" Star))))
-                                                 (TCon (TC "String" Star) "prelude"))
-                                            (Area (Loc 238 14 10) (Loc 300 14 72))
-                                            (Abs
-                                               (Typed
-                                                  ([ IsIn
-                                                       "Show"
-                                                       [ TVar (TV "q16" Star) ]
-                                                       (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
-                                                   , IsIn
-                                                       "Show"
-                                                       [ TVar (TV "r17" Star) ]
-                                                       (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
-                                                   ] :=>
-                                                     TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TVar (TV "q16" Star)))
-                                                       (TVar (TV "r17" Star)))
-                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                  "__x__")
-                                               [ Typed
-                                                   ([ IsIn
-                                                        "Show"
-                                                        [ TVar (TV "q16" Star) ]
-                                                        (Just
-                                                           (Area (Loc 265 14 37) (Loc 269 14 41)))
-                                                    , IsIn
-                                                        "Show"
-                                                        [ TVar (TV "r17" Star) ]
-                                                        (Just
-                                                           (Area (Loc 284 14 56) (Loc 288 14 60)))
-                                                    ] :=>
-                                                      TCon (TC "String" Star) "prelude")
-                                                   (Area (Loc 238 14 10) (Loc 300 14 72))
-                                                   (Where
-                                                      (Typed
-                                                         ([] :=>
-                                                            TApp
-                                                              (TApp
-                                                                 (TCon
-                                                                    (TC
-                                                                       "(,)"
-                                                                       (Kfun Star (Kfun Star Star)))
-                                                                    "prelude")
-                                                                 (TVar (TV "q16" Star)))
-                                                              (TVar (TV "r17" Star)))
-                                                         (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                         (Var "__x__" False))
-                                                      [ Typed
+                                                 (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TVar (TV "q16" Star)))
+                                           (TVar (TV "r17" Star)))
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      "__x__")
+                                   [ Typed
+                                       ([ IsIn
+                                            "Show"
+                                            [ TVar (TV "q16" Star) ]
+                                            (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                        , IsIn
+                                            "Show"
+                                            [ TVar (TV "r17" Star) ]
+                                            (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                        ] :=>
+                                          TCon (TC "String" Star) "prelude")
+                                       (Area (Loc 238 14 10) (Loc 300 14 72))
+                                       (Where
+                                          (Typed
+                                             ([] :=>
+                                                TApp
+                                                  (TApp
+                                                     (TCon
+                                                        (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                        "prelude")
+                                                     (TVar (TV "q16" Star)))
+                                                  (TVar (TV "r17" Star)))
+                                             (Area (Loc 0 0 0) (Loc 0 0 0))
+                                             (Var "__x__" False))
+                                          [ Typed
+                                              ([ IsIn
+                                                   "Show"
+                                                   [ TVar (TV "q16" Star) ]
+                                                   (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                               , IsIn
+                                                   "Show"
+                                                   [ TVar (TV "r17" Star) ]
+                                                   (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                               ] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TApp
+                                                         (TApp
+                                                            (TCon
+                                                               (TC
+                                                                  "(,)"
+                                                                  (Kfun Star (Kfun Star Star)))
+                                                               "prelude")
+                                                            (TVar (TV "q16" Star)))
+                                                         (TVar (TV "r17" Star))))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 246 14 18) (Loc 298 14 70))
+                                              (Is
+                                                 (Typed
+                                                    ([] :=>
+                                                       TApp
+                                                         (TApp
+                                                            (TCon
+                                                               (TC
+                                                                  "(,)"
+                                                                  (Kfun Star (Kfun Star Star)))
+                                                               "prelude")
+                                                            (TVar (TV "q16" Star)))
+                                                         (TVar (TV "r17" Star)))
+                                                    (Area (Loc 246 14 18) (Loc 253 14 25))
+                                                    (PTuple
+                                                       [ Typed
+                                                           ([ IsIn
+                                                                "Show"
+                                                                [ TVar (TV "q16" Star) ]
+                                                                (Just
+                                                                   (Area
+                                                                      (Loc 265 14 37)
+                                                                      (Loc 269 14 41)))
+                                                            , IsIn
+                                                                "Show"
+                                                                [ TVar (TV "q16" Star) ]
+                                                                (Just
+                                                                   (Area
+                                                                      (Loc 265 14 37)
+                                                                      (Loc 269 14 41)))
+                                                            ] :=>
+                                                              TVar (TV "q16" Star))
+                                                           (Area (Loc 248 14 20) (Loc 249 14 21))
+                                                           (PVar "a")
+                                                       , Typed
+                                                           ([ IsIn
+                                                                "Show"
+                                                                [ TVar (TV "r17" Star) ]
+                                                                (Just
+                                                                   (Area
+                                                                      (Loc 284 14 56)
+                                                                      (Loc 288 14 60)))
+                                                            , IsIn
+                                                                "Show"
+                                                                [ TVar (TV "r17" Star) ]
+                                                                (Just
+                                                                   (Area
+                                                                      (Loc 284 14 56)
+                                                                      (Loc 288 14 60)))
+                                                            ] :=>
+                                                              TVar (TV "r17" Star))
+                                                           (Area (Loc 251 14 23) (Loc 252 14 24))
+                                                           (PVar "b")
+                                                       ]))
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Show"
+                                                         [ TVar (TV "q16" Star) ]
+                                                         (Just
+                                                            (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                                     , IsIn
+                                                         "Show"
+                                                         [ TVar (TV "r17" Star) ]
+                                                         (Just
+                                                            (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                                     ] :=>
+                                                       TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 257 14 29) (Loc 298 14 70))
+                                                    (App
+                                                       (Typed
+                                                          ([] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TCon
+                                                                     (TC "String" Star) "prelude"))
+                                                               (TCon (TC "String" Star) "prelude"))
+                                                          (Area (Loc 257 14 29) (Loc 298 14 70))
+                                                          (App
+                                                             (Typed
+                                                                ([] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude"))
+                                                                     (TApp
+                                                                        (TApp
+                                                                           (TCon
+                                                                              (TC
+                                                                                 "(->)"
+                                                                                 (Kfun
+                                                                                    Star
+                                                                                    (Kfun
+                                                                                       Star Star)))
+                                                                              "prelude")
+                                                                           (TCon
+                                                                              (TC "String" Star)
+                                                                              "prelude"))
+                                                                        (TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude")))
+                                                                (Area
+                                                                   (Loc 262 14 34) (Loc 264 14 36))
+                                                                (Var "++" False))
+                                                             (Typed
+                                                                ([] :=>
+                                                                   TCon
+                                                                     (TC "String" Star) "prelude")
+                                                                (Area
+                                                                   (Loc 257 14 29) (Loc 261 14 33))
+                                                                (LStr "\"#[\""))
+                                                             False))
+                                                       (Typed
                                                           ([ IsIn
                                                                "Show"
                                                                [ TVar (TV "q16" Star) ]
@@ -541,73 +535,145 @@
                                                                      (Loc 284 14 56)
                                                                      (Loc 288 14 60)))
                                                            ] :=>
-                                                             TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TApp
-                                                                     (TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "(,)"
-                                                                              (Kfun
-                                                                                 Star
-                                                                                 (Kfun Star Star)))
-                                                                           "prelude")
-                                                                        (TVar (TV "q16" Star)))
-                                                                     (TVar (TV "r17" Star))))
-                                                               (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 246 14 18) (Loc 298 14 70))
-                                                          (Is
+                                                             TCon (TC "String" Star) "prelude")
+                                                          (Area (Loc 265 14 37) (Loc 298 14 70))
+                                                          (App
                                                              (Typed
-                                                                ([] :=>
+                                                                ([ IsIn
+                                                                     "Show"
+                                                                     [ TVar (TV "q16" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 265 14 37)
+                                                                           (Loc 269 14 41)))
+                                                                 ] :=>
                                                                    TApp
                                                                      (TApp
                                                                         (TCon
                                                                            (TC
-                                                                              "(,)"
+                                                                              "(->)"
                                                                               (Kfun
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV "q16" Star)))
-                                                                     (TVar (TV "r17" Star)))
+                                                                        (TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude"))
+                                                                     (TCon
+                                                                        (TC "String" Star)
+                                                                        "prelude"))
                                                                 (Area
-                                                                   (Loc 246 14 18) (Loc 253 14 25))
-                                                                (PTuple
-                                                                   [ Typed
-                                                                       ([ IsIn
-                                                                            "Show"
-                                                                            [ TVar (TV "q16" Star) ]
-                                                                            (Just
-                                                                               (Area
-                                                                                  (Loc 265 14 37)
-                                                                                  (Loc 269 14 41)))
-                                                                        ] :=>
-                                                                          TVar (TV "q16" Star))
-                                                                       (Area
-                                                                          (Loc 248 14 20)
-                                                                          (Loc 249 14 21))
-                                                                       (PVar "a")
-                                                                   , Typed
-                                                                       ([ IsIn
-                                                                            "Show"
-                                                                            [ TVar (TV "r17" Star) ]
-                                                                            (Just
-                                                                               (Area
-                                                                                  (Loc 284 14 56)
-                                                                                  (Loc 288 14 60)))
-                                                                        ] :=>
-                                                                          TVar (TV "r17" Star))
-                                                                       (Area
-                                                                          (Loc 251 14 23)
-                                                                          (Loc 252 14 24))
-                                                                       (PVar "b")
-                                                                   ]))
+                                                                   (Loc 265 14 37) (Loc 298 14 70))
+                                                                (App
+                                                                   (Typed
+                                                                      ([] :=>
+                                                                         TApp
+                                                                           (TApp
+                                                                              (TCon
+                                                                                 (TC
+                                                                                    "(->)"
+                                                                                    (Kfun
+                                                                                       Star
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          Star)))
+                                                                                 "prelude")
+                                                                              (TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude"))
+                                                                           (TApp
+                                                                              (TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "(->)"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             Star)))
+                                                                                    "prelude")
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "String"
+                                                                                       Star)
+                                                                                    "prelude"))
+                                                                              (TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude")))
+                                                                      (Area
+                                                                         (Loc 273 14 45)
+                                                                         (Loc 275 14 47))
+                                                                      (Var "++" False))
+                                                                   (Typed
+                                                                      ([ IsIn
+                                                                           "Show"
+                                                                           [ TVar (TV "q16" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 265 14 37)
+                                                                                 (Loc 269 14 41)))
+                                                                       ] :=>
+                                                                         TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude")
+                                                                      (Area
+                                                                         (Loc 265 14 37)
+                                                                         (Loc 272 14 44))
+                                                                      (App
+                                                                         (Typed
+                                                                            ([ IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "q16" Star)
+                                                                                 ]
+                                                                                 Nothing
+                                                                             ] :=>
+                                                                               TApp
+                                                                                 (TApp
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "(->)"
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star)))
+                                                                                       "prelude")
+                                                                                    (TVar
+                                                                                       (TV
+                                                                                          "q16"
+                                                                                          Star)))
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "String"
+                                                                                       Star)
+                                                                                    "prelude"))
+                                                                            (Area
+                                                                               (Loc 265 14 37)
+                                                                               (Loc 269 14 41))
+                                                                            (Var "show" False))
+                                                                         (Typed
+                                                                            ([ IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "q16" Star)
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          265 14 37)
+                                                                                       (Loc
+                                                                                          269
+                                                                                          14
+                                                                                          41)))
+                                                                             ] :=>
+                                                                               TVar (TV "q16" Star))
+                                                                            (Area
+                                                                               (Loc 270 14 42)
+                                                                               (Loc 271 14 43))
+                                                                            (Var "a" False))
+                                                                         True))
+                                                                   False))
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Show"
@@ -627,7 +693,7 @@
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 257 14 29) (Loc 298 14 70))
+                                                                   (Loc 276 14 48) (Loc 298 14 70))
                                                                 (App
                                                                    (Typed
                                                                       ([] :=>
@@ -649,7 +715,7 @@
                                                                               (TC "String" Star)
                                                                               "prelude"))
                                                                       (Area
-                                                                         (Loc 257 14 29)
+                                                                         (Loc 276 14 48)
                                                                          (Loc 298 14 70))
                                                                       (App
                                                                          (Typed
@@ -692,8 +758,8 @@
                                                                                           Star)
                                                                                        "prelude")))
                                                                             (Area
-                                                                               (Loc 262 14 34)
-                                                                               (Loc 264 14 36))
+                                                                               (Loc 281 14 53)
+                                                                               (Loc 283 14 55))
                                                                             (Var "++" False))
                                                                          (Typed
                                                                             ([] :=>
@@ -701,19 +767,12 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 257 14 29)
-                                                                               (Loc 261 14 33))
-                                                                            (LStr "\"#[\""))
+                                                                               (Loc 276 14 48)
+                                                                               (Loc 280 14 52))
+                                                                            (LStr "\", \""))
                                                                          False))
                                                                    (Typed
                                                                       ([ IsIn
-                                                                           "Show"
-                                                                           [ TVar (TV "q16" Star) ]
-                                                                           (Just
-                                                                              (Area
-                                                                                 (Loc 265 14 37)
-                                                                                 (Loc 269 14 41)))
-                                                                       , IsIn
                                                                            "Show"
                                                                            [ TVar (TV "r17" Star) ]
                                                                            (Just
@@ -725,23 +784,23 @@
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 265 14 37)
+                                                                         (Loc 284 14 56)
                                                                          (Loc 298 14 70))
                                                                       (App
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Show"
                                                                                  [ TVar
-                                                                                     (TV "q16" Star)
+                                                                                     (TV "r17" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          265 14 37)
+                                                                                          284 14 56)
                                                                                        (Loc
-                                                                                          269
+                                                                                          288
                                                                                           14
-                                                                                          41)))
+                                                                                          60)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -765,7 +824,7 @@
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 265 14 37)
+                                                                               (Loc 284 14 56)
                                                                                (Loc 298 14 70))
                                                                             (App
                                                                                (Typed
@@ -808,301 +867,10 @@
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 273 14 45)
+                                                                                     (Loc 292 14 64)
                                                                                      (Loc
-                                                                                        275 14 47))
+                                                                                        294 14 66))
                                                                                   (Var "++" False))
-                                                                               (Typed
-                                                                                  ([ IsIn
-                                                                                       "Show"
-                                                                                       [ TVar
-                                                                                           (TV
-                                                                                              "q16"
-                                                                                              Star)
-                                                                                       ]
-                                                                                       (Just
-                                                                                          (Area
-                                                                                             (Loc
-                                                                                                265
-                                                                                                14
-                                                                                                37)
-                                                                                             (Loc
-                                                                                                269
-                                                                                                14
-                                                                                                41)))
-                                                                                   ] :=>
-                                                                                     TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude")
-                                                                                  (Area
-                                                                                     (Loc 265 14 37)
-                                                                                     (Loc
-                                                                                        272 14 44))
-                                                                                  (App
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Show"
-                                                                                             [ TVar
-                                                                                                 (TV
-                                                                                                    "q16"
-                                                                                                    Star)
-                                                                                             ]
-                                                                                             Nothing
-                                                                                         ] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      "q16"
-                                                                                                      Star)))
-                                                                                             (TCon
-                                                                                                (TC
-                                                                                                   "String"
-                                                                                                   Star)
-                                                                                                "prelude"))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              265
-                                                                                              14
-                                                                                              37)
-                                                                                           (Loc
-                                                                                              269
-                                                                                              14
-                                                                                              41))
-                                                                                        (Placeholder
-                                                                                           ( MethodRef
-                                                                                               "Show"
-                                                                                               "show"
-                                                                                               True
-                                                                                           , [ TVar
-                                                                                                 (TV
-                                                                                                    "q16"
-                                                                                                    Star)
-                                                                                             ]
-                                                                                           )
-                                                                                           (Typed
-                                                                                              ([ IsIn
-                                                                                                   "Show"
-                                                                                                   [ TVar
-                                                                                                       (TV
-                                                                                                          "q16"
-                                                                                                          Star)
-                                                                                                   ]
-                                                                                                   Nothing
-                                                                                               ] :=>
-                                                                                                 TApp
-                                                                                                   (TApp
-                                                                                                      (TCon
-                                                                                                         (TC
-                                                                                                            "(->)"
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               (Kfun
-                                                                                                                  Star
-                                                                                                                  Star)))
-                                                                                                         "prelude")
-                                                                                                      (TVar
-                                                                                                         (TV
-                                                                                                            "q16"
-                                                                                                            Star)))
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                              (Area
-                                                                                                 (Loc
-                                                                                                    265
-                                                                                                    14
-                                                                                                    37)
-                                                                                                 (Loc
-                                                                                                    269
-                                                                                                    14
-                                                                                                    41))
-                                                                                              (Var
-                                                                                                 "show"
-                                                                                                 False))))
-                                                                                     (Typed
-                                                                                        ([ IsIn
-                                                                                             "Show"
-                                                                                             [ TVar
-                                                                                                 (TV
-                                                                                                    "q16"
-                                                                                                    Star)
-                                                                                             ]
-                                                                                             (Just
-                                                                                                (Area
-                                                                                                   (Loc
-                                                                                                      265
-                                                                                                      14
-                                                                                                      37)
-                                                                                                   (Loc
-                                                                                                      269
-                                                                                                      14
-                                                                                                      41)))
-                                                                                         ] :=>
-                                                                                           TVar
-                                                                                             (TV
-                                                                                                "q16"
-                                                                                                Star))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              270
-                                                                                              14
-                                                                                              42)
-                                                                                           (Loc
-                                                                                              271
-                                                                                              14
-                                                                                              43))
-                                                                                        (Var
-                                                                                           "a"
-                                                                                           False))
-                                                                                     True))
-                                                                               False))
-                                                                         (Typed
-                                                                            ([ IsIn
-                                                                                 "Show"
-                                                                                 [ TVar
-                                                                                     (TV "q16" Star)
-                                                                                 ]
-                                                                                 (Just
-                                                                                    (Area
-                                                                                       (Loc
-                                                                                          265 14 37)
-                                                                                       (Loc
-                                                                                          269
-                                                                                          14
-                                                                                          41)))
-                                                                             , IsIn
-                                                                                 "Show"
-                                                                                 [ TVar
-                                                                                     (TV "r17" Star)
-                                                                                 ]
-                                                                                 (Just
-                                                                                    (Area
-                                                                                       (Loc
-                                                                                          284 14 56)
-                                                                                       (Loc
-                                                                                          288
-                                                                                          14
-                                                                                          60)))
-                                                                             ] :=>
-                                                                               TCon
-                                                                                 (TC "String" Star)
-                                                                                 "prelude")
-                                                                            (Area
-                                                                               (Loc 276 14 48)
-                                                                               (Loc 298 14 70))
-                                                                            (App
-                                                                               (Typed
-                                                                                  ([] :=>
-                                                                                     TApp
-                                                                                       (TApp
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "(->)"
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   (Kfun
-                                                                                                      Star
-                                                                                                      Star)))
-                                                                                             "prelude")
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "String"
-                                                                                                Star)
-                                                                                             "prelude"))
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "String"
-                                                                                             Star)
-                                                                                          "prelude"))
-                                                                                  (Area
-                                                                                     (Loc 276 14 48)
-                                                                                     (Loc
-                                                                                        298 14 70))
-                                                                                  (App
-                                                                                     (Typed
-                                                                                        ([] :=>
-                                                                                           TApp
-                                                                                             (TApp
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "(->)"
-                                                                                                      (Kfun
-                                                                                                         Star
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star)))
-                                                                                                   "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
-                                                                                             (TApp
-                                                                                                (TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "(->)"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               Star)))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "String"
-                                                                                                         Star)
-                                                                                                      "prelude"))
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude")))
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              281
-                                                                                              14
-                                                                                              53)
-                                                                                           (Loc
-                                                                                              283
-                                                                                              14
-                                                                                              55))
-                                                                                        (Var
-                                                                                           "++"
-                                                                                           False))
-                                                                                     (Typed
-                                                                                        ([] :=>
-                                                                                           TCon
-                                                                                             (TC
-                                                                                                "String"
-                                                                                                Star)
-                                                                                             "prelude")
-                                                                                        (Area
-                                                                                           (Loc
-                                                                                              276
-                                                                                              14
-                                                                                              48)
-                                                                                           (Loc
-                                                                                              280
-                                                                                              14
-                                                                                              52))
-                                                                                        (LStr
-                                                                                           "\", \""))
-                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
                                                                                        "Show"
@@ -1130,7 +898,7 @@
                                                                                   (Area
                                                                                      (Loc 284 14 56)
                                                                                      (Loc
-                                                                                        298 14 70))
+                                                                                        291 14 63))
                                                                                   (App
                                                                                      (Typed
                                                                                         ([ IsIn
@@ -1140,16 +908,7 @@
                                                                                                     "r17"
                                                                                                     Star)
                                                                                              ]
-                                                                                             (Just
-                                                                                                (Area
-                                                                                                   (Loc
-                                                                                                      284
-                                                                                                      14
-                                                                                                      56)
-                                                                                                   (Loc
-                                                                                                      288
-                                                                                                      14
-                                                                                                      60)))
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1162,11 +921,10 @@
                                                                                                             Star
                                                                                                             Star)))
                                                                                                    "prelude")
-                                                                                                (TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude"))
+                                                                                                (TVar
+                                                                                                   (TV
+                                                                                                      "r17"
+                                                                                                      Star)))
                                                                                              (TCon
                                                                                                 (TC
                                                                                                    "String"
@@ -1178,223 +936,11 @@
                                                                                               14
                                                                                               56)
                                                                                            (Loc
-                                                                                              298
+                                                                                              288
                                                                                               14
-                                                                                              70))
-                                                                                        (App
-                                                                                           (Typed
-                                                                                              ([] :=>
-                                                                                                 TApp
-                                                                                                   (TApp
-                                                                                                      (TCon
-                                                                                                         (TC
-                                                                                                            "(->)"
-                                                                                                            (Kfun
-                                                                                                               Star
-                                                                                                               (Kfun
-                                                                                                                  Star
-                                                                                                                  Star)))
-                                                                                                         "prelude")
-                                                                                                      (TCon
-                                                                                                         (TC
-                                                                                                            "String"
-                                                                                                            Star)
-                                                                                                         "prelude"))
-                                                                                                   (TApp
-                                                                                                      (TApp
-                                                                                                         (TCon
-                                                                                                            (TC
-                                                                                                               "(->)"
-                                                                                                               (Kfun
-                                                                                                                  Star
-                                                                                                                  (Kfun
-                                                                                                                     Star
-                                                                                                                     Star)))
-                                                                                                            "prelude")
-                                                                                                         (TCon
-                                                                                                            (TC
-                                                                                                               "String"
-                                                                                                               Star)
-                                                                                                            "prelude"))
-                                                                                                      (TCon
-                                                                                                         (TC
-                                                                                                            "String"
-                                                                                                            Star)
-                                                                                                         "prelude")))
-                                                                                              (Area
-                                                                                                 (Loc
-                                                                                                    292
-                                                                                                    14
-                                                                                                    64)
-                                                                                                 (Loc
-                                                                                                    294
-                                                                                                    14
-                                                                                                    66))
-                                                                                              (Var
-                                                                                                 "++"
-                                                                                                 False))
-                                                                                           (Typed
-                                                                                              ([ IsIn
-                                                                                                   "Show"
-                                                                                                   [ TVar
-                                                                                                       (TV
-                                                                                                          "r17"
-                                                                                                          Star)
-                                                                                                   ]
-                                                                                                   (Just
-                                                                                                      (Area
-                                                                                                         (Loc
-                                                                                                            284
-                                                                                                            14
-                                                                                                            56)
-                                                                                                         (Loc
-                                                                                                            288
-                                                                                                            14
-                                                                                                            60)))
-                                                                                               ] :=>
-                                                                                                 TCon
-                                                                                                   (TC
-                                                                                                      "String"
-                                                                                                      Star)
-                                                                                                   "prelude")
-                                                                                              (Area
-                                                                                                 (Loc
-                                                                                                    284
-                                                                                                    14
-                                                                                                    56)
-                                                                                                 (Loc
-                                                                                                    291
-                                                                                                    14
-                                                                                                    63))
-                                                                                              (App
-                                                                                                 (Typed
-                                                                                                    ([ IsIn
-                                                                                                         "Show"
-                                                                                                         [ TVar
-                                                                                                             (TV
-                                                                                                                "r17"
-                                                                                                                Star)
-                                                                                                         ]
-                                                                                                         Nothing
-                                                                                                     ] :=>
-                                                                                                       TApp
-                                                                                                         (TApp
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "(->)"
-                                                                                                                  (Kfun
-                                                                                                                     Star
-                                                                                                                     (Kfun
-                                                                                                                        Star
-                                                                                                                        Star)))
-                                                                                                               "prelude")
-                                                                                                            (TVar
-                                                                                                               (TV
-                                                                                                                  "r17"
-                                                                                                                  Star)))
-                                                                                                         (TCon
-                                                                                                            (TC
-                                                                                                               "String"
-                                                                                                               Star)
-                                                                                                            "prelude"))
-                                                                                                    (Area
-                                                                                                       (Loc
-                                                                                                          284
-                                                                                                          14
-                                                                                                          56)
-                                                                                                       (Loc
-                                                                                                          288
-                                                                                                          14
-                                                                                                          60))
-                                                                                                    (Placeholder
-                                                                                                       ( MethodRef
-                                                                                                           "Show"
-                                                                                                           "show"
-                                                                                                           True
-                                                                                                       , [ TVar
-                                                                                                             (TV
-                                                                                                                "r17"
-                                                                                                                Star)
-                                                                                                         ]
-                                                                                                       )
-                                                                                                       (Typed
-                                                                                                          ([ IsIn
-                                                                                                               "Show"
-                                                                                                               [ TVar
-                                                                                                                   (TV
-                                                                                                                      "r17"
-                                                                                                                      Star)
-                                                                                                               ]
-                                                                                                               Nothing
-                                                                                                           ] :=>
-                                                                                                             TApp
-                                                                                                               (TApp
-                                                                                                                  (TCon
-                                                                                                                     (TC
-                                                                                                                        "(->)"
-                                                                                                                        (Kfun
-                                                                                                                           Star
-                                                                                                                           (Kfun
-                                                                                                                              Star
-                                                                                                                              Star)))
-                                                                                                                     "prelude")
-                                                                                                                  (TVar
-                                                                                                                     (TV
-                                                                                                                        "r17"
-                                                                                                                        Star)))
-                                                                                                               (TCon
-                                                                                                                  (TC
-                                                                                                                     "String"
-                                                                                                                     Star)
-                                                                                                                  "prelude"))
-                                                                                                          (Area
-                                                                                                             (Loc
-                                                                                                                284
-                                                                                                                14
-                                                                                                                56)
-                                                                                                             (Loc
-                                                                                                                288
-                                                                                                                14
-                                                                                                                60))
-                                                                                                          (Var
-                                                                                                             "show"
-                                                                                                             False))))
-                                                                                                 (Typed
-                                                                                                    ([ IsIn
-                                                                                                         "Show"
-                                                                                                         [ TVar
-                                                                                                             (TV
-                                                                                                                "r17"
-                                                                                                                Star)
-                                                                                                         ]
-                                                                                                         (Just
-                                                                                                            (Area
-                                                                                                               (Loc
-                                                                                                                  284
-                                                                                                                  14
-                                                                                                                  56)
-                                                                                                               (Loc
-                                                                                                                  288
-                                                                                                                  14
-                                                                                                                  60)))
-                                                                                                     ] :=>
-                                                                                                       TVar
-                                                                                                         (TV
-                                                                                                            "r17"
-                                                                                                            Star))
-                                                                                                    (Area
-                                                                                                       (Loc
-                                                                                                          289
-                                                                                                          14
-                                                                                                          61)
-                                                                                                       (Loc
-                                                                                                          290
-                                                                                                          14
-                                                                                                          62))
-                                                                                                    (Var
-                                                                                                       "b"
-                                                                                                       False))
-                                                                                                 True))
+                                                                                              60))
+                                                                                        (Var
+                                                                                           "show"
                                                                                            False))
                                                                                      (Typed
                                                                                         ([ IsIn
@@ -1415,28 +961,52 @@
                                                                                                       14
                                                                                                       60)))
                                                                                          ] :=>
-                                                                                           TCon
-                                                                                             (TC
-                                                                                                "String"
-                                                                                                Star)
-                                                                                             "prelude")
+                                                                                           TVar
+                                                                                             (TV
+                                                                                                "r17"
+                                                                                                Star))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              295
+                                                                                              289
                                                                                               14
-                                                                                              67)
+                                                                                              61)
                                                                                            (Loc
-                                                                                              298
+                                                                                              290
                                                                                               14
-                                                                                              70))
-                                                                                        (LStr
-                                                                                           "\"]\""))
+                                                                                              62))
+                                                                                        (Var
+                                                                                           "b"
+                                                                                           False))
                                                                                      True))
-                                                                               True))
+                                                                               False))
+                                                                         (Typed
+                                                                            ([ IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "r17" Star)
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          284 14 56)
+                                                                                       (Loc
+                                                                                          288
+                                                                                          14
+                                                                                          60)))
+                                                                             ] :=>
+                                                                               TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude")
+                                                                            (Area
+                                                                               (Loc 295 14 67)
+                                                                               (Loc 298 14 70))
+                                                                            (LStr "\"]\""))
                                                                          True))
-                                                                   True)))
-                                                      ])
-                                               ])))))))
+                                                                   True))
+                                                             True))
+                                                       True)))
+                                          ])
+                                   ])))
                       , Forall
                           [ Star , Star ]
                           ([ IsIn "Show" [ TGen 0 ] Nothing

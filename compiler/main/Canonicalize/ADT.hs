@@ -138,18 +138,13 @@ resolveADTConstructorParams
 resolveADTConstructorParams env astPath _ params c@(Src.Source area _ (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
-  mapM_
-    (\case
-      TVar (TV n _) ->
-        if n `elem` params then
-          return ()
-        else
-          throwError (CompilationError (UnboundVariable n) (Context astPath area))
-
-      _ ->
+  forM_ ts $ \t -> do
+    let varNames = map (\(TV n _) -> n) (ftv t)
+    forM_ varNames $ \n ->
+      if n `elem` params then
         return ()
-    )
-    ts
+      else
+        throwError (CompilationError (UnboundVariable n) (Context astPath area))
 
   let s = foldr (\t s -> buildCtorSubst t <> s) M.empty ts
 

@@ -109,7 +109,7 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
   }
 })(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 5, n: { v: 8, n: null } } } } }));
     (true ? `ok` : `not ok`);
-    (x => x)((x => (__eq__(x, `ok`) ? 1 : 10))((x => x)((__eq__(1, 2) ? `ok` : `not ok`))));
+    (x => (__eq__(x, `ok`) ? 1 : 10))((x => x)((__eq__(1, 2) ? `ok` : `not ok`)));
     (__eq__(1, 2) ? `ok` : `not ok`);
     ((__x__) => {
   if (__x__ === 3) {
@@ -117,7 +117,7 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
   }
   else if (true) {
     let n = __x__;
-    return (x => (x + 1))(1);
+    return (1 + 1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -125,7 +125,7 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
     throw 'non exhaustive patterns!';
   }
 })(3);
-    (x => (x + 1))(((__x__) => {
+    (((__x__) => {
   if (__x__ === "3") {
     return 48;
   }
@@ -138,8 +138,8 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(`3`));
-    (x => x)(((__x__) => {
+})(`3`) + 1);
+    ((__x__) => {
   if (__x__ !== null && __x__.v === 2 && true) {
     let { n: rest } = __x__;
     return rest;
@@ -153,7 +153,7 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 4, n: { v: 5, n: null } } } } })));
+})(({ v: 1, n: { v: 2, n: { v: 3, n: { v: 4, n: { v: 5, n: null } } } } }));
     ((__x__) => {
   if (__x__.name === "Bob") {
     let {  } = __x__;

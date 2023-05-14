@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=>
@@ -69,25 +76,7 @@
                                                    (TCon (TC "String" Star) "prelude"))
                                                 (TCon (TC "Integer" Star) "prelude"))
                                            (Area (Loc 131 10 4) (Loc 135 10 8))
-                                           (Placeholder
-                                              ( MethodRef "Read" "read" False
-                                              , [ TCon (TC "Integer" Star) "prelude" ]
-                                              )
-                                              (Typed
-                                                 ([ IsIn
-                                                      "Read"
-                                                      [ TCon (TC "Integer" Star) "prelude" ]
-                                                      Nothing
-                                                  ] :=>
-                                                    TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TCon (TC "String" Star) "prelude"))
-                                                      (TCon (TC "Integer" Star) "prelude"))
-                                                 (Area (Loc 131 10 4) (Loc 135 10 8))
-                                                 (Var "read" False))))
+                                           (Var "read" False))
                                         (Typed
                                            ([ IsIn
                                                 "Read"

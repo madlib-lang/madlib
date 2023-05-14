@@ -1,5 +1,12 @@
 ( AST
-    { aimports = []
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (NamedImport
+               []
+               "__BUILTINS__"
+               ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+        ]
     , aexps =
         [ Typed
             ([] :=> TVar (TV "-" Star))
@@ -315,6 +322,26 @@
                                                                                  (Area
                                                                                     (Loc 0 0 0)
                                                                                     (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
                                                                           ] :=>
                                                                             TCon
                                                                               (TC "String" Star)
@@ -324,6 +351,28 @@
                                                                          (PVar "a0")
                                                                      , Typed
                                                                          ([ IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC
+                                                                                     "Integer" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC
+                                                                                     "Integer" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
                                                                               "Eq"
                                                                               [ TCon
                                                                                   (TC
@@ -361,6 +410,26 @@
                                                                                  (Area
                                                                                     (Loc 0 0 0)
                                                                                     (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
                                                                           ] :=>
                                                                             TCon
                                                                               (TC "String" Star)
@@ -370,6 +439,28 @@
                                                                          (PVar "b0")
                                                                      , Typed
                                                                          ([ IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC
+                                                                                     "Integer" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC
+                                                                                     "Integer" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          , IsIn
                                                                               "Eq"
                                                                               [ TCon
                                                                                   (TC
@@ -584,78 +675,7 @@
                                                                                    (Area
                                                                                       (Loc 0 0 0)
                                                                                       (Loc 0 0 0))
-                                                                                   (Placeholder
-                                                                                      ( MethodRef
-                                                                                          "Eq"
-                                                                                          "=="
-                                                                                          False
-                                                                                      , [ TCon
-                                                                                            (TC
-                                                                                               "String"
-                                                                                               Star)
-                                                                                            "prelude"
-                                                                                        ]
-                                                                                      )
-                                                                                      (Typed
-                                                                                         ([ IsIn
-                                                                                              "Eq"
-                                                                                              [ TCon
-                                                                                                  (TC
-                                                                                                     "String"
-                                                                                                     Star)
-                                                                                                  "prelude"
-                                                                                              ]
-                                                                                              Nothing
-                                                                                          ] :=>
-                                                                                            TApp
-                                                                                              (TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "(->)"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             Star)))
-                                                                                                    "prelude")
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "String"
-                                                                                                       Star)
-                                                                                                    "prelude"))
-                                                                                              (TApp
-                                                                                                 (TApp
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "(->)"
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                Star)))
-                                                                                                       "prelude")
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "String"
-                                                                                                          Star)
-                                                                                                       "prelude"))
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "Boolean"
-                                                                                                       Star)
-                                                                                                    "prelude")))
-                                                                                         (Area
-                                                                                            (Loc
-                                                                                               0
-                                                                                               0
-                                                                                               0)
-                                                                                            (Loc
-                                                                                               0
-                                                                                               0
-                                                                                               0))
-                                                                                         (Var
-                                                                                            "=="
-                                                                                            False))))
+                                                                                   (Var "==" False))
                                                                                 (Typed
                                                                                    ([ IsIn
                                                                                         "Eq"
@@ -937,78 +957,9 @@
                                                                                                0
                                                                                                0
                                                                                                0))
-                                                                                         (Placeholder
-                                                                                            ( MethodRef
-                                                                                                "Eq"
-                                                                                                "=="
-                                                                                                False
-                                                                                            , [ TCon
-                                                                                                  (TC
-                                                                                                     "Integer"
-                                                                                                     Star)
-                                                                                                  "prelude"
-                                                                                              ]
-                                                                                            )
-                                                                                            (Typed
-                                                                                               ([ IsIn
-                                                                                                    "Eq"
-                                                                                                    [ TCon
-                                                                                                        (TC
-                                                                                                           "Integer"
-                                                                                                           Star)
-                                                                                                        "prelude"
-                                                                                                    ]
-                                                                                                    Nothing
-                                                                                                ] :=>
-                                                                                                  TApp
-                                                                                                    (TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "(->)"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   Star)))
-                                                                                                          "prelude")
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Integer"
-                                                                                                             Star)
-                                                                                                          "prelude"))
-                                                                                                    (TApp
-                                                                                                       (TApp
-                                                                                                          (TCon
-                                                                                                             (TC
-                                                                                                                "(->)"
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   (Kfun
-                                                                                                                      Star
-                                                                                                                      Star)))
-                                                                                                             "prelude")
-                                                                                                          (TCon
-                                                                                                             (TC
-                                                                                                                "Integer"
-                                                                                                                Star)
-                                                                                                             "prelude"))
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Boolean"
-                                                                                                             Star)
-                                                                                                          "prelude")))
-                                                                                               (Area
-                                                                                                  (Loc
-                                                                                                     0
-                                                                                                     0
-                                                                                                     0)
-                                                                                                  (Loc
-                                                                                                     0
-                                                                                                     0
-                                                                                                     0))
-                                                                                               (Var
-                                                                                                  "=="
-                                                                                                  False))))
+                                                                                         (Var
+                                                                                            "=="
+                                                                                            False))
                                                                                       (Typed
                                                                                          ([ IsIn
                                                                                               "Eq"
@@ -1251,12 +1202,24 @@
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                            , IsIn
+                                                                "Inspect"
+                                                                [ TCon (TC "String" Star) "prelude"
+                                                                ]
+                                                                (Just
+                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        , Typed
                                                            ([ IsIn
+                                                                "Inspect"
+                                                                [ TCon (TC "Integer" Star) "prelude"
+                                                                ]
+                                                                (Just
+                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                            , IsIn
                                                                 "Inspect"
                                                                 [ TCon (TC "Integer" Star) "prelude"
                                                                 ]
@@ -1321,43 +1284,7 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Placeholder
-                                                                    ( MethodRef
-                                                                        "Inspect" "inspect" False
-                                                                    , [ TCon
-                                                                          (TC "String" Star)
-                                                                          "prelude"
-                                                                      ]
-                                                                    )
-                                                                    (Typed
-                                                                       ([ IsIn
-                                                                            "Inspect"
-                                                                            [ TCon
-                                                                                (TC "String" Star)
-                                                                                "prelude"
-                                                                            ]
-                                                                            Nothing
-                                                                        ] :=>
-                                                                          TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC "String" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude"))
-                                                                       (Area
-                                                                          (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "inspect" False))))
+                                                                 (Var "inspect" False))
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Inspect"
@@ -1416,44 +1343,7 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Placeholder
-                                                                    ( MethodRef
-                                                                        "Inspect" "inspect" False
-                                                                    , [ TCon
-                                                                          (TC "Integer" Star)
-                                                                          "prelude"
-                                                                      ]
-                                                                    )
-                                                                    (Typed
-                                                                       ([ IsIn
-                                                                            "Inspect"
-                                                                            [ TCon
-                                                                                (TC "Integer" Star)
-                                                                                "prelude"
-                                                                            ]
-                                                                            Nothing
-                                                                        ] :=>
-                                                                          TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude"))
-                                                                       (Area
-                                                                          (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "inspect" False))))
+                                                                 (Var "inspect" False))
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Inspect"

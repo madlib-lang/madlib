@@ -602,6 +602,10 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "You forgot to define a 'main' function in your main module\n\n"
     <> "Hint: Add a main method"
 
+  MainInvalidTyping ->
+    "The main function has a wrong type signature\n\n"
+    <> "Hint: The typing of the main function should be 'List String -> {}'"
+
   MutationRestriction ->
     "This value depends on a closure doing mutation and can't be generic\n\n"
     <> "Hint: Add a type definition with concrete types"
@@ -940,6 +944,20 @@ createErrorDiagnostic color context typeError = case typeError of
       []
       [Diagnose.Hint "Add a main method"]
 
+  MainInvalidTyping ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Main invalid typing"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The main function has a wrong type signature"
+            )
+          ]
+          [ Diagnose.Hint "The typing of the main function should be 'List String -> {}'"
+          , Diagnose.Note "You can omit the typing for the main function"
+          ]
+
   MutationRestriction ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
@@ -950,7 +968,7 @@ createErrorDiagnostic color context typeError = case typeError of
             , Diagnose.This $ "This value depends on a closure doing mutation and can't be generic"
             )
           ]
-          [Diagnose.Hint " Add a type definition with concrete types"]
+          [Diagnose.Hint "Add a type definition with concrete types"]
 
   NotADefinition ->
     case context of

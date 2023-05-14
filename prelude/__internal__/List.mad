@@ -628,7 +628,9 @@ export sortBy = (compareFn, list) => {
   merge :: List a -> List a -> List a
   merge = (listA, listB) => where(#[listA, listB]) {
     #[[a, ...as], [b, ...bs]] =>
-      compareFn(a, b) == MORE ? [b, ...merge(listA, bs)] : [a, ...merge(as, listB)]
+      compareFn(a, b) == MORE
+        ? [b, ...merge(listA, bs)]
+        : [a, ...merge(as, listB)]
 
     #[[], bs] =>
       bs

@@ -25,7 +25,6 @@ import           Control.Monad.IO.Class
 import           Driver.Query
 import           Run.Target
 import           Parse.Madlib.TargetMacro
-import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
 import qualified Optimize.SortExpressions as SortExpressions
 import qualified Optimize.EtaReduction         as EtaReduction
@@ -74,6 +73,8 @@ import           Infer.MonomorphizationState
 import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
 import qualified AST.Core as Core
+import qualified Optimize.CalledLambda as CalledLambda
+import qualified Optimize.FoldCalls as FoldCalls
 
 
 
@@ -285,7 +286,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   SolvedMethodNode methodName methodCallType -> nonInput $ do
     astTable <- Rock.fetch AllSolvedASTsWithEnvs
-    found <- findMethodByNameAndType astTable (optEntrypoint options) methodName methodCallType
+    found <- findMethodByNameAndType (Map.elems astTable) methodName methodCallType
     return (found, (mempty, mempty))
 
   DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
@@ -371,16 +372,18 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         coreAst <- astToCore False monomorphicAST
         let sortedAST = SortExpressions.sortASTExpressions coreAst
         let renamedAst       = Rename.renameAST sortedAST
-            -- reducedAst       = EtaReduction.reduceAST renamedAst
-            tceResolved      = TCE.resolveAST renamedAst
+            reducedAst       = CalledLambda.reduceAST renamedAst
+            tceResolved      = TCE.resolveAST reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
-        return (closureConverted, (mempty, mempty))
+            folded           = FoldCalls.foldAST closureConverted
+        -- liftIO $ putStrLn $ ppShow folded
+        return (folded, (mempty, mempty))
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
         let renamedAst       = Rename.renameAST coreAst
-        let strippedAst      = stripAST renamedAst
-            tceResolved      = TCE.resolveAST strippedAst
+            reducedAst       = CalledLambda.reduceAST renamedAst
+            tceResolved      = TCE.resolveAST reducedAst
         return (tceResolved, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
@@ -597,20 +600,6 @@ findSlvInterface name paths = case paths of
             findSlvInterface name importedModulePaths
 
 
-findMethodByNameAndTypeInImports :: (Rock.MonadFetch Query m, MonadIO m) => Map.Map FilePath (Slv.AST, SlvEnv.Env) -> [FilePath] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
-findMethodByNameAndTypeInImports table importPaths methodName typeItsCalledWith = case importPaths of
-  [] ->
-    return Nothing
-
-  (modulePath : nextModulePaths) -> do
-    found <- findMethodByNameAndType table modulePath methodName typeItsCalledWith
-    case found of
-      Just method ->
-        return $ Just method
-
-      Nothing ->
-        findMethodByNameAndTypeInImports table nextModulePaths methodName typeItsCalledWith
-
 findMethod :: String -> Type -> [Slv.Instance] -> Maybe Slv.Exp
 findMethod methodName typeItsCalledWith instances = case instances of
   (Slv.Untyped _ (Slv.Instance _ _ _ methods)) : next ->
@@ -628,16 +617,19 @@ findMethod methodName typeItsCalledWith instances = case instances of
   _ ->
     Nothing
 
-findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => Map.Map FilePath (Slv.AST, SlvEnv.Env) -> FilePath -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
-findMethodByNameAndType table moduleWhereItsUsed methodName typeItsCalledWith = do
-  let (slvAst, _) = Maybe.fromMaybe undefined (Map.lookup moduleWhereItsUsed table)
-  case findMethod methodName typeItsCalledWith (Slv.ainstances slvAst) of
-    Just found ->
-      return $ Just (found, moduleWhereItsUsed)
 
-    Nothing -> do
-      let imports = map Slv.getImportAbsolutePath (Slv.aimports slvAst)
-      findMethodByNameAndTypeInImports table imports methodName typeItsCalledWith
+findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => [(Slv.AST, SlvEnv.Env)] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
+findMethodByNameAndType asts methodName typeItsCalledWith = case asts of
+  (slvAst, _) : more ->
+    case findMethod methodName typeItsCalledWith (Slv.ainstances slvAst) of
+      Just found ->
+        return $ Just (found, Maybe.fromMaybe undefined (Slv.apath slvAst))
+
+      Nothing -> do
+        findMethodByNameAndType more methodName typeItsCalledWith
+
+  [] ->
+    return Nothing
 
 
 noError :: (Monoid w, Functor f) => f a -> f ((a, Rock.TaskKind), w)

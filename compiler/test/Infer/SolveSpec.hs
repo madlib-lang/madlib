@@ -292,7 +292,7 @@ spec = do
 
     it "should resolve ADTs with function parameters" $ do
       let code   = unlines
-                    [ "export type Wish e a = Wish ((e -> m) -> (a -> m) -> m)"
+                    [ "export type Wish e a = Wish ((e -> {}) -> (a -> {}) -> {})"
                     , "main = () => {"
                     , "  Wish((bad, good) => (good(3)))"
                     , "}"
@@ -365,7 +365,7 @@ spec = do
             , "  chain :: (a -> m b) -> m a -> m b"
             , "}"
             , ""
-            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> {})"
+            , "export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {})"
             , ""
             , ""
             , "instance Functor (Wish e) {"
@@ -462,7 +462,7 @@ spec = do
             , ")"
             , ""
             , ""
-            , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}"
+            , "fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}"
             , "export fulfill = (badCB, goodCB, m) => {"
             , "  where(m) {"
             , "    Wish(run) => run(badCB, goodCB)"
@@ -930,7 +930,7 @@ spec = do
             , "fromMaybe :: a -> Maybe a -> a"
             , "fromMaybe = (a, maybe) => #- -#"
             , ""
-            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> {})"
+            , "export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {})"
             , ""
             , "of = (a) => Wish((bad, good) => good(a))"
             , ""

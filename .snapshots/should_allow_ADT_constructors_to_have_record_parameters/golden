@@ -1,7 +1,14 @@
 ( fromList
     [ ( "./ModuleA.mad"
       , AST
-          { aimports = []
+          { aimports =
+              [ Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (NamedImport
+                     []
+                     "__BUILTINS__"
+                     ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+              ]
           , aexps = []
           , atypedecls =
               [ Untyped
@@ -295,6 +302,70 @@
                                                                                              0
                                                                                              0
                                                                                              0)))
+                                                                                , IsIn
+                                                                                    "Eq"
+                                                                                    [ TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(,)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "Integer"
+                                                                                                 Star)
+                                                                                              "prelude"))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "Integer"
+                                                                                              Star)
+                                                                                           "prelude")
+                                                                                    ]
+                                                                                    (Just
+                                                                                       (Area
+                                                                                          (Loc
+                                                                                             0 0 0)
+                                                                                          (Loc
+                                                                                             0
+                                                                                             0
+                                                                                             0)))
+                                                                                , IsIn
+                                                                                    "Eq"
+                                                                                    [ TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(,)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "Integer"
+                                                                                                 Star)
+                                                                                              "prelude"))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "Integer"
+                                                                                              Star)
+                                                                                           "prelude")
+                                                                                    ]
+                                                                                    (Just
+                                                                                       (Area
+                                                                                          (Loc
+                                                                                             0 0 0)
+                                                                                          (Loc
+                                                                                             0
+                                                                                             0
+                                                                                             0)))
                                                                                 ] :=>
                                                                                   TApp
                                                                                     (TApp
@@ -333,6 +404,70 @@
                                                                            "Point"
                                                                            [ Typed
                                                                                ([ IsIn
+                                                                                    "Eq"
+                                                                                    [ TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(,)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "Integer"
+                                                                                                 Star)
+                                                                                              "prelude"))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "Integer"
+                                                                                              Star)
+                                                                                           "prelude")
+                                                                                    ]
+                                                                                    (Just
+                                                                                       (Area
+                                                                                          (Loc
+                                                                                             0 0 0)
+                                                                                          (Loc
+                                                                                             0
+                                                                                             0
+                                                                                             0)))
+                                                                                , IsIn
+                                                                                    "Eq"
+                                                                                    [ TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(,)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "Integer"
+                                                                                                 Star)
+                                                                                              "prelude"))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "Integer"
+                                                                                              Star)
+                                                                                           "prelude")
+                                                                                    ]
+                                                                                    (Just
+                                                                                       (Area
+                                                                                          (Loc
+                                                                                             0 0 0)
+                                                                                          (Loc
+                                                                                             0
+                                                                                             0
+                                                                                             0)))
+                                                                                , IsIn
                                                                                     "Eq"
                                                                                     [ TApp
                                                                                         (TApp
@@ -737,376 +872,9 @@
                                                                                                0
                                                                                                0
                                                                                                0))
-                                                                                         (Placeholder
-                                                                                            ( ClassRef
-                                                                                                "Eq"
-                                                                                                []
-                                                                                                True
-                                                                                                False
-                                                                                            , [ TCon
-                                                                                                  (TC
-                                                                                                     "Integer"
-                                                                                                     Star)
-                                                                                                  "prelude"
-                                                                                              ]
-                                                                                            )
-                                                                                            (Typed
-                                                                                               ([ IsIn
-                                                                                                    "Eq"
-                                                                                                    [ TApp
-                                                                                                        (TApp
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "(,)"
-                                                                                                                 (Kfun
-                                                                                                                    Star
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star)))
-                                                                                                              "prelude")
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "Integer"
-                                                                                                                 Star)
-                                                                                                              "prelude"))
-                                                                                                        (TCon
-                                                                                                           (TC
-                                                                                                              "Integer"
-                                                                                                              Star)
-                                                                                                           "prelude")
-                                                                                                    ]
-                                                                                                    Nothing
-                                                                                                ] :=>
-                                                                                                  TApp
-                                                                                                    (TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "(->)"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   Star)))
-                                                                                                          "prelude")
-                                                                                                       (TApp
-                                                                                                          (TApp
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "(,)"
-                                                                                                                   (Kfun
-                                                                                                                      Star
-                                                                                                                      (Kfun
-                                                                                                                         Star
-                                                                                                                         Star)))
-                                                                                                                "prelude")
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "Integer"
-                                                                                                                   Star)
-                                                                                                                "prelude"))
-                                                                                                          (TCon
-                                                                                                             (TC
-                                                                                                                "Integer"
-                                                                                                                Star)
-                                                                                                             "prelude")))
-                                                                                                    (TApp
-                                                                                                       (TApp
-                                                                                                          (TCon
-                                                                                                             (TC
-                                                                                                                "(->)"
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   (Kfun
-                                                                                                                      Star
-                                                                                                                      Star)))
-                                                                                                             "prelude")
-                                                                                                          (TApp
-                                                                                                             (TApp
-                                                                                                                (TCon
-                                                                                                                   (TC
-                                                                                                                      "(,)"
-                                                                                                                      (Kfun
-                                                                                                                         Star
-                                                                                                                         (Kfun
-                                                                                                                            Star
-                                                                                                                            Star)))
-                                                                                                                   "prelude")
-                                                                                                                (TCon
-                                                                                                                   (TC
-                                                                                                                      "Integer"
-                                                                                                                      Star)
-                                                                                                                   "prelude"))
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "Integer"
-                                                                                                                   Star)
-                                                                                                                "prelude")))
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Boolean"
-                                                                                                             Star)
-                                                                                                          "prelude")))
-                                                                                               (Area
-                                                                                                  (Loc
-                                                                                                     0
-                                                                                                     0
-                                                                                                     0)
-                                                                                                  (Loc
-                                                                                                     0
-                                                                                                     0
-                                                                                                     0))
-                                                                                               (Placeholder
-                                                                                                  ( ClassRef
-                                                                                                      "Eq"
-                                                                                                      []
-                                                                                                      True
-                                                                                                      False
-                                                                                                  , [ TCon
-                                                                                                        (TC
-                                                                                                           "Integer"
-                                                                                                           Star)
-                                                                                                        "prelude"
-                                                                                                    ]
-                                                                                                  )
-                                                                                                  (Typed
-                                                                                                     ([ IsIn
-                                                                                                          "Eq"
-                                                                                                          [ TApp
-                                                                                                              (TApp
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "(,)"
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star)))
-                                                                                                                    "prelude")
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "Integer"
-                                                                                                                       Star)
-                                                                                                                    "prelude"))
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "Integer"
-                                                                                                                    Star)
-                                                                                                                 "prelude")
-                                                                                                          ]
-                                                                                                          Nothing
-                                                                                                      ] :=>
-                                                                                                        TApp
-                                                                                                          (TApp
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "(->)"
-                                                                                                                   (Kfun
-                                                                                                                      Star
-                                                                                                                      (Kfun
-                                                                                                                         Star
-                                                                                                                         Star)))
-                                                                                                                "prelude")
-                                                                                                             (TApp
-                                                                                                                (TApp
-                                                                                                                   (TCon
-                                                                                                                      (TC
-                                                                                                                         "(,)"
-                                                                                                                         (Kfun
-                                                                                                                            Star
-                                                                                                                            (Kfun
-                                                                                                                               Star
-                                                                                                                               Star)))
-                                                                                                                      "prelude")
-                                                                                                                   (TCon
-                                                                                                                      (TC
-                                                                                                                         "Integer"
-                                                                                                                         Star)
-                                                                                                                      "prelude"))
-                                                                                                                (TCon
-                                                                                                                   (TC
-                                                                                                                      "Integer"
-                                                                                                                      Star)
-                                                                                                                   "prelude")))
-                                                                                                          (TApp
-                                                                                                             (TApp
-                                                                                                                (TCon
-                                                                                                                   (TC
-                                                                                                                      "(->)"
-                                                                                                                      (Kfun
-                                                                                                                         Star
-                                                                                                                         (Kfun
-                                                                                                                            Star
-                                                                                                                            Star)))
-                                                                                                                   "prelude")
-                                                                                                                (TApp
-                                                                                                                   (TApp
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "(,)"
-                                                                                                                            (Kfun
-                                                                                                                               Star
-                                                                                                                               (Kfun
-                                                                                                                                  Star
-                                                                                                                                  Star)))
-                                                                                                                         "prelude")
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "Integer"
-                                                                                                                            Star)
-                                                                                                                         "prelude"))
-                                                                                                                   (TCon
-                                                                                                                      (TC
-                                                                                                                         "Integer"
-                                                                                                                         Star)
-                                                                                                                      "prelude")))
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "Boolean"
-                                                                                                                   Star)
-                                                                                                                "prelude")))
-                                                                                                     (Area
-                                                                                                        (Loc
-                                                                                                           0
-                                                                                                           0
-                                                                                                           0)
-                                                                                                        (Loc
-                                                                                                           0
-                                                                                                           0
-                                                                                                           0))
-                                                                                                     (Placeholder
-                                                                                                        ( MethodRef
-                                                                                                            "Eq"
-                                                                                                            "=="
-                                                                                                            False
-                                                                                                        , [ TApp
-                                                                                                              (TApp
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "(,)"
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star)))
-                                                                                                                    "prelude")
-                                                                                                                 (TVar
-                                                                                                                    (TV
-                                                                                                                       "a"
-                                                                                                                       Star)))
-                                                                                                              (TVar
-                                                                                                                 (TV
-                                                                                                                    "b"
-                                                                                                                    Star))
-                                                                                                          ]
-                                                                                                        )
-                                                                                                        (Typed
-                                                                                                           ([ IsIn
-                                                                                                                "Eq"
-                                                                                                                [ TApp
-                                                                                                                    (TApp
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "(,)"
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star)))
-                                                                                                                          "prelude")
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "Integer"
-                                                                                                                             Star)
-                                                                                                                          "prelude"))
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "Integer"
-                                                                                                                          Star)
-                                                                                                                       "prelude")
-                                                                                                                ]
-                                                                                                                Nothing
-                                                                                                            ] :=>
-                                                                                                              TApp
-                                                                                                                (TApp
-                                                                                                                   (TCon
-                                                                                                                      (TC
-                                                                                                                         "(->)"
-                                                                                                                         (Kfun
-                                                                                                                            Star
-                                                                                                                            (Kfun
-                                                                                                                               Star
-                                                                                                                               Star)))
-                                                                                                                      "prelude")
-                                                                                                                   (TApp
-                                                                                                                      (TApp
-                                                                                                                         (TCon
-                                                                                                                            (TC
-                                                                                                                               "(,)"
-                                                                                                                               (Kfun
-                                                                                                                                  Star
-                                                                                                                                  (Kfun
-                                                                                                                                     Star
-                                                                                                                                     Star)))
-                                                                                                                            "prelude")
-                                                                                                                         (TCon
-                                                                                                                            (TC
-                                                                                                                               "Integer"
-                                                                                                                               Star)
-                                                                                                                            "prelude"))
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "Integer"
-                                                                                                                            Star)
-                                                                                                                         "prelude")))
-                                                                                                                (TApp
-                                                                                                                   (TApp
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "(->)"
-                                                                                                                            (Kfun
-                                                                                                                               Star
-                                                                                                                               (Kfun
-                                                                                                                                  Star
-                                                                                                                                  Star)))
-                                                                                                                         "prelude")
-                                                                                                                      (TApp
-                                                                                                                         (TApp
-                                                                                                                            (TCon
-                                                                                                                               (TC
-                                                                                                                                  "(,)"
-                                                                                                                                  (Kfun
-                                                                                                                                     Star
-                                                                                                                                     (Kfun
-                                                                                                                                        Star
-                                                                                                                                        Star)))
-                                                                                                                               "prelude")
-                                                                                                                            (TCon
-                                                                                                                               (TC
-                                                                                                                                  "Integer"
-                                                                                                                                  Star)
-                                                                                                                               "prelude"))
-                                                                                                                         (TCon
-                                                                                                                            (TC
-                                                                                                                               "Integer"
-                                                                                                                               Star)
-                                                                                                                            "prelude")))
-                                                                                                                   (TCon
-                                                                                                                      (TC
-                                                                                                                         "Boolean"
-                                                                                                                         Star)
-                                                                                                                      "prelude")))
-                                                                                                           (Area
-                                                                                                              (Loc
-                                                                                                                 0
-                                                                                                                 0
-                                                                                                                 0)
-                                                                                                              (Loc
-                                                                                                                 0
-                                                                                                                 0
-                                                                                                                 0))
-                                                                                                           (Var
-                                                                                                              "=="
-                                                                                                              False))))))))
+                                                                                         (Var
+                                                                                            "=="
+                                                                                            False))
                                                                                       (Typed
                                                                                          ([ IsIn
                                                                                               "Eq"
@@ -1472,6 +1240,30 @@
                                                                          (Area
                                                                             (Loc 0 0 0)
                                                                             (Loc 0 0 0)))
+                                                                  , IsIn
+                                                                      "Inspect"
+                                                                      [ TApp
+                                                                          (TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "(,)"
+                                                                                   (Kfun
+                                                                                      Star
+                                                                                      (Kfun
+                                                                                         Star
+                                                                                         Star)))
+                                                                                "prelude")
+                                                                             (TCon
+                                                                                (TC "Integer" Star)
+                                                                                "prelude"))
+                                                                          (TCon
+                                                                             (TC "Integer" Star)
+                                                                             "prelude")
+                                                                      ]
+                                                                      (Just
+                                                                         (Area
+                                                                            (Loc 0 0 0)
+                                                                            (Loc 0 0 0)))
                                                                   ] :=>
                                                                     TApp
                                                                       (TApp
@@ -1614,266 +1406,7 @@
                                                                                "prelude"))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Placeholder
-                                                                          ( ClassRef
-                                                                              "Inspect"
-                                                                              []
-                                                                              True
-                                                                              False
-                                                                          , [ TCon
-                                                                                (TC "Integer" Star)
-                                                                                "prelude"
-                                                                            ]
-                                                                          )
-                                                                          (Typed
-                                                                             ([ IsIn
-                                                                                  "Inspect"
-                                                                                  [ TApp
-                                                                                      (TApp
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "(,)"
-                                                                                               (Kfun
-                                                                                                  Star
-                                                                                                  (Kfun
-                                                                                                     Star
-                                                                                                     Star)))
-                                                                                            "prelude")
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "Integer"
-                                                                                               Star)
-                                                                                            "prelude"))
-                                                                                      (TCon
-                                                                                         (TC
-                                                                                            "Integer"
-                                                                                            Star)
-                                                                                         "prelude")
-                                                                                  ]
-                                                                                  Nothing
-                                                                              ] :=>
-                                                                                TApp
-                                                                                  (TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "(->)"
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star)))
-                                                                                        "prelude")
-                                                                                     (TApp
-                                                                                        (TApp
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "(,)"
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       Star)))
-                                                                                              "prelude")
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "Integer"
-                                                                                                 Star)
-                                                                                              "prelude"))
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Integer"
-                                                                                              Star)
-                                                                                           "prelude")))
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude"))
-                                                                             (Area
-                                                                                (Loc 0 0 0)
-                                                                                (Loc 0 0 0))
-                                                                             (Placeholder
-                                                                                ( ClassRef
-                                                                                    "Inspect"
-                                                                                    []
-                                                                                    True
-                                                                                    False
-                                                                                , [ TCon
-                                                                                      (TC
-                                                                                         "Integer"
-                                                                                         Star)
-                                                                                      "prelude"
-                                                                                  ]
-                                                                                )
-                                                                                (Typed
-                                                                                   ([ IsIn
-                                                                                        "Inspect"
-                                                                                        [ TApp
-                                                                                            (TApp
-                                                                                               (TCon
-                                                                                                  (TC
-                                                                                                     "(,)"
-                                                                                                     (Kfun
-                                                                                                        Star
-                                                                                                        (Kfun
-                                                                                                           Star
-                                                                                                           Star)))
-                                                                                                  "prelude")
-                                                                                               (TCon
-                                                                                                  (TC
-                                                                                                     "Integer"
-                                                                                                     Star)
-                                                                                                  "prelude"))
-                                                                                            (TCon
-                                                                                               (TC
-                                                                                                  "Integer"
-                                                                                                  Star)
-                                                                                               "prelude")
-                                                                                        ]
-                                                                                        Nothing
-                                                                                    ] :=>
-                                                                                      TApp
-                                                                                        (TApp
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "(->)"
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       Star)))
-                                                                                              "prelude")
-                                                                                           (TApp
-                                                                                              (TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "(,)"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             Star)))
-                                                                                                    "prelude")
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "Integer"
-                                                                                                       Star)
-                                                                                                    "prelude"))
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "Integer"
-                                                                                                    Star)
-                                                                                                 "prelude")))
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"))
-                                                                                   (Area
-                                                                                      (Loc 0 0 0)
-                                                                                      (Loc 0 0 0))
-                                                                                   (Placeholder
-                                                                                      ( MethodRef
-                                                                                          "Inspect"
-                                                                                          "inspect"
-                                                                                          False
-                                                                                      , [ TApp
-                                                                                            (TApp
-                                                                                               (TCon
-                                                                                                  (TC
-                                                                                                     "(,)"
-                                                                                                     (Kfun
-                                                                                                        Star
-                                                                                                        (Kfun
-                                                                                                           Star
-                                                                                                           Star)))
-                                                                                                  "prelude")
-                                                                                               (TVar
-                                                                                                  (TV
-                                                                                                     "a"
-                                                                                                     Star)))
-                                                                                            (TVar
-                                                                                               (TV
-                                                                                                  "b"
-                                                                                                  Star))
-                                                                                        ]
-                                                                                      )
-                                                                                      (Typed
-                                                                                         ([ IsIn
-                                                                                              "Inspect"
-                                                                                              [ TApp
-                                                                                                  (TApp
-                                                                                                     (TCon
-                                                                                                        (TC
-                                                                                                           "(,)"
-                                                                                                           (Kfun
-                                                                                                              Star
-                                                                                                              (Kfun
-                                                                                                                 Star
-                                                                                                                 Star)))
-                                                                                                        "prelude")
-                                                                                                     (TCon
-                                                                                                        (TC
-                                                                                                           "Integer"
-                                                                                                           Star)
-                                                                                                        "prelude"))
-                                                                                                  (TCon
-                                                                                                     (TC
-                                                                                                        "Integer"
-                                                                                                        Star)
-                                                                                                     "prelude")
-                                                                                              ]
-                                                                                              Nothing
-                                                                                          ] :=>
-                                                                                            TApp
-                                                                                              (TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "(->)"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             Star)))
-                                                                                                    "prelude")
-                                                                                                 (TApp
-                                                                                                    (TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "(,)"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   Star)))
-                                                                                                          "prelude")
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Integer"
-                                                                                                             Star)
-                                                                                                          "prelude"))
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "Integer"
-                                                                                                          Star)
-                                                                                                       "prelude")))
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"))
-                                                                                         (Area
-                                                                                            (Loc
-                                                                                               0
-                                                                                               0
-                                                                                               0)
-                                                                                            (Loc
-                                                                                               0
-                                                                                               0
-                                                                                               0))
-                                                                                         (Var
-                                                                                            "inspect"
-                                                                                            False))))))))
+                                                                       (Var "inspect" False))
                                                                     (Typed
                                                                        ([ IsIn
                                                                             "Inspect"
@@ -1977,6 +1510,12 @@
       , AST
           { aimports =
               [ Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (NamedImport
+                     []
+                     "__BUILTINS__"
+                     ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+              , Untyped
                   (Area (Loc 0 1 1) (Loc 25 1 26))
                   (DefaultImport
                      (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "P")
@@ -2061,7 +1600,7 @@
                                                             (TCon (TC "Integer" Star) "prelude")))
                                                       (TCon (TC "Point" Star) "./ModuleA.mad"))
                                                  (Area (Loc 45 3 5) (Loc 52 3 12))
-                                                 (Var "P.Point" False))
+                                                 (Var "P.Point" True))
                                               (Typed
                                                  ([ IsIn
                                                       "Number"
@@ -2153,6 +1692,16 @@
                                                                         (Area
                                                                            (Loc 101 5 27)
                                                                            (Loc 102 5 28)))
+                                                                 , IsIn
+                                                                     "Number"
+                                                                     [ TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 101 5 27)
+                                                                           (Loc 102 5 28)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "Integer" Star) "prelude")
@@ -2160,6 +1709,16 @@
                                                                 (PVar "a")
                                                             , Typed
                                                                 ([ IsIn
+                                                                     "Number"
+                                                                     [ TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 101 5 27)
+                                                                           (Loc 102 5 28)))
+                                                                 , IsIn
                                                                      "Number"
                                                                      [ TCon
                                                                          (TC "Integer" Star)
@@ -2241,56 +1800,7 @@
                                                                          (TC "Integer" Star)
                                                                          "prelude")))
                                                               (Area (Loc 101 5 27) (Loc 102 5 28))
-                                                              (Placeholder
-                                                                 ( MethodRef "Number" "+" False
-                                                                 , [ TCon
-                                                                       (TC "Integer" Star) "prelude"
-                                                                   ]
-                                                                 )
-                                                                 (Typed
-                                                                    ([ IsIn
-                                                                         "Number"
-                                                                         [ TCon
-                                                                             (TC "Integer" Star)
-                                                                             "prelude"
-                                                                         ]
-                                                                         Nothing
-                                                                     ] :=>
-                                                                       TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "(->)"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "prelude")
-                                                                            (TCon
-                                                                               (TC "Integer" Star)
-                                                                               "prelude"))
-                                                                         (TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star)))
-                                                                                  "prelude")
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"))
-                                                                            (TCon
-                                                                               (TC "Integer" Star)
-                                                                               "prelude")))
-                                                                    (Area
-                                                                       (Loc 101 5 27)
-                                                                       (Loc 102 5 28))
-                                                                    (Var "+" False))))
+                                                              (Var "+" False))
                                                            (Typed
                                                               ([ IsIn
                                                                    "Number"

@@ -51,6 +51,7 @@ data TypeError
   | ImportCycle [FilePath]
   | OverloadedMutation String [Pred]
   | NoMain
+  | MainInvalidTyping
   | NotADefinition
   | ConstructorAccessBadIndex String String Int Int
   | ConstructorAccessNoConstructorFound String

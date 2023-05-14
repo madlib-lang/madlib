@@ -1,7 +1,14 @@
 ( fromList
     [ ( "./ModuleA.mad"
       , AST
-          { aimports = []
+          { aimports =
+              [ Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (NamedImport
+                     []
+                     "__BUILTINS__"
+                     ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+              ]
           , aexps = []
           , atypedecls = []
           , ainterfaces = []
@@ -13,6 +20,12 @@
       , AST
           { aimports =
               [ Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (NamedImport
+                     []
+                     "__BUILTINS__"
+                     ".//Users/arnaudboeglin/Code/madlib/prelude/__internal__/__BUILTINS__.mad")
+              , Untyped
                   (Area (Loc 0 1 1) (Loc 25 1 26))
                   (DefaultImport
                      (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "M")

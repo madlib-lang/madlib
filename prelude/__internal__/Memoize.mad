@@ -8,23 +8,21 @@ export memoize = (f) => {
   IO.putLine("memoize")
   cache = {{}}
 
-  return (a) => {
-    return where (Dictionary.get(a, cache)) {
-      Just(cached) =>
-        IO.trace("cached", cached)
+  return (a) => where (Dictionary.get(a, cache)) {
+    Just(cached) =>
+      IO.trace("cached", cached)
 
-      _ =>
-        do {
-          IO.putLine("exec")
-          result = f(a)
+    _ =>
+      do {
+        IO.putLine("exec")
+        result = f(a)
 
-          _ = (() => {
-            cache = Dictionary.insert(a, result, cache)
-          })()
+        _ = (() => {
+          cache = Dictionary.insert(a, result, cache)
+        })()
 
-          return result
-        }
-    }
+        return result
+      }
   }
 }
 
