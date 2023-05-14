@@ -362,7 +362,6 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                     (\methods ->
                       (methods <> Set.singleton monomorphicName, ())
                     )
-
                   return monomorphicName
 
             _ -> do

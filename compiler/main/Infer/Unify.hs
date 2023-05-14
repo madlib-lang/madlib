@@ -339,12 +339,7 @@ quickMatch (l `TApp` r) (l' `TApp` r') =
   quickMatch l l' && quickMatch r r'
 
 quickMatch (TRecord fields _ _) (TRecord fields' _ _) =
-  let extraFields  = M.difference fields fields'
-      extraFields' = M.difference fields' fields
-  in  if extraFields' /= mempty || extraFields /= mempty then
-        False
-      else
-        any (uncurry quickMatch) $ zip (M.elems fields) (M.elems fields')
+  quickMatchFields (M.toList fields) (M.toList fields')
 
 quickMatch (TVar _) _ = True
 quickMatch _ (TVar _) = True
@@ -365,3 +360,15 @@ quickMatch (TApp (TCon (TC tNameB _) _) _) (TCon (TC tNameA _) _)
 quickMatch _ _ =
   False
 
+quickMatchFields :: [(String, Type)] -> [(String, Type)] -> Bool
+quickMatchFields fields1 fields2 = case fields1 of
+  (name1, t1) : next1 ->
+    case fields2 of
+      [] ->
+        False
+
+      (name2, t2) : next2 ->
+        name1 == name2 && quickMatch t1 t2 && quickMatchFields next1 next2
+
+  [] ->
+    null fields2
