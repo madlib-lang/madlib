@@ -118,7 +118,7 @@ library
       Paths_madlib
   hs-source-dirs:
       compiler/main
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -207,7 +207,7 @@ library common
       Paths_madlib
   hs-source-dirs:
       compiler/common
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2
@@ -273,7 +273,7 @@ executable madlib
       Paths_madlib
   hs-source-dirs:
       compiler/app
-  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns -optcxx=-std=c++14 -optcxx=-lstdc++ -optcxx=-fno-rtti
+  ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
   build-depends:
       Cabal ==3.6.2.0
     , Glob >=0.10.2

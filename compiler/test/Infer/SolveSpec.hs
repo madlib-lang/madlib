@@ -65,6 +65,15 @@ buildOptions entrypoint pathUtils =
     }
 
 
+renameBuiltinsImport :: Slv.Import -> Slv.Import
+renameBuiltinsImport imp = case imp of
+  Slv.Untyped area (Slv.NamedImport [] "__BUILTINS__" _) ->
+    Slv.Untyped area (Slv.NamedImport [] "__BUILTINS__" "__BUILTINS__")
+
+  or ->
+    or
+
+
 inferModule :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModule code = do
   let modulePath = "Module.mad"
@@ -78,7 +87,7 @@ inferModule code = do
     Don'tPrune
     (Rock.fetch $ Query.SolvedASTWithEnv modulePath)
 
-  return (ast, warnings, errors)
+  return (ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }, warnings, errors)
 
 inferModuleWithoutMain :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModuleWithoutMain code = do
@@ -93,7 +102,7 @@ inferModuleWithoutMain code = do
     Don'tPrune
     (Rock.fetch $ Query.SolvedASTWithEnv modulePath)
 
-  return (ast, warnings, errors)
+  return (ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }, warnings, errors)
 
 
 inferManyModules :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
@@ -113,7 +122,8 @@ inferManyModules entrypoint modules = do
     modules
     Don'tPrune
     task
-  return (solvedModules, warnings, errors)
+  -- return (solvedModules, warnings, errors)
+  return (M.map (\ast -> ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }) solvedModules, warnings, errors)
 
 inferManyModulesWithoutMain :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModulesWithoutMain entrypoint modules = do
@@ -132,7 +142,7 @@ inferManyModulesWithoutMain entrypoint modules = do
     modules
     Don'tPrune
     task
-  return (solvedModules, warnings, errors)
+  return (M.map (\ast -> ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }) solvedModules, warnings, errors)
 
 
 spec :: Spec
