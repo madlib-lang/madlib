@@ -602,6 +602,10 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "You forgot to define a 'main' function in your main module\n\n"
     <> "Hint: Add a main method"
 
+  MutationRestriction ->
+    "This value depends on a closure doing mutation and can't be generic\n\n"
+    <> "Hint: Add a type definition with concrete types"
+
   NotADefinition ->
     "Not a definition\n\n"
     <> "It is not a definition and is not allowed\n\n"
@@ -935,6 +939,30 @@ createErrorDiagnostic color context typeError = case typeError of
       "You forgot to define a 'main' function in your main module."
       []
       [Diagnose.Hint "Add a main method"]
+
+    -- case context of
+    --   Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+    --     Diagnose.Err
+    --       Nothing
+    --       "Constructor access - bad index"
+    --       [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+    --         , Diagnose.This $
+    --             "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
+    --             <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+    --         )
+    --       ]
+    --       [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
+  MutationRestriction ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Mutation restriction"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "This value depends on a closure doing mutation and can't be generic"
+            )
+          ]
+          [Diagnose.Hint " Add a type definition with concrete types"]
 
   NotADefinition ->
     case context of

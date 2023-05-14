@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# HLINT ignore "Use list comprehension" #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -44,6 +45,10 @@ import           AST.Solved (getType)
 import qualified Data.Set as Set
 import           Run.Options
 import qualified Data.List as List
+
+
+mutationInterface = "__MUTATION__"
+mutationPred = IsIn mutationInterface [] Nothing
 
 
 infer :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -218,7 +223,7 @@ inferBody options env [e] = do
 
 inferBody options env (e : es) = do
   (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
-  (sb, ps', tb, eb) <- inferBody options (apply s env') es
+  (sb, ps', tb, eb) <- inferBody options (apply s env' { envInBody = True }) es
   let finalS = s `compose` (sb `compose` s)
 
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
@@ -355,8 +360,18 @@ inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) =
 inferAssignment :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAssignment options env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   currentScheme <- case M.lookup name (envVars env) of
-    Just sc -> return sc
-    _       -> (\t -> Forall [] ([] :=> t)) <$> newTVar Star
+    Just sc ->
+      return sc
+
+    _ -> do
+      tVar <- newTVar Star
+      return $ Forall [] ([] :=> tVar)
+
+  let mutationPs =
+        if name `Set.member` envNamesInScope env && envInBody env then
+          [mutationPred]
+        else
+          []
 
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
@@ -366,7 +381,7 @@ inferAssignment options env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   let s  = s1 `compose` s2
   let t2 = apply s t1
 
-  return (s, currentPreds ++ ps1, apply s t2, applyAssignmentSolve e name e1 (apply s $ (currentPreds ++ ps1) :=> t2))
+  return (s, currentPreds ++ ps1 ++ mutationPs, apply s t2, applyAssignmentSolve e name e1 (apply s $ (currentPreds ++ ps1) :=> t2))
 
 
 
@@ -896,7 +911,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   -- Once we have gattered clues we update the env types and infer it again
   -- to handle recursion errors. We probably need to improve that solution at
   -- some point!
-  (s2, ps, t, e) <- infer options (apply s1 env''') exp
+  (s2, ps, t, e) <- infer options (apply s1 env''' { envNamesInScope = M.keysSet (envVars env) }) exp
   let s = s1 `compose` s2
 
   let env'' = apply s env'''
@@ -955,23 +970,27 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
   let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
   let sFinal = sDefaults `compose` s''
-  -- let sc     = apply sFinal $ quantify gs (rs'' :=> t')
-  -- let sc'     = apply sFinal $ quantify [] (rs'' :=> t')
+
+  let mutPS = List.filter (\(IsIn cls _ _) -> cls == mutationInterface) ps
+
   let sc =
         if isLet && not (Slv.isNamedAbs e) then
-          apply sFinal $ quantify [] (rs'' :=> t')
+          apply sFinal $ quantify [] ((rs'' ++ mutPS) :=> t')
         else
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          apply sFinal $ quantify gs (rs'' :=> t')
+          apply sFinal $ quantify gs ((rs'' ++ mutPS) :=> t')
+
+  when (not isLet && not (null mutPS) && not (null (ftv t')) && not (Slv.isNamedAbs e)) $ do
+    throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds', rs''), extendVars env (n, sc), updateQualType e (apply sFinal $ rs'' :=> t'))
+      return (sFinal, (ds' ++ mutPS, rs''), extendVars env (n, sc), updateQualType e (apply sFinal $ rs'' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds', rs''), env, updateQualType e (apply sFinal $ rs'' :=> t'))
+      return (sFinal, (ds' ++ mutPS, rs''), env, updateQualType e (apply sFinal $ rs'' :=> t'))
 
 
 inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -980,6 +999,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
   env' <- case Can.getExpName exp of
         Just n  -> do
+          -- TODO: this can probably go now
           -- We convert say Applicative f => .. to (Functor f, Applicative f) => ..
           -- so that we generate the right dictionary placeholders.
           psWithParents <- getAllParentPreds env (dedupePreds qs)
@@ -990,7 +1010,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
         Nothing ->
           return env
 
-  (s, ps, t, e) <- infer options env' exp
+  (s, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
@@ -1019,6 +1039,11 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
       (CompilationError e c) ->
         throwError $ CompilationError e c
     )
+
+  let mutPS = List.filter (\(IsIn cls _ _) -> cls == mutationInterface) ps
+
+  when (not isLet && not (null mutPS) && not (null (ftv t''')) && not (Slv.isNamedAbs e)) $ do
+    throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   psWithParents <- getAllParentPreds env (dedupePreds qs')
   psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents

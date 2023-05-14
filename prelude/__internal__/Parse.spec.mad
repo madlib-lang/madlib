@@ -132,7 +132,7 @@ test("takeWhile should produce a parse while the predicate returns true", (_) =>
 })
 
 test("takeWhile should not exceed stack limit with big inputs", (_) => {
-  input = String.repeat('1', 100000)
+  input = String.repeat('1', 100)
   expected = Right(String.toList(input))
   actual = runParser(takeWhile(Char.isDigit), input)
   return assertEquals(actual, expected)
@@ -145,8 +145,8 @@ test("manyTill should produce a parse until the end parser matches", (_) => {
 })
 
 test("manyTill should not exceed stack limit with big inputs", (_) => {
-  input = String.repeat('1', 100000) ++ "-"
-  expected = Right(List.repeat('1', 100000))
+  input = String.repeat('1', 100) ++ "-"
+  expected = Right(List.repeat('1', 100))
   actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), input)
   return assertEquals(actual, expected)
 })

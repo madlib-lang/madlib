@@ -342,7 +342,6 @@ export runAllTestSuites = (testSuites) => pipe(
       runTestSuite(path, beforeAll, afterAll, tests)}
   ),
   (suites) => {
-    IO.log("tchou")
     if (IS_COLOR_ENABLED) {
       printSuiteResults(collector.getResults())
     }

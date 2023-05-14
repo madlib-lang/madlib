@@ -83,7 +83,13 @@ findExpByName moduleWhereItsUsed expName = do
       case findForeignModuleForImportedName expName ast of
         Just foreignModulePath -> do
           found <- Rock.fetch $ ForeignExp foreignModulePath expName
-          return $ (,foreignModulePath) <$> found
+
+          case found of
+            Nothing ->
+              findExpByName foreignModulePath expName
+
+            Just exp ->
+              return $ Just (exp, foreignModulePath)
 
         _ ->
           return Nothing
@@ -351,6 +357,12 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                       (removeParameterPlaceholdersAndUpdateName monomorphicName methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath typeItIsCalledWith monomorphized
                   addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
+
+                  liftIO $ atomicModifyIORef
+                    monomorphicMethods
+                    (\methods ->
+                      (methods <> Set.singleton monomorphicName, ())
+                    )
 
                   return monomorphicName
 
@@ -785,20 +797,7 @@ mergeResult ast@AST{ apath = Just currentModulePath } = do
   let monomorphizedFunctionsForModule = filterMonomorphicFunctionsForModule state currentModulePath
   let methodExps = Set.toList $ Set.fromList $ ainstances ast >>= findMonomorphicMethods monomorphizedFunctionsForModule
   let newExps = aexps ast >>= replaceDefinitionWithMonomorphicOnes monomorphizedFunctionsForModule
-  -- let allExps = newExps ++ methodExps
-  let newExpsAtTheTop = filter (Maybe.isNothing . getExpName) newExps
-  -- let newExpsToBeSorted = filter (\(i, _) -> i /= (-1)) allExps
-  -- -- let sortedNewExps = map snd $ List.sortBy (\a b -> compare (fst b) (fst a)) newExpsToBeSorted
-  -- let sortedNewExps = map snd $ methodExps ++ newExps
   let allExps = methodExps ++ newExps
-  let dependencies = buildDependenciesForAllExps allExps
-  let sortedNames = sortByDependencies dependencies
-  let sortedExps =
-        Maybe.mapMaybe
-          (\n ->
-            List.find (\e -> getExpName e == Just n) allExps
-          )
-          sortedNames
 
   allImports <- liftIO $ readIORef monomorphizationImports
   let importedNames = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup currentModulePath allImports
@@ -810,110 +809,7 @@ mergeResult ast@AST{ apath = Just currentModulePath } = do
           )
           (filter (\(foreignPath, _) -> foreignPath /= currentModulePath) importedNames)
 
-
-  return ast { aexps = newExpsAtTheTop ++ sortedExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
+  return ast { aexps = allExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
+  -- return ast { aexps = newExpsAtTheTop ++ allExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
 mergeResult ast =
   return ast
-
-
-compareDependencies :: (String, [String]) -> (String, [String]) -> Ordering
-compareDependencies entry1 entry2
-  | fst entry1 `elem` snd entry2 = LT
---   | null (dependencies entry1) = LT
-  | fst entry2 `elem` snd entry1 = GT
-  | null (snd entry1) && not (null (snd entry2)) = LT
-  | null (snd entry2) && not (null (snd entry1)) = GT
-  | otherwise = EQ
-  -- | otherwise = GT
-
-sortByDependencies :: [(String, [String])] -> [String]
-sortByDependencies entries = map fst $ List.sortBy compareDependencies entries
-
-
-buildDependenciesForAllExps :: [Exp] -> [(String, [String])]
-buildDependenciesForAllExps exps =
-  let allLocalNames = Maybe.mapMaybe getExpName exps
-  in  Maybe.mapMaybe (buildDependencies allLocalNames) exps
-
-buildDependencies :: [String] -> Exp -> Maybe (String, [String])
-buildDependencies localNames exp =
-  (\name -> (name, buildDependencies' localNames name exp)) <$> getExpName exp
-
-buildDependencies' :: [String] -> String -> Exp -> [String]
-buildDependencies' localNames expName exp = case exp of
-  Typed _ _ (Abs _ body) ->
-    body >>= buildDependencies' localNames expName
-
-  Typed _ _ (Do exps) ->
-    exps >>= buildDependencies' localNames expName
-
-  Typed _ _ (Assignment _ e) ->
-    buildDependencies' localNames expName e
-
-  Typed _ _ (Export e) ->
-    buildDependencies' localNames expName e
-
-  Typed _ _ (Placeholder _ e) ->
-    buildDependencies' localNames expName e
-
-  Typed _ _ (TypedExp e _ _) ->
-    buildDependencies' localNames expName e
-
-  Typed _ _ (Var n _) ->
-    if n `elem` localNames then
-      [n]
-    else
-      []
-
-  Typed _ _ (Where e iss) ->
-    buildDependencies' localNames expName e
-    ++ (iss >>= (buildDependencies' localNames expName . getIsExpression))
-
-  Typed _ _ (If cond truthy falsy) ->
-    buildDependencies' localNames expName cond
-    ++ buildDependencies' localNames expName truthy
-    ++ buildDependencies' localNames expName falsy
-
-  Typed _ _ (App fn arg _) ->
-    buildDependencies' localNames expName fn
-    ++ buildDependencies' localNames expName arg
-
-  Typed _ _ (Record fields) ->
-    concatMap
-      (\case
-        Typed _ _ (Field (_, exp)) ->
-          buildDependencies' localNames expName exp
-
-        Typed _ _ (FieldSpread exp) ->
-          buildDependencies' localNames expName exp
-
-        _ ->
-          []
-      )
-      fields
-
-  Typed _ _ (Access rec _) ->
-    buildDependencies' localNames expName rec
-
-  Typed _ _ (ListConstructor items) ->
-    concatMap
-      (\case
-        Typed _ _ (ListItem exp) ->
-          buildDependencies' localNames expName exp
-
-        Typed _ _ (ListSpread exp) ->
-          buildDependencies' localNames expName exp
-
-        _ ->
-          []
-      )
-      items
-
-  Typed _ _ (TupleConstructor items) ->
-    items >>= buildDependencies' localNames expName
-
-  Typed _ _ (TemplateString items) ->
-    items >>= buildDependencies' localNames expName
-
-  _ ->
-    []

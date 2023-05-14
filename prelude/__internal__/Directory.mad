@@ -9,7 +9,7 @@ import IOError from "IOError"
 
 #-
 {Node}
-import fs from "fs"
+import prelude_directory_fs from "fs"
 {/Node}
 -#
 
@@ -28,7 +28,7 @@ import fs from "fs"
  */
 read :: String -> Wish IOError (List String)
 export read = (path) => Wish((bad, good) => #- {
-  fs.readdir(path, (err, files) => {
+  prelude_file_fs.readdir(path, (err, files) => {
     if (err) {
       bad(IOError.UnknownError);
     } else {

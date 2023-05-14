@@ -1,4 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module Infer.MonomorphizationState where
 
 import           Infer.Type
@@ -7,12 +9,14 @@ import Data.IORef
 import GHC.IO (unsafePerformIO)
 import AST.Solved
 import qualified Data.Set as Set
+import           Data.Hashable
+import           GHC.Generics hiding(Constructor)
 
 data ImportType
   = DefinitionImport Int
   | ConstructorImport
   | ExpressionImport
-  deriving(Eq, Ord, Show)
+  deriving(Eq, Ord, Show, Generic, Hashable)
 
 monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
@@ -23,6 +27,11 @@ monomorphizationState = unsafePerformIO $ newIORef Map.empty
 monomorphizationImports :: IORef (Map.Map FilePath (Map.Map FilePath (Set.Set (String, Type, ImportType))))
 {-# NOINLINE monomorphizationImports #-}
 monomorphizationImports = unsafePerformIO $ newIORef Map.empty
+
+-- TODO: this can most likely go away!
+monomorphicMethods :: IORef (Set.Set String)
+{-# NOINLINE monomorphicMethods #-}
+monomorphicMethods = unsafePerformIO $ newIORef Set.empty
 
 data ScopeState
   = ScopeState
@@ -44,7 +53,7 @@ data MonomorphizationRequest
   { mrIndex :: Int
   , mrResult :: Maybe Exp
   }
-  deriving(Eq, Ord, Show)
+  deriving(Eq, Ord, Show, Generic, Hashable)
 
 data FunctionId
   = FunctionId
@@ -52,7 +61,7 @@ data FunctionId
   , fiModulePath :: FilePath
   , fiMonomorphicType :: Type
   }
-  deriving(Eq, Ord, Show)
+  deriving(Eq, Ord, Show, Generic, Hashable)
 
 
 buildMonomorphizedName :: String -> Int -> String
