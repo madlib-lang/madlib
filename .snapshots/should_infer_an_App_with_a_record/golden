@@ -91,8 +91,12 @@
                                      (Area (Loc 21 2 7) (Loc 35 2 21))
                                      (Record
                                         [ Typed
-                                            ([ IsIn "Number" [ TVar (TV "e4" Star) ] Nothing ] :=>
-                                               TVar (TV "e4" Star))
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Integer" Star) "prelude")
                                             (Area (Loc 23 2 9) (Loc 27 2 13))
                                             (Field
                                                ( "x"
@@ -107,8 +111,12 @@
                                                    (LNum "3")
                                                ))
                                         , Typed
-                                            ([ IsIn "Number" [ TVar (TV "f5" Star) ] Nothing ] :=>
-                                               TVar (TV "f5" Star))
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Integer" Star) "prelude")
                                             (Area (Loc 29 2 15) (Loc 33 2 19))
                                             (Field
                                                ( "y"

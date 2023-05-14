@@ -401,7 +401,8 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Unit" _) _ -> do
     safeBitcast what $ Type.ptr Type.i1
 
-  -- boxed lists are { i8*, i8* }**
+  -- boxed lists are i8*
+  -- unboxed lists are { i8*, i8* }*
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
     safeBitcast what listType
 
@@ -1601,12 +1602,59 @@ generateBranchTest env symbolTable pat value = case pat of
   Core.Typed _ _ _ (Core.PList pats) -> mdo
     let hasSpread = List.any isSpread pats
 
-    lengthTestBlock' <- currentBlock
+    currentBlock
     lengthTest <-
       if hasSpread then do
-        call madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
+        let minLengthToFind = List.length pats - 1
+        if minLengthToFind == 1 then do
+          nextPtr <- gep value [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          nextPtr' <- load nextPtr 0
+          icmp IntegerPredicate.NE nextPtr' (Operand.ConstantOperand (Constant.Null boxType))
+        else if minLengthToFind == 2 then mdo
+          br length1Block
+          length1Block <- block `named` "length1Block"
+          nextPtr <- gep value [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          nextPtr' <- load nextPtr 0
+          hasLength1 <- icmp IntegerPredicate.NE nextPtr' (Operand.ConstantOperand (Constant.Null boxType))
+          condBr hasLength1 length2Block lengthResultBlock
+
+          length2Block <- block `named` "length2Block"
+          nextPtr'' <- safeBitcast nextPtr' listType
+          secondItemPtr <- gep nextPtr'' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          secondItemPtr' <- load secondItemPtr 0
+          hasLength2 <- icmp IntegerPredicate.NE secondItemPtr' (Operand.ConstantOperand (Constant.Null boxType))
+          br lengthResultBlock
+
+          lengthResultBlock <- block `named` "lengthResultBlock"
+          phi [(hasLength1, length1Block), (hasLength2, length2Block)]
+        else
+          call madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
       else
-        call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
+        if List.null pats then do
+          nextPtr <- gep value [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          nextPtr' <- load nextPtr 0
+          icmp IntegerPredicate.EQ nextPtr' (Operand.ConstantOperand (Constant.Null boxType))
+        else if List.length pats == 1 then mdo
+          br length1Block
+          length1Block <- block `named` "length1Block"
+          nextPtr <- gep value [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          nextPtr' <- load nextPtr 0
+          hasLength1 <- icmp IntegerPredicate.NE nextPtr' (Operand.ConstantOperand (Constant.Null boxType))
+          condBr hasLength1 notLength2Block lengthResultBlock
+
+          notLength2Block <- block `named` "notLength2Block"
+          nextPtr'' <- safeBitcast nextPtr' listType
+          secondItemPtr <- gep nextPtr'' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+          secondItemPtr' <- load secondItemPtr 0
+          hasNotLength2 <- icmp IntegerPredicate.EQ secondItemPtr' (Operand.ConstantOperand (Constant.Null boxType))
+          br lengthResultBlock
+
+          lengthResultBlock <- block `named` "lengthResultBlock"
+          phi [(hasLength1, length1Block), (hasNotLength2, notLength2Block)]
+        else
+          call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
+
+    lengthTestBlock'' <- currentBlock
     condBr lengthTest subPatternTestBlock testResultBlock
 
     subPatternTestBlock <- block `named` "subPatternTestBlock"
@@ -1615,7 +1663,7 @@ generateBranchTest env symbolTable pat value = case pat of
     br testResultBlock
 
     testResultBlock <- block `named` "testResultBlock"
-    phi [(subPatternsTest, subPatternTestBlock'), (lengthTest, lengthTestBlock')]
+    phi [(subPatternsTest, subPatternTestBlock'), (lengthTest, lengthTestBlock'')]
 
     where
       isSpread :: Core.Pattern -> Bool

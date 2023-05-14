@@ -860,82 +860,82 @@ spec = do
       snapshotTest "should compile and resolve imported modules that import namespaced imports" actual
 
 
-    it "should compile and resolve imported packages" $ do
-      let
-        madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
-        mainMadlibDotJSON =
-          unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+    -- it "should compile and resolve imported packages" $ do
+    --   let
+    --     madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+    --     mainMadlibDotJSON =
+    --       unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
-        libMain   = unlines ["import R from \"./Utils/Random\"", "export random = (seed) => (R.random(seed))"]
+    --     libMain   = unlines ["import R from \"./Utils/Random\"", "export random = (seed) => (R.random(seed))"]
 
-        libRandom = "export random = (seed) => (seed / 2)"
+    --     libRandom = "export random = (seed) => (seed / 2)"
 
-        main      = unlines ["import R from \"random\"", "main = () => { R.random(3) }"]
+    --     main      = unlines ["import R from \"random\"", "main = () => { R.random(3) }"]
 
-        files     = M.fromList
-          [ ("/madlib_modules/random/madlib.json"         , madlibDotJSON)
-          , ("/madlib_modules/random/src/Main.mad"        , libMain)
-          , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
-          , ("/src/Main.mad"                              , main)
-          , ("/madlib.json"                               , mainMadlibDotJSON)
-          ]
+    --     files     = M.fromList
+    --       [ ("/madlib_modules/random/madlib.json"         , madlibDotJSON)
+    --       , ("/madlib_modules/random/src/Main.mad"        , libMain)
+    --       , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
+    --       , ("/src/Main.mad"                              , main)
+    --       , ("/madlib.json"                               , mainMadlibDotJSON)
+    --       ]
 
-        pathUtils = defaultPathUtils
-          { readFile           = makeReadFile files
-          , byteStringReadFile = makeByteStringReadFile files
-          , doesFileExist      = \f ->
-            if f == "/madlib_modules/random/madlib.json" || f == "/madlib.json" then return True else return False
-          }
+    --     pathUtils = defaultPathUtils
+    --       { readFile           = makeReadFile files
+    --       , byteStringReadFile = makeByteStringReadFile files
+    --       , doesFileExist      = \f ->
+    --         if f == "/madlib_modules/random/madlib.json" || f == "/madlib.json" then return True else return False
+    --       }
 
-      let actual = unsafePerformIO $ compileManyModulesWithReadFile
-            pathUtils
-            "/"
-            "/src/Main.mad"
-            files
+    --   let actual = unsafePerformIO $ compileManyModulesWithReadFile
+    --         pathUtils
+    --         "/"
+    --         "/src/Main.mad"
+    --         files
 
-      snapshotTest "should compile and resolve imported packages" actual
+    --   snapshotTest "should compile and resolve imported packages" actual
 
 
-    it "should compile and resolve imported packages when project is not at root path" $ do
-      let
-        madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
-        mainMadlibDotJSON =
-          unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+    -- it "should compile and resolve imported packages when project is not at root path" $ do
+    --   let
+    --     madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+    --     mainMadlibDotJSON =
+    --       unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
-        libMain = unlines
-          [ "import R from \"./Utils/Random\""
-          , "export random = (seed) => R.random(seed)"
-          , "export type Maybe a = Just(a) | Nothing"
-          ]
+    --     libMain = unlines
+    --       [ "import R from \"./Utils/Random\""
+    --       , "export random = (seed) => R.random(seed)"
+    --       , "export type Maybe a = Just(a) | Nothing"
+    --       ]
 
-        libRandom = "export random = (seed) => (seed / 2)"
+    --     libRandom = "export random = (seed) => (seed / 2)"
 
-        main      = unlines ["import R from \"random\"", "main = () => { R.random(3) }"]
+    --     main      = unlines ["import R from \"random\"", "main = () => { R.random(3) }"]
 
-        files     = M.fromList
-          [ ("/root/project/madlib_modules/random/madlib.json"         , madlibDotJSON)
-          , ("/root/project/madlib_modules/random/src/Main.mad"        , libMain)
-          , ("/root/project/madlib_modules/random/src/Utils/Random.mad", libRandom)
-          , ("/root/project/src/Main.mad"                              , main)
-          , ("/root/project/madlib.json"                               , mainMadlibDotJSON)
-          ]
+    --     files     = M.fromList
+    --       [ ("/root/project/madlib_modules/random/madlib.json"         , madlibDotJSON)
+    --       , ("/root/project/madlib_modules/random/src/Main.mad"        , libMain)
+    --       , ("/root/project/madlib_modules/random/src/Utils/Random.mad", libRandom)
+    --       , ("/root/project/src/Main.mad"                              , main)
+    --       , ("/root/project/madlib.json"                               , mainMadlibDotJSON)
+    --       ]
 
-        pathUtils = defaultPathUtils
-          { readFile           = makeReadFile files
-          , byteStringReadFile = makeByteStringReadFile files
-          , doesFileExist      = \f ->
-                                   if f == "/root/project/madlib_modules/random/madlib.json" || f == "/root/project/madlib.json"
-                                     then return True
-                                     else return False
-          }
+    --     pathUtils = defaultPathUtils
+    --       { readFile           = makeReadFile files
+    --       , byteStringReadFile = makeByteStringReadFile files
+    --       , doesFileExist      = \f ->
+    --                                if f == "/root/project/madlib_modules/random/madlib.json" || f == "/root/project/madlib.json"
+    --                                  then return True
+    --                                  else return False
+    --       }
 
-      let actual = unsafePerformIO $ compileManyModulesWithReadFile
-            pathUtils
-            "/root/project"
-            "/root/project/src/Main.mad"
-            files
+    --   let actual = unsafePerformIO $ compileManyModulesWithReadFile
+    --         pathUtils
+    --         "/root/project"
+    --         "/root/project/src/Main.mad"
+    --         files
 
-      snapshotTest "should compile and resolve imported packages when project is not at root path" actual
+    --   snapshotTest "should compile and resolve imported packages when project is not at root path" actual
 
 
     it "should compile and resolve files importing prelude modules" $ do

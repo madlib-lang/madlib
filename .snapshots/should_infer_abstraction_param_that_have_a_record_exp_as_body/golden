@@ -65,7 +65,11 @@
                          (Area (Loc 22 1 23) (Loc 54 1 55))
                          (Record
                             [ Typed
-                                ([] :=> TVar (TV "g6" Star))
+                                ([] :=>
+                                   TRecord
+                                     (fromList [ ( "y" , TVar (TV "h7" Star) ) ])
+                                     (Just (TVar (TV "o14" Star)))
+                                     (fromList []))
                                 (Area (Loc 24 1 25) (Loc 32 1 33))
                                 (FieldSpread
                                    (Typed

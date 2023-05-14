@@ -98,11 +98,14 @@
                                         , Typed
                                             ([ IsIn
                                                  "Number"
-                                                 [ TVar (TV "g6" Star) ]
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
                                                  (Just (Area (Loc 37 2 23) (Loc 38 2 24)))
-                                             , IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
                                              ] :=>
-                                               TVar (TV "f5" Star))
+                                               TCon (TC "Integer" Star) "prelude")
                                             (Area (Loc 34 2 20) (Loc 41 2 27))
                                             (Field
                                                ( "y"
