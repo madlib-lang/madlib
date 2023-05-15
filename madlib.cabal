@@ -39,6 +39,7 @@ library
       Canonicalize.EnvUtils
       Canonicalize.Interface
       Canonicalize.JSExp
+      Canonicalize.Rewrite
       Canonicalize.Typing
       Driver
       Driver.Rules
@@ -70,10 +71,10 @@ library
       Infer.Unify
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
-      Optimize.CalledLambda
       Optimize.EtaExpansion
       Optimize.EtaReduction
       Optimize.FoldCalls
+      Optimize.SimplifyCalls
       Optimize.SortExpressions
       Optimize.TCE
       Optimize.ToCore

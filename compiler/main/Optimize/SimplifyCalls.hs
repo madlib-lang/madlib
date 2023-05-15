@@ -1,5 +1,8 @@
-module Optimize.CalledLambda where
+module Optimize.SimplifyCalls where
 import AST.Core
+import Infer.Type
+import Debug.Trace
+import Text.Show.Pretty
 
 {-
 Replaces expressions of the form
@@ -11,7 +14,7 @@ It is not very common, but that is mainly what pipe(..)(..) generates when calle
 and creates an extra function.
 -}
 
-replaceVarInIsWith :: Name -> Exp -> Is -> Is
+replaceVarInIsWith :: String -> Exp -> Is -> Is
 replaceVarInIsWith n replaceWith is = case is of
   Typed qt area metadata (Is pat exp) ->
     Typed qt area metadata (Is pat (replaceVarWith n replaceWith exp))
@@ -20,7 +23,7 @@ replaceVarInIsWith n replaceWith is = case is of
     is
 
 
-replaceVarWith :: Name -> Exp -> Exp -> Exp
+replaceVarWith :: String -> Exp -> Exp -> Exp
 replaceVarWith n replaceWith exp = case exp of
   Typed qt area metadata (Assignment name e) ->
     Typed qt area metadata (Assignment name (replaceVarWith n replaceWith e))
@@ -74,7 +77,7 @@ reduceIs is = case is of
 reduce :: Exp -> Exp
 reduce exp = case exp of
   Typed _ _ _ (Call (Typed _ _ _ (Definition [param] [body])) [arg]) ->
-    replaceVarWith (getValue param) arg body
+    replaceVarWith (getValue param) arg (reduce body)
 
   Typed qt area metadata (Assignment name e) ->
     Typed qt area metadata (Assignment name (reduce e))
