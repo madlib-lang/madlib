@@ -73,8 +73,9 @@ import           Infer.MonomorphizationState
 import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
 import qualified AST.Core as Core
-import qualified Optimize.CalledLambda as CalledLambda
+import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
+import qualified Canonicalize.Rewrite as Rewrite
 
 
 
@@ -144,7 +145,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
           Coverage.addTrackers options ast
         else
           return ast
-      return (ast', env, instancesToDerive)
+
+      let ast'' =
+            if optMustHaveMain options then
+              Rewrite.rewriteAST ast'
+            else
+              -- we don't do it if we're not building an executable
+              ast'
+      return (ast'', env, instancesToDerive)
 
     case can of
       Right (ast, env, instancesToDerive) ->
@@ -373,18 +381,19 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         coreAst <- astToCore False monomorphicAST
         let sortedAST = SortExpressions.sortASTExpressions coreAst
         let renamedAst       = Rename.renameAST sortedAST
-            reducedAst       = CalledLambda.reduceAST renamedAst
+            reducedAst       = SimplifyCalls.reduceAST renamedAst
             tceResolved      = TCE.resolveAST reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
             folded           = FoldCalls.foldAST closureConverted
-        -- liftIO $ putStrLn $ ppShow folded
+
         return (folded, (mempty, mempty))
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
         let renamedAst       = Rename.renameAST coreAst
-            reducedAst       = CalledLambda.reduceAST renamedAst
+            reducedAst       = SimplifyCalls.reduceAST renamedAst
             tceResolved      = TCE.resolveAST reducedAst
+
         return (tceResolved, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do

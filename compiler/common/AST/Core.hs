@@ -480,3 +480,16 @@ getJSExpContent exp = case exp of
 
   _ ->
     ""
+
+mergeCalls :: Exp -> Exp
+mergeCalls exp = case exp of
+  Typed qt area metadata (Call fn args) ->
+    case fn of
+      Typed _ _ _ (Call fn' args') ->
+        mergeCalls $ Typed qt area metadata (Call fn' (args' ++ args))
+
+      _ ->
+        exp
+
+  _ ->
+    exp

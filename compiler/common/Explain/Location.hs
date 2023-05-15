@@ -7,6 +7,7 @@ import           GHC.Generics hiding(Constructor)
 
 
 -- Loc ------------------------------------------------------------------------
+-- TODO: remove absolute position as it's never used
 data Loc = Loc Int Int Int deriving(Eq, Show, Ord, Generic, Hashable)
 
 getLine :: Loc -> Int
@@ -31,6 +32,11 @@ getLineFromStart (Area (Loc _ l _) _) = l
 getStartLoc :: Area -> Loc
 getStartLoc area = case area of
   Area loc _ -> loc
+
+
+increaseStartColumns :: Int -> Area -> Area
+increaseStartColumns amount (Area (Loc a l c) (Loc a' l' c')) =
+  (Area (Loc a (l + amount) c) (Loc a' l' c'))
 
 
 getEndLoc :: Area -> Loc
