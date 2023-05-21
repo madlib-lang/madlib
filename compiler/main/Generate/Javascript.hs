@@ -46,6 +46,7 @@ import qualified Data.List as List
 import Data.IORef
 import Infer.MonomorphizationState
 import qualified Data.ByteString.Lazy.Char8 as BLChar8
+import Utils.Hash (generateHashFromPath)
 
 
 

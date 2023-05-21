@@ -12,15 +12,6 @@ expandAST ast =
   in  ast { aexps = expandedExps }
 
 
-isDefinition :: Exp -> Bool
-isDefinition exp = case exp of
-  Typed _ _ _ (Definition _ _) ->
-    True
-
-  _ ->
-    False
-
-
 makeParamNames :: Int -> [String]
 makeParamNames count = ("$param_" <>) . (: "") <$> take count ['a'..]
 

@@ -74,6 +74,8 @@ data Query a where
 
   -- Core
   CoreAST :: FilePath -> Query Core.AST
+  PropagatedAST :: FilePath -> Query Core.AST
+  ForeignCoreExp :: FilePath -> String -> Query (Maybe Core.Exp)
 
   -- LLVM
   BuiltObjectFile :: FilePath -> Query (SymbolTable, LLVM.Env, ByteString.ByteString)
@@ -167,23 +169,29 @@ instance Hashable (Query a) where
     CoreAST path ->
       hashWithSalt salt (path, 23 :: Int)
 
-    BuiltObjectFile path ->
+    PropagatedAST path ->
       hashWithSalt salt (path, 24 :: Int)
 
-    GeneratedJSModule path ->
-      hashWithSalt salt (path, 25 :: Int)
+    ForeignCoreExp modulePath expName ->
+      hashWithSalt salt (modulePath <> "." <> expName, 25 :: Int)
 
-    BuiltJSModule path ->
+    BuiltObjectFile path ->
       hashWithSalt salt (path, 26 :: Int)
 
-    BuiltTarget path ->
+    GeneratedJSModule path ->
       hashWithSalt salt (path, 27 :: Int)
 
-    StaticLibPathsToLink path ->
+    BuiltJSModule path ->
       hashWithSalt salt (path, 28 :: Int)
 
+    BuiltTarget path ->
+      hashWithSalt salt (path, 29 :: Int)
+
+    StaticLibPathsToLink path ->
+      hashWithSalt salt (path, 30 :: Int)
+
     EnvVar name ->
-      hashWithSalt salt (name, 29 :: Int)
+      hashWithSalt salt (name, 31 :: Int)
 
 
 instance Hashable (Some Query) where

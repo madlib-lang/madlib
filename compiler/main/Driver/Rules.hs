@@ -76,6 +76,7 @@ import qualified AST.Core as Core
 import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
 import qualified Canonicalize.Rewrite as Rewrite
+import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 
 
 
@@ -396,6 +397,18 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
         return (tceResolved, (mempty, mempty))
 
+  PropagatedAST path -> nonInput $ do
+    coreAST <- Rock.fetch $ CoreAST path
+    (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
+    return (propagatedAST, (mempty, mempty))
+
+  ForeignCoreExp modulePath name -> nonInput $ do
+    coreAST <- Rock.fetch $ CoreAST modulePath
+    let found = findExpByName name (Core.aexps coreAST)
+    return (found, (mempty, mempty))
+    where
+      findExpByName name exps = List.find (\e -> Core.getExpName e == Just name) exps
+
   BuiltObjectFile path -> nonInput $ do
     coreAst                           <- Rock.fetch $ CoreAST path
     builtModule@(_, _, objectContent) <- LLVM.compileModule options coreAst
@@ -411,6 +424,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
+    -- coreAst  <- Rock.fetch $ PropagatedAST path
     jsModule <- liftIO $ Javascript.generateJSModule options paths coreAst
     return (jsModule, (mempty, mempty))
 
@@ -556,6 +570,7 @@ runCanonicalM a =
         , Can.typesToDerive = []
         , Can.derivedTypes = Set.empty
         , Can.placeholderIndex = 0
+        , Can.parameterIndex = 0
         , Can.coverableInfo = []
         , Can.linesTracked = []
         , Can.anonymousFunctionIndex = 0

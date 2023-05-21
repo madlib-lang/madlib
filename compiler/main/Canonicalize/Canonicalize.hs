@@ -28,7 +28,7 @@ import qualified Text.Show.Pretty as PP
 import qualified Data.Set as Set
 import           Error.Warning
 import           Error.Context
-import Text.Regex.TDFA ((=~))
+import           Text.Regex.TDFA ((=~))
 import           Error.Error
 
 
@@ -188,9 +188,12 @@ instance Canonicalizable Src.Exp Can.Exp where
       typing' <- canonicalizeTyping typing
       return $ Can.Canonical area (Can.TypedExp exp' typing' scheme)
 
-    -- TODO: verify that the names match
-    Src.NamedTypedExp _ exp typing -> do
+    Src.NamedTypedExp n exp typing -> do
       exp'    <- canonicalize env target exp
+      let expName = Can.getExpName exp'
+      when (expName /= Just n) $ do
+        throwError $ CompilationError (TypeAnnotationNameMismatch n (Maybe.fromMaybe "" expName)) (Context (Env.envCurrentPath env) (Can.getArea exp'))
+
       scheme  <- typingToScheme env typing
       typing' <- canonicalizeTyping typing
       return $ Can.Canonical area (Can.TypedExp exp' typing' scheme)
@@ -249,12 +252,14 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Where exp' iss')
 
     Src.WhereAbs iss -> do
+      parameterIndex <- generateParameterIndex
+      let parameterName = "__W__" ++ show parameterIndex
       buildAbs
         env
         target
         area
-        [Src.Source emptyArea sourceTarget "__x__"]
-        [Src.Source area sourceTarget (Src.Where (Src.Source emptyArea sourceTarget (Src.Var "__x__")) iss)]
+        [Src.Source emptyArea sourceTarget parameterName]
+        [Src.Source area sourceTarget (Src.Where (Src.Source emptyArea sourceTarget (Src.Var parameterName)) iss)]
 
     Src.JsxTag{} -> do
       canonicalizeJsxTag env target (Src.Source area sourceTarget e)
@@ -266,10 +271,12 @@ instance Canonicalizable Src.Exp Can.Exp where
       canonicalize env target exp
 
     Src.Pipe exps -> do
+      parameterIndex <- generateParameterIndex
+      let parameterName = "__P__" ++ show parameterIndex
       let (Area (Loc x l c) _) = area
           varPLoc              = Area (Loc x l c) (Loc (x + 3) l (c + 3))
-      app <- buildApplication (Can.Canonical varPLoc (Can.Var "_P_")) exps
-      return $ Can.Canonical area (Can.Abs (Can.Canonical varPLoc "_P_") [app])
+      app <- buildApplication (Can.Canonical varPLoc (Can.Var parameterName)) exps
+      return $ Can.Canonical area (Can.Abs (Can.Canonical varPLoc parameterName) [app])
      where
       buildApplication :: Can.Exp -> [Src.Exp] -> CanonicalM Can.Exp
       buildApplication prev es = case es of

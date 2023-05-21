@@ -5,16 +5,14 @@ import IO from "IO"
 
 memoize :: (Inspect b, Comparable a) => (a -> b) -> a -> b
 export memoize = (f) => {
-  IO.putLine("memoize")
   cache = {{}}
 
   return (a) => where (Dictionary.get(a, cache)) {
     Just(cached) =>
-      IO.trace("cached", cached)
+      cached
 
     _ =>
       do {
-        IO.putLine("exec")
         result = f(a)
 
         cache = Dictionary.insert(a, result, cache)

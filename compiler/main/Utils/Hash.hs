@@ -14,4 +14,4 @@ hash input =
 
 generateHashFromPath :: FilePath -> String
 generateHashFromPath =
-  hash . BLChar8.pack
+  take 5 . hash . BLChar8.pack

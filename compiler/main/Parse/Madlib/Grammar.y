@@ -319,12 +319,15 @@ recordTypingArgs :: { M.Map Src.Name (Area, Src.Typing) }
   | recordTypingArgs ',' name '::' typings ','      { M.insert (strV $3) (mergeAreas (tokenArea $3) (tokenArea $4), $5) $1 }
 
 tupleTypings :: { [Src.Typing] }
-  : typing ',' typing                   { [$1, $3] }
-  | typing ',' compositeTyping          { [$1, $3] }
-  | compositeTyping ',' typing          { [$1, $3] }
-  | compositeTyping ',' compositeTyping { [$1, $3] }
-  | tupleTypings ',' typing             { $1 <> [$3] }
-  | tupleTypings ',' compositeTyping    { $1 <> [$3] }
+  : typings                             %shift { [$1] }
+  | tupleTypings ',' typings            %shift { $1 <> [$3] }
+  | typings ',' typings                 %shift { [$1, $3] }
+  | typing ',' typing                   %shift { [$1, $3] }
+  | typing ',' compositeTyping          %shift { [$1, $3] }
+  | compositeTyping ',' typing          %shift { [$1, $3] }
+  | compositeTyping ',' compositeTyping %shift { [$1, $3] }
+  | tupleTypings ',' typing             %shift { $1 <> [$3] }
+  | tupleTypings ',' compositeTyping    %shift { $1 <> [$3] }
 
 
 bodyExp :: { Src.Exp }

@@ -4,12 +4,7 @@ import           Run.Target
 import           Generate.Utils
 import qualified Utils.Hash                    as Hash
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
-
-
-
-generateHashFromPath :: FilePath -> String
-generateHashFromPath =
-  Hash.hash . BLChar8.pack
+import           Utils.Hash (generateHashFromPath)
 
 
 preludeHash :: String
