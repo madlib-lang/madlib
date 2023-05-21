@@ -725,6 +725,9 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
             next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
         in  prefix <> paths !! current <> "\n" <> next
 
+  TypeAnnotationNameMismatch typingName expName ->
+    "The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )"
+
   GrammarError _ _ ->
     "Grammar error\n\n"
     <> "Unexpected character"
@@ -1369,6 +1372,25 @@ createErrorDiagnostic color context typeError = case typeError of
           prefix         = spaces <> if current /= 0 then "-> " else ""
           next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
       in  prefix <> paths !! current <> "\n" <> next
+
+  TypeAnnotationNameMismatch typingName expName ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Type annotation error"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )"
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Type annotation error"
+          []
+          []
 
   GrammarError _ _ ->
     case context of

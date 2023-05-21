@@ -57,6 +57,7 @@ data TypeError
   | ConstructorAccessNoConstructorFound String
   | ConstructorAccessTooManyConstructors String Int
   | MutationRestriction
+  | TypeAnnotationNameMismatch String String
   deriving (Show, Eq, Ord)
 
 

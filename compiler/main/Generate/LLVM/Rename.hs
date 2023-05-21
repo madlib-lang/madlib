@@ -12,6 +12,7 @@ import qualified Utils.Hash                    as Hash
 import           AST.Core
 import Debug.Trace
 import Text.Show.Pretty
+import Utils.Hash (generateHashFromPath)
 
 
 
@@ -51,11 +52,6 @@ addHashToName hash name =
 hashName :: Env -> String -> String
 hashName Env { currentModuleHash } =
   addHashToName currentModuleHash
-
-
-generateHashFromPath :: FilePath -> String
-generateHashFromPath =
-  Hash.hash . BLChar8.pack
 
 
 hashModulePath :: AST -> String

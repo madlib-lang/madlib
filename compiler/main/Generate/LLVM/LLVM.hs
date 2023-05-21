@@ -82,6 +82,7 @@ import qualified Canonicalize.Env as CanEnv
 import qualified AST.Solved as Slv
 import Control.Exception (try, SomeException (SomeException))
 import LLVM.Exception (EncodeException, VerifyException)
+import Utils.Hash (generateHashFromPath)
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -2195,10 +2196,6 @@ buildSymbolTableFromImports imports = do
   results <- mapM buildSymbolTableFromImport imports
   return $ mconcat results
 
-
-generateHashFromPath :: FilePath -> String
-generateHashFromPath =
-  Hash.hash . BLChar8.pack
 
 hashModulePath :: AST -> String
 hashModulePath ast =

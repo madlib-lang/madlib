@@ -286,30 +286,6 @@ findFreeVarsInBranch env is = case is of
     return $ filter (\(varName, _) -> varName `notElem` patternVars) expVars
 
 
-getPatternVars :: Pattern -> [String]
-getPatternVars (Typed _ _ _ pat) = case pat of
-  PVar n ->
-    [n]
-
-  PCon _ pats ->
-    concatMap getPatternVars pats
-
-  PRecord fields ->
-    concatMap getPatternVars $ M.elems fields
-
-  PList pats ->
-    concatMap getPatternVars pats
-
-  PTuple pats ->
-    concatMap getPatternVars pats
-
-  PSpread pat' ->
-    getPatternVars pat'
-
-  _ ->
-    []
-
-
 findMutationsInExp :: [String] -> Exp -> [String]
 findMutationsInExp params exp = case exp of
   Typed _ _ _ (Assignment n e) | n `elem` params ->

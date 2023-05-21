@@ -42,6 +42,7 @@ data CanonicalState
       -- not redefine that instance later on if that record is present in another module.
       , derivedTypes :: Set.Set InstanceToDerive
       , placeholderIndex :: Int
+      , parameterIndex :: Int
       , coverableInfo :: [Coverable]
       , linesTracked :: [Int]
       , anonymousFunctionIndex :: Int
@@ -197,4 +198,11 @@ generatePlaceholderIndex = do
   s <- get
   let index = placeholderIndex s + 1
   put s { placeholderIndex = index }
+  return index
+
+generateParameterIndex :: CanonicalM Int
+generateParameterIndex = do
+  s <- get
+  let index = parameterIndex s + 1
+  put s { parameterIndex = index }
   return index

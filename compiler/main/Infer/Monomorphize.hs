@@ -811,6 +811,5 @@ mergeResult ast@AST{ apath = Just currentModulePath } = do
           (filter (\(foreignPath, _) -> foreignPath /= currentModulePath) importedNames)
 
   return ast { aexps = allExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
-  -- return ast { aexps = newExpsAtTheTop ++ allExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
 mergeResult ast =
   return ast

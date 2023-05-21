@@ -1,10 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 module AST.Core where
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Map                      as M
+import qualified Data.List                     as List
 import           Data.Hashable
 import           GHC.Generics hiding(Constructor)
 
@@ -384,6 +386,30 @@ getImportAbsolutePath imp = case imp of
     undefined
 
 
+getPatternVars :: Pattern -> [String]
+getPatternVars (Typed _ _ _ pat) = case pat of
+  PVar n ->
+    [n]
+
+  PCon _ pats ->
+    concatMap getPatternVars pats
+
+  PRecord fields ->
+    concatMap getPatternVars $ M.elems fields
+
+  PList pats ->
+    concatMap getPatternVars pats
+
+  PTuple pats ->
+    concatMap getPatternVars pats
+
+  PSpread pat' ->
+    getPatternVars pat'
+
+  _ ->
+    []
+
+
 isTCODefinition :: [Metadata] -> Bool
 isTCODefinition = any isTCODefinitionMetada
 
@@ -460,10 +486,12 @@ isReferenceArgument = elem ReferenceArgument
 isReferenceToMutatingFunction :: [Metadata] -> Bool
 isReferenceToMutatingFunction = elem MutatingFunctionRef
 
+
 getImportName :: Core ImportInfo -> String
 getImportName info = case info of
   Typed _ _ _ (ImportInfo n _) ->
     n
+
 
 isJSExp :: Exp -> Bool
 isJSExp exp = case exp of
@@ -473,6 +501,7 @@ isJSExp exp = case exp of
   _ ->
     False
 
+
 getJSExpContent :: Exp -> String
 getJSExpContent exp = case exp of
   Typed _ _ _ (JSExp js) ->
@@ -480,6 +509,16 @@ getJSExpContent exp = case exp of
 
   _ ->
     ""
+
+
+isDefinition :: Exp -> Bool
+isDefinition exp = case exp of
+  Typed _ _ _ (Definition _ _) ->
+    True
+
+  _ ->
+    False
+
 
 mergeCalls :: Exp -> Exp
 mergeCalls exp = case exp of
@@ -493,3 +532,22 @@ mergeCalls exp = case exp of
 
   _ ->
     exp
+
+
+findForeignModuleForImportedName :: String -> AST -> Maybe FilePath
+findForeignModuleForImportedName expName ast =
+  let imports = aimports ast
+      found =
+        List.find
+          (\case
+            Untyped _ _ (NamedImport names _ _) ->
+              if expName `elem` (map getImportName names) then
+                True
+              else
+                False
+
+            _ ->
+              False
+          )
+          imports
+  in  getImportAbsolutePath <$> found
