@@ -448,10 +448,10 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
         case Map.elems found of
           [MonomorphizationRequest _ _ True] -> do
             let (_ :=> t') = applyAndCleanQt envSubstitution qt
-            return $ Typed qt area (App (Typed ([] :=> (tUnit `fn` t')) area (Var monomorphicName False)) (Typed ([] :=> tUnit) area LUnit) True)
+            return $ Typed (applyAndCleanQt envSubstitution qt) area (App (Typed ([] :=> (tUnit `fn` t')) area (Var monomorphicName False)) (Typed ([] :=> tUnit) area LUnit) True)
 
           _ ->
-            return $ Typed qt area (Var monomorphicName False)
+            return $ Typed (applyAndCleanQt envSubstitution qt) area (Var monomorphicName False)
 
             
       else
@@ -488,6 +488,9 @@ monomorphizeBodyExp target env exp = case exp of
   Typed qt area (Assignment n e) -> do
     e' <- monomorphizeLocalAssignment target env qt area n e
     return $ Typed (apply (envSubstitution env) qt) area (Assignment n e')
+
+  Typed qt area node ->
+    monomorphize target env $ Typed (apply (envSubstitution env) qt) area node
 
   or ->
     monomorphize target env or
@@ -791,6 +794,7 @@ filterMonomorphicFunctionsForModule state modulePath =
   Map.filterWithKey
     (\id _ -> fiModulePath id == modulePath)
     state
+
 
 mergeResult :: AST -> IO AST
 mergeResult ast@AST{ apath = Just currentModulePath } = do

@@ -335,7 +335,7 @@
                                                 Nothing
                                                 (fromList []))
                                            (Area (Loc 286 16 3) (Loc 289 16 6))
-                                           "_P_")
+                                           "__P__1")
                                         [ Typed
                                             ([] :=> TCon (TC "{}" Star) "prelude")
                                             (Area (Loc 286 16 3) (Loc 412 22 8))
@@ -890,7 +890,8 @@
                                                                                 (Area
                                                                                    (Loc 286 16 3)
                                                                                    (Loc 289 16 6))
-                                                                                (Var "_P_" False))
+                                                                                (Var
+                                                                                   "__P__1" False))
                                                                              True))
                                                                        True))
                                                                  True))

@@ -52,7 +52,7 @@ instance (Monad m, Monoid w) => MonadTrans m (WriterT w) {
 
 export type Identity a = Identity(a)
 
-run :: Identity a -> a
+runIdentity :: Identity a -> a
 export runIdentity = (x) => where(x) {
   Identity(a) => a
 }

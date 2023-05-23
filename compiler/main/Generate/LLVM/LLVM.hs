@@ -269,7 +269,7 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
 
-  IT.TRecord _ _ _ -> do
+  IT.TRecord{} -> do
     recordType
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
@@ -312,6 +312,260 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   _ ->
     Type.ptr Type.i8
 
+buildLLVMType' :: Rock.MonadFetch Query.Query m => IT.Qual IT.Type -> m (Type.Type, Maybe (String, Symbol))
+buildLLVMType' (ps IT.:=> t) = case t of
+  IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+    return (Type.double, Nothing)
+
+  IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+    return (Type.i8, Nothing)
+
+  IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+    return (Type.i32, Nothing)
+
+  IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+    return (Type.i64, Nothing)
+
+  IT.TCon (IT.TC "String" IT.Star) "prelude" ->
+    return (stringType, Nothing)
+
+  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
+    return (Type.i1, Nothing)
+
+  IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
+    return (Type.ptr Type.i1, Nothing)
+
+  IT.TVar _ | IT.hasNumberPred ps ->
+    return (Type.i64, Nothing)
+
+  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
+    return (listType, Nothing)
+
+  IT.TRecord{} -> do
+    return (recordType, Nothing)
+
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ -> do
+    let arity = List.length $ IT.getParamTypes t
+    return (Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False, Nothing)
+
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+    return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
+
+  _ | IT.isTCon t ->
+    if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then do
+      let adtTypePath = IT.getTConPath t
+      let adtTypeName = IT.getTConName t
+      maybeADT <- Rock.fetch $ Query.ForeignTypeDeclaration adtTypePath adtTypeName
+      case maybeADT of
+        Nothing ->
+          return (boxType, Nothing)
+
+        Just (Slv.Untyped _ adt) -> do
+          let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
+          return
+            ( Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+            , Just (adtTypePath <> "__" <> adtTypeName, adtSymbol maxArity)
+            )
+          -- in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
+      -- retrieveConstructorStructType env symbolTable t
+    else
+      return (Type.ptr Type.i8, Nothing)
+
+  _ ->
+    return (Type.ptr Type.i8, Nothing)
+
+-- buildLLVMType' :: Rock.MonadFetch Query.Query m => IT.Qual IT.Type -> m Type.Type
+-- buildLLVMType' (ps IT.:=> t) = case t of
+--   IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+--     return Type.double
+
+--   IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+--     return Type.i8
+
+--   IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+--     return Type.i32
+
+--   IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+--     return Type.i64
+
+--   IT.TCon (IT.TC "String" IT.Star) "prelude" ->
+--     return stringType
+
+--   IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
+--     return Type.i1
+
+--   IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
+--     return $ Type.ptr Type.i1
+
+--   IT.TVar _ | IT.hasNumberPred ps ->
+--     return Type.i64
+
+--   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
+--     return listType
+
+--   IT.TRecord{} -> do
+--     return recordType
+
+--   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ -> do
+--     let arity = List.length $ IT.getParamTypes t
+--     return $ Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+
+--   IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+--     return $ Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+--   _ | IT.isTCon t ->
+--     if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then do
+--       let adtTypePath = IT.getTConPath t
+--       let adtTypeName = IT.getTConName t
+--       maybeADT <- Rock.fetch $ Query.ForeignTypeDeclaration adtTypePath adtTypeName
+--       case maybeADT of
+--         Nothing ->
+--           return boxType
+
+--         Just (Slv.Untyped _ adt) -> do
+--           let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
+--           return $ Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+--           -- in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
+--       -- retrieveConstructorStructType env symbolTable t
+--     else
+--       return $ Type.ptr Type.i8
+
+--   _ ->
+--     return $ Type.ptr Type.i8
+
+-- makeADTSymbolForType :: Rock.MonadFetch Query.Query m => IT.Qual IT.Type -> m (Maybe Symbol)
+-- makeADTSymbolForType (ps IT.:=> t) = case t of
+--   IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "String" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
+--     return Nothing
+
+--   IT.TVar _ | IT.hasNumberPred ps ->
+--     return Nothing
+
+--   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
+--     return Nothing
+
+--   IT.TRecord{} -> do
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ -> do
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+--     return Nothing
+
+--   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+--     return Nothing
+
+--   _ | IT.isTCon t ->
+--     if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then do
+--       let adtTypePath = IT.getTConPath t
+--       let adtTypeName = IT.getTConName t
+--       maybeADT <- Rock.fetch $ Query.ForeignTypeDeclaration adtTypePath adtTypeName
+--       case maybeADT of
+--         Nothing ->
+--           return Nothing
+
+--         Just (Slv.Untyped _ adt) -> do
+--           let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
+--           return $ Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+--           -- Just (Symbol (ADTSymbol maxArity) _) ->
+--           -- Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+--           -- in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
+--       -- retrieveConstructorStructType env symbolTable t
+--     else
+--       return $ Type.ptr Type.i8
+
+--   _ ->
+--     return $ Type.ptr Type.i8
+
+
 buildLLVMParamType :: Env -> SymbolTable -> IT.Type -> Type.Type
 buildLLVMParamType env symbolTable t = case t of
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
@@ -346,7 +600,7 @@ recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
 tConExclude :: [String]
-tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,)"]
+tConExclude = ["Array", "Dictionary", "ByteArray", "(->)", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,)"]
 
 
 retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
@@ -2123,7 +2377,7 @@ generateExternForImportName symbolTable optimizedName = case optimizedName of
 
 generateImport :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Import -> m ()
 generateImport symbolTable imp = case imp of
-  Core.Untyped _ _ (NamedImport names _ _) ->
+  Core.Untyped _ _ (NamedImport names _ _) -> do
     mapM_ (generateExternForImportName symbolTable) names
 
   _ ->
@@ -2139,11 +2393,18 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
       return $ Map.singleton name (topLevelSymbol globalRef)
     else do
       -- TODO: fix args for buildLLVMType
-      let expType   = buildLLVMType initialEnv mempty qt
-          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-      return $ Map.singleton name (topLevelSymbol globalRef)
+      (expType, maybeAdtSymbol) <- buildLLVMType' qt
+      -- let expType = buildLLVMType initialEnv mempty qt
+      let globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      let adtSymbol = case maybeAdtSymbol of
+            Just (n, s) ->
+              Map.singleton n s
 
-  Typed (_ IT.:=> t) _ _ (ImportInfo name (DefinitionImport arity)) -> do
+            _ ->
+              Map.empty
+      return $ Map.singleton name (topLevelSymbol globalRef) <> adtSymbol
+
+  Typed _ _ _ (ImportInfo name (DefinitionImport arity)) -> do
     let fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
     return $ Map.singleton name (fnSymbol arity fnRef)

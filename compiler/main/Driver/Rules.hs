@@ -410,7 +410,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       findExpByName name exps = List.find (\e -> Core.getExpName e == Just name) exps
 
   BuiltObjectFile path -> nonInput $ do
-    coreAst                           <- Rock.fetch $ CoreAST path
+    coreAst                           <- Rock.fetch $ PropagatedAST path
     builtModule@(_, _, objectContent) <- LLVM.compileModule options coreAst
 
     liftIO $ do

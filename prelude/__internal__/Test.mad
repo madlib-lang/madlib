@@ -153,7 +153,7 @@ export assertEquals = (actual, expected) => actual == expected
 
 test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
-  (run) => run(description),
+  testImpl,
   map((_) => IO.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
   Wish.mapRej(
     where {
@@ -175,7 +175,7 @@ export test = (description, testImpl) => pipe(
         IO.red(`${CHAR_CROSS} not implemented`)
     }
   )
-)(testImpl)
+)(description)
 
 
 generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String

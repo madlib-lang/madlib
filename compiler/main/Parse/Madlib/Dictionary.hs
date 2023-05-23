@@ -15,11 +15,13 @@ addDictionaryImportIfNeeded pathUtils ctxPath ast =
   else
     return ast
 
+
 addDictionaryImport :: PathUtils -> FilePath -> AST -> IO AST
 addDictionaryImport pathUtils ctxPath ast = do
   dictionaryModulePath <- resolveAbsoluteSrcPath pathUtils ctxPath "Dictionary"
   updatedImports       <- updateImports pathUtils ctxPath dictionaryModulePath False (aimports ast)
   return ast { aimports = updatedImports }
+
 
 updateImports :: PathUtils -> FilePath -> Maybe FilePath -> Bool -> [Import] -> IO [Import]
 updateImports pathUtils ctxPath dictionaryModulePath found imports = case imports of
@@ -52,10 +54,12 @@ updateImports pathUtils ctxPath dictionaryModulePath found imports = case import
     next' <- updateImports pathUtils ctxPath dictionaryModulePath found next
     return (imp : next')
 
+
 usesDictionaryConstructor :: AST -> Bool
 usesDictionaryConstructor ast =
   let methods = concat $ (\(Source _ _ (Instance _ _ _ methods)) -> Map.elems methods) <$> ainstances ast
   in  any expUsesDictionaryConstructor (methods ++ aexps ast)
+
 
 expUsesDictionaryConstructor :: Exp -> Bool
 expUsesDictionaryConstructor exp = case exp of

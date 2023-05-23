@@ -322,12 +322,12 @@ tupleTypings :: { [Src.Typing] }
   : typings                             %shift { [$1] }
   | tupleTypings ',' typings            %shift { $1 <> [$3] }
   | typings ',' typings                 %shift { [$1, $3] }
-  | typing ',' typing                   %shift { [$1, $3] }
-  | typing ',' compositeTyping          %shift { [$1, $3] }
-  | compositeTyping ',' typing          %shift { [$1, $3] }
-  | compositeTyping ',' compositeTyping %shift { [$1, $3] }
-  | tupleTypings ',' typing             %shift { $1 <> [$3] }
-  | tupleTypings ',' compositeTyping    %shift { $1 <> [$3] }
+  -- | typing ',' typing                   %shift { [$1, $3] }
+  -- | typing ',' compositeTyping          %shift { [$1, $3] }
+  -- | compositeTyping ',' typing          %shift { [$1, $3] }
+  -- | compositeTyping ',' compositeTyping %shift { [$1, $3] }
+  -- | tupleTypings ',' typing             %shift { $1 <> [$3] }
+  -- | tupleTypings ',' compositeTyping    %shift { $1 <> [$3] }
 
 
 bodyExp :: { Src.Exp }

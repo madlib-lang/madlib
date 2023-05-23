@@ -30,7 +30,6 @@ import           System.FilePath                ( replaceExtension
                                                 , joinPath, splitDirectories, takeDirectory, pathSeparator
                                                 , splitPath, takeFileName
                                                 )
-import           Explain.Location
 import           Infer.Type
 import           Generate.JSInternals
 import           Run.Target
