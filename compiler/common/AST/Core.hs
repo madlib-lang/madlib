@@ -409,6 +409,29 @@ getPatternVars (Typed _ _ _ pat) = case pat of
   _ ->
     []
 
+getPatternConstructorNames :: Pattern -> [String]
+getPatternConstructorNames (Typed _ _ _ pat) = case pat of
+  PVar n ->
+    []
+
+  PCon n pats ->
+    n : concatMap getPatternConstructorNames pats
+
+  PRecord fields ->
+    concatMap getPatternConstructorNames $ M.elems fields
+
+  PList pats ->
+    concatMap getPatternConstructorNames pats
+
+  PTuple pats ->
+    concatMap getPatternConstructorNames pats
+
+  PSpread pat' ->
+    getPatternConstructorNames pat'
+
+  _ ->
+    []
+
 
 isTCODefinition :: [Metadata] -> Bool
 isTCODefinition = any isTCODefinitionMetada

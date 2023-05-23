@@ -4,23 +4,23 @@ let __568c75136c0c369c440814a7af59434a__Just = (a => ({ __constructor: "Just", _
 let __568c75136c0c369c440814a7af59434a__Nothing = ({ __constructor: "Nothing", __args: [  ] });
 let __568c75136c0c369c440814a7af59434a__Right = (a => ({ __constructor: "Right", __args: [ a ] }));
 let __568c75136c0c369c440814a7af59434a__Left = (a => ({ __constructor: "Left", __args: [ a ] }));
-export let __568c75136c0c369c440814a7af59434a__map__2 = (f => __x__ => {
+export let __568c75136c0c369c440814a7af59434a__map__2 = (f => __W__3 => {
     let $_result_;
     let $_continue_ = true;
     let $_start_ = {};
     let $_end_ = $_start_;
     let $$f = f;
-    let $$__x__ = __x__;
+    let $$__W__3 = __W__3;
 
     while($_continue_) {
       let $f = $$f;
-      let $__x__ = $$__x__;
+      let $__W__3 = $$__W__3;
 
         $_continue_ = false;
         ((__x__) => {
   if (__x__ !== null && true && true) {
     let { v: h, n: t } = __x__;
-    ($_end_ = $_end_.n = { v: $f(h) }, $$f = $f, $$__x__ = t, $_continue_ = true);
+    ($_end_ = $_end_.n = { v: $f(h) }, $$f = $f, $$__W__3 = t, $_continue_ = true);
   }
   else if (__x__ !== null && true && __x__.n === null) {
     let { v: l } = __x__;
@@ -34,11 +34,11 @@ export let __568c75136c0c369c440814a7af59434a__map__2 = (f => __x__ => {
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})($__x__)
+})($__W__3)
     }
     return $_result_;
 });
-export let __568c75136c0c369c440814a7af59434a__map__5 = (f => __x__ => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__map__5 = (f => __W__4 => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let x = __x__.__args[0];
     return __568c75136c0c369c440814a7af59434a__Just(f(x));
@@ -51,8 +51,8 @@ export let __568c75136c0c369c440814a7af59434a__map__5 = (f => __x__ => ((__x__) 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__));
-export let __568c75136c0c369c440814a7af59434a__chain__7 = (f => __x__ => ((__x__) => {
+})(__W__4));
+export let __568c75136c0c369c440814a7af59434a__chain__7 = (f => __W__2 => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let x = __x__.__args[0];
     return f(x);
@@ -65,7 +65,7 @@ export let __568c75136c0c369c440814a7af59434a__chain__7 = (f => __x__ => ((__x__
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__));
+})(__W__2));
 let __568c75136c0c369c440814a7af59434a__inc__1 = (a => (a + 1));
 let __568c75136c0c369c440814a7af59434a__doIt__6 = (x => __568c75136c0c369c440814a7af59434a__map__5((k => (k + 1)))(x));
 let __568c75136c0c369c440814a7af59434a__fn__3 = __568c75136c0c369c440814a7af59434a__map__2(__568c75136c0c369c440814a7af59434a__inc__1);

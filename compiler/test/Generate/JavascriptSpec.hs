@@ -443,7 +443,7 @@ monadTransformersProgram = unlines
   , ""
   , "export type Identity a = Identity(a)"
   , ""
-  , "run :: Identity a -> a"
+  , "runIdentity :: Identity a -> a"
   , "export runIdentity = where {"
   , "  Identity(a) => a"
   , "}"

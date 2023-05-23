@@ -2,6 +2,7 @@ module Optimize.FoldCalls where
 import AST.Core
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
+import Infer.Type
 
 {-
 Main use case is to eliminate extra closures created by
@@ -108,7 +109,16 @@ findInvalidAccesses exp = case exp of
 
 findEligibleCalls :: Exp -> [(String, Exp)] -> [(String, Exp)]
 findEligibleCalls exp found = case exp of
-  Typed _ _ _ (Assignment n call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) _))) | not (isReferenceToMutatingFunction metadata) ->
+  Typed (_ :=> t) _ _ (Assignment n call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
+    if any ((== fnName) . fst) found then
+      -- if we have already found the function it'll most likely be inlined and we can
+      -- skip it for the current pass
+      -- List.foldl' (flip findEligibleCalls) found args
+      found
+    else
+      (n, call) : found
+
+  Typed (_ :=> t) _ _ (Assignment n call@(Typed _ _ metadata (Var fnName _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
     if any ((== fnName) . fst) found then
       -- if we have already found the function it'll most likely be inlined and we can
       -- skip it for the current pass
@@ -162,7 +172,7 @@ findEligibleCallsInBody :: [Exp] -> [(String, Exp)] -> [(String, Exp)]
 findEligibleCallsInBody exps found = case exps of
   e : es ->
     let found' = findEligibleCalls e found
-    in  findEligibleCallsInBody es found'
+    in  findEligibleCallsInBody es (found' ++ found)
 
   [] ->
     found
@@ -195,9 +205,9 @@ propagateCalls exp candidates = case exp of
     else
       Just $ Typed qt area metadata (Assignment n (Maybe.fromMaybe e $ propagateCalls e candidates))
 
-  -- Typed qt area metadata (Definition params body) ->
-  --   let body' = Maybe.mapMaybe (`propagateCalls` candidates) body
-  --   in  Just $ Typed qt area metadata (Definition params body')
+  Typed qt area metadata (Definition params body) ->
+    let body' = Maybe.mapMaybe (`propagateCalls` candidates) body
+    in  Just $ Typed qt area metadata (Definition params body')
 
   Typed qt area metadata (Do body) ->
     let body' = Maybe.mapMaybe (`propagateCalls` candidates) body

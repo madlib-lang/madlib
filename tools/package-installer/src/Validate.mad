@@ -108,18 +108,18 @@ instance Applicative Validate {
 instance Monad Validate {
   of = pure
 
-  chain = (fn, m) => where(m) {
+  chain = (f, m) => where(m) {
     Valid(a) =>
-      fn(a)
+      f(a)
 
     NotValid(_, a) =>
       pipe(
-        fn,
+        f,
         combine(m)
       )(a)
 
     ValidationError(warnings, err, maybeA) =>
-      ValidationError(warnings, err, chain(pipe(fn, getValidationValue), maybeA))
+      ValidationError(warnings, err, chain(pipe(f, getValidationValue), maybeA))
   }
 }
 

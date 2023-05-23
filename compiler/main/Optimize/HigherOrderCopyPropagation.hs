@@ -17,6 +17,7 @@ import           Control.Monad.State
 import           Utils.Hash (generateHashFromPath)
 import qualified Data.Set as Set
 import qualified Data.List as List
+import Explain.Location (emptyArea)
 
 
 {-
@@ -166,6 +167,7 @@ findGlobalAccesses namesInScope exp = case exp of
         map
           (\(Typed _ _ _ (Is pat e)) ->
             findGlobalAccesses (namesInScope <> Set.fromList (getPatternVars pat)) e
+            <> Set.fromList (getPatternConstructorNames pat)
           )
           iss
       )
@@ -207,12 +209,11 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
         replacement
 
       _ ->
-        -- if n == newFnName then
         Typed qt area metadata (Var n isCtor)
 
-  Typed qt area metadata (Assignment n e) ->
+  Typed _ area metadata (Assignment n e) ->
     let e' = propagateBody fnName newFnName newQualType propagateMap e
-    in  Typed qt area metadata (Assignment n e')
+    in  Typed (getQualType e') area metadata (Assignment n e')
 
   Typed qt area metadata (Call (Typed _ area' metadata' (Var calledFn ctor)) args) | calledFn == fnName ->
     let mapKeys = Map.keys propagateMap
@@ -238,9 +239,10 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
     let body' = map (propagateBody fnName newFnName newQualType propagateMap) body
     in  Typed qt area metadata (Definition params body')
 
-  Typed qt area metadata (Do exps) ->
+  Typed _ area metadata (Do exps) ->
     let exps' = map (propagateBody fnName newFnName newQualType propagateMap) exps
-    in  Typed qt area metadata (Do exps')
+        newQt = getQualType $ last exps
+    in  Typed newQt area metadata (Do exps')
 
   Typed qt area metadata (If cond truthy falsy) ->
     let cond' = propagateBody fnName newFnName newQualType propagateMap cond
@@ -323,7 +325,7 @@ applyPropagation path fnName newName newQualType args = do
 
 propagate :: FilePath -> Exp -> Propagate Exp
 propagate path exp = case exp of
-  Typed qt area metadata (Call (Typed (_ :=> t) varArea varMetadata (Var fnName False)) args) -> do
+  Typed qt area metadata (Call (Typed (ps :=> t) varArea varMetadata (Var fnName False)) args) -> do
     result <- mapM (isArgEligible path) args
     if or result then do
       newFnName <- makeNewName path fnName
@@ -334,21 +336,101 @@ propagate path exp = case exp of
 
       case applied of
         Just good -> do
-          pushPropagatedExp good
-          return $ Typed qt area metadata (Call (Typed newQualType varArea varMetadata (Var newFnName False)) newArgs)
+          good' <- propagate path good
+          pushPropagatedExp good'
+          newArgs' <- mapM (propagate path) newArgs
+          return $ Typed qt area metadata (Call (Typed newQualType varArea varMetadata (Var newFnName False)) newArgs')
 
-        _ ->
-          return exp
-    else
-      return exp
+        _ -> do
+          args' <- mapM (propagate path) args
+          return $ Typed qt area metadata (Call (Typed (ps :=> t) varArea varMetadata (Var fnName False)) args')
+
+    else do
+      args' <- mapM (propagate path) args
+      return $ Typed qt area metadata (Call (Typed (ps :=> t) varArea varMetadata (Var fnName False)) args')
+
+  Typed qt area metadata (Call fn args) -> do
+    args' <- mapM (propagate path) args
+    return $ Typed qt area metadata (Call fn args')
 
   Typed qt area metadata (Assignment n e) -> do
     e' <- propagate path e
-    return $ Typed qt area metadata (Assignment n e')
+    return $ Typed (getQualType e') area metadata (Assignment n e')
 
   Typed qt area metadata (Definition params body) -> do
     body' <- mapM (propagate path) body
     return $ Typed qt area metadata (Definition params body')
+
+  Typed qt area metadata (Do exps) -> do
+    exps' <- mapM (propagate path) exps
+    let newQt = getQualType $ last exps'
+    return $ Typed newQt area metadata (Do exps')
+
+  Typed qt area metadata (Export e) -> do
+    e' <- propagate path e
+    return $ Typed (getQualType e') area metadata (Export e')
+
+  Typed qt area metadata (TupleConstructor items) -> do
+    items' <- mapM (propagate path) items
+    return $ Typed qt area metadata (TupleConstructor items')
+
+  Typed qt area metadata (ListConstructor items) -> do
+    items' <-
+      mapM
+        (\case
+          Typed qt' area' metadata' (ListItem e) -> do
+            e' <- propagate path e
+            return $ Typed qt' area' metadata' (ListItem e')
+
+          Typed qt' area' metadata' (ListSpread e) -> do
+            e' <- propagate path e
+            return $ Typed qt' area' metadata' (ListSpread e')
+
+          or ->
+            return or
+        )
+        items
+    return $ Typed qt area metadata (ListConstructor items')
+
+  Typed qt area metadata (Record fields) -> do
+    fields' <-
+      mapM
+        (\case
+          Typed qt' area' metadata' (Field (n, e)) -> do
+            e' <- propagate path e
+            return $ Typed qt' area' metadata' (Field (n, e'))
+
+          Typed qt' area' metadata' (FieldSpread e) -> do
+            e' <- propagate path e
+            return $ Typed qt' area' metadata' (FieldSpread e')
+
+          or ->
+            return or
+        )
+        fields
+    return $ Typed qt area metadata (Record fields')
+
+  Typed qt area metadata (If cond truthy falsy) -> do
+    cond' <- propagate path cond
+    truthy' <- propagate path truthy
+    falsy' <- propagate path falsy
+    return $ Typed qt area metadata (If cond' truthy' falsy')
+
+  Typed qt area metadata (Access rec field) -> do
+    rec' <- propagate path rec
+    field' <- propagate path field
+    return $ Typed qt area metadata (Access rec' field')
+
+  Typed qt area metadata (Where e iss) -> do
+    e' <- propagate path e
+    iss' <-
+      mapM
+        (\(Typed qt' area' metadata' (Is pat isExp)) -> do
+          isExp' <- propagate path isExp
+          return $ Typed qt' area' metadata' (Is pat isExp')
+        )
+        iss
+    return $ Typed qt area metadata (Where e' iss')
 
   or ->
     return or
@@ -398,24 +480,102 @@ findImportPathForNameInForeignAST name ast = case List.find ((== Just name) . ge
         ""
 
 
+isDef :: Exp -> Bool
+isDef exp = case exp of
+  Typed _ _ _ (Definition _ _) ->
+    True
+
+  Typed _ _ _ (Export e) ->
+    isDef e
+
+  Typed _ _ _ (Assignment _ e) ->
+    isDef e
+
+  Typed _ _ _ (Extern _ _ _) ->
+    True
+
+  _ ->
+    False
+
+getDefParamCount :: Exp -> Int
+getDefParamCount exp = case exp of
+  Typed _ _ _ (Definition params _) ->
+    length params
+
+  Typed _ _ _ (Export e) ->
+    getDefParamCount e
+
+  Typed _ _ _ (Assignment _ e) ->
+    getDefParamCount e
+
+  Typed (_ :=> t) _ _ (Extern _ _ _) ->
+    length $ getParamTypes t
+
+  _ ->
+    0
+
+
+makeImportForNameInForeignAST :: AST -> String -> Import
+makeImportForNameInForeignAST ast name = case List.find ((== Just name) . getExpName) (aexps ast) of
+  Just found ->
+    let path = Maybe.fromMaybe "" $ apath ast
+        importT = getType found
+        importType =
+          if isDef found then
+            DefinitionImport $ getDefParamCount found
+            -- DefinitionImport $ length $ getParamTypes importT
+          else
+            ExpressionImport
+    in  Untyped emptyArea [] (NamedImport [Typed (getQualType found) emptyArea [] (ImportInfo name importType)] path path)
+
+  Nothing ->
+    case List.find (\(Untyped _ _ (NamedImport names _ _)) -> any ((== name) . getImportName) names) (aimports ast) of
+      Just (Untyped area metadata (NamedImport names relPath absPath)) ->
+        let neededName = Maybe.fromMaybe undefined $ List.find ((== name) . getImportName) names
+        in  Untyped area metadata (NamedImport [neededName] relPath absPath)
+
+      _ ->
+        case List.find ((== name) . getConstructorName) (atypedecls ast >>= (adtconstructors . getValue)) of
+          Just (Untyped _ _ (Constructor _ _ t)) ->
+            let path = Maybe.fromMaybe "" $ apath ast
+            in  Untyped emptyArea [] (NamedImport [Typed ([] :=> t) emptyArea [] (ImportInfo name ConstructorImport)] path path)
+
+          _ ->
+            undefined
+
+
+mergeImports :: [Import] -> [Import]
+mergeImports imports =
+  let groupedByPath = List.groupBy (\a b -> getImportAbsolutePath a == getImportAbsolutePath b) (List.sortBy (\a b -> compare (getImportAbsolutePath a) (getImportAbsolutePath b)) imports)
+      mergeImports = map $ \is ->
+        let path = (getImportAbsolutePath $ List.head is)
+            merged = foldr
+              (\(Untyped area _ (NamedImport names1 relPath absPath)) (Untyped _ _ (NamedImport names2 _ _)) ->
+                Untyped area [] (NamedImport (names2 ++ filter (\n -> getImportName n `List.notElem` map getImportName names2) names1) relPath absPath)
+              )
+              (Untyped emptyArea [] (NamedImport [] path path))
+              is
+        in  merged
+  in  mergeImports groupedByPath
 
 
 moduleAccessesToImports :: (FilePath, Set.Set String) -> Propagate [Import]
 moduleAccessesToImports (modulePath, namesNeeded) = do
   originalAST <- Rock.fetch $ CoreAST modulePath
-  let x = Set.map (\n -> (n, findImportPathForNameInForeignAST n originalAST)) namesNeeded
-  undefined
+  return $ map (makeImportForNameInForeignAST originalAST) (Set.toList namesNeeded)
 
 
 accessesToImports :: [(FilePath, Set.Set String)] -> Propagate [Import]
 accessesToImports accesses =
-  undefined
+  concat <$> mapM moduleAccessesToImports accesses
 
 
 updateImports :: AST -> Propagate AST
 updateImports ast = do
   PropagationState _ _ accesses <- get
-  undefined
+  newImports <- accessesToImports $ Map.toList accesses
+  let existingImports = aimports ast
+  return $ ast { aimports = mergeImports (existingImports ++ newImports) }
 
 
 propagateAST :: AST -> Propagate AST
@@ -424,4 +584,4 @@ propagateAST ast = do
     mapM
       (propagateTopLevelExp (Maybe.fromMaybe "" $ apath ast))
       (aexps ast)
-  return ast { aexps = concat propagatedExps }
+  updateImports ast { aexps = concat propagatedExps }
