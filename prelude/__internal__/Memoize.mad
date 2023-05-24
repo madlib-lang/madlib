@@ -3,7 +3,7 @@ import Dictionary from "Dictionary"
 import { Just } from "Maybe"
 import IO from "IO"
 
-memoize :: (Inspect b, Comparable a) => (a -> b) -> a -> b
+memoize :: Comparable a => (a -> b) -> a -> b
 export memoize = (f) => {
   cache = {{}}
 
@@ -14,9 +14,7 @@ export memoize = (f) => {
     _ =>
       do {
         result = f(a)
-
         cache = Dictionary.insert(a, result, cache)
-
         return result
       }
   }

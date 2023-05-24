@@ -97,6 +97,24 @@ findRecursiveConstructorArgIndex index fnName args = case args of
 -- looks for tail recursive calls and marks them
 markTRCCalls :: RecursionKind -> Type -> String -> Exp -> Exp
 markTRCCalls recursionKind fnType fnName exp = case exp of
+  Typed qt area metadata (Call fn@(Typed _ _ _ (Var "+" False)) args@[arg1, arg2]) | recursionKind == AdditionRecursion AnyRecursion ->
+    if containsRecursion True fnType fnName arg1 then
+      Typed qt area (RecursiveCall (AdditionRecursion LeftRecursion) : metadata) (Call fn args)
+    else if containsRecursion True fnType fnName arg2 then
+      -- if we have a right recursion, we just call it a LeftRecursion and invert the arguments
+      Typed qt area (RecursiveCall (AdditionRecursion LeftRecursion) : metadata) (Call fn [arg2, arg1])
+    else
+      Typed qt area (RecursionEnd recursionKind : metadata) (Call fn args)
+
+  Typed qt area metadata (Call fn@(Typed _ _ _ (Var "*" False)) args@[arg1, arg2]) | recursionKind == MultiplicationRecursion AnyRecursion ->
+    if containsRecursion True fnType fnName arg1 then
+      Typed qt area (RecursiveCall (MultiplicationRecursion LeftRecursion) : metadata) (Call fn args)
+    else if containsRecursion True fnType fnName arg2 then
+      -- if we have a right recursion, we just call it a LeftRecursion and invert the arguments
+      Typed qt area (RecursiveCall (MultiplicationRecursion LeftRecursion) : metadata) (Call fn [arg2, arg1])
+    else
+      Typed qt area (RecursionEnd recursionKind : metadata) (Call fn args)
+
   Typed qt area metadata (Call (Typed _ _ _ (Var "&&" False)) [arg1, arg2]) | recursionKind == BooleanAndRecursion ->
     if containsRecursion True fnType fnName arg1 then
       Typed qt area metadata (If arg2 arg1 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
@@ -104,6 +122,7 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
       Typed qt area metadata (If arg1 arg2 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
     else
       exp
+
   Typed qt area metadata (Call (Typed _ _ _ (Var "||" False)) [arg1, arg2]) | recursionKind == BooleanOrRecursion ->
     if containsRecursion True fnType fnName arg1 then
       Typed qt area metadata (If arg2 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) arg1)
@@ -111,6 +130,7 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
       Typed qt area metadata (If arg1 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) arg2)
     else
       exp
+
   Typed qt area metadata (Call fn@(Typed _ _ _ (Var constructorName True)) args) ->
     case findRecursiveConstructorArgIndex 0 fnName args of
       Just index ->
@@ -157,6 +177,12 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
 
 combineRecursionKinds :: [Maybe RecursionKind] -> Maybe RecursionKind
 combineRecursionKinds kinds = case kinds of
+  (Just (AdditionRecursion side) : _) ->
+    Just (AdditionRecursion side)
+
+  (Just (MultiplicationRecursion side) : _) ->
+    Just (MultiplicationRecursion side)
+
   (Just BooleanAndRecursion : _) ->
     Just BooleanAndRecursion
 
@@ -182,8 +208,6 @@ combineRecursionKinds kinds = case kinds of
 
   _ ->
     Nothing
-
-
 
 
 findRecursionKindInIss :: Type -> String -> [String] -> [Is] -> Maybe RecursionKind
@@ -219,6 +243,28 @@ findRecursionKind fnType fnName params exps = case exps of
     findRecursionKind fnType fnName params [last exps]
 
   [lastExp] -> case lastExp of
+    Typed _ _ _ (Call (Typed _ _ _ (Var "+" False)) [arg1, arg2]) ->
+      case (containsRecursion True fnType fnName arg1, containsRecursion True fnType fnName arg2) of
+        (True, _) ->
+          Just $ AdditionRecursion AnyRecursion
+
+        (False, True) ->
+          Just $ AdditionRecursion AnyRecursion
+
+        _ ->
+          Nothing
+
+    Typed _ _ _ (Call (Typed _ _ _ (Var "*" False)) [arg1, arg2]) ->
+      case (containsRecursion True fnType fnName arg1, containsRecursion True fnType fnName arg2) of
+        (True, _) ->
+          Just $ MultiplicationRecursion AnyRecursion
+
+        (False, True) ->
+          Just $ MultiplicationRecursion AnyRecursion
+
+        _ ->
+          Nothing
+
     Typed _ _ _ (Call (Typed _ _ _ (Var "&&" False)) [arg1, arg2]) ->
       case (containsRecursion True fnType fnName arg1, containsRecursion True fnType fnName arg2) of
         (True, False) ->

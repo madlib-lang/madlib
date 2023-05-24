@@ -225,11 +225,17 @@ strConcat :: Operand
 strConcat =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (AST.mkName "madlib__string__internal__concat"))
 
+i8ConstOp :: Integer -> Operand
+i8ConstOp i = Operand.ConstantOperand $ Constant.Int 8 i
+
 i32ConstOp :: Integer -> Operand
 i32ConstOp i = Operand.ConstantOperand $ Constant.Int 32 i
 
 i64ConstOp :: Integer -> Operand
 i64ConstOp i = Operand.ConstantOperand $ Constant.Int 64 i
+
+doubleConstOp :: Double -> Operand
+doubleConstOp i = C.double i
 
 
 storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
@@ -863,6 +869,57 @@ buildReferencePAP symbolTable arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
+  Core.Typed qt area metadata (Core.Call (Core.Typed _ _ _ (Var "+" _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
+    | Core.isLeftAdditionRecursiveCall metadata || Core.isLeftMultiplicationRecursiveCall metadata -> do
+      let Just params   = boxedParams <$> recursionData env
+      let Just holePtr' = holePtr <$> recursionData env
+      let Just continue = continueRef <$> recursionData env
+
+      (_, arg2', _) <- generateExp env symbolTable arg2
+
+      let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) recArgs
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
+      let unboxedArgs = (\(_, x, _) -> x) <$> args'
+
+      -- We need to reverse because we may have some closured variables in the params and these need not be updated
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+      mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdateData
+
+      holeValue <- load holePtr' 0
+      updatedHole <-
+        if Core.getType arg2 == IT.tFloat then
+          if Core.isLeftMultiplicationRecursiveCall metadata then
+            fmul holeValue arg2'
+          else
+            fadd holeValue arg2'
+        else
+          if Core.isLeftMultiplicationRecursiveCall metadata then
+            mul holeValue arg2'
+          else
+            add holeValue arg2'
+      store holePtr' 0 updatedHole
+      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+      return (symbolTable, updatedHole, Nothing)
+
+  Core.Typed qt@(_ IT.:=> t) area metadata e | Core.isAdditionRecursionEnd metadata || Core.isMultiplicationRecursionEnd metadata -> do
+    (_, endValue, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
+
+    let Just holePtr' = holePtr <$> recursionData env
+    holeValue <- load holePtr' 0
+    updatedHole <-
+      if t == IT.tFloat then
+        if Core.isMultiplicationRecursionEnd metadata then
+          fmul holeValue endValue
+        else
+          fadd holeValue endValue
+      else
+        if Core.isMultiplicationRecursionEnd metadata then
+          mul holeValue endValue
+        else
+          add holeValue endValue
+    store holePtr' 0 updatedHole
+    return (symbolTable, updatedHole, Nothing)
+
   Core.Typed qt area metadata e | Core.isRightListRecursionEnd metadata -> do
     -- TODO: generate exp without the metadata and append its result to the end
     (_, endList, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
@@ -1547,10 +1604,9 @@ generateExp env symbolTable exp = case exp of
           items <- retrieveArgs [Core.getMetadata item] [item']
 
           newHead <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
-          newHead' <- bitcast newHead listType
+          newHead' <- safeBitcast newHead listType
           nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
-          nextPtr' <- bitcast nextPtr (Type.ptr listType)
-          -- nextPtr' <- load nextPtr 0
+          nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
           store nextPtr' 0 list'
           valuePtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
           -- valuePtr' <- load valuePtr 0
@@ -2102,6 +2158,37 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
                   , boxedParams = List.drop dictCount allocatedParams
                   , start = start'
                   , end = end
+                  , holePtr = holePtr
+                  }
+            else if Core.isAdditionRecursiveDefinition metadata || Core.isMultiplicationRecursiveDefinition metadata then do
+              let returnType = IT.getReturnType t
+              let llvmType = buildLLVMType env symbolTable ([] IT.:=> returnType)
+              holePtr <- alloca llvmType Nothing 0
+              let initialValue =
+                    if returnType == IT.tInteger then
+                      if Core.isMultiplicationRecursiveDefinition metadata then
+                        i64ConstOp 1
+                      else
+                        i64ConstOp 0
+                    else if returnType == IT.tByte then
+                      if Core.isMultiplicationRecursiveDefinition metadata then
+                        i8ConstOp 1
+                      else
+                        i8ConstOp 0
+                    else if returnType == IT.tFloat then
+                      if Core.isMultiplicationRecursiveDefinition metadata then
+                        doubleConstOp 1
+                      else
+                        doubleConstOp 0
+                    else
+                      undefined
+              store holePtr 0 initialValue
+
+              return $
+                ArithmeticRecursionData
+                  { entryBlockName = entry
+                  , continueRef = continue
+                  , boxedParams = List.drop dictCount allocatedParams
                   , holePtr = holePtr
                   }
             else

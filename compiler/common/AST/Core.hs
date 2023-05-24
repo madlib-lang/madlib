@@ -15,6 +15,7 @@ data RecursionDirection
   = LeftRecursion
   | RightRecursion
   | BothRecursion
+  | AnyRecursion
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 data ConstructorRecursionInfo
@@ -28,6 +29,8 @@ data RecursionKind
   | ConstructorRecursion (Maybe ConstructorRecursionInfo)
   | BooleanAndRecursion
   | BooleanOrRecursion
+  | AdditionRecursion RecursionDirection
+  | MultiplicationRecursion RecursionDirection
   | NotOptimizable
   deriving(Eq, Show, Ord, Generic, Hashable)
 
@@ -470,6 +473,24 @@ isConstructorRecursiveDefinition = elem (RecursiveDefinition (ConstructorRecursi
 
 isConstructorRecursionEnd :: [Metadata] -> Bool
 isConstructorRecursionEnd = elem (RecursionEnd (ConstructorRecursion Nothing))
+
+isAdditionRecursiveDefinition :: [Metadata] -> Bool
+isAdditionRecursiveDefinition = elem (RecursiveDefinition (AdditionRecursion AnyRecursion))
+
+isLeftAdditionRecursiveCall :: [Metadata] -> Bool
+isLeftAdditionRecursiveCall = elem (RecursiveCall (AdditionRecursion LeftRecursion))
+
+isAdditionRecursionEnd :: [Metadata] -> Bool
+isAdditionRecursionEnd = elem (RecursionEnd (AdditionRecursion AnyRecursion))
+
+isMultiplicationRecursiveDefinition :: [Metadata] -> Bool
+isMultiplicationRecursiveDefinition = elem (RecursiveDefinition (MultiplicationRecursion AnyRecursion))
+
+isLeftMultiplicationRecursiveCall :: [Metadata] -> Bool
+isLeftMultiplicationRecursiveCall = elem (RecursiveCall (MultiplicationRecursion LeftRecursion))
+
+isMultiplicationRecursionEnd :: [Metadata] -> Bool
+isMultiplicationRecursionEnd = elem (RecursionEnd (MultiplicationRecursion AnyRecursion))
 
 isConstructorRecursiveCall :: [Metadata] -> Bool
 isConstructorRecursiveCall metadata = case metadata of

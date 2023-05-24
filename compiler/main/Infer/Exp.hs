@@ -589,7 +589,7 @@ inferIf :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.E
 inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   (s1, ps1, tcond  , econd  ) <- infer options env cond
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
-  (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s1 `compose` s2) env) falsy
+  (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s2 `compose` s1) env) falsy
 
   s4                          <- catchError (contextualUnify env falsy tfalsy ttruthy) flipUnificationError
   s5                          <- contextualUnify env cond tBool (apply s4 tcond)

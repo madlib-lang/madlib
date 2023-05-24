@@ -32,6 +32,12 @@ data RecursionData
       , end :: Operand.Operand
       , holePtr :: Operand.Operand
       }
+  | ArithmeticRecursionData
+      { entryBlockName :: AST.Name
+      , continueRef :: Operand.Operand
+      , boxedParams :: [Operand.Operand]
+      , holePtr :: Operand.Operand
+      }
   deriving(Eq, Show, Generic, Hashable)
 
 data Env
