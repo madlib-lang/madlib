@@ -21,6 +21,7 @@ import qualified AST.Solved                    as Slv
 import           Canonicalize.CanonicalM
 import           Error.Error
 import           Run.Target
+import           Run.OptimizationLevel
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Error.Warning
@@ -62,6 +63,7 @@ buildOptions entrypoint pathUtils =
     , optGenerateDerivedInstances = True
     , optInsertInstancePlaholders = True
     , optMustHaveMain = True
+    , optOptimizationLevel = O3
     }
 
 

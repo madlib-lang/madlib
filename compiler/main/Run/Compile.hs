@@ -26,7 +26,7 @@ import           System.Exit (exitFailure)
 
 
 runCompilation :: Command -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode coverage)
+runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode coverage optLevel)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
@@ -51,6 +51,7 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
             , optGenerateDerivedInstances = True
             , optInsertInstancePlaholders = True
             , optMustHaveMain = True
+            , optOptimizationLevel = optLevel
             }
 
     when verbose $ do

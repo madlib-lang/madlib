@@ -34,6 +34,7 @@ import           Canonicalize.Canonicalize     as Can
 import           Canonicalize.AST              as Can
 import           Canonicalize.Env              as Can
 import           Run.Target
+import           Run.OptimizationLevel
 import           Infer.AST
 import           Debug.Trace
 import qualified Driver
@@ -72,6 +73,7 @@ buildOptions entrypoint pathUtils optimized coverage =
     , optGenerateDerivedInstances = True
     , optInsertInstancePlaholders = True
     , optMustHaveMain = True
+    , optOptimizationLevel = O3
     }
 
 compileModule :: Bool -> Bool -> String -> IO String

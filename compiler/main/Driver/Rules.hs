@@ -77,6 +77,7 @@ import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
+import Run.OptimizationLevel
 
 
 
@@ -148,7 +149,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
           return ast
 
       let ast'' =
-            if optMustHaveMain options then
+            if optMustHaveMain options && optOptimizationLevel options > O1 then
               Rewrite.rewriteAST ast'
             else
               -- we don't do it if we're not building an executable
@@ -376,31 +377,55 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   CoreAST path -> nonInput $ do
     monomorphicAST <- Rock.fetch $ MonomorphizedAST path
+    let optLevel = optOptimizationLevel options
 
     case optTarget options of
       TLLVM -> do
         coreAst <- astToCore False monomorphicAST
         let sortedAST = SortExpressions.sortASTExpressions coreAst
         let renamedAst       = Rename.renameAST sortedAST
-            reducedAst       = SimplifyCalls.reduceAST renamedAst
-            tceResolved      = TCE.resolveAST reducedAst
+            reducedAst       =
+              if optLevel > O1 then
+                SimplifyCalls.reduceAST renamedAst
+              else
+                renamedAst
+            tceResolved      =
+              if optLevel > O0 then
+                TCE.resolveAST reducedAst
+              else
+                reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
-            folded           = FoldCalls.foldAST closureConverted
+            folded           =
+              if optLevel > O1 then
+                FoldCalls.foldAST closureConverted
+              else
+                closureConverted
 
         return (folded, (mempty, mempty))
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
         let renamedAst       = Rename.renameAST coreAst
-            reducedAst       = SimplifyCalls.reduceAST renamedAst
-            tceResolved      = TCE.resolveAST reducedAst
+            reducedAst       =
+              if optLevel > O1 then
+                SimplifyCalls.reduceAST renamedAst
+              else
+                renamedAst
+            tceResolved      =
+              if optLevel > O0 then
+                TCE.resolveAST reducedAst
+              else
+                reducedAst
 
         return (tceResolved, (mempty, mempty))
 
   PropagatedAST path -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST path
-    (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
-    return (propagatedAST, (mempty, mempty))
+    if optOptimizationLevel options > O2 then do
+      (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
+      return (propagatedAST, (mempty, mempty))
+    else
+      return (coreAST, (mempty, mempty))
 
   ForeignCoreExp modulePath name -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST modulePath

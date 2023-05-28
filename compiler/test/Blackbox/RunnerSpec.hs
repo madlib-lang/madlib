@@ -11,6 +11,7 @@ import           System.FilePath (joinPath, takeFileName, splitPath)
 import           Run.Options
 import qualified Utils.PathUtils as Path
 import           Run.Target
+import           Run.OptimizationLevel
 import qualified Driver
 import           Control.Exception (try)
 import           System.Process
@@ -57,6 +58,7 @@ compileAndRun casePath = do
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
           , optMustHaveMain = True
+          , optOptimizationLevel = O3
           }
 
   state <- Driver.initialState

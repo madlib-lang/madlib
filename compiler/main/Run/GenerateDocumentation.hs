@@ -41,6 +41,7 @@ import           Control.Concurrent.MVar
 import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
 import qualified Driver
+import Run.OptimizationLevel
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
@@ -71,6 +72,7 @@ generateDocData rootFolder paths = do
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
+          , optOptimizationLevel = O1
           }
   let llvmOptions =
         Options
@@ -85,6 +87,7 @@ generateDocData rootFolder paths = do
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
+          , optOptimizationLevel = O1
           }
   jsMemoVar <- newIORef mempty
   llvmMemoVar <- newIORef mempty

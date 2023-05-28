@@ -2,12 +2,13 @@
 module Run.CommandLine where
 
 import           Options.Applicative
+import qualified Options.Applicative.Builder.Internal as OPInternalBuilder
 
 import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
-import Run.Target (Target(TLLVM))
+import           Run.OptimizationLevel
 
 
 data ConfigCommand
@@ -15,6 +16,7 @@ data ConfigCommand
   | RuntimeLibHeadersPath
   | InstallDir
   deriving(Eq, Show)
+
 
 data Command
   = Compile
@@ -28,8 +30,9 @@ data Command
       , compileTarget :: Target
       , compileWatch :: Bool
       , compileCoverage :: Bool
+      , compileOptimizationLevel :: OptimizationLevel
       }
-  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool, testCoverage :: Bool }
+  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool, testCoverage :: Bool, testOptimizationLevel :: OptimizationLevel }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -132,9 +135,46 @@ parseRebuild = switch
 
 parsePackage :: Parser Command
 parsePackage =
-    (Package <$> parseGenerateHash <*> pure False)
-    <|> Package NoPackageSubCommand <$> parseRebuild
+  (Package <$> parseGenerateHash <*> pure False)
+  <|> Package NoPackageSubCommand <$> parseRebuild
 
+
+parseO0 :: Parser OptimizationLevel
+parseO0 =
+  O0 <$ switch (
+    long "O0"
+    <> help "Disables optimizations"
+    <> showDefault
+  )
+
+parseO1 :: Parser OptimizationLevel
+parseO1 =
+  O1 <$ switch (
+    long "O1"
+    <> help "Enables O1 optimizations, mainly TCO"
+    <> showDefault
+  )
+
+parseO2 :: Parser OptimizationLevel
+parseO2 =
+  O2 <$ switch (
+    long "O2"
+    <> help "Enables O2 optimizations"
+    <> showDefault
+  )
+
+parseO3 :: Parser OptimizationLevel
+parseO3 =
+  O3 <$ switch (
+    long "O3"
+    <> help "Enables O3 optimizations"
+    <> showDefault
+  )
+
+
+parseOptimizationLevel :: Parser OptimizationLevel
+parseOptimizationLevel =
+  pure O1 <|> (parseO0 <|> parseO1 <|> parseO2 <|> parseO3)
 
 
 parseCompile :: Parser Command
@@ -150,13 +190,14 @@ parseCompile =
     <*> parseTarget
     <*> parseWatch
     <*> parseCoverage
+    <*> parseOptimizationLevel
 
 parseTestInput :: Parser FilePath
 parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch <*> parseCoverage
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel
 
 
 parseRunInput :: Parser FilePath

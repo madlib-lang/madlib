@@ -61,6 +61,7 @@ import qualified Infer.Typing as Slv
 import qualified Canonicalize.Env as CanEnv
 import qualified Canonicalize.Interface as Can
 import System.FilePath (takeFileName, dropExtension)
+import Run.OptimizationLevel
 
 
 
@@ -127,6 +128,7 @@ buildOptions target = do
       , Options.optGenerateDerivedInstances = False
       , Options.optInsertInstancePlaholders = False
       , Options.optMustHaveMain = False
+      , Options.optOptimizationLevel = O1
       }
 
 
