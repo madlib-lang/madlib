@@ -83,6 +83,7 @@ import qualified AST.Solved as Slv
 import Control.Exception (try, SomeException (SomeException))
 import LLVM.Exception (EncodeException, VerifyException)
 import Utils.Hash (generateHashFromPath)
+import Run.OptimizationLevel
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -2700,7 +2701,7 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   -- let pretty = ppllvm astModule
   -- liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
 
-  objectContent <- liftIO $ buildObjectFile astModule
+  objectContent <- liftIO $ buildObjectFile (optOptimizationLevel options) astModule
 
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
   let rest = List.dropWhile (/= modulePath) pathsToBuild
@@ -2712,15 +2713,29 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   return (table, env, objectContent)
 
 
-buildObjectFile :: AST.Module -> IO ByteString.ByteString
-buildObjectFile astModule = do
+buildObjectFile :: OptimizationLevel -> AST.Module -> IO ByteString.ByteString
+buildObjectFile optLevel astModule = do
+  let optLevel' =
+        case optLevel of
+          O0 ->
+            Nothing
+
+          O1 ->
+            Just 1
+
+          O2 ->
+            Just 2
+
+          O3 ->
+            Just 3
+
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
           mod'' <-
             withPassManager
             defaultCuratedPassSetSpec
-              { optLevel = Just 3
+              { optLevel = optLevel'
               , useInlinerWithThreshold = Just 200
               , simplifyLibCalls = Just True
               , loopVectorize = Just True

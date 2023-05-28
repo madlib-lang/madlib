@@ -20,6 +20,7 @@ import           Run.Target
 import           Run.Compile
 import           Run.CommandLine
 import           Utils.Path (computeTargetPath)
+import Run.OptimizationLevel
 
 
 runRun :: FilePath -> [String] -> IO ()
@@ -53,6 +54,7 @@ runRunPackage package args =
                                 , compileTarget        = TNode
                                 , compileWatch         = False
                                 , compileCoverage      = False
+                                , compileOptimizationLevel = O1
                                 }
 
                   runCompilation compileCommand
@@ -79,6 +81,7 @@ runSingleModule input args = do
           , compileTarget        = TNode
           , compileWatch         = False
           , compileCoverage      = False
+          , compileOptimizationLevel = O1
           }
 
   runCompilation compileCommand

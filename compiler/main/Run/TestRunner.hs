@@ -42,6 +42,7 @@ import           Error.Warning
 
 import           GHC.IO.Handle
 import           GHC.IO.Handle.FD
+import Run.OptimizationLevel (OptimizationLevel)
 
 
 
@@ -52,8 +53,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> IO ()
-runTests entrypoint target watchMode coverage = do
+runTests :: String -> Target -> Bool -> Bool -> OptimizationLevel -> IO ()
+runTests entrypoint target watchMode coverage optLevel = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -83,6 +84,7 @@ runTests entrypoint target watchMode coverage = do
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
           , optMustHaveMain = True
+          , optOptimizationLevel = optLevel
           }
 
   runTestTask watchMode state options canonicalEntrypoint []

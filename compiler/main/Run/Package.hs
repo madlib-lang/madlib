@@ -49,6 +49,7 @@ import           Control.Monad
 import qualified Driver
 import           Run.Options
 import Utils.PathUtils (defaultPathUtils)
+import Run.OptimizationLevel
 
 
 typeCheckTask :: FilePath -> Rock.Task Query.Query Slv.Table
@@ -78,6 +79,7 @@ typeCheckMain target main = do
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
           , optMustHaveMain = False
+          , optOptimizationLevel = O1
           }
   (table, warnings, errors) <- Driver.runIncrementalTask state options [] mempty Driver.Don'tPrune (typeCheckTask main)
   if null errors then

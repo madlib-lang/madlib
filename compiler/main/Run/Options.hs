@@ -2,6 +2,7 @@ module Run.Options where
 
 import Utils.PathUtils (PathUtils)
 import Run.Target (Target)
+import Run.OptimizationLevel (OptimizationLevel)
 
 
 data Options
@@ -17,4 +18,5 @@ data Options
     , optGenerateDerivedInstances :: Bool
     , optInsertInstancePlaholders :: Bool
     , optMustHaveMain :: Bool
+    , optOptimizationLevel :: OptimizationLevel
     }

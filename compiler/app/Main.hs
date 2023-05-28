@@ -36,8 +36,8 @@ run cmd = do
             Left  e ->
               putStrLn e
 
-    Test entrypoint target watch coverage ->
-      runTests entrypoint target watch coverage
+    Test entrypoint target watch coverage optLevel ->
+      runTests entrypoint target watch coverage optLevel
 
     Install ->
       runPackageInstaller
