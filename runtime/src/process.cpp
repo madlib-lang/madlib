@@ -48,14 +48,14 @@ static char **ARGV = NULL;
 void sig_handler(int signum);
 static int init_suspend_resume(void);
 
-void sig_catcher(int signum) {
-  printf("signum: %d\n", signum);
-}
+// void sig_catcher(int signum) {
+//   printf("signum: %d\n", signum);
+// }
 
 void __main__init__(int argc, char **argv) {
   // signal(SIGUSR1, sig_handler);
-  signal(SIGSEGV, sig_catcher);
-  signal(SIGABRT, sig_catcher);
+  // signal(SIGSEGV, sig_catcher);
+  // signal(SIGABRT, sig_catcher);
   init_suspend_resume();
   GC_set_dont_precollect(1);
   GC_allow_register_threads();
@@ -427,6 +427,11 @@ pthread_mutex_t     mutex = PTHREAD_MUTEX_INITIALIZER;
 int threadsPaused = 0;
 bool _paused = false;
 
+#include <csignal>
+
+sigset_t waiting_mask;
+volatile std::sig_atomic_t _pause_atomic = 0;
+volatile std::sig_atomic_t _resume_atomic = 0;
 
 
 #ifndef   SUSPEND_RESUME_H
@@ -448,6 +453,7 @@ bool _paused = false;
 static void resume_handler(int signum, siginfo_t *info, void *context) {
   /* The delivery of the resume signal is the key point.
     * The actual signal handler does nothing. */
+  _resume_atomic += 1;
   return;
 }
 
@@ -465,12 +471,14 @@ static void suspend_handler(int signum, siginfo_t *info, void *context) {
 
   /* Block until suspend or resume signal received. */
   sigfillset(&resumeset);
+  // sigemptyset(&resumeset);
   sigdelset(&resumeset, SUSPEND_SIGNAL);
   sigdelset(&resumeset, RESUME_SIGNAL);
+  _pause_atomic += 1;
   sigsuspend(&resumeset);
 
   /* Restore errno. */
-  errno = saved_errno; 
+  errno = saved_errno;
 }
 
 /* Install signal handlers.
@@ -479,19 +487,24 @@ static int init_suspend_resume(void) {
   __threads[__threadCount] = uv_thread_self();
   __threadCount += 1;
 
-  struct sigaction act;
+  struct sigaction suspendAct;
+  struct sigaction resumeAct;
 
-  sigemptyset(&act.sa_mask);
-  sigaddset(&act.sa_mask, SUSPEND_SIGNAL);
-  sigaddset(&act.sa_mask, RESUME_SIGNAL);
-  act.sa_flags = SA_RESTART | SA_SIGINFO;
+  sigemptyset(&resumeAct.sa_mask);
+  sigaddset(&resumeAct.sa_mask, SUSPEND_SIGNAL);
+  sigaddset(&resumeAct.sa_mask, RESUME_SIGNAL);
+  resumeAct.sa_flags = SA_RESTART | SA_SIGINFO;
+  resumeAct.sa_sigaction = resume_handler;
 
-  act.sa_sigaction = resume_handler;
-  if (sigaction(RESUME_SIGNAL, &act, NULL))
+  if (sigaction(RESUME_SIGNAL, &resumeAct, NULL))
       return errno;
 
-  act.sa_sigaction = suspend_handler;
-  if (sigaction(SUSPEND_SIGNAL, &act, NULL))
+  sigemptyset(&suspendAct.sa_mask);
+  sigaddset(&suspendAct.sa_mask, SUSPEND_SIGNAL);
+  sigaddset(&suspendAct.sa_mask, RESUME_SIGNAL);
+  suspendAct.sa_flags = SA_RESTART | SA_SIGINFO;
+  suspendAct.sa_sigaction = suspend_handler;
+  if (sigaction(SUSPEND_SIGNAL, &suspendAct, NULL))
       return errno;
 
   return 0;
@@ -501,14 +514,31 @@ static int init_suspend_resume(void) {
 */
 static int suspend_threads(const pthread_t *const identifier, const int count) {
   sleep_ms(20);
+  printf("SUSPENDING\n");
+
+  while (_resume_atomic > 0) {
+    sleep_ms(211);
+    printf("resumed: %d\n", _resume_atomic);
+  }
+
   int i, result, retval = 0;
   if (!identifier || count < 1)
       return errno = EINVAL;
+
+  printf("SENDING KILLS\n");
 
   for (i = 0; i < count; i++) {
       result = pthread_kill(identifier[i], SUSPEND_SIGNAL);
       if (result && !retval)
           retval = result;
+  }
+
+  printf("KILLED PAUSE, count: %d\n", count);
+
+  int paused = 0;
+  while (_pause_atomic < count) {
+    sleep_ms(211);
+    printf("paused: %d\n", _pause_atomic);
   }
 
   return errno = retval;
@@ -528,6 +558,14 @@ static int resume_threads(const pthread_t *const identifier, const int count) {
           retval = result;
   }
 
+  printf("KILLED RESUME, count: %d\n", count);
+
+  while (_resume_atomic < count) {
+    sleep_ms(211);
+    printf("resumed: %d\n", _resume_atomic);
+  }
+
+
   return errno = retval;
 }
 
@@ -535,7 +573,15 @@ static int resume_threads(const pthread_t *const identifier, const int count) {
 
 
 void madlib__process__pauseOtherThreads() {
+  printf("POSSIBLY WILL DEADLOCK - PAUSE: %d, %d\n", _pause_atomic, _resume_atomic);
   GC_alloc_lock();
+  // sleep_ms(211);
+  printf("NOPE\n");
+
+  if (_pause_atomic > 0 || _resume_atomic > 0) {
+    printf("WEIRD MORE\n");
+  }
+
   uv_thread_t tid = uv_thread_self();
   int index = 0;
   pthread_t toKill[10];
@@ -551,11 +597,16 @@ void madlib__process__pauseOtherThreads() {
 
   int result;
   do { result = suspend_threads(toKill, index); } while (result == -1 && errno == EINTR);
+
+  printf("SENT KILLS\n");
+
   GC_alloc_unlock();
 }
 
 void madlib__process__releaseThreads() {
+  printf("POSSIBLY WILL DEADLOCK - RESUME\n");
   GC_alloc_lock();
+  printf("NOPE\n");
   uv_thread_t tid = uv_thread_self();
   int index = 0;
   pthread_t toResume[10];
@@ -571,6 +622,13 @@ void madlib__process__releaseThreads() {
 
   int result;
   do { result = resume_threads(toResume, index); } while (result == -1 && errno == EINTR);
+  while (_pause_atomic < index || _resume_atomic < index) {
+    sleep_ms(211);
+    printf("CANT EXIT\n");
+  }
+
+  _pause_atomic = 0;
+  _resume_atomic = 0;
   GC_alloc_unlock();
 }
 
