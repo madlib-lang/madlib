@@ -13,6 +13,7 @@ OBJS :=\
   $(BUILDDIR)/array.o\
   $(BUILDDIR)/bytearray.o\
   $(BUILDDIR)/date.o\
+  $(BUILDDIR)/debugger.o\
   $(BUILDDIR)/dictionary.o\
   $(BUILDDIR)/record.o\
   $(BUILDDIR)/number.o\
