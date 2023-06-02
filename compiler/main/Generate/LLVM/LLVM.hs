@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
 {-# HLINT ignore "Use let" #-}
@@ -39,13 +40,14 @@ import           System.Environment.Executable
 import           LLVM.Target
 import           LLVM.Module
 import           LLVM.AST                        as AST hiding (function)
+import qualified LLVM.AST                        as LLVMAST
 import           LLVM.AST.Type                   as Type
 import           LLVM.AST.AddrSpace              as AddrSpace
 import           LLVM.AST.ParameterAttribute     as ParameterAttribute
-import           LLVM.AST.Typed
+import LLVM.AST.Typed ( Typed(typeOf) )
 import qualified LLVM.AST.Float                  as Float
 import qualified LLVM.AST.Constant               as Constant
-import qualified LLVM.AST.Operand                as Operand
+import qualified LLVM.AST.Operand                as Operand hiding (Module)
 import qualified LLVM.AST.IntegerPredicate       as IntegerPredicate
 import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
 import qualified LLVM.AST.Global                 as Global
@@ -84,6 +86,11 @@ import Control.Exception (try, SomeException (SomeException))
 import LLVM.Exception (EncodeException, VerifyException)
 import Utils.Hash (generateHashFromPath)
 import Run.OptimizationLevel
+import qualified System.FilePath as FilePath
+import GHC.Stack (HasCallStack)
+import qualified LLVM.AST.CallingConvention as CC
+import Generate.LLVM.WithMetadata (functionWithMetadata)
+import qualified Control.Monad.State as State
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -778,7 +785,7 @@ retrieveArgs metadata exps =
     (List.zip metadata exps)
 
 
-generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
+generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
 generateApplicationForKnownFunction env symbolTable returnQualType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
@@ -868,7 +875,7 @@ buildReferencePAP symbolTable arity fn = do
   return (symbolTable, papPtr', Just papPtr)
 
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
-generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
+generateExp :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
   Core.Typed qt area metadata (Core.Call (Core.Typed _ _ _ (Var "+" _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
     | Core.isLeftAdditionRecursiveCall metadata || Core.isLeftMultiplicationRecursiveCall metadata -> do
@@ -1642,7 +1649,7 @@ generateExp env symbolTable exp = case exp of
     record <- call buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
     return (symbolTable, record, Nothing)
     where
-      generateField :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Core.Field -> m Operand
+      generateField :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Core.Field -> m Operand
       generateField symbolTable field = case field of
         Core.Typed _ _ _ (Core.Field (name, value)) -> do
           let fieldType = Type.StructureType False [stringType, boxType]
@@ -1735,7 +1742,7 @@ updateTCOArg symbolTable (_ IT.:=> t) ptr exp =
     return (symbolTable, exp, Nothing)
 
 
-generateBranches :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
+generateBranches :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
 generateBranches env symbolTable exitBlock whereExp iss = case iss of
   (is : next) -> do
     branch <- generateBranch env symbolTable (not (List.null next)) exitBlock whereExp is
@@ -1746,7 +1753,7 @@ generateBranches env symbolTable exitBlock whereExp iss = case iss of
     return []
 
 
-generateBranch :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Core.Is -> m [(Operand, AST.Name)]
+generateBranch :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Core.Is -> m [(Operand, AST.Name)]
 generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
   Core.Typed _ _ _ (Core.Is pat exp) -> mdo
     test      <- generateBranchTest env symbolTable pat whereExp
@@ -2050,7 +2057,7 @@ getStructPointers ids ptr = case ids of
     return []
 
 
-generateExps :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m ()
+generateExps :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m ()
 generateExps env symbolTable exps = case exps of
   [exp] -> do
     generateExp env { isTopLevel = isTopLevelAssignment exp } symbolTable exp
@@ -2092,14 +2099,57 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
+makeOriginalName :: String -> String
+makeOriginalName globalName =
+  let withoutHash = List.drop 36 globalName
+  in  if '_' `List.notElem` withoutHash then
+        withoutHash
+      else
+        (List.init . List.init . List.dropWhileEnd (/= '_')) withoutHash
+
+
+generateFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
 generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
       params'       = (boxType,) . makeParamName <$> (Core.getValue <$> coreParams)
       functionName' = AST.mkName functionName
       dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) (Core.getValue <$> coreParams)
 
-  function <- function functionName' params' boxType $ \params ->
+  let id =
+        if functionName == "__41238d75361d1f3eed4a89bc7205a951__breakIt__1" then
+          3
+        else
+          4
+
+  let meta = MetadataNodeDefinition (MetadataNodeID id) $
+        DINode . Operand.DIScope . Operand.DILocalScope . Operand.DISubprogram $
+          Operand.Subprogram
+            { scope = Nothing
+            , name = stringToShortByteString (makeOriginalName functionName)
+            , linkageName = ""
+            , file = Nothing
+            , line = 0
+            , type' = Just $ Operand.MDInline $ Operand.SubroutineType { flags = [], cc = 0, typeArray = [] }
+            , localToUnit = False
+            , definition = True
+            , scopeLine = 0
+            , containingType = Nothing
+            , virtuality = Operand.NoVirtuality
+            , virtualityIndex = 0
+            , thisAdjustment = 0
+            , flags = []
+            , optimized = False
+            , unit = Just (MDRef (MetadataNodeID 1))
+            , Operand.templateParams = []
+            , declaration = Nothing
+            , retainedNodes = []
+            , thrownTypes = []
+            }
+
+  emitDefn meta
+
+  -- function <- functionWithMetadata [("dbg", MDRef (MetadataNodeID id))] functionName' params' boxType $ \params ->
+  function <- functionWithMetadata [("dbg", MDRef (MetadataNodeID id))] functionName' params' boxType $ \params ->
     if Core.isTCODefinition metadata then mdo
       entry          <- block `named` "entry"
       continue       <- alloca Type.i1 Nothing 0
@@ -2247,7 +2297,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
   return $ Map.insert functionName (fnSymbol (List.length coreParams) function) symbolTable
 
 
-generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
+generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed qt _ metadata (Core.Definition params body))) -> do
     generateFunction env symbolTable metadata qt functionName params body
@@ -2300,7 +2350,7 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
     symbolTable
 
 
-generateDoExps :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
+generateDoExps :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateDoExps env symbolTable exps = case exps of
   [exp] -> do
     (_, result, _) <- generateExp env symbolTable exp
@@ -2314,7 +2364,7 @@ generateDoExps env symbolTable exps = case exps of
     undefined
 
 
-generateBody :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
+generateBody :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateBody env symbolTable exps = case exps of
   [exp] -> do
     (_, result, _) <- generateExp env { isLast = True } symbolTable exp
@@ -2328,7 +2378,7 @@ generateBody env symbolTable exps = case exps of
     undefined
 
 
-generateTopLevelFunctions :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m SymbolTable
+generateTopLevelFunctions :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m SymbolTable
 generateTopLevelFunctions env symbolTable topLevelFunctions = case topLevelFunctions of
   (fn : fns) -> do
     symbolTable' <- generateTopLevelFunction env symbolTable fn
@@ -2575,9 +2625,60 @@ callModuleFunctions allModulePaths = case allModulePaths of
     return ()
 
 
-generateLLVMModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
+-- File	 
+-- filename :: ShortByteString	 
+-- directory :: ShortByteString	 
+-- checksum :: Maybe ChecksumInfo	 
+
+
+makeCompileUnitMetadata =
+  MetadataNodeDefinition (MetadataNodeID 1) $
+    DINode . Operand.DIScope . Operand.DICompileUnit $
+    Operand.CompileUnit
+      { Operand.language = 12
+      , Operand.file = MDRef (MetadataNodeID 0)
+      , Operand.producer = "clang version 6.0.0 (tags/RELEASE_600/final)"
+      , Operand.optimized = True
+      , Operand.flags = ""
+      , Operand.runtimeVersion = 0
+      , Operand.splitDebugFileName = ""
+      , Operand.emissionKind = Operand.FullDebug
+      , Operand.enums = []
+      , Operand.retainedTypes = []
+      , Operand.globals = []
+      , Operand.imports = []
+      , Operand.macros = []
+      , Operand.dWOId = 0
+      , Operand.splitDebugInlining = True
+      , Operand.debugInfoForProfiling = False
+      , Operand.nameTableKind = Operand.NameTableKindDefault
+      , Operand.debugBaseAddress = False
+      }
+
+
+makeFileMetadata :: FilePath -> Definition
+makeFileMetadata astPath =
+  MetadataNodeDefinition
+    (MetadataNodeID 0)
+    (DINode
+      (Operand.DIScope
+        (Operand.DIFile
+          (Operand.File
+            (stringToShortByteString $ FilePath.takeFileName astPath)
+            (stringToShortByteString $ FilePath.takeDirectory astPath)
+            Nothing)
+        )
+      )
+    )
+
+
+generateLLVMModule :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
-generateLLVMModule env isMain currentModulePaths initialSymbolTable ast = do
+generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
+  emitDefn $ makeFileMetadata astPath
+  emitDefn makeCompileUnitMetadata
+  emitDefn $ NamedMetadataDefinition "llvm.dbg.cu" [MetadataNodeID 1]
+
   symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithTopLevel
@@ -2686,7 +2787,7 @@ generateModule options ast@AST{ apath = Just modulePath } = do
     else
       return []
 
-  (mod, table) <- Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (generateLLVMModule envForAST isMain importModulePaths symbolTable ast)
+  ((mod, table), _) <- State.runStateT (Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (generateLLVMModule envForAST isMain importModulePaths symbolTable ast)) 0
   return (mod, table, envForAST)
 
 generateModule _ _ =
@@ -2698,8 +2799,11 @@ compileModule _ Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, 
 compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   (astModule, table, env) <- generateModule options ast
 
-  -- let pretty = ppllvm astModule
-  -- liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
+
+  let pretty = ppllvm astModule
+  liftIO $ Prelude.putStrLn (LazyText.unpack pretty)
+
+  -- liftIO $ Prelude.putStrLn $ ppShow astModule
 
   objectContent <- liftIO $ buildObjectFile (optOptimizationLevel options) astModule
 
@@ -2736,7 +2840,8 @@ buildObjectFile optLevel astModule = do
             withPassManager
             defaultCuratedPassSetSpec
               { optLevel = optLevel'
-              , useInlinerWithThreshold = Just 200
+              , useInlinerWithThreshold = Nothing
+              -- , useInlinerWithThreshold = Just 200
               , simplifyLibCalls = Just True
               , loopVectorize = Just True
               , superwordLevelParallelismVectorize = Just True
@@ -2745,6 +2850,7 @@ buildObjectFile optLevel astModule = do
               runPassManager pm mod'
               return mod'
           moduleObject target mod''
+          -- moduleLLVMAssembly mod''
 
 
 makeExecutablePath :: FilePath -> FilePath
