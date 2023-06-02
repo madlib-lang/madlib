@@ -692,6 +692,26 @@ spec = do
           actual = unsafePerformIO $ inferModule code
       snapshotTest "correctly infer various record transformations" actual
 
+    it "correctly infer recursive calls that aren't in tail position" $ do
+      let code = unlines
+            [" stuff = () => {"
+            , "  run = () => {"
+            , "    where(\"\") {"
+            , "      \"continue\" =>"
+            , "        {}"
+            , ""
+            , "      _ => do {"
+            , "        run()"
+            , "      }"
+            , "    }"
+            , "  }"
+            , ""
+            , "  run()"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModuleWithoutMain code
+      snapshotTest "correctly infer recursive calls that aren't in tail position" actual
+
     it "should infer complex where expressions with records" $ do
       let code = unlines
             [ "export alias ComparisonResult = Integer"
