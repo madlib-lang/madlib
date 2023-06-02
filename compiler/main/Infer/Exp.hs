@@ -903,7 +903,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   let env'' = apply s env'''
 
   s' <- contextualUnify env'' exp (apply s tv) t
-  let s'' = s `compose` s1 `compose` s'
+  -- let s'' = s `compose` s1 `compose` s'
+  let s'' = s' `compose` s
       envWithVarsExcluded = env''
         { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
 
@@ -961,12 +962,12 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   let sc =
         if isLet && not (Slv.isNamedAbs e) then
-          quantify [] (apply sFinal $ (rs'' ++ mutPS) :=> t')
+          apply sFinal $ quantify [] ((rs'' ++ mutPS) :=> t')
         else
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          quantify gs (apply sFinal $ (rs'' ++ mutPS) :=> t')
+          apply sFinal $ quantify gs ((rs'' ++ mutPS) :=> t')
 
   when (not isLet && not (null mutPS) && not (null (ftv t')) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
