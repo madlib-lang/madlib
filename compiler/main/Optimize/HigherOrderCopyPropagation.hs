@@ -184,7 +184,12 @@ findGlobalAccesses namesInScope exp = case exp of
 
 -- TODO:
 -- - can be used in recursion, but it should then be exactly itself
--- - 
+--     so the following case should not be eligible:
+--        weirdMap :: (a -> a) -> List a -> List a
+--        weirdMap f (x:xs) = f x : weirdMap (f . f) xs
+--        weirdMap _ [] = []
+
+--        weirdMap (+ 1) [0, 0, 0, 0]
 isArgEligible :: FilePath -> Exp -> Propagate Bool
 isArgEligible path exp = case exp of
   Typed (_ :=> t) _ _ (Var name _) | isFunctionType t -> do
@@ -195,7 +200,7 @@ isArgEligible path exp = case exp of
     return False
 
 
--- TODO: in case of recursion ( like map ), we also need to drop the arg in the recursive call:
+-- In case of recursion ( like map ), we also need to drop the arg in the recursive call:
 --   map(f, xs) -> map(xs)
 --   to do this we need to take the function name as a parameter so that we can transform:
 --     Call (Var "map") [Var f, arg]
@@ -353,7 +358,7 @@ propagate path exp = case exp of
     args' <- mapM (propagate path) args
     return $ Typed qt area metadata (Call fn args')
 
-  Typed qt area metadata (Assignment n e) -> do
+  Typed _ area metadata (Assignment n e) -> do
     e' <- propagate path e
     return $ Typed (getQualType e') area metadata (Assignment n e')
 
@@ -361,12 +366,12 @@ propagate path exp = case exp of
     body' <- mapM (propagate path) body
     return $ Typed qt area metadata (Definition params body')
 
-  Typed qt area metadata (Do exps) -> do
+  Typed _ area metadata (Do exps) -> do
     exps' <- mapM (propagate path) exps
     let newQt = getQualType $ last exps'
     return $ Typed newQt area metadata (Do exps')
 
-  Typed qt area metadata (Export e) -> do
+  Typed _ area metadata (Export e) -> do
     e' <- propagate path e
     return $ Typed (getQualType e') area metadata (Export e')
 
@@ -508,7 +513,7 @@ getDefParamCount exp = case exp of
   Typed _ _ _ (Assignment _ e) ->
     getDefParamCount e
 
-  Typed (_ :=> t) _ _ (Extern _ _ _) ->
+  Typed (_ :=> t) _ _ Extern{} ->
     length $ getParamTypes t
 
   _ ->
@@ -519,11 +524,9 @@ makeImportForNameInForeignAST :: AST -> String -> Import
 makeImportForNameInForeignAST ast name = case List.find ((== Just name) . getExpName) (aexps ast) of
   Just found ->
     let path = Maybe.fromMaybe "" $ apath ast
-        importT = getType found
         importType =
           if isDef found then
             DefinitionImport $ getDefParamCount found
-            -- DefinitionImport $ length $ getParamTypes importT
           else
             ExpressionImport
     in  Untyped emptyArea [] (NamedImport [Typed (getQualType found) emptyArea [] (ImportInfo name importType)] path path)
