@@ -112,14 +112,14 @@ extra-deps:
 - unliftio-core-0.2.0.1@sha256:f9abcdd3f3d28e4840563efb7b8760d2de9b5707bcd6f53a87f6a0d77bb5a9f7,1082
 - split-0.2.3.4@sha256:a6df9c3e806ee7cb50bc980a183fc1156f35022a39430dabac0bf9456fe18a4b,2647
 - vector-algorithms-0.8.0.4@sha256:bf4760b23a0fee09abb8c9e3c952c870f5dc9780876e9d7e38ab2bdd98c8f283,3752
-# - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
-# - git: https://github.com/llvm-hs/llvm-hs
-#   commit: 423220bffac4990d019fc088c46c5f25310d5a33  # llvm-9, with Setup.hs fix
-#   subdirs:
-#     - llvm-hs-pure
-#     - llvm-hs
-- ../llvm-hs/llvm-hs-pure
-- ../llvm-hs/llvm-hs
+- git: https://github.com/madlib-lang/llvm-hs
+  commit: 6239fb9715bb9169524e3e7d43682db21e495224  # llvm-12, with Setup.hs fix for DILocalVariable and DICompileUnit
+  subdirs:
+    - llvm-hs-pure
+    - llvm-hs
+# for local development
+# - ../llvm-hs/llvm-hs-pure
+# - ../llvm-hs/llvm-hs
 - git: https://github.com/llvm-hs/llvm-hs-pretty
   commit: 655ff4d47b3a584b4c9a5863f6121b954825920c
 - rock-0.3.1.1@sha256:78ea97956e6db9a8913e420111c2b5bcc5e52122ab56bfd9958606f0857aa25c,3591
