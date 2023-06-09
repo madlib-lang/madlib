@@ -17,6 +17,7 @@ import           Control.Monad.Except
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified AST.Canonical                 as Can
+import qualified Control.Monad as Monad
 
 
 
@@ -163,10 +164,12 @@ instance Match Type where
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
     | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
-  match (TRecord fields1 _ optionalFields1) (TRecord fields2 _ optionalFields2) =
-    -- Not complete but that's all we need for now as we don't support userland
-    -- record instances. An instance for a record would be matched for all records.
-    unify (TRecord fields1 Nothing optionalFields1) (TRecord fields2 Nothing optionalFields2)
+  match t1@(TRecord fields1 _ optionalFields1) t2@(TRecord fields2 _ optionalFields2) = do
+    let allFields1 = fields1 <> optionalFields1
+    let allFields2 = fields2 <> optionalFields2
+    Monad.when (M.size allFields1 /= M.size allFields2) $
+      throwError $ CompilationError (UnificationError t2 t1) NoContext
+    unify (TRecord allFields1 Nothing mempty) (TRecord allFields2 Nothing mempty)
   match t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 instance Match t => Match [t] where

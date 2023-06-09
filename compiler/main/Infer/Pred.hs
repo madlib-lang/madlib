@@ -144,8 +144,10 @@ isConcrete t = case t of
   TApp l _ ->
     isConcrete l
 
-  TRecord _ _ _ ->
-    True
+  -- TRecord _ _ _ ->
+  --   True
+  TRecord fields Nothing extra ->
+    all isConcrete (M.elems fields) && all isConcrete (M.elems extra)
 
   _ ->
     False
@@ -153,15 +155,15 @@ isConcrete t = case t of
 
 isInstanceOf :: Pred -> Pred -> Infer Substitution
 isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
-  if interface == interface'
-    then do
-      let r  = zip ts ts'
-      match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
-    else throwError $ CompilationError FatalError NoContext
+  if interface == interface' then do
+    let r  = zip ts ts'
+    match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
+  else
+    throwError $ CompilationError FatalError NoContext
 
 
 byInst :: Env -> Pred -> Infer [Pred]
-byInst env p@(IsIn "__MUTATION__" ts maybeArea) = return []
+byInst _ (IsIn "__MUTATION__" _ _) = return []
 byInst env p@(IsIn interface ts maybeArea) =
   catchError
     (tryInsts (insts env interface))

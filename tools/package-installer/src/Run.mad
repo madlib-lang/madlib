@@ -314,7 +314,7 @@ processDependency = (config, contextAndNextDeps, dependency) => pipe(
   map(
     pipe(
       displayResult,
-      tryRecovery
+      tryRecovery,
     )
   ),
   chain(postProcess(contextAndNextDeps, dependency)),
