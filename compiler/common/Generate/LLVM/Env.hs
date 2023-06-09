@@ -46,6 +46,7 @@ data Env
   , isTopLevel :: Bool
   , recursionData :: Maybe RecursionData
   , envASTPath :: String
+  , envIsDebugBuild :: Bool
   , envCurrentCompilationUnitSymbolIndex :: Word
   , envCurrentFileSymbolIndex :: Word
   , envCurrentSubProgramSymbolIndex :: Word
@@ -58,6 +59,7 @@ initialEnv =
       , isTopLevel = True
       , recursionData = Nothing
       , envASTPath = ""
+      , envIsDebugBuild = False
       , envCurrentCompilationUnitSymbolIndex = 0
       , envCurrentFileSymbolIndex = 0
       , envCurrentSubProgramSymbolIndex = 0

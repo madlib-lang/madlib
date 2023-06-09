@@ -13,6 +13,7 @@ data Options
     , optOutputPath :: FilePath
     , optTarget :: Target
     , optOptimized :: Bool
+    , optDebug :: Bool
     , optBundle :: Bool
     , optCoverage :: Bool
     , optGenerateDerivedInstances :: Bool

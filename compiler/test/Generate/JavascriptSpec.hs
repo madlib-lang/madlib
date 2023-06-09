@@ -68,6 +68,7 @@ buildOptions entrypoint pathUtils optimized coverage =
     , optOutputPath = "/build"
     , optTarget = TNode
     , optOptimized = optimized
+    , optDebug = False
     , optBundle = False
     , optCoverage = coverage
     , optGenerateDerivedInstances = True
