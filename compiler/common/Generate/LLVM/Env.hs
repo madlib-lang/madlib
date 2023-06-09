@@ -46,6 +46,9 @@ data Env
   , isTopLevel :: Bool
   , recursionData :: Maybe RecursionData
   , envASTPath :: String
+  , envCurrentCompilationUnitSymbolIndex :: Word
+  , envCurrentFileSymbolIndex :: Word
+  , envCurrentSubProgramSymbolIndex :: Word
   }
   deriving(Eq, Show, Generic, Hashable)
 
@@ -55,4 +58,7 @@ initialEnv =
       , isTopLevel = True
       , recursionData = Nothing
       , envASTPath = ""
+      , envCurrentCompilationUnitSymbolIndex = 0
+      , envCurrentFileSymbolIndex = 0
+      , envCurrentSubProgramSymbolIndex = 0
       }
