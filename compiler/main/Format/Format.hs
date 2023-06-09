@@ -957,14 +957,19 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ _ (Pipe exps) ->
+        Source area _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
+              (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
+              commentsDoc' =
+                if length comments'' == length comments''' && not (null comments'') then
+                  mempty
+                else
+                  hcat (replicate (computeLineDiff [] (getArea $ last exps) (getCommentArea $ head comments'')) Pretty.line') <> commentsDoc
           in  ( Pretty.pretty "pipe("
-                  <> Pretty.nest indentSize (Pretty.hardline <> exps')
-                  <> Pretty.comma
+                  <> Pretty.nest indentSize (Pretty.hardline <> exps' <> Pretty.comma <> commentsDoc')
                   <> Pretty.hardline
                   <> Pretty.rparen
-              , comments''
+              , comments'''
               )
 
         Source _ _ (Where exp iss) ->
@@ -1441,8 +1446,8 @@ insertComments :: Bool -> Area -> [Comment] -> (Pretty.Doc ann, [Comment])
 insertComments topLevel area comments = case comments of
   (comment : _) ->
     let commentArea = getCommentArea comment
-        after                                         = area `isAfter` commentArea
-        afterOrSameLine                               = after || isSameLine area commentArea && isInlineComment comment
+        after = area `isAfter` commentArea
+        afterOrSameLine = after || isSameLine area commentArea && isInlineComment comment
     in
       if afterOrSameLine then
         let (next, comments') = insertComments topLevel area (tail comments)
