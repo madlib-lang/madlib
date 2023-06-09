@@ -27,6 +27,7 @@ import           Driver (Prune(..))
 import           Error.Context (Context(ctxAstPath))
 import Debug.Trace
 import Data.List (isInfixOf)
+import System.Environment (setEnv)
 
 
 printInfo :: IO ()
@@ -41,6 +42,7 @@ sanitizeExpected s = read $ "\"" <> s <> "\""
 
 compileAndRun :: FilePath -> IO (String, String)
 compileAndRun casePath = do
+  setEnv "NO_COLOR" "true"
   expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected"])
   let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
   let outputPath   = joinPath [casePath, ".tests/run"]
@@ -101,6 +103,8 @@ spec = do
         , "compiler/test/Blackbox/test-cases/import-cycle"
         , "compiler/test/Blackbox/test-cases/operators"
         , "compiler/test/Blackbox/test-cases/recursion-from-closure"
+        , "compiler/test/Blackbox/test-cases/record-instances"
+        , "compiler/test/Blackbox/test-cases/record-instance-not-found"
         ]
   forM_ cases $ \casePath -> do
     before (compileAndRun casePath) $ describe "" $ do

@@ -212,7 +212,7 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
   let t'        = apply s' (tv `fn` t)
       paramType = apply s' tv
 
-  return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' ps :=> paramType) area param) es' (apply s' ps :=> t'))
+  return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
 
 
 inferBody :: Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
@@ -904,7 +904,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   s' <- contextualUnify env'' exp (apply s tv) t
   -- let s'' = s `compose` s1 `compose` s'
-  let s'' = s' `compose` s
+  let s'' = s `compose` s' `compose` s
       envWithVarsExcluded = env''
         { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
 

@@ -166,7 +166,7 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
       fs  = ftv (apply s' env)
       gs  = ftv t'' \\ fs
       sc' = quantify (ftv t'') (qs' :=> t'')
-  ps'         <- filterM ((not <$>) . entail env qs') (apply s' ps)
+  ps' <- filterM ((not <$>) . entail env qs') (apply s' ps)
 
   (ds, rs, _) <- split True env fs gs ps'
 

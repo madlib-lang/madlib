@@ -1,40 +1,40 @@
-\ESC[0;93;1m[warning]\ESC[0m: Unused import
-     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@3:10-3:17\ESC[0m
-     \ESC[0;90;1m│\ESC[0m
-\ESC[0;90;1m   3 │\ESC[0m \ESC[0;97mi\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97mp\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m{\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;93;1mf\ESC[0m\ESC[0;93;1mu\ESC[0m\ESC[0;93;1ml\ESC[0m\ESC[0;93;1mf\ESC[0m\ESC[0;93;1mi\ESC[0m\ESC[0;93;1ml\ESC[0m\ESC[0;93;1ml\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m}\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mf\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m\"\ESC[0m\ESC[0;97mW\ESC[0m\ESC[0;97mi\ESC[0m\ESC[0;97ms\ESC[0m\ESC[0;97mh\ESC[0m\ESC[0;97m\"\ESC[0m
-     \ESC[0;90;1m•\ESC[0m          \ESC[0;93m┬\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m 
-     \ESC[0;90;1m•\ESC[0m          \ESC[0;93m╰╸\ESC[0m \ESC[0;93mYou imported 'fulfill' from the module located at
-     \ESC[0;90;1m•\ESC[0;93m             'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
-     \ESC[0;90;1m•\ESC[0;93m             but it seems that you never use it.\ESC[0m
-     \ESC[0;90;1m•\ESC[0m
-     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Remove the import if you don't use it.\ESC[0m
-\ESC[0;90;1m─────╯\ESC[0m
+[warning]: Unused import
+     ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@3:10-3:17
+     │
+   3 │ import { fulfill } from \"Wish\"
+     •          ┬────── 
+     •          ╰╸ You imported 'fulfill' from the module located at
+     •             'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+     •             but it seems that you never use it.
+     •
+     │ Hint: Remove the import if you don't use it.
+─────╯
 
 
 
-\ESC[0;93;1m[warning]\ESC[0m: Unused import
-     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@1:8-1:13\ESC[0m
-     \ESC[0;90;1m│\ESC[0m
-\ESC[0;90;1m   1 │\ESC[0m \ESC[0;97mi\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97mp\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;93;1mM\ESC[0m\ESC[0;93;1ma\ESC[0m\ESC[0;93;1my\ESC[0m\ESC[0;93;1mb\ESC[0m\ESC[0;93;1me\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mf\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m\"\ESC[0m\ESC[0;97mM\ESC[0m\ESC[0;97ma\ESC[0m\ESC[0;97my\ESC[0m\ESC[0;97mb\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97m\"\ESC[0m
-     \ESC[0;90;1m•\ESC[0m        \ESC[0;93m┬\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m 
-     \ESC[0;90;1m•\ESC[0m        \ESC[0;93m╰╸\ESC[0m \ESC[0;93mYou imported 'Maybe' from the module located at
-     \ESC[0;90;1m•\ESC[0;93m           'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
-     \ESC[0;90;1m•\ESC[0;93m           but it seems that you never use it.\ESC[0m
-     \ESC[0;90;1m•\ESC[0m
-     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Remove the import if you don't use it.\ESC[0m
-\ESC[0;90;1m─────╯\ESC[0m
+[warning]: Unused import
+     ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@1:8-1:13
+     │
+   1 │ import Maybe from \"Maybe\"
+     •        ┬──── 
+     •        ╰╸ You imported 'Maybe' from the module located at
+     •           'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+     •           but it seems that you never use it.
+     •
+     │ Hint: Remove the import if you don't use it.
+─────╯
 
 
 
-\ESC[0;93;1m[warning]\ESC[0m: Unused import
-     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@2:15-2:21\ESC[0m
-     \ESC[0;90;1m│\ESC[0m
-\ESC[0;90;1m   2 │\ESC[0m \ESC[0;97mi\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97mp\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97my\ESC[0m\ESC[0;97mp\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m{\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;93;1mE\ESC[0m\ESC[0;93;1mi\ESC[0m\ESC[0;93;1mt\ESC[0m\ESC[0;93;1mh\ESC[0m\ESC[0;93;1me\ESC[0m\ESC[0;93;1mr\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m}\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mf\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mo\ESC[0m\ESC[0;97mm\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m\"\ESC[0m\ESC[0;97mE\ESC[0m\ESC[0;97mi\ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97mh\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97m\"\ESC[0m
-     \ESC[0;90;1m•\ESC[0m               \ESC[0;93m┬\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m\ESC[0;93m─\ESC[0m 
-     \ESC[0;90;1m•\ESC[0m               \ESC[0;93m╰╸\ESC[0m \ESC[0;93mYou imported 'Either' from the module located at
-     \ESC[0;90;1m•\ESC[0;93m                  'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
-     \ESC[0;90;1m•\ESC[0;93m                  but it seems that you never use it.\ESC[0m
-     \ESC[0;90;1m•\ESC[0m
-     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Remove the import if you don't use it.\ESC[0m
-\ESC[0;90;1m─────╯\ESC[0m
+[warning]: Unused import
+     ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@2:15-2:21
+     │
+   2 │ import type { Either } from \"Either\"
+     •               ┬───── 
+     •               ╰╸ You imported 'Either' from the module located at
+     •                  'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
+     •                  but it seems that you never use it.
+     •
+     │ Hint: Remove the import if you don't use it.
+─────╯
 

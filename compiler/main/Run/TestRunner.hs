@@ -53,8 +53,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> OptimizationLevel -> IO ()
-runTests entrypoint target watchMode coverage optLevel = do
+runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> IO ()
+runTests entrypoint target debug watchMode coverage optLevel = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -80,7 +80,7 @@ runTests entrypoint target watchMode coverage optLevel = do
           , optTarget = target
           , optOptimized = False
           , optBundle = False
-          , optDebug = False
+          , optDebug = debug
           , optCoverage = coverage
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True

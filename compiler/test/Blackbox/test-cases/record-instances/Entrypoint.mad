@@ -1,0 +1,100 @@
+import IO from "IO"
+
+
+export type Warning
+  = OutOfRangeVersion
+  | InvalidVersionHash
+  | InvalidBuildHash
+  | VersionDotLockMissing
+  | BuildHashCouldNotBeGenerated
+
+
+export type Error
+  = CopyToMadlibModulesFailed(String)
+  | MadlibDotJsonCouldNotBeLoaded(String)
+
+
+export type Validate a
+  = Valid(a)
+  | NotValid(List Warning, a)
+  | ValidationError(List Warning, Error, a)
+
+
+unsafeGetValidationValue :: Validate a -> a
+export unsafeGetValidationValue = where {
+  Valid(a) =>
+    a
+
+  NotValid(_, a) =>
+    a
+
+  ValidationError(_, _, a) =>
+    a
+}
+
+// alias ValidationOutput = {
+//   madlibDotJson :: {
+//     name :: String,
+//     version :: String,
+//     deps :: {
+//       name :: String,
+//     },
+//   },
+// }
+
+// displayInstalling :: Validate ValidationOutput -> Validate ValidationOutput
+displayInstalling = (validation) => {
+  validationOutput = unsafeGetValidationValue(validation)
+  dotJson = validationOutput.madlibDotJson
+  IO.log(dotJson)
+  dotJson == dotJson
+  
+  myVar = dotJson.name
+  IO.log(myVar)
+  version = validationOutput.madlibDotJson.version
+
+  IO.putLine(`Installing ${myVar} version ${version}`)
+
+  return validation
+}
+
+interface ShowX a {
+  showX :: a -> String
+}
+
+
+instance ShowX a => ShowX { name :: a } {
+  showX = (x) => showX(x.name)
+}
+
+instance ShowX String {
+  showX = () => ""
+}
+
+f = (x) => {
+  dotJson = x.y
+
+  myVar = dotJson.name
+  showX(dotJson)
+  inspect(dotJson)
+
+  return dotJson
+}
+
+start = () => {
+  displayInstalling(Valid({
+    madlibDotJson: {
+      name: "Stuff",
+      version: "0.0.0",
+      deps: {
+        name: "R",
+      },
+    },
+  }))
+  
+  f({ y: { name: "" } })
+}
+
+main = () => {
+  start()
+}

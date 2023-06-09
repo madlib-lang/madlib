@@ -1,27 +1,27 @@
-     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@3:12-3:13\ESC[0m
-     \ESC[0;90;1m│\ESC[0m
-\ESC[0;90;1m   3 │\ESC[0m \ESC[0;97m \ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97mu\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mn\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97ma\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;91;1m+\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m\"\ESC[0m\ESC[0;97m\"\ESC[0m
-     \ESC[0;90;1m•\ESC[0m            \ESC[0;91m┬\ESC[0m 
-     \ESC[0;90;1m•\ESC[0m            \ESC[0;91m╰╸\ESC[0m \ESC[0;91mNo instance for 'Number String' was found.
-     \ESC[0;90;1m•\ESC[0;91m               \ESC[0m
-     \ESC[0;90;1m•\ESC[0m
-     \ESC[0;90;1m│\ESC[0m \ESC[0;96mHint: Verify that you imported the module where the Number
-     \ESC[0;90;1m│\ESC[0;96m       instance for 'String' is defined\ESC[0m
-     \ESC[0;90;1m│\ESC[0m \ESC[0;96mNote: Remember that instance methods are automatically imported when the module
-     \ESC[0;90;1m│\ESC[0;96m       is imported, directly, or indirectly.\ESC[0m
-\ESC[0;90;1m─────╯\ESC[0m
+     ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@3:12-3:13
+     │
+   3 │   return a + \"\"
+     •            ┬ 
+     •            ╰╸ No instance for 'Number String' was found.
+     •               
+     •
+     │ Hint: Verify that you imported the module where the Number
+     │       instance for 'String' is defined
+     │ Note: Remember that instance methods are automatically imported when the module
+     │       is imported, directly, or indirectly.
+─────╯
 
 
 
-     \ESC[0;90;1m╭──▶\ESC[0m \ESC[0;32;1mcompiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@7:11-7:18\ESC[0m
-     \ESC[0;90;1m│\ESC[0m
-\ESC[0;90;1m   7 │\ESC[0m \ESC[0;97m \ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97mt\ESC[0m\ESC[0;97mr\ESC[0m\ESC[0;97mu\ESC[0m\ESC[0;97me\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;97m&\ESC[0m\ESC[0;97m&\ESC[0m\ESC[0;97m \ESC[0m\ESC[0;91;1m\"\ESC[0m\ESC[0;91;1mH\ESC[0m\ESC[0;91;1me\ESC[0m\ESC[0;91;1ml\ESC[0m\ESC[0;91;1ml\ESC[0m\ESC[0;91;1mo\ESC[0m\ESC[0;91;1m\"\ESC[0m
-     \ESC[0;90;1m•\ESC[0m           \ESC[0;91m┬\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m\ESC[0;91m─\ESC[0m
-     \ESC[0;90;1m•\ESC[0m           \ESC[0;91m╰╸\ESC[0m \ESC[0;91m\ESC[0mexpected:
-     \ESC[0;90;1m•\ESC[0;91m                \ESC[0m\ESC[0;92;1mBoolean\ESC[0m
-     \ESC[0;90;1m•\ESC[0;91m              
-     \ESC[0;90;1m•\ESC[0;91m              \ESC[0mbut found:
-     \ESC[0;90;1m•\ESC[0;91m                \ESC[0m\ESC[0;91;1mString\ESC[0m
-     \ESC[0;90;1m•\ESC[0;91m              \ESC[0m
-\ESC[0;90;1m─────╯\ESC[0m
+     ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@7:11-7:18
+     │
+   7 │   true && \"Hello\"
+     •           ┬──────
+     •           ╰╸ expected:
+     •                  Boolean
+     •              
+     •              but found:
+     •                  String
+     •              
+─────╯
 

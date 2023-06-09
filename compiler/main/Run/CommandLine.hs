@@ -32,7 +32,14 @@ data Command
       , compileCoverage :: Bool
       , compileOptimizationLevel :: OptimizationLevel
       }
-  | Test { testInput :: FilePath, testTarget :: Target, testWatch :: Bool, testCoverage :: Bool, testOptimizationLevel :: OptimizationLevel }
+  | Test
+      { testInput :: FilePath
+      , testTarget :: Target
+      , testDebug :: Bool
+      , testWatch :: Bool
+      , testCoverage :: Bool
+      , testOptimizationLevel :: OptimizationLevel
+      }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -205,7 +212,7 @@ parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel
 
 
 parseRunInput :: Parser FilePath
