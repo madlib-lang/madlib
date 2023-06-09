@@ -555,10 +555,11 @@ inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (C
         (lookupVar env (ns <> field))
         (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
     (ps :=> t) <- instantiate sc
+    let ps' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps
 
     let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field) (isConstructor env (ns <> field))
 
-    return (M.empty, ps, t, e)
+    return (M.empty, ps', t, e)
 inferNamespaceAccess _ _ _ = throwError $ CompilationError FatalError NoContext
 
 

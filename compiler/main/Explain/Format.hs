@@ -569,6 +569,7 @@ renderType t =
       s             = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT')
   in  Text.unpack s
 
+
 renderScheme :: Scheme -> String
 renderScheme sc =
   let (_, _, docT)  = schemeToDoc (mempty, mempty) sc
@@ -1718,17 +1719,34 @@ createErrorDiagnostic color context typeError = case typeError of
   ContextTooWeak preds ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Context too weak"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The context of the type annotation is too weak. The type\n"
-                <> "inferred for the implementation has the following\n"
-                <> "constraints: " <> intercalate ", " (predClass <$> preds)
-            )
-          ]
-          [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+        let positionInfos =
+              Maybe.mapMaybe
+                (\p@(IsIn _ _ maybeArea) ->
+                  case maybeArea of
+                    Just (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+                      let (_, _, rendererPred) = predToStr True (mempty, mempty) p
+                      in  Just
+                            ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+                            , Diagnose.This $ "The constraint '" <> rendererPred <> "' originates from here"
+                            )
+
+                    Nothing ->
+                      Nothing
+                )
+                preds
+        in  Diagnose.Err
+              Nothing
+              "Context too weak"
+              (
+                [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+                  , Diagnose.This $
+                      "The context of the type annotation is too weak. The type\n"
+                      <> "inferred for the implementation has constraints\n"
+                      <> "for the following instances: " <> intercalate ", " (predClass <$> preds)
+                  )
+                ] ++ positionInfos
+              )
+              [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
 
       NoContext ->
         Diagnose.Err

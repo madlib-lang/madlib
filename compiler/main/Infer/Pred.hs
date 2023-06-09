@@ -18,6 +18,7 @@ import           Data.List
 import qualified Data.Map                      as M
 import Infer.EnvUtils
 import Utils.Record (generateRecordPredsAndType)
+import qualified Data.Maybe as Maybe
 
 
 getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
@@ -80,9 +81,10 @@ insts env i = case M.lookup i (envInterfaces env) of
 
 bySuper :: Env -> Pred -> [Pred]
 bySuper env p@(IsIn i ts maybeArea) =
-  p : ((\(IsIn c ts' _) -> IsIn c ts' maybeArea) <$> concatMap (bySuper env) supers)
+  p : ((\(IsIn c ts' _) -> IsIn c ts' maybeArea) <$> concatMap (bySuper env) supers')
   where
     supers = apply s (super env i)
+    supers' = map (\(IsIn c' ts' maybeArea') -> IsIn c' ts' (if Maybe.isNothing maybeArea' then maybeArea else maybeArea')) supers
     s      = M.fromList $ zip (sig env i) ts
 
 
