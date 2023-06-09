@@ -21,7 +21,8 @@ jobs:
 
       - run: sudo apt-get update -y
 
-      - run: sudo apt-get install -y lcov llvm-9 nasm
+      # TODO: remove llvm-9
+      - run: sudo apt-get install -y lcov llvm-12 nasm
       # - run: DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip musl-tools cmake git nasm libssl-dev
       # - run: sudo apt-get install -y build-essential curl libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
 
@@ -37,7 +38,7 @@ jobs:
         run: TARGET="LINUX_X64" ./scripts/build-runtime-libs
 
       - name: build runtime
-        run: AR="llvm-ar-9" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
+        run: AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
 
       - run: ./scripts/test coverage
 
