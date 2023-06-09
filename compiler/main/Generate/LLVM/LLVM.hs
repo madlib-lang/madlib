@@ -89,8 +89,11 @@ import Run.OptimizationLevel
 import qualified System.FilePath as FilePath
 import GHC.Stack (HasCallStack)
 import qualified LLVM.AST.CallingConvention as CC
-import Generate.LLVM.WithMetadata (functionWithMetadata)
+import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata)
+import Generate.LLVM.Debug
 import qualified Control.Monad.State as State
+import Data.Word (Word8)
+import Generate.LLVM.Helper
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -140,11 +143,6 @@ constructorSymbol ctor id arity =
 adtSymbol :: Int -> Symbol
 adtSymbol maxArity =
   Symbol (ADTSymbol maxArity) (Operand.ConstantOperand (Constant.Null boxType))
-
-
-stringToShortByteString :: String -> ShortByteString.ShortByteString
-stringToShortByteString = ShortByteString.toShort . Char8.pack
-
 
 true :: Operand
 true = Operand.ConstantOperand (Constant.Int 1 1)
@@ -785,15 +783,17 @@ retrieveArgs metadata exps =
     (List.zip metadata exps)
 
 
-generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
-generateApplicationForKnownFunction env symbolTable returnQualType arity fnOperand args
+generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Area -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
+generateApplicationForKnownFunction env symbolTable area returnQualType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
       args'   <- mapM (generateExp env { isLast = False } symbolTable) args
       args''  <- retrieveArgs (Core.getMetadata <$> args) args'
       let args''' = (, []) <$> args''
 
-      ret <- call fnOperand args'''
+      let diLocation = makeDILocation env area
+
+      ret <- callWithMetadata [diLocation] fnOperand args'''
       unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
@@ -804,7 +804,9 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       args'''  <- retrieveArgs (Core.getMetadata <$> args') args''
       let args'''' = (, []) <$> args'''
 
-      pap <- call fnOperand args''''
+      let diLocation = makeDILocation env area
+
+      pap <- callWithMetadata [diLocation] fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
       remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
@@ -1113,10 +1115,11 @@ generateExp env symbolTable exp = case exp of
     result           <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
     return (symbolTable, result, Nothing)
 
-  Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
+  Core.Typed _ area _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result                <- call strConcat [(leftOperand', []), (rightOperand', [])]
+    let diLocation = makeDILocation env area
+    result <- callWithMetadata [diLocation] strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
@@ -1436,10 +1439,10 @@ generateExp env symbolTable exp = case exp of
           Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
           return (symbolTable, structPtr', Nothing)
         else
-          generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
+          generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
 
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
-        generateApplicationForKnownFunction env symbolTable qt arity fnOperand args
+        generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
 
       Just (Symbol symbolType pap) -> do
         -- We apply a partial application
@@ -2115,11 +2118,10 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
       functionName' = AST.mkName functionName
       dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) (Core.getValue <$> coreParams)
 
-  let id =
-        if functionName == "__41238d75361d1f3eed4a89bc7205a951__breakIt__1" then
-          3
-        else
-          4
+  id <- newMetadataId
+  let env' = env { envCurrentSubProgramSymbolIndex = id }
+  let diCUIndex = envCurrentCompilationUnitSymbolIndex env
+  let diFileIndex = envCurrentFileSymbolIndex env
 
   let meta = MetadataNodeDefinition (MetadataNodeID id) $
         DINode . Operand.DIScope . Operand.DILocalScope . Operand.DISubprogram $
@@ -2127,10 +2129,10 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
             { scope = Nothing
             , name = stringToShortByteString (makeOriginalName functionName)
             , linkageName = ""
-            , file = Nothing
+            , file = Just (MDRef (MetadataNodeID diFileIndex))
             , line = 0
             , type' = Just $ Operand.MDInline $ Operand.SubroutineType { flags = [], cc = 0, typeArray = [] }
-            , localToUnit = False
+            , localToUnit = True
             , definition = True
             , scopeLine = 0
             , containingType = Nothing
@@ -2139,7 +2141,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
             , thisAdjustment = 0
             , flags = []
             , optimized = False
-            , unit = Just (MDRef (MetadataNodeID 1))
+            , unit = Just (MDRef (MetadataNodeID diCUIndex))
             , Operand.templateParams = []
             , declaration = Nothing
             , retainedNodes = []
@@ -2155,7 +2157,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
       continue       <- alloca Type.i1 Nothing 0
 
       let typesWithParams = List.zip paramTypes params
-      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
+      unboxedParams <- mapM (uncurry (unbox env' symbolTable)) typesWithParams
 
       allocatedParams <-
         mapM
@@ -2190,7 +2192,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t
-                  constructedType = retrieveConstructorStructType env symbolTable returnType
+                  constructedType = retrieveConstructorStructType env' symbolTable returnType
               -- contains an unused index and the value that will be returned at the end of recursion
               start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [Type.i64, constructedType]), [])]
               start' <- safeBitcast start (Type.ptr (Type.StructureType False [Type.i64, constructedType]))
@@ -2213,7 +2215,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
                   }
             else if Core.isAdditionRecursiveDefinition metadata || Core.isMultiplicationRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t
-              let llvmType = buildLLVMType env symbolTable ([] IT.:=> returnType)
+              let llvmType = buildLLVMType env' symbolTable ([] IT.:=> returnType)
               holePtr <- alloca llvmType Nothing 0
               let initialValue =
                     if returnType == IT.tInteger then
@@ -2254,7 +2256,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
 
 
       -- Generate body
-      (generatedBody, maybeBoxed) <- generateBody env { recursionData = Just recData } symbolTableWithParams body
+      (generatedBody, maybeBoxed) <- generateBody env' { recursionData = Just recData } symbolTableWithParams body
 
       shouldLoop <- load continue 0
       condBr shouldLoop loop afterLoop
@@ -2277,10 +2279,10 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
             if Core.isReferenceParameter metadata then do
               param' <- safeBitcast param (Type.ptr boxType)
               loaded <- load param' 0
-              unboxed <- unbox env symbolTable paramQt loaded
+              unboxed <- unbox env' symbolTable paramQt loaded
               return (paramName, localVarSymbol param unboxed)
             else do
-              unboxed <- unbox env symbolTable paramQt param
+              unboxed <- unbox env' symbolTable paramQt param
               return (paramName, varSymbol unboxed)
         )
         (List.zip coreParams params)
@@ -2288,7 +2290,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
       let symbolTableWithParams = symbolTable <> Map.fromList paramsWithNames
 
       -- Generate body
-      (generatedBody, _) <- generateBody env symbolTableWithParams body
+      (generatedBody, _) <- generateBody env' symbolTableWithParams body
 
       boxed <- box generatedBody
       ret boxed
@@ -2625,62 +2627,23 @@ callModuleFunctions allModulePaths = case allModulePaths of
     return ()
 
 
--- File	 
--- filename :: ShortByteString	 
--- directory :: ShortByteString	 
--- checksum :: Maybe ChecksumInfo	 
-
-
-makeCompileUnitMetadata =
-  MetadataNodeDefinition (MetadataNodeID 1) $
-    DINode . Operand.DIScope . Operand.DICompileUnit $
-    Operand.CompileUnit
-      { Operand.language = 12
-      , Operand.file = MDRef (MetadataNodeID 0)
-      , Operand.producer = "clang version 6.0.0 (tags/RELEASE_600/final)"
-      , Operand.optimized = True
-      , Operand.flags = ""
-      , Operand.runtimeVersion = 0
-      , Operand.splitDebugFileName = ""
-      , Operand.emissionKind = Operand.FullDebug
-      , Operand.enums = []
-      , Operand.retainedTypes = []
-      , Operand.globals = []
-      , Operand.imports = []
-      , Operand.macros = []
-      , Operand.dWOId = 0
-      , Operand.splitDebugInlining = True
-      , Operand.debugInfoForProfiling = False
-      , Operand.nameTableKind = Operand.NameTableKindDefault
-      , Operand.debugBaseAddress = False
-      }
-
-
-makeFileMetadata :: FilePath -> Definition
-makeFileMetadata astPath =
-  MetadataNodeDefinition
-    (MetadataNodeID 0)
-    (DINode
-      (Operand.DIScope
-        (Operand.DIFile
-          (Operand.File
-            (stringToShortByteString $ FilePath.takeFileName astPath)
-            (stringToShortByteString $ FilePath.takeDirectory astPath)
-            Nothing)
-        )
-      )
-    )
-
-
 generateLLVMModule :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
 generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
-  emitDefn $ makeFileMetadata astPath
-  emitDefn makeCompileUnitMetadata
-  emitDefn $ NamedMetadataDefinition "llvm.dbg.cu" [MetadataNodeID 1]
+  fileSymbolId <- newMetadataId
+  compilationUnitSymbolId <- newMetadataId
+  emitDefn $ makeFileMetadata fileSymbolId astPath
+  emitDefn $ makeCompileUnitMetadata fileSymbolId compilationUnitSymbolId
+  emitDefn $ NamedMetadataDefinition "llvm.dbg.cu" [MetadataNodeID compilationUnitSymbolId]
 
-  symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
-  let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
+  let env' =
+        env
+          { envCurrentCompilationUnitSymbolIndex = compilationUnitSymbolId
+          , envCurrentFileSymbolIndex = fileSymbolId
+          }
+
+  symbolTableWithConstructors <- generateConstructors env' initialSymbolTable (atypedecls ast)
+  let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env')) symbolTableWithConstructors (aexps ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithTopLevel
 
   let moduleHash = hashModulePath ast
@@ -2692,7 +2655,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
 
-  symbolTable <- generateTopLevelFunctions env symbolTableWithDefaults (topLevelFunctions $ aexps ast)
+  symbolTable <- generateTopLevelFunctions env' symbolTableWithDefaults (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
@@ -2737,7 +2700,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
 
         callModuleFunctions currentModulePaths
 
-        generateExps env symbolTable (expsForMain $ aexps ast)
+        generateExps env' symbolTable (expsForMain $ aexps ast)
         -- call user main that should be named like main_moduleHash
         mainArgs <- call getArgs []
         mainArgs' <- safeBitcast mainArgs boxType
@@ -2754,7 +2717,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
     else do
       function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
         block `named` "entry"
-        generateExps env symbolTable (expsForMain $ aexps ast)
+        generateExps env' symbolTable (expsForMain $ aexps ast)
         retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)

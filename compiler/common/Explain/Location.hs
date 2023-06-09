@@ -29,6 +29,10 @@ getLineFromStart :: Area -> Int
 getLineFromStart (Area (Loc _ l _) _) = l
 
 
+getColumnFromStart :: Area -> Int
+getColumnFromStart (Area (Loc _ _ c) _) = c
+
+
 getStartLoc :: Area -> Loc
 getStartLoc area = case area of
   Area loc _ -> loc
