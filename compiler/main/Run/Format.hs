@@ -23,6 +23,7 @@ import           Data.Either.Combinators (mapLeft)
 import           Run.Options
 import           Run.Target
 import Explain.Format (formatError)
+import Run.OptimizationLevel (OptimizationLevel(..))
 
 
 
@@ -54,6 +55,8 @@ parseASTsToFormat  (fp : fps)   = do
                               , optGenerateDerivedInstances = True
                               , optInsertInstancePlaholders = True
                               , optMustHaveMain = True
+                              , optDebug = False
+                              , optOptimizationLevel = O1
                               }
         ast <- case parse code of
           Right a ->
@@ -89,6 +92,8 @@ parseCodeToFormat code = do
                         , optGenerateDerivedInstances = True
                         , optInsertInstancePlaholders = True
                         , optMustHaveMain = True
+                        , optDebug = False
+                        , optOptimizationLevel = O1
                         }
   ast <- case parse code of
         Right a ->

@@ -1,4 +1,5 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Generate.LLVM.Debug where
 import LLVM.AST
 import qualified LLVM.AST.Operand as Operand
@@ -8,6 +9,18 @@ import Generate.LLVM.Env
 import Explain.Location
 import Data.ByteString.Short (ShortByteString)
 import qualified Data.List as List
+import Generate.LLVM.WithMetadata (callWithMetadata)
+import qualified LLVM.AST.Constant as Constant
+import qualified LLVM.AST.Type as Type
+import qualified LLVM.AST as AST
+import qualified Control.Monad as Monad
+import LLVM.IRBuilder (MonadIRBuilder, MonadModuleBuilder)
+import qualified Data.Maybe as Maybe
+
+
+llvmDbgDeclare :: Operand
+llvmDbgDeclare =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.MetadataType, Type.MetadataType, Type.MetadataType] False) (AST.mkName "llvm.dbg.declare"))
 
 
 makeCompileUnitMetadata :: Word -> Word -> Definition
@@ -15,24 +28,26 @@ makeCompileUnitMetadata diFileIndex index =
   MetadataNodeDefinition (MetadataNodeID index) $
     DINode . Operand.DIScope . Operand.DICompileUnit $
     Operand.CompileUnit
-      { Operand.language = 12
-      , Operand.file = MDRef (MetadataNodeID diFileIndex)
-      , Operand.producer = stringToShortByteString "Homebrew clang version 12.0.1"
-      , Operand.optimized = False
-      , Operand.flags = stringToShortByteString ""
-      , Operand.runtimeVersion = 0
-      , Operand.splitDebugFileName = stringToShortByteString ""
-      , Operand.emissionKind = Operand.FullDebug
-      , Operand.enums = []
-      , Operand.retainedTypes = []
-      , Operand.globals = []
-      , Operand.imports = []
-      , Operand.macros = []
-      , Operand.dWOId = 0
-      , Operand.splitDebugInlining = False
-      , Operand.debugInfoForProfiling = False
-      , Operand.nameTableKind = Operand.NameTableKindNone
-      , Operand.debugBaseAddress = False
+      { language = 12
+      , file = MDRef (MetadataNodeID diFileIndex)
+      , producer = "clang version 6.0.0 (tags/RELEASE_600/final)"
+      , optimized = True
+      , flags = ""
+      , runtimeVersion = 0
+      , splitDebugFileName = ""
+      , emissionKind = Operand.FullDebug
+      , enums = []
+      , retainedTypes = []
+      , globals = []
+      , imports = []
+      , macros = []
+      , dWOId = 0
+      , splitDebugInlining = False
+      , debugInfoForProfiling = False
+      , nameTableKind = Operand.NameTableKindDefault
+      , rangesBaseAddress = False
+      , sysRoot = ""
+      , sdk = ""
       }
 
 
@@ -46,7 +61,7 @@ makeFileMetadata index astPath =
           (Operand.File
             (stringToShortByteString $ FilePath.takeFileName astPath)
             (stringToShortByteString $ FilePath.takeDirectory astPath)
-            Nothing)
+            (Just (Operand.ChecksumInfo Operand.MD5 "")))
         )
       )
     )
@@ -55,14 +70,18 @@ makeFileMetadata index astPath =
 makeDILocation :: Env -> Area -> [(ShortByteString, MDRef MDNode)]
 makeDILocation env area =
   if envIsDebugBuild env then
-    let diSubprogramIndex = envCurrentSubProgramSymbolIndex env
-        metadata = MDInline $
-          DILocation Operand.Location
-            { Operand.line = fromIntegral $ getLineFromStart area
-            , Operand.column = fromIntegral $ getColumnFromStart area
-            , scope = MDRef (MetadataNodeID diSubprogramIndex)
-            }
-    in  [(stringToShortByteString "dbg", metadata)]
+    case envCurrentSubProgramSymbolIndex env of
+      Just diSubprogramIndex ->
+        let metadata = MDInline $
+              DILocation Operand.Location
+                { Operand.line = fromIntegral $ getLineFromStart area
+                , Operand.column = fromIntegral $ getColumnFromStart area
+                , scope = MDRef (MetadataNodeID diSubprogramIndex)
+                }
+        in  [("dbg", metadata)]
+
+      Nothing ->
+        []
   else
     []
 
@@ -76,18 +95,18 @@ makeOriginalName globalName =
         (List.init . List.init . List.dropWhileEnd (/= '_')) withoutHash
 
 
-makeDISubprogram :: Env -> Word -> String -> Definition
-makeDISubprogram env index functionName =
+makeDISubprogram :: Env -> Area -> Word -> String -> Definition
+makeDISubprogram env area index functionName =
   let diCUIndex = envCurrentCompilationUnitSymbolIndex env
       diFileIndex = envCurrentFileSymbolIndex env
       diSubprogram = MetadataNodeDefinition (MetadataNodeID index) $
         DINode . Operand.DIScope . Operand.DILocalScope . Operand.DISubprogram $
           Operand.Subprogram
-            { scope = Nothing
+            { scope = Just (MDRef (MetadataNodeID diFileIndex))
             , name = stringToShortByteString (makeOriginalName functionName)
-            , linkageName = stringToShortByteString ""
+            , linkageName = ""
             , file = Just (MDRef (MetadataNodeID diFileIndex))
-            , line = 0
+            , line = fromIntegral $ getLineFromStart area
             , type' = Just $ Operand.MDInline $ Operand.SubroutineType { flags = [], cc = 0, typeArray = [] }
             , localToUnit = True
             , definition = True
@@ -105,3 +124,28 @@ makeDISubprogram env index functionName =
             , thrownTypes = []
             }
   in  diSubprogram
+
+
+declareVariable :: (MonadIRBuilder f, MonadModuleBuilder f) => Env -> Area -> Bool -> String -> Operand -> f ()
+declareVariable env area isArg varName var =
+  Monad.when (envIsDebugBuild env && Maybe.isJust (envCurrentSubProgramSymbolIndex env)) $ do
+    callWithMetadata
+      (makeDILocation env area)
+      llvmDbgDeclare
+      [ (Operand.MetadataOperand (MDValue var), [])
+      , (Operand.MetadataOperand
+          (MDNode (Operand.MDInline (Operand.DINode (Operand.DIVariable (Operand.DILocalVariable
+            Operand.LocalVariable
+              { name = stringToShortByteString varName
+              , scope = MDRef $ Operand.MetadataNodeID (Maybe.fromMaybe undefined (envCurrentSubProgramSymbolIndex env))
+              , file = Just $ MDRef $ Operand.MetadataNodeID (envCurrentFileSymbolIndex env)
+              , line = fromIntegral $ getLineFromStart area
+              , type' = Just $ Operand.MDInline $ Operand.DIBasicType Operand.BasicType { flags = [], name = "int", sizeInBits = 64, alignInBits = 0, encoding = Just Operand.SignedEncoding, tag = Operand.BaseType }
+              , flags = []
+              , arg = if isArg then 1 else 0
+              , alignInBits = 0
+              }
+          ))))), [])
+      , (Operand.MetadataOperand (MDNode (Operand.MDInline (DIExpression (Operand.Expression [])))), [])
+      ]
+    return ()

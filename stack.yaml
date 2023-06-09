@@ -14,8 +14,8 @@ extra-deps:
 - regex-posix-clib-2.7
 - MissingH-1.4.3.0@sha256:efbbe7065e17bc01ed925593a0c5b5793ab857585a8e9d5015d0025e526ab55c,4702
 - groupBy-0.1.0.0@sha256:9bd0c5e6bbfaf793f6e816a072bcb085dba1149bf282e998567eaaed8d0efec4,1720
-- llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
-- llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
+# - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
+# - llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
 - Cabal-3.6.2.0
 - Glob-0.10.2@sha256:2a4537c55816d3a87f8623e307fb709946c27bc1aabf068e2f96d2ff402ebb9c,2936
 - aeson-1.5.6.0@sha256:5003bb6fd260d2e2d5a51dee2bf5c8e8f29e4e0e0288fef805c22dcc80ecab06,6788
@@ -112,10 +112,16 @@ extra-deps:
 - unliftio-core-0.2.0.1@sha256:f9abcdd3f3d28e4840563efb7b8760d2de9b5707bcd6f53a87f6a0d77bb5a9f7,1082
 - split-0.2.3.4@sha256:a6df9c3e806ee7cb50bc980a183fc1156f35022a39430dabac0bf9456fe18a4b,2647
 - vector-algorithms-0.8.0.4@sha256:bf4760b23a0fee09abb8c9e3c952c870f5dc9780876e9d7e38ab2bdd98c8f283,3752
-- git: https://github.com/madlib-lang/llvm-hs
-  commit: 599e3d76dbdcdda15bdd430b8030a618ec5dd401  # llvm-9, with Setup.hs fix
-  subdirs:
-    - llvm-hs
+# - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
+# - git: https://github.com/llvm-hs/llvm-hs
+#   commit: 423220bffac4990d019fc088c46c5f25310d5a33  # llvm-9, with Setup.hs fix
+#   subdirs:
+#     - llvm-hs-pure
+#     - llvm-hs
+- ../llvm-hs/llvm-hs-pure
+- ../llvm-hs/llvm-hs
+- git: https://github.com/llvm-hs/llvm-hs-pretty
+  commit: 655ff4d47b3a584b4c9a5863f6121b954825920c
 - rock-0.3.1.1@sha256:78ea97956e6db9a8913e420111c2b5bcc5e52122ab56bfd9958606f0857aa25c,3591
 - dependent-hashmap-0.1.0.1@sha256:6d1c20bd79f32d8daebd3cc741f884cc3d093118e3b876eb957defd4c594a966,1892
 - parallel-io-0.3.5@sha256:97db32eb84b3141f4957f6d208c0ef8adce647cbf68099417e93c7d9a45f9b35,3482

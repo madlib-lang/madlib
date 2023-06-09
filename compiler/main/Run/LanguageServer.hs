@@ -129,6 +129,7 @@ buildOptions target = do
       , Options.optInsertInstancePlaholders = False
       , Options.optMustHaveMain = False
       , Options.optOptimizationLevel = O1
+      , Options.optDebug = False
       }
 
 

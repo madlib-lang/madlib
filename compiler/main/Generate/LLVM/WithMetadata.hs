@@ -1,20 +1,29 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
-module Generate.LLVM.WithMetadata where
-import GHC.Stack (HasCallStack)
-import LLVM.IRBuilder (MonadIRBuilder, MonadModuleBuilder, emitInstrVoid, emitInstr, ParameterName (NoParameterName, ParameterName), IRBuilderT, named, fresh, runIRBuilderT, emptyIRBuilder, emitDefn)
-import Data.ByteString.Short (ShortByteString)
-import LLVM.AST (MDRef, MDNode, Instruction (Call, tailCallKind, callingConvention, returnAttributes, function, arguments, functionAttributes, metadata, Store), Type (FunctionType, VoidType, PointerType), Operand (ConstantOperand, LocalReference), Name, Definition (GlobalDefinition), Parameter (Parameter), mkName)
-import LLVM.AST.Operand (Operand)
-import LLVM.AST.Attribute (ParameterAttribute, FunctionAttribute (..))
+module           Generate.LLVM.WithMetadata where
+import           GHC.Stack (HasCallStack)
+import           LLVM.IRBuilder (MonadIRBuilder, MonadModuleBuilder, emitInstrVoid, emitInstr, ParameterName (NoParameterName, ParameterName), IRBuilderT, named, fresh, runIRBuilderT, emptyIRBuilder, emitDefn)
+import           Data.ByteString.Short (ShortByteString)
+import           LLVM.AST (MDRef, MDNode, Instruction (Call, tailCallKind, callingConvention, returnAttributes, function, arguments, functionAttributes, metadata, Store), Type (FunctionType, VoidType, PointerType), Operand (ConstantOperand, LocalReference), Name, Definition (GlobalDefinition), Parameter (Parameter), mkName)
+import           LLVM.AST.Operand (Operand)
+import           LLVM.AST.Attribute (ParameterAttribute, FunctionAttribute (..))
 import qualified LLVM.AST.Constant as Constant
-import LLVM.AST.Type (void, ptr)
+import           LLVM.AST.Type (void, ptr)
 import qualified LLVM.AST.CallingConvention as CC
-import LLVM.AST.Typed
+import           LLVM.AST.Typed
 import qualified LLVM.AST.Global as Global
 import qualified LLVM.AST.Constant as C
-import Control.Monad (forM)
-import Data.Word (Word32)
-import LLVM.AST.Linkage (Linkage(..))
+import           Control.Monad (forM)
+import           Data.Word (Word32)
+import           LLVM.AST.Linkage (Linkage(..))
+
+
+-- r :: Show e => Either e a -> a
+-- r e = case e of
+--   Right a ->
+--     a
+
+--   Left e ->
+--     error $ "got: " <> show e
 
 
 callWithMetadata :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [(ShortByteString, MDRef MDNode)] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
@@ -28,14 +37,16 @@ callWithMetadata metadata fun args = do
   , functionAttributes = []
   , metadata = metadata
   }
-  case typeOf fun of
-    (FunctionType r _ _) -> case r of
-      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+  tf <- typeOf fun
+  case tf of
+    (Left s) -> error s
+    (Right (FunctionType r _ _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
       _        -> emitInstr r instr
-    (PointerType (FunctionType r _ _) _) -> case r of
-      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+    (Right (PointerType (FunctionType r _ _) _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
       _        -> emitInstr r instr
-    _ -> error "Cannot call non-function (Malformed AST)."
+    (Right _) -> error "Cannot call non-function (Malformed AST)."
 
 callWithAttributes :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [FunctionAttribute] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
 callWithAttributes attributes fun args = do
@@ -48,14 +59,16 @@ callWithAttributes attributes fun args = do
   , functionAttributes = Right <$> attributes
   , metadata = []
   }
-  case typeOf fun of
-    (FunctionType r _ _) -> case r of
-      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+  tf <- typeOf fun
+  case tf of
+    (Left s) -> error s
+    (Right (FunctionType r _ _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
       _        -> emitInstr r instr
-    (PointerType (FunctionType r _ _) _) -> case r of
-      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+    (Right (PointerType (FunctionType r _ _) _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
       _        -> emitInstr r instr
-    _ -> error "Cannot call non-function (Malformed AST)."
+    (Right _) -> error "Cannot call non-function (Malformed AST)."
 
 functionWithMetadata
   :: MonadModuleBuilder m
@@ -85,8 +98,6 @@ functionWithMetadata metadata label argtys retty body = do
   emitDefn def
   pure $ ConstantOperand $ C.GlobalReference funty label
 
--- ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
--- declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
 declareWithAttributes
   :: MonadModuleBuilder m

@@ -72,6 +72,7 @@ deriving instance Hashable Operand.DIObjCProperty
 deriving instance Hashable Operand.DITemplateParameter
 deriving instance Hashable Operand.DIFlag
 deriving instance Hashable Operand.BasicTypeTag
+deriving instance Hashable Operand.DIBound
 deriving instance Hashable Operand.DISubrange
 deriving instance Hashable Operand.DICount
 deriving instance Hashable Operand.DIAccessibility
