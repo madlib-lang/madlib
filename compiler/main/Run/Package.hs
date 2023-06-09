@@ -80,6 +80,7 @@ typeCheckMain target main = do
           , optInsertInstancePlaholders = True
           , optMustHaveMain = False
           , optOptimizationLevel = O1
+          , optDebug = False
           }
   (table, warnings, errors) <- Driver.runIncrementalTask state options [] mempty Driver.Don'tPrune (typeCheckTask main)
   if null errors then

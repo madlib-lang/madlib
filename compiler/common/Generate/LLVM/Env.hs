@@ -49,7 +49,7 @@ data Env
   , envIsDebugBuild :: Bool
   , envCurrentCompilationUnitSymbolIndex :: Word
   , envCurrentFileSymbolIndex :: Word
-  , envCurrentSubProgramSymbolIndex :: Word
+  , envCurrentSubProgramSymbolIndex :: Maybe Word
   }
   deriving(Eq, Show, Generic, Hashable)
 
@@ -62,5 +62,5 @@ initialEnv =
       , envIsDebugBuild = False
       , envCurrentCompilationUnitSymbolIndex = 0
       , envCurrentFileSymbolIndex = 0
-      , envCurrentSubProgramSymbolIndex = 0
+      , envCurrentSubProgramSymbolIndex = Nothing
       }

@@ -73,6 +73,7 @@ generateDocData rootFolder paths = do
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
           , optOptimizationLevel = O1
+          , optDebug = False
           }
   let llvmOptions =
         Options
@@ -88,6 +89,7 @@ generateDocData rootFolder paths = do
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
           , optOptimizationLevel = O1
+          , optDebug = False
           }
   jsMemoVar <- newIORef mempty
   llvmMemoVar <- newIORef mempty

@@ -80,6 +80,7 @@ runTests entrypoint target watchMode coverage optLevel = do
           , optTarget = target
           , optOptimized = False
           , optBundle = False
+          , optDebug = False
           , optCoverage = coverage
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True

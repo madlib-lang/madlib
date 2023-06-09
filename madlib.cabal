@@ -53,6 +53,7 @@ library
       Generate.LLVM.Helper
       Generate.LLVM.LLVM
       Generate.LLVM.Rename
+      Generate.LLVM.TypeOf
       Generate.LLVM.WithMetadata
       Generate.Utils
       Infer.AST
@@ -160,9 +161,8 @@ library
     , hspec
     , hspec-golden
     , lifted-base ==0.2.3.12
-    , llvm-hs ==9.0.1
-    , llvm-hs-pretty ==0.9.0.0
-    , llvm-hs-pure ==9.0.0
+    , llvm-hs ==12.0.0
+    , llvm-hs-pure ==12.0.0
     , lsp
     , monad-control ==1.0.3.1
     , mtl
@@ -248,7 +248,7 @@ library common
     , hspec
     , hspec-golden
     , lifted-base ==0.2.3.12
-    , llvm-hs-pure ==9.0.0
+    , llvm-hs-pure ==12.0.0
     , lsp
     , monad-control ==1.0.3.1
     , mtl
