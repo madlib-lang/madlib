@@ -89,11 +89,14 @@ import Run.OptimizationLevel
 import qualified System.FilePath as FilePath
 import GHC.Stack (HasCallStack)
 import qualified LLVM.AST.CallingConvention as CC
-import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata)
+import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import Generate.LLVM.Debug
 import qualified Control.Monad.State as State
 import Data.Word (Word8)
 import Generate.LLVM.Helper
+import LLVM.AST.Attribute (FunctionAttribute(..))
+import qualified LLVM.AST.FunctionAttribute as FunctionAttribute
+import LLVM.Analysis (verify)
 
 
 sizeof :: Type.Type -> Constant.Constant
@@ -166,6 +169,10 @@ initEventLoop =
 startEventLoop :: Operand
 startEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__startEventLoop__"))
+
+llvmDbgDeclare :: Operand
+llvmDbgDeclare =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.MetadataType, Type.MetadataType, Type.MetadataType] False) (AST.mkName "llvm.dbg.declare"))
 
 gcMalloc :: Operand
 gcMalloc =
@@ -734,17 +741,17 @@ box what = case typeOf what of
     safeBitcast what boxType
 
 
-emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => m Operand
-emptyList = do
-  emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> m Operand
+emptyList env area = do
+  emptyList  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
   emptyList' <- addrspacecast emptyList listType
-  store emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
+  storeWithMetadata (makeDILocation env area) emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
 
   return emptyList'
 
 
-buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => String -> m Operand
-buildStr s = do
+buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> String -> m Operand
+buildStr env area s = do
   let parser     = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
       parsed     = fst $ List.last $ parser s
       asText     = Text.pack parsed
@@ -752,7 +759,7 @@ buildStr s = do
       bytes      = ByteString.unpack bs
       charCodes  = (fromEnum <$> bytes) ++ [0]
       charCodes' = toInteger <$> charCodes
-  addr  <- call gcMallocAtomic [(i64ConstOp (fromIntegral $ List.length charCodes'), [])]
+  addr  <- callWithMetadata (makeDILocation env area) gcMallocAtomic [(i64ConstOp (fromIntegral $ List.length charCodes'), [])]
   addr' <- addrspacecast addr stringType
 
   let charCodesWithIds = List.zip charCodes' [0..]
@@ -791,9 +798,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args''  <- retrieveArgs (Core.getMetadata <$> args) args'
       let args''' = (, []) <$> args''
 
-      let diLocation = makeDILocation env area
-
-      ret <- callWithMetadata [diLocation] fnOperand args'''
+      ret <- callWithMetadata (makeDILocation env area) fnOperand args'''
       unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
@@ -804,9 +809,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'''  <- retrieveArgs (Core.getMetadata <$> args') args''
       let args'''' = (, []) <$> args'''
 
-      let diLocation = makeDILocation env area
-
-      pap <- callWithMetadata [diLocation] fnOperand args''''
+      pap <- callWithMetadata (makeDILocation env area) fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
       remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
@@ -1118,8 +1121,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ area _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    let diLocation = makeDILocation env area
-    result <- callWithMetadata [diLocation] strConcat [(leftOperand', []), (rightOperand', [])]
+    result <- callWithMetadata (makeDILocation env area) strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
@@ -1523,12 +1525,16 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Literal Core.LUnit) -> do
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
 
-  Core.Typed _ _ _ (Core.Literal (Core.LStr (leading : s))) | leading == '"' || leading == '\'' -> do
-    addr <- if List.null s then buildStr [] else buildStr (List.init s)
+  Core.Typed _ area _ (Core.Literal (Core.LStr (leading : s))) | leading == '"' || leading == '\'' -> do
+    addr <-
+      if List.null s then
+        buildStr env area []
+      else
+        buildStr env area (List.init s)
     return (symbolTable, addr, Nothing)
 
-  Core.Typed _ _ _ (Core.Literal (Core.LStr s)) -> do
-    addr <- buildStr s
+  Core.Typed _ area _ (Core.Literal (Core.LStr s)) -> do
+    addr <- buildStr env area s
     return (symbolTable, addr, Nothing)
 
   Core.Typed _ _ _ (Core.Literal (Core.LChar c)) -> do
@@ -1538,25 +1544,25 @@ generateExp env symbolTable exp = case exp of
     (ret, boxed) <- generateDoExps env { isLast = False } symbolTable exps
     return (symbolTable, ret, boxed)
 
-  Core.Typed _ _ _ (Core.TupleConstructor exps) -> do
+  Core.Typed _ area _ (Core.TupleConstructor exps) -> do
     -- exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
     exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
-    tuplePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
+    tuplePtr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
     return (symbolTable, tuplePtr', Nothing)
 
-  Core.Typed _ _ _ (Core.ListConstructor []) -> do
+  Core.Typed _ area _ (Core.ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
-    emptyList' <- emptyList
+    emptyList' <- emptyList env area
     return (symbolTable, emptyList', Nothing)
 
   Core.Typed _ _ metadata (Core.ListConstructor [
-      Core.Typed _ _ _ (Core.ListItem li),
+      Core.Typed _ area _ (Core.ListItem li),
       Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
     ]) | Core.isRightListRecursiveCall metadata -> do
       let Just continue = continueRef <$> recursionData env
@@ -1579,7 +1585,7 @@ generateExp env symbolTable exp = case exp of
         Nothing ->
           box item
 
-      newNode <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+      newNode <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
       newNode' <- addrspacecast newNode listType
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
@@ -1610,11 +1616,11 @@ generateExp env symbolTable exp = case exp of
 
     list <- Monad.foldM
       (\list' i -> case i of
-        Core.Typed _ _ _ (Core.ListItem item) -> do
+        Core.Typed _ area _ (Core.ListItem item) -> do
           item' <- generateExp env { isLast = False } symbolTable item
           items <- retrieveArgs [Core.getMetadata item] [item']
 
-          newHead <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+          newHead <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
           newHead' <- safeBitcast newHead listType
           nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
           nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
@@ -1624,16 +1630,16 @@ generateExp env symbolTable exp = case exp of
           store valuePtr 0 (List.head items)
           return newHead'
 
-        Core.Typed _ _ _ (Core.ListSpread spread) -> do
+        Core.Typed _ area _ (Core.ListSpread spread) -> do
           (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
-          call madlistConcat [(spread, []), (list', [])]
+          callWithMetadata (makeDILocation env area) madlistConcat [(spread, []), (list', [])]
       )
       tail
       (List.reverse $ List.init listItems)
 
     return (symbolTable, list, Nothing)
 
-  Core.Typed _ _ _ (Core.Record fields) -> do
+  Core.Typed _ area _ (Core.Record fields) -> do
     let (base, fields') = List.partition isSpreadField fields
     let fieldCount = i32ConstOp (fromIntegral $ List.length fields')
     let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
@@ -1649,18 +1655,18 @@ generateExp env symbolTable exp = case exp of
 
     fields'' <- mapM (generateField symbolTable) sortedFields
 
-    record <- call buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
+    record <- callWithMetadata (makeDILocation env area) buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
     return (symbolTable, record, Nothing)
     where
       generateField :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Core.Field -> m Operand
       generateField symbolTable field = case field of
-        Core.Typed _ _ _ (Core.Field (name, value)) -> do
+        Core.Typed _ area _ (Core.Field (name, value)) -> do
           let fieldType = Type.StructureType False [stringType, boxType]
-          nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
+          nameOperand <- buildStr env area name
           field  <- generateExp env { isLast = False } symbolTable value
           fields <- retrieveArgs [Core.getMetadata value] [field]
 
-          fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
+          fieldPtr    <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
           fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
 
           Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (List.head fields, 1)]
@@ -1669,7 +1675,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _))) -> do
+  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- case recordType of
       IT.TRecord fields _ _ -> do
@@ -1685,7 +1691,7 @@ generateExp env symbolTable exp = case exp of
         load value 0
 
       _ -> do
-        nameOperand <- buildStr fieldName
+        nameOperand <- buildStr env area fieldName
         call selectField [(nameOperand, []), (recordOperand, [])]
 
     value' <- unbox env symbolTable qt value
@@ -1911,9 +1917,9 @@ generateBranchTest env symbolTable pat value = case pat of
   Core.Typed _ _ _ (Core.PBool _) ->
     icmp IntegerPredicate.EQ (Operand.ConstantOperand $ Constant.Int 1 0) value
 
-  Core.Typed _ _ _ (Core.PStr s) -> do
-    s' <- buildStr (List.init . List.tail $ s)
-    call areStringsEqual [(s', []), (value, [])]
+  Core.Typed _ area _ (Core.PStr s) -> do
+    s' <- buildStr env area (List.init . List.tail $ s)
+    callWithMetadata (makeDILocation env area) areStringsEqual [(s', []), (value, [])]
 
   Core.Typed _ _ _ (Core.PChar c) -> do
     let char = Operand.ConstantOperand $ Constant.Int 32 (fromIntegral $ fromEnum c)
@@ -1931,7 +1937,7 @@ generateBranchTest env symbolTable pat value = case pat of
     let patsWithPtrs = List.zip pats itemPtrs
     Monad.foldM (generateSubPatternTest env symbolTable) true patsWithPtrs
 
-  Core.Typed _ _ _ (Core.PList pats) -> mdo
+  Core.Typed _ area _ (Core.PList pats) -> mdo
     let hasSpread = List.any isSpread pats
 
     currentBlock
@@ -1960,7 +1966,7 @@ generateBranchTest env symbolTable pat value = case pat of
           lengthResultBlock <- block `named` "lengthResultBlock"
           phi [(hasLength1, length1Block), (hasLength2, length2Block)]
         else
-          call madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
+          callWithMetadata (makeDILocation env area) madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
       else
         if List.null pats then do
           nextPtr <- gep value [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
@@ -1984,7 +1990,7 @@ generateBranchTest env symbolTable pat value = case pat of
           lengthResultBlock <- block `named` "lengthResultBlock"
           phi [(hasLength1, length1Block), (hasNotLength2, notLength2Block)]
         else
-          call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
+          callWithMetadata (makeDILocation env area) madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
 
     lengthTestBlock'' <- currentBlock
     condBr lengthTest subPatternTestBlock testResultBlock
@@ -2043,8 +2049,9 @@ generateBranchTest env symbolTable pat value = case pat of
 
 getFieldPattern :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
 getFieldPattern env symbolTable record (fieldName, fieldPattern) = do
-  nameOperand <- buildStr fieldName
-  field       <- call selectField [(nameOperand, []), (record, [])]
+  let area = Core.getArea fieldPattern
+  nameOperand <- buildStr env area fieldName
+  field       <- callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (record, [])]
   field'      <- unbox env symbolTable (getQualType fieldPattern) field
   return (field', fieldPattern)
 
@@ -2102,15 +2109,6 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-makeOriginalName :: String -> String
-makeOriginalName globalName =
-  let withoutHash = List.drop 36 globalName
-  in  if '_' `List.notElem` withoutHash then
-        withoutHash
-      else
-        (List.init . List.init . List.dropWhileEnd (/= '_')) withoutHash
-
-
 generateFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
 generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
@@ -2118,40 +2116,17 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
       functionName' = AST.mkName functionName
       dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) (Core.getValue <$> coreParams)
 
-  id <- newMetadataId
-  let env' = env { envCurrentSubProgramSymbolIndex = id }
-  let diCUIndex = envCurrentCompilationUnitSymbolIndex env
-  let diFileIndex = envCurrentFileSymbolIndex env
+  (env', debugMetadata) <-
+    if envIsDebugBuild env then do
+      id <- newMetadataId
+      let env' = env { envCurrentSubProgramSymbolIndex = id }
+      let meta = makeDISubprogram env id functionName
+      emitDefn meta
+      return (env', [("dbg", MDRef (MetadataNodeID id))])
+    else
+      return (env, [])
 
-  let meta = MetadataNodeDefinition (MetadataNodeID id) $
-        DINode . Operand.DIScope . Operand.DILocalScope . Operand.DISubprogram $
-          Operand.Subprogram
-            { scope = Nothing
-            , name = stringToShortByteString (makeOriginalName functionName)
-            , linkageName = ""
-            , file = Just (MDRef (MetadataNodeID diFileIndex))
-            , line = 0
-            , type' = Just $ Operand.MDInline $ Operand.SubroutineType { flags = [], cc = 0, typeArray = [] }
-            , localToUnit = True
-            , definition = True
-            , scopeLine = 0
-            , containingType = Nothing
-            , virtuality = Operand.NoVirtuality
-            , virtualityIndex = 0
-            , thisAdjustment = 0
-            , flags = []
-            , optimized = False
-            , unit = Just (MDRef (MetadataNodeID diCUIndex))
-            , Operand.templateParams = []
-            , declaration = Nothing
-            , retainedNodes = []
-            , thrownTypes = []
-            }
-
-  emitDefn meta
-
-  -- function <- functionWithMetadata [("dbg", MDRef (MetadataNodeID id))] functionName' params' boxType $ \params ->
-  function <- functionWithMetadata [("dbg", MDRef (MetadataNodeID id))] functionName' params' boxType $ \params ->
+  function <- functionWithMetadata debugMetadata functionName' params' boxType $ \params ->
     if Core.isTCODefinition metadata then mdo
       entry          <- block `named` "entry"
       continue       <- alloca Type.i1 Nothing 0
@@ -2275,21 +2250,99 @@ generateFunction env symbolTable metadata (ps IT.:=> t) functionName coreParams 
       block `named` "entry"
 
       paramsWithNames <- mapM
-        (\(Typed paramQt _ metadata paramName, param) ->
-            if Core.isReferenceParameter metadata then do
+        (\(Typed paramQt paramArea metadata paramName, param) ->
+            if Core.isReferenceParameter (trace (ppShow param) metadata) then do
               param' <- safeBitcast param (Type.ptr boxType)
               loaded <- load param' 0
               unboxed <- unbox env' symbolTable paramQt loaded
-              return (paramName, localVarSymbol param unboxed)
+              return (paramName, localVarSymbol param unboxed, unboxed)
             else do
+              -- paramAddr <- ptrtoint param Type.i64
+              
+              -- Monad.when (functionName == "__41238d75361d1f3eed4a89bc7205a951__id__1") $ do
+              p <- alloca boxType Nothing 0
+              callWithMetadata
+                (makeDILocation env' paramArea)
+                -- [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline]
+                llvmDbgDeclare
+                -- [ (param, [])
+                [ (Operand.MetadataOperand (MDValue p), [])
+                -- [ (Operand.MetadataOperand (MDNode (Operand.MDInline (MDValue p))), [])
+                , (Operand.MetadataOperand
+                    (MDNode (Operand.MDInline (Operand.DINode (Operand.DIVariable (Operand.DILocalVariable
+                      Operand.LocalVariable
+                        { name = stringToShortByteString paramName
+                        , scope = MDRef $ Operand.MetadataNodeID (envCurrentSubProgramSymbolIndex env')
+                        , file = Just $ MDRef $ Operand.MetadataNodeID (envCurrentFileSymbolIndex env')
+                        , line = 2
+                        , type' = Just $ Operand.MDInline $ Operand.DIBasicType Operand.BasicType { flags = [], name = "int", sizeInBits = 8, alignInBits = 0, encoding = Just Operand.SignedEncoding, tag = Operand.BaseType }
+                        , flags = []
+                        , arg = 1
+                        , alignInBits = 0
+                        }
+                    ))))), [])
+                , (Operand.MetadataOperand (MDNode (Operand.MDInline (DIExpression (Operand.Expression [])))), [])
+                ]
+              store p 0 param
+                -- return ()
+                -- [ (Operand.MetadataOperand (MDValue param) , [])
+                -- , (Operand.MetadataOperand
+                --     (MDNode (Operand.MDInline (Operand.DINode (Operand.DIVariable (Operand.DILocalVariable
+                --       Operand.LocalVariable
+                --         { name = stringToShortByteString paramName
+                --         , scope = MDRef $ Operand.MetadataNodeID (envCurrentSubProgramSymbolIndex env')
+                --         , file = Just $ MDRef $ Operand.MetadataNodeID (envCurrentFileSymbolIndex env')
+                --         , line = 2
+                --         , type' = Just $ Operand.MDInline $ Operand.DIBasicType Operand.BasicType { flags = [], name = "int", sizeInBits = 8, alignInBits = 0, encoding = Just Operand.SignedEncoding, tag = Operand.BaseType }
+                --         , flags = []
+                --         , arg = 0
+                --         , alignInBits = 0
+                --         }
+                --     ))))), [])
+                -- , (Operand.MetadataOperand (MDNode (Operand.MDInline (DIExpression (Operand.Expression [])))), [])
+                -- ]
+
               unboxed <- unbox env' symbolTable paramQt param
-              return (paramName, varSymbol unboxed)
+
+              return (paramName, varSymbol unboxed, unboxed)
         )
         (List.zip coreParams params)
 
-      let symbolTableWithParams = symbolTable <> Map.fromList paramsWithNames
+      let symbolTableWithParams = symbolTable <> Map.fromList (List.map (\(a, b, _) -> (a, b)) paramsWithNames)
 
+      -- Monad.forM_ paramsWithNames $ \(name, _, param) -> do
+      --   call
+      --     llvmDbgDeclare
+      --     [ (param , [])
+      --     , (param , [])
+      --     , (param , [])
+      --     ]
+      --   call
+      --     llvmDbgDeclare
+      --     [ (param , [])
+      --     , (param , [])
+      --     , (param , [])
+      --     ]
       -- Generate body
+      -- Monad.forM_ paramsWithNames $ \(name, _, param) -> do
+      --   call
+      --     llvmDbgDeclare
+      --     [ (Operand.MetadataOperand (MDValue param) , [])
+      --     , (Operand.MetadataOperand
+      --         (MDNode (Operand.MDInline (Operand.DINode (Operand.DIVariable (Operand.DILocalVariable
+      --           Operand.LocalVariable
+      --             { name = stringToShortByteString name
+      --             , scope = MDRef $ Operand.MetadataNodeID (envCurrentSubProgramSymbolIndex env')
+      --             , file = Nothing
+      --             , line = 0
+      --             , type' = Just $ Operand.MDInline $ Operand.DIBasicType Operand.BasicType { flags = [], name = "type", sizeInBits = 64, alignInBits = 0, encoding = Nothing, tag = Operand.UnspecifiedType }
+      --             , flags = []
+      --             , arg = 0
+      --             , alignInBits = 0
+      --             }
+      --         ))))), [])
+      --     , (Operand.MetadataOperand (MDNode (Operand.MDInline (DIExpression (Operand.Expression [])))), [])
+      --     ]
       (generatedBody, _) <- generateBody env' symbolTableWithParams body
 
       boxed <- box generatedBody
@@ -2401,8 +2454,8 @@ internally it builds a struct to represent the constructor:
 the i64 is the type of constructor ( simply the index )
 the two i8* are the content of the created type
 -}
-generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Int -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
-generateConstructor maxArity symbolTable (constructor, index) = case constructor of
+generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Int -> Env -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
+generateConstructor maxArity env symbolTable (constructor, index) = case constructor of
   Core.Untyped _ _ (Core.Constructor constructorName _ t) -> do
     let paramTypes     = IT.getParamTypes t
     let arity          = List.length paramTypes
@@ -2412,7 +2465,7 @@ generateConstructor maxArity symbolTable (constructor, index) = case constructor
     constructor' <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
       block `named` "entry"
       -- allocate memory for the structure
-      structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+      structPtr     <- callWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
       structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
       -- store the constructor data in the struct
@@ -2441,7 +2494,7 @@ generateConstructorsForADT env symbolTable adt = case adt of
         maxArity            = findMaximumConstructorArity adtconstructors
         symbolTable'        = Map.insert (envASTPath env <> "__" <> adtname) (adtSymbol maxArity) symbolTable
     Writer.tell $ Map.singleton (envASTPath env <> "__" <> adtname) (adtSymbol maxArity)
-    Monad.foldM (generateConstructor maxArity) symbolTable' indexedConstructors
+    Monad.foldM (generateConstructor maxArity env) symbolTable' indexedConstructors
 
   _ ->
     return symbolTable
@@ -2630,17 +2683,40 @@ callModuleFunctions allModulePaths = case allModulePaths of
 generateLLVMModule :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
 generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
-  fileSymbolId <- newMetadataId
-  compilationUnitSymbolId <- newMetadataId
-  emitDefn $ makeFileMetadata fileSymbolId astPath
-  emitDefn $ makeCompileUnitMetadata fileSymbolId compilationUnitSymbolId
-  emitDefn $ NamedMetadataDefinition "llvm.dbg.cu" [MetadataNodeID compilationUnitSymbolId]
+  env' <-
+    if envIsDebugBuild env then do
+      fileSymbolId <- newMetadataId
+      compilationUnitSymbolId <- newMetadataId
+      emitDefn $ makeFileMetadata fileSymbolId astPath
+      emitDefn $ makeCompileUnitMetadata fileSymbolId compilationUnitSymbolId
+      emitDefn $ NamedMetadataDefinition "llvm.dbg.cu" [MetadataNodeID compilationUnitSymbolId]
+      
 
-  let env' =
-        env
-          { envCurrentCompilationUnitSymbolIndex = compilationUnitSymbolId
-          , envCurrentFileSymbolIndex = fileSymbolId
-          }
+      debugInfoVersionId <- newMetadataId
+      emitDefn $ MetadataNodeDefinition (MetadataNodeID debugInfoVersionId)
+                    (MDTuple [ Just (MDValue (int32 2))
+                             , Just (MDString "Debug Info Version")
+                             , Just (MDValue (int32 3))
+                             ])
+
+      dwarfVersionId <- newMetadataId
+      emitDefn $ MetadataNodeDefinition (MetadataNodeID dwarfVersionId)
+                    (MDTuple [ Just (MDValue (int32 2))
+                             , Just (MDString "Dwarf Version")
+                             , Just (MDValue (int32 3))
+                             ])
+
+      emitDefn $ NamedMetadataDefinition "llvm.module.flags"
+        [ MetadataNodeID debugInfoVersionId
+        , MetadataNodeID dwarfVersionId
+        ]
+
+      return env
+              { envCurrentCompilationUnitSymbolIndex = compilationUnitSymbolId
+              , envCurrentFileSymbolIndex = fileSymbolId
+              }
+    else
+      return env
 
   symbolTableWithConstructors <- generateConstructors env' initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env')) symbolTableWithConstructors (aexps ast)
@@ -2662,6 +2738,9 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
   extern (AST.mkName "__applyPAP2__")                                [boxType, boxType, boxType] boxType
   extern (AST.mkName "__applyPAP1__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__process__internal__typedHoleReached")  [] Type.void
+
+  -- nofree nosync nounwind readnone speculatable willreturn
+  declareWithAttributes [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline] (AST.mkName "llvm.dbg.declare")                             [Type.MetadataType, Type.MetadataType, Type.MetadataType] Type.void
 
   extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
@@ -2726,7 +2805,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
 
 generateModule :: (MonadIO m, Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)
 generateModule options ast@AST{ apath = Just modulePath } = do
-  let imports                          = aimports ast
+  let imports = aimports ast
   symbolTable <- buildSymbolTableFromImports imports
 
   let isMain = optEntrypoint options == modulePath
@@ -2736,6 +2815,10 @@ generateModule options ast@AST{ apath = Just modulePath } = do
           , isTopLevel = False
           , recursionData = Nothing
           , envASTPath = modulePath
+          , envIsDebugBuild = optDebug options
+          , envCurrentCompilationUnitSymbolIndex = 0
+          , envCurrentFileSymbolIndex = 0
+          , envCurrentSubProgramSymbolIndex = 0
           }
   let moduleName =
         if isMain then
@@ -2768,7 +2851,7 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
 
   -- liftIO $ Prelude.putStrLn $ ppShow astModule
 
-  objectContent <- liftIO $ buildObjectFile (optOptimizationLevel options) astModule
+  objectContent <- liftIO $ buildObjectFile options astModule
 
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
   let rest = List.dropWhile (/= modulePath) pathsToBuild
@@ -2780,10 +2863,13 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   return (table, env, objectContent)
 
 
-buildObjectFile :: OptimizationLevel -> AST.Module -> IO ByteString.ByteString
-buildObjectFile optLevel astModule = do
+buildObjectFile :: Options -> AST.Module -> IO ByteString.ByteString
+buildObjectFile options astModule = do
   let optLevel' =
-        case optLevel of
+        case optOptimizationLevel options of
+          _ | optDebug options ->
+            Just 0
+
           O0 ->
             Nothing
 
@@ -2796,19 +2882,26 @@ buildObjectFile optLevel astModule = do
           O3 ->
             Just 3
 
+  let inlineThreshold =
+        if optDebug options then
+          Nothing
+        else
+          Just 200
+
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
+          verify mod'
+
           mod'' <-
             withPassManager
-            defaultCuratedPassSetSpec
-              { optLevel = optLevel'
-              , useInlinerWithThreshold = Nothing
-              -- , useInlinerWithThreshold = Just 200
-              , simplifyLibCalls = Just True
-              , loopVectorize = Just True
-              , superwordLevelParallelismVectorize = Just True
-              }
+              defaultCuratedPassSetSpec
+                { optLevel = optLevel'
+                , useInlinerWithThreshold = inlineThreshold
+                , simplifyLibCalls = Just False
+                , loopVectorize = Just False
+                , superwordLevelParallelismVectorize = Just False
+                }
             $ \pm -> do
               runPassManager pm mod'
               return mod'
@@ -2851,7 +2944,8 @@ buildTarget options staticLibs entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
-        "clang++ -flto -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
+        -- "clang++ -flto -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
+        "clang++ -stdlib=libc++ -O0 -g "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

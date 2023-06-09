@@ -3,9 +3,9 @@ module Generate.LLVM.WithMetadata where
 import GHC.Stack (HasCallStack)
 import LLVM.IRBuilder (MonadIRBuilder, MonadModuleBuilder, emitInstrVoid, emitInstr, ParameterName (NoParameterName, ParameterName), IRBuilderT, named, fresh, runIRBuilderT, emptyIRBuilder, emitDefn)
 import Data.ByteString.Short (ShortByteString)
-import LLVM.AST (MDRef, MDNode, Instruction (Call, tailCallKind, callingConvention, returnAttributes, function, arguments, functionAttributes, metadata), Type (FunctionType, VoidType, PointerType), Operand (ConstantOperand, LocalReference), Name, Definition (GlobalDefinition), Parameter (Parameter))
+import LLVM.AST (MDRef, MDNode, Instruction (Call, tailCallKind, callingConvention, returnAttributes, function, arguments, functionAttributes, metadata, Store), Type (FunctionType, VoidType, PointerType), Operand (ConstantOperand, LocalReference), Name, Definition (GlobalDefinition), Parameter (Parameter), mkName)
 import LLVM.AST.Operand (Operand)
-import LLVM.AST.Attribute (ParameterAttribute)
+import LLVM.AST.Attribute (ParameterAttribute, FunctionAttribute (..))
 import qualified LLVM.AST.Constant as Constant
 import LLVM.AST.Type (void, ptr)
 import qualified LLVM.AST.CallingConvention as CC
@@ -13,6 +13,8 @@ import LLVM.AST.Typed
 import qualified LLVM.AST.Global as Global
 import qualified LLVM.AST.Constant as C
 import Control.Monad (forM)
+import Data.Word (Word32)
+import LLVM.AST.Linkage (Linkage(..))
 
 
 callWithMetadata :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [(ShortByteString, MDRef MDNode)] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
@@ -25,6 +27,26 @@ callWithMetadata metadata fun args = do
   , arguments = args
   , functionAttributes = []
   , metadata = metadata
+  }
+  case typeOf fun of
+    (FunctionType r _ _) -> case r of
+      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+      _        -> emitInstr r instr
+    (PointerType (FunctionType r _ _) _) -> case r of
+      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (Constant.Undef void))
+      _        -> emitInstr r instr
+    _ -> error "Cannot call non-function (Malformed AST)."
+
+callWithAttributes :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [FunctionAttribute] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
+callWithAttributes attributes fun args = do
+  let instr = Call {
+    tailCallKind = Nothing
+  , callingConvention = CC.C
+  , returnAttributes = []
+  , function = Right fun
+  , arguments = args
+  , functionAttributes = Right <$> attributes
+  , metadata = []
   }
   case typeOf fun of
     (FunctionType r _ _) -> case r of
@@ -62,3 +84,28 @@ functionWithMetadata metadata label argtys retty body = do
     funty = ptr $ FunctionType retty (fst <$> argtys) False
   emitDefn def
   pure $ ConstantOperand $ C.GlobalReference funty label
+
+-- ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+-- declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
+
+declareWithAttributes
+  :: MonadModuleBuilder m
+  => [FunctionAttribute]
+  -> Name   -- ^ Definition name
+  -> [Type] -- ^ Parameter types
+  -> Type   -- ^ Type
+  -> m Operand
+declareWithAttributes attributes nm argtys retty = do
+  emitDefn $ GlobalDefinition Global.functionDefaults
+    { Global.name        = nm
+    -- , Global.linkage     = External
+    , Global.parameters  = ([Parameter ty (mkName "") [] | ty <- argtys], False)
+    , Global.returnType  = retty
+    , Global.functionAttributes = Right <$> attributes
+    }
+  let funty = ptr $ FunctionType retty argtys False
+  pure $ ConstantOperand $ C.GlobalReference funty nm
+
+
+storeWithMetadata :: MonadIRBuilder m => [(ShortByteString, MDRef MDNode)] -> Operand -> Word32 -> Operand -> m ()
+storeWithMetadata metadata addr align val = emitInstrVoid $ Store False addr val Nothing align metadata

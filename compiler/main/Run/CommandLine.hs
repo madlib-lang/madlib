@@ -75,7 +75,7 @@ parseVerbose :: Parser Bool
 parseVerbose = switch (long "verbose" <> short 'v' <> help "Verbose output" <> showDefault)
 
 parseDebug :: Parser Bool
-parseDebug = switch (long "debug" <> short 'd' <> help "Print AST info" <> showDefault)
+parseDebug = switch (long "debug" <> help "Builds executable with debug symbols, currently only useful for llvm backend" <> showDefault)
 
 parseBundle :: Parser Bool
 parseBundle = switch (long "bundle" <> short 'b' <> help "Bundle the compile js in one file" <> showDefault)
@@ -175,6 +175,14 @@ parseO3 =
 parseOptimizationLevel :: Parser OptimizationLevel
 parseOptimizationLevel =
   pure O1 <|> (parseO0 <|> parseO1 <|> parseO2 <|> parseO3)
+
+
+-- parseDebug :: Parser Bool
+-- parseDebug = switch
+--   (  long "debug"
+--   <> help "Builds the executable in debug mode, currently only useful for llvm backend"
+--   <> showDefault
+--   )
 
 
 parseCompile :: Parser Command

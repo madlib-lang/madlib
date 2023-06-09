@@ -54,6 +54,7 @@ compileAndRun casePath = do
           , optTarget = TLLVM
           , optOptimized = False
           , optBundle = False
+          , optDebug = False
           , optCoverage = False
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True

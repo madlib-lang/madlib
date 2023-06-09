@@ -23,10 +23,11 @@ import           Driver (Prune(Don'tPrune))
 import           System.Console.ANSI
 import           Rock (Cyclic)
 import           System.Exit (exitFailure)
+import Run.OptimizationLevel (OptimizationLevel(O0))
 
 
 runCompilation :: Command -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized target watchMode coverage optLevel)
+runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
@@ -38,6 +39,12 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
       putStrLn $ "'" <> entrypoint <> "' not found, exiting"
       exitFailure
 
+    let optLevel' =
+          if debug then
+            O0
+          else
+            optLevel
+
     let options =
           Options
             { optPathUtils = PathUtils.defaultPathUtils
@@ -46,12 +53,13 @@ runCompilation (Compile entrypoint outputPath _ verbose _ bundle optimized targe
             , optRootPath = rootPath
             , optOutputPath = canonicalOutputPath
             , optOptimized = optimized
+            , optDebug = debug
             , optBundle = bundle
             , optCoverage = coverage
             , optGenerateDerivedInstances = True
             , optInsertInstancePlaholders = True
             , optMustHaveMain = True
-            , optOptimizationLevel = optLevel
+            , optOptimizationLevel = optLevel'
             }
 
     when verbose $ do
