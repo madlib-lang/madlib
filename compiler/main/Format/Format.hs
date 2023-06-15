@@ -377,6 +377,9 @@ issToDoc comments iss = case iss of
 
 bodyToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 bodyToDoc comments exps = case exps of
+  [] ->
+    (Pretty.emptyDoc, comments)
+
   [Source _ _ LUnit] ->
     (Pretty.emptyDoc, comments)
 
@@ -388,9 +391,6 @@ bodyToDoc comments exps = case exps of
         (next', comments'') = bodyToDoc comments' next
         breaks              = Pretty.hcat $ replicate (expLineDiff comments' exp (head next)) Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
-
-  [] ->
-    (Pretty.emptyDoc, comments)
 
 
 binOpToDocs :: [Comment] -> Exp -> ([Pretty.Doc ann], [Comment])
@@ -540,6 +540,9 @@ flattenTRArrs typing = case typing of
 
 trArrPartsToDocs :: Bool -> [Comment] -> [Typing] -> ([Pretty.Doc ann], [Comment])
 trArrPartsToDocs canBreak comments typings = case typings of
+  [] ->
+    ([], comments)
+
   (typing@(Source _ _ TRArr{}) : more) ->
     let (typing', comments') = typingToDoc canBreak comments typing
         (commentDocs, comments'') =
@@ -575,9 +578,6 @@ trArrPartsToDocs canBreak comments typings = case typings of
           else
             [sep <> Pretty.pretty "-> "]
     in  (typing' : commentDoc : arrow ++ more', comments''')
-
-  [] ->
-    ([], comments)
 
 
 typingToDoc :: Bool -> [Comment] -> Typing -> (Pretty.Doc ann, [Comment])
@@ -751,7 +751,11 @@ expToDoc comments exp =
 
         Source _ _ (Abs params body) ->
           let (params', comments'') = paramsToDoc comments' params
-              (body', comments''')  = expToDoc comments'' (head body)
+              (body', comments''')  =
+                if null body then
+                  (Pretty.emptyDoc, comments'')
+                else
+                  expToDoc comments'' (head body)
               params''              = formatParams (length params == 1) params'
               arrowAndBody          = case body of
                 [Source _ _ BinOp{}] ->
@@ -919,15 +923,18 @@ expToDoc comments exp =
 
         Source _ _ (Dictionary items) ->
           let (fields', comments'') = dictItemsToDoc comments' items
-          in  ( Pretty.group
-                  (
-                    Pretty.pretty "{{"
-                    <> Pretty.nest indentSize (Pretty.line <> fields')
-                    <> trailingCommaOrSpace
-                  )
-                <> Pretty.pretty "}}"
-              , comments''
-              )
+          in  if null items then
+                (Pretty.pretty "{{}}", comments'')
+              else
+                ( Pretty.group
+                    (
+                      Pretty.pretty "{{"
+                      <> Pretty.nest indentSize (Pretty.line <> fields')
+                      <> trailingCommaOrSpace
+                    )
+                  <> Pretty.pretty "}}"
+                , comments''
+                )
 
         Source area _ (ListConstructor items) ->
           let (items', comments'')       = listItemsToDoc comments' items
@@ -961,7 +968,7 @@ expToDoc comments exp =
           let (exps', comments'') = argsToDoc comments' exps
               (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
               commentsDoc' =
-                if length comments'' == length comments''' && not (null comments'') then
+                if length comments'' == length comments''' || null comments'' then
                   mempty
                 else
                   hcat (replicate (computeLineDiff [] (getArea $ last exps) (getCommentArea $ head comments'')) Pretty.line') <> commentsDoc
@@ -975,6 +982,12 @@ expToDoc comments exp =
         Source _ _ (Where exp iss) ->
           let (exp', comments'')  = expToDoc comments' exp
               (iss', comments''') = issToDoc comments'' iss
+              lineBreakForIndentation =
+                if length iss > 1 then
+                  -- if there's more than one branch we force multiline layout
+                  Pretty.hardline
+                else
+                  Pretty.line
               exp'' =
                 if shouldNestApp [exp] then
                   Pretty.lparen
@@ -984,16 +997,22 @@ expToDoc comments exp =
                   Pretty.lparen <> exp'
           in  ( Pretty.group (Pretty.pretty "where" <> exp'')
                 <> Pretty.pretty ") {"
-                <> Pretty.nest indentSize (Pretty.line <> iss')
+                <> Pretty.nest indentSize (lineBreakForIndentation <> iss')
                 <> Pretty.line <> Pretty.rbrace
               , comments'''
               )
 
         Source _ _ (WhereAbs iss) ->
           let (iss', comments'') = issToDoc comments' iss
+              lineBreakForIndentation =
+                if length iss > 1 then
+                  -- if there's more than one branch we force multiline layout
+                  Pretty.hardline
+                else
+                  Pretty.line
           in  ( Pretty.pretty "where"
                 <> Pretty.pretty " {"
-                <> Pretty.nest indentSize (Pretty.line <> iss')
+                <> Pretty.nest indentSize (lineBreakForIndentation <> iss')
                 <> Pretty.line
                 <> Pretty.rbrace
               , comments''
