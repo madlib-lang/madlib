@@ -2711,9 +2711,7 @@ buildTarget options staticLibs entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
-        -- "clang++ -flto -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
         "clang++ -flto -dead_strip -foptimize-sibling-calls -O2 "
-        -- "clang++ -O0 -g "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

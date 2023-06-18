@@ -35,7 +35,7 @@ jobs:
         run: npm i -g rollup @rollup/plugin-node-resolve
 
       - name: Install LLVM 9
-        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-9
+        run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-12
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
@@ -55,7 +55,7 @@ jobs:
       #     stack build
 
       - name: Add rpath
-        run: install_name_tool -change /usr/local/opt/llvm-9/lib/llvm-9/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
+        run: install_name_tool -change /usr/local/opt/llvm-12/lib/llvm-12/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
 
       - name: Install automake
         run: brew install autoconf automake nasm libtool perl
@@ -63,7 +63,7 @@ jobs:
       - name: Build runtime
         run: |
           TARGET="MACOS_X64" ./scripts/build-runtime-libs
-          TARGET="MACOS_X64" AR="llvm-ar-9" ./scripts/build-runtime
+          TARGET="MACOS_X64" AR="llvm-ar-12" ./scripts/build-runtime
 
       - name: Build tools
         run: ./scripts/build
