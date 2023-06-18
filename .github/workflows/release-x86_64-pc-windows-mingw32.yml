@@ -58,9 +58,9 @@ jobs:
             unzip
             tar
 
-      - name: Install LLVM 9
+      - name: Install LLVM 12
         run: |
-          curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
+          curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.2/llvm12-mingw64.zip --output LLVM.zip
           mkdir LLVM
           cd LLVM
           unzip ../LLVM.zip
