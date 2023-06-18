@@ -16,7 +16,7 @@ FROM ubuntu:20.04 as build-stage
 # install common dependencies
 RUN apt update --fix-missing
 # DEBIAN_FRONTEND=noninteractive is necessary to skip geographical questions asked when installing cmake
-RUN DEBIAN_FRONTEND=noninteractive apt install --fix-missing -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip cmake git nasm perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+RUN DEBIAN_FRONTEND=noninteractive apt install --fix-missing -y curl llvm-12 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip cmake git nasm perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
 
 RUN echo "Setup Haskell"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
@@ -49,7 +49,7 @@ RUN stack install alex happy
 
 # build runtime
 RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
-RUN AR="llvm-ar-9" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
+RUN AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
 
 
 RUN stack build --jobs 1 --flag madlib:static
