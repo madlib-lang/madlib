@@ -389,7 +389,7 @@ bodyToDoc comments exps = case exps of
   (exp : next) ->
     let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
-        breaks              = Pretty.hcat $ replicate (expLineDiff comments' exp (head next)) Pretty.hardline
+        breaks              = Pretty.hcat $ replicate (max 1 $ expLineDiff comments' exp (head next)) Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
 
 
@@ -1577,7 +1577,7 @@ nodesToDocs comments nodes = case nodes of
                     if null more then
                       Pretty.hardline
                     else
-                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
+                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (exp' <> emptyLinesToAdd, comments'', more)
 
             ImportNode _ ->
@@ -1595,7 +1595,7 @@ nodesToDocs comments nodes = case nodes of
                     if null more then
                       Pretty.hardline
                     else
-                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
+                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (td' <> emptyLinesToAdd, comments'', more)
 
             InterfaceNode interface ->
@@ -1604,7 +1604,7 @@ nodesToDocs comments nodes = case nodes of
                     if null more then
                       Pretty.hardline
                     else
-                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
+                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (interface' <> emptyLinesToAdd, comments'', more)
 
             InstanceNode inst ->
@@ -1613,7 +1613,7 @@ nodesToDocs comments nodes = case nodes of
                     if null more then
                       Pretty.hardline
                     else
-                      Pretty.hcat $ replicate (nodesLineDiff comments'' node (head more)) Pretty.hardline
+                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
               in  (inst' <> emptyLinesToAdd, comments'', more)
         (more', comments''') = nodesToDocs comments'' newMore
     in  (commentsDoc <> node' <> more', comments''')
