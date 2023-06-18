@@ -51,6 +51,9 @@ jobs:
           ls -l /usr/local/Cellar/llvm-12/12_2/lib/llvm-12/lib/
           ls -l /usr/local/lib/
           ls -l /usr/lib/
+
+      - name: Fix libc++abi
+        run: ln -s /usr/local/Cellar/llvm-12/12_2/lib/llvm-12/lib/libc++abi.1.dylib /usr/local/lib/libc++abi.1.dylib
       # - name: Fix libffi
       #   run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
 
