@@ -382,7 +382,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     case optTarget options of
       TLLVM -> do
         coreAst <- astToCore False monomorphicAST
-        let sortedAST = SortExpressions.sortASTExpressions coreAst
+
+        -- Only runs for the REPL
+        let coreAst' = SortExpressions.keepLastMainExpAndDeps coreAst
+
+        let sortedAST = SortExpressions.sortASTExpressions coreAst'
         let renamedAst       = Rename.renameAST sortedAST
             reducedAst       =
               if optLevel > O1 then
@@ -405,7 +409,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
-        let renamedAst       = Rename.renameAST coreAst
+
+        -- Only runs for the REPL
+        let coreAst' = SortExpressions.keepLastMainExpAndDeps coreAst
+
+        let renamedAst       = Rename.renameAST coreAst'
             reducedAst       =
               if optLevel > O1 then
                 SimplifyCalls.reduceAST renamedAst

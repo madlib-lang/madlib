@@ -12,6 +12,7 @@ packages:
 # forks / in-progress versions pinned to a git hash. For example:
 extra-deps:
 - regex-posix-clib-2.7
+- haskeline-0.8.2.1
 - MissingH-1.4.3.0@sha256:efbbe7065e17bc01ed925593a0c5b5793ab857585a8e9d5015d0025e526ab55c,4702
 - groupBy-0.1.0.0@sha256:9bd0c5e6bbfaf793f6e816a072bcb085dba1149bf282e998567eaaed8d0efec4,1720
 # - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
@@ -139,6 +140,8 @@ flags:
     _regex-posix-clib: true
   mintty:
     Win32-2-13-1: false
+  haskeline:
+    terminfo: false
 
 # ghc-options:
 #   llvm-hs: -optcxx=-std=c++11

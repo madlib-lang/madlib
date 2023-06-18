@@ -5,6 +5,8 @@ module Optimize.SortExpressions where
 import AST.Core
 import qualified Data.Maybe as Maybe
 import Data.Graph
+import Debug.Trace
+import Text.Show.Pretty (ppShow)
 
 
 sortASTExpressions :: AST -> AST
@@ -15,10 +17,59 @@ sortASTExpressions ast =
   in ast { aexps = sortedExps }
 
 
+-- Used for the REPL
+keepLastMainExpAndDeps :: AST -> AST
+keepLastMainExpAndDeps ast =
+  if apath ast == Just "__REPL__.mad" then
+    let Typed qt area metadata (Assignment n (Typed qt' area' metadata' (Definition params body))) =
+          last $ aexps ast
+    in  if length body > 1 then
+          let allLocalNames = Maybe.mapMaybe getExpName body
+              deps = buildDependenciesForMain 0 allLocalNames [] (init body)
+              (graph, findNode, findVertex) = graphFromEdges deps
+              (_, key, _) = last deps
+              Just lastVertex = findVertex key
+              reachedVertices = reachable graph lastVertex
+              reachedNodes = map findNode reachedVertices
+              newBody = concat $ map (\(exps, _, _) -> exps) reachedNodes
+              newBody' = filter (`elem` newBody) body
+              newBodyWithReturn = (trace ("localNames: " <> ppShow allLocalNames <> "\ndeps: " <> ppShow deps <> "\nreached: " <> ppShow reachedNodes) newBody') ++ [last body]
+              newMainFunction = Typed qt area metadata (Assignment n (Typed qt' area' metadata' (Definition params newBodyWithReturn)))
+          in  ast { aexps = init (aexps ast) ++ [newMainFunction] }
+        else
+          ast
+  else
+    ast
+
+
 buildDependenciesForAllExps :: [Exp] -> [([Exp], String, [String])]
 buildDependenciesForAllExps exps =
   let allLocalNames = Maybe.mapMaybe getExpName exps
   in  buildDependencies allLocalNames [] exps
+
+
+buildDependenciesForMain :: Int -> [String] -> [Exp] -> [Exp] -> [([Exp], String, [String])]
+buildDependenciesForMain expIndex localNames cachedExps exps = case exps of
+  e : es ->
+    case getExpName e of
+      Just n ->
+        let deps = buildDependencies' localNames n e
+        in  (cachedExps ++ [e], n, deps) : buildDependenciesForMain (expIndex + 1) localNames [] es
+
+      Nothing ->
+        let expName = "exp__" <> show expIndex
+            deps = buildDependencies' localNames expName e
+        in  (cachedExps ++ [e], expName, deps) : buildDependenciesForMain (expIndex + 1) localNames [] es
+    -- case getExpName e of
+    --   Just n ->
+    --     let deps = buildDependencies' localNames n e
+    --     in  (cachedExps ++ [e], n, deps) : buildDependencies localNames [] es
+
+    --   Nothing ->
+    --     buildDependencies localNames (cachedExps ++ [e]) es
+
+  [] ->
+    []
 
 
 buildDependencies :: [String] -> [Exp] -> [Exp] -> [([Exp], String, [String])]

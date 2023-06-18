@@ -30,10 +30,17 @@ import           System.IO.Silently
 import           System.Exit (ExitCode)
 import           Control.Exception (try)
 import           System.Process
+import qualified System.Console.Haskeline         as Haskeline
+import Control.Monad.Catch (handle)
+import GHC.IO.Exception (IOException(IOError))
+import Infer.Type
+import           Paths_madlib                   ( version )
+import           Data.Version                   ( showVersion )
+-- import qualified System.Console.Haskeline.Prefs   as HaskelinePrefs
 
 
 -- TODO: consider this lib
--- https://hackage.haskell.org/package/haskeline-0.8.1.1/docs/System-Console-Haskeline.html
+-- Look into https://github.com/judah/haskeline/issues/162
 
 type State = Driver.State CompilationError
 
@@ -57,9 +64,11 @@ options :: Options.Options
 options =
   Options.Options
     { Options.optEntrypoint = replModulePath
-    , Options.optTarget = TLLVM
+    , Options.optTarget = TNode
+    -- , Options.optTarget = TLLVM
     , Options.optRootPath = "./"
-    , Options.optOutputPath = ".repl/run"
+    , Options.optOutputPath = ".repl/"
+    -- , Options.optOutputPath = ".repl/run"
     , Options.optOptimized = False
     , Options.optPathUtils = PathUtils.defaultPathUtils
     , Options.optBundle = False
@@ -92,25 +101,10 @@ src a =
   Src.Source emptyArea Src.TargetAll a
 
 
-start :: IO ()
-start = do
-  state <- Driver.initialState
-
-  -- load initial module and fill caches for external modules like IO
-  hSilence [stdout, stderr] $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
-    Rock.fetch $ Query.BuiltTarget replModulePath
-  loop state
-  return ()
-
-
 addNewCode :: String -> String -> String
 addNewCode newCode previousCode =
   let previousLines = List.init $ lines previousCode
   in  unlines $ previousLines ++ [newCode, "}"]
-
-
-read :: IO String
-read = liftIO Prelude.getLine
 
 
 addExpToAST :: Src.AST -> Src.Exp -> Src.AST
@@ -161,32 +155,50 @@ addLogToLastExp ast =
         ast
 
 
+findType :: Slv.AST -> Maybe (Qual Type)
+findType ast =
+  let (Slv.Typed _ _ (Slv.Assignment n (
+          Slv.Typed _ _ (Slv.Abs _ body)
+          ))) = last $ Slv.aexps ast
+  in  if length body > 1 then
+        case last $ init body of
+          Slv.Typed _ _ (Slv.App _ (Slv.Typed qt _ _) _) ->
+            Just qt
+
+          _ ->
+            Nothing
+      else
+        Nothing
+
+
 shouldRun :: Src.AST -> Bool
 shouldRun ast =
   not (null $ Src.aexps ast) && not (Src.isTopLevelFunction (last (Src.aexps ast)))
 
 
-evalMadlibExp :: State -> String -> IO String
-evalMadlibExp state code = case parse code of
+evalMadlibCode :: State -> String -> Haskeline.InputT IO CommandResult
+evalMadlibCode state code = case parse code of
   Right parsedNewCode -> do
-    (currentAST, _, _) <- runTask state options Driver.Don'tPrune mempty $ do
+    (currentAST, _, _) <- liftIO $ runTask state options Driver.Don'tPrune mempty $ do
       Rock.fetch $ Query.ParsedAST replModulePath
     let newAST = foldl addExpToAST currentAST (Src.aexps parsedNewCode)
     let newASTWithImports = foldl addImportToAST newAST (Src.aimports parsedNewCode)
     let newASTWithTypeDecls = foldl addTypeDeclToAST newASTWithImports (Src.atypedecls parsedNewCode)
     let newASTWithLogAdded = addLogToLastExp newASTWithTypeDecls
     let newCodeWithLogAdded = Format.astToSource 80 newASTWithLogAdded []
-    ((typed, _), _, errs) <- runTask state options Driver.Don'tPrune (Map.singleton replModulePath newCodeWithLogAdded) $ do
+    ((typed, _), _, errs) <- liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath newCodeWithLogAdded) $ do
       Rock.fetch $ Query.SolvedASTWithEnv replModulePath
 
-    formattedErrs <- forM errs $ simpleFormatError False
+    let maybeType = findType typed
+
+    formattedErrs <- liftIO $ forM errs $ simpleFormatError False
     if null formattedErrs then do
       -- TODO: compile & run the AST with the newly added __IO__.log call for the last exp of main
 
-      hSilence [stdout, stderr] $ runTask state options Driver.Don'tPrune mempty $ do
+      liftIO $ hSilence [stdout, stderr] $ runTask state options Driver.Don'tPrune mempty $ do
         Rock.fetch $ Query.BuiltTarget replModulePath
 
-      runResult <- try $ readProcessWithExitCode ".repl/run" [] ""
+      runResult <- liftIO $ try $ readProcessWithExitCode "node" [".repl/__REPL__.mjs"] ""
       let output = case (runResult :: Either IOError (ExitCode, String, String)) of
             Right (_, result, _) | shouldRun parsedNewCode ->
               result
@@ -196,20 +208,52 @@ evalMadlibExp state code = case parse code of
 
       -- then reset to newAST
       let newValidCode = Format.astToSource 80 newASTWithTypeDecls []
-      runTask state options Driver.Don'tPrune (Map.singleton replModulePath newValidCode) $ do
-        Rock.fetch $ Query.SolvedASTWithEnv replModulePath
+      let resetValidCode = do
+            runTask state options Driver.Don'tPrune (Map.singleton replModulePath newValidCode) $ do
+              Rock.fetch $ Query.ParsedAST replModulePath
+            return ()
 
       let output' = List.dropWhileEnd Char.isSpace output
-      return output'
+
+      if null output' then
+        return $ Continue resetValidCode
+      else
+        return $ Output output' maybeType resetValidCode
     else do
       let previousCode = Format.astToSource 80 currentAST []
       -- We need this to reset the code to the previous state
-      runTask state options Driver.Don'tPrune (Map.singleton replModulePath previousCode) $ do
+      liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath previousCode) $ do
         Rock.fetch $ Query.ParsedAST replModulePath
-      return $ List.intercalate "\n" formattedErrs
+      return $ ErrorResult $ List.intercalate "\n" formattedErrs
 
   _ ->
-    return "Grammar error"
+    return $ ErrorResult "Grammar error"
+
+
+data CommandResult
+  = Exit
+  | CommandNotFound String
+  | Output String (Maybe (Qual Type)) (IO ())
+  | CommandResult String
+  | ErrorResult String
+  | Continue (IO ())
+
+
+evalCmd :: String -> Haskeline.InputT IO CommandResult
+evalCmd cmd = case cmd of
+  "exit" ->
+    return Exit
+
+  "help" ->
+    return $ CommandResult "help text TBD"
+
+  _ ->
+    return $ CommandNotFound cmd
+
+
+
+read :: Haskeline.InputT IO (Maybe String)
+read = Haskeline.getInputLine "> "
 
 
 -- should return a type other than String
@@ -219,24 +263,88 @@ evalMadlibExp state code = case parse code of
 --   | EvaluatedCode String
 --   | ImportedModule FilePath String
 --   | TypeDefined ...
-eval :: State -> String -> IO String
-eval state code = do
-  evalMadlibExp state code
+eval :: State -> String -> Haskeline.InputT IO CommandResult
+eval state code =
+  case code of
+    ':' : cmd ->
+      evalCmd cmd
+
+    _ ->
+      evalMadlibCode state code
 
 
-print :: String -> IO ()
-print "" = return ()
-print result = do
-  putStrLn result
+print :: CommandResult -> Haskeline.InputT IO ()
+print result = case result of
+  Output output maybeType _ -> do
+    let output' = color Yellow output
+    let output'' = case maybeType of
+          Just (_ :=> t) ->
+            output' <> color Grey (" :: " <> prettyPrintType True t)
+
+          _ ->
+            output'
+    liftIO $ putStrLn output''
+
+  ErrorResult err ->
+    liftIO $ putStrLn err
+
+  CommandResult toShow ->
+    liftIO $ putStrLn toShow
+
+  _ ->
+    return ()
 
 
-loop :: State -> IO ()
+loop :: State -> Haskeline.InputT IO ()
 loop state = do
-  putStr "> "
-  hFlush stdout
-
+  -- code <- Haskeline.handleInterrupt (return (Just "")) (Haskeline.withInterrupt read)
   code <- read
-  evaluated <- eval state code
-  print evaluated
+  case code of
+    Just "" ->
+      loop state
 
-  loop state
+    Just c -> do
+      evaluated <- eval state c
+      print evaluated
+      case evaluated of
+        Exit ->
+          return ()
+
+        Continue postAction -> do
+          liftIO postAction
+          loop state
+
+        Output _ _ postAction -> do
+          liftIO postAction
+          loop state
+
+        _ -> do
+          loop state
+
+    _ ->
+      return ()
+
+
+introduction :: String
+introduction =
+  unlines
+    [ color Grey "------ " <> (color Yellow ("Madlib@" <> showVersion version)) <> color Grey " -----------------------------------"
+    , "Welcome to the repl!"
+    , color Grey "The command :help will assist you"
+    , color Grey "The command :exit will exit the REPL"
+    , color Grey "--------------------------------------------------------"
+    ]
+
+
+start :: IO ()
+start = do
+  state <- Driver.initialState
+
+  putStrLn introduction
+  -- load initial module and fill caches for external modules like IO
+  hSilence [stdout, stderr] $ liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
+    Rock.fetch $ Query.BuiltTarget replModulePath
+
+  Haskeline.runInputT Haskeline.defaultSettings $ loop state
+  -- Haskeline.runInputT Haskeline.defaultSettings $ Haskeline.withInterrupt $ loop state
+  return ()
