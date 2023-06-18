@@ -74,7 +74,7 @@ jobs:
           rm -rf "/c/Program Files/LLVM"
           echo "move LLVM folder"
           mv LLVM "/c/Program Files/"
-          echo "ls -l "/c/Program Files/LLVM"
+          ls -l "/c/Program Files/LLVM"
         shell: msys2 {0}
 
       - name: Update paths
