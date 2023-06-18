@@ -38,11 +38,14 @@ jobs:
         run: brew update
 
       - name: Install LLVM 12
-        run: brew install llvm-12
+        run: brew install llvm-hs/llvm/llvm-12
         # run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-12
 
       - name: Fix libffi
         run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
+
+      # - name: Fix llvm install
+      #   run: cd /usr/local/Cellar/llvm-9/9.0.1/bin/ && ln -s llvm-config-9 llvm-config || cd /usr/local/Cellar/llvm-9/9.0.1.reinstall/bin/ && ln -s llvm-config-9 llvm-config
 
       - name: Install alex and happy
         run: stack install alex happy
@@ -50,8 +53,13 @@ jobs:
       - name: Build madlib executable
         run: stack build
 
+      # - name: Build madlib executable
+      #   run: |
+      #     export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
+      #     stack build
+
       - name: Add rpath
-        run: install_name_tool -change /usr/local/opt/llvm/lib/llvm/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
+        run: install_name_tool -change /usr/local/opt/llvm-12/lib/llvm-12/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
 
       - name: Install automake
         run: brew install autoconf automake nasm libtool perl
@@ -59,7 +67,7 @@ jobs:
       - name: Build runtime
         run: |
           TARGET="MACOS_X64" ./scripts/build-runtime-libs
-          TARGET="MACOS_X64" AR="llvm-ar" ./scripts/build-runtime
+          TARGET="MACOS_X64" AR="llvm-ar-12" ./scripts/build-runtime
 
       - name: Build tools
         run: ./scripts/build
