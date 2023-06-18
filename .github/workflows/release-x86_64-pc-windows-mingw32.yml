@@ -60,12 +60,19 @@ jobs:
 
       - name: Install LLVM 12
         run: |
+          echo "download archive"
           curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.2/llvm12-mingw64.zip --output LLVM.zip
+          echo "create folder"
           mkdir LLVM
+          echo "move to folder"
           cd LLVM
+          echo "unzip archive"
           unzip ../LLVM.zip
+          echo "exit folder"
           cd ..
+          echo "clean up LLVM folder"
           rm -rf "/c/Program Files/LLVM"
+          echo "move LLVM folder"
           mv LLVM "/c/Program Files/"
         shell: msys2 {0}
 
