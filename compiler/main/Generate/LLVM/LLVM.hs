@@ -98,6 +98,7 @@ import Generate.LLVM.Helper
 import LLVM.AST.Attribute (FunctionAttribute(..))
 import qualified LLVM.AST.FunctionAttribute as FunctionAttribute
 import LLVM.Analysis (verify)
+import qualified System.IO as SystemIO
 
 
 sizeof' :: Type.Type -> Constant.Constant
@@ -2629,7 +2630,7 @@ compileModule options ast@Core.AST { Core.apath = Just modulePath } = do
   let total = List.length pathsToBuild
   let curr = total - List.length rest + 1
   let currStr = if curr < 10 then " " <> show curr else show curr
-  liftIO $ Prelude.putStrLn $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> modulePath <> "'"
+  liftIO $ SystemIO.hPutStrLn SystemIO.stdout $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> modulePath <> "'"
 
   return (table, env, objectContent)
 

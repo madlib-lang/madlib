@@ -47,6 +47,7 @@ data Command
   | Run { runInput :: FilePath, runArgs :: [String] }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
+  | Repl
   | Config { configCommand :: ConfigCommand }
   deriving (Eq, Show)
 
@@ -184,14 +185,6 @@ parseOptimizationLevel =
   pure O1 <|> (parseO0 <|> parseO1 <|> parseO2 <|> parseO3)
 
 
--- parseDebug :: Parser Bool
--- parseDebug = switch
---   (  long "debug"
---   <> help "Builds the executable in debug mode, currently only useful for llvm backend"
---   <> showDefault
---   )
-
-
 parseCompile :: Parser Command
 parseCompile =
   Compile
@@ -297,6 +290,7 @@ parseCommand :: Parser Command
 parseCommand =
   subparser
     $  command "compile" (parseCompile `withInfo` "compile madlib code to js")
+    <> command "repl"    (pure Repl `withInfo` "start the repl")
     <> command "run"     (parseRun `withInfo` "run a madlib module or package")
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")

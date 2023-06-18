@@ -17,6 +17,7 @@ import           Run.Package
 import           Run.Format
 import           Run.LanguageServer
 import           Run.Config
+import qualified Run.Repl as Repl
 
 
 main :: IO ()
@@ -50,6 +51,9 @@ run cmd = do
 
     Doc path ->
       runDocumentationGenerator path
+
+    Repl ->
+      Repl.start
 
     Run path args ->
       runRun path args

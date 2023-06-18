@@ -105,6 +105,7 @@ library
       Run.Package
       Run.PackageHash
       Run.PackageInstaller
+      Run.Repl
       Run.Run
       Run.Target
       Run.TestRunner
@@ -176,6 +177,7 @@ library
     , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
+    , silently
     , some ==1.*
     , stm ==2.5.0.2
     , template-haskell
@@ -262,6 +264,7 @@ library common
     , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
+    , silently
     , some ==1.*
     , stm ==2.5.0.2
     , template-haskell
@@ -328,6 +331,7 @@ executable madlib
     , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
+    , silently
     , some ==1.*
     , stm ==2.5.0.2
     , template-haskell
@@ -404,6 +408,7 @@ test-suite madlib-test
     , random ==1.2.1
     , regex-tdfa
     , rock ==0.3.*
+    , silently
     , some ==1.*
     , stm ==2.5.0.2
     , template-haskell

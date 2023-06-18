@@ -200,6 +200,18 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
+emptyAST :: AST
+emptyAST =
+  AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "__REPL__"
+    }
+
+
 isMacroExp :: Exp -> Bool
 isMacroExp exp = case exp of
   Source _ _ (IfTarget _) ->
@@ -289,10 +301,12 @@ getInstanceTypings inst = case inst of
   Source _ _ (Instance _ _ typings _) ->
     typings
 
+
 getInstanceConstraintTypings :: Instance -> [Typing]
 getInstanceConstraintTypings inst = case inst of
   Source _ _ (Instance constraints _ _ _) ->
     constraints
+
 
 isAbs :: Exp -> Bool
 isAbs exp = case exp of
@@ -300,6 +314,36 @@ isAbs exp = case exp of
     True
 
   Source _ _ (AbsWithMultilineBody _ _) ->
+    True
+
+  _ ->
+    False
+
+
+isTopLevelFunction :: Exp -> Bool
+isTopLevelFunction exp = case exp of
+  Source _ _ (Assignment _ (Source _ _ (Abs _ _))) ->
+    True
+
+  Source _ _ (Assignment _ (Source _ _ (AbsWithMultilineBody _ _))) ->
+    True
+
+  Source _ _ (NamedTypedExp _ (Source _ _ (Abs _ _)) _) ->
+    True
+
+  Source _ _ (NamedTypedExp _ (Source _ _ (AbsWithMultilineBody _ _)) _) ->
+    True
+
+  Source _ _ (Export (Source _ _ (Assignment _ (Source _ _ (Abs _ _))))) ->
+    True
+
+  Source _ _ (Export (Source _ _ (Assignment _ (Source _ _ (AbsWithMultilineBody _ _))))) ->
+    True
+
+  Source _ _ (Export (Source _ _ (NamedTypedExp _ (Source _ _ (Abs _ _)) _))) ->
+    True
+
+  Source _ _ (Export (Source _ _ (NamedTypedExp _ (Source _ _ (AbsWithMultilineBody _ _)) _))) ->
     True
 
   _ ->
