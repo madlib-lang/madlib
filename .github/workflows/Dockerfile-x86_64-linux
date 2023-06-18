@@ -20,7 +20,7 @@ FROM ubuntu:20.04 as build-stage
 
 RUN apt-get update -y
 
-RUN apt-get install -y lcov llvm-12 nasm curl zip wget automake libtool unzip cmake git perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+RUN apt-get install -y polly-dev lcov llvm-12 nasm curl zip wget automake libtool unzip cmake git perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
 
 RUN echo "Setup Haskell"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
