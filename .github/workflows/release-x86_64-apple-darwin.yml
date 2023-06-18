@@ -16,6 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Log lib
+        run: |
+          ls -l /usr/local/Cellar/llvm-12/12_2/lib/llvm-12/lib/
+          ls -l /usr/local/lib/
+          ls -l /usr/lib/
+
       - uses: haskell/actions/setup@v2
         with:
             ghc-version: "8.10.7"
@@ -41,6 +47,11 @@ jobs:
         run: brew install llvm-hs/llvm/llvm-12
         # run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-12
 
+      - name: Log lib
+        run: |
+          ls -l /usr/local/Cellar/llvm-12/12_2/lib/llvm-12/lib/
+          ls -l /usr/local/lib/
+          ls -l /usr/lib/
       # - name: Fix libffi
       #   run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
 
