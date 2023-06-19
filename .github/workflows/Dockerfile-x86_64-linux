@@ -51,12 +51,11 @@ COPY . .
 # will download a new ghc version, which we want to avoid.
 RUN stack install alex happy
 
+RUN stack build --jobs 1 --flag madlib:static
+
 # build runtime
 RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
 RUN AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
-
-
-RUN stack build --jobs 1 --flag madlib:static
 
 
 # build the js tools ( test-runner and package-installer )
