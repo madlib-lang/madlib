@@ -94,6 +94,7 @@ then
     cp build/lib64/libssl.a ../../runtime/lib/
     cp build/lib64/libcrypto.a ../../runtime/lib/
   elif [ "$TARGET" = "LINUX_ARM64" ]
+  then
     cp build/lib/libssl.a ../../runtime/lib/
     cp build/lib/libcrypto.a ../../runtime/lib/
   fi
