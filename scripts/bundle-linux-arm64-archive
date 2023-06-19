@@ -6,7 +6,5 @@ mkdir ./madlib-arm64-unknown-linux-gnu
 DOCKER_BUILDKIT=1 docker build -f ".github/workflows/Dockerfile-arm64-linux" -o ./madlib-arm64-unknown-linux-gnu/ .
 
 cp -R prelude ./madlib-arm64-unknown-linux-gnu/
-# cp -R ./pkg/node_modules/binary-install/node_modules/.bin/* ./madlib-arm64-apple-darwin/
-# cp -R ./prelude ./madlib-arm64-apple-darwin/
 tar -czvf madlib-arm64-unknown-linux-gnu.tar.gz madlib-arm64-unknown-linux-gnu
-# rm -r ./madlib-arm64-unknown-linux-gnu
+rm -r ./madlib-arm64-unknown-linux-gnu
