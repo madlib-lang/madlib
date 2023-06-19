@@ -82,14 +82,21 @@ OPENSSL_PREFIX="$OPENSSL_FOLDER/build"
 wget "https://github.com/openssl/openssl/archive/refs/tags/openssl-$OPENSSL_VERSION.zip"
 unzip "openssl-$OPENSSL_VERSION.zip"
 cd "openssl-openssl-$OPENSSL_VERSION"
-if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ]
+if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ] || [ "$TARGET" = "LINUX_ARM64" ]
 then
   ./Configure --prefix=$OPENSSL_PREFIX
   make
   make install
   cp -R include/* ../../runtime/include/
-  cp build/lib64/libssl.a ../../runtime/lib/
-  cp build/lib64/libcrypto.a ../../runtime/lib/
+
+  if [ "$TARGET" = "LINUX_X64" ] || [ "$TARGET" = "MUSL_X64" ]
+  then
+    cp build/lib64/libssl.a ../../runtime/lib/
+    cp build/lib64/libcrypto.a ../../runtime/lib/
+  elif [ "$TARGET" = "LINUX_ARM64" ]
+    cp build/lib/libssl.a ../../runtime/lib/
+    cp build/lib/libcrypto.a ../../runtime/lib/
+  fi
   cd ..
 elif [ "$TARGET" = "MACOS_X64" ] || [ "$TARGET" = "MACOS_ARM64" ]
 then

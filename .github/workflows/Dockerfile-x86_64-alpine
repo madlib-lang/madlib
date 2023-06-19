@@ -1,0 +1,59 @@
+FROM alpine:3.13.0 as build-stage
+
+# The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
+RUN apk add libtool ncurses ncurses-dev git curl gmp-dev wget unzip cmake linux-headers musl-dev build-base libuv-static bash nasm zlib-dev zlib-static perl automake m4 autoconf
+RUN apk add build-base cmake git python3
+
+# needed for stack to install Haskell tools
+RUN apk add --no-cache --upgrade grep
+
+# install llvm12
+RUN git clone https://github.com/llvm/llvm-project.git --branch llvmorg-12.0.0  --depth 1
+RUN cd llvm-project/
+RUN mkdir build
+RUN cd build/
+# The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
+# and we need all three with the exact same version since C++ does not have a stable ABI.
+RUN cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="AVR" -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" ../llvm
+
+RUN make -j1
+RUN make install
+
+RUN PATH="/root/.ghcup/bin:$PATH"
+
+# install Haskell
+RUN echo "Setup Haskell"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+RUN ~/.ghcup/bin/ghcup install 8.10.7
+RUN ~/.ghcup/bin/ghcup install cabal 3.6.2.0
+RUN ~/.ghcup/bin/ghcup install stack 2.11.1
+RUN ~/.ghcup/bin/ghcup set 8.10.7
+RUN ~/.ghcup/bin/ghcup set cabal 3.6.2.0
+RUN ~/.ghcup/bin/ghcup set stack 2.11.1
+
+# setup node and rollup
+RUN apk add --update nodejs npm
+RUN npm i -g rollup @rollup/plugin-node-resolve
+
+# build runtime
+RUN TARGET="MUSL_X64" sh ./scripts/build-runtime-libs
+RUN AR="llvm-ar" TARGET="MUSL_X64" sh ./scripts/build-runtime
+
+# build the js tools ( test-runner and package-installer )
+RUN ./scripts/build
+
+# install Alex and Happy
+RUN stack --system-ghc install alex happy
+
+# build Madlib executable
+RUN stack --system-ghc build --jobs 1
+RUN cp "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" .
+
+# build package installer
+RUN "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
+
+FROM scratch AS export-stage
+COPY --from=build-stage ./madlib /
+COPY --from=build-stage ./runtime /runtime
+COPY --from=build-stage ./tools/package-installer/dist/package-installer.js /package-installer.js
+

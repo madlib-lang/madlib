@@ -1,4 +1,4 @@
-name: 'Build linux target for release'
+name: 'Build linux alpine target for release'
 
 on:
   workflow_dispatch:
@@ -22,16 +22,16 @@ jobs:
           docker_channel: stable
 
       - name: Build madlib
-        run: DOCKER_BUILDKIT=1 docker build -f ".github/workflows/Dockerfile-x86_64-linux" -o . .
+        run: DOCKER_BUILDKIT=1 docker build -f ".github/workflows/Dockerfile-x86_64-alpine" -o . .
 
-      - name: Bundle unknown archive
+      - name: Bundle alpine archive
         run: |
-          mkdir madlib-x86_64-unknown-linux-gnu
-          cp ./madlib ./madlib-x86_64-unknown-linux-gnu/
-          cp -R runtime ./madlib-x86_64-unknown-linux-gnu/
-          cp -R prelude ./madlib-x86_64-unknown-linux-gnu/
-          cp ./package-installer.js ./madlib-x86_64-unknown-linux-gnu/
-          tar -czvf madlib-x86_64-unknown-linux-gnu.tar.gz madlib-x86_64-unknown-linux-gnu
+          mkdir madlib-x86_64-alpine-linux-musl
+          cp ./madlib ./madlib-x86_64-alpine-linux-musl/
+          cp -R runtime ./madlib-x86_64-alpine-linux-musl/
+          cp -R prelude ./madlib-x86_64-alpine-linux-musl/
+          cp ./package-installer.js ./madlib-x86_64-alpine-linux-musl/
+          tar -czvf madlib-x86_64-alpine-linux-musl.tar.gz madlib-x86_64-alpine-linux-musl
 
       - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1
         id: release_upload_url
@@ -39,12 +39,12 @@ jobs:
           tag: ${{ github.event.inputs.version }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload unknown build
+      - name: Upload alpine build
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.release_upload_url.outputs.uploadUrl }}
-          asset_path: ./madlib-x86_64-unknown-linux-gnu.tar.gz
-          asset_name: madlib-x86_64-unknown-linux-gnu.tar.gz
+          asset_path: ./madlib-x86_64-alpine-linux-musl.tar.gz
+          asset_name: madlib-x86_64-alpine-linux-musl.tar.gz
           asset_content_type: application/tar+gzip

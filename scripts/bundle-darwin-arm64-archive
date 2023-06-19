@@ -1,0 +1,14 @@
+#!/bin/sh
+
+
+stack build -j10
+TARGET=MACOS_ARM64 ./scripts/build-runtime-libs
+TARGET=MACOS_ARM64 AR=llvm-ar ./scripts/build-runtime
+./scripts/build
+./scripts/update-pkg-build
+
+mkdir ./madlib-arm64-apple-darwin/
+cp -R ./pkg/node_modules/binary-install/node_modules/.bin/* ./madlib-arm64-apple-darwin/
+cp -R ./prelude ./madlib-arm64-apple-darwin/
+tar -czvf madlib-arm64-apple-darwin.tar.gz madlib-arm64-apple-darwin
+rm -r ./madlib-arm64-apple-darwin

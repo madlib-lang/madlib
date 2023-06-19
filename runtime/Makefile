@@ -50,6 +50,8 @@ build/stack.o:
 		as "$(SRCDIR)/stack/stack-arm64-apple-darwin.s" -o "$(BUILDDIR)/stack.o";\
 	elif [ $(TARGET) = "MACOS_X64" ]; then\
 		nasm -f macho64 "$(SRCDIR)/stack/stack-x64-apple-darwin.s" -o "$(BUILDDIR)/stack.o";\
+	elif [ $(TARGET) = "LINUX_ARM64" ]; then\
+		as "$(SRCDIR)/stack/stack-arm64-linux.s" -o "$(BUILDDIR)/stack.o";\
 	elif [ $(TARGET) = "LINUX_X64" ] || [ $(TARGET) = "MUSL_X64" ]; then\
 		nasm -f elf64 "$(SRCDIR)/stack/stack-x64-linux.s" -o "$(BUILDDIR)/stack.o";\
 	elif [ $(TARGET) = "WIN_X64" ]; then\

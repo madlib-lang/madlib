@@ -71,6 +71,13 @@ jobs:
           token: ${{ secrets.TOKEN_GITHUB }}
           inputs: '{ "version": "${{ github.event.inputs.version }}" }'
 
+      - name: Start release for linux alpine
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Build linux alpine target for release
+          token: ${{ secrets.TOKEN_GITHUB }}
+          inputs: '{ "version": "${{ github.event.inputs.version }}" }'
+
       - name: Start release for windows
         uses: benc-uk/workflow-dispatch@v1
         with:

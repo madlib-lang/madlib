@@ -1,0 +1,57 @@
+FROM ubuntu:20.04 as build-stage
+
+RUN apt-get update -y
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y lcov libnuma1 clang-12 llvm-12 nasm curl zip wget automake libtool unzip cmake git perl build-essential libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+
+RUN ln -s /usr/lib/aarch64-linux-gnu/libnuma.so.1 /usr/lib/libnuma.so
+
+# RUN echo "Setup Haskell"
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+# RUN ~/.ghcup/bin/ghcup install 8.10.7
+# RUN ~/.ghcup/bin/ghcup install cabal 3.4.0.0
+# RUN ~/.ghcup/bin/ghcup install stack 2.7.3
+# RUN ~/.ghcup/bin/ghcup set 8.10.7
+# RUN ~/.ghcup/bin/ghcup set cabal 3.4.0.0
+# RUN ~/.ghcup/bin/ghcup set stack 2.7.3
+
+# install stack
+RUN curl -sSL https://get.haskellstack.org/ | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# tell stack to use the global ghc, installing GHC with stack fails
+RUN stack config set system-ghc --global true
+ENV PATH="$(stack path --bin-path):$PATH"
+
+# setup node and rollup
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+RUN apt-get install -y nodejs
+RUN npm i -g rollup @rollup/plugin-node-resolve
+
+# run the build
+COPY . .
+
+ENV LC_ALL="C.UTF-8"
+# ENV LANG="en_US.UTF-8"
+
+# note: this needs to happen here as we need the resolved field from the stack.yml or else stack
+# will download a new ghc version, which we want to avoid.
+RUN stack install alex happy
+
+RUN stack build --jobs 1
+
+# build runtime
+RUN TARGET="LINUX_ARM64" ./scripts/build-runtime-libs
+RUN AR="llvm-ar-12" TARGET="LINUX_ARM64" ./scripts/build-runtime
+
+
+# build the js tools ( test-runner and package-installer )
+RUN ./scripts/build
+
+RUN cp "$(stack path --dist-dir)/build/madlib/madlib" .
+
+
+FROM scratch AS export-stage
+COPY --from=build-stage ./madlib /
+COPY --from=build-stage ./runtime /runtime
+COPY --from=build-stage ./tools/package-installer/dist/package-installer.js /package-installer.js

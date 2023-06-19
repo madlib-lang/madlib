@@ -1,13 +1,13 @@
-FROM alpine:3.13.0 as build-musl-runtime
+# FROM alpine:3.13.0 as build-musl-runtime
 
-RUN apk add --update git wget unzip cmake linux-headers musl-dev build-base libuv-static bash nasm zlib-dev zlib-static perl automake m4 autoconf
+# RUN apk add --update git wget unzip cmake linux-headers musl-dev build-base libuv-static bash nasm zlib-dev zlib-static perl automake m4 autoconf
 
-COPY . .
+# COPY . .
 
-# build runtime
-RUN TARGET="MUSL_X64" ./scripts/build-runtime-libs
-RUN cp /usr/lib/libuv.a runtime/lib/
-RUN TARGET="MUSL_X64" CXX="g++" ./scripts/build-runtime
+# # build runtime
+# RUN TARGET="MUSL_X64" ./scripts/build-runtime-libs
+# RUN cp /usr/lib/libuv.a runtime/lib/
+# RUN TARGET="MUSL_X64" CXX="g++" ./scripts/build-runtime
 
 
 
@@ -51,7 +51,7 @@ COPY . .
 # will download a new ghc version, which we want to avoid.
 RUN stack install alex happy
 
-RUN stack build --jobs 1 --flag madlib:static
+RUN stack build --jobs 1
 
 # build runtime
 RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
@@ -68,4 +68,3 @@ FROM scratch AS export-stage
 COPY --from=build-stage ./madlib /
 COPY --from=build-stage ./runtime /runtime
 COPY --from=build-stage ./tools/package-installer/dist/package-installer.js /package-installer.js
-COPY --from=build-musl-runtime ./runtime /runtime-musl
