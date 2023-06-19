@@ -16,7 +16,7 @@ RUN ls -l ..
 # and we need all three with the exact same version since C++ does not have a stable ABI.
 RUN cd llvm-project/llvm/build && cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="AVR" -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" ..
 
-RUN cd llvm-project/llvm/build && make -j2
+RUN cd llvm-project/llvm/build && make -j4
 RUN cd llvm-project/llvm/build && make install
 
 RUN PATH="/root/.ghcup/bin:$PATH"
