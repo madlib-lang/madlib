@@ -9,17 +9,15 @@ RUN apk add --no-cache --upgrade grep
 
 # install llvm12
 RUN git clone https://github.com/llvm/llvm-project.git --branch llvmorg-12.0.0  --depth 1
-RUN cd llvm-project/llvm
-RUN mkdir build
-RUN cd build/
+RUN cd llvm-project/llvm && mkdir build
 
 RUN ls -l ..
 # The flag LLVM_ENABLE_PROJECTS is crucial, otherwise only llvm will be built, without clang or lld,
 # and we need all three with the exact same version since C++ does not have a stable ABI.
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="AVR" -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" ../
+RUN cd llvm-project/llvm/build && cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="AVR" -DLLVM_ENABLE_LIBXML2=OFF -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" ..
 
-RUN make -j1
-RUN make install
+RUN cd llvm-project/llvm/build && make -j1
+RUN cd llvm-project/llvm/build && make install
 
 RUN PATH="/root/.ghcup/bin:$PATH"
 
