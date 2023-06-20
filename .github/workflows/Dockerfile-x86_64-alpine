@@ -41,7 +41,8 @@ COPY . .
 RUN ~/.ghcup/bin/stack --system-ghc install alex happy
 
 # build Madlib executable
-RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
+# RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
+RUN ~/.ghcup/bin/stack --system-ghc build --flag madlib:static --jobs 1
 RUN cp "$(~/.ghcup/bin/stack --system-ghc path --dist-dir)/build/madlib/madlib" .
 
 # build runtime
