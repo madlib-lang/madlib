@@ -18,7 +18,7 @@ RUN cd llvm-project/llvm/build && cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_EXPERI
 RUN cd llvm-project/llvm/build && make -j4
 RUN cd llvm-project/llvm/build && make install
 
-RUN PATH="/root/.ghcup/bin:$PATH"
+ENV PATH="/root/.ghcup/bin:${PATH}"
 
 # install Haskell
 RUN echo "Setup Haskell"
@@ -38,18 +38,18 @@ RUN npm i -g rollup @rollup/plugin-node-resolve
 COPY . .
 
 # install Alex and Happy
-RUN stack --system-ghc install alex happy
+RUN ~/.ghcup/bin/stack --system-ghc install alex happy
 
 # build Madlib executable
-RUN stack --system-ghc build --jobs 1
-RUN cp "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" .
+RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
+RUN cp "$(~/.ghcup/bin/stack --system-ghc path --dist-dir)/build/madlib/madlib" .
 
 # build runtime
 RUN TARGET="MUSL_X64" sh ./scripts/build-runtime-libs
 RUN AR="llvm-ar" TARGET="MUSL_X64" sh ./scripts/build-runtime
 
 # build package installer
-RUN "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
+RUN "$(~/.ghcup/bin/stack --system-ghc path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
 
 FROM scratch AS export-stage
 COPY --from=build-stage ./madlib /

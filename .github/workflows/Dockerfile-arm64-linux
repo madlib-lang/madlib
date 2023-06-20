@@ -1,3 +1,8 @@
+# Note: libnuma1 or libnuma-dev needs to be installed as well
+# on the system using this build. There's no evident solution
+# at the moment, and moving to GHC > 9.2 might solve it in the
+# future.
+
 FROM ubuntu:20.04 as build-stage
 
 RUN apt-get update -y
