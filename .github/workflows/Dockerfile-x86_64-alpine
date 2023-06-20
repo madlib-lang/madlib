@@ -37,19 +37,16 @@ RUN npm i -g rollup @rollup/plugin-node-resolve
 # run the build
 COPY . .
 
-# build runtime
-RUN TARGET="MUSL_X64" sh ./scripts/build-runtime-libs
-RUN AR="llvm-ar" TARGET="MUSL_X64" sh ./scripts/build-runtime
-
-# build the js tools ( test-runner and package-installer )
-RUN ./scripts/build
-
 # install Alex and Happy
 RUN stack --system-ghc install alex happy
 
 # build Madlib executable
 RUN stack --system-ghc build --jobs 1
 RUN cp "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" .
+
+# build runtime
+RUN TARGET="MUSL_X64" sh ./scripts/build-runtime-libs
+RUN AR="llvm-ar" TARGET="MUSL_X64" sh ./scripts/build-runtime
 
 # build package installer
 RUN "$(stack --system-ghc path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
