@@ -1,3 +1,4 @@
+# Note: the generated madlib needs build-base and ncurses to run
 FROM alpine:3.13.0 as build-stage
 
 # The only Alpine specific bit. build-base mainly installs make and a C++ compiler. Python 3 is required by LLVM for some reason.
@@ -41,8 +42,7 @@ COPY . .
 RUN ~/.ghcup/bin/stack --system-ghc install alex happy
 
 # build Madlib executable
-# RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
-RUN ~/.ghcup/bin/stack --system-ghc build --flag madlib:static --jobs 1
+RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
 RUN cp "$(~/.ghcup/bin/stack --system-ghc path --dist-dir)/build/madlib/madlib" .
 
 # build runtime
