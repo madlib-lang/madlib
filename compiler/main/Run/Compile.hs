@@ -23,8 +23,8 @@ import           Driver (Prune(Don'tPrune))
 import           System.Console.ANSI
 import           Rock (Cyclic)
 import           System.Exit (exitFailure)
-import Run.OptimizationLevel (OptimizationLevel(O0))
-
+import           Run.OptimizationLevel (OptimizationLevel(O0))
+import           System.IO (hPutStr, stderr)
 
 runCompilation :: Command -> IO ()
 runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel)
@@ -129,7 +129,8 @@ runCompilationTask watchMode state options invalidatedPaths = do
     formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
     formattedErrors   <- mapM (Explain.formatError readFile False) $ removeDuplicates errors
 
-    putStr $ List.intercalate "\n" (formattedWarnings ++ formattedErrors)
+    putStrLn $ List.intercalate "\n" formattedWarnings
+    hPutStr stderr $ List.intercalate "\n" formattedErrors
     unless (null errors || watchMode) $ do
       exitFailure
 

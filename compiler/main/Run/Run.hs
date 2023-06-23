@@ -20,8 +20,9 @@ import           Run.Target
 import           Run.Compile
 import           Run.CommandLine
 import           Utils.Path (computeTargetPath)
-import Run.OptimizationLevel
-
+import           Run.OptimizationLevel
+import           System.IO (stdout)
+import           System.IO.Silently
 
 runRun :: FilePath -> [String] -> IO ()
 runRun input args = do
@@ -57,7 +58,7 @@ runRunPackage package args =
                                 , compileOptimizationLevel = O1
                                 }
 
-                  runCompilation compileCommand
+                  hSilence [stdout] $ runCompilation compileCommand
                   entrypoint <- canonicalizePath exePath
                   rootPath <- canonicalizePath "./"
                   outputPath <- canonicalizePath baseRunFolder
@@ -84,7 +85,7 @@ runSingleModule input args = do
           , compileOptimizationLevel = O1
           }
 
-  runCompilation compileCommand
+  hSilence [stdout] $ runCompilation compileCommand
 
   canEntrypoint    <- canonicalizePath input
   canCurrentFolder <- canonicalizePath "./"

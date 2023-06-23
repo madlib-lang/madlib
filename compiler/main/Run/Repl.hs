@@ -36,11 +36,11 @@ import GHC.IO.Exception (IOException(IOError))
 import Infer.Type
 import           Paths_madlib                   ( version )
 import           Data.Version                   ( showVersion )
--- import qualified System.Console.Haskeline.Prefs   as HaskelinePrefs
 
 
--- TODO: consider this lib
--- Look into https://github.com/judah/haskeline/issues/162
+
+-- TODO: handle export & simply discard it after parsing
+-- TODO: if assignment, show assignmentName :: Type
 
 type State = Driver.State CompilationError
 
@@ -60,32 +60,6 @@ runTask state options prune fileUpdates task =
     task
 
 
-options :: Options.Options
-options =
-  Options.Options
-    { Options.optEntrypoint = replModulePath
-    , Options.optTarget = TNode
-    -- , Options.optTarget = TLLVM
-    , Options.optRootPath = "./"
-    , Options.optOutputPath = ".repl/"
-    -- , Options.optOutputPath = ".repl/run"
-    , Options.optOptimized = False
-    , Options.optPathUtils = PathUtils.defaultPathUtils
-    , Options.optBundle = False
-    , Options.optCoverage = False
-    , Options.optGenerateDerivedInstances = True
-    , Options.optInsertInstancePlaholders = False
-    , Options.optMustHaveMain = False
-    , Options.optOptimizationLevel = O1
-    , Options.optDebug = False
-    }
-
-
-state :: IO (IORef Src.AST)
-state =
-  newIORef Src.emptyAST
-
-
 startCode :: String
 startCode =
   unlines
@@ -101,25 +75,23 @@ src a =
   Src.Source emptyArea Src.TargetAll a
 
 
-addNewCode :: String -> String -> String
-addNewCode newCode previousCode =
-  let previousLines = List.init $ lines previousCode
-  in  unlines $ previousLines ++ [newCode, "}"]
-
-
 addExpToAST :: Src.AST -> Src.Exp -> Src.AST
-addExpToAST ast exp =
-  if Src.isTopLevelFunction exp then
-    ast { Src.aexps = init (Src.aexps ast) ++ [exp, last $ Src.aexps ast] }
-  else
-    let (Src.Source area target (Src.Assignment n (
-          Src.Source absArea absTarget (Src.AbsWithMultilineBody params exps)
-          ))) = last $ Src.aexps ast
-        mainWithNewExp =
-          Src.Source area target (Src.Assignment n (
-            Src.Source absArea absTarget (Src.AbsWithMultilineBody params (init exps ++ [exp, Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) Src.TargetAll Src.LUnit]))
-          ))
-    in  ast { Src.aexps = init (Src.aexps ast) ++ [mainWithNewExp] }
+addExpToAST ast exp = case exp of
+  Src.Source _ _ (Src.Export e) ->
+    addExpToAST ast e
+
+  _ ->
+    if Src.isTopLevelFunction exp then
+      ast { Src.aexps = init (Src.aexps ast) ++ [exp, last $ Src.aexps ast] }
+    else
+      let (Src.Source area target (Src.Assignment n (
+            Src.Source absArea absTarget (Src.AbsWithMultilineBody params exps)
+            ))) = last $ Src.aexps ast
+          mainWithNewExp =
+            Src.Source area target (Src.Assignment n (
+              Src.Source absArea absTarget (Src.AbsWithMultilineBody params (init exps ++ [exp, Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) Src.TargetAll Src.LUnit]))
+            ))
+      in  ast { Src.aexps = init (Src.aexps ast) ++ [mainWithNewExp] }
 
 
 addImportToAST :: Src.AST -> Src.Import -> Src.AST
@@ -144,9 +116,8 @@ addLogToLastExp ast =
           Src.Source _ _ (Src.TypedExp (Src.Source _ _ (Src.Assignment _ _)) _) ->
             ast
 
-          _ ->
-            let lastBodyExp = last $ init body
-                wrapped = src (Src.App (src (Src.Var "__IO__.log")) [lastBodyExp])
+          lastBodyExp ->
+            let wrapped = src (Src.App (src (Src.Var "__IO__.log")) [lastBodyExp])
                 updatedBody = Src.Source area target (Src.Assignment n (
                     Src.Source absArea absTarget (Src.AbsWithMultilineBody params (init (init body) ++ [wrapped, Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) Src.TargetAll Src.LUnit]))
                   ))
@@ -157,13 +128,13 @@ addLogToLastExp ast =
 
 findType :: Slv.AST -> Maybe (Qual Type)
 findType ast =
-  let (Slv.Typed _ _ (Slv.Assignment n (
+  let (Slv.Typed _ _ (Slv.Assignment _ (
           Slv.Typed _ _ (Slv.Abs _ body)
           ))) = last $ Slv.aexps ast
   in  if length body > 1 then
         case last $ init body of
-          Slv.Typed _ _ (Slv.App _ (Slv.Typed qt _ _) _) ->
-            Just qt
+          Slv.Typed _ _ (Slv.App _ (Slv.Typed (_ :=> t) _ _) _) ->
+            Just ([] :=> t)
 
           _ ->
             Nothing
@@ -176,8 +147,46 @@ shouldRun ast =
   not (null $ Src.aexps ast) && not (Src.isTopLevelFunction (last (Src.aexps ast)))
 
 
-evalMadlibCode :: State -> String -> Haskeline.InputT IO CommandResult
-evalMadlibCode state code = case parse code of
+getNewExpName :: [Src.Exp] -> Maybe String
+getNewExpName exps = case exps of
+  [Src.Source _ _ (Src.NamedTypedExp n _ _)] ->
+    Just n
+
+  [Src.Source _ _ (Src.TypedExp e _)] ->
+    getNewExpName [e]
+
+  [Src.Source _ _ (Src.Assignment n _)] ->
+    Just n
+
+  [Src.Source _ _ (Src.Export e)] ->
+    getNewExpName [e]
+
+  _ ->
+    Nothing
+
+
+findTypeOfName :: Slv.AST -> String -> Maybe (Qual Type)
+findTypeOfName ast name =
+  let topLevel = List.find ((== Just name) . Slv.getExpName) $ Slv.aexps ast
+  in  case topLevel of
+        Just (Slv.Typed qt _ _) ->
+          Just qt
+
+        Nothing ->
+          -- if not top level we look in Main
+          let (Slv.Typed _ _ (Slv.Assignment n (Slv.Typed _ _ (Slv.Abs _ body)))) = last $ Slv.aexps ast
+              localDecl = List.find ((== Just name) . Slv.getExpName) $ reverse body
+          in  case localDecl of
+                Just (Slv.Typed (_ :=> t) _ _) ->
+                  Just ([] :=> t)
+
+                _ ->
+                  Nothing
+
+
+
+evalMadlibCode :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+evalMadlibCode options state code = case parse code of
   Right parsedNewCode -> do
     (currentAST, _, _) <- liftIO $ runTask state options Driver.Don'tPrune mempty $ do
       Rock.fetch $ Query.ParsedAST replModulePath
@@ -189,16 +198,18 @@ evalMadlibCode state code = case parse code of
     ((typed, _), _, errs) <- liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath newCodeWithLogAdded) $ do
       Rock.fetch $ Query.SolvedASTWithEnv replModulePath
 
-    let maybeType = findType typed
-
     formattedErrs <- liftIO $ forM errs $ simpleFormatError False
     if null formattedErrs then do
-      -- TODO: compile & run the AST with the newly added __IO__.log call for the last exp of main
-
+      let newExpName = getNewExpName $ Src.aexps parsedNewCode
+      let maybeType = findType typed
       liftIO $ hSilence [stdout, stderr] $ runTask state options Driver.Don'tPrune mempty $ do
         Rock.fetch $ Query.BuiltTarget replModulePath
 
-      runResult <- liftIO $ try $ readProcessWithExitCode "node" [".repl/__REPL__.mjs"] ""
+      runResult <-
+        if Options.optTarget options == TLLVM then
+          liftIO $ try $ readProcessWithExitCode ".repl/run" [] ""
+        else
+          liftIO $ try $ readProcessWithExitCode "node" [".repl/__REPL__.mjs"] ""
       let output = case (runResult :: Either IOError (ExitCode, String, String)) of
             Right (_, result, _) | shouldRun parsedNewCode ->
               result
@@ -215,10 +226,23 @@ evalMadlibCode state code = case parse code of
 
       let output' = List.dropWhileEnd Char.isSpace output
 
-      if null output' then
-        return $ Continue resetValidCode
-      else
-        return $ Output output' maybeType resetValidCode
+      case newExpName of
+        Just n ->
+          case findTypeOfName typed n of
+            Nothing ->
+              return $ Continue resetValidCode
+
+            Just t ->
+              return $ Output n (Just t) resetValidCode
+
+
+
+        Nothing ->
+          -- We just typed something evaluated that should be printed
+          if null output' then
+            return $ Continue resetValidCode
+          else
+            return $ Output output' maybeType resetValidCode
     else do
       let previousCode = Format.astToSource 80 currentAST []
       -- We need this to reset the code to the previous state
@@ -263,14 +287,14 @@ read = Haskeline.getInputLine "> "
 --   | EvaluatedCode String
 --   | ImportedModule FilePath String
 --   | TypeDefined ...
-eval :: State -> String -> Haskeline.InputT IO CommandResult
-eval state code =
+eval :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+eval options state code =
   case code of
     ':' : cmd ->
       evalCmd cmd
 
     _ ->
-      evalMadlibCode state code
+      evalMadlibCode options state code
 
 
 print :: CommandResult -> Haskeline.InputT IO ()
@@ -278,8 +302,8 @@ print result = case result of
   Output output maybeType _ -> do
     let output' = color Yellow output
     let output'' = case maybeType of
-          Just (_ :=> t) ->
-            output' <> color Grey (" :: " <> prettyPrintType True t)
+          Just qt ->
+            output' <> color Grey (" :: " <> prettyPrintQualType qt)
 
           _ ->
             output'
@@ -295,16 +319,16 @@ print result = case result of
     return ()
 
 
-loop :: State -> Haskeline.InputT IO ()
-loop state = do
+loop :: Options.Options -> State -> Haskeline.InputT IO ()
+loop options state = do
   -- code <- Haskeline.handleInterrupt (return (Just "")) (Haskeline.withInterrupt read)
   code <- read
   case code of
     Just "" ->
-      loop state
+      loop options state
 
     Just c -> do
-      evaluated <- eval state c
+      evaluated <- eval options state c
       print evaluated
       case evaluated of
         Exit ->
@@ -312,14 +336,14 @@ loop state = do
 
         Continue postAction -> do
           liftIO postAction
-          loop state
+          loop options state
 
         Output _ _ postAction -> do
           liftIO postAction
-          loop state
+          loop options state
 
         _ -> do
-          loop state
+          loop options state
 
     _ ->
       return ()
@@ -336,15 +360,33 @@ introduction =
     ]
 
 
-start :: IO ()
-start = do
+start :: Target -> IO ()
+start target = do
   state <- Driver.initialState
+
+  let options =
+        Options.Options
+          { Options.optEntrypoint = replModulePath
+          , Options.optTarget = target
+          , Options.optRootPath = "./"
+          -- , Options.optOutputPath = ".repl/"
+          , Options.optOutputPath = if target == TLLVM then ".repl/run" else ".repl/"
+          , Options.optOptimized = False
+          , Options.optPathUtils = PathUtils.defaultPathUtils
+          , Options.optBundle = False
+          , Options.optCoverage = False
+          , Options.optGenerateDerivedInstances = True
+          , Options.optInsertInstancePlaholders = False
+          , Options.optMustHaveMain = False
+          , Options.optOptimizationLevel = O1
+          , Options.optDebug = False
+          }
 
   putStrLn introduction
   -- load initial module and fill caches for external modules like IO
   hSilence [stdout, stderr] $ liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
     Rock.fetch $ Query.BuiltTarget replModulePath
 
-  Haskeline.runInputT Haskeline.defaultSettings $ loop state
+  Haskeline.runInputT Haskeline.defaultSettings $ loop options state
   -- Haskeline.runInputT Haskeline.defaultSettings $ Haskeline.withInterrupt $ loop state
   return ()
