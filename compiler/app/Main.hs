@@ -52,8 +52,8 @@ run cmd = do
     Doc path ->
       runDocumentationGenerator path
 
-    Repl ->
-      Repl.start
+    Repl target ->
+      Repl.start target
 
     Run path args ->
       runRun path args

@@ -80,7 +80,7 @@ renameBuiltinsImport imp = case imp of
 inferModule :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModule code = do
   let modulePath = "Module.mad"
-  let options = buildOptions modulePath defaultPathUtils
+  let options = buildOptions modulePath defaultPathUtils { doesFileExist = (\_ -> return True) }
   initialState <- Driver.initialState
   ((ast, _), warnings, errors) <- Driver.runIncrementalTask
     initialState
@@ -95,7 +95,7 @@ inferModule code = do
 inferModuleWithoutMain :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModuleWithoutMain code = do
   let modulePath = "Module.mad"
-  let options = (buildOptions modulePath defaultPathUtils) { optMustHaveMain = False }
+  let options = (buildOptions modulePath defaultPathUtils { doesFileExist = (\_ -> return True) }) { optMustHaveMain = False }
   initialState <- Driver.initialState
   ((ast, _), warnings, errors) <- Driver.runIncrementalTask
     initialState
@@ -110,7 +110,7 @@ inferModuleWithoutMain code = do
 
 inferManyModules :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModules entrypoint modules = do
-  let options = buildOptions entrypoint defaultPathUtils
+  let options = buildOptions entrypoint defaultPathUtils { doesFileExist = (\_ -> return True) }
   initialState <- Driver.initialState
   let task = do
         solved <- forM (M.keys modules) $ \path -> do
@@ -130,7 +130,7 @@ inferManyModules entrypoint modules = do
 
 inferManyModulesWithoutMain :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModulesWithoutMain entrypoint modules = do
-  let options = (buildOptions entrypoint defaultPathUtils) { optMustHaveMain = False }
+  let options = (buildOptions entrypoint defaultPathUtils { doesFileExist = (\_ -> return True) }) { optMustHaveMain = False }
   initialState <- Driver.initialState
   let task = do
         solved <- forM (M.keys modules) $ \path -> do

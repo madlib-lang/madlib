@@ -89,7 +89,15 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
         p -> return $ Just p
 
       case path' of
-        Just p  ->
+        Just p@('.' : '/' : _) -> do
+          absPath <- normalisePath pathUtils <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+          exists <- doesFileExist pathUtils absPath
+          if exists then
+            return $ Just absPath
+          else
+            return Nothing
+
+        Just p ->
           Just . normalisePath pathUtils <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
 
         Nothing ->
@@ -138,6 +146,7 @@ retrieveMadlibDotJson pathUtils dir = do
         Left  _     ->  return (Nothing, dir)
     else if dir == "/" then return (Nothing, dir) else retrieveMadlibDotJson pathUtils $ getParentFolder dir
 
+
 getParentFolder :: FilePath -> FilePath
 getParentFolder = joinPath . init . splitPath
 
@@ -146,11 +155,12 @@ findMadlibPackage :: PathUtils -> FilePath -> FilePath -> MadlibDotJson.MadlibDo
 findMadlibPackage pathUtils pkgName dir madlibDotJson = do
   let path = joinPath [dir, madlibModulesFolder, pkgName, madlibDotJsonFile]
   found <- doesFileExist pathUtils path
-  if found
-    then findMadlibPackageMainPath pathUtils path
-    else if dir == "/"
-      then return Nothing
-      else (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
+  if found then
+    findMadlibPackageMainPath pathUtils path
+  else if dir == "/" || dir == "" then
+    return Nothing
+  else
+    (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
 
 
 findMadlibPackageMainPath :: PathUtils -> FilePath -> IO (Maybe FilePath)

@@ -47,7 +47,7 @@ data Command
   | Run { runInput :: FilePath, runArgs :: [String] }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
-  | Repl
+  | Repl { replTarget :: Target }
   | Config { configCommand :: ConfigCommand }
   deriving (Eq, Show)
 
@@ -100,12 +100,29 @@ parseCoverage =
   switch (long "coverage" <> help "compile with coverage enabled" <> showDefault)
 
 
+parseLimitedTargetOption :: ReadM Target
+parseLimitedTargetOption = eitherReader $ \case
+  "node"    -> Right TNode
+  "llvm"    -> Right TLLVM
+  s         -> Left $ "'" <> s <> "' is not a valid target option, possible values are 'llvm' or 'node'."
+
+parseLimitedTarget :: Parser Target
+parseLimitedTarget = option
+  parseLimitedTargetOption
+  (  long "target"
+  <> short 't'
+  <> metavar "TARGET"
+  <> help "What target it should compile to, possible values are: 'llvm' or 'node'"
+  <> showDefault
+  <> value TNode
+  )
+
 parseTargetOption :: ReadM Target
 parseTargetOption = eitherReader $ \case
   "node"    -> Right TNode
   "browser" -> Right TBrowser
   "llvm"    -> Right TLLVM
-  s         -> Left $ "'" <> s <> "' is not a valid target option, possible values are 'browser' or 'node'."
+  s         -> Left $ "'" <> s <> "' is not a valid target option, possible values 'llvm', 'node' or 'browser'."
 
 parseTarget :: Parser Target
 parseTarget = option
@@ -113,7 +130,7 @@ parseTarget = option
   (  long "target"
   <> short 't'
   <> metavar "TARGET"
-  <> help "What target it should compile to, possible values are: browser or node"
+  <> help "What target it should compile to, possible values are: 'llvm', 'node' or 'browser'"
   <> showDefault
   <> value TNode
   )
@@ -286,11 +303,15 @@ parseConfig =
   )
 
 
+parseRepl :: Parser Command
+parseRepl = Repl <$> parseLimitedTarget
+
+
 parseCommand :: Parser Command
 parseCommand =
   subparser
     $  command "compile" (parseCompile `withInfo` "compile madlib code to js")
-    <> command "repl"    (pure Repl `withInfo` "start the repl")
+    <> command "repl"    (parseRepl `withInfo` "start the repl")
     <> command "run"     (parseRun `withInfo` "run a madlib module or package")
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")

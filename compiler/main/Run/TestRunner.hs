@@ -42,8 +42,9 @@ import           Error.Warning
 
 import           GHC.IO.Handle
 import           GHC.IO.Handle.FD
-import Run.OptimizationLevel (OptimizationLevel)
+import           Run.OptimizationLevel (OptimizationLevel)
 
+import           System.IO (hPutStrLn, stderr)
 
 
 resetCode :: String
@@ -195,7 +196,7 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
           return ()
     else do
       formattedErrors <- mapM (Explain.formatError rf False) $ removeDuplicates errors
-      putStrLn $ List.intercalate "\n\n\n" formattedErrors
+      hPutStrLn stderr $ List.intercalate "\n\n\n" formattedErrors
       unless watchMode Exit.exitFailure
 
   when watchMode $ putStrLn "\nWatching... (press ctrl-C to quit)"

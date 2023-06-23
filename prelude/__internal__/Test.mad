@@ -8,6 +8,7 @@ import Tuple from "Tuple"
 import Process from "Process"
 import FilePath from "FilePath/Posix"
 import Math from "Math"
+import Monad from "Monad"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import {} from "Number"
 
@@ -189,8 +190,8 @@ generateReportSuiteEndMessage = pipe(
 )
 
 
-prepareSuitePath :: String -> String
-prepareSuitePath = (suitePath) => {
+prepareSuitePath :: Boolean -> String -> String
+prepareSuitePath = (colorful, suitePath) => {
   cwdParts = FilePath.splitPath(CWD)
   partIndex = 0
 
@@ -210,7 +211,7 @@ prepareSuitePath = (suitePath) => {
       return drop
     }),
     (parts) => {
-      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
+      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(colorful && IS_COLOR_ENABLED), IO.grey))(parts)
       fileName = pipe(
         List.last,
         fromMaybe("")
@@ -238,7 +239,7 @@ printSuiteResults = (results) => {
         #[suitePath, SuiteResult(total, success, failed)] =>
           do {
             counts = `${inspect(success + failed)}/${inspect(total)}`
-            preparedSuitePath = prepareSuitePath(suitePath)
+            preparedSuitePath = prepareSuitePath(true, suitePath)
             coloredCounts =
               if (IS_COLOR_ENABLED) {
                 failed > 0
@@ -273,6 +274,28 @@ printSuiteResults = (results) => {
 }
 
 
+failSuite :: String -> {}
+failSuite = (suitePath) => {
+  pipe(
+    Dictionary.update(
+      where {
+        SuiteResult(total, success, failed) =>
+          SuiteResult(total, success, total - success)
+      },
+      suitePath
+    ),
+    collector.setResults
+  )(collector.getResults())
+
+  if (IS_COLOR_ENABLED) {
+    do {
+      IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
+      printSuiteResults(collector.getResults())
+    }
+  }
+}
+
+
 updateSuiteResult :: String -> TestResult -> a -> a
 updateSuiteResult = (suitePath, result, a) => {
   pipe(
@@ -299,7 +322,12 @@ updateSuiteResult = (suitePath, result, a) => {
 }
 
 
-runTestSuite :: (Inspect e, Inspect f) => String -> ({} -> Wish e a) -> ({} -> Wish f b) -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
+runTestSuite :: (Inspect e, Inspect f) =>
+  String
+  -> ({} -> Wish e a)
+  -> ({} -> Wish f b)
+  -> List (Wish String String)
+  -> Wish {} TestReport
 runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   (tests) => {
     pipe(
@@ -311,10 +339,19 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   },
   map(Wish.bichain(pipe(updateSuiteResult(suitePath, Failure), failureReport, of), pipe(updateSuiteResult(suitePath, Success), successReport, of))),
   Wish.parallel,
-  (testsWish) => Wish.bichain(pipe(IO.log, () => Wish.bad({})), () => testsWish, beforeAll()),
+  (testsWish) => Monad.andDo(
+    testsWish,
+    Wish.mapRej(
+      (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:\n${inspect(err)}`),
+      beforeAll(),
+    ),
+  ),
   (testsWish) => do {
     result <- testsWish
-    _ <- Wish.bichain(pipe(IO.log, () => Wish.bad({})), () => of({}), afterAll())
+    _ <- Wish.mapRej(
+      (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:\n${inspect(err)}`),
+      afterAll(),
+    )
     return of(result)
   },
   map(
@@ -332,11 +369,15 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
             : TestReport("", total, success, failed)
       }
     )
-  )
+  ),
+  Wish.chainRej((err) => {
+    failSuite(suitePath)
+    return of(TestReport(`${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`, List.length(testsInSuite), 0, List.length(testsInSuite)))
+  })
 )(testsInSuite)
 
 
-runAllTestSuites :: (Inspect e, Inspect f) => List #[String, ({} -> Wish e a), ({} -> Wish f b), List (Wish.Wish String String)] -> {}
+runAllTestSuites :: Inspect a => List #[String, {} -> Wish a c, {} -> Wish a d, List (Wish String String)] -> {}
 export runAllTestSuites = (testSuites) => pipe(
   map(where {
     #[path, beforeAll, afterAll, tests] =>

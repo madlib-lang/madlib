@@ -305,7 +305,6 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
       throwError $ CompilationError NoMain (Context astPath (Area (Loc 1 1 1) (Loc 2 2 2)))
 
 
-
   derivedTypes             <- getDerivedTypes
   typeDeclarationsToDerive <- getTypeDeclarationsToDerive
   let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
@@ -350,6 +349,7 @@ performExportCheck env area exportedNames name = do
     then throwError $ CompilationError (NameAlreadyExported name) (Context (envCurrentPath env) area)
     else return $ name : exportedNames
 
+
 verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]
 verifyExport env exportedNames (Src.Source area _ exp) = case exp of
   Src.NameExport name ->
@@ -364,10 +364,18 @@ verifyExport env exportedNames (Src.Source area _ exp) = case exp of
 
 findASTM :: Can.Table -> FilePath -> CanonicalM Can.AST
 findASTM table path = case M.lookup path table of
-  Just found -> return found
-  Nothing    -> throwError $ CompilationError (ImportNotFound path) NoContext
+  Just found ->
+    return found
+
+  Nothing ->
+    throwError $ CompilationError (ImportNotFound path) NoContext
+
 
 findAST :: Can.Table -> FilePath -> Either CompilationError Can.AST
 findAST table path = case M.lookup path table of
-  Just found -> return found
-  Nothing    -> Left $ CompilationError (ImportNotFound path) NoContext
+  Just found ->
+    return found
+
+  Nothing ->
+    Left $ CompilationError (ImportNotFound path) NoContext
+

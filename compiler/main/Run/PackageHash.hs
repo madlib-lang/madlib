@@ -51,6 +51,9 @@ getFileOrDirContent blackList path = do
       _         -> return BL.empty
 
 
+-- consider using this: https://hackage.haskell.org/package/vcs-ignore-0.0.1.0/docs/Data-VCS-Ignore-Repo-Git.html
+-- instead of this hardcoded version as it doesn't work well if you have for instance
+-- some non versioned lib files or source files that aren't versioned
 filesToExclude :: [FilePath]
 filesToExclude = [ "madlib_modules"
                  , "node_modules"
