@@ -277,7 +277,36 @@ evalCmd cmd = case cmd of
 
 
 read :: Haskeline.InputT IO (Maybe String)
-read = Haskeline.getInputLine "> "
+read = read' False []
+
+
+read' :: Bool -> [String] -> Haskeline.InputT IO (Maybe String)
+read' multi acc = do
+  let start =
+        if multi then
+          "| "
+        else
+          "> "
+  maybeLine <- Haskeline.getInputLine start
+  case maybeLine of
+    Nothing ->
+      return Nothing
+
+    Just line ->
+      if not multi && null acc && line == ":multi" then do
+        -- we start multiline mode
+        liftIO $ putStrLn $ color Grey "-------- Multiline Mode enabled ------------------------"
+        liftIO $ putStrLn $ color Grey "You are now in multiline mode, to validate it enter a"
+        liftIO $ putStrLn $ color Grey "dot ( '.' ) on an empty line"
+        liftIO $ putStrLn $ color Grey "--------------------------------------------------------"
+        read' True []
+      else if multi then
+        if line == "." then
+          return $ Just $ unlines acc
+        else
+          read' multi (acc ++ [line])
+      else
+        return $ Just line
 
 
 -- should return a type other than String
@@ -353,9 +382,9 @@ introduction :: String
 introduction =
   unlines
     [ color Grey "------ " <> (color Yellow ("Madlib@" <> showVersion version)) <> color Grey " -----------------------------------"
-    , "Welcome to the repl!"
     , color Grey "The command :help will assist you"
     , color Grey "The command :exit will exit the REPL"
+    , color Grey "The command :multi starts the multiline mode"
     , color Grey "--------------------------------------------------------"
     ]
 
