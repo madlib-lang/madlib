@@ -158,6 +158,15 @@ instance Alternative Parser {
 }
 
 
+lazy :: ({} -> Parser a) -> Parser a
+export lazy = (wrapped) => Parser(
+  (input, loc) => where(wrapped({})) {
+    Parser(parserFn) =>
+      parserFn(input, loc)
+  }
+)
+
+
 /**
  * A parser combinator that matches any character and returns a Parser String
  * containing that character.
@@ -408,15 +417,21 @@ export takeWhile = (pred) => Parser((s, l) => {
 
 
 sepBy :: Parser a -> Parser s -> Parser (List a)
-export sepBy = (parser, separator) =>
-  alt(
-    do {
-      first <- parser
-      rest <- many(andDo(parser, separator))
-      return of([first, ...rest])
-    },
-    fail
-  )
+export sepBy = (parser, separator) => alt(
+  do {
+    first <- parser
+    rest <- many(andDo(parser, separator))
+    return of([first, ...rest])
+  },
+  fail
+)
+
+
+maybeSepBy :: Parser a -> Parser s -> Parser (List a)
+export maybeSepBy = (parser, sep) => pipe(
+  sepBy(parser),
+  alt($, pure([]))
+)(sep)
 
 
 /**

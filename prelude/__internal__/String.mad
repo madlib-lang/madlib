@@ -239,6 +239,10 @@ export fromList = extern "madlib__string__fromList"
 #endif
 
 
+singleton :: Char -> String
+export singleton = (c) => fromList([c])
+
+
 #iftarget js
 
 mapChars :: (Char -> Char) -> String -> String

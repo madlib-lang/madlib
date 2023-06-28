@@ -167,7 +167,17 @@ char *madlib__string__internal__inspect(char *input) {
       result = resized;
     }
 
-    if (*input == '\n') {
+    if (*input == '\\') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = '\\';
+
+      currentIndex += 2;
+    } else if (*input == '"') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = '"';
+
+      currentIndex += 2;
+    } else if (*input == '\n') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = 'n';
 

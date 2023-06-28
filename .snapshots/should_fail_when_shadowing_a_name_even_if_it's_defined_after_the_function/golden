@@ -51,14 +51,14 @@
                          (Var "a" False)
                      ])))
         , Typed
-            ([] :=> TCon (TC "Integer" Star) "prelude")
+            ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
+               TVar (TV "j9" Star))
             (Area (Loc 34 5 1) (Loc 39 5 6))
             (Assignment
                "a"
                (Typed
-                  ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   ] :=>
-                     TCon (TC "Integer" Star) "prelude")
+                  ([ IsIn "Number" [ TVar (TV "j9" Star) ] Nothing ] :=>
+                     TVar (TV "j9" Star))
                   (Area (Loc 38 5 5) (Loc 39 5 6))
                   (LNum "4")))
         , Typed

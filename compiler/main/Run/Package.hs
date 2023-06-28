@@ -79,6 +79,7 @@ typeCheckMain target main = do
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
           , optMustHaveMain = False
+          , optParseOnly = False
           , optOptimizationLevel = O1
           , optDebug = False
           }

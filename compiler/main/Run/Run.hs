@@ -23,16 +23,18 @@ import           Utils.Path (computeTargetPath)
 import           Run.OptimizationLevel
 import           System.IO (stdout)
 import           System.IO.Silently
+import           Run.Target
 
-runRun :: FilePath -> [String] -> IO ()
-runRun input args = do
-  if ".mad" `isSuffixOf` input then runSingleModule input args else runRunPackage input args
+
+runRun :: Target -> FilePath -> [String] -> IO ()
+runRun target input args = do
+  if ".mad" `isSuffixOf` input then runSingleModule target input args else runRunPackage target input args
 
 runFolder :: FilePath
 runFolder = "build/"
 
-runRunPackage :: FilePath -> [String] -> IO ()
-runRunPackage package args =
+runRunPackage :: Target -> FilePath -> [String] -> IO ()
+runRunPackage target package args =
   let packagePath              = joinPath ["madlib_modules", package]
       packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
   in  do
@@ -40,46 +42,50 @@ runRunPackage package args =
         case parsedMadlibDotJson of
           Left e -> putStrLn e
 
-          Right MadlibDotJson.MadlibDotJson { MadlibDotJson.bin = Just bin } ->
+          Right MadlibDotJson.MadlibDotJson { MadlibDotJson.bin = Just bin } -> do
             let exePath = joinPath [packagePath, bin]
-            in  do
-                  let baseRunFolder  = joinPath [packagePath, runFolder]
-                      compileCommand =
-                        Compile { compileInput         = exePath
-                                , compileOutput        = baseRunFolder
-                                , compileConfig        = "madlib.json"
-                                , compileVerbose       = False
-                                , compileDebug         = False
-                                , compileBundle        = False
-                                , compileOptimize      = False
-                                , compileTarget        = TNode
-                                , compileWatch         = False
-                                , compileCoverage      = False
-                                , compileOptimizationLevel = O1
-                                }
+            let baseRunFolder  = joinPath [packagePath, runFolder]
+            let llvmOutputPath = baseRunFolder <> "run"
+                compileCommand =
+                  Compile { compileInput         = exePath
+                          , compileOutput        = if target == TNode then baseRunFolder else llvmOutputPath
+                          , compileConfig        = "madlib.json"
+                          , compileVerbose       = False
+                          , compileDebug         = False
+                          , compileBundle        = False
+                          , compileOptimize      = False
+                          , compileTarget        = target
+                          , compileWatch         = False
+                          , compileCoverage      = False
+                          , compileOptimizationLevel = O1
+                          }
 
-                  hSilence [stdout] $ runCompilation compileCommand
-                  entrypoint <- canonicalizePath exePath
-                  rootPath <- canonicalizePath "./"
-                  outputPath <- canonicalizePath baseRunFolder
-                  let target = computeTargetPath outputPath rootPath entrypoint
-                  callCommand $ "node " <> target <> " " <> unwords args
+            hSilence [stdout] $ runCompilation compileCommand
+            entrypoint <- canonicalizePath exePath
+            rootPath <- canonicalizePath "./"
+            outputPath <- canonicalizePath baseRunFolder
+            let jsOutputPath = computeTargetPath outputPath rootPath entrypoint
+            if target == TNode then
+              callCommand $ "node " <> jsOutputPath <> " " <> unwords (map show args)
+            else
+              callCommand $ llvmOutputPath <> " " <> unwords (map show args)
 
           _ -> putStrLn "That package doesn't have any executable!"
 
 
-runSingleModule :: FilePath -> [String] -> IO ()
-runSingleModule input args = do
+runSingleModule :: Target -> FilePath -> [String] -> IO ()
+runSingleModule target input args = do
+  let llvmOutputPath = runFolder <> "run"
   let compileCommand =
         Compile
           { compileInput         = input
-          , compileOutput        = runFolder
+          , compileOutput        = if target == TNode then runFolder else llvmOutputPath
           , compileConfig        = "madlib.json"
           , compileVerbose       = False
           , compileDebug         = False
           , compileBundle        = False
           , compileOptimize      = False
-          , compileTarget        = TNode
+          , compileTarget        = target
           , compileWatch         = False
           , compileCoverage      = False
           , compileOptimizationLevel = O1
@@ -92,5 +98,8 @@ runSingleModule input args = do
 
   let fromRoot = makeRelative canCurrentFolder (dropFileName canEntrypoint)
 
-  let target = joinPath [runFolder, fromRoot, (takeBaseName . takeFileName $ input) <> ".mjs"]
-  callCommand $ "node " <> target <> " " <> unwords args
+  let jsOutputPath = joinPath [runFolder, fromRoot, (takeBaseName . takeFileName $ input) <> ".mjs"]
+  if target == TNode then
+    callCommand $ "node " <> jsOutputPath <> " " <> unwords (map show args)
+  else
+    callCommand $ llvmOutputPath <> " " <> unwords (map show args)

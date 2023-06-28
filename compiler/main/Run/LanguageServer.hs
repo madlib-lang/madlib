@@ -128,6 +128,7 @@ buildOptions target = do
       , Options.optGenerateDerivedInstances = False
       , Options.optInsertInstancePlaholders = False
       , Options.optMustHaveMain = False
+      , Options.optParseOnly = False
       , Options.optOptimizationLevel = O1
       , Options.optDebug = False
       }

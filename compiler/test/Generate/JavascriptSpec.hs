@@ -73,6 +73,7 @@ buildOptions entrypoint pathUtils optimized coverage =
     , optCoverage = coverage
     , optGenerateDerivedInstances = True
     , optInsertInstancePlaholders = True
+    , optParseOnly = False
     , optMustHaveMain = True
     , optOptimizationLevel = O3
     }

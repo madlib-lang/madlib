@@ -60,6 +60,7 @@ compileAndRun casePath = do
           , optCoverage = False
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
+          , optParseOnly = False
           , optMustHaveMain = True
           , optOptimizationLevel = O3
           }

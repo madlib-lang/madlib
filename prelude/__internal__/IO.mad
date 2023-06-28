@@ -5,121 +5,9 @@ import IOError from "IOError"
 import { mapWithIndex } from "List"
 import { equals, when } from "Function"
 import { split, join, isEmpty } from "String"
+import { ppInspect, cInspect } from "Inspect"
+import Terminal from "Terminal"
 
-END_COLOR = "\x1b[0m"
-
-colorize :: String -> String -> String
-colorize = (color, v) => color ++ v ++ END_COLOR
-
-// via https://en.wikipedia.org/wiki/ANSI_escape_code
-
-/**
- * Ansi styles to be used with the ansiColor function.
- *
- * @since 0.11.0
- */
-export ansi = {
-  FGBlack: "30",
-  FGRed: "31",
-  FGGreen: "32",
-  FGYellow: "33",
-  FGBlue: "34",
-  FGMagenta: "35",
-  FGCyan: "36",
-  FGWhite: "37",
-
-  FGBrightBlack: "90",
-  FGBrightRed: "91",
-  FGBrightGreen: "92",
-  FGBrightYellow: "93",
-  FGBrightBlue: "94",
-  FGBrightMagenta: "95",
-  FGBrightCyan: "96",
-  FGBrightWhite: "97",
-
-  BGBlack: "40",
-  BGRed: "41",
-  BGGreen: "42",
-  BGYellow: "43",
-  BGBlue: "44",
-  BGMagenta: "45",
-  BGCyan: "46",
-  BGWhite: "47",
-
-  BGBrightBlack: "100",
-  BGBrightRed: "101",
-  BGBrightGreen: "102",
-  BGBrightYellow: "103",
-  BGBrightBlue: "104",
-  BGBrightMagenta: "105",
-  BGBrightCyan: "106",
-  BGBrightWhite: "107",
-
-  FormatUnderline: "4",
-  FormatNoUnderline: "24",
-  FormatBold: "1",
-  FormatNoBold: "21",
-
-  FormatInvert: "7",
-}
-
-
-/**
- * Adds ansi escape codes to a string given a list of styles.
- *
- * @since 0.11.0
- * @example
- * ansiColor([ansi.FormatBold, ansi.FGBrightRed], "will be red and bold")
- */
-ansiColor :: List String -> String -> String
-export ansiColor = (parts, str) => colorize(
-  `\x1b[${join(";", parts)}m`,
-  str
-)
-
-export text = {
-  black: ansiColor([ansi.FGBlack]),
-  red: ansiColor([ansi.FGRed]),
-  green: ansiColor([ansi.FGGreen]),
-  yellow: ansiColor([ansi.FGYellow]),
-  blue: ansiColor([ansi.FGBlue]),
-  magenta: ansiColor([ansi.FGMagenta]),
-  cyan: ansiColor([ansi.FGCyan]),
-  white: ansiColor([ansi.FGWhite]),
-  brightBlack: ansiColor([ansi.FGBrightBlack]),
-  brightRed: ansiColor([ansi.FGBrightRed]),
-  brightGreen: ansiColor([ansi.FGBrightGreen]),
-  brightYellow: ansiColor([ansi.FGBrightYellow]),
-  brightBlue: ansiColor([ansi.FGBrightBlue]),
-  brightMagenta: ansiColor([ansi.FGBrightMagenta]),
-  brightCyan: ansiColor([ansi.FGBrightCyan]),
-  brightWhite: ansiColor([ansi.FGBrightWhite]),
-  underline: ansiColor([ansi.FormatUnderline]),
-  bold: ansiColor([ansi.FormatBold]),
-  boldUnderline: ansiColor([ansi.FormatBold, ansi.FormatUnderline]),
-}
-
-export dark = {
-  black: ansiColor([ansi.FGBlack, ansi.BGBlack]),
-  red: ansiColor([ansi.FGRed, ansi.BGBlack]),
-  green: ansiColor([ansi.FGGreen, ansi.BGBlack]),
-  yellow: ansiColor([ansi.FGYellow, ansi.BGBlack]),
-  blue: ansiColor([ansi.FGBlue, ansi.BGBlack]),
-  magenta: ansiColor([ansi.FGMagenta, ansi.BGBlack]),
-  cyan: ansiColor([ansi.FGCyan, ansi.BGBlack]),
-  white: ansiColor([ansi.FGWhite, ansi.BGBlack]),
-}
-
-export light = {
-  black: ansiColor([ansi.FGBrightBlack, ansi.BGWhite]),
-  red: ansiColor([ansi.FGBrightRed, ansi.BGWhite]),
-  green: ansiColor([ansi.FGBrightGreen, ansi.BGWhite]),
-  yellow: ansiColor([ansi.FGBrightYellow, ansi.BGWhite]),
-  blue: ansiColor([ansi.FGBrightBlue, ansi.BGWhite]),
-  magenta: ansiColor([ansi.FGBrightMagenta, ansi.BGWhite]),
-  cyan: ansiColor([ansi.FGBrightCyan, ansi.BGWhite]),
-  white: ansiColor([ansi.FGBrightWhite, ansi.BGWhite]),
-}
 
 
 prettyCase :: (String -> String) -> String -> String
@@ -150,10 +38,10 @@ export colortrace = (fn, v, a) => trace(
 )
 
 
-export red = text.red
-export green = text.green
-export yellow = text.yellow
-export grey = text.white
+export red = Terminal.text.red
+export green = Terminal.text.green
+export yellow = Terminal.text.yellow
+export grey = Terminal.text.white
 
 #iftarget js
 
@@ -352,6 +240,28 @@ export err = extern "madlib__stdio__err"
  */
 log :: Inspect a => a -> {}
 export log = pipe(inspect, putLine)
+
+
+/**
+ * Writes a pretty printed Madlib value to stdout.
+ *
+ * @since 0.11.0
+ * @example
+ * ppLog({ x: 7, y: 13 })
+ */
+ppLog :: Inspect a => a -> {}
+export ppLog = pipe(ppInspect, putLine)
+
+
+/**
+ * Writes a pretty printed Madlib value with ansi colors to stdout.
+ *
+ * @since 0.11.0
+ * @example
+ * cLog({ x: 7, y: 13 })
+ */
+cLog :: Inspect a => a -> {}
+export cLog = pipe(cInspect, putLine)
 
 
 /**

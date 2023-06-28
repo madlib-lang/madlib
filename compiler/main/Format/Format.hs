@@ -17,6 +17,7 @@ import Utils.Path (getPathType, ModulePath (FileSystemPath, PackagePath), isPrel
 import Data.Functor (($>))
 import Debug.Trace
 import Text.Show.Pretty (ppShow)
+import Data.Char (showLitChar)
 
 
 
@@ -302,7 +303,7 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.pretty n
 
   PChar c ->
-    Pretty.pretty $ show c
+    Pretty.pretty $ renderChar c
 
   PStr s ->
     Pretty.pretty s
@@ -714,6 +715,39 @@ formatParams isSingle paramsDoc =
     <> Pretty.rparen
 
 
+renderChar :: Char -> String
+renderChar c = case c of
+  '\a' ->
+    "'\\a'"
+
+  '\b' ->
+    "'\\b'"
+
+  '\f' ->
+    "'\\f'"
+
+  '\n' ->
+    "'\\n'"
+
+  '\r' ->
+    "'\\r'"
+
+  '\t' ->
+    "'\\t'"
+
+  '\v' ->
+    "'\\v'"
+
+  '\\' ->
+    "'\\\\'"
+
+  '\'' ->
+    "'\\''"
+
+  c ->
+    ['\'', c, '\'']
+
+
 expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])
 expToDoc comments exp =
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
@@ -1025,7 +1059,7 @@ expToDoc comments exp =
           (Pretty.pretty n, comments')
 
         Source _ _ (LChar c) ->
-          (Pretty.pretty $ show c, comments')
+          (Pretty.pretty $ renderChar c, comments')
 
         Source _ _ (LStr s) ->
           (Pretty.pretty s, comments')
@@ -1113,14 +1147,15 @@ expToDoc comments exp =
               -- the space between #- and { will create an extra indentation level
               -- and this will happen every time it is formatted, thus shifting the whole
               -- fenced code to the right each application.
-              js' = Pretty.nesting $ \n -> Pretty.nest (leadingSpaces - n) $ Pretty.pretty js
+              js' = Pretty.nesting $ \_ -> Pretty.nest 0 $ Pretty.pretty js
+              -- js' = Pretty.nesting $ \n -> Pretty.nest (leadingSpaces - n) $ Pretty.pretty js
           in
             if length lines' > 1 then
-              (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#", comments')
-              -- (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#", comments')
+              -- (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#", comments')
+              (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#", comments')
             else
-              (Pretty.group (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#"), comments')
-              -- (Pretty.group (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#"), comments')
+              -- (Pretty.group (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#"), comments')
+              (Pretty.group (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#"), comments')
 
         Source _ _ (JsxTag name props children) ->
           let (props', comments'')     = jsxPropsToDoc comments' props

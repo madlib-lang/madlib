@@ -72,6 +72,7 @@ generateDocData rootFolder paths = do
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
+          , optParseOnly = False
           , optOptimizationLevel = O1
           , optDebug = False
           }
@@ -88,6 +89,7 @@ generateDocData rootFolder paths = do
           , optGenerateDerivedInstances = False
           , optInsertInstancePlaholders = False
           , optMustHaveMain = False
+          , optParseOnly = False
           , optOptimizationLevel = O1
           , optDebug = False
           }

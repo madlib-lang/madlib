@@ -592,7 +592,10 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
   (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s2 `compose` s1) env) falsy
 
-  s4                          <- catchError (contextualUnify env falsy tfalsy ttruthy) flipUnificationError
+  let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
+  let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
+  s4                          <- catchError (contextualUnify env falsy tfalsy' ttruthy') flipUnificationError
+  -- s4                          <- catchError (contextualUnify env falsy ttruthy tfalsy) flipUnificationError
   s5                          <- contextualUnify env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
@@ -930,29 +933,30 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         throwError $ CompilationError e c
     )
 
-  (ds', rs', sDefaults) <-
-    if
-      not isLet
-      && not (Slv.isExtern e)
-      && not (null (ds ++ rs))
-      && not (Can.isNamedAbs exp)
-      && not (isFunctionType t')
-      -- TODO: we need to update that and only default preds for values that aren't behind a function
-      -- So the record might still have direct values that should be defaulted ( like mempty )
-      && not (isRecordType t')
-    then do
-      (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
-          -- TODO: tryDefaults should handle such a case so that we only call it once.
-          -- What happens is that defaulting may solve some types ( like Number a -> Integer )
-          -- and then it could resolve instances like Show where before we still had a type var
-          -- but after the first pass we have Integer instead.
-      (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
-      CM.unless (null rs'') $ throwError $ CompilationError
-        (AmbiguousType (TV "-" Star, rs'))
-        (Context (envCurrentPath env) area)
-      return ([], [], sDef' `compose` sDef)
-    else do
-      return (ds, rs, mempty)
+  -- (ds', rs', sDefaults) <-
+  --   if
+  --     not isLet
+  --     && not (Slv.isExtern e)
+  --     && not (null (ds ++ rs))
+  --     && not (Can.isNamedAbs exp)
+  --     && not (isFunctionType t')
+  --     -- TODO: we need to update that and only default preds for values that aren't behind a function
+  --     -- So the record might still have direct values that should be defaulted ( like mempty )
+  --     && not (isRecordType t')
+  --   then do
+  --     (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
+  --         -- TODO: tryDefaults should handle such a case so that we only call it once.
+  --         -- What happens is that defaulting may solve some types ( like Number a -> Integer )
+  --         -- and then it could resolve instances like Show where before we still had a type var
+  --         -- but after the first pass we have Integer instead.
+  --     (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
+  --     CM.unless (null rs'') $ throwError $ CompilationError
+  --       (AmbiguousType (TV "-" Star, rs'))
+  --       (Context (envCurrentPath env) area)
+  --     return ([], [], sDef' `compose` sDef)
+  --   else do
+  --     return (ds, rs, mempty)
+  let (ds', rs', sDefaults) = (ds, rs, mempty)
 
   rsWithParentPreds <- getAllParentPreds env rs'
   rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
@@ -968,7 +972,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          apply sFinal $ quantify gs ((rs'' ++ mutPS) :=> t')
+          apply sFinal $ quantify gs (apply sDefaults $ (rs'' ++ mutPS) :=> t')
 
   when (not isLet && not (null mutPS) && not (null (ftv t')) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)

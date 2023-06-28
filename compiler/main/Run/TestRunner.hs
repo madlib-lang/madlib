@@ -85,6 +85,7 @@ runTests entrypoint target debug watchMode coverage optLevel = do
           , optCoverage = coverage
           , optGenerateDerivedInstances = True
           , optInsertInstancePlaholders = True
+          , optParseOnly = False
           , optMustHaveMain = True
           , optOptimizationLevel = optLevel
           }
