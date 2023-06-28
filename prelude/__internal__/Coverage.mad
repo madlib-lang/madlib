@@ -13,6 +13,7 @@ import { always, when } from "Function"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 import IO from "IO"
+import Terminal from "Terminal"
 
 
 COVERAGE_TEXT :: String
@@ -447,11 +448,11 @@ renderPercentage = (input) =>
     where(scan(String.dropLast(1, input))) {
       Just(num) =>
         if (num > 90) {
-          IO.text.brightGreen(input)
+          Terminal.text.brightGreen(input)
         } else if (num > 75) {
-          IO.text.brightYellow(input)
+          Terminal.text.brightYellow(input)
         } else {
-          IO.text.brightRed(input)
+          Terminal.text.brightRed(input)
         }
 
       Nothing =>

@@ -7,13 +7,26 @@ import qualified Data.Maybe as Maybe
 import Data.Graph
 import Debug.Trace
 import Text.Show.Pretty (ppShow)
+import qualified Data.List as List
+
+
+-- In case of CyclicSSC we try to keep the order from the areas
+-- as those should only happen within the same files and mainly not move
+-- because cyclic imports aren't allowed anyways.
+flattenAndFixCyclic :: SCC [Exp] -> [[Exp]]
+flattenAndFixCyclic ssc = case ssc of
+  AcyclicSCC v ->
+    [v]
+
+  CyclicSCC vs ->
+    List.sortBy (\a b -> compare (getArea $ List.head a) (getArea $ List.head b)) vs
 
 
 sortASTExpressions :: AST -> AST
 sortASTExpressions ast =
   let exps = aexps ast
       expDeps = buildDependenciesForAllExps exps
-      sortedExps = concat $ stronglyConnComp expDeps >>= flattenSCC
+      sortedExps = concat $ stronglyConnComp expDeps >>= flattenAndFixCyclic
   in ast { aexps = sortedExps }
 
 
@@ -33,7 +46,7 @@ keepLastMainExpAndDeps ast =
               reachedNodes = map findNode reachedVertices
               newBody = concat $ map (\(exps, _, _) -> exps) reachedNodes
               newBody' = filter (`elem` newBody) body
-              newBodyWithReturn = (trace ("localNames: " <> ppShow allLocalNames <> "\ndeps: " <> ppShow deps <> "\nreached: " <> ppShow reachedNodes) newBody') ++ [last body]
+              newBodyWithReturn = newBody' ++ [last body]
               newMainFunction = Typed qt area metadata (Assignment n (Typed qt' area' metadata' (Definition params newBodyWithReturn)))
           in  ast { aexps = init (aexps ast) ++ [newMainFunction] }
         else

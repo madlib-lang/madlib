@@ -19,5 +19,6 @@ data Options
     , optGenerateDerivedInstances :: Bool
     , optInsertInstancePlaholders :: Bool
     , optMustHaveMain :: Bool
+    , optParseOnly :: Bool
     , optOptimizationLevel :: OptimizationLevel
     }

@@ -75,7 +75,7 @@ export read = (path) => Wish(
   (bad, good) => #- {
     prelude_file_fs.readFile(path, "utf8", (err, d) => {
       if (err) {
-        bad(IOError.UnknownError);
+        bad({ __constructor: "UnknownError", __args: [] });
       }
       else {
         good(d)

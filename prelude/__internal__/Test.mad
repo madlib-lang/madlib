@@ -11,6 +11,7 @@ import Math from "Math"
 import Monad from "Monad"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import {} from "Number"
+import Terminal from "Terminal"
 
 
 moveCursorUpCode :: Integer -> String
@@ -26,17 +27,17 @@ IS_COLOR_ENABLED = do {
 
 PREFIX_RUNS :: String
 PREFIX_RUNS = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightYellow], " RUNS ")
+  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], " RUNS ")
   : "RUNS "
 
 PREFIX_PASS :: String
 PREFIX_PASS = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightGreen], " PASS ")
+  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], " PASS ")
   : "PASS "
 
 PREFIX_FAIL :: String
 PREFIX_FAIL = IS_COLOR_ENABLED
-  ? IO.ansiColor([IO.ansi.FGBlack, IO.ansi.BGBrightRed], " FAIL ")
+  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], " FAIL ")
   : "FAIL "
 
 CHAR_CHECK :: String
@@ -155,15 +156,15 @@ export assertEquals = (actual, expected) => actual == expected
 test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   testImpl,
-  map((_) => IO.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
+  map((_) => Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
   Wish.mapRej(
     where {
       AssertionError(expected, actual) => 
         IO.red(`${CHAR_CROSS} ${description}`)
         ++ "\n  expected:\n    "
-        ++ IO.text.brightGreen(inspect(expected))
+        ++ Terminal.text.brightGreen(inspect(expected))
         ++ "\n  actual:\n    "
-        ++ IO.text.brightRed(inspect(actual))
+        ++ Terminal.text.brightRed(inspect(actual))
         ++ "\n"
 
       ErrorWithMessage(message) =>
@@ -243,8 +244,8 @@ printSuiteResults = (results) => {
             coloredCounts =
               if (IS_COLOR_ENABLED) {
                 failed > 0
-                  ? IO.text.brightRed(counts)
-                  : IO.text.brightGreen(counts)
+                  ? Terminal.text.brightRed(counts)
+                  : Terminal.text.brightGreen(counts)
               } else {
                 counts
               }

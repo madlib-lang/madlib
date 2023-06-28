@@ -26,6 +26,7 @@ import           System.Exit (exitFailure)
 import           Run.OptimizationLevel (OptimizationLevel(O0))
 import           System.IO (hPutStr, stderr)
 
+
 runCompilation :: Command -> IO ()
 runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel)
   = do

@@ -84,7 +84,7 @@ void madlib__process__internal__initExtra() {
 }
 
 void madlib__process__internal__typedHoleReached() {
-  printf("Typed hole reached, exiting.\n");
+  fprintf(stderr, "Typed hole reached, exiting.\n");
   exit(1);
 }
 

@@ -1,0 +1,399 @@
+import type { Parser } from "Parse"
+
+import {} from "Compare"
+import Dictionary from "Dictionary"
+import { Left, Right } from "Either"
+import List from "List"
+import Parse from "Parse"
+import PP from "PrettyPrint"
+import String from "String"
+import Tuple from "Tuple"
+import Terminal from "Terminal"
+
+
+
+type Value
+  = Constructor(String, List Value)
+  | Unit
+  | Record(Dictionary String Value)
+  | Integer(String)
+  | Float(String)
+  | Boolean(String)
+  | Char(String)
+  | Str(String)
+  | DictionaryConstructor(Dictionary Value Value)
+  | ListConstructor(List Value)
+
+
+instance Comparable Value {
+  // note: this should work fine for now because we never insert anything
+  // but just construct an initial value and never insert. And for creation
+  // only Eq eliminates elements which is derived correctly.
+  // This should most likely be correctly defined for the future AST of
+  // the madlib parser, which will be based on this.
+  compare = (_, _) => 0
+}
+
+
+// -------- Integer ---------------------------------------
+
+integer :: Parser Value
+integer = do {
+  digits <- Parse.some(Parse.digit)
+
+  return pipe(
+    String.fromList,
+    Integer,
+    of,
+  )(digits)
+}
+
+
+// -------- Float -----------------------------------------
+
+float :: Parser Value
+float = do {
+  before <- Parse.some(Parse.digit)
+  dot <- Parse.char('.')
+  after <- Parse.some(Parse.digit)
+
+  return pipe(
+    String.fromList,
+    Float,
+    of,
+  )([...before, dot, ...after])
+}
+
+
+// -------- Boolean ---------------------------------------
+
+boolean :: Parser Value
+boolean = pipe(
+  alt(Parse.string("false")),
+  map(Boolean),
+)(Parse.string("true"))
+
+
+escapedChar :: Parser String
+escapedChar = do {
+  backslash <- Parse.char('\\')
+  escaped <- Parse.anyChar
+
+  return pipe(
+    String.fromList,
+    of,
+  )([backslash, escaped])
+}
+
+
+// -------- Char ------------------------------------------
+
+char :: Parser Value
+char = do {
+  _ <- Parse.char('\'')
+  c <- pipe(
+    map((c) => inspect(c)),
+    alt($, map((c) => `'${c}'`, escapedChar)),
+  // )(Parse.anyChar)
+  )(Parse.notOneOf(['\'', '\\']))
+
+  _ <- Parse.char('\'')
+
+  return pipe(
+    Char,
+    of,
+  )(c)
+}
+
+
+// -------- String ----------------------------------------
+
+string :: Parser Value
+string = do {
+  _ <- Parse.char('"')
+  content <- pipe(
+    map(String.singleton),
+    alt($, escapedChar),
+    Parse.many,
+    map(List.reduce(mconcat, "")),
+    map((s) => `"${s}"`),
+  )(Parse.notOneOf(['"', '\\']))
+  _ <- Parse.char('"')
+
+  return pipe(
+    Str,
+    of,
+  )(content)
+}
+
+
+// -------- Unit ------------------------------------------
+
+unit :: Parser Value
+unit = map(() => Unit, Parse.symbol("{}"))
+
+
+
+alphaNumericalName :: Parser String
+alphaNumericalName = do {
+  firstChar <- Parse.letter
+  rest <- Parse.many(Parse.choice([Parse.letter, Parse.digit]))
+
+  return pipe(
+    String.fromList,
+    of,
+  )([firstChar, ...rest])
+}
+
+
+// -------- Constructor -----------------------------------
+
+constructor :: Parser Value
+constructor = do {
+  nary = do {
+    name <- alphaNumericalName
+    _ <- Parse.symbol("(")
+    args <- Parse.maybeSepBy(value, Parse.symbol(","))
+    _ <- Parse.symbol(")")
+
+    return of(Constructor(name, args))
+  }
+
+  nullary = do {
+    name <- alphaNumericalName
+    return of(Constructor(name, []))
+  }
+
+  return alt(nary, nullary)
+}
+
+
+// -------- Record ----------------------------------------
+
+recordField :: Parser #[String, Value]
+recordField = do {
+  fieldName <- Parse.token(alphaNumericalName)
+  _ <- Parse.symbol(":")
+  fieldValue <- Parse.token(value)
+
+  return of(#[fieldName, fieldValue])
+}
+
+
+record :: Parser Value
+record = do {
+  _ <- Parse.symbol("{")
+  fields <- Parse.sepBy(recordField, Parse.symbol(","))
+  _ <- alt(Parse.symbol(","), pure(""))
+  _ <- Parse.symbol("}")
+
+  return pipe(
+    Dictionary.fromList,
+    Record,
+    of,
+  )(fields)
+}
+
+
+// -------- Dictionary ------------------------------------
+
+dictionaryField :: Parser #[Value, Value]
+dictionaryField = do {
+  fieldKey <- Parse.token(Parse.lazy(() => value))
+  _ <- Parse.symbol(":")
+  fieldValue <- Parse.token(value)
+
+  return of(#[fieldKey, fieldValue])
+}
+
+dictionary :: Parser Value
+dictionary = do {
+  _ <- Parse.symbol("{{")
+  fields <- Parse.maybeSepBy(dictionaryField, Parse.symbol(","))
+  _ <- alt(Parse.symbol(","), pure(""))
+  _ <- Parse.symbol("}}")
+
+  return pipe(
+    Dictionary.fromList,
+    DictionaryConstructor,
+    of,
+  )(fields)
+}
+
+
+// -------- List ------------------------------------------
+
+list :: Parser Value
+list = do {
+  _ <- Parse.symbol("[")
+  items <- Parse.maybeSepBy(value, Parse.symbol(","))
+  _ <- Parse.symbol("]")
+  return pipe(
+    ListConstructor,
+    of,
+  )(items)
+}
+
+
+// -------- Value -----------------------------------------
+
+value :: Parser Value
+value = Parse.choice([
+  unit,
+  boolean,
+  char,
+  string,
+  float,
+  integer,
+  list,
+  dictionary,
+  record,
+  constructor,
+])
+
+
+// DictionaryConstructor(Dictionary Value Value)
+
+valueToDoc :: Boolean -> Value -> PP.Doc
+valueToDoc = (colored, v) => where(v) {
+  Unit =>
+    PP.text("{}")
+
+  Integer(i) =>
+    colored
+      ? PP.text(Terminal.text.brightYellow(i))
+      : PP.text(i)
+
+  Float(f) =>
+    colored
+      ? PP.text(Terminal.text.brightYellow(f))
+      : PP.text(f)
+
+  Boolean(b) =>
+    colored
+      ? PP.text(Terminal.text.brightYellow(b))
+      : PP.text(b)
+
+  Char(c) =>
+    colored
+      ? PP.text(Terminal.text.brightCyan(c))
+      : PP.text(c)
+
+  Str(s) =>
+    colored
+      ? PP.text(Terminal.text.brightCyan(s))
+      : PP.text(s)
+
+  Constructor(n, args) =>
+    if (List.isEmpty(args)) { PP.text(n) } else {
+      PP.group(
+        PP.hcat([
+          PP.text(n),
+          PP.text("("),
+          PP.nest(
+            2,
+            PP.hcat([PP.linebreak, PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), args))]),
+          ),
+          PP.linebreak,
+          PP.text(")"),
+        ]),
+      )
+    }
+
+  ListConstructor(items) =>
+    PP.group(
+      PP.hcat([
+        PP.lbracket,
+        PP.nest(
+          2,
+          PP.hcat([PP.linebreak, PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), items))]),
+        ),
+        PP.linebreak,
+        PP.rbracket,
+      ]),
+    )
+
+  Record(fields) =>
+    PP.group(
+      PP.hcat([
+        PP.lbrace,
+        PP.nest(
+          2,
+          PP.hcat([
+            PP.line,
+            PP.sepBy(
+              PP.hcat([PP.comma, PP.line]),
+              map(
+                (f) => PP.hcat([
+                  PP.text(Tuple.fst(f)),
+                  PP.colon,
+                  PP.space,
+                  valueToDoc(colored, Tuple.snd(f)),
+                ]),
+                Dictionary.toList(fields),
+              ),
+            ),
+          ]),
+        ),
+        PP.line,
+        PP.rbrace,
+      ]),
+    )
+
+  DictionaryConstructor(fields) =>
+    PP.group(
+      PP.hcat([
+        PP.text("{{"),
+        PP.nest(
+          2,
+          PP.hcat([
+            PP.line,
+            PP.sepBy(
+              PP.hcat([PP.comma, PP.line]),
+              map(
+                (f) => PP.hcat([
+                  valueToDoc(colored, Tuple.fst(f)),
+                  PP.colon,
+                  PP.space,
+                  valueToDoc(colored, Tuple.snd(f)),
+                ]),
+                Dictionary.toList(fields),
+              ),
+            ),
+          ]),
+        ),
+        PP.line,
+        PP.text("}}"),
+      ]),
+    )
+}
+
+
+printMadlibValue :: Integer -> Boolean -> String -> String
+printMadlibValue = (width, colored, madlibValue) => pipe(
+  Parse.runParser(value),
+  where {
+    Left(_) =>
+      "Unknown"
+
+    Right(parsed) =>
+      pipe(
+        valueToDoc(colored),
+        PP.prettyPrint(width),
+      )(parsed)
+  },
+)(madlibValue)
+
+
+ppInspect :: Inspect a => a -> String
+export ppInspect = (a) => pipe(
+  inspect,
+  printMadlibValue(80, false),
+)(a)
+
+
+cInspect :: Inspect a => a -> String
+export cInspect = (a) => pipe(
+  inspect,
+  printMadlibValue(80, true),
+)(a)

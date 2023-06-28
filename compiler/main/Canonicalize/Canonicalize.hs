@@ -226,15 +226,15 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.If cond' truthy' falsy')
 
     Src.Do exps -> do
-      exps' <- canonicalizeDefineExps exps
+      exps' <- canonicalizeDoExps exps
       return $ Can.Canonical area (Can.Do exps')
       where
-        canonicalizeDefineExps :: [Src.Exp] -> CanonicalM [Can.Exp]
-        canonicalizeDefineExps []     = return []
-        canonicalizeDefineExps (e:es) = case e of
+        canonicalizeDoExps :: [Src.Exp] -> CanonicalM [Can.Exp]
+        canonicalizeDoExps []     = return []
+        canonicalizeDoExps (e:es) = case e of
           Src.Source assignmentArea@(Area (Loc a l c) _) _ (Src.DoAssignment name action) -> do
             exp' <- canonicalize env target action
-            es'  <- canonicalizeDefineExps es
+            es'  <- canonicalizeDoExps es
             let symbolArea = Area (Loc a l c) (Loc (a + length name) l (c + length name))
             let fn  = Can.Canonical emptyArea (Can.Var "chain")
             let abs = Can.Canonical (mergeAreas assignmentArea area) $ Can.Abs (Can.Canonical symbolArea name) es'
@@ -243,7 +243,7 @@ instance Canonicalizable Src.Exp Can.Exp where
 
           _ -> do
             e'  <- canonicalize env target e
-            es' <- canonicalizeDefineExps es
+            es' <- canonicalizeDoExps es
             return $ e':es'
 
     Src.Where exp iss -> do

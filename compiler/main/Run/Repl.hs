@@ -36,6 +36,8 @@ import GHC.IO.Exception (IOException(IOError))
 import Infer.Type
 import           Paths_madlib                   ( version )
 import           Data.Version                   ( showVersion )
+import qualified Data.Maybe as Maybe
+import System.Environment (lookupEnv)
 
 
 
@@ -102,9 +104,17 @@ addTypeDeclToAST :: Src.AST -> Src.TypeDecl -> Src.AST
 addTypeDeclToAST ast td =
   ast { Src.atypedecls = Src.atypedecls ast ++ [td] }
 
+addInstanceToAST :: Src.AST -> Src.Instance -> Src.AST
+addInstanceToAST ast inst =
+  ast { Src.ainstances = Src.ainstances ast ++ [inst] }
 
-addLogToLastExp :: Src.AST -> Src.AST
-addLogToLastExp ast =
+addInterfaceToAST :: Src.AST -> Src.Interface -> Src.AST
+addInterfaceToAST ast interface =
+  ast { Src.ainterfaces = Src.ainterfaces ast ++ [interface] }
+
+
+addLogToLastExp :: Bool -> Src.AST -> Src.AST
+addLogToLastExp isColorful ast =
   let (Src.Source area target (Src.Assignment n (
           Src.Source absArea absTarget (Src.AbsWithMultilineBody params body)
           ))) = last $ Src.aexps ast
@@ -117,7 +127,8 @@ addLogToLastExp ast =
             ast
 
           lastBodyExp ->
-            let wrapped = src (Src.App (src (Src.Var "__IO__.log")) [lastBodyExp])
+            let logVarName = if isColorful then "__IO__.cLog" else "__IO__.log"
+                wrapped = src (Src.App (src (Src.Var logVarName)) [lastBodyExp])
                 updatedBody = Src.Source area target (Src.Assignment n (
                     Src.Source absArea absTarget (Src.AbsWithMultilineBody params (init (init body) ++ [wrapped, Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) Src.TargetAll Src.LUnit]))
                   ))
@@ -185,16 +196,19 @@ findTypeOfName ast name =
 
 
 
-evalMadlibCode :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
-evalMadlibCode options state code = case parse code of
+evalMadlibCode :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+evalMadlibCode isColorful options state code = case parse code of
   Right parsedNewCode -> do
     (currentAST, _, _) <- liftIO $ runTask state options Driver.Don'tPrune mempty $ do
       Rock.fetch $ Query.ParsedAST replModulePath
     let newAST = foldl addExpToAST currentAST (Src.aexps parsedNewCode)
     let newASTWithImports = foldl addImportToAST newAST (Src.aimports parsedNewCode)
     let newASTWithTypeDecls = foldl addTypeDeclToAST newASTWithImports (Src.atypedecls parsedNewCode)
-    let newASTWithLogAdded = addLogToLastExp newASTWithTypeDecls
+    let newASTWithInterfaces = foldl addInterfaceToAST newASTWithTypeDecls (Src.ainterfaces parsedNewCode)
+    let newASTWithInstances = foldl addInstanceToAST newASTWithInterfaces (Src.ainstances parsedNewCode)
+    let newASTWithLogAdded = addLogToLastExp isColorful newASTWithInstances
     let newCodeWithLogAdded = Format.astToSource 80 newASTWithLogAdded []
+
     ((typed, _), _, errs) <- liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath newCodeWithLogAdded) $ do
       Rock.fetch $ Query.SolvedASTWithEnv replModulePath
 
@@ -218,7 +232,7 @@ evalMadlibCode options state code = case parse code of
               ""
 
       -- then reset to newAST
-      let newValidCode = Format.astToSource 80 newASTWithTypeDecls []
+      let newValidCode = Format.astToSource 80 newASTWithInstances []
       let resetValidCode = do
             runTask state options Driver.Don'tPrune (Map.singleton replModulePath newValidCode) $ do
               Rock.fetch $ Query.ParsedAST replModulePath
@@ -234,8 +248,6 @@ evalMadlibCode options state code = case parse code of
 
             Just t ->
               return $ Output n (Just t) resetValidCode
-
-
 
         Nothing ->
           -- We just typed something evaluated that should be printed
@@ -254,6 +266,19 @@ evalMadlibCode options state code = case parse code of
     return $ ErrorResult "Grammar error"
 
 
+findTypeCommand :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+findTypeCommand options state name = do
+  ((typed, _), _, _) <- liftIO $ runTask state options Driver.Don'tPrune mempty $ do
+      Rock.fetch $ Query.SolvedASTWithEnv replModulePath
+  let maybeType = findTypeOfName typed name
+  case maybeType of
+    Just _ ->
+      return $ Output name maybeType (return ())
+
+    Nothing ->
+      return $ ErrorResult $ "No type found for '" <> name <> "'"
+
+
 data CommandResult
   = Exit
   | CommandNotFound String
@@ -263,25 +288,60 @@ data CommandResult
   | Continue (IO ())
 
 
-evalCmd :: String -> Haskeline.InputT IO CommandResult
-evalCmd cmd = case cmd of
+
+resetCommand :: Options.Options -> State -> Haskeline.InputT IO CommandResult
+resetCommand options state = do
+  liftIO $ hSilence [stdout, stderr] $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
+    Rock.fetch $ Query.ParsedAST replModulePath
+  return $ CommandResult "Cleared, you can now start fresh again!"
+
+evalCmd :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+evalCmd isColorful options state cmd = case cmd of
   "exit" ->
     return Exit
 
+  "e" ->
+    return Exit
+
   "help" ->
-    return $ CommandResult "help text TBD"
+    return $ CommandResult $ introduction isColorful
+
+  "h" ->
+    return $ CommandResult $ introduction isColorful
+
+  "reset" ->
+    resetCommand options state
+
+  "r" ->
+    resetCommand options state
+
+  't':'y':'p':'e':' ':args -> do
+    let args' = List.dropWhile Char.isSpace args
+        args'' = words args'
+    if length args'' /= 1 then
+      return $ ErrorResult $ "Invalid command ':" <> cmd <> "'"
+    else
+      findTypeCommand options state $ List.head args''
+
+  't':' ':args -> do
+    let args' = List.dropWhile Char.isSpace args
+        args'' = words args'
+    if length args'' /= 1 then
+      return $ ErrorResult $ "Invalid command ':" <> cmd <> "'"
+    else
+      findTypeCommand options state $ List.head args''
 
   _ ->
-    return $ CommandNotFound cmd
+    return $ CommandNotFound $ ':' : cmd
 
 
 
-read :: Haskeline.InputT IO (Maybe String)
-read = read' False []
+read :: Bool -> Haskeline.InputT IO (Maybe String)
+read isColorful = read' isColorful False []
 
 
-read' :: Bool -> [String] -> Haskeline.InputT IO (Maybe String)
-read' multi acc = do
+read' :: Bool -> Bool -> [String] -> Haskeline.InputT IO (Maybe String)
+read' isColorful multi acc = do
   let start =
         if multi then
           "| "
@@ -293,49 +353,42 @@ read' multi acc = do
       return Nothing
 
     Just line ->
-      if not multi && null acc && line == ":multi" then do
+      if not multi && null acc && (line == ":multi" || line == ":m") then do
         -- we start multiline mode
-        liftIO $ putStrLn $ color Grey "-------- Multiline Mode enabled ------------------------"
-        liftIO $ putStrLn $ color Grey "You are now in multiline mode, to validate it enter a"
-        liftIO $ putStrLn $ color Grey "dot ( '.' ) on an empty line"
-        liftIO $ putStrLn $ color Grey "--------------------------------------------------------"
-        read' True []
+        liftIO $ putStrLn $ colorWhen isColorful Grey "-------- " <> colorWhen isColorful Yellow "Multiline Mode enabled" <> colorWhen isColorful Grey " ------------------------"
+        liftIO $ putStrLn $ colorWhen isColorful Grey "You are now in multiline mode, to validate it enter a"
+        liftIO $ putStrLn $ colorWhen isColorful Grey "dot ( '.' ) on an empty line"
+        liftIO $ putStrLn $ colorWhen isColorful Grey "--------------------------------------------------------"
+        read' isColorful True []
       else if multi then
         if line == "." then
           return $ Just $ unlines acc
         else
-          read' multi (acc ++ [line])
+          read' isColorful multi (acc ++ [line])
       else
         return $ Just line
 
 
--- should return a type other than String
--- something like
--- data EvalResult
---   = TypeCheckError CompilationError
---   | EvaluatedCode String
---   | ImportedModule FilePath String
---   | TypeDefined ...
-eval :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
-eval options state code =
+eval :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+eval isColorful options state code =
   case code of
     ':' : cmd ->
-      evalCmd cmd
+      evalCmd isColorful options state cmd
 
     _ ->
-      evalMadlibCode options state code
+      evalMadlibCode isColorful options state code
 
 
-print :: CommandResult -> Haskeline.InputT IO ()
-print result = case result of
+print :: Bool -> CommandResult -> Haskeline.InputT IO ()
+print isColorful result = case result of
   Output output maybeType _ -> do
-    let output' = color Yellow output
+    -- let output' = colorWhen isColorful Yellow output
     let output'' = case maybeType of
           Just qt ->
-            output' <> color Grey (" :: " <> prettyPrintQualType qt)
+            output <> colorWhen isColorful Grey (" :: " <> prettyPrintQualType qt)
 
           _ ->
-            output'
+            output
     liftIO $ putStrLn output''
 
   ErrorResult err ->
@@ -344,53 +397,61 @@ print result = case result of
   CommandResult toShow ->
     liftIO $ putStrLn toShow
 
+  CommandNotFound cmd ->
+    liftIO $ putStrLn $ "Command not found '" <> cmd <> "'"
+
   _ ->
     return ()
 
 
-loop :: Options.Options -> State -> Haskeline.InputT IO ()
-loop options state = do
+loop :: Bool -> Options.Options -> State -> Haskeline.InputT IO ()
+loop isColorful options state = do
   -- code <- Haskeline.handleInterrupt (return (Just "")) (Haskeline.withInterrupt read)
-  code <- read
+  code <- read isColorful
   case code of
     Just "" ->
-      loop options state
+      loop isColorful options state
 
     Just c -> do
-      evaluated <- eval options state c
-      print evaluated
+      evaluated <- eval isColorful options state c
+      print isColorful evaluated
       case evaluated of
         Exit ->
           return ()
 
         Continue postAction -> do
           liftIO postAction
-          loop options state
+          loop isColorful options state
 
         Output _ _ postAction -> do
           liftIO postAction
-          loop options state
+          loop isColorful options state
 
         _ -> do
-          loop options state
+          loop isColorful options state
 
     _ ->
       return ()
 
 
-introduction :: String
-introduction =
+introduction :: Bool -> String
+introduction isColorful =
   unlines
-    [ color Grey "------ " <> (color Yellow ("Madlib@" <> showVersion version)) <> color Grey " -----------------------------------"
-    , color Grey "The command :help will assist you"
-    , color Grey "The command :exit will exit the REPL"
-    , color Grey "The command :multi starts the multiline mode"
-    , color Grey "--------------------------------------------------------"
+    [ colorWhen isColorful Grey "------ " <> colorWhen isColorful Yellow ("REPL - Madlib@" <> showVersion version) <> colorWhen isColorful Grey " -------------------------------"
+    , colorWhen isColorful Grey "Available commands:"
+    , colorWhen isColorful Grey "  :help           show help (alias :h)"
+    , colorWhen isColorful Grey "  :exit           exit the REPL (alias :e)"
+    , colorWhen isColorful Grey "  :multi          start multiline mode (alias :m)"
+    , colorWhen isColorful Grey "  :type NAME      show the type of an assignment (alias :t)"
+    , colorWhen isColorful Grey "  :reset          reset the state of the repl (alias :r)"
+    , colorWhen isColorful Grey "-----------------------------------------------------------"
     ]
 
 
 start :: Target -> IO ()
 start target = do
+  noColor <- lookupEnv "NO_COLOR"
+  let isColorful = noColor == Just "" || Maybe.isNothing noColor
   state <- Driver.initialState
 
   let options =
@@ -398,7 +459,6 @@ start target = do
           { Options.optEntrypoint = replModulePath
           , Options.optTarget = target
           , Options.optRootPath = "./"
-          -- , Options.optOutputPath = ".repl/"
           , Options.optOutputPath = if target == TLLVM then ".repl/run" else ".repl/"
           , Options.optOptimized = False
           , Options.optPathUtils = PathUtils.defaultPathUtils
@@ -407,15 +467,17 @@ start target = do
           , Options.optGenerateDerivedInstances = True
           , Options.optInsertInstancePlaholders = False
           , Options.optMustHaveMain = False
+          , Options.optParseOnly = False
           , Options.optOptimizationLevel = O1
           , Options.optDebug = False
           }
 
-  putStrLn introduction
+  putStrLn $ introduction isColorful
+
   -- load initial module and fill caches for external modules like IO
   hSilence [stdout, stderr] $ liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
     Rock.fetch $ Query.BuiltTarget replModulePath
 
-  Haskeline.runInputT Haskeline.defaultSettings $ loop options state
+  Haskeline.runInputT Haskeline.defaultSettings $ loop isColorful options state
   -- Haskeline.runInputT Haskeline.defaultSettings $ Haskeline.withInterrupt $ loop state
   return ()

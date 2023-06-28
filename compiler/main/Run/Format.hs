@@ -55,12 +55,13 @@ parseASTsToFormat  (fp : fps)   = do
                               , optGenerateDerivedInstances = True
                               , optInsertInstancePlaholders = True
                               , optMustHaveMain = True
+                              , optParseOnly = True
                               , optDebug = False
                               , optOptimizationLevel = O1
                               }
         ast <- case parse code of
           Right a ->
-            computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) (setPath a fp)
+            computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a fp)
 
           Left _ ->
             return $ Left $ CompilationError Error NoContext
@@ -92,12 +93,13 @@ parseCodeToFormat code = do
                         , optGenerateDerivedInstances = True
                         , optInsertInstancePlaholders = True
                         , optMustHaveMain = True
+                        , optParseOnly = True
                         , optDebug = False
                         , optOptimizationLevel = O1
                         }
   ast <- case parse code of
         Right a ->
-          computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) (setPath a "./Module.mad")
+          computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a "./Module.mad")
 
         Left _ ->
           return $ Left $ CompilationError Error NoContext

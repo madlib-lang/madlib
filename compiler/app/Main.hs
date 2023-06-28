@@ -55,8 +55,8 @@ run cmd = do
     Repl target ->
       Repl.start target
 
-    Run path args ->
-      runRun path args
+    Run target path args ->
+      runRun target path args
 
     Format path code fix width ->
       runFormatter width fix path code

@@ -44,7 +44,11 @@ data Command
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
   | Format { formatInput :: FilePath, formatTextInput :: String, fix :: Bool, width :: Int }
-  | Run { runInput :: FilePath, runArgs :: [String] }
+  | Run
+      { runTarget :: Target
+      , runInput :: FilePath
+      , runArgs :: [String]
+      }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
   | Repl { replTarget :: Target }
@@ -238,7 +242,7 @@ parseRunArguments = many
   )
 
 parseRun :: Parser Command
-parseRun = Run <$> parseRunInput <*> parseRunArguments
+parseRun = Run <$> parseLimitedTarget <*> parseRunInput <*> parseRunArguments
 
 
 parseFolder :: Parser FilePath

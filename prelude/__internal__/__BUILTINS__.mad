@@ -165,12 +165,16 @@ instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i, Eq j) => Eq #[a,
 
 #-
 const escapeChar = (c) => {
-  if (c === '\n') {
+  if (c === '\\') {
+    return `\\\\`
+  } else if (c === '"') {
+    return `\\"`
+  } else if (c === '\n') {
     return `\\n`
   } else if (c === '\t') {
     return `\\t`
   } else if (c === '\r') {
-    return `\\t`
+    return `\\r`
   } else {
     return c
   }
@@ -196,12 +200,16 @@ instance Inspect Float {
 
 instance Inspect Char {
   inspect = (c) => #- {
-    if (c === '\n') {
+    if (c === '\\') {
+      return `'\\\\'`;
+    } else if (c === '\'') {
+      return `'\\''`;
+    } else if (c === '\n') {
       return `'\\n'`;
     } else if (c === '\t') {
       return `'\\t'`;
     } else if (c === '\r') {
-      return `'\\t'`;
+      return `'\\r'`;
     } else if (c === '\c') {
       return `'\\c'`;
     } else {

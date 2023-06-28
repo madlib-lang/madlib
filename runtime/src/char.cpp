@@ -193,7 +193,7 @@ char *madlib__char__internal__show(int32_t unicode) {
 char *madlib__char__internal__inspect(int32_t unicode) {
   char *inspected;
 
-  if (unicode == '\n' || unicode == '\t' || unicode == '\r') {
+  if (unicode == '\n' || unicode == '\t' || unicode == '\r' || unicode == '\\' || unicode == '\'') {
     char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * 5);
     result[0] = '\'';
     result[1] = '\\';
@@ -201,6 +201,12 @@ char *madlib__char__internal__inspect(int32_t unicode) {
     result[4] = '\0';
 
     switch (unicode) {
+      case '\'':
+        result[2] = '\'';
+        break;
+      case '\\':
+        result[2] = '\\';
+        break;
       case '\n':
         result[2] = 'n';
         break;

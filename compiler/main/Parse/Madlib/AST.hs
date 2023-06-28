@@ -81,7 +81,7 @@ buildAST options path code = case parse code of
             astWithDictImport
           else
             astWithDictImport { aimports = builtinsImport : aimports astWithDictImport }
-    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (optRootPath options) astWithBuiltinsImport
+    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
     case astWithAbsoluteImportPaths of
       Right astWithAbsoluteImportPaths' -> do
         astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
@@ -143,28 +143,32 @@ computeAbsoluteImportPath pathUtils rootPath (Source area target imp) = case imp
     return $ Source area target . DefaultImport namespace rel <$> abs
 
 
-computeAbsoluteImportPaths :: PathUtils -> FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
-computeAbsoluteImportPaths pathUtils astPath rootPath imps = case imps of
+computeAbsoluteImportPaths :: PathUtils -> Bool -> FilePath -> FilePath -> [Import] -> IO (Either CompilationError [Import])
+computeAbsoluteImportPaths pathUtils mustExist astPath rootPath imps = case imps of
   imp : next -> do
     imp' <- computeAbsoluteImportPath pathUtils (dropFileName astPath) imp
     case imp' of
       Nothing ->
-        return
-          $ Left
-          $ CompilationError
-              (ImportNotFound $ snd $ getImportPath imp)
-              (Context astPath (getArea imp))
+        if mustExist then
+          return
+            $ Left
+            $ CompilationError
+                (ImportNotFound $ snd $ getImportPath imp)
+                (Context astPath (getArea imp))
+        else do
+          next' <- computeAbsoluteImportPaths pathUtils mustExist astPath rootPath next
+          return $ (imp :) <$> next'
 
       Just good -> do
-        next' <- computeAbsoluteImportPaths pathUtils astPath rootPath next
+        next' <- computeAbsoluteImportPaths pathUtils mustExist astPath rootPath next
         return $ (good :) <$> next'
 
   [] ->
     return $ Right []
 
 
-computeAbsoluteImportPathsForAST :: PathUtils -> FilePath -> AST -> IO (Either CompilationError AST)
-computeAbsoluteImportPathsForAST pathUtils rootPath ast@AST{ aimports, apath = Just path } = do
-  updatedImports <- computeAbsoluteImportPaths pathUtils path rootPath aimports
+computeAbsoluteImportPathsForAST :: PathUtils -> Bool -> FilePath -> AST -> IO (Either CompilationError AST)
+computeAbsoluteImportPathsForAST pathUtils mustExist rootPath ast@AST{ aimports, apath = Just path } = do
+  updatedImports <- computeAbsoluteImportPaths pathUtils mustExist path rootPath aimports
   return $ (\updated -> ast { aimports = updated }) <$> updatedImports
-computeAbsoluteImportPathsForAST _ _ ast = error $ "ast has no path\n\n" <> ppShow ast
+computeAbsoluteImportPathsForAST _ _ _ ast = error $ "ast has no path\n\n" <> ppShow ast

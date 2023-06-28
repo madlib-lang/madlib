@@ -139,6 +139,7 @@ hasAbs :: Exp -> Bool
 hasAbs e = case e of
   Typed _ _ (Abs _ _) ->
     True
+
   _ ->
     False
 
@@ -151,8 +152,8 @@ verifyScope env globals globalAccesses globalScope dependencies exp =
     foldM (verifyScope' env globals S.empty globalScope dependencies exp) () globalAccesses
 
 verifyScope' :: Env -> [(String, Exp)] -> S.Set String -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
-verifyScope' env globals verified globalScope dependencies originExp@(Typed _ originArea _) _ (nameToVerify, Typed qt (Area loc _) _)
-  = if nameToVerify `S.member` verified then
+verifyScope' env globals verified globalScope dependencies originExp@(Typed _ originArea _) _ (nameToVerify, spotExp@(Typed qt (Area loc _) _))
+  = if nameToVerify `S.member` verified || hasAbs spotExp then
       return ()
     else if nameToVerify `S.member` globalScope then
       case M.lookup nameToVerify dependencies of
@@ -278,7 +279,28 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                                         arg
       return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
-    (Typed _ _ (Abs (Typed _ _ name) body)) -> do
+    Typed _ _ (Do body) -> do
+      collectFromBody foundNames nameToFind globalScope localScope body
+      where
+        collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
+        collectFromBody _          _   _           _          []       = return S.empty
+        collectFromBody foundNames ntf globalScope localScope (e : es) = do
+          let localScope' = extendScope localScope e
+          access <- collect env
+                            topLevelAssignments
+                            currentTopLevelAssignment
+                            foundNames
+                            ntf
+                            globalScope
+                            localScope'
+                            e
+          let nextFound = case getExpName e of
+                Just n  -> n : foundNames
+                Nothing -> foundNames
+          next <- collectFromBody nextFound ntf globalScope localScope' es
+          return $ access <> next
+
+    Typed _ _ (Abs (Typed _ _ name) body) -> do
       let (nameToFind', foundNames') = case nameToFind of
             Just "_" ->
               (Nothing, foundNames)
@@ -291,25 +313,26 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       let localScope' = S.insert name localScope
       collectFromBody (name : foundNames') nameToFind' globalScope localScope' body
 
-     where
-      collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
-      collectFromBody _          _   _           _          []       = return S.empty
-      collectFromBody foundNames ntf globalScope localScope (e : es) = do
-        let localScope' = extendScope localScope e
-        access <- collect env
-                          (topLevelAssignments <> S.singleton name)
-                          currentTopLevelAssignment
-                          foundNames
-                          ntf
-                          globalScope
-                          localScope'
-                          e
-        let nextFound = case getExpName e of
-              Just n  -> n : foundNames
-              Nothing -> foundNames
-        next <- collectFromBody nextFound ntf globalScope localScope' es
-        -- return S.empty
-        return $ access <> next
+      where
+        collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
+        collectFromBody _          _   _           _          []       = return S.empty
+        collectFromBody foundNames ntf globalScope localScope (e : es) = do
+          let localScope' = extendScope localScope e
+          accesses <- collect env
+                            (topLevelAssignments <> S.singleton name)
+                            currentTopLevelAssignment
+                            foundNames
+                            ntf
+                            globalScope
+                            localScope'
+                            e
+          let nextFound = case getExpName e of
+                Just n  -> n : foundNames
+                Nothing -> foundNames
+          next <- collectFromBody nextFound ntf globalScope localScope' es
+          -- return S.empty
+          let accesses' = S.map (\(a, _) -> (a, solvedExp)) accesses
+          return $ accesses' <> next
 
     (Typed _ _ (If cond truthy falsy)) -> do
       condAccesses <- collect env

@@ -206,6 +206,11 @@ export onExit = extern "madlib__eventloop__onExit"
 
 #endif
 
+// TODO: this is mainly broken and will not always work but should be fine
+// for node. We need to find a more robust solution.
+// Also note that for llvm backend it generates whatever it's called with
+// and can be a relative or absolute path, or simply a name that needs to
+// be resolved via PATH or other means for windows.
 getExecutablePath :: a -> String
 export getExecutablePath = () => fromMaybe("", List.nth(0, Argv))
 
