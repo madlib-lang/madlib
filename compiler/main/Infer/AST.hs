@@ -117,10 +117,12 @@ buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.apath = Nothing } = return priorEnv
 buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath, Can.aimports }
   = do
+    let env = priorEnv { envCurrentPath = apath }
     let methods = foldr (\(Can.Canonical _ (Can.Interface _ _ _ mtds' _)) mtds -> mtds <> mtds') mempty ainterfaces
-    env' <- foldM (\env (Can.Canonical area (Can.Interface id preds vars _ _)) -> addInterface env { envCurrentPath = apath } area id vars preds)
-                  priorEnv
-                  ainterfaces
+    env' <- foldM
+      (\currentEnv (Can.Canonical area (Can.Interface id preds vars _ _)) -> addInterface currentEnv area id vars preds)
+      env
+      ainterfaces
     env'' <- foldM
       (\env inst@(Can.Canonical _ (Can.Instance _ preds p _)) ->
         catchError (addInstance env preds p) (addContext env' inst)
@@ -130,8 +132,11 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
 
     let constructors = concat $ mapMaybe
           (\case
-            Can.Canonical _ adt@Can.ADT{} -> Just $ Can.adtconstructors adt
-            _                             -> Nothing
+            Can.Canonical _ adt@Can.ADT{} ->
+              Just $ Can.adtconstructors adt
+
+            _ ->
+              Nothing
           )
           atypedecls
 
@@ -311,8 +316,6 @@ buildImportInfos :: Env -> Can.AST -> Env
 buildImportInfos env Can.AST { Can.aimports } =
   let info = concatMap importInfo aimports
   in  env { envImportInfo = info }
-
-
 
 
 searchTypeInConstructor :: Id -> Type -> Maybe Type

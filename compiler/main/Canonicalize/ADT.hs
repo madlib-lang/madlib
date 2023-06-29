@@ -24,14 +24,51 @@ import Explain.Location
 
 
 canonicalizeTypeDecls :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
-canonicalizeTypeDecls env _       []         = return (env, [])
-canonicalizeTypeDecls env astPath [typeDecl] = do
-  (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
-  return (env', [tds'])
-canonicalizeTypeDecls env astPath (typeDecl : tds) = do
-  (env' , tds' ) <- canonicalizeTypeDecls env astPath [typeDecl]
-  (env'', tds'') <- canonicalizeTypeDecls env' astPath tds
-  return (env'', tds' <> tds'')
+canonicalizeTypeDecls env astPath tds = do
+  env' <- foldM (addTypeToEnv astPath) env tds
+  let tds' =
+        sortBy
+          (\a b -> case (a, b) of
+            (Src.Source _ _ Src.ADT{}, Src.Source _ _ Src.Alias{}) ->
+              GT
+
+            (Src.Source _ _ Src.Alias{}, Src.Source _ _ Src.ADT{}) ->
+              LT
+
+            _ ->
+              EQ
+          )
+          tds
+
+  (env'', tds'', toRetry) <- canonicalizeTypeDecls' True env' astPath tds'
+  if null toRetry then
+    return (env'', tds'')
+  else do
+    (env''', tds''', _) <- canonicalizeTypeDecls' False env'' astPath toRetry
+    return (env''', tds'' <> tds''')
+
+
+-- Last value in the tuple is the failed types that should be retried, mainly for forward use of type aliases
+-- if after a first pass that value isn't empty, we just retry all failed ones
+canonicalizeTypeDecls' :: Bool -> Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl], [Src.TypeDecl])
+canonicalizeTypeDecls' _ env _       []         = return (env, [], [])
+canonicalizeTypeDecls' firstPass env astPath [typeDecl] = do
+  if firstPass then
+    catchError
+      (do
+        (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
+        return (env', [tds'], [])
+      )
+      (\_ ->
+        return (env, [], [typeDecl])
+      )
+  else do
+    (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
+    return (env', [tds'], [])
+canonicalizeTypeDecls' firstPass env astPath (typeDecl : tds) = do
+  (env' , tds', toRetry') <- canonicalizeTypeDecls' firstPass env astPath [typeDecl]
+  (env'', tds'', toRetry'') <- canonicalizeTypeDecls' firstPass env' astPath tds
+  return (env'', tds' <> tds'', toRetry' <> toRetry'')
 
 
 verifyTypeVars :: Area -> FilePath -> Name -> [Name] -> CanonicalM ()
@@ -45,13 +82,16 @@ verifyTypeVars area astPath adtname ps = do
     )
     ps
 
-canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl of
+
+addTypeToEnv :: FilePath -> Env -> Src.TypeDecl -> CanonicalM Env
+addTypeToEnv astPath env (Src.Source area _ typeDecl) = case typeDecl of
   adt@Src.ADT{} ->
     if isLower . head $ Src.adtname adt then
       throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area)
     else case M.lookup (Src.adtname adt) (envTypeDecls env) of
-      Just t  -> throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area)
+      Just t  ->
+        throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area)
+
       Nothing -> do
         verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
@@ -59,8 +99,27 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
             vars  = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
             t'    = foldl1 TApp (t : vars)
             env'  = addADT env (Src.adtname adt) t'
-            env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
-        canonicalizeConstructors env'' astPath td
+            -- env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
+        return env'
+
+  Src.Alias{} -> do
+    return env
+
+
+canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
+canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl of
+  adt@Src.ADT{} ->
+    if isLower . head $ Src.adtname adt then
+      throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area)
+    else do
+      verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
+
+      let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
+          vars  = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
+          t'    = foldl1 TApp (t : vars)
+          env'  = addADT env (Src.adtname adt) t'
+          env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
+      canonicalizeConstructors env'' astPath td
 
   alias@Src.Alias{} -> do
     verifyTypeVars area astPath (Src.aliasname alias) (Src.aliasparams alias)
