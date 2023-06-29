@@ -126,6 +126,9 @@ addLogToLastExp isColorful ast =
           Src.Source _ _ (Src.TypedExp (Src.Source _ _ (Src.Assignment _ _)) _) ->
             ast
 
+          Src.Source _ _ (Src.NamedTypedExp _ _ _) ->
+            ast
+
           lastBodyExp ->
             let logVarName = if isColorful then "__IO__.cLog" else "__IO__.log"
                 wrapped = src (Src.App (src (Src.Var logVarName)) [lastBodyExp])
