@@ -51,13 +51,6 @@ lookupConstructorInfos env name = do
     _ ->
       return $ Map.lookup name (envConstructorInfos env)
 
-  -- case maybeType of
-  --   Just t ->
-  --     return t
-
-  --   Nothing ->
-  --     throwError $ CompilationError (UnknownType name) NoContext
-
 
 lookupADT :: Env -> String -> CanonicalM Type
 lookupADT env name = do

@@ -77,15 +77,15 @@ global.__jsArrayToList__ = (arr) => {
 
 global.__listCtorSpread__ = (_spread, _next) => {
   if (_spread === null) {
-    return _next;
+    return _next
   }
 
-  let head = _spread;
-  let result = _spread;
+  let head = { ..._spread }
+  let result = head
   while (head.n !== null) {
-    head = head.n;
+    head = head.n
   }
-  head.n = _next;
-  return result;
+  head.n = _next
+  return result
 }
 
