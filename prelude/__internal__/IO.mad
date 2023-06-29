@@ -316,3 +316,37 @@ export trace = (v, a) => {
   putLine(`${v} ${inspect(a)}`)
   return a
 }
+
+
+/**
+ * Very useful within pipes as it allows one to quickly introspect,
+ * whatever value is currently coming through the pipe. Analog to
+ * trace but produces a pretty-printed output
+ *
+ * @since 0.11.0
+ * @example
+ * // prints "current value 6" and returns 7
+ * pipe((x) => x * 2, trace("current value"), (x) => x + 1)(3)
+ */
+ppTrace :: Inspect a => String -> a -> a
+export ppTrace = (v, a) => {
+  putLine(`${v} ${ppInspect(a)}`)
+  return a
+}
+
+
+/**
+ * Very useful within pipes as it allows one to quickly introspect,
+ * whatever value is currently coming through the pipe. Analog to
+ * trace but produces a pretty-printed & colored output
+ *
+ * @since 0.11.0
+ * @example
+ * // prints "current value 6" and returns 7
+ * pipe((x) => x * 2, trace("current value"), (x) => x + 1)(3)
+ */
+cTrace :: Inspect a => String -> a -> a
+export cTrace = (v, a) => {
+  putLine(`${v} ${cInspect(a)}`)
+  return a
+}
