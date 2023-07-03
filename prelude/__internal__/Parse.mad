@@ -1,16 +1,16 @@
 import type { Either } from "Either"
+import type { Maybe } from "Maybe"
 
-import { andDo } from "Monad"
 import {} from "Alternative"
-import {} from "Number"
-import Char from "Char"
 import { apL } from "Applicative"
-import { Right, Left } from "Either"
-import { Just, Nothing } from "Maybe"
-import String from "String"
-import List from "List"
-import { always, complement, equals, ifElse, notEquals } from "Function"
+import Char from "Char"
 import { maybeLoop, while } from "Control"
+import { Left, Right } from "Either"
+import { always, complement, equals, ifElse, notEquals } from "Function"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import { andDo } from "Monad"
+import String from "String"
 
 
 
@@ -22,10 +22,9 @@ export type Error = Error(Location)
 
 
 incLoc :: Char -> Location -> Location
-incLoc = (c) => where { 
-  Loc(abs, line, col) => c == '\n'
-    ? Loc(abs + 1, line + 1, 0)
-    : Loc(abs + 1, line, col + 1)
+incLoc = (c) => where {
+  Loc(abs, line, col) =>
+    c == '\n' ? Loc(abs + 1, line + 1, 0) : Loc(abs + 1, line, col + 1)
 }
 
 
@@ -71,13 +70,15 @@ export fail = aempty
  * map(Letter, anyChar) // Parser Letter
  */
 instance Functor Parser {
-  map = (f, m) => Parser((s, l) => where(parse(m, s, l)) {
-    #[[#[a, b]], loc] =>
-      #[[#[f(a), b]], loc]
+  map = (f, m) => Parser(
+    (s, l) => where(parse(m, s, l)) {
+      #[[#[a, b]], loc] =>
+        #[[#[f(a), b]], loc]
 
-    #[_, loc] =>
-      #[[], loc]
-  })
+      #[_, loc] =>
+        #[[], loc]
+    },
+  )
 }
 
 
@@ -94,10 +95,8 @@ instance Functor Parser {
  * )(abcParser)
  */
 instance Applicative Parser {
-  pure = (a) => Parser((s, l) => #[[#[a, s]], l])
-
-  ap = (parserA, parserB) => Parser((s, l) =>
-    where(parse(parserA, s, l)) {
+  ap = (parserA, parserB) => Parser(
+    (s, l) => where(parse(parserA, s, l)) {
       #[[#[f, s1]], l1] =>
         where(parse(parserB, s1, l1)) {
           #[[#[a, s2]], l2] =>
@@ -109,8 +108,10 @@ instance Applicative Parser {
 
       #[_, l1] =>
         #[[], l1]
-    }
+    },
   )
+
+  pure = (a) => Parser((s, l) => #[[#[a, s]], l])
 }
 
 
@@ -121,17 +122,17 @@ instance Applicative Parser {
  * @since 0.0.1
  */
 instance Monad Parser {
-  of = pure
-
-  chain = (f, m) => Parser((s, l) =>
-    where(parse(m, s, l)) {
+  chain = (f, m) => Parser(
+    (s, l) => where(parse(m, s, l)) {
       #[[#[a, s1]], l1] =>
         parse(f(a), s1, l1)
 
       #[_, ll] =>
         #[[], ll]
-    }
+    },
   )
+
+  of = pure
 }
 
 
@@ -146,14 +147,14 @@ instance Monad Parser {
 instance Alternative Parser {
   aempty = Parser((_, l) => #[[], l])
 
-  alt = (ma, mb) => Parser((s, l) =>
-    where(parse(ma, s, l)) {
+  alt = (ma, mb) => Parser(
+    (s, l) => where(parse(ma, s, l)) {
       #[[], _] =>
         parse(mb, s, l)
 
       res =>
         res
-    }
+    },
   )
 }
 
@@ -163,7 +164,7 @@ export lazy = (wrapped) => Parser(
   (input, loc) => where(wrapped({})) {
     Parser(parserFn) =>
       parserFn(input, loc)
-  }
+  },
 )
 
 
@@ -176,13 +177,15 @@ export lazy = (wrapped) => Parser(
  * parse(anyChar, "?") // Right "?"
  */
 anyChar :: Parser Char
-export anyChar = Parser((s, l) => where(String.charAt(0, s)) {
-  Just(c) =>
-    #[[#[c, String.drop(1, s)]], incLoc(c, l)]
+export anyChar = Parser(
+  (s, l) => where(String.charAt(0, s)) {
+    Just(c) =>
+      #[[#[c, String.drop(1, s)]], incLoc(c, l)]
 
-  Nothing =>
-    #[[], l]
-})
+    Nothing =>
+      #[[], l]
+  },
+)
 
 
 /**
@@ -267,26 +270,29 @@ export choice = (ps) => List.reduce(alt, fail, ps)
  * runParser(many(string("O")), "OKOKOK")  // Left (Loc 1 0 1)
  */
 many :: Parser a -> Parser (List a)
-export many = (p) => Parser((s, l) => {
-  rest = s
-  loc = l
-  acc = []
-  while((_) =>
-    where(parse(p, rest, loc)) {
-      #[[#[parsed, r]], loc_] => do {
-        rest = r
-        loc = loc_
-        acc = [parsed, ...acc]
-        return true
-      }
+export many = (p) => Parser(
+  (s, l) => {
+    rest = s
+    loc = l
+    acc = []
+    while(
+      (_) => where(parse(p, rest, loc)) {
+        #[[#[parsed, r]], loc_] =>
+          do {
+            rest = r
+            loc = loc_
+            acc = [parsed, ...acc]
+            return true
+          }
 
-      _ =>
-        false
-    }
-  )
+        _ =>
+          false
+      },
+    )
 
-  return #[[#[List.reverse(acc), rest]], loc]
-})
+    return #[[#[List.reverse(acc), rest]], loc]
+  },
+)
 
 
 /**
@@ -299,13 +305,7 @@ export many = (p) => Parser((s, l) => {
  * runParser(some(string("OK")), "NOPE")   // Left (Loc 0 0 0)
  */
 some :: Parser a -> Parser (List a)
-export some = (p) => chain(
-  (first) => map(
-    (rest) => [first, ...rest],
-    many(p)
-  ),
-  p
-)
+export some = (p) => chain((first) => map((rest) => [first, ...rest], many(p)), p)
 
 /**
  * A parser combinator that matches many times the first given parser until the
@@ -319,30 +319,34 @@ export some = (p) => chain(
  * runParser(parser, "aaaaab") // Right "aaaaa"
  */
 manyTill :: Parser a -> Parser b -> Parser (List a)
-export manyTill = (p, end) => Parser((s, l) => {
-  result = maybeLoop(#[s, l, []], (state) =>
-    where(state) {
-      #[ss, ll, acc] =>
-        where(parse(end, ss, ll)) {
-          #[[#[_, _]], _] =>
-            Nothing
+export manyTill = (p, end) => Parser(
+  (s, l) => {
+    result = maybeLoop(
+      #[s, l, []],
+      (state) => where(state) {
+        #[ss, ll, acc] =>
+          where(parse(end, ss, ll)) {
+            #[[#[_, _]], _] =>
+              Nothing
 
-          _ =>
-            where(parse(p, ss, ll)) {
-              #[[#[parsed, rest]], loc] =>
-                Just(#[rest, loc, [parsed, ...acc]])
+            _ =>
+              where(parse(p, ss, ll)) {
+                #[[#[parsed, rest]], loc] =>
+                  Just(#[rest, loc, [parsed, ...acc]])
 
-              _ =>
-                Nothing
-            }
-        }
+                _ =>
+                  Nothing
+              }
+          }
+      },
+    )
+
+    return where(result) {
+      #[rest, loc, parseResult] =>
+        #[[#[List.reverse(parseResult), rest]], loc]
     }
-  )
-
-  return where(result) {
-    #[rest, loc, parseResult] =>
-      #[[#[List.reverse(parseResult), rest]], loc] }
-})
+  },
+)
 
 
 /**
@@ -361,11 +365,8 @@ export manyTill = (p, end) => Parser((s, l) => {
  */
 someTill :: Parser a -> Parser b -> Parser (List a)
 export someTill = (p, end) => chain(
-  (first) => map(
-    (rest) => mconcat([first], rest),
-    manyTill(p, end)
-  ),
-  p
+  (first) => map((rest) => mconcat([first], rest), manyTill(p, end)),
+  p,
 )
 
 /**
@@ -376,13 +377,15 @@ export someTill = (p, end) => chain(
  * alt(char("a"), lookAhead(anyChar))
  */
 lookAhead :: Parser a -> Parser a
-export lookAhead = (p) => Parser((s, l) => where(parse(p, s, l)) {
-  #[[#[a, _]], _] =>
-    #[[#[a, s]], l]
+export lookAhead = (p) => Parser(
+  (s, l) => where(parse(p, s, l)) {
+    #[[#[a, _]], _] =>
+      #[[#[a, s]], l]
 
-  _ =>
-    #[[], l]
-})
+    _ =>
+      #[[], l]
+  },
+)
 
 /**
  * A parser combinator that parses all characters while the given predicate
@@ -393,27 +396,28 @@ export lookAhead = (p) => Parser((s, l) => where(parse(p, s, l)) {
  * runParser(takeWhile(notEquals("-")), "abcdef-")
  */
 takeWhile :: (Char -> Boolean) -> Parser (List Char)
-export takeWhile = (pred) => Parser((s, l) => {
-  result = maybeLoop(#[s, l, []], (state) =>
-    where(state) {
-      #[ss, ll, acc] =>
-        where(parse(anyChar, ss, ll)) {
-          #[[#[parsed, rest]], loc] =>
-            pred(parsed)
-              ? Just(#[rest, loc, [parsed, ...acc]])
-              : Nothing
+export takeWhile = (pred) => Parser(
+  (s, l) => {
+    result = maybeLoop(
+      #[s, l, []],
+      (state) => where(state) {
+        #[ss, ll, acc] =>
+          where(parse(anyChar, ss, ll)) {
+            #[[#[parsed, rest]], loc] =>
+              pred(parsed) ? Just(#[rest, loc, [parsed, ...acc]]) : Nothing
 
-          _ =>
-            Nothing
-        }
+            _ =>
+              Nothing
+          }
+      },
+    )
+
+    return where(result) {
+      #[rest, loc, parseResult] =>
+        #[[#[List.reverse(parseResult), rest]], loc]
     }
-  )
-
-  return where(result) {
-    #[rest, loc, parseResult] =>
-      #[[#[List.reverse(parseResult), rest]], loc]
-  }
-})
+  },
+)
 
 
 sepBy :: Parser a -> Parser s -> Parser (List a)
@@ -423,14 +427,14 @@ export sepBy = (parser, separator) => alt(
     rest <- many(andDo(parser, separator))
     return of([first, ...rest])
   },
-  fail
+  fail,
 )
 
 
 maybeSepBy :: Parser a -> Parser s -> Parser (List a)
 export maybeSepBy = (parser, sep) => pipe(
   sepBy(parser),
-  alt($, pure([]))
+  alt($, pure([])),
 )(sep)
 
 
@@ -443,10 +447,7 @@ export maybeSepBy = (parser, sep) => pipe(
  * runParser(satisfy(isLetter), "1") // Left (Loc 0 0 0)
  */
 satisfy :: (Char -> Boolean) -> Parser Char
-export satisfy = (pred) => chain(
-  ifElse(pred, of, always(fail)),
-  anyChar
-)
+export satisfy = (pred) => chain(ifElse(pred, of, always(fail)), anyChar)
 
 /**
  * A parser combinator that parses a single given character.
@@ -457,7 +458,10 @@ export satisfy = (pred) => chain(
  * runParser(char("a"), "b") // Left (Loc 0 0 0)
  */
 char :: Char -> Parser Char
-export char = pipe(equals, satisfy)
+export char = pipe(
+  equals,
+  satisfy,
+)
 
 /**
  * The complement of char, it parses any char that not the one given.
@@ -468,7 +472,10 @@ export char = pipe(equals, satisfy)
  * runParser(notChar("a"), "b") // Right "a"
  */
 notChar :: Char -> Parser Char
-export notChar = pipe(notEquals, satisfy)
+export notChar = pipe(
+  notEquals,
+  satisfy,
+)
 
 /**
  * A parser combinator that parses the eof token, or the end of the input.
@@ -479,13 +486,15 @@ export notChar = pipe(notEquals, satisfy)
  * runParser(eof, "a") // Left (Loc 0 0 0)
  */
 eof :: Parser {}
-export eof = Parser((s, l) => where(parse(anyChar, s, l)) {
-  #[[], _] =>
-    #[[#[{}, ""]], l]
+export eof = Parser(
+  (s, l) => where(parse(anyChar, s, l)) {
+    #[[], _] =>
+      #[[#[{}, ""]], l]
 
-  _ =>
-    #[[], l]
-})
+    _ =>
+      #[[], l]
+  },
+)
 
 /**
  * A parser combinator that parses a given string.
@@ -496,11 +505,11 @@ export eof = Parser((s, l) => where(parse(anyChar, s, l)) {
  * runParser(string("hello world"), "hello")       // Left (Loc 0 0 0)
  */
 string :: String -> Parser String
-export string = (s) => where(String.firstChar(s)){
+export string = (s) => where(String.firstChar(s)) {
   Just(c) =>
     pipe(
       map((a, b) => String.pushChar(a, b)),
-      ap($, string(String.drop(1, s)))
+      ap($, string(String.drop(1, s))),
     )(char(c))
 
   Nothing =>
@@ -519,7 +528,7 @@ export string = (s) => where(String.firstChar(s)){
 spaces :: Parser (List Char)
 export spaces = pipe(
   oneOf,
-  some
+  some,
 )([' ', '\n', '\r', '\t'])
 
 /**
@@ -544,7 +553,10 @@ export token = apL($, alt(spaces, pure([])))
  * runParser(symbol("hello"), "hello\n!") // Left (Loc 0 0 0)
  */
 symbol :: String -> Parser String
-export symbol = pipe(string, token)
+export symbol = pipe(
+  string,
+  token,
+)
 
 /**
  * A parser combinator that parses a digit.
@@ -569,3 +581,123 @@ export letter = satisfy(Char.isLetter)
  */
 letters :: Parser (List Char)
 export letters = many(letter)
+
+
+
+// ------------ Pratt Parser ------------------------------
+
+export type Config a
+  = Config({
+    andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+    oneOf :: List (Config a -> Parser a),
+    spaces :: Parser {},
+  })
+
+
+getConf :: Config a
+-> {
+  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+  oneOf :: List (Config a -> Parser a),
+  spaces :: Parser {},
+}
+getConf = (config) => where(config) {
+  Config(conf) =>
+    conf
+}
+
+
+prattExpression :: {
+  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+  oneOf :: List (Config a -> Parser a),
+  spaces :: Parser {},
+}
+-> Parser a
+export prattExpression = (config) => pipe(
+  Config,
+  subExpression(0),
+)(config)
+
+
+subExpression :: Integer -> Config a -> Parser a
+subExpression = (precedence, config) => do {
+  conf = getConf(config)
+  _ <- conf.spaces
+
+  leftExpression <- choice(map((p) => p(config), conf.oneOf))
+
+  return expressionHelp(config, precedence, leftExpression)
+}
+
+
+expressionHelp :: Config a -> Integer -> a -> Parser a
+expressionHelp = (config, precedence, leftExpression) => do {
+  conf = getConf(config)
+  _ <- conf.spaces
+
+  return choice([
+    do {
+      expr <- operation(config, precedence, leftExpression)
+      return alt(expressionHelp(config, precedence, expr), of(expr))
+    },
+    of(leftExpression),
+  ])
+}
+
+
+operation :: Config a -> Integer -> a -> Parser a
+operation = (config, precedence, leftExpression) => pipe(
+  getConf,
+  .andThenOneOf,
+  List.mapMaybe((toOperation) => filter(toOperation(config), precedence, leftExpression)),
+  choice,
+)(config)
+
+
+filter :: #[Integer, a -> Parser a] -> Integer -> a -> Maybe (Parser a)
+filter = (op, currentPrecedence, leftExpression) => where(op) {
+  #[precedence, parser] =>
+    precedence > currentPrecedence ? Just(parser(leftExpression)) : Nothing
+}
+
+
+prefix :: Integer -> Parser a -> (a -> a -> a) -> Config a -> Parser a
+export prefix = (precedence, operator, apply, config) => do {
+  op <- operator
+  value <- subExpression(precedence, config)
+
+  return of(apply(op, value))
+}
+
+
+infixHelp :: #[Integer, Integer]
+-> Parser a
+-> (a -> a -> a -> a)
+-> Config a
+-> #[Integer, a -> Parser a]
+infixHelp = (precedences, operator, apply, config) => where(precedences) {
+  #[leftPrecedence, rightPrecedence] =>
+    #[
+      leftPrecedence,
+      (leftExpression) => do {
+        op <- operator
+        rightExpression <- subExpression(rightPrecedence, config)
+
+        return of(apply(leftExpression, op, rightExpression))
+      },
+    ]
+}
+
+
+infixLeft :: Integer -> Parser a -> (a -> a -> a -> a) -> Config a -> #[Integer, a -> Parser a]
+export infixLeft = (precedence) => infixHelp(#[precedence, precedence])
+
+
+infixRight :: Integer -> Parser a -> (a -> a -> a -> a) -> Config a -> #[Integer, a -> Parser a]
+export infixRight = (precedence) => infixHelp(#[precedence, precedence - 1])
+
+
+postfix :: Integer -> Parser {} -> (a -> a) -> Config a -> #[Integer, a -> Parser a]
+export postfix = (precedence, operator, apply, _) => #[
+  precedence,
+  (leftExpression) => map(() => apply(leftExpression), operator),
+]

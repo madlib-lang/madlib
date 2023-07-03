@@ -127,19 +127,19 @@ applyAndCleanQt subst (ps :=> t) =
   in  filteredPs :=> apply subst t
 
 
-removeParameterPlaceholdersAndUpdateName :: String -> Exp -> Exp
-removeParameterPlaceholdersAndUpdateName newName fnDefinition = case fnDefinition of
+updateName :: String -> Exp -> Exp
+updateName newName fnDefinition = case fnDefinition of
   Typed qt area (Export e) ->
-    Typed qt area (Export (removeParameterPlaceholdersAndUpdateName newName e))
+    Typed qt area (Export (updateName newName e))
 
   Typed qt area (Extern qualType _ foreignName) ->
     Typed qt area (Extern qualType newName foreignName)
 
   Typed qt area (TypedExp e typing sc) ->
-    Typed qt area (TypedExp (removeParameterPlaceholdersAndUpdateName newName e) typing sc)
+    Typed qt area (TypedExp (updateName newName e) typing sc)
 
   Typed qt area (Assignment _ e) ->
-    Typed qt area (Assignment newName (removeParameterPlaceholdersAndUpdateName newName e))
+    Typed qt area (Assignment newName (updateName newName e))
 
   or ->
     or
@@ -224,7 +224,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
             monomorphize
               target
               env { envSubstitution = s }
-              (removeParameterPlaceholdersAndUpdateName monomorphicName fnDefinition)
+              (updateName monomorphicName fnDefinition)
 
           liftIO $ atomicModifyIORef
             envLocalState
@@ -300,7 +300,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                       , envLocalState = makeLocalMonomorphizationState ()
                       , envLocalBindingsToExclude = mempty
                       }
-                    (removeParameterPlaceholdersAndUpdateName nameToUse fnDefinition)
+                    (updateName nameToUse fnDefinition)
                 liftIO $ setRequestResult fnName' fnModulePath False typeItIsCalledWith monomorphized
 
                 let importType =
@@ -358,7 +358,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                         , envLocalState = makeLocalMonomorphizationState ()
                         , envLocalBindingsToExclude = mempty
                         }
-                      (removeParameterPlaceholdersAndUpdateName monomorphicName methodExp'')
+                      (updateName monomorphicName methodExp'')
                   liftIO $ setRequestResult fnName methodModulePath (not $ isAbs methodExp) typeItIsCalledWith monomorphized
                   addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
 

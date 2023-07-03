@@ -63,7 +63,7 @@ pow :: Float -> Float -> Float
 export pow = (a, b) => #- { return Math.pow(a, b) } -#
 
 random :: a -> Float
-export random = #- { return Math.random } -#
+export random = #- Math.random -#
 
 #elseif llvm
 

@@ -53,6 +53,11 @@ isAfter :: Area -> Area -> Bool
   a > a'
 
 
+startsBeforeEnd :: Area -> Area -> Bool
+(Area (Loc a _ _) _) `startsBeforeEnd` (Area _ (Loc a' _ _) ) =
+  a > a'
+
+
 isSameLine :: Area -> Area -> Bool
 isSameLine (Area (Loc _ l _) _) (Area (Loc _ l' _) _) =
   l == l'

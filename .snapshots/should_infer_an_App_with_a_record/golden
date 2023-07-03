@@ -33,10 +33,6 @@
                              "Number"
                              [ TCon (TC "Integer" Star) "prelude" ]
                              (Just (Area (Loc 75 4 10) (Loc 76 4 11)))
-                         , IsIn
-                             "Number"
-                             [ TCon (TC "Integer" Star) "prelude" ]
-                             (Just (Area (Loc 75 4 10) (Loc 76 4 11)))
                          ] :=>
                            TApp
                              (TApp
@@ -49,10 +45,6 @@
                         (Abs
                            (Typed
                               ([ IsIn
-                                   "Number"
-                                   [ TCon (TC "Integer" Star) "prelude" ]
-                                   (Just (Area (Loc 75 4 10) (Loc 76 4 11)))
-                               , IsIn
                                    "Number"
                                    [ TCon (TC "Integer" Star) "prelude" ]
                                    (Just (Area (Loc 75 4 10) (Loc 76 4 11)))
@@ -363,10 +355,6 @@
                                           "Number"
                                           [ TCon (TC "Integer" Star) "prelude" ]
                                           (Just (Area (Loc 68 4 3) (Loc 74 4 9)))
-                                      , IsIn
-                                          "Number"
-                                          [ TCon (TC "Integer" Star) "prelude" ]
-                                          (Just (Area (Loc 75 4 10) (Loc 76 4 11)))
                                       , IsIn
                                           "Number"
                                           [ TCon (TC "Integer" Star) "prelude" ]
