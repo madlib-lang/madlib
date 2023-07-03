@@ -210,8 +210,6 @@ instance Inspect Char {
       return `'\\t'`;
     } else if (c === '\r') {
       return `'\\r'`;
-    } else if (c === '\c') {
-      return `'\\c'`;
     } else {
       return `'${c}'`;
     }

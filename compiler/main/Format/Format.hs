@@ -391,7 +391,13 @@ bodyToDoc comments exps = case exps of
     let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
         breaks              = Pretty.hcat $ replicate (max 1 $ expLineDiff comments' exp (head next)) Pretty.hardline
-    in  (exp' <> breaks <> next', comments'')
+        breaks' = case next of
+          [Source _ _ LUnit] ->
+            Pretty.emptyDoc
+
+          _ ->
+            breaks
+    in  (exp' <> breaks' <> next', comments'')
 
 
 binOpToDocs :: [Comment] -> Exp -> ([Pretty.Doc ann], [Comment])
@@ -1362,6 +1368,8 @@ constructorsToDoc comments ctors = case ctors of
         args''              =
           if null args then
             Pretty.emptyDoc
+          else if length args == 1 then
+            Pretty.lparen <> args' <> Pretty.rparen
           else
             Pretty.group
               (
@@ -1527,7 +1535,7 @@ insertCommentsAsDocList :: Bool -> Area -> [Comment] -> ([Pretty.Doc ann], [Comm
 insertCommentsAsDocList topLevel area comments = case comments of
   (comment : _) ->
     let commentArea = getCommentArea comment
-        after                                         = area `isAfter` commentArea
+        after                                         = area `startsBeforeEnd` commentArea
         afterOrSameLine                               = after || isSameLine area commentArea && isInlineComment comment
     in
       if afterOrSameLine then

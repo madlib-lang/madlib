@@ -333,7 +333,7 @@ tupleTypings :: { [Src.Typing] }
 bodyExp :: { Src.Exp }
   : name '=' maybeRet exp                          %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $1) $4) }
   | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
-  | exp { $1 }
+  | exp                                                   { $1 }
 
 
 exp :: { Src.Exp }
@@ -388,9 +388,9 @@ absOrParenthesizedName :: { Src.Exp }
   | '(' ')' '=>' rets exp                              %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $5)) (tokenTarget $1) (Src.Abs [] [$5]) }
   | '(' ')' '=>' '{' rets multiExpBody rets '}'        %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.AbsWithMultilineBody [] $6) }
 
-maybeAbsExps :: { Maybe (Area, [Src.Exp]) }
-  : '=>' rets bodyExp                   %shift { Just (mergeAreas (tokenArea $1) (Src.getArea $3), [$3]) }
-  | '=>' '{' rets multiExpBody rets '}' %shift { Just (mergeAreas (tokenArea $1) (tokenArea $6), $4) }
+maybeAbsExps :: { Maybe (Bool, Area, [Src.Exp]) }
+  : '=>' rets bodyExp                   %shift { Just (False, mergeAreas (tokenArea $1) (Src.getArea $3), [$3]) }
+  | '=>' '{' rets multiExpBody rets '}' %shift { Just (True, mergeAreas (tokenArea $1) (tokenArea $6), $4) }
   | {- nothing -}                       %shift { Nothing }
 
 
@@ -683,15 +683,18 @@ buildPipe :: Area -> Src.SourceTarget -> [Src.Exp] -> Src.Exp
 buildPipe area sourceTarget exps = Src.Source area sourceTarget (Src.Pipe exps)
 
 
-buildAbsOrParenthesizedName :: Area -> Area -> Src.SourceTarget -> Src.Source Name -> Maybe (Area, [Src.Exp]) -> Src.Exp
+buildAbsOrParenthesizedName :: Area -> Area -> Src.SourceTarget -> Src.Source Name -> Maybe (Bool, Area, [Src.Exp]) -> Src.Exp
 buildAbsOrParenthesizedName parenLeftArea parenRightArea sourceTarget n@(Src.Source nameArea _ name) maybeExp = case maybeExp of
   Nothing ->
     Src.Source (mergeAreas parenLeftArea parenRightArea) sourceTarget (Src.Parenthesized parenLeftArea (Src.Source nameArea sourceTarget $ Src.Var name) parenRightArea)
 
-  Just (_, [exp]) ->
+  Just (False, _, [exp]) ->
     Src.Source (mergeAreas parenLeftArea (Src.getArea exp)) sourceTarget (Src.Abs [n] [exp])
 
-  Just (initialArea, exps) ->
+  Just (True, initialArea, [exp]) ->
+    Src.Source (mergeAreas parenLeftArea initialArea) sourceTarget (Src.AbsWithMultilineBody [n] [exp])
+
+  Just (_, initialArea, exps) ->
     Src.Source (mergeAreas parenLeftArea initialArea) sourceTarget (Src.AbsWithMultilineBody [n] exps)
 
 

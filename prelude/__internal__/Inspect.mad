@@ -94,7 +94,6 @@ char = do {
   c <- pipe(
     map((c) => inspect(c)),
     alt($, map((c) => `'${c}'`, escapedChar)),
-  // )(Parse.anyChar)
   )(Parse.notOneOf(['\'', '\\']))
 
   _ <- Parse.char('\'')
@@ -385,8 +384,8 @@ printMadlibValue = (width, colored, madlibValue) => pipe(
 )(madlibValue)
 
 
-ppInspect :: Inspect a => a -> String
-export ppInspect = (a) => pipe(
+pInspect :: Inspect a => a -> String
+export pInspect = (a) => pipe(
   inspect,
   printMadlibValue(80, false),
 )(a)

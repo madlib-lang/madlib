@@ -167,7 +167,12 @@ char *madlib__string__internal__inspect(char *input) {
       result = resized;
     }
 
-    if (*input == '\\') {
+    if (*input == '\n') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = 'n';
+
+      currentIndex += 2;
+    } else if (*input == '\\') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = '\\';
 
@@ -175,11 +180,6 @@ char *madlib__string__internal__inspect(char *input) {
     } else if (*input == '"') {
       result[currentIndex] = '\\';
       result[currentIndex + 1] = '"';
-
-      currentIndex += 2;
-    } else if (*input == '\n') {
-      result[currentIndex] = '\\';
-      result[currentIndex + 1] = 'n';
 
       currentIndex += 2;
     } else if (*input == '\t') {

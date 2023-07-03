@@ -100,6 +100,8 @@ runSingleModule target input args = do
 
   let jsOutputPath = joinPath [runFolder, fromRoot, (takeBaseName . takeFileName $ input) <> ".mjs"]
   if target == TNode then
-    callCommand $ "node " <> jsOutputPath <> " " <> unwords (map show args)
+    callCommand $ "node " <> jsOutputPath <> " " <> unwords (map (("\"" <>) . (<> "\"")) args)
+    -- callCommand $ "node " <> jsOutputPath <> " " <> unwords (map show args)
   else
-    callCommand $ llvmOutputPath <> " " <> unwords (map show args)
+    callCommand $ llvmOutputPath <> " " <> unwords (map (("\"" <>) . (<> "\"")) args)
+    -- callCommand $ llvmOutputPath <> " " <> unwords (map show args)

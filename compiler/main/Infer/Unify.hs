@@ -126,14 +126,14 @@ instance (Unify t, Show t, Substitutable t) => Unify [t] where
 
 unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
 unifyVars s ((tp, tp') : xs) = do
-  s1 <- unify tp tp'
-  unifyVars (compose s s1) xs
+  s1 <- unify (apply s tp) (apply s tp')
+  unifyVars (compose s1 s) xs
 unifyVars s [] = return s
 
 unifyVars' :: Substitution -> [Type] -> [Type] -> Infer Substitution
 unifyVars' s (tp : xs) (tp' : xs') = do
-  s1 <- unify tp tp'
-  unifyVars' (compose s s1) xs xs'
+  s1 <- unify (apply s tp) (apply s tp')
+  unifyVars' (compose s1 s) xs xs'
 unifyVars' s _ _  = return s
 
 

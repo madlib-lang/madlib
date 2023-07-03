@@ -503,8 +503,9 @@ inferRecord options env exp = do
       return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
 
   let allPS = concat fieldPS
+  let finalSubst = subst `compose` extraSubst
 
-  return (subst `compose` extraSubst, allPS, recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
+  return (finalSubst, allPS, apply finalSubst recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
 
 
 inferRecordField :: Options -> Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
