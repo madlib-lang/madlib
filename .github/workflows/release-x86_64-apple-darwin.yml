@@ -10,11 +10,19 @@ on:
 env:
   node-version: 14.x
 
+env:
+  HOMEBREW_NO_INSTALL_FROM_API:
+
 jobs:
   release:
     runs-on: macos-12
     steps:
       - uses: actions/checkout@v2
+
+      - run: brew config
+      - run: brew untap homebrew/core homebrew/cask
+      - run: brew config
+      - run: brew update --verbose --debug
 
       - name: Log lib
         run: |
@@ -38,9 +46,6 @@ jobs:
 
       - name: Install rollup
         run: npm i -g rollup @rollup/plugin-node-resolve
-
-      - name: Brew update
-        run: brew update
 
       - name: Install LLVM 12
         run: brew install llvm-hs/llvm/llvm-12
