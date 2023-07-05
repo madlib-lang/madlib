@@ -1,10 +1,9 @@
 import type { Maybe } from "Maybe"
 
 import { split } from "String"
-import {} from "Number"
+import {} from "Integer"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
-import {} from "Show"
 import {} from "Scan"
 import { ge, le } from "Compare"
 
@@ -20,14 +19,12 @@ export type VersionRange
   | AnyVersion
 
 
-instance Show Version {
-  show = (version) => {
-    major = show(getMajor(version))
-    minor = show(getMinor(version))
-    patch = show(getPatch(version))
+showVersion = (version) => {
+  major = inspect(getMajor(version))
+  minor = inspect(getMinor(version))
+  patch = inspect(getPatch(version))
 
-    return `${major}.${minor}.${patch}`
-  }
+  return `${major}.${minor}.${patch}`
 }
 
 
@@ -37,7 +34,7 @@ instance Scan Version {
 
 
 instance Comparable Version {
-  compare = (a, b) => compare(show(a), show(b))
+  compare = (a, b) => compare(showVersion(a), showVersion(b))
 }
 
 

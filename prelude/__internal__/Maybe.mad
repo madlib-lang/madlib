@@ -1,5 +1,4 @@
 import {} from "Monad"
-import {} from "Show"
 
 
 /**
@@ -87,25 +86,6 @@ instance Monad Maybe {
     Nothing =>
       Nothing
   })
-}
-
-
-/**
- * Use `show` to transform a Maybe to a string. 
- *
- * @since 0.0.6
- * @example
- * show(Just(3))                   // "Just 3"
- * show((Nothing :: Maybe Number)) // "Nothing"
- */
-instance Show a => Show (Maybe a) {
-  show = where {
-    Just(a)  =>
-      "Just " ++ show(a)
-
-    Nothing =>
-      "Nothing"
-  }
 }
 
 

@@ -270,7 +270,7 @@ export prettyPrint = (width, doc) => {
       pretty
 
     SChar(c, next) =>
-      helper(pretty ++ show(c), next)
+      helper(String.appendChar(c, pretty), next)
 
     SText(_, s, next) =>
       helper(pretty ++ s, next())

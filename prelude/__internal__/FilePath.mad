@@ -33,8 +33,8 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
 
   Just(char) =>
     foundSlash
-      ? mconcat([buffer], performSplitPath(show(char), false, String.drop(1, path)))
-      : performSplitPath(buffer ++ show(char), false, String.drop(1, path))
+      ? mconcat([buffer], performSplitPath(String.pushChar(char, ""), false, String.drop(1, path)))
+      : performSplitPath(buffer ++ String.pushChar(char, ""), false, String.drop(1, path))
 }
 
 

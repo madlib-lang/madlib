@@ -26,83 +26,6 @@ char *madlib__number__internal__inspectByte(unsigned char i) {
   return str;
 }
 
-unsigned char madlib__number__internal__numberToByte(int64_t a) {
-  return a;
-}
-
-unsigned char madlib__number__internal__negateByte(unsigned char a) {
-  return -a;
-}
-
-unsigned char madlib__number__internal__addBytes(unsigned char a,
-                                                  unsigned char b) {
-  return a + b;
-}
-
-unsigned char madlib__number__internal__substractBytes(unsigned char a,
-                                                        unsigned char b) {
-  return a - b;
-}
-
-unsigned char madlib__number__internal__multiplyBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a * b;
-}
-
-double *madlib__number__internal__divideBytes(unsigned char a,
-                                                       unsigned char b) {
-  return boxDouble(madlib__number__byteToFloat(a) / madlib__number__byteToFloat(b));
-}
-
-bool madlib__number__internal__gtBytes(unsigned char a, unsigned char b) {
-  return a > b;
-}
-
-bool madlib__number__internal__ltBytes(unsigned char a, unsigned char b) {
-  return a < b;
-}
-
-bool madlib__number__internal__gteBytes(unsigned char a, unsigned char b) {
-  return a >= b;
-}
-
-bool madlib__number__internal__lteBytes(unsigned char a, unsigned char b) {
-  return a <= b;
-}
-
-bool madlib__number__internal__eqByte(unsigned char a, unsigned char b) {
-  return a == b;
-}
-
-unsigned char madlib__number__internal__andBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a & b;
-}
-
-unsigned char madlib__number__internal__orBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a | b;
-}
-
-unsigned char madlib__number__internal__xorBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a ^ b;
-}
-
-unsigned char madlib__number__internal__complementBytes(unsigned char a) {
-  return ~a;
-}
-
-unsigned char madlib__number__internal__leftShiftBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a << b;
-}
-
-unsigned char madlib__number__internal__rightShiftBytes(unsigned char a,
-                                                       unsigned char b) {
-  return a >> b;
-}
-
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   unsigned char parsed;
@@ -149,49 +72,6 @@ char *madlib__number__internal__inspectFloat(double *d) {
   return stripped;
 }
 
-double *madlib__number__internal__numberToFloat(int64_t a) {
-  return boxDouble(a);
-}
-
-double *madlib__number__internal__negateFloat(double *a) {
-  return boxDouble(-unboxDouble(a));
-}
-
-double *madlib__number__internal__addFloats(double *a, double *b) {
-  return boxDouble(unboxDouble(a) + unboxDouble(b));
-}
-
-double *madlib__number__internal__substractFloats(double *a, double *b) {
-  return boxDouble(unboxDouble(a) - unboxDouble(b));
-}
-
-double *madlib__number__internal__multiplyFloats(double *a, double *b) {
-  return boxDouble(unboxDouble(a) * unboxDouble(b));
-}
-
-double *madlib__number__internal__divideFloats(double *a, double *b) {
-  return boxDouble(unboxDouble(a) / unboxDouble(b));
-}
-
-bool madlib__number__internal__gtFloats(double *a, double *b) {
-  return unboxDouble(a) > unboxDouble(b);
-}
-
-bool madlib__number__internal__ltFloats(double *a, double *b) {
-  return unboxDouble(a) < unboxDouble(b);
-}
-
-bool madlib__number__internal__gteFloats(double *a, double *b) {
-  return unboxDouble(a) >= unboxDouble(b);
-}
-
-bool madlib__number__internal__lteFloats(double *a, double *b) {
-  return unboxDouble(a) <= unboxDouble(b);
-}
-
-bool madlib__number__internal__eqFloat(double *a, double *b) {
-  return unboxDouble(a) == unboxDouble(b);
-}
 
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
@@ -209,6 +89,7 @@ madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
   return result;
 }
 
+
 // Integer
 
 char *madlib__number__internal__showInteger(int64_t i) {
@@ -225,73 +106,6 @@ char *madlib__number__internal__inspectInteger(int64_t i) {
   return str;
 }
 
-int64_t madlib__number__internal__numberToInteger(int64_t a) {
-  return a;
-}
-
-int64_t madlib__number__internal__negateInteger(int64_t a) {
-  return -a;
-}
-
-int64_t madlib__number__internal__addIntegers(int64_t a, int64_t b) {
-  return a + b;
-}
-
-int64_t madlib__number__internal__substractIntegers(int64_t a, int64_t b) {
-  return a - b;
-}
-
-int64_t madlib__number__internal__multiplyIntegers(int64_t a, int64_t b) {
-  return a * b;
-}
-
-double *madlib__number__internal__divideIntegers(int64_t a, int64_t b) {
-  return boxDouble(madlib__number__intToFloat(a) / madlib__number__intToFloat(b));
-}
-
-int64_t madlib__number__internal__andIntegers(int64_t a, int64_t b) {
-  return a & b;
-}
-
-int64_t madlib__number__internal__orIntegers(int64_t a, int64_t b) {
-  return a | b;
-}
-
-int64_t madlib__number__internal__xorIntegers(int64_t a, int64_t b) {
-  return a ^ b;
-}
-
-int64_t madlib__number__internal__complementIntegers(int64_t a) {
-  return ~a;
-}
-
-int64_t madlib__number__internal__leftShiftIntegers(int64_t a, int64_t b) {
-  return a << b;
-}
-
-int64_t madlib__number__internal__rightShiftIntegers(int64_t a, int64_t b) {
-  return a >> b;
-}
-
-bool madlib__number__internal__gtIntegers(int64_t a, int64_t b) {
-  return a > b;
-}
-
-bool madlib__number__internal__ltIntegers(int64_t a, int64_t b) {
-  return a < b;
-}
-
-bool madlib__number__internal__gteIntegers(int64_t a, int64_t b) {
-  return a >= b;
-}
-
-bool madlib__number__internal__lteIntegers(int64_t a, int64_t b) {
-  return a <= b;
-}
-
-bool madlib__number__internal__eqInteger(int64_t a, int64_t b) {
-  return a == b;
-}
 
 madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
@@ -311,6 +125,39 @@ madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
 }
 
 
+// Short
+
+char *madlib__number__internal__showShort(int32_t i) {
+  char *str = (char *)GC_MALLOC_ATOMIC(30);
+  sprintf(str, "%" PRId32, i);
+
+  return str;
+}
+
+char *madlib__number__internal__inspectShort(int32_t i) {
+  char *str = (char *)GC_MALLOC_ATOMIC(30);
+  sprintf(str, "%" PRId32, i);
+
+  return str;
+}
+
+madlib__maybe__Maybe_t *madlib__number__scanShort(char *s) {
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+  int32_t parsed;
+  int success = sscanf(s, "%" SCNd32, &parsed);
+
+  if (success == 1) {
+    result->index = 0;
+    result->data = (int32_t*)parsed;
+  } else {
+    result->index = 1;
+    result->data = NULL;
+  }
+
+  return result;
+}
+
+
 // conversion
 
 double madlib__number__intToFloat(int64_t x) {
@@ -318,6 +165,10 @@ double madlib__number__intToFloat(int64_t x) {
 }
 
 unsigned char madlib__number__intToByte(int64_t x) {
+  return x;
+}
+
+int32_t madlib__number__intToShort(int64_t x) {
   return x;
 }
 
@@ -329,12 +180,40 @@ int64_t madlib__number__byteToInt(unsigned char x) {
   return x;
 }
 
+int32_t madlib__number__byteToShort(unsigned char x) {
+  return x;
+}
+
 int64_t madlib__number__floatToInt(double x) {
   return trunc(x);
 }
 
 unsigned char madlib__number__floatToByte(double x) {
   return trunc(x);
+}
+
+int32_t madlib__number__floatToShort(double x) {
+  return trunc(x);
+}
+
+int64_t madlib__number__shortToInt(int32_t x) {
+  return x;
+}
+
+double madlib__number__shortToFloat(int32_t x) {
+  return x;
+}
+
+unsigned char madlib__number__shortToByte(int32_t x) {
+  return x;
+}
+
+int32_t madlib__number__shortToChar(int32_t x) {
+  return x;
+}
+
+int32_t madlib__number__charToShort(int32_t x) {
+  return x;
 }
 
 

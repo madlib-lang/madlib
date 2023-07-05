@@ -6,8 +6,6 @@ import Function from "Function"
 import { Just, Nothing } from "Maybe"
 import {} from "Monad"
 import {} from "Monoid"
-import {} from "Show"
-
 
 
 /**
@@ -248,7 +246,7 @@ export intersperseWithIndex = (f, list) => {
  *
  * @since 0.0.5
  * @example
- * mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
+ * mapWithIndex((x, i) => x ++ inspect(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
  */
 mapWithIndex :: (a -> Integer -> b) -> List a -> List b
 export mapWithIndex = (f, list) => {

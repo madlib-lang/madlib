@@ -4,11 +4,11 @@ import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
 import String from "String"
-import FilePath from "FilePath/Posix"
+import FilePath from "FilePath"
 import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
 import { EQUAL } from "Compare"
-import { integerToFloat } from "Number"
+import Integer from "Integer"
 import { always, when } from "Function"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
@@ -347,7 +347,7 @@ buildAllResults = (coverageData) => {
     )
   )(coverageData)
 
-  moduleCount = integerToFloat(List.length(moduleResults))
+  moduleCount = Integer.toFloat(List.length(moduleResults))
 
   totalRow = pipe(
     List.reduce(

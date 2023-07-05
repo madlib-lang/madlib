@@ -1,8 +1,11 @@
 import { assertEquals, test } from "Test"
 import Char from "./Char"
 
-test("toLower - ascii", (_) => assertEquals(Char.toLower('C'), 'c'))
-test("toLower - extended", (_) => assertEquals(Char.toLower('Ü'), 'ü'))
+test("toLower - ascii", () => assertEquals(Char.toLower('C'), 'c'))
+test("toLower - extended", () => assertEquals(Char.toLower('Ü'), 'ü'))
 
-test("toUpper - ascii", (_) => assertEquals(Char.toUpper('d'), 'D'))
-test("toUpper - extended", (_) => assertEquals(Char.toUpper('ä'), 'Ä'))
+test("toUpper - ascii", () => assertEquals(Char.toUpper('d'), 'D'))
+test("toUpper - extended", () => assertEquals(Char.toUpper('ä'), 'Ä'))
+
+test("toShort", () => assertEquals(Char.toShort('A'), 65))
+test("fromShort", () => assertEquals(Char.fromShort(65), 'A'))

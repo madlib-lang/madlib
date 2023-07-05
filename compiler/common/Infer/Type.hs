@@ -66,6 +66,10 @@ qtNumber :: Qual Type
 qtNumber = [IsIn "Number" [tNumber] Nothing] :=> tNumber
 
 
+tShort :: Type
+tShort = TCon (TC "Short" Star) "prelude"
+
+
 tFloat :: Type
 tFloat = TCon (TC "Float" Star) "prelude"
 

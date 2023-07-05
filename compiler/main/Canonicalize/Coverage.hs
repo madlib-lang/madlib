@@ -23,12 +23,12 @@ addTrackers options ast@AST{ apath = Just path } = do
   let isPrelude = "prelude/__internal__" `isInfixOf` path
   let isPackage = "madlib_modules" `isInfixOf` path
   let isTest    = ".spec.mad" `isSuffixOf` path
-  coverageModulePath <- Rock.fetch $ AbsolutePreludePath "Coverage"
+  coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
   processModulePath  <- Rock.fetch $ AbsolutePreludePath "Process"
 
   -- We skip it for prelude and the coverage module itself
   if coverageModulePath /= path && not isPrelude && not isPackage && not isTest then do
-    updatedImports   <- addImport coverageModuleName "Coverage" coverageModulePath $ aimports ast
+    updatedImports   <- addImport coverageModuleName "__Coverage__" coverageModulePath $ aimports ast
     updatedImports'  <- addImport processModuleName "Process" processModulePath updatedImports
     updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
     updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods)) -> do

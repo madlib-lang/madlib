@@ -9,7 +9,7 @@ import {
   takeExtension,
   takeFileName,
   parentPath
-} from "./Posix"
+} from "./FilePath"
 
 test("splitPath             - '/some/path/file.ext'", (_) => pipe(
   splitPath,

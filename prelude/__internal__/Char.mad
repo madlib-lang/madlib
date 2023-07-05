@@ -1,4 +1,3 @@
-import {} from "Show"
 import String from "String"
 
 
@@ -54,23 +53,25 @@ instance Comparable Char {
 
 #endif
 
+
 #iftarget js
 
-instance Show Char {
-  show = (x) => #- x -#
-}
+toShort :: Char -> Short
+export toShort = (c) => #- c.charCodeAt(0) -#
+
+fromShort :: Short -> Char
+export fromShort = (s) => #- String.fromCharCode(s) -#
 
 #elseif llvm
 
-showChar :: Char -> String
-showChar = extern "madlib__char__internal__show"
+toShort :: Char -> Short
+export toShort = extern "madlib__number__charToShort"
 
-
-instance Show Char {
-  show = showChar
-}
+fromShort :: Short -> Char
+export fromShort = extern "madlib__number__shortToChar"
 
 #endif
+
 
 /**
  * Returns true if the character is a digit, false otherwise.
@@ -105,7 +106,7 @@ export isDigit = (s) =>
  */
 isLetter :: Char -> Boolean
 export isLetter = (c) => pipe(
-  show,
+  String.pushChar($, ""),
   String.match("[a-zA-Z]+")
 )(c)
 

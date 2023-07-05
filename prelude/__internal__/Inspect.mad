@@ -39,13 +39,14 @@ instance Comparable Value {
 
 integer :: Parser Value
 integer = do {
+  minus <- alt(map(of, Parse.char('-')), pure([]))
   digits <- Parse.some(Parse.digit)
 
   return pipe(
     String.fromList,
     Integer,
     of,
-  )(digits)
+  )([...minus, ...digits])
 }
 
 
@@ -53,6 +54,7 @@ integer = do {
 
 float :: Parser Value
 float = do {
+  minus <- alt(map(of, Parse.char('-')), pure([]))
   before <- Parse.some(Parse.digit)
   dot <- Parse.char('.')
   after <- Parse.some(Parse.digit)
@@ -61,7 +63,7 @@ float = do {
     String.fromList,
     Float,
     of,
-  )([...before, dot, ...after])
+  )([...minus, ...before, dot, ...after])
 }
 
 

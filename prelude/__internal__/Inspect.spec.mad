@@ -1,21 +1,21 @@
 import { assertEquals, test } from "Test"
 
-import { ppInspect } from "./Inspect"
+import { pInspect } from "./Inspect"
 
 
 type User = User(String, Integer)
 
 
-test("ppInspect - Integer", () => assertEquals(ppInspect(3), "3"))
+test("pInspect - Integer", () => assertEquals(pInspect(3), "3"))
 
-test("ppInspect - Float", () => assertEquals(ppInspect(3.5), "3.5"))
+test("pInspect - Float", () => assertEquals(pInspect(3.5), "3.5"))
 
-test("ppInspect - List", () => assertEquals(ppInspect([3.5, 7.5]), "[3.5, 7.5]"))
+test("pInspect - List", () => assertEquals(pInspect([3.5, 7.5]), "[3.5, 7.5]"))
 
 test(
-  "ppInspect - List overflowed",
+  "pInspect - List overflowed",
   () => assertEquals(
-    ppInspect([
+    pInspect([
       3.5,
       7.5,
       14.5,
@@ -32,6 +32,6 @@ test(
   ),
 )
 
-test("ppInspect - Constructor", () => assertEquals(ppInspect(User("John", 35)), "User(\"John\", 35)"))
+test("pInspect - Constructor", () => assertEquals(pInspect(User("John", 35)), "User(\"John\", 35)"))
 
-test("ppInspect - Constructor overflowed", () => assertEquals(ppInspect(User("Name that is super long and should force the pretty printer to break the line right there or else it's broken", 35)), "User(\n  \"Name that is super long and should force the pretty printer to break the line right there or else it's broken\",\n  35\n)"))
+test("pInspect - Constructor overflowed", () => assertEquals(pInspect(User("Name that is super long and should force the pretty printer to break the line right there or else it's broken", 35)), "User(\n  \"Name that is super long and should force the pretty printer to break the line right there or else it's broken\",\n  35\n)"))
