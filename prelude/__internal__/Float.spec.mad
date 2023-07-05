@@ -1,0 +1,8 @@
+import { assertEquals, test } from "Test"
+import Float from "./Float"
+
+test("toInteger - positive", (_) => assertEquals(Float.toInteger(3.4), 3))
+test("toInteger - negative", (_) => assertEquals(Float.toInteger(-3.4), -3))
+
+test("toByte - normal", (_) => assertEquals(Float.toByte(3.4), 3))
+test("toByte - overflow", (_) => assertEquals(Float.toByte(257.4), 1))

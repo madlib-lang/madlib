@@ -140,7 +140,7 @@ export onExit = (cb) => #- {
 
 #elseif llvm
 
-import { canonicalizePath, joinPath } from "FilePath/Posix"
+import { canonicalizePath, joinPath } from "FilePath"
 
 
 getCurrentPathFFI :: {} -> String

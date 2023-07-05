@@ -140,11 +140,13 @@ initialEnv = Env
       [ ("Number", Interface [TV "a" Star] []
                     [ Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty
                     , Instance ([] :=> IsIn "Number" [tByte] Nothing) M.empty
+                    , Instance ([] :=> IsIn "Number" [tShort] Nothing) M.empty
                     , Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty
                     ]
         )
       , ("Bits", Interface [TV "a" Star] [IsIn "Number" [TVar $ TV "a" Star] Nothing]
                   [ Instance ([] :=> IsIn "Bits" [tByte] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Bits" [tShort] Nothing) M.empty
                   , Instance ([] :=> IsIn "Bits" [tInteger] Nothing) M.empty
                   ]
         )
@@ -152,6 +154,7 @@ initialEnv = Env
                 [ Instance ([] :=> IsIn "Inspect" [tStr] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tChar] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tInteger] Nothing) M.empty
+                , Instance ([] :=> IsIn "Inspect" [tShort] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tByte] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tFloat] Nothing) M.empty
                 , Instance ([] :=> IsIn "Inspect" [tBool] Nothing) M.empty
@@ -267,6 +270,7 @@ initialEnv = Env
         )
       , ("Eq", Interface [TV "a" Star] []
                 [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tShort] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tFloat] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tByte] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tStr] Nothing) M.empty

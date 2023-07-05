@@ -379,7 +379,7 @@ blackList =
 
 eqExcludeTypes :: [Type]
 eqExcludeTypes =
-  [tInteger, tByte, tFloat, tStr, tBool, tUnit, tChar]
+  [tInteger, tShort, tByte, tFloat, tStr, tBool, tUnit, tChar]
 
 monomorphizeApp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeApp target env@Env{ envSubstitution } exp = case exp of

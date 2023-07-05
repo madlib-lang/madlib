@@ -265,6 +265,9 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
     Type.i8
 
+  IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+    Type.i32
+
   IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
     Type.i32
 
@@ -336,6 +339,9 @@ buildLLVMType' (ps IT.:=> t) = case t of
 
   IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
     return (Type.i8, Nothing)
+
+  IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+    return (Type.i32, Nothing)
 
   IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
     return (Type.i32, Nothing)
@@ -489,6 +495,9 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
 
   IT.TCon (IT.TC "Byte" _) _ -> do
     ptrtoint what Type.i8
+
+  IT.TCon (IT.TC "Short" _) _ -> do
+    ptrtoint what Type.i32
 
   IT.TCon (IT.TC "Char" _) _ -> do
     ptrtoint what Type.i32
@@ -1035,6 +1044,11 @@ generateExp env symbolTable exp = case exp of
           result                <- mul leftOperand' (i64ConstOp (-1))
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- mul leftOperand' (C.int32 (-1))
+          return (symbolTable, result, Nothing)
+
         IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- mul leftOperand' (C.int8 (-1))
@@ -1064,6 +1078,14 @@ generateExp env symbolTable exp = case exp of
           return (symbolTable, result, Nothing)
 
         IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          leftOperand''         <- sitofp leftOperand' Type.double
+          rightOperand''        <- sitofp rightOperand' Type.double
+          result                <- fdiv leftOperand'' rightOperand''
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           leftOperand''         <- sitofp leftOperand' Type.double
@@ -1121,11 +1143,14 @@ generateExp env symbolTable exp = case exp of
         IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
           Instruction.xor operand' (i64ConstOp (-1))
 
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+          Instruction.xor operand' (i32ConstOp (-1))
+
         IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
           Instruction.xor operand' (i8ConstOp (-1))
       return (symbolTable, result, Nothing)
 
-    Core.Typed _ area _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] ->
+    Core.Typed _ area _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tShort, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] ->
       case getType (List.head args) of
         IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
@@ -1134,6 +1159,12 @@ generateExp env symbolTable exp = case exp of
           return (symbolTable, result, Nothing)
 
         IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
@@ -1180,6 +1211,12 @@ generateExp env symbolTable exp = case exp of
           result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
         IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1195,6 +1232,12 @@ generateExp env symbolTable exp = case exp of
           return (symbolTable, result, Nothing)
 
         IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
@@ -1220,6 +1263,12 @@ generateExp env symbolTable exp = case exp of
           result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
         IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1235,6 +1284,12 @@ generateExp env symbolTable exp = case exp of
           return (symbolTable, result, Nothing)
 
         IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
@@ -1346,6 +1401,9 @@ generateExp env symbolTable exp = case exp of
 
     IT.TCon (IT.TC "Integer" _) _ ->
       return (symbolTable, C.int64 (read n), Nothing)
+
+    IT.TCon (IT.TC "Short" _) _ ->
+      return (symbolTable, C.int32 (read n), Nothing)
 
     IT.TCon (IT.TC "Byte" _) _ ->
       return (symbolTable, C.int8 (read n), Nothing)
@@ -1744,6 +1802,9 @@ generateBranchTest env symbolTable pat value = case pat of
     IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
       icmp IntegerPredicate.EQ (C.int8 (read n)) value
 
+    IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+      icmp IntegerPredicate.EQ (C.int32 (read n)) value
+
     IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
       icmp IntegerPredicate.EQ (C.int64 (read n)) value
 
@@ -2052,6 +2113,11 @@ generateFunction env symbolTable metadata (ps IT.:=> t) area functionName corePa
                         i8ConstOp 1
                       else
                         i8ConstOp 0
+                    else if returnType == IT.tShort then
+                      if Core.isMultiplicationRecursiveDefinition metadata then
+                        i32ConstOp 1
+                      else
+                        i32ConstOp 0
                     else if returnType == IT.tFloat then
                       if Core.isMultiplicationRecursiveDefinition metadata then
                         doubleConstOp 1

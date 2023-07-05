@@ -1,6 +1,5 @@
 import {} from "Bifunctor"
 import {} from "Monad"
-import {} from "Show"
 
 
 
@@ -95,26 +94,6 @@ instance Bifunctor Either {
   mapFirst = mapLeft
 
   mapSecond = map
-}
-
-
-/**
- * Use `show` to transform an Either to a string.
- *
- * @since 0.0.6
- * @example
- * show((Right(3) :: Either Number Number)) // "Right 3"
- * show((Left(3) :: Either Number Number))  // "Left 3"
- */
-instance (Show e,
-Show a) => Show (Either e a) {
-  show = where {
-    Right(a) =>
-      "Right " ++ show(a)
-
-    Left(e) =>
-      "Left " ++ show(e)
-  }
 }
 
 

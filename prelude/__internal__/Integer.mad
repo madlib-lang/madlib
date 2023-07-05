@@ -1,0 +1,82 @@
+import type { Maybe } from "Maybe"
+
+import { EQUAL, LESS, MORE } from "Compare"
+import {} from "Scan"
+
+
+
+instance Comparable Integer {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
+}
+
+
+#iftarget js
+
+import { Just, Nothing } from "Maybe"
+
+
+
+_scanInteger :: (Integer -> Maybe Integer) -> Maybe Integer -> String -> Maybe Integer
+_scanInteger = (just, nothing, str) => (
+  #- {
+    const n = parseInt(str)
+    return isNaN(n) ? nothing : just(n)
+  } -#
+)
+
+scanInteger = _scanInteger(Just, Nothing)
+
+#elseif llvm
+
+scanInteger :: String -> Maybe Integer
+scanInteger = extern "madlib__number__scanInteger"
+
+#endif
+
+instance Scan Integer {
+  scan = scanInteger
+}
+
+#iftarget js
+
+toFloat :: Integer -> Float
+export toFloat = (a) => #- { return a } -#
+
+toShort :: Integer -> Short
+export toShort = (a) => #- { return a } -#
+
+toByte :: Integer -> Byte
+export toByte = (a) => #- { return Uint8Array.from([a])[0] } -#
+
+
+fromFloat :: Float -> Integer
+export fromFloat = (a) => #- { return Math.trunc(a) } -#
+
+fromShort :: Short -> Integer
+export fromShort = (a) => #- { return a } -#
+
+fromByte :: Byte -> Integer
+export fromByte = (a) => #- { return a } -#
+
+#elseif llvm
+
+toFloat :: Integer -> Float
+export toFloat = extern "madlib__number__intToFloat"
+
+toShort :: Integer -> Short
+export toShort = extern "madlib__number__intToShort"
+
+toByte :: Integer -> Byte
+export toByte = extern "madlib__number__intToByte"
+
+
+fromFloat :: Float -> Integer
+export fromFloat = extern "madlib__number__floatToInt"
+
+fromShort :: Short -> Integer
+export fromShort = extern "madlib__number__shortToInt"
+
+fromByte :: Byte -> Integer
+export fromByte = extern "madlib__number__byteToInt"
+
+#endif

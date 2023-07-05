@@ -194,6 +194,10 @@ instance Inspect Integer {
   inspect = (n) => #- "" + n -#
 }
 
+instance Inspect Short {
+  inspect = (n) => #- "" + n -#
+}
+
 instance Inspect Float {
   inspect = (n) => #- "" + n -#
 }
@@ -234,11 +238,18 @@ inspectFloat = extern "madlib__number__internal__inspectFloat"
 inspectChar :: Char -> String
 inspectChar = extern "madlib__char__internal__inspect"
 
+inspectShort :: Short -> String
+inspectShort = extern "madlib__number__internal__inspectShort"
+
 inspectString :: String -> String
 inspectString = extern "madlib__string__internal__inspect"
 
 instance Inspect Byte {
   inspect = inspectByte
+}
+
+instance Inspect Short {
+  inspect = inspectShort
 }
 
 instance Inspect Integer {

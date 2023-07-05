@@ -139,6 +139,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
   | t == "Integer" = return tInteger
   | t == "Float"   = return tFloat
   | t == "Byte"    = return tByte
+  | t == "Short"   = return tShort
   | t == "Boolean" = return tBool
   | t == "String"  = return tStr
   | t == "Char"    = return tChar
