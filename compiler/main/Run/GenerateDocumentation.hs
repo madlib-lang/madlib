@@ -21,7 +21,7 @@ import           System.Directory               ( canonicalizePath
                                                 , doesDirectoryExist
                                                 , getCurrentDirectory
                                                 )
-import           Data.List                      ( isSuffixOf )
+import           Data.List                      ( isSuffixOf, isInfixOf, isPrefixOf )
 import qualified Parse.DocString.Grammar       as DocString
 import qualified Parse.DocString.DocString     as DocString
 import qualified Canonicalize.AST              as Can
@@ -47,7 +47,15 @@ import Run.OptimizationLevel
 getFilesForDoc :: FilePath -> IO [FilePath]
 getFilesForDoc fp = do
   allFiles <- getFilesToCompile False fp
-  return $ filter (not . isSuffixOf ".spec.mad") allFiles
+  let withoutSpecFiles = filter (not . isSuffixOf ".spec.mad") allFiles
+      withoutPreludePrivateFiles =
+        filter
+          (\path ->
+            not ("prelude/__internal__" `isInfixOf` path) ||
+            not ("__" `isPrefixOf` takeBaseName path && "__" `isSuffixOf` takeBaseName path)
+          )
+          withoutSpecFiles
+  return withoutPreludePrivateFiles
 
 
 runTask :: Options -> IORef (DHashMap Query.Query MVar) -> Rock.Task Query.Query a -> IO a

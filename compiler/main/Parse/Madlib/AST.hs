@@ -17,7 +17,7 @@ import           Utils.PathUtils
 import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
-import           System.FilePath                  ( dropFileName, takeExtension, normalise )
+import           System.FilePath                  ( dropFileName, takeExtension, normalise, takeBaseName )
 import qualified Prelude                          as P
 import           Prelude                          hiding ( readFile )
 import qualified System.Environment.Executable    as E
@@ -28,6 +28,7 @@ import           Parse.Madlib.Dictionary
 import           Run.Options
 import           Text.Read (readMaybe)
 import           Text.Show.Pretty (ppShow)
+import           Data.Either (isLeft)
 
 
 
@@ -69,26 +70,65 @@ generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Sou
   return $ assignment : next
 
 
+validatePreludePrivateModules :: Options -> AST -> IO (Either CompilationError AST)
+validatePreludePrivateModules options ast@AST{ aimports, apath = Just path } = do
+  if "prelude/__internal__" `isInfixOf` path then
+    return $ Right ast
+  else do
+    updatedImports <- computeAbsoluteImportPaths (optPathUtils options) (not $ optParseOnly options) path (optRootPath options) aimports
+
+    case updatedImports of
+      Right updatedImports' -> do
+        let processed = foldl
+              (\res imp ->
+                if isLeft res then
+                  res
+                else
+                  let importPath = getImportAbsolutePath imp
+                  in  if not ("prelude/__internal__" `isInfixOf` path) then
+                        let fileName = takeBaseName importPath
+                        in  if "__" `isPrefixOf` fileName && "__" `isSuffixOf` fileName then
+                          Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp))
+                        else
+                          Right ()
+                      else
+                        Right ()
+              )
+              (Right ())
+              updatedImports'
+
+        return $ ast <$ processed
+
+      Left err ->
+        return $Left err
+
+
 buildAST :: Options -> FilePath -> String -> IO (Either CompilationError AST)
 buildAST options path code = case parse code of
   Right ast -> do
     let astWithPath = setPath ast path
-    let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
-    astWithDictImport          <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
-    let builtinsImport = Source emptyArea TargetAll $ NamedImport [] "__BUILTINS__" "__BUILTINS__"
-    let astWithBuiltinsImport =
-          if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithDictImport) then
-            astWithDictImport
-          else
-            astWithDictImport { aimports = builtinsImport : aimports astWithDictImport }
-    astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
-    case astWithAbsoluteImportPaths of
-      Right astWithAbsoluteImportPaths' -> do
-        astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
-        return $ Right astWithJsonAssignments
+    validatedImports <- validatePreludePrivateModules options astWithPath
+    case validatedImports of
+      Left err ->
+        return $ Left err
 
-      Left _ ->
-        return astWithAbsoluteImportPaths
+      Right _ -> do
+        let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
+        astWithDictImport <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
+        let builtinsImport = Source emptyArea TargetAll $ NamedImport [] "__BUILTINS__" "__BUILTINS__"
+        let astWithBuiltinsImport =
+              if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithDictImport) then
+                astWithDictImport
+              else
+                astWithDictImport { aimports = builtinsImport : aimports astWithDictImport }
+        astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
+        case astWithAbsoluteImportPaths of
+          Right astWithAbsoluteImportPaths' -> do
+            astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
+            return $ Right astWithJsonAssignments
+
+          Left _ ->
+            return astWithAbsoluteImportPaths
 
   Left e -> do
     let split = lines e
