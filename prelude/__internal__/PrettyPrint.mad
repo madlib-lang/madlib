@@ -110,6 +110,23 @@ export text = (s) => where(s) {
 }
 
 
+/**
+ * Same as text but forces a specific length to be considered for the layout.
+ * This is useful when a string containing non rendered characters is given
+ * such as ANSI escape sequences.
+ *
+ * @since 0.21.0
+ */
+textWithLength :: Integer -> String -> Doc
+export textWithLength = (i, s) => where(s) {
+  "" =>
+    EmptyDoc
+
+  or =>
+    TextDoc(i, or)
+}
+
+
 group :: Doc -> Doc
 export group = (x) => UnionDoc(flatten(x), x)
 

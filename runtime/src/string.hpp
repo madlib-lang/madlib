@@ -32,7 +32,7 @@ char *madlib__string__trimEnd(char *s);
 
 madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s);
 
-char *madlib__string__internal__inspect(char *s);
+char *madlib__string__internal__show(char *s);
 
 char *madlib__string__internal__concat(char *s1, char *s2);
 

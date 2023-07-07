@@ -93,7 +93,7 @@ findInst env p@(IsIn interface ts _) =
   catchError
     (Just <$> tryInsts (insts env interface))
     (const $ case ts of
-      [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
+      [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
         let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
             qp = fieldsPreds :=> IsIn interface [tRec] Nothing
         return $ Just (Instance qp mempty)
@@ -170,7 +170,7 @@ byInst env p@(IsIn interface ts maybeArea) =
   catchError
     (tryInsts (insts env interface))
     (\err -> case ts of
-      [TRecord fields _ _] | interface == "Eq" || interface == "Inspect" -> do
+      [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
         pushExtensibleRecordToDerive (M.keys fields)
         let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
         u <- isInstanceOf (IsIn interface [ts'] Nothing) p

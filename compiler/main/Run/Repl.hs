@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Run.Repl where
 import Prelude hiding(read, print)
 import System.IO (hFlush, stdout, stderr)
@@ -130,7 +131,7 @@ addLogToLastExp isColorful ast =
             ast
 
           lastBodyExp ->
-            let logVarName = if isColorful then "__IO__.cLog" else "__IO__.log"
+            let logVarName = if isColorful then "__IO__.cLog" else "__IO__.pLog"
                 wrapped = src (Src.App (src (Src.Var logVarName)) [lastBodyExp])
                 updatedBody = Src.Source area target (Src.Assignment n (
                     Src.Source absArea absTarget (Src.AbsWithMultilineBody params (init (init body) ++ [wrapped, Src.Source (Area (Loc 0 0 0) (Loc 0 0 0)) Src.TargetAll Src.LUnit]))
@@ -199,6 +200,11 @@ findTypeOfName ast name =
 
 
 
+cleanBuiltinsImport :: Src.AST -> Src.AST
+cleanBuiltinsImport ast@Src.AST{ Src.aimports } =
+  ast{ Src.aimports = filter (\imp -> not $ "prelude/__internal__/__BUILTINS__.mad" `List.isSuffixOf` Src.getImportAbsolutePath imp) aimports }
+
+
 evalMadlibCode :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
 evalMadlibCode isColorful options state code = case parse code of
   Right parsedNewCode -> do
@@ -210,7 +216,7 @@ evalMadlibCode isColorful options state code = case parse code of
     let newASTWithInterfaces = foldl addInterfaceToAST newASTWithTypeDecls (Src.ainterfaces parsedNewCode)
     let newASTWithInstances = foldl addInstanceToAST newASTWithInterfaces (Src.ainstances parsedNewCode)
     let newASTWithLogAdded = addLogToLastExp isColorful newASTWithInstances
-    let newCodeWithLogAdded = Format.astToSource 80 newASTWithLogAdded []
+    let newCodeWithLogAdded = Format.astToSource 80 (cleanBuiltinsImport newASTWithLogAdded) []
 
     ((typed, _), _, errs) <- liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath newCodeWithLogAdded) $ do
       Rock.fetch $ Query.SolvedASTWithEnv replModulePath
@@ -235,7 +241,7 @@ evalMadlibCode isColorful options state code = case parse code of
               ""
 
       -- then reset to newAST
-      let newValidCode = Format.astToSource 80 newASTWithInstances []
+      let newValidCode = Format.astToSource 80 (cleanBuiltinsImport newASTWithInstances) []
       let resetValidCode = do
             runTask state options Driver.Don'tPrune (Map.singleton replModulePath newValidCode) $ do
               Rock.fetch $ Query.ParsedAST replModulePath
@@ -259,7 +265,7 @@ evalMadlibCode isColorful options state code = case parse code of
           else
             return $ Output output' maybeType resetValidCode
     else do
-      let previousCode = Format.astToSource 80 currentAST []
+      let previousCode = Format.astToSource 80 (cleanBuiltinsImport currentAST) []
       -- We need this to reset the code to the previous state
       liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath previousCode) $ do
         Rock.fetch $ Query.ParsedAST replModulePath

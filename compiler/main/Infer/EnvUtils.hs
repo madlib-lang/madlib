@@ -150,119 +150,119 @@ initialEnv = Env
                   , Instance ([] :=> IsIn "Bits" [tInteger] Nothing) M.empty
                   ]
         )
-      , ("Inspect", Interface [TV "a" Star] []
-                [ Instance ([] :=> IsIn "Inspect" [tStr] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tChar] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tInteger] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tShort] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tByte] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tFloat] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tBool] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tUnit] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [tByteArray] Nothing) M.empty
-                , Instance ([IsIn "Inspect" [TVar (TV "a" Star)] Nothing] :=> IsIn "Inspect" [tListOf (TVar (TV "a" Star))] Nothing) M.empty
-                , Instance ([IsIn "Inspect" [TVar (TV "a" Star)] Nothing] :=> IsIn "Inspect" [tArrayOf (TVar (TV "a" Star))] Nothing) M.empty
+      , ("Show", Interface [TV "a" Star] []
+                [ Instance ([] :=> IsIn "Show" [tStr] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tChar] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tInteger] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tShort] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tByte] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tFloat] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tBool] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tUnit] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [tByteArray] Nothing) M.empty
+                , Instance ([IsIn "Show" [TVar (TV "a" Star)] Nothing] :=> IsIn "Show" [tListOf (TVar (TV "a" Star))] Nothing) M.empty
+                , Instance ([IsIn "Show" [TVar (TV "a" Star)] Nothing] :=> IsIn "Show" [tArrayOf (TVar (TV "a" Star))] Nothing) M.empty
                 , Instance ([
-                    IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                    IsIn "Inspect" [TVar (TV "b" Star)] Nothing
-                  ] :=> IsIn "Inspect" [tDictionaryOf (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
-                , Instance ([] :=> IsIn "Inspect" [TVar (TV "a" Star) `fn` TVar (TV "b" Star)] Nothing) M.empty
+                    IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                    IsIn "Show" [TVar (TV "b" Star)] Nothing
+                  ] :=> IsIn "Show" [tDictionaryOf (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
+                , Instance ([] :=> IsIn "Show" [TVar (TV "a" Star) `fn` TVar (TV "b" Star)] Nothing) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp tTuple2 (TVar (TV "a" Star))) (TVar (TV "b" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp tTuple3 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp tTuple4 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp tTuple5 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "f" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "f" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp (TApp tTuple6 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))) (TVar (TV "f" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "f" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "g" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "f" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "g" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp (TApp (TApp tTuple7 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))) (TVar (TV "f" Star))) (TVar (TV "g" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "f" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "g" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "h" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "f" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "g" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "h" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp tTuple8 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))) (TVar (TV "f" Star))) (TVar (TV "g" Star))) (TVar (TV "h" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "f" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "g" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "h" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "i" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "f" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "g" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "h" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "i" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp tTuple9 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))) (TVar (TV "f" Star))) (TVar (TV "g" Star))) (TVar (TV "h" Star))) (TVar (TV "i" Star))
                     ] Nothing
                   ) M.empty
                 , Instance ([
-                      IsIn "Inspect" [TVar (TV "a" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "b" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "c" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "d" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "e" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "f" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "g" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "h" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "i" Star)] Nothing,
-                      IsIn "Inspect" [TVar (TV "j" Star)] Nothing
-                    ] :=> IsIn "Inspect" [
+                      IsIn "Show" [TVar (TV "a" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "b" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "c" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "d" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "e" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "f" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "g" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "h" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "i" Star)] Nothing,
+                      IsIn "Show" [TVar (TV "j" Star)] Nothing
+                    ] :=> IsIn "Show" [
                       TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp tTuple10 (TVar (TV "a" Star))) (TVar (TV "b" Star))) (TVar (TV "c" Star))) (TVar (TV "d" Star))) (TVar (TV "e" Star))) (TVar (TV "f" Star))) (TVar (TV "g" Star))) (TVar (TV "h" Star))) (TVar (TV "i" Star))) (TVar (TV "j" Star))
                     ] Nothing
                   ) M.empty
@@ -399,7 +399,7 @@ initialEnv = Env
       , (">="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("<="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-      , ("inspect"      , Forall [Star] $ [IsIn "Inspect" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
+      , ("show"      , Forall [Star] $ [IsIn "Show" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
 
       , ("|"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("&"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))

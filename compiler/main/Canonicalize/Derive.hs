@@ -165,56 +165,56 @@ deriveEqInstance astPath toDerive = case toDerive of
     undefined
 
 
-inspectFields :: [String] -> Exp
-inspectFields fieldNames =
+showFields :: [String] -> Exp
+showFields fieldNames =
   let fields =
         (\fieldName ->
             let fieldNameStr = ec $ LStr ("\""<> fieldName <> ": \"")
                 fieldValue   = ec $ Access (ec $ Var "__$a__") (ec $ Var ('.':fieldName))
-                inspectedFieldValue = ec $ App (ec $ Var "inspect") fieldValue True
-            in  ec $ App (ec $ App (ec $ Var "++") fieldNameStr False) inspectedFieldValue True
+                showedFieldValue = ec $ App (ec $ Var "show") fieldValue True
+            in  ec $ App (ec $ App (ec $ Var "++") fieldNameStr False) showedFieldValue True
         ) <$> fieldNames
       commaSeparated = List.intersperse (ec $ LStr "\", \"") fields
   in  ec $ TemplateString ([ec $ LStr "\"{ \""] ++ commaSeparated ++ [ec $ LStr "\" }\""])
 
 
-buildConstructorIsForInspect :: Constructor -> Is
-buildConstructorIsForInspect ctor = case ctor of
+buildConstructorIsForShow :: Constructor -> Is
+buildConstructorIsForShow ctor = case ctor of
   Canonical _ (Constructor name typings _ _) ->
     let vars = generateCtorParamPatternNames 'a' typings
-        inspected =
+        showed =
           if null typings then
             ec $ LStr ("\"" <> name <> "\"")
           else
             let constructorNameLStr = ec $ LStr ("\"" <> name <> "(\"")
                 closingParenthesis  = ec $ LStr "\")\""
-                inspectedValues     = (\var -> ec $ App (ec $ Var "inspect") (ec $ Var var) True) <$> vars
-                commaSeparated      = List.intersperse (ec $ LStr "\", \"") inspectedValues
+                showedValues     = (\var -> ec $ App (ec $ Var "show") (ec $ Var var) True) <$> vars
+                commaSeparated      = List.intersperse (ec $ LStr "\", \"") showedValues
             in  ec $ TemplateString ([constructorNameLStr] ++ commaSeparated ++ [closingParenthesis])
     in
-      ec $ Is (ec $ PCon name (ec . PVar <$> vars)) inspected
+      ec $ Is (ec $ PCon name (ec . PVar <$> vars)) showed
 
 
-deriveInspectInstance :: FilePath -> InstanceToDerive -> Maybe Instance
-deriveInspectInstance astPath toDerive = case toDerive of
+deriveShowInstance :: FilePath -> InstanceToDerive -> Maybe Instance
+deriveShowInstance astPath toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
-        instPreds   = (\varInType -> IsIn "Inspect" [varInType] Nothing) <$> varsInType
+        instPreds   = (\varInType -> IsIn "Show" [varInType] Nothing) <$> varsInType
         inst =
           ec (
             Instance
-            "Inspect"
+            "Show"
             instPreds
-            (IsIn "Inspect" [adtType] Nothing)
+            (IsIn "Show" [adtType] Nothing)
             (
               Map.singleton
-              "inspect"
+              "show"
               (
-                ec (Assignment "inspect" (ec $ Abs (ec "__$a__") [
+                ec (Assignment "show" (ec $ Abs (ec "__$a__") [
                   ec $ Where (ec $ Var "__$a__")
                     (
-                      (buildConstructorIsForInspect <$> adtconstructors)
+                      (buildConstructorIsForShow <$> adtconstructors)
                         ++  [
                               -- if no previous pattern matches then the two values are not equal
                               ec $ Is (ec PAny) (ec $ LStr "\"Unknown\"")
@@ -227,13 +227,13 @@ deriveInspectInstance astPath toDerive = case toDerive of
     in  Just inst
 
   RecordToDerive fieldNames ->
-    let (instPreds, recordType) = generateRecordPredsAndType astPath "Inspect" (Set.toList fieldNames)
-    in  Just $ ec (Instance "Inspect" instPreds (IsIn "Inspect" [recordType] Nothing) (
+    let (instPreds, recordType) = generateRecordPredsAndType astPath "Show" (Set.toList fieldNames)
+    in  Just $ ec (Instance "Show" instPreds (IsIn "Show" [recordType] Nothing) (
           Map.singleton
-          "inspect"
+          "show"
           (
-            ec (Assignment "inspect" (ec $ Abs (ec "__$a__") [
-              inspectFields (Set.toList fieldNames)
+            ec (Assignment "show" (ec $ Abs (ec "__$a__") [
+              showFields (Set.toList fieldNames)
             ]))
           )
         ))

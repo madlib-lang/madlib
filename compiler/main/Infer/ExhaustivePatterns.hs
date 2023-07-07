@@ -179,7 +179,7 @@ data Error
 check :: Env -> Slv.AST -> Infer ()
 check env ast@Slv.AST { Slv.aexps } = do
   checkExps ast env aexps
-  -- TODO: exclude instances for Eq and Inspect
+  -- TODO: exclude instances for Eq and Show
   checkExps ast env (Slv.getAllMethods ast)
 
 

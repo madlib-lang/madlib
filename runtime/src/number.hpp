@@ -11,7 +11,6 @@ extern "C" {
 
 // Byte
 char *madlib__number__internal__showByte(unsigned char i);
-char *madlib__number__internal__inspectByte(unsigned char i);
 
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s);
 
@@ -20,20 +19,17 @@ double unboxDouble(double *x);
 double *boxDouble(double x);
 
 char *madlib__number__internal__showFloat(double d);
-char *madlib__number__internal__inspectFloat(double *i);
 
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s);
 
 // Integer
 char *madlib__number__internal__showInteger(int64_t i);
-char *madlib__number__internal__inspectInteger(int64_t i);
 
 madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s);
 
 
 // Short
 char *madlib__number__internal__showShort(int32_t i);
-char *madlib__number__internal__inspectShort(int32_t i);
 madlib__maybe__Maybe_t *madlib__number__scanShort(char *s);
 
 

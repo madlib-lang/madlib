@@ -25,19 +25,19 @@ concat :: List a -> List a -> List a
 ```
 
 ## Constraints
-Analog to Haskell type classes, Madlib has interfaces (1). The standard library includes for example the `Inspect` interface, which as one method `inspect`. Now, if you want to have a function that calls it with a type variable as a parameter, say:
+Analog to Haskell type classes, Madlib has interfaces (1). The standard library includes for example the `Show` interface, which as one method `show`. Now, if you want to have a function that calls it with a type variable as a parameter, say:
 ```madlib
 pushAndLog = (item, list) => {
-  IO.putLine(inspect(item))
+  IO.putLine(show(item))
   return [item, ...list]
 }
 ```
 The type of the above function is the following:
 ~~`a -> List a -> List a`~~
 
-Well, almost! Because inspect is called on that item parameter of type `a`, there's a missing constraint. The fact that we call a method on that item implies that the type `a` must be a type that implements `Inspect`. Therefore the correct type is:
+Well, almost! Because show is called on that item parameter of type `a`, there's a missing constraint. The fact that we call a method on that item implies that the type `a` must be a type that implements `Show`. Therefore the correct type is:
 ```madlib
-Inspect a => a -> List a -> List a
+Show a => a -> List a -> List a
 ```
 A type annotation with constraints has the form:
 `constraints => type` where constraints has the form `Interface typeVar` or `(Interface typeVar, OtherInterface otherVar)`.
@@ -45,9 +45,9 @@ A type annotation with constraints has the form:
 Note that a type variable can have multiple constraints. Example:
 ```madlib
 // for reference IO.log has type:
-// Inspect a => a -> {}
+// Show a => a -> {}
 
-sumAndLog :: (Number a, Inspect a) => a -> a -> a
+sumAndLog :: (Number a, Show a) => a -> a -> a
 sumAndLog = (a, b) => {
   result = a + b
   IO.log(result)

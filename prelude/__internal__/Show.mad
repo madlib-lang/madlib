@@ -7,8 +7,8 @@ import List from "List"
 import Parse from "Parse"
 import PP from "PrettyPrint"
 import String from "String"
-import Tuple from "Tuple"
 import Terminal from "Terminal"
+import Tuple from "Tuple"
 
 
 
@@ -23,6 +23,8 @@ type Value
   | Str(String)
   | DictionaryConstructor(Dictionary Value Value)
   | ListConstructor(List Value)
+  | Byte(String)
+  | ByteArray(List Value)
 
 
 instance Comparable Value {
@@ -94,7 +96,7 @@ char :: Parser Value
 char = do {
   _ <- Parse.char('\'')
   c <- pipe(
-    map((c) => inspect(c)),
+    map((c) => show(c)),
     alt($, map((c) => `'${c}'`, escapedChar)),
   )(Parse.notOneOf(['\'', '\\']))
 
@@ -166,6 +168,34 @@ constructor = do {
   }
 
   return alt(nary, nullary)
+}
+
+
+// -------- Byte ------------------------------------------
+
+BYTE_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+
+_byte = do {
+  char1 <- Parse.oneOf(BYTE_CHARS)
+  char2 <- Parse.oneOf(BYTE_CHARS)
+
+  return of(Byte(String.fromList([char1, char2])))
+}
+
+byte :: Parser Value
+byte = Parse.token(_byte)
+
+
+// -------- ByteArray -------------------------------------
+
+byteArray :: Parser Value
+byteArray = do {
+  name <- Parse.string("ByteArray")
+  _ <- Parse.symbol("(")
+  args <- Parse.many(byte)
+  _ <- Parse.symbol(")")
+
+  return of(ByteArray(args))
 }
 
 
@@ -249,6 +279,8 @@ value = Parse.choice([
   list,
   dictionary,
   record,
+  byteArray,
+  byte,
   constructor,
 ])
 
@@ -261,29 +293,22 @@ valueToDoc = (colored, v) => where(v) {
     PP.text("{}")
 
   Integer(i) =>
-    colored
-      ? PP.text(Terminal.text.brightYellow(i))
-      : PP.text(i)
+    colored ? PP.textWithLength(String.length(i), Terminal.text.brightYellow(i)) : PP.text(i)
 
   Float(f) =>
-    colored
-      ? PP.text(Terminal.text.brightYellow(f))
-      : PP.text(f)
+    colored ? PP.textWithLength(String.length(f), Terminal.text.brightYellow(f)) : PP.text(f)
+
+  Byte(b) =>
+    colored ? PP.textWithLength(2, Terminal.text.brightYellow(b)) : PP.text(b)
 
   Boolean(b) =>
-    colored
-      ? PP.text(Terminal.text.brightYellow(b))
-      : PP.text(b)
+    colored ? PP.textWithLength(String.length(b), Terminal.text.brightYellow(b)) : PP.text(b)
 
   Char(c) =>
-    colored
-      ? PP.text(Terminal.text.brightCyan(c))
-      : PP.text(c)
+    colored ? PP.textWithLength(String.length(c), Terminal.text.brightCyan(c)) : PP.text(c)
 
   Str(s) =>
-    colored
-      ? PP.text(Terminal.text.brightCyan(s))
-      : PP.text(s)
+    colored ? PP.textWithLength(String.length(s), Terminal.text.brightCyan(s)) : PP.text(s)
 
   Constructor(n, args) =>
     if (List.isEmpty(args)) { PP.text(n) } else {
@@ -293,8 +318,37 @@ valueToDoc = (colored, v) => where(v) {
           PP.text("("),
           PP.nest(
             2,
-            PP.hcat([PP.linebreak, PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), args))]),
+            PP.hcat([
+              PP.linebreak,
+              PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), args)),
+            ]),
           ),
+          PP.linebreak,
+          PP.text(")"),
+        ]),
+      )
+    }
+
+  ByteArray(bytes) =>
+    do {
+      groupBytes :: List Value -> List PP.Doc -> List PP.Doc
+      groupBytes = (bs, result) => if (List.isEmpty(bs)) { result } else do {
+        currentGroup = pipe(
+          List.take(8),
+          map(valueToDoc(colored)),
+          PP.hcat,
+        )(bs)
+
+        return List.isEmpty(result)
+          ? groupBytes(List.drop(8, bs), [currentGroup])
+          : groupBytes(List.drop(8, bs), [...result, currentGroup])
+      }
+
+      return PP.group(
+        PP.hcat([
+          PP.text("ByteArray"),
+          PP.text("("),
+          PP.nest(2, PP.hcat([PP.linebreak, PP.sepBy(PP.softline, groupBytes(bytes, []))])),
           PP.linebreak,
           PP.text(")"),
         ]),
@@ -307,7 +361,10 @@ valueToDoc = (colored, v) => where(v) {
         PP.lbracket,
         PP.nest(
           2,
-          PP.hcat([PP.linebreak, PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), items))]),
+          PP.hcat([
+            PP.linebreak,
+            PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), items)),
+          ]),
         ),
         PP.linebreak,
         PP.rbracket,
@@ -386,15 +443,15 @@ printMadlibValue = (width, colored, madlibValue) => pipe(
 )(madlibValue)
 
 
-pInspect :: Inspect a => a -> String
-export pInspect = (a) => pipe(
-  inspect,
+pShow :: Show a => a -> String
+export pShow = (a) => pipe(
+  show,
   printMadlibValue(80, false),
 )(a)
 
 
-cInspect :: Inspect a => a -> String
-export cInspect = (a) => pipe(
-  inspect,
+cShow :: Show a => a -> String
+export cShow = (a) => pipe(
+  show,
   printMadlibValue(80, true),
 )(a)

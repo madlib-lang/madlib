@@ -104,7 +104,7 @@ test(
 
 test(
   "intersperseWithIndex",
-  () => assertEquals(intersperseWithIndex(inspect, ["cats", "dogs"]), ["cats", "0", "dogs"]),
+  () => assertEquals(intersperseWithIndex(show, ["cats", "dogs"]), ["cats", "0", "dogs"]),
 )
 
 test(
@@ -117,7 +117,7 @@ test(
 
 test(
   "mapWithIndex",
-  () => assertEquals(mapWithIndex((x, i) => x ++ inspect(i), ["a", "b", "c"]), ["a0", "b1", "c2"]),
+  () => assertEquals(mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]), ["a0", "b1", "c2"]),
 )
 
 test(

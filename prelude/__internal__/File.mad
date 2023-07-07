@@ -1,10 +1,10 @@
-import type { IOError } from "IOError"
+import type { Error } from "__IOError__"
 import type { Wish } from "Wish"
 
-import IOError from "IOError"
+import Error from "__IOError__"
 import { Wish } from "Wish"
 
-
+export type Error
 
 #iftarget js
 
@@ -24,7 +24,7 @@ import prelude_file_fs from "fs"
  * @example
  * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
  */
-write :: String -> String -> Wish IOError {}
+write :: String -> String -> Wish Error {}
 export write = (path, content) => Wish(
   (bad, good) => #- {
     prelude_file_fs.writeFile(path, content, (err) => {
@@ -48,7 +48,7 @@ export write = (path, content) => Wish(
  * @example
  * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
  */
-writeBytes :: String -> ByteArray -> Wish IOError {}
+writeBytes :: String -> ByteArray -> Wish Error {}
 export writeBytes = (path, bytes) => Wish(
   (bad, good) => #- {
     prelude_file_fs.writeFile(path, bytes, (err) => {
@@ -70,7 +70,7 @@ export writeBytes = (path, bytes) => Wish(
  * @example
  * fulfill(IO.log, IO.putLine, read("./test.txt"))
  */
-read :: String -> Wish IOError String
+read :: String -> Wish Error String
 export read = (path) => Wish(
   (bad, good) => #- {
     prelude_file_fs.readFile(path, "utf8", (err, d) => {
@@ -92,7 +92,7 @@ export read = (path) => Wish(
  * @example
  * fulfill(IO.log, IO.log, read("./test.bin"))
  */
-readBytes :: String -> Wish IOError ByteArray
+readBytes :: String -> Wish Error ByteArray
 export readBytes = (path) => Wish(
   (bad, good) => #- {
     prelude_file_fs.readFile(path, (err, d) => {
@@ -141,12 +141,12 @@ readFFI = extern "madlib__file__read"
  * @example
  * fulfill(IO.log, IO.putLine, read("./test.txt"))
  */
-read :: String -> Wish IOError String
+read :: String -> Wish Error String
 export read = (path) => Wish(
   (bad, good) => readFFI(
     path,
     (libuvError, fileContent) => libuvError != 0
-      ? bad(IOError.fromLibuvError(libuvError))
+      ? bad(Error.fromLibuvError(libuvError))
       : good(fileContent)
   )
 )
@@ -162,12 +162,12 @@ readBytesFFI = extern "madlib__file__readBytes"
  * @example
  * fulfill(IO.log, IO.log, read("./test.bin"))
  */
-readBytes :: String -> Wish IOError ByteArray
+readBytes :: String -> Wish Error ByteArray
 export readBytes = (path) => Wish(
   (bad, good) => readBytesFFI(
     path,
     (libuvError, fileContent) => libuvError != 0
-      ? bad(IOError.fromLibuvError(libuvError))
+      ? bad(Error.fromLibuvError(libuvError))
       : good(fileContent)
   )
 )
@@ -186,12 +186,12 @@ writeFFI = extern "madlib__file__write"
  * @example
  * fulfill(() => {}, () => {}, write("./test.txt", "some content"))
  */
-write :: String -> String -> Wish IOError {}
+write :: String -> String -> Wish Error {}
 export write = (path, content) => Wish(
   (bad, good) => writeFFI(
     path,
     content,
-    (libuvError, _) => libuvError != 0 ? bad(IOError.fromLibuvError(libuvError)) : good({})
+    (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
   )
 )
 
@@ -209,12 +209,12 @@ writeBytesFFI = extern "madlib__file__writeBytes"
  * @example
  * fulfill(() => {}, () => {}, write("./test.txt", ByteArray.fromString("some content")))
  */
-writeBytes :: String -> ByteArray -> Wish IOError {}
+writeBytes :: String -> ByteArray -> Wish Error {}
 export writeBytes = (path, content) => Wish(
   (bad, good) => writeBytesFFI(
     path,
     content,
-    (libuvError, _) => libuvError != 0 ? bad(IOError.fromLibuvError(libuvError)) : good({})
+    (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
   )
 )
 

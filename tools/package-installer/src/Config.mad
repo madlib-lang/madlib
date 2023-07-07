@@ -1,7 +1,7 @@
 import type { Wish } from "Wish"
 import type { CommandResult, CommandOptions } from "Process"
 import type { Response, Error } from "Http"
-import type { IOError } from "IOError"
+import IO from "IO"
 
 import File from "File"
 import Directory from "Directory"
@@ -10,10 +10,10 @@ import { getBytes } from "Http"
 
 
 export alias Config = {
-  readFile :: String -> Wish IOError String,
-  writeFile :: String -> String -> Wish IOError {},
-  writeBytes :: String -> ByteArray -> Wish IOError {},
-  readDir :: String -> Wish IOError (List String),
+  readFile :: String -> Wish IO.Error String,
+  writeFile :: String -> String -> Wish IO.Error {},
+  writeBytes :: String -> ByteArray -> Wish IO.Error {},
+  readDir :: String -> Wish IO.Error (List String),
   exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
   exists :: String -> Wish {} Boolean,
   getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),

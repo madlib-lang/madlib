@@ -1,5 +1,5 @@
 import type { Either } from "Either"
-import type { JsonValue } from "JsonValue"
+import type { Value } from "Json/Value"
 import type { Maybe } from "Maybe"
 
 import Dictionary from "Dictionary"
@@ -13,7 +13,7 @@ import {
   JsonNull,
   JsonObject,
   JsonString
-} from "JsonValue"
+} from "Json/Value"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Integer"
@@ -36,7 +36,7 @@ stringCharacter = choice([
 ])
 
 
-jsonString :: Parse.Parser JsonValue
+jsonString :: Parse.Parser Value
 jsonString = do {
   _ <- char('"')
   cs <- many(stringCharacter)
@@ -50,7 +50,7 @@ jsonString = do {
 }
 
 
-jsonInteger :: Parse.Parser JsonValue
+jsonInteger :: Parse.Parser Value
 jsonInteger = pipe(
   some,
   chain(
@@ -69,7 +69,7 @@ jsonInteger = pipe(
 )(digit)
 
 
-jsonFloat :: Parse.Parser JsonValue
+jsonFloat :: Parse.Parser Value
 jsonFloat = do {
   beforeDot <- some(digit)
   dot <- char('.')
@@ -90,21 +90,21 @@ jsonFloat = do {
 }
 
 
-jsonNull :: Parse.Parser JsonValue
+jsonNull :: Parse.Parser Value
 jsonNull = pipe(
   symbol,
   map((_) => JsonNull)
 )("null")
 
 
-jsonBoolean :: Parse.Parser JsonValue
+jsonBoolean :: Parse.Parser Value
 jsonBoolean = pipe(
   choice,
   map((b) => b == "true" ? JsonBoolean(true) : JsonBoolean(false))
 )([symbol("true"), symbol("false"),])
 
 
-jsonArray :: Parse.Parser JsonValue
+jsonArray :: Parse.Parser Value
 jsonArray = do {
   _ <- symbol("[")
   items <- alt(sepBy(jsonValue, symbol(",")), of([]))
@@ -115,7 +115,7 @@ jsonArray = do {
 }
 
 
-objectField :: Parse.Parser #[String, JsonValue]
+objectField :: Parse.Parser #[String, Value]
 objectField = do {
   _ <- char('"')
   fieldName <- many(notChar('"'))
@@ -127,7 +127,7 @@ objectField = do {
 }
 
 
-jsonObject :: Parse.Parser JsonValue
+jsonObject :: Parse.Parser Value
 jsonObject = do {
   _ <- symbol("{")
   fields <- alt(sepBy(objectField, symbol(",")), of([]))
@@ -138,7 +138,7 @@ jsonObject = do {
 }
 
 
-jsonValue :: Parse.Parser JsonValue
+jsonValue :: Parse.Parser Value
 export jsonValue = do {
   _ <- alt(spaces, pure([]))
 
@@ -155,9 +155,9 @@ export jsonValue = do {
  *
  * @since 0.11.0
  */
-export type Parser r = Parser(JsonValue -> Either String r)
+export type Parser r = Parser(Value -> Either String r)
 
-getParserFn :: Parser a -> JsonValue -> Either String a
+getParserFn :: Parser a -> Value -> Either String a
 getParserFn = (parser) => where(parser) {
   Parser(fn) =>
     fn
@@ -178,7 +178,7 @@ export parse = (parser, input) => pipe(
   runParser(jsonValue),
   where {
     Left(e) =>
-      Left("Invalid json: " ++ inspect(e))
+      Left("Invalid json: " ++ show(e))
 
     Right(parsed) =>
       where(parser) {
@@ -189,8 +189,8 @@ export parse = (parser, input) => pipe(
 )(input)
 
 
-parseJsonValue :: Parser a -> JsonValue -> Either String a
-export parseJsonValue = (parser, input) => where(parser) {
+parseValue :: Parser a -> Value -> Either String a
+export parseValue = (parser, input) => where(parser) {
   Parser(parserFn) =>
     parserFn(input)
 }
@@ -460,7 +460,7 @@ export path = (pathParts, parser) => Parser(
           )(d)
 
         _ =>
-          Left(`Error parsing path: '${inspect(pathParts)}' - value: '${inspect(val)}'`)
+          Left(`Error parsing path: '${show(pathParts)}' - value: '${show(val)}'`)
       },
       Right(input)
     ),

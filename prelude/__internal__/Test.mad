@@ -1,21 +1,22 @@
-import Wish from "Wish"
-import IO from "IO"
-import { always, equals, ifElse, when } from "Function"
-import List from "List"
-import String from "String"
 import Dictionary from "Dictionary"
-import Tuple from "Tuple"
-import Process from "Process"
 import FilePath from "FilePath"
+import { always, equals, ifElse, when } from "Function"
+import IO from "IO"
+import List from "List"
 import Math from "Math"
-import Monad from "Monad"
 import { Just, Nothing, fromMaybe } from "Maybe"
+import Monad from "Monad"
 import {} from "Number"
+import Process from "Process"
+import String from "String"
 import Terminal from "Terminal"
+import Tuple from "Tuple"
+import Wish from "Wish"
+
 
 
 moveCursorUpCode :: Integer -> String
-moveCursorUpCode = (lines) => `\x1b[${inspect(lines)}A`
+moveCursorUpCode = (lines) => `\x1b[${show(lines)}A`
 
 
 IS_COLOR_ENABLED :: Boolean
@@ -58,14 +59,13 @@ CWD = Process.getCurrentWorkingDirectory()
 // SuiteResult(total, succeeded, failed)
 type SuiteResult = SuiteResult(Integer, Integer, Integer)
 
-type TestResult
-  = Success
-  | Failure
+type TestResult = Success | Failure
 
-makeResultCollector :: {} -> {
-  getResults :: {} -> Dictionary String SuiteResult,
-  setResults :: Dictionary String SuiteResult -> {}
-}
+makeResultCollector :: {}
+  -> {
+    getResults :: {} -> Dictionary String SuiteResult,
+    setResults :: Dictionary String SuiteResult -> {},
+  }
 makeResultCollector = () => {
   results = {{}}
 
@@ -80,7 +80,7 @@ makeResultCollector = () => {
 
 collector :: {
   getResults :: {} -> Dictionary String SuiteResult,
-  setResults :: Dictionary String SuiteResult -> {}
+  setResults :: Dictionary String SuiteResult -> {},
 }
 collector = makeResultCollector()
 
@@ -129,13 +129,11 @@ getFailureCount = where {
 
 
 failureReport :: String -> TestReport
-failureReport = (message) =>
-  TestReport(message, 1, 0, 1)
+failureReport = (message) => TestReport(message, 1, 0, 1)
 
 
 successReport :: String -> TestReport
-successReport = (_) =>
-  TestReport("", 1, 1, 0)
+successReport = (_) => TestReport("", 1, 1, 0)
 
 
 mergeReports :: TestReport -> TestReport -> TestReport
@@ -143,7 +141,7 @@ mergeReports = (t1, t2) => TestReport(
   getMessage(t1) ++ getMessage(t2),
   getTotal(t1) + getTotal(t2),
   getSuccessCount(t1) + getSuccessCount(t2),
-  getFailureCount(t1) + getFailureCount(t2)
+  getFailureCount(t1) + getFailureCount(t2),
 )
 
 
@@ -153,41 +151,37 @@ export assertEquals = (actual, expected) => actual == expected
   : Wish.bad(AssertionError(expected, actual))
 
 
-test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
+test :: Show a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   testImpl,
-  map((_) => Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
+  map(() => Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
   Wish.mapRej(
     where {
-      AssertionError(expected, actual) => 
+      AssertionError(expected, actual) =>
         IO.red(`${CHAR_CROSS} ${description}`)
-        ++ "\n  expected:\n    "
-        ++ Terminal.text.brightGreen(inspect(expected))
-        ++ "\n  actual:\n    "
-        ++ Terminal.text.brightRed(inspect(actual))
-        ++ "\n"
+          ++ "\n  expected:\n    "
+          ++ Terminal.text.brightGreen(show(expected))
+          ++ "\n  actual:\n    "
+          ++ Terminal.text.brightRed(show(actual))
+          ++ "\n"
 
       ErrorWithMessage(message) =>
         IO.red(`${CHAR_CROSS} ${message}\n`)
 
       Error(err) =>
-        IO.red(`${CHAR_CROSS} ${inspect(err)}`)
+        IO.red(`${CHAR_CROSS} ${show(err)}`)
 
       NotImplemented =>
         IO.red(`${CHAR_CROSS} not implemented`)
-    }
-  )
+    },
+  ),
 )(description)
 
 
 generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String
 generateReportSuiteEndMessage = pipe(
   List.length,
-  ifElse(
-    equals(0),
-    always("No test found\n\n"),
-    always("")
-  )
+  ifElse(equals(0), always("No test found\n\n"), always("")),
 )
 
 
@@ -198,28 +192,35 @@ prepareSuitePath = (colorful, suitePath) => {
 
   return pipe(
     FilePath.splitPath,
-    List.dropWhile((part) => {
-      justPart = pipe(
-        FilePath.dropTrailingPathSeparator,
-        Just
-      )(part)
-      justCwdPart = pipe(
-        List.nth(partIndex),
-        map(FilePath.dropTrailingPathSeparator)
-      )(cwdParts)
-      drop = justPart == justCwdPart
-      partIndex = partIndex + 1
-      return drop
-    }),
+    List.dropWhile(
+      (part) => {
+        justPart = pipe(
+          FilePath.dropTrailingPathSeparator,
+          Just,
+        )(part)
+        justCwdPart = pipe(
+          List.nth(partIndex),
+          map(FilePath.dropTrailingPathSeparator),
+        )(cwdParts)
+        drop = justPart == justCwdPart
+        partIndex = partIndex + 1
+        return drop
+      },
+    ),
     (parts) => {
-      path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(colorful && IS_COLOR_ENABLED), IO.grey))(parts)
+      path = pipe(
+        List.init,
+        FilePath.joinPath,
+        mconcat($, "/"),
+        when(always(colorful && IS_COLOR_ENABLED), IO.grey),
+      )(parts)
       fileName = pipe(
         List.last,
-        fromMaybe("")
+        fromMaybe(""),
       )(parts)
 
       return path ++ fileName
-    }
+    },
   )(suitePath)
 }
 
@@ -227,7 +228,7 @@ prepareSuitePath = (colorful, suitePath) => {
 spaces :: Integer -> String
 spaces = (amount) => pipe(
   List.repeat(' '),
-  String.fromList
+  String.fromList,
 )(amount)
 
 
@@ -239,36 +240,38 @@ printSuiteResults = (results) => {
       where {
         #[suitePath, SuiteResult(total, success, failed)] =>
           do {
-            counts = `${inspect(success + failed)}/${inspect(total)}`
+            counts = `${show(success + failed)}/${show(total)}`
             preparedSuitePath = prepareSuitePath(true, suitePath)
-            coloredCounts =
-              if (IS_COLOR_ENABLED) {
-                failed > 0
-                  ? Terminal.text.brightRed(counts)
-                  : Terminal.text.brightGreen(counts)
-              } else {
-                counts
-              }
+            coloredCounts = if (IS_COLOR_ENABLED) {
+              failed > 0 ? Terminal.text.brightRed(counts) : Terminal.text.brightGreen(counts)
+            } else { counts }
             prefix = total == success + failed
-              ? failed > 0
-                  ? PREFIX_FAIL
-                  : PREFIX_PASS
+              ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS
               : PREFIX_RUNS
             message = `${prefix} ${preparedSuitePath}  [${coloredCounts}]`
 
             return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
           }
+      },
+    ),
+    (
+      (prepared) => {
+        firsts = map(Tuple.fst, prepared)
+        longest = List.reduce(
+          (biggest, input) => Math.max(biggest, String.length(input)),
+          0,
+          firsts,
+        )
+
+        map(
+          where {
+            #[start, counts] =>
+              IO.putLine(`${start}${spaces(longest - String.length(start))} [${counts}]`)
+          },
+          prepared,
+        )
       }
     ),
-    ((prepared) => {
-      firsts = map(Tuple.fst, prepared)
-      longest = List.reduce((biggest, input) => Math.max(biggest, String.length(input)), 0, firsts)
-
-      map(where {
-        #[start, counts] =>
-          IO.putLine(`${start}${spaces(longest - String.length(start))} [${counts}]`)
-      }, prepared)
-    })
   )(results)
 
   IO.putLine("")
@@ -283,16 +286,14 @@ failSuite = (suitePath) => {
         SuiteResult(total, success, failed) =>
           SuiteResult(total, success, total - success)
       },
-      suitePath
+      suitePath,
     ),
-    collector.setResults
+    collector.setResults,
   )(collector.getResults())
 
-  if (IS_COLOR_ENABLED) {
-    do {
-      IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
-      printSuiteResults(collector.getResults())
-    }
+  if (IS_COLOR_ENABLED) do {
+    IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
+    printSuiteResults(collector.getResults())
   }
 }
 
@@ -307,24 +308,21 @@ updateSuiteResult = (suitePath, result, a) => {
             ? SuiteResult(total, success + 1, failed)
             : SuiteResult(total, success, failed + 1)
       },
-      suitePath
+      suitePath,
     ),
-    collector.setResults
+    collector.setResults,
   )(collector.getResults())
 
-  if (IS_COLOR_ENABLED) {
-    do {
-      IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
-      printSuiteResults(collector.getResults())
-    }
+  if (IS_COLOR_ENABLED) do {
+    IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
+    printSuiteResults(collector.getResults())
   }
 
   return a
 }
 
 
-runTestSuite :: (Inspect e, Inspect f) =>
-  String
+runTestSuite :: (Show e, Show f) => String
   -> ({} -> Wish e a)
   -> ({} -> Wish f b)
   -> List (Wish String String)
@@ -333,24 +331,37 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   (tests) => {
     pipe(
       Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0)),
-      collector.setResults
+      collector.setResults,
     )(collector.getResults())
 
     return tests
   },
-  map(Wish.bichain(pipe(updateSuiteResult(suitePath, Failure), failureReport, of), pipe(updateSuiteResult(suitePath, Success), successReport, of))),
+  map(
+    Wish.bichain(
+      pipe(
+        updateSuiteResult(suitePath, Failure),
+        failureReport,
+        of,
+      ),
+      pipe(
+        updateSuiteResult(suitePath, Success),
+        successReport,
+        of,
+      ),
+    ),
+  ),
   Wish.parallel,
   (testsWish) => Monad.andDo(
     testsWish,
     Wish.mapRej(
-      (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:\n${inspect(err)}`),
+      (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:\n${show(err)}`),
       beforeAll(),
     ),
   ),
   (testsWish) => do {
     result <- testsWish
     _ <- Wish.mapRej(
-      (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:\n${inspect(err)}`),
+      (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:\n${show(err)}`),
       afterAll(),
     )
     return of(result)
@@ -362,32 +373,42 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
         TestReport(msg, total, success, failed) =>
           (total == 0 || failed > 0)
             ? TestReport(
-                `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
-                total,
-                success,
-                failed
-              )
+              `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
+              total,
+              success,
+              failed,
+            )
             : TestReport("", total, success, failed)
-      }
-    )
+      },
+    ),
   ),
-  Wish.chainRej((err) => {
-    failSuite(suitePath)
-    return of(TestReport(`${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`, List.length(testsInSuite), 0, List.length(testsInSuite)))
-  })
+  Wish.chainRej(
+    (err) => {
+      failSuite(suitePath)
+      return of(
+        TestReport(
+          `${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`,
+          List.length(testsInSuite),
+          0,
+          List.length(testsInSuite),
+        ),
+      )
+    },
+  ),
 )(testsInSuite)
 
 
-runAllTestSuites :: Inspect a => List #[String, {} -> Wish a c, {} -> Wish a d, List (Wish String String)] -> {}
+runAllTestSuites :: Show a => List #[String, {} -> Wish a c, {} -> Wish a d, List (Wish String String)]
+  -> {}
 export runAllTestSuites = (testSuites) => pipe(
-  map(where {
-    #[path, beforeAll, afterAll, tests] =>
-      runTestSuite(path, beforeAll, afterAll, tests)}
+  map(
+    where {
+      #[path, beforeAll, afterAll, tests] =>
+        runTestSuite(path, beforeAll, afterAll, tests)
+    },
   ),
   (suites) => {
-    if (IS_COLOR_ENABLED) {
-      printSuiteResults(collector.getResults())
-    }
+    if (IS_COLOR_ENABLED) { printSuiteResults(collector.getResults()) }
     return suites
   },
   Wish.parallel,
@@ -395,14 +416,14 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.fulfill(
     (_) => ({}),
     (report) => {
-      if (!IS_COLOR_ENABLED) {
-        printSuiteResults(collector.getResults())
-      }
+      if (!IS_COLOR_ENABLED) { printSuiteResults(collector.getResults()) }
       IO.put(getMessage(report))
-      IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
-      if (getFailureCount(report) > 0) {
-        Process.exit(1)
-      }
-    }
-  )
+      IO.putLine(
+        `Test suites: ${show(List.length(testSuites))}  tests: ${show(getTotal(report))}  passed: ${
+          show(getSuccessCount(report))
+        }  failed: ${show(getFailureCount(report))}`,
+      )
+      if (getFailureCount(report) > 0) { Process.exit(1) }
+    },
+  ),
 )(testSuites)

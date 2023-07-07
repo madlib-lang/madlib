@@ -19,12 +19,6 @@ char *madlib__number__internal__showByte(unsigned char i) {
   return str;
 }
 
-char *madlib__number__internal__inspectByte(unsigned char i) {
-  char *str = (char *)GC_MALLOC_ATOMIC(3 * sizeof(char));
-  snprintf(str, 3 * sizeof(char), "%02X", i);
-
-  return str;
-}
 
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
@@ -64,15 +58,6 @@ double *boxDouble(double x) {
 }
 
 
-char *madlib__number__internal__inspectFloat(double *d) {
-  char *str = (char *)GC_MALLOC_ATOMIC(200);
-  sprintf(str, "%.20f", unboxDouble(d));
-  char *stripped = stripTrailingZeros(str);
-
-  return stripped;
-}
-
-
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
   double parsed;
@@ -93,13 +78,6 @@ madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
 // Integer
 
 char *madlib__number__internal__showInteger(int64_t i) {
-  char *str = (char *)GC_MALLOC_ATOMIC(30);
-  sprintf(str, "%" PRId64, i);
-
-  return str;
-}
-
-char *madlib__number__internal__inspectInteger(int64_t i) {
   char *str = (char *)GC_MALLOC_ATOMIC(30);
   sprintf(str, "%" PRId64, i);
 
@@ -128,13 +106,6 @@ madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
 // Short
 
 char *madlib__number__internal__showShort(int32_t i) {
-  char *str = (char *)GC_MALLOC_ATOMIC(30);
-  sprintf(str, "%" PRId32, i);
-
-  return str;
-}
-
-char *madlib__number__internal__inspectShort(int32_t i) {
   char *str = (char *)GC_MALLOC_ATOMIC(30);
   sprintf(str, "%" PRId32, i);
 

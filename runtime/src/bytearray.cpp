@@ -26,7 +26,7 @@ bool madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madli
   return result;
 }
 
-char *madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytearray) {
+char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearray) {
   int64_t length = bytearray->length;
 
   if (length == 0) {

@@ -4215,18 +4215,18 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "b" , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) )
@@ -4237,7 +4237,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -4256,10 +4256,10 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "r303" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "y310" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "r303" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "y310" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -4276,11 +4276,11 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "r303" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "y310" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -4306,7 +4306,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "r303" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -4361,7 +4361,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "r303" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -4370,7 +4370,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "r303" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -4385,10 +4385,10 @@
                                                                   (TVar (TV "r303" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "r303" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -4450,7 +4450,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "y310" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -4505,7 +4505,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "y310" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -4514,7 +4514,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "y310" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -4529,10 +4529,10 @@
                                                                   (TVar (TV "y310" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "y310" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -4603,8 +4603,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp
@@ -4620,14 +4620,14 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "p" , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ) ])
@@ -4636,7 +4636,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -4649,9 +4649,9 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "j321" Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV "j321" Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -4664,7 +4664,7 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "j321" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -4684,7 +4684,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "j321" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -4739,7 +4739,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "j321" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -4748,7 +4748,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "j321" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -4763,10 +4763,10 @@
                                                                   (TVar (TV "j321" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "j321" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -4827,7 +4827,7 @@
                                    ])))
                       , Forall
                           [ Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing ] :=>
+                          ([ IsIn "Show" [ TGen 0 ] Nothing ] :=>
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -4839,22 +4839,22 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_2568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "p" , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) )
@@ -4866,7 +4866,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -4887,11 +4887,11 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "t331" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "a338" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "h345" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "t331" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "a338" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "h345" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -4909,15 +4909,15 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "t331" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "a338" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "h345" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -4945,7 +4945,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "t331" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -5000,7 +5000,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "t331" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -5009,7 +5009,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "t331" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -5024,10 +5024,10 @@
                                                                   (TVar (TV "t331" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "t331" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -5095,7 +5095,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "a338" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -5150,7 +5150,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "a338" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -5159,7 +5159,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "a338" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -5174,10 +5174,10 @@
                                                                   (TVar (TV "a338" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "a338" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -5245,7 +5245,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "h345" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -5300,7 +5300,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "h345" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -5309,7 +5309,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "h345" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -5324,10 +5324,10 @@
                                                                   (TVar (TV "h345" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "h345" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -5408,9 +5408,9 @@
                                    ])))
                       , Forall
                           [ Star , Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
-                           , IsIn "Inspect" [ TGen 2 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
+                           , IsIn "Show" [ TGen 2 ] Nothing
                            ] :=>
                              TApp
                                (TApp
@@ -7165,18 +7165,18 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "p" , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) )
@@ -7187,7 +7187,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -7206,10 +7206,10 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "y180" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "f187" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "y180" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "f187" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -7226,11 +7226,11 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "y180" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "f187" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -7256,7 +7256,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "y180" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7311,7 +7311,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "y180" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7320,7 +7320,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "y180" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7335,10 +7335,10 @@
                                                                   (TVar (TV "y180" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "y180" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7400,7 +7400,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "f187" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7455,7 +7455,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "f187" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7464,7 +7464,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "f187" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7479,10 +7479,10 @@
                                                                   (TVar (TV "f187" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "f187" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7553,8 +7553,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp
@@ -7570,18 +7570,18 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "g" , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) )
@@ -7592,7 +7592,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -7611,10 +7611,10 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "q198" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "x205" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "q198" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "x205" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -7631,11 +7631,11 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "q198" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "x205" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -7661,7 +7661,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "q198" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7716,7 +7716,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "q198" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7725,7 +7725,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "q198" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7740,10 +7740,10 @@
                                                                   (TVar (TV "q198" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "q198" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7805,7 +7805,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "x205" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7860,7 +7860,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "x205" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7869,7 +7869,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "x205" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7884,10 +7884,10 @@
                                                                   (TVar (TV "x205" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "x205" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7958,8 +7958,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp

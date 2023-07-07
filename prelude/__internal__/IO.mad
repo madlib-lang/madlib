@@ -1,14 +1,15 @@
 import type { Wish } from "Wish"
 import { Wish } from "Wish"
-import IOError from "IOError"
+import type { Error } from "__IOError__"
+import Error from "__IOError__"
 
 import { mapWithIndex } from "List"
 import { equals, when } from "Function"
 import { split, join, isEmpty } from "String"
-import { pInspect, cInspect } from "Inspect"
+import { pShow, cShow } from "Show"
 import Terminal from "Terminal"
 
-
+export type Error
 
 prettyCase :: (String -> String) -> String -> String
 prettyCase = (color, str) => pipe(
@@ -31,7 +32,7 @@ prettyCase = (color, str) => pipe(
  * @example
  * colortrace(text.green, "label", [1, 2, 3])
  */
-colortrace :: Inspect a => (String -> String) -> String -> a -> a
+colortrace :: Show a => (String -> String) -> String -> a -> a
 export colortrace = (fn, v, a) => trace(
   prettyCase(fn, v),
   a
@@ -104,7 +105,7 @@ export err = (e) => #- {
  *
  * @since 0.11.0
  */
-getLine :: Wish IOError.IOError String
+getLine :: Wish Error String
 export getLine = Wish((bad, good) => #- {
   {Node}
     const rl = prelude_readline.createInterface({
@@ -129,7 +130,7 @@ export getLine = Wish((bad, good) => #- {
  *
  * @since 0.11.0
  */
-get :: Wish IOError.IOError String
+get :: Wish Error String
 export get = Wish((bad, good) => #- {
   {Node}
     const lines = [];
@@ -165,12 +166,12 @@ getLineFFI = extern "madlib__stdio__getLine"
  *
  * @since 0.11.0
  */
-getLine :: Wish IOError.IOError String
+getLine :: Wish Error String
 export getLine = Wish((bad, good) =>
   getLineFFI(
     (libuvError, line) =>
       libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
+        ? bad(Error.fromLibuvError(libuvError))
         : good(line)
   )
 )
@@ -185,12 +186,12 @@ getFFI = extern "madlib__stdio__get"
  *
  * @since 0.11.0
  */
-get :: Wish IOError.IOError String
+get :: Wish Error String
 export get = Wish((bad, good) =>
   getFFI(
     (libuvError, line) =>
       libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
+        ? bad(Error.fromLibuvError(libuvError))
         : good(line)
   )
 )
@@ -238,8 +239,8 @@ export err = extern "madlib__stdio__err"
  * @example
  * log({ x: 7, y: 13 })
  */
-log :: Inspect a => a -> {}
-export log = pipe(inspect, putLine)
+log :: Show a => a -> {}
+export log = pipe(show, putLine)
 
 
 /**
@@ -249,8 +250,8 @@ export log = pipe(inspect, putLine)
  * @example
  * pLog({ x: 7, y: 13 })
  */
-pLog :: Inspect a => a -> {}
-export pLog = pipe(pInspect, putLine)
+pLog :: Show a => a -> {}
+export pLog = pipe(pShow, putLine)
 
 
 /**
@@ -260,8 +261,8 @@ export pLog = pipe(pInspect, putLine)
  * @example
  * cLog({ x: 7, y: 13 })
  */
-cLog :: Inspect a => a -> {}
-export cLog = pipe(cInspect, putLine)
+cLog :: Show a => a -> {}
+export cLog = pipe(cShow, putLine)
 
 
 /**
@@ -311,9 +312,15 @@ export newLine = putLineAndPass("")
  * // prints "current value 6" and returns 7
  * pipe((x) => x * 2, trace("current value"), (x) => x + 1)(3)
  */
-trace :: Inspect a => String -> a -> a
+trace :: Show a => String -> a -> a
 export trace = (v, a) => {
-  putLine(`${v} ${inspect(a)}`)
+  putLine(`${v} ${show(a)}`)
+  return a
+}
+
+traceStr :: String -> String -> String
+export traceStr = (v, a) => {
+  putLine(`${v} ${a}`)
   return a
 }
 
@@ -328,9 +335,9 @@ export trace = (v, a) => {
  * // prints "current value 6" and returns 7
  * pipe((x) => x * 2, pTrace("current value"), (x) => x + 1)(3)
  */
-pTrace :: Inspect a => String -> a -> a
+pTrace :: Show a => String -> a -> a
 export pTrace = (v, a) => {
-  putLine(`${v} ${pInspect(a)}`)
+  putLine(`${v} ${pShow(a)}`)
   return a
 }
 
@@ -345,8 +352,8 @@ export pTrace = (v, a) => {
  * // prints "current value 6" and returns 7
  * pipe((x) => x * 2, cTrace("current value"), (x) => x + 1)(3)
  */
-cTrace :: Inspect a => String -> a -> a
+cTrace :: Show a => String -> a -> a
 export cTrace = (v, a) => {
-  putLine(`${v} ${cInspect(a)}`)
+  putLine(`${v} ${cShow(a)}`)
   return a
 }

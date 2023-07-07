@@ -3,7 +3,7 @@ import Set from "./Set"
 
 
 test("fromList", (_) =>
-  assertEquals(inspect(Set.fromList([2, 1, 1])), "Set([1, 2])")
+  assertEquals(show(Set.fromList([2, 1, 1])), "Set([1, 2])")
 )
 
 test("toList", (_) =>

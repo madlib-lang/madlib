@@ -6,7 +6,7 @@ import IO from "IO"
 import { bad, fulfill, mapRej } from "Wish"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
-import J from "JsonParser"
+import J from "Json/Parse"
 import { always } from "Function"
 
 
@@ -118,7 +118,7 @@ export load = (path) => pipe(
   File.read,
   mapRej(always(`madlib.json file not found at path ''`)),
   chain(parse),
-  mapRej((e) => `madlib.json file at path '' is malformed Error: ${inspect(e)}`)
+  mapRej((e) => `madlib.json file at path '' is malformed Error: ${show(e)}`)
 )(path)
 
 

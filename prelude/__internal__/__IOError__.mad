@@ -1,10 +1,10 @@
-export type IOError
+export type Error
   = ArgumentListToLong
   | PermissionDenied
   | AddressAlreadyInUse
   | UnknownError
 
-fromLibuvError :: Integer -> IOError
+fromLibuvError :: Integer -> Error
 export fromLibuvError = where {
   1 =>
     ArgumentListToLong

@@ -1,10 +1,10 @@
 // Parser
 
-export type JsonValue
+export type Value
   = JsonString(String)
   | JsonInteger(Integer)
   | JsonFloat(Float)
   | JsonBoolean(Boolean)
   | JsonNull
-  | JsonObject(Dictionary String JsonValue)
-  | JsonArray(List JsonValue)
+  | JsonObject(Dictionary String Value)
+  | JsonArray(List Value)

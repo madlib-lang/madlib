@@ -14,7 +14,7 @@
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TCon (TC "String" Star) "prelude")))
                  (TCon (TC "{}" Star) "prelude"))
-            (Area (Loc 304 17 1) (Loc 340 19 2))
+            (Area (Loc 340 17 1) (Loc 379 19 2))
             (TypedExp
                (Typed
                   ([] :=>
@@ -25,7 +25,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TCon (TC "String" Star) "prelude")))
                        (TCon (TC "{}" Star) "prelude"))
-                  (Area (Loc 304 17 1) (Loc 340 19 2))
+                  (Area (Loc 340 17 1) (Loc 379 19 2))
                   (Assignment
                      "main"
                      (Typed
@@ -37,23 +37,24 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude")))
                              (TCon (TC "{}" Star) "prelude"))
-                        (Area (Loc 311 17 8) (Loc 340 19 2))
+                        (Area (Loc 347 17 8) (Loc 379 19 2))
                         (Abs
                            (Typed
                               ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
-                              (Area (Loc 339 19 1) (Loc 339 19 1))
+                              (Area (Loc 378 19 1) (Loc 378 19 1))
                               "_")
                            [ Typed
-                               ([ IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ] Nothing ] :=>
+                               ([ IsIn "Inspect" [ TCon (TC "Boolean" Star) "prelude" ] Nothing
+                                ] :=>
                                   TCon (TC "String" Star) "prelude")
-                               (Area (Loc 321 18 3) (Loc 338 18 20))
+                               (Area (Loc 357 18 3) (Loc 377 18 23))
                                (App
                                   (Typed
                                      ([ IsIn
-                                          "Show"
+                                          "Inspect"
                                           [ TApp
                                               (TApp
                                                  (TCon
@@ -76,11 +77,11 @@
                                                    (TCon (TC "Integer" Star) "prelude"))
                                                 (TCon (TC "Boolean" Star) "prelude")))
                                           (TCon (TC "String" Star) "prelude"))
-                                     (Area (Loc 321 18 3) (Loc 325 18 7))
-                                     (Var "show" False))
+                                     (Area (Loc 357 18 3) (Loc 364 18 10))
+                                     (Var "inspect" False))
                                   (Typed
                                      ([ IsIn
-                                          "Show"
+                                          "Inspect"
                                           [ TApp
                                               (TApp
                                                  (TCon
@@ -89,7 +90,7 @@
                                                  (TCon (TC "Integer" Star) "prelude"))
                                               (TCon (TC "Boolean" Star) "prelude")
                                           ]
-                                          (Just (Area (Loc 321 18 3) (Loc 325 18 7)))
+                                          (Just (Area (Loc 357 18 3) (Loc 364 18 10)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TApp
@@ -98,7 +99,7 @@
                                                 (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TCon (TC "Integer" Star) "prelude"))
                                           (TCon (TC "Boolean" Star) "prelude"))
-                                     (Area (Loc 326 18 8) (Loc 337 18 19))
+                                     (Area (Loc 365 18 11) (Loc 376 18 22))
                                      (TupleConstructor
                                         [ Typed
                                             ([ IsIn
@@ -107,11 +108,11 @@
                                                  Nothing
                                              ] :=>
                                                TCon (TC "Integer" Star) "prelude")
-                                            (Area (Loc 328 18 10) (Loc 329 18 11))
+                                            (Area (Loc 367 18 13) (Loc 368 18 14))
                                             (LNum "1")
                                         , Typed
                                             ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                            (Area (Loc 331 18 13) (Loc 336 18 18))
+                                            (Area (Loc 370 18 16) (Loc 375 18 21))
                                             (LBool "false")
                                         ]))
                                   True)
@@ -143,16 +144,16 @@
     , atypedecls = []
     , ainterfaces =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 42 3 2))
+            (Area (Loc 0 1 1) (Loc 48 3 2))
             (Interface
-               "Show"
+               "Inspect"
                []
                [ TV "a" Star ]
                (fromList
-                  [ ( "show"
+                  [ ( "inspect"
                     , Forall
                         [ Star ]
-                        ([ IsIn "Show" [ TGen 0 ] Nothing ] :=>
+                        ([ IsIn "Inspect" [ TGen 0 ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
@@ -160,24 +161,24 @@
                     )
                   ])
                (fromList
-                  [ ( "show"
+                  [ ( "inspect"
                     , Untyped
-                        (Area (Loc 29 2 11) (Loc 40 2 22))
+                        (Area (Loc 35 2 14) (Loc 46 2 25))
                         (TRArr
-                           (Untyped (Area (Loc 29 2 11) (Loc 30 2 12)) (TRSingle "a"))
-                           (Untyped (Area (Loc 34 2 16) (Loc 40 2 22)) (TRSingle "String")))
+                           (Untyped (Area (Loc 35 2 14) (Loc 36 2 15)) (TRSingle "a"))
+                           (Untyped (Area (Loc 40 2 19) (Loc 46 2 25)) (TRSingle "String")))
                     )
                   ]))
         ]
     , ainstances =
         [ Untyped
-            (Area (Loc 44 5 1) (Loc 106 7 2))
+            (Area (Loc 50 5 1) (Loc 118 7 2))
             (Instance
-               "Show"
+               "Inspect"
                []
-               (IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ] Nothing)
+               (IsIn "Inspect" [ TCon (TC "Boolean" Star) "prelude" ] Nothing)
                (fromList
-                  [ ( "show"
+                  [ ( "inspect"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -185,9 +186,9 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TCon (TC "Boolean" Star) "prelude"))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 70 6 3) (Loc 104 6 37))
+                          (Area (Loc 79 6 3) (Loc 116 6 40))
                           (Assignment
-                             "show"
+                             "inspect"
                              (Typed
                                 ([] :=>
                                    TApp
@@ -195,27 +196,27 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TCon (TC "Boolean" Star) "prelude"))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 77 6 10) (Loc 104 6 37))
+                                (Area (Loc 89 6 13) (Loc 116 6 40))
                                 (Abs
                                    (Typed
                                       ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                      (Area (Loc 78 6 11) (Loc 79 6 12))
+                                      (Area (Loc 90 6 14) (Loc 91 6 15))
                                       "b")
                                    [ Typed
                                        ([] :=> TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 84 6 17) (Loc 104 6 37))
+                                       (Area (Loc 96 6 20) (Loc 116 6 40))
                                        (If
                                           (Typed
                                              ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                             (Area (Loc 84 6 17) (Loc 85 6 18))
+                                             (Area (Loc 96 6 20) (Loc 97 6 21))
                                              (Var "b" False))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                             (Area (Loc 88 6 21) (Loc 94 6 27))
+                                             (Area (Loc 100 6 24) (Loc 106 6 30))
                                              (LStr "\"True\""))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                             (Area (Loc 97 6 30) (Loc 104 6 37))
+                                             (Area (Loc 109 6 33) (Loc 116 6 40))
                                              (LStr "\"False\"")))
                                    ])))
                       , Forall
@@ -230,13 +231,13 @@
                     )
                   ]))
         , Untyped
-            (Area (Loc 108 9 1) (Loc 183 11 2))
+            (Area (Loc 120 9 1) (Loc 201 11 2))
             (Instance
-               "Show"
+               "Inspect"
                []
-               (IsIn "Show" [ TCon (TC "Integer" Star) "prelude" ] Nothing)
+               (IsIn "Inspect" [ TCon (TC "Integer" Star) "prelude" ] Nothing)
                (fromList
-                  [ ( "show"
+                  [ ( "inspect"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -244,9 +245,9 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TCon (TC "Integer" Star) "prelude"))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 134 10 3) (Loc 181 10 50))
+                          (Area (Loc 149 10 3) (Loc 199 10 53))
                           (Assignment
-                             "show"
+                             "inspect"
                              (Typed
                                 ([] :=>
                                    TApp
@@ -254,15 +255,15 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TCon (TC "Integer" Star) "prelude"))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 141 10 10) (Loc 181 10 50))
+                                (Area (Loc 159 10 13) (Loc 199 10 53))
                                 (Abs
                                    (Typed
                                       ([] :=> TCon (TC "Integer" Star) "prelude")
-                                      (Area (Loc 142 10 11) (Loc 143 10 12))
+                                      (Area (Loc 160 10 14) (Loc 161 10 15))
                                       "n")
                                    [ Typed
                                        ([] :=> TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 149 10 18) (Loc 180 10 49))
+                                       (Area (Loc 167 10 21) (Loc 198 10 52))
                                        (JSExp " new Integer(n).toString() ")
                                    ])))
                       , Forall
@@ -277,14 +278,14 @@
                     )
                   ]))
         , Untyped
-            (Area (Loc 185 13 1) (Loc 302 15 2))
+            (Area (Loc 203 13 1) (Loc 338 15 2))
             (Instance
-               "Show"
-               [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Show" [ TVar (TV "b" Star) ] Nothing
+               "Inspect"
+               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
+               , IsIn "Inspect" [ TVar (TV "b" Star) ] Nothing
                ]
                (IsIn
-                  "Show"
+                  "Inspect"
                   [ TApp
                       (TApp
                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -293,7 +294,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "show"
+                  [ ( "inspect"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -305,12 +306,12 @@
                                         (TVar (TV "q16" Star)))
                                      (TVar (TV "r17" Star))))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 231 14 3) (Loc 300 14 72))
+                          (Area (Loc 258 14 3) (Loc 336 14 81))
                           (Assignment
-                             "show"
+                             "inspect"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV "q16" Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV "r17" Star) ] Nothing
+                                ([ IsIn "Inspect" [ TVar (TV "q16" Star) ] Nothing
+                                 , IsIn "Inspect" [ TVar (TV "r17" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -322,17 +323,17 @@
                                               (TVar (TV "q16" Star)))
                                            (TVar (TV "r17" Star))))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 238 14 10) (Loc 300 14 72))
+                                (Area (Loc 268 14 13) (Loc 336 14 81))
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Show"
+                                           "Inspect"
                                            [ TVar (TV "q16" Star) ]
-                                           (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                           (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                        , IsIn
-                                           "Show"
+                                           "Inspect"
                                            [ TVar (TV "r17" Star) ]
-                                           (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                           (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                        ] :=>
                                          TApp
                                            (TApp
@@ -344,16 +345,16 @@
                                       "__W__1")
                                    [ Typed
                                        ([ IsIn
-                                            "Show"
+                                            "Inspect"
                                             [ TVar (TV "q16" Star) ]
-                                            (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                            (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                         , IsIn
-                                            "Show"
+                                            "Inspect"
                                             [ TVar (TV "r17" Star) ]
-                                            (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                            (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 238 14 10) (Loc 300 14 72))
+                                       (Area (Loc 268 14 13) (Loc 336 14 81))
                                        (Where
                                           (Typed
                                              ([] :=>
@@ -368,13 +369,13 @@
                                              (Var "__W__1" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Show"
+                                                   "Inspect"
                                                    [ TVar (TV "q16" Star) ]
-                                                   (Just (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                                   (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                                , IsIn
-                                                   "Show"
+                                                   "Inspect"
                                                    [ TVar (TV "r17" Star) ]
-                                                   (Just (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                                   (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                                ] :=>
                                                  TApp
                                                    (TApp
@@ -391,7 +392,7 @@
                                                             (TVar (TV "q16" Star)))
                                                          (TVar (TV "r17" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
-                                              (Area (Loc 246 14 18) (Loc 298 14 70))
+                                              (Area (Loc 276 14 21) (Loc 334 14 79))
                                               (Is
                                                  (Typed
                                                     ([] :=>
@@ -404,61 +405,61 @@
                                                                "prelude")
                                                             (TVar (TV "q16" Star)))
                                                          (TVar (TV "r17" Star)))
-                                                    (Area (Loc 246 14 18) (Loc 253 14 25))
+                                                    (Area (Loc 276 14 21) (Loc 283 14 28))
                                                     (PTuple
                                                        [ Typed
                                                            ([ IsIn
-                                                                "Show"
+                                                                "Inspect"
                                                                 [ TVar (TV "q16" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 265 14 37)
-                                                                      (Loc 269 14 41)))
+                                                                      (Loc 295 14 40)
+                                                                      (Loc 302 14 47)))
                                                             , IsIn
-                                                                "Show"
+                                                                "Inspect"
                                                                 [ TVar (TV "q16" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 265 14 37)
-                                                                      (Loc 269 14 41)))
+                                                                      (Loc 295 14 40)
+                                                                      (Loc 302 14 47)))
                                                             ] :=>
                                                               TVar (TV "q16" Star))
-                                                           (Area (Loc 248 14 20) (Loc 249 14 21))
+                                                           (Area (Loc 278 14 23) (Loc 279 14 24))
                                                            (PVar "a")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Show"
+                                                                "Inspect"
                                                                 [ TVar (TV "r17" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 284 14 56)
-                                                                      (Loc 288 14 60)))
+                                                                      (Loc 317 14 62)
+                                                                      (Loc 324 14 69)))
                                                             , IsIn
-                                                                "Show"
+                                                                "Inspect"
                                                                 [ TVar (TV "r17" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 284 14 56)
-                                                                      (Loc 288 14 60)))
+                                                                      (Loc 317 14 62)
+                                                                      (Loc 324 14 69)))
                                                             ] :=>
                                                               TVar (TV "r17" Star))
-                                                           (Area (Loc 251 14 23) (Loc 252 14 24))
+                                                           (Area (Loc 281 14 26) (Loc 282 14 27))
                                                            (PVar "b")
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Show"
+                                                         "Inspect"
                                                          [ TVar (TV "q16" Star) ]
                                                          (Just
-                                                            (Area (Loc 265 14 37) (Loc 269 14 41)))
+                                                            (Area (Loc 295 14 40) (Loc 302 14 47)))
                                                      , IsIn
-                                                         "Show"
+                                                         "Inspect"
                                                          [ TVar (TV "r17" Star) ]
                                                          (Just
-                                                            (Area (Loc 284 14 56) (Loc 288 14 60)))
+                                                            (Area (Loc 317 14 62) (Loc 324 14 69)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 257 14 29) (Loc 298 14 70))
+                                                    (Area (Loc 287 14 32) (Loc 334 14 79))
                                                     (App
                                                        (Typed
                                                           ([] :=>
@@ -473,7 +474,7 @@
                                                                   (TCon
                                                                      (TC "String" Star) "prelude"))
                                                                (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 257 14 29) (Loc 298 14 70))
+                                                          (Area (Loc 287 14 32) (Loc 334 14 79))
                                                           (App
                                                              (Typed
                                                                 ([] :=>
@@ -506,43 +507,43 @@
                                                                            (TC "String" Star)
                                                                            "prelude")))
                                                                 (Area
-                                                                   (Loc 262 14 34) (Loc 264 14 36))
+                                                                   (Loc 292 14 37) (Loc 294 14 39))
                                                                 (Var "++" False))
                                                              (Typed
                                                                 ([] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 257 14 29) (Loc 261 14 33))
+                                                                   (Loc 287 14 32) (Loc 291 14 36))
                                                                 (LStr "\"#[\""))
                                                              False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show"
+                                                               "Inspect"
                                                                [ TVar (TV "q16" Star) ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 265 14 37)
-                                                                     (Loc 269 14 41)))
+                                                                     (Loc 295 14 40)
+                                                                     (Loc 302 14 47)))
                                                            , IsIn
-                                                               "Show"
+                                                               "Inspect"
                                                                [ TVar (TV "r17" Star) ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 284 14 56)
-                                                                     (Loc 288 14 60)))
+                                                                     (Loc 317 14 62)
+                                                                     (Loc 324 14 69)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
-                                                          (Area (Loc 265 14 37) (Loc 298 14 70))
+                                                          (Area (Loc 295 14 40) (Loc 334 14 79))
                                                           (App
                                                              (Typed
                                                                 ([ IsIn
-                                                                     "Show"
+                                                                     "Inspect"
                                                                      [ TVar (TV "q16" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 265 14 37)
-                                                                           (Loc 269 14 41)))
+                                                                           (Loc 295 14 40)
+                                                                           (Loc 302 14 47)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -560,7 +561,7 @@
                                                                         (TC "String" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 265 14 37) (Loc 298 14 70))
+                                                                   (Loc 295 14 40) (Loc 334 14 79))
                                                                 (App
                                                                    (Typed
                                                                       ([] :=>
@@ -598,28 +599,28 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")))
                                                                       (Area
-                                                                         (Loc 273 14 45)
-                                                                         (Loc 275 14 47))
+                                                                         (Loc 306 14 51)
+                                                                         (Loc 308 14 53))
                                                                       (Var "++" False))
                                                                    (Typed
                                                                       ([ IsIn
-                                                                           "Show"
+                                                                           "Inspect"
                                                                            [ TVar (TV "q16" Star) ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 265 14 37)
-                                                                                 (Loc 269 14 41)))
+                                                                                 (Loc 295 14 40)
+                                                                                 (Loc 302 14 47)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 265 14 37)
-                                                                         (Loc 272 14 44))
+                                                                         (Loc 295 14 40)
+                                                                         (Loc 305 14 50))
                                                                       (App
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Show"
+                                                                                 "Inspect"
                                                                                  [ TVar
                                                                                      (TV "q16" Star)
                                                                                  ]
@@ -646,51 +647,51 @@
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 265 14 37)
-                                                                               (Loc 269 14 41))
-                                                                            (Var "show" False))
+                                                                               (Loc 295 14 40)
+                                                                               (Loc 302 14 47))
+                                                                            (Var "inspect" False))
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Show"
+                                                                                 "Inspect"
                                                                                  [ TVar
                                                                                      (TV "q16" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          265 14 37)
+                                                                                          295 14 40)
                                                                                        (Loc
-                                                                                          269
+                                                                                          302
                                                                                           14
-                                                                                          41)))
+                                                                                          47)))
                                                                              ] :=>
                                                                                TVar (TV "q16" Star))
                                                                             (Area
-                                                                               (Loc 270 14 42)
-                                                                               (Loc 271 14 43))
+                                                                               (Loc 303 14 48)
+                                                                               (Loc 304 14 49))
                                                                             (Var "a" False))
                                                                          True))
                                                                    False))
                                                              (Typed
                                                                 ([ IsIn
-                                                                     "Show"
+                                                                     "Inspect"
                                                                      [ TVar (TV "q16" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 265 14 37)
-                                                                           (Loc 269 14 41)))
+                                                                           (Loc 295 14 40)
+                                                                           (Loc 302 14 47)))
                                                                  , IsIn
-                                                                     "Show"
+                                                                     "Inspect"
                                                                      [ TVar (TV "r17" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 284 14 56)
-                                                                           (Loc 288 14 60)))
+                                                                           (Loc 317 14 62)
+                                                                           (Loc 324 14 69)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 276 14 48) (Loc 298 14 70))
+                                                                   (Loc 309 14 54) (Loc 334 14 79))
                                                                 (App
                                                                    (Typed
                                                                       ([] :=>
@@ -712,8 +713,8 @@
                                                                               (TC "String" Star)
                                                                               "prelude"))
                                                                       (Area
-                                                                         (Loc 276 14 48)
-                                                                         (Loc 298 14 70))
+                                                                         (Loc 309 14 54)
+                                                                         (Loc 334 14 79))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -755,8 +756,8 @@
                                                                                           Star)
                                                                                        "prelude")))
                                                                             (Area
-                                                                               (Loc 281 14 53)
-                                                                               (Loc 283 14 55))
+                                                                               (Loc 314 14 59)
+                                                                               (Loc 316 14 61))
                                                                             (Var "++" False))
                                                                          (Typed
                                                                             ([] :=>
@@ -764,40 +765,40 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 276 14 48)
-                                                                               (Loc 280 14 52))
+                                                                               (Loc 309 14 54)
+                                                                               (Loc 313 14 58))
                                                                             (LStr "\", \""))
                                                                          False))
                                                                    (Typed
                                                                       ([ IsIn
-                                                                           "Show"
+                                                                           "Inspect"
                                                                            [ TVar (TV "r17" Star) ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 284 14 56)
-                                                                                 (Loc 288 14 60)))
+                                                                                 (Loc 317 14 62)
+                                                                                 (Loc 324 14 69)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 284 14 56)
-                                                                         (Loc 298 14 70))
+                                                                         (Loc 317 14 62)
+                                                                         (Loc 334 14 79))
                                                                       (App
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Show"
+                                                                                 "Inspect"
                                                                                  [ TVar
                                                                                      (TV "r17" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          284 14 56)
+                                                                                          317 14 62)
                                                                                        (Loc
-                                                                                          288
+                                                                                          324
                                                                                           14
-                                                                                          60)))
+                                                                                          69)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -821,8 +822,8 @@
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 284 14 56)
-                                                                               (Loc 298 14 70))
+                                                                               (Loc 317 14 62)
+                                                                               (Loc 334 14 79))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -864,13 +865,13 @@
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 292 14 64)
+                                                                                     (Loc 328 14 73)
                                                                                      (Loc
-                                                                                        294 14 66))
+                                                                                        330 14 75))
                                                                                   (Var "++" False))
                                                                                (Typed
                                                                                   ([ IsIn
-                                                                                       "Show"
+                                                                                       "Inspect"
                                                                                        [ TVar
                                                                                            (TV
                                                                                               "r17"
@@ -879,13 +880,13 @@
                                                                                        (Just
                                                                                           (Area
                                                                                              (Loc
-                                                                                                284
+                                                                                                317
                                                                                                 14
-                                                                                                56)
+                                                                                                62)
                                                                                              (Loc
-                                                                                                288
+                                                                                                324
                                                                                                 14
-                                                                                                60)))
+                                                                                                69)))
                                                                                    ] :=>
                                                                                      TCon
                                                                                        (TC
@@ -893,13 +894,13 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 284 14 56)
+                                                                                     (Loc 317 14 62)
                                                                                      (Loc
-                                                                                        291 14 63))
+                                                                                        327 14 72))
                                                                                   (App
                                                                                      (Typed
                                                                                         ([ IsIn
-                                                                                             "Show"
+                                                                                             "Inspect"
                                                                                              [ TVar
                                                                                                  (TV
                                                                                                     "r17"
@@ -929,19 +930,19 @@
                                                                                                 "prelude"))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              284
+                                                                                              317
                                                                                               14
-                                                                                              56)
+                                                                                              62)
                                                                                            (Loc
-                                                                                              288
+                                                                                              324
                                                                                               14
-                                                                                              60))
+                                                                                              69))
                                                                                         (Var
-                                                                                           "show"
+                                                                                           "inspect"
                                                                                            False))
                                                                                      (Typed
                                                                                         ([ IsIn
-                                                                                             "Show"
+                                                                                             "Inspect"
                                                                                              [ TVar
                                                                                                  (TV
                                                                                                     "r17"
@@ -950,13 +951,13 @@
                                                                                              (Just
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      284
+                                                                                                      317
                                                                                                       14
-                                                                                                      56)
+                                                                                                      62)
                                                                                                    (Loc
-                                                                                                      288
+                                                                                                      324
                                                                                                       14
-                                                                                                      60)))
+                                                                                                      69)))
                                                                                          ] :=>
                                                                                            TVar
                                                                                              (TV
@@ -964,13 +965,13 @@
                                                                                                 Star))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              289
+                                                                                              325
                                                                                               14
-                                                                                              61)
+                                                                                              70)
                                                                                            (Loc
-                                                                                              290
+                                                                                              326
                                                                                               14
-                                                                                              62))
+                                                                                              71))
                                                                                         (Var
                                                                                            "b"
                                                                                            False))
@@ -978,25 +979,25 @@
                                                                                False))
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Show"
+                                                                                 "Inspect"
                                                                                  [ TVar
                                                                                      (TV "r17" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          284 14 56)
+                                                                                          317 14 62)
                                                                                        (Loc
-                                                                                          288
+                                                                                          324
                                                                                           14
-                                                                                          60)))
+                                                                                          69)))
                                                                              ] :=>
                                                                                TCon
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 295 14 67)
-                                                                               (Loc 298 14 70))
+                                                                               (Loc 331 14 76)
+                                                                               (Loc 334 14 79))
                                                                             (LStr "\"]\""))
                                                                          True))
                                                                    True))
@@ -1006,8 +1007,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Show" [ TGen 0 ] Nothing
-                           , IsIn "Show" [ TGen 1 ] Nothing
+                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
+                           , IsIn "Inspect" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp

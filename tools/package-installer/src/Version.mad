@@ -19,10 +19,11 @@ export type VersionRange
   | AnyVersion
 
 
-showVersion = (version) => {
-  major = inspect(getMajor(version))
-  minor = inspect(getMinor(version))
-  patch = inspect(getPatch(version))
+showVersion :: Version -> String
+export showVersion = (version) => {
+  major = show(getMajor(version))
+  minor = show(getMinor(version))
+  patch = show(getPatch(version))
 
   return `${major}.${minor}.${patch}`
 }
