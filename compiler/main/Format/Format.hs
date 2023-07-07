@@ -600,7 +600,7 @@ typingToDoc canBreak comments typing = case typing of
   Source _ _ TRArr{} ->
     let parts = flattenTRArrs typing
         (parts', comments') = trArrPartsToDocs canBreak comments parts
-    in  ( Pretty.group $ Pretty.hcat parts'
+    in  ( Pretty.group $ Pretty.nest indentSize (Pretty.hcat parts')
         , comments'
         )
 
@@ -654,7 +654,12 @@ typingToDoc canBreak comments typing = case typing of
     let (constraints', comments') = typingListToDoc canBreak comments constraints
         constraints'' =
           if length constraints > 1 then
-            Pretty.lparen <> constraints' <> Pretty.rparen
+            Pretty.group (
+              Pretty.lparen
+              <> Pretty.nest indentSize (Pretty.line' <> constraints')
+              <> Pretty.line'
+              <> Pretty.rparen
+            )
           else
             constraints'
         (typing', comments'') = typingToDoc canBreak comments' typing
@@ -1147,14 +1152,15 @@ expToDoc comments exp =
 
         Source _ _ (JSExp js) ->
           let lines' = lines js
-              leadingSpaces = length $ takeWhile (== ' ') js
               -- TODO: this logic is still not correct and thus commented for now.
               -- The issue is that if the fence starts with #- {\n  ...,
               -- the space between #- and { will create an extra indentation level
               -- and this will happen every time it is formatted, thus shifting the whole
               -- fenced code to the right each application.
-              js' = Pretty.nesting $ \_ -> Pretty.nest 0 $ Pretty.pretty js
+              -- leadingSpaces = length $ takeWhile (== ' ') js
               -- js' = Pretty.nesting $ \n -> Pretty.nest (leadingSpaces - n) $ Pretty.pretty js
+
+              js' = Pretty.nesting $ \x -> Pretty.nest (-x) $ Pretty.pretty js
           in
             if length lines' > 1 then
               -- (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#", comments')
