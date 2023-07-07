@@ -313,9 +313,9 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
           mapMaybe (deriveEqInstance astPath) typeDeclarationsToDerive'
         else
           []
-      derivedInspectInstances   =
+      derivedShowInstances   =
         if optGenerateDerivedInstances options then
-          mapMaybe (deriveInspectInstance astPath) typeDeclarationsToDerive'
+          mapMaybe (deriveShowInstance astPath) typeDeclarationsToDerive'
         else
           []
   
@@ -326,7 +326,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
-                                 , Can.ainstances  = derivedEqInstances ++ derivedInspectInstances ++ instances
+                                 , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ instances
                                  , Can.apath       = Src.apath sourceAst
                                  }
 

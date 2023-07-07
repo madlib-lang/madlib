@@ -48,8 +48,8 @@ test("mapSecond should not alter a Left", (_) =>
   assertEquals(mapSecond((x) => x * 2, Left(3)), Left(3))
 )
 
-test("inspect - Right", (_) => assertEquals(inspect((Right(3) :: Either Integer Integer)), "Right(3)"))
-test("inspect - Left", (_) => assertEquals(inspect((Left(3) :: Either Integer Integer)), "Left(3)"))
+test("show - Right", (_) => assertEquals(show((Right(3) :: Either Integer Integer)), "Right(3)"))
+test("show - Left", (_) => assertEquals(show((Left(3) :: Either Integer Integer)), "Left(3)"))
 
 test("mapRight - Right", (_) => assertEquals(mapRight((x) => x + 1, Right(3)), Right(4)))
 test("mapRight - Left", (_) => assertEquals(mapRight((x) => x + 1, Left("error")), Left("error")))

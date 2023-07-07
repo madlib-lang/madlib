@@ -187,10 +187,6 @@ bool madlib__char__internal__eq(int32_t a, int32_t b) {
 }
 
 char *madlib__char__internal__show(int32_t unicode) {
-  return utf8EncodeChar(unicode);
-}
-
-char *madlib__char__internal__inspect(int32_t unicode) {
   char *inspected;
 
   if (unicode == '\n' || unicode == '\t' || unicode == '\r' || unicode == '\\' || unicode == '\'') {

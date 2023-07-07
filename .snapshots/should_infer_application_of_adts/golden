@@ -989,11 +989,11 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                []
-               (IsIn "Inspect" [ TCon (TC "Result" Star) "Module.mad" ] Nothing)
+               (IsIn "Show" [ TCon (TC "Result" Star) "Module.mad" ] Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -1003,7 +1003,7 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
                                 ([] :=>
                                    TApp
@@ -1015,7 +1015,7 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -1024,7 +1024,7 @@
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
-                                            "Inspect"
+                                            "Show"
                                             [ TCon (TC "String" Star) "prelude" ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
@@ -1037,7 +1037,7 @@
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TCon (TC "String" Star) "prelude" ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -1057,13 +1057,13 @@
                                                        "Success"
                                                        [ Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -1075,7 +1075,7 @@
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TCon (TC "String" Star) "prelude" ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -1089,7 +1089,7 @@
                                                            (LStr "\"Success(\"")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -1100,7 +1100,7 @@
                                                            (App
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "String" Star)
                                                                           "prelude"
@@ -1123,10 +1123,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "inspect" False))
+                                                                 (Var "show" False))
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "String" Star)
                                                                           "prelude"

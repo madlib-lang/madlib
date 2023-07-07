@@ -1,0 +1,37 @@
+import { assertEquals, test } from "Test"
+
+import { pShow } from "./Show"
+
+
+type User = User(String, Integer)
+
+
+test("pShow - Integer", () => assertEquals(pShow(3), "3"))
+
+test("pShow - Float", () => assertEquals(pShow(3.5), "3.5"))
+
+test("pShow - List", () => assertEquals(pShow([3.5, 7.5]), "[3.5, 7.5]"))
+
+test(
+  "pShow - List overflowed",
+  () => assertEquals(
+    pShow([
+      3.5,
+      7.5,
+      14.5,
+      135.5,
+      975.5,
+      1153.5,
+      8193.5,
+      21893.5,
+      103892.5,
+      3532083.5,
+      48104328.5,
+    ]),
+    "[\n  3.5,\n  7.5,\n  14.5,\n  135.5,\n  975.5,\n  1153.5,\n  8193.5,\n  21893.5,\n  103892.5,\n  3532083.5,\n  48104328.5\n]",
+  ),
+)
+
+test("pShow - Constructor", () => assertEquals(pShow(User("John", 35)), "User(\"John\", 35)"))
+
+test("pShow - Constructor overflowed", () => assertEquals(pShow(User("Name that is super long and should force the pretty printer to break the line right there or else it's broken", 35)), "User(\n  \"Name that is super long and should force the pretty printer to break the line right there or else it's broken\",\n  35\n)"))

@@ -44,7 +44,7 @@ import Explain.Location (emptyArea)
 import Run.Options
 import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
 import Utils.List (removeDuplicates)
-import Canonicalize.Derive (deriveEqInstance, deriveInspectInstance)
+import Canonicalize.Derive (deriveEqInstance, deriveShowInstance)
 
 
 {-|
@@ -362,22 +362,22 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
               IsIn interfaceName [varInType] Nothing
           ) <$> varsInType
         eqInstPreds = instPreds "Eq"
-        inspectInstPreds = instPreds "Inspect"
+        showInstPreds = instPreds "Show"
         eqInstanceForEnv = Instance (eqInstPreds :=> IsIn "Eq" [adtType] Nothing) mempty
-        inspectInstanceForEnv = Instance (inspectInstPreds :=> IsIn "Inspect" [adtType] Nothing) mempty
+        showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [adtType] Nothing) mempty
         newEqInterface = case M.lookup "Eq" envInterfaces of
                           Just (Interface vars preds instances) ->
                             Interface vars preds (eqInstanceForEnv : instances)
 
                           _ ->
                             undefined
-        newInspectInterface = case M.lookup "Inspect" envInterfaces of
+        newShowInterface = case M.lookup "Show" envInterfaces of
                           Just (Interface vars preds instances) ->
-                            Interface vars preds (inspectInstanceForEnv : instances)
+                            Interface vars preds (showInstanceForEnv : instances)
 
                           _ ->
                             undefined
-        updatedInterfaces = M.insert "Inspect" newInspectInterface $ M.insert "Eq" newEqInterface envInterfaces
+        updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
     in  env { envInterfaces = updatedInterfaces }
 
   RecordToDerive fieldNames ->
@@ -385,22 +385,22 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
         fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing mempty
         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
-        inspectInstPreds = instPreds "Inspect"
+        showInstPreds = instPreds "Show"
         eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
-        inspectInstanceForEnv = Instance (inspectInstPreds :=> IsIn "Inspect" [recordType] Nothing) mempty
+        showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [recordType] Nothing) mempty
         newEqInterface = case M.lookup "Eq" envInterfaces of
                           Just (Interface vars preds instances) ->
                             Interface vars preds (eqInstanceForEnv : instances)
 
                           _ ->
                             undefined
-        newInspectInterface = case M.lookup "Inspect" envInterfaces of
+        newShowInterface = case M.lookup "Show" envInterfaces of
                           Just (Interface vars preds instances) ->
-                            Interface vars preds (inspectInstanceForEnv : instances)
+                            Interface vars preds (showInstanceForEnv : instances)
 
                           _ ->
                             undefined
-        updatedInterfaces = M.insert "Inspect" newInspectInterface $ M.insert "Eq" newEqInterface envInterfaces
+        updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
     in  env { envInterfaces = updatedInterfaces }
 
 buildEnvForDerivedInstances :: Env -> [InstanceToDerive] -> Env
@@ -452,12 +452,12 @@ deriveExtra options env derivedTypes extra = do
           mapMaybe (deriveEqInstance (envCurrentPath env)) typeDeclarationsToDerive'
         else
           []
-      derivedInspectInstances   =
+      derivedShowInstances   =
         if optGenerateDerivedInstances options then
-          mapMaybe (deriveInspectInstance (envCurrentPath env)) typeDeclarationsToDerive'
+          mapMaybe (deriveShowInstance (envCurrentPath env)) typeDeclarationsToDerive'
         else
           []
-      allInstances = derivedEqInstances ++ derivedInspectInstances
+      allInstances = derivedEqInstances ++ derivedShowInstances
 
   resolveInstances options env allInstances
 

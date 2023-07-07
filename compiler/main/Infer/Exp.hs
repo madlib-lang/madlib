@@ -791,7 +791,7 @@ tryDefaults env ps = case ps of
             s    = M.fromList $ zip tvs' (tUnit <$ tvs')
         return (nextSubst `compose` s, nextPS)
 
-    IsIn "Inspect" [t] _ -> do
+    IsIn "Show" [t] _ -> do
       (nextSubst, nextPS) <- tryDefaults env next
 
       let vars = getTypeVarsInType t

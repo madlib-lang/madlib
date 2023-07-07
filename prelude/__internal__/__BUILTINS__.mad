@@ -181,29 +181,32 @@ const escapeChar = (c) => {
 }
 -#
 
-// Inspect
+// Show
 
-instance Inspect Byte {
-  inspect = (n) => #- {
+instance Show Byte {
+  show = (n) => #- {
     n = n % 256
     return ('0' + (n < 0 ? 256 + n : n).toString(16)).slice(-2).toUpperCase()
   } -#
 }
 
-instance Inspect Integer {
-  inspect = (n) => #- "" + n -#
+
+// TODO: handle the case of very big numbers that are currently displayed like this:
+// 2.0120391209380983e+28
+instance Show Integer {
+  show = (n) => #- "" + n -#
 }
 
-instance Inspect Short {
-  inspect = (n) => #- "" + n -#
+instance Show Short {
+  show = (n) => #- "" + n -#
 }
 
-instance Inspect Float {
-  inspect = (n) => #- "" + n -#
+instance Show Float {
+  show = (n) => #- "" + n -#
 }
 
-instance Inspect Char {
-  inspect = (c) => #- {
+instance Show Char {
+  show = (c) => #- {
     if (c === '\\') {
       return `'\\\\'`;
     } else if (c === '\'') {
@@ -220,88 +223,88 @@ instance Inspect Char {
   } -#
 }
 
-instance Inspect String {
-  inspect = (s) => #- `"${s.split('').map(escapeChar).join('')}"` -#
+instance Show String {
+  show = (s) => #- `"${s.split('').map(escapeChar).join('')}"` -#
 }
 
 #elseif llvm
 
-inspectByte :: Byte -> String
-inspectByte = extern "madlib__number__internal__inspectByte"
+showByte :: Byte -> String
+showByte = extern "madlib__number__internal__showByte"
 
-inspectInteger :: Integer -> String
-inspectInteger = extern "madlib__number__internal__inspectInteger"
+showInteger :: Integer -> String
+showInteger = extern "madlib__number__internal__showInteger"
 
-inspectFloat :: Float -> String
-inspectFloat = extern "madlib__number__internal__inspectFloat"
+showFloat :: Float -> String
+showFloat = extern "madlib__number__internal__showFloat"
 
-inspectChar :: Char -> String
-inspectChar = extern "madlib__char__internal__inspect"
+showChar :: Char -> String
+showChar = extern "madlib__char__internal__show"
 
-inspectShort :: Short -> String
-inspectShort = extern "madlib__number__internal__inspectShort"
+showShort :: Short -> String
+showShort = extern "madlib__number__internal__showShort"
 
-inspectString :: String -> String
-inspectString = extern "madlib__string__internal__inspect"
+showString :: String -> String
+showString = extern "madlib__string__internal__show"
 
-instance Inspect Byte {
-  inspect = inspectByte
+instance Show Byte {
+  show = showByte
 }
 
-instance Inspect Short {
-  inspect = inspectShort
+instance Show Short {
+  show = showShort
 }
 
-instance Inspect Integer {
-  inspect = inspectInteger
+instance Show Integer {
+  show = showInteger
 }
 
-instance Inspect Float {
-  inspect = inspectFloat
+instance Show Float {
+  show = showFloat
 }
 
-instance Inspect Char {
-  inspect = inspectChar
+instance Show Char {
+  show = showChar
 }
 
-instance Inspect String {
-  inspect = inspectString
+instance Show String {
+  show = showString
 }
 
 #endif
 
-instance Inspect {} {
-  inspect = () => "{}"
+instance Show {} {
+  show = () => "{}"
 }
 
-instance Inspect Boolean {
-  inspect = (b) => b
+instance Show Boolean {
+  show = (b) => b
     ? "true"
     : "false"
 }
 
-instance Inspect (a -> b) {
-  inspect = () => "[Function]"
+instance Show (a -> b) {
+  show = () => "[Function]"
 }
 
-instance Inspect a => Inspect (List a) {
-  inspect = (list) => {
-    inspectItems = (_list, acc) => where(_list) {
+instance Show a => Show (List a) {
+  show = (list) => {
+    showItems = (_list, acc) => where(_list) {
       [] =>
         acc
 
       [last] =>
         acc == ""
-          ? inspect(last)
-          : `${acc}, ${inspect(last)}`
+          ? show(last)
+          : `${acc}, ${show(last)}`
 
       [item, ...next] =>
         acc == ""
-          ? inspectItems(next, inspect(item))
-          : inspectItems(next, `${acc}, ${inspect(item)}`)
+          ? showItems(next, show(item))
+          : showItems(next, `${acc}, ${show(item)}`)
     }
 
-    return `[${inspectItems(list, "")}]`
+    return `[${showItems(list, "")}]`
   }
 }
 
@@ -320,38 +323,38 @@ Dictionary = extern "madlib__dictionary__typeConstructor"
 
 #endif
 
-instance (Inspect a, Inspect b) => Inspect (Dictionary a b) {
-  inspect = (dict) => {
-    inspectItems = (items, acc) => where(items) {
+instance (Show a, Show b) => Show (Dictionary a b) {
+  show = (dict) => {
+    showItems = (items, acc) => where(items) {
       [] =>
         ""
 
       [#[key, value]] =>
         acc == ""
-          ? `${inspect(key)}: ${inspect(value)}`
-          : `${acc}, ${inspect(key)}: ${inspect(value)}`
+          ? `${show(key)}: ${show(value)}`
+          : `${acc}, ${show(key)}: ${show(value)}`
 
       [#[key, value], ...next] =>
         acc == ""
-          ? inspectItems(next, `${inspect(key)}: ${inspect(value)}`)
-          : inspectItems(next, `${acc}, ${inspect(key)}: ${inspect(value)}`)
+          ? showItems(next, `${show(key)}: ${show(value)}`)
+          : showItems(next, `${acc}, ${show(key)}: ${show(value)}`)
     }
 
     return where(dict) {
       Dictionary(items) =>
-        `{{ ${inspectItems(items, "")} }}`
+        `{{ ${showItems(items, "")} }}`
     }
   }
 }
 
 #iftarget js
 
-instance Inspect ByteArray {
-  inspect = (byteArray) => #- {
+instance Show ByteArray {
+  show = (byteArray) => #- {
     let s = ''
     let h = '0123456789ABCDEF'
     byteArray.forEach((v, index) => {
-      if ((index + 1) % 8 === 0) { s += ' ' }
+      if ((index + 1) % 9 === 0) { s += ' ' }
       s += h[v >> 4] + h[v & 15]
     })
     return `ByteArray(${s})`
@@ -360,11 +363,11 @@ instance Inspect ByteArray {
 
 #elseif llvm
 
-inspectByteArray :: ByteArray -> String
-inspectByteArray = extern "madlib__bytearray__internal__inspect"
+showByteArray :: ByteArray -> String
+showByteArray = extern "madlib__bytearray__internal__show"
 
-instance Inspect ByteArray {
-  inspect = inspectByteArray
+instance Show ByteArray {
+  show = showByteArray
 }
 
 #endif
@@ -383,110 +386,110 @@ export arrayToList = (array) => #- {
   return start.n
 } -#
 
-instance Inspect a => Inspect (Array a) {
-  inspect = (array) => `Array(${inspect(arrayToList(array))})`
+instance Show a => Show (Array a) {
+  show = (array) => `Array(${show(arrayToList(array))})`
 }
 
 #elseif llvm
 
-instance Inspect a => Inspect (Array a) {
-  inspect = (array) => `Array(${inspect(arrayToList(array))})`
+instance Show a => Show (Array a) {
+  show = (array) => `Array(${show(arrayToList(array))})`
 }
 
 #endif
 
-instance (Inspect a, Inspect b) => Inspect #[a, b] {
-  inspect = (tuple) => where(tuple) {
+instance (Show a, Show b) => Show #[a, b] {
+  show = (tuple) => where(tuple) {
     #[a, b] =>
-      `#[${inspect(a)}, ${inspect(b)}]`
+      `#[${show(a)}, ${show(b)}]`
   }
 }
 
-instance (Inspect a, Inspect b, Inspect c) => Inspect #[a, b, c] {
-  inspect = (tuple) => where(tuple) {
+instance (Show a, Show b, Show c) => Show #[a, b, c] {
+  show = (tuple) => where(tuple) {
     #[a, b, c] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}]`
   }
 }
 
-instance (Inspect a, Inspect b, Inspect c, Inspect d) => Inspect #[a, b, c, d] {
-  inspect = (tuple) => where(tuple) {
+instance (Show a, Show b, Show c, Show d) => Show #[a, b, c, d] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}]`
   }
 }
 
 instance (
-  Inspect a,
-  Inspect b,
-  Inspect c,
-  Inspect d,
-  Inspect e
-) => Inspect #[a, b, c, d, e] {
-  inspect = (tuple) => where(tuple) {
+  Show a,
+  Show b,
+  Show c,
+  Show d,
+  Show e
+) => Show #[a, b, c, d, e] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d, e] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}]`
   }
 }
 
 instance (
-  Inspect a,
-  Inspect b,
-  Inspect c,
-  Inspect d,
-  Inspect e,
-  Inspect f
-) => Inspect #[a, b, c, d, e, f] {
-  inspect = (tuple) => where(tuple) {
+  Show a,
+  Show b,
+  Show c,
+  Show d,
+  Show e,
+  Show f
+) => Show #[a, b, c, d, e, f] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d, e, f] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}, ${show(f)}]`
   }
 }
 
 instance (
-  Inspect a,
-  Inspect b,
-  Inspect c,
-  Inspect d,
-  Inspect e,
-  Inspect f,
-  Inspect g
-) => Inspect #[a, b, c, d, e, f, g] {
-  inspect = (tuple) => where(tuple) {
+  Show a,
+  Show b,
+  Show c,
+  Show d,
+  Show e,
+  Show f,
+  Show g
+) => Show #[a, b, c, d, e, f, g] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d, e, f, g] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}, ${show(f)}, ${show(g)}]`
   }
 }
 
 instance (
-  Inspect a,
-  Inspect b,
-  Inspect c,
-  Inspect d,
-  Inspect e,
-  Inspect f,
-  Inspect g,
-  Inspect h
-) => Inspect #[a, b, c, d, e, f, g, h] {
-  inspect = (tuple) => where(tuple) {
+  Show a,
+  Show b,
+  Show c,
+  Show d,
+  Show e,
+  Show f,
+  Show g,
+  Show h
+) => Show #[a, b, c, d, e, f, g, h] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d, e, f, g, h] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}, ${inspect(h)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}, ${show(f)}, ${show(g)}, ${show(h)}]`
   }
 }
 
 instance (
-  Inspect a,
-  Inspect b,
-  Inspect c,
-  Inspect d,
-  Inspect e,
-  Inspect f,
-  Inspect g,
-  Inspect h,
-  Inspect i
-) => Inspect #[a, b, c, d, e, f, g, h, i] {
-  inspect = (tuple) => where(tuple) {
+  Show a,
+  Show b,
+  Show c,
+  Show d,
+  Show e,
+  Show f,
+  Show g,
+  Show h,
+  Show i
+) => Show #[a, b, c, d, e, f, g, h, i] {
+  show = (tuple) => where(tuple) {
     #[a, b, c, d, e, f, g, h, i] =>
-      `#[${inspect(a)}, ${inspect(b)}, ${inspect(c)}, ${inspect(d)}, ${inspect(e)}, ${inspect(f)}, ${inspect(g)}, ${inspect(h)}, ${inspect(i)}]`
+      `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}, ${show(f)}, ${show(g)}, ${show(h)}, ${show(i)}]`
   }
 }

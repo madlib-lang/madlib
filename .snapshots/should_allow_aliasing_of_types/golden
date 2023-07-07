@@ -6812,12 +6812,12 @@
               , Untyped
                   (Area (Loc 0 0 0) (Loc 0 0 0))
                   (Instance
-                     "Inspect"
-                     [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
-                     , IsIn "Inspect" [ TVar (TV "e" Star) ] Nothing
+                     "Show"
+                     [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
+                     , IsIn "Show" [ TVar (TV "e" Star) ] Nothing
                      ]
                      (IsIn
-                        "Inspect"
+                        "Show"
                         [ TApp
                             (TApp
                                (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA.mad")
@@ -6826,7 +6826,7 @@
                         ]
                         Nothing)
                      (fromList
-                        [ ( "inspect"
+                        [ ( "show"
                           , ( Typed
                                 ([] :=>
                                    TApp
@@ -6842,10 +6842,10 @@
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Assignment
-                                   "inspect"
+                                   "show"
                                    (Typed
-                                      ([ IsIn "Inspect" [ TVar (TV "e160" Star) ] Nothing
-                                       , IsIn "Inspect" [ TVar (TV "d159" Star) ] Nothing
+                                      ([ IsIn "Show" [ TVar (TV "e160" Star) ] Nothing
+                                       , IsIn "Show" [ TVar (TV "d159" Star) ] Nothing
                                        ] :=>
                                          TApp
                                            (TApp
@@ -6863,7 +6863,7 @@
                                       (Abs
                                          (Typed
                                             ([ IsIn
-                                                 "Inspect"
+                                                 "Show"
                                                  [ TApp
                                                      (TApp
                                                         (TCon
@@ -6909,7 +6909,7 @@
                                             "__$a__")
                                          [ Typed
                                              ([ IsIn
-                                                  "Inspect"
+                                                  "Show"
                                                   [ TApp
                                                       (TApp
                                                          (TCon
@@ -6963,7 +6963,7 @@
                                                    (Var "__$a__" False))
                                                 [ Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TApp
                                                              (TApp
                                                                 (TCon
@@ -7043,7 +7043,7 @@
                                                              "Wish"
                                                              [ Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TApp
                                                                           (TApp
                                                                              (TCon
@@ -7111,7 +7111,7 @@
                                                                             (Loc 0 0 0)
                                                                             (Loc 0 0 0)))
                                                                   , IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TApp
                                                                           (TApp
                                                                              (TCon
@@ -7240,7 +7240,7 @@
                                                              ]))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TApp
                                                                    (TApp
                                                                       (TCon
@@ -7305,7 +7305,7 @@
                                                                  (LStr "\"Wish(\"")
                                                              , Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TApp
                                                                           (TApp
                                                                              (TCon
@@ -7379,7 +7379,7 @@
                                                                  (App
                                                                     (Typed
                                                                        ([ IsIn
-                                                                            "Inspect"
+                                                                            "Show"
                                                                             [ TApp
                                                                                 (TApp
                                                                                    (TCon
@@ -7531,10 +7531,10 @@
                                                                                "prelude"))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "inspect" False))
+                                                                       (Var "show" False))
                                                                     (Typed
                                                                        ([ IsIn
-                                                                            "Inspect"
+                                                                            "Show"
                                                                             [ TApp
                                                                                 (TApp
                                                                                    (TCon
@@ -7724,8 +7724,8 @@
                                          ])))
                             , Forall
                                 [ Star , Star ]
-                                ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                                 , IsIn "Inspect" [ TGen 1 ] Nothing
+                                ([ IsIn "Show" [ TGen 0 ] Nothing
+                                 , IsIn "Show" [ TGen 1 ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp

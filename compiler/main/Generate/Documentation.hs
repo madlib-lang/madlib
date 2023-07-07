@@ -62,7 +62,7 @@ prepareInterfacesForDocs = Slv.ainterfaces
 
 
 prepareInstancesForDocs :: Slv.AST -> [Slv.Instance]
-prepareInstancesForDocs ast = filter ((\name -> name /= "Eq" && name /= "Inspect") . Slv.getInstanceName) (Slv.ainstances ast)
+prepareInstancesForDocs ast = filter ((\name -> name /= "Eq" && name /= "Show") . Slv.getInstanceName) (Slv.ainstances ast)
 
 
 prepareExportedExps :: Slv.AST -> [(String, Slv.Exp)]

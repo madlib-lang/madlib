@@ -142,7 +142,7 @@ int64_t madlib__string__length(unsigned char *s) {
 }
 
 int makeNextSize(int oldSize) {
-  int newSize = oldSize * 0.1;
+  int newSize = oldSize * 1.1;
   if (newSize - oldSize < 10) {
     return oldSize + 10;
   }
@@ -150,7 +150,7 @@ int makeNextSize(int oldSize) {
   return newSize;
 }
 
-char *madlib__string__internal__inspect(char *input) {
+char *madlib__string__internal__show(char *input) {
   int initialLength = strlen(input);
   int currentLength = initialLength + (initialLength + 3) * 0.1;
   char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (currentLength + 1));
@@ -161,9 +161,10 @@ char *madlib__string__internal__inspect(char *input) {
   while (*input != '\0') {
     // if the size of the string isn't enough we resize it
     if (currentLength - currentIndex < 4) {
-      char *resized = (char *)GC_MALLOC_ATOMIC(sizeof(char) * makeNextSize(currentLength));
+      currentLength = makeNextSize(currentLength);
+
+      char *resized = (char *)GC_MALLOC_ATOMIC(sizeof(char) * currentLength);
       memcpy(resized, result, sizeof(char) * (currentIndex + 1));
-      // GC_free(result);
       result = resized;
     }
 
@@ -194,7 +195,7 @@ char *madlib__string__internal__inspect(char *input) {
       currentIndex += 2;
     } else {
       result[currentIndex] = *input;
-      currentIndex++;
+      currentIndex += 1;
     }
 
     input++;

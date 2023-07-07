@@ -1,5 +1,5 @@
 import File from "File"
-import { UnknownError } from "IOError"
+import { UnknownError } from "__IOError__"
 import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
 import List from "List"
@@ -129,34 +129,34 @@ stringifyLine = (line) => where(line){
     "SF:" ++ arg ++ "\n"
 
   FN(l, name) =>
-    "FN:" ++ inspect(l) ++ "," ++ name ++ "\n"
+    "FN:" ++ show(l) ++ "," ++ name ++ "\n"
 
   FNDA(count, name) =>
-    "FNDA:" ++ inspect(count) ++ "," ++ name ++ "\n"
+    "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
 
   FNF(count) =>
-    "FNF:" ++ inspect(count) ++ "\n"
+    "FNF:" ++ show(count) ++ "\n"
 
   FNH(count) =>
-    "FNH:" ++ inspect(count) ++ "\n"
+    "FNH:" ++ show(count) ++ "\n"
 
   DA(l, count) =>
-    "DA:" ++ inspect(l) ++ "," ++ inspect(count) ++ "\n"
+    "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
 
   LF(count) =>
-    "LF:" ++ inspect(count) ++ "\n"
+    "LF:" ++ show(count) ++ "\n"
 
   LH(count) =>
-    "LH:" ++ inspect(count) ++ "\n"
+    "LH:" ++ show(count) ++ "\n"
 
   BRF(count) =>
-    "BRF:" ++ inspect(count) ++ "\n"
+    "BRF:" ++ show(count) ++ "\n"
 
   BRH(count) =>
-    "BRH:" ++ inspect(count) ++ "\n"
+    "BRH:" ++ show(count) ++ "\n"
 
   BRDA(l, blockNumber, branchNumber, count) =>
-    `BRDA:${inspect(l)},${inspect(blockNumber)},${inspect(branchNumber)},${inspect(count)}\n`
+    `BRDA:${show(l)},${show(blockNumber)},${show(branchNumber)},${show(count)}\n`
 }
 
 stringifySection :: LcovSection -> String
@@ -511,10 +511,10 @@ displayCoverageResults = (coverageData) => pipe(
       ModuleResult(astPath, line, fn, branch, total) =>
         [
           processSuitePath(astPath),
-          `${keepTwoDecimals(inspect(line))}%`,
-          `${keepTwoDecimals(inspect(fn))}%`,
-          `${keepTwoDecimals(inspect(branch))}%`,
-          `${keepTwoDecimals(inspect(total))}%`,
+          `${keepTwoDecimals(show(line))}%`,
+          `${keepTwoDecimals(show(fn))}%`,
+          `${keepTwoDecimals(show(branch))}%`,
+          `${keepTwoDecimals(show(total))}%`,
         ]
     }
   ),

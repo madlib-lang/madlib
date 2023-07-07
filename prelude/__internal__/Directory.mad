@@ -1,9 +1,10 @@
 import type { Wish } from "Wish"
-import type { IOError } from "IOError"
+import type { Error } from "__IOError__"
 
 import { Wish } from "Wish"
-import IOError from "IOError"
+import Error from "__IOError__"
 
+export type Error
 
 #iftarget js
 
@@ -26,7 +27,7 @@ import prelude_directory_fs from "fs"
  * )
  * // ["bin", "dev", "etc", "home", "opt", "tmp", "usr"]
  */
-read :: String -> Wish IOError (List String)
+read :: String -> Wish Error (List String)
 export read = (path) => Wish((bad, good) => #- {
   prelude_file_fs.readdir(path, (err, files) => {
     if (err) {
@@ -64,13 +65,13 @@ readFFI = extern "madlib__directory__read"
  * )
  * // ["bin", "dev", "etc", "home", "opt", "tmp", "usr"]
  */
-read :: String -> Wish IOError (List String)
+read :: String -> Wish Error (List String)
 export read = (path) => Wish((bad, good) =>
   readFFI(
     path,
     (libuvError, result) =>
       libuvError != 0
-        ? bad(IOError.fromLibuvError(libuvError))
+        ? bad(Error.fromLibuvError(libuvError))
         : good(result)
   )
 )

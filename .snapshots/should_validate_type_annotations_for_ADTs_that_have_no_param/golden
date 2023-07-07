@@ -303,11 +303,11 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                []
-               (IsIn "Inspect" [ TCon (TC "X" Star) "Module.mad" ] Nothing)
+               (IsIn "Show" [ TCon (TC "X" Star) "Module.mad" ] Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -317,7 +317,7 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
                                 ([] :=>
                                    TApp

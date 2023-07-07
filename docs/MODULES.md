@@ -53,7 +53,7 @@ import IO from "IO"
 import { fulfill } from "Wish"
 
 fulfill(
-  pipe(inspect, IO.errLine),
+  pipe(show, IO.errLine),
   IO.log,
   File.write("./file.txt", "hello world")
 )

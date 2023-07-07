@@ -1,6 +1,5 @@
-import type { JsonValue } from "JsonValue"
+import type { Value } from "Json/Value"
 
-import String from "String"
 import Tuple from "Tuple"
 import {} from "Number"
 import Dictionary from "Dictionary"
@@ -13,13 +12,14 @@ import {
   JsonNull,
   JsonArray,
   JsonObject
-} from "JsonValue"
+} from "Json/Value"
+import String from "String"
 
 
 // Pretty Printer
 // --------------
 
-jsonToDoc :: JsonValue -> PP.Doc
+jsonToDoc :: Value -> PP.Doc
 export jsonToDoc = (value) => where(value) {
   JsonString(s) =>
     pipe(
@@ -29,13 +29,13 @@ export jsonToDoc = (value) => where(value) {
     )(s)
 
   JsonBoolean(b) =>
-    PP.text(inspect(b))
+    PP.text(show(b))
 
   JsonInteger(i) =>
-    PP.text(inspect(i))
+    PP.text(show(i))
 
   JsonFloat(f) =>
-    PP.text(inspect(f))
+    PP.text(show(f))
 
   JsonNull =>
     PP.text("null")
@@ -121,46 +121,46 @@ escapeString = (s) => {
 // Printer Public API
 // ------------------
 
-string :: String -> JsonValue
+string :: String -> Value
 export string = (s) =>
   JsonString(s)
 
 
-integer :: Integer -> JsonValue
+integer :: Integer -> Value
 export integer = (i) =>
   JsonInteger(i)
 
 
-float :: Float -> JsonValue
+float :: Float -> Value
 export float = (f) =>
   JsonFloat(f)
 
 
-boolean :: Boolean -> JsonValue
+boolean :: Boolean -> Value
 export boolean = (b) =>
   JsonBoolean(b)
 
 
-null :: JsonValue
+null :: Value
 export null = JsonNull
 
 
-list :: (a -> JsonValue) -> List a -> JsonValue
+list :: (a -> Value) -> List a -> Value
 export list = (transformer, items) =>
   JsonArray(map(transformer, items))
 
 
-dict :: (a -> JsonValue) -> Dictionary String a -> JsonValue
+dict :: (a -> Value) -> Dictionary String a -> Value
 export dict = (transformer, items) =>
   JsonObject(map(transformer, items))
 
 
-object :: List #[String, JsonValue] -> JsonValue
+object :: List #[String, Value] -> Value
 export object = (items) =>
   JsonObject(Dictionary.fromList(items))
 
 
-printJson :: Integer -> JsonValue -> String
+printJson :: Integer -> Value -> String
 export printJson = (width, value) => pipe(
   jsonToDoc,
   PP.prettyPrint(width)

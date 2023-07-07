@@ -203,26 +203,11 @@ generateFnAssignment = (arity) => {
 }
 
 
-makeIndentation :: Integer -> String
-makeIndentation = (indent) => String.repeat(' ', indent)
-
-
 makeArgNamesWithStart :: Integer -> Integer -> List String
 makeArgNamesWithStart = (start, count) => pipe(
   List.range(start),
-  map((argIndex) => `arg${inspect(argIndex)}`)
+  map((argIndex) => `arg${show(argIndex)}`)
 )(count)
-
-
-makeArgNames :: Integer -> List String
-makeArgNames = makeArgNamesWithStart(1)
-
-
-makeArgAssignments :: Integer -> List String -> String
-makeArgAssignments = (indent, argNames) => pipe(
-  map((n) => `${makeIndentation(indent)}void *${n} = va_arg(argv, void*);\n`),
-  List.reduce(mconcat, "")
-)(argNames)
 
 
 makeFunctionCall :: String -> List String -> String
@@ -234,10 +219,10 @@ makeFunctionCall = (functionName, argNames) => pipe(
 
 generateKnownCallCase :: Integer -> String
 generateKnownCallCase = (arity) => {
-  caseStart = `      case ${inspect(arity)}: {\n`
+  caseStart = `      case ${show(arity)}: {\n`
   fnAssignment = `        ${generateFnAssignment(arity)}\n`
   allArgs = makeIndexedArgNames(arity)
-  case = `        void* args[${inspect(arity)}];
+  case = `        void* args[${show(arity)}];
         int i = 0;
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
@@ -263,7 +248,7 @@ generateKnownCallCases = (maxArity) => {
 makeIndexedArgNames :: Integer -> List String
 makeIndexedArgNames = (count) => pipe(
   List.range(0),
-  map((index) => `args[${inspect(index)}]`)
+  map((index) => `args[${show(index)}]`)
 )(count)
 
 
@@ -271,12 +256,12 @@ generateOverloadCase :: Integer -> String
 generateOverloadCase = (argsLeft) => {
   argNames = makeIndexedArgNames(argsLeft)
   allArgs = ["result", "argsLeft", ...argNames]
-  argsRead = `          void *args[${inspect(argsLeft)}];
-          for (int i = 0; i < ${inspect(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }\n`
+  argsRead = `          void *args[${show(argsLeft)}];
+          for (int i = 0; i < ${show(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }\n`
   fnCall = makeFunctionCall("__applyPAP__", allArgs)
 
 
-  return `        case ${inspect(argsLeft)}: {\n${argsRead}          result = ${fnCall};\n          break;\n        }\n`
+  return `        case ${show(argsLeft)}: {\n${argsRead}          result = ${fnCall};\n          break;\n        }\n`
 }
 
 
@@ -316,7 +301,7 @@ generatePAPTypeDefinition = (arity) => pipe(
   makeArgNamesWithStart(0),
   map((argName) => `  void *${argName};\n`),
   List.reduce(mconcat, ""),
-  (fields) => `typedef struct PAPEnv_${inspect(arity)} {\n${fields}} PAPEnv_${inspect(arity)}_t;\n\n`
+  (fields) => `typedef struct PAPEnv_${show(arity)} {\n${fields}} PAPEnv_${show(arity)}_t;\n\n`
 )(arity)
 
 

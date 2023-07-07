@@ -122,7 +122,7 @@ buildAPI ast table =
       packageAliases    = Slv.extractExportedAliases ast
       packageASTs       = Map.filterWithKey (\path _ -> not ("madlib_modules" `List.isInfixOf` path) && not (("prelude" <> (pathSeparator : "__internal__")) `List.isInfixOf` path)) table
       packageInterfaces = Map.elems packageASTs >>= Slv.ainterfaces
-      packageInstances  = filter ((\name -> name /= "Eq" && name /= "Inspect") . Slv.getInstanceName) $ Map.elems packageASTs >>= Slv.ainstances
+      packageInstances  = filter ((\name -> name /= "Eq" && name /= "Show") . Slv.getInstanceName) $ Map.elems packageASTs >>= Slv.ainstances
 
       apiWithNames      = PublicAPI
         { apiNames      = prettyPrintQualType . Slv.getQualType <$> exports

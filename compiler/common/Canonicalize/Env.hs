@@ -61,7 +61,7 @@ data Env
 initialEnv :: Env
 initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary), ("Array", tArray), ("ByteArray", tByteArray)]
                  , envConstructorInfos = M.empty
-                 , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] [] ["=="]), ("Inspect", Interface [TV "a" Star] [] ["inspect"])]
+                 , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] [] ["=="]), ("Show", Interface [TV "a" Star] [] ["show"])]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""
                  , envImportInfo = []

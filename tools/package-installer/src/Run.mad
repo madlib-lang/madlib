@@ -39,6 +39,7 @@ import Constants from "./Constants"
 import { DownloadError, Downloaded, downloadIfNotCached } from "./Download"
 import { hashVersion } from "./Hash"
 import Color from "./Color"
+import { showVersion } from "./Version"
 
 
 
@@ -199,7 +200,7 @@ displayInstalling :: Validate ValidationOutput -> Validate ValidationOutput
 displayInstalling = (validation) => {
   validationOutput = unsafeGetValidationValue(validation)
   name = validationOutput.madlibDotJson.name
-  version = show(validationOutput.madlibDotJson.version)
+  version = showVersion(validationOutput.madlibDotJson.version)
 
   IO.putLine(`Installing ${name} version ${version}`)
 

@@ -6949,18 +6949,18 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                [ IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                , IsIn
-                   "Inspect"
+                   "Show"
                    [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
                    Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TRecord
                       (fromList
                          [ ( "input"
@@ -6975,7 +6975,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -6994,10 +6994,10 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "l167" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "s174" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "l167" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "s174" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -7014,11 +7014,11 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "l167" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "s174" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -7044,7 +7044,7 @@
                                               (LStr "\"{ \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "l167" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7099,7 +7099,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "l167" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7108,7 +7108,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "l167" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7123,10 +7123,10 @@
                                                                   (TVar (TV "l167" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "l167" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7188,7 +7188,7 @@
                                               (LStr "\", \"")
                                           , Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "s174" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7243,7 +7243,7 @@
                                                        False))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "s174" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7252,7 +7252,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "s174" Star) ]
                                                                Nothing
                                                            ] :=>
@@ -7267,10 +7267,10 @@
                                                                   (TVar (TV "s174" Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "inspect" False))
+                                                          (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
+                                                               "Show"
                                                                [ TVar (TV "s174" Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
@@ -7341,8 +7341,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp
@@ -7358,17 +7358,17 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing ]
+               "Show"
+               [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TApp
                       (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
                       (TVar (TV "a" Star))
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -7380,9 +7380,9 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "a182" Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV "a182" Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -7394,7 +7394,7 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TVar (TV "a182" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -7405,7 +7405,7 @@
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
-                                            "Inspect"
+                                            "Show"
                                             [ TVar (TV "a182" Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
@@ -7421,7 +7421,7 @@
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TVar (TV "a182" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -7450,12 +7450,12 @@
                                                        "Just"
                                                        [ Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TVar (TV "a182" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TVar (TV "a182" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -7466,7 +7466,7 @@
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TVar (TV "a182" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -7480,7 +7480,7 @@
                                                            (LStr "\"Just(\"")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TVar (TV "a182" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -7490,7 +7490,7 @@
                                                            (App
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TVar (TV "a182" Star) ]
                                                                       Nothing
                                                                   ] :=>
@@ -7508,10 +7508,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "inspect" False))
+                                                                 (Var "show" False))
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TVar (TV "a182" Star) ]
                                                                       (Just
                                                                          (Area
@@ -7588,7 +7588,7 @@
                                    ])))
                       , Forall
                           [ Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing ] :=>
+                          ([ IsIn "Show" [ TGen 0 ] Nothing ] :=>
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -7600,12 +7600,12 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
-               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Inspect" [ TVar (TV "e" Star) ] Nothing
+               "Show"
+               [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
+               , IsIn "Show" [ TVar (TV "e" Star) ] Nothing
                ]
                (IsIn
-                  "Inspect"
+                  "Show"
                   [ TApp
                       (TApp
                          (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
@@ -7614,7 +7614,7 @@
                   ]
                   Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -7628,10 +7628,10 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "p197" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "o196" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "p197" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "o196" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -7648,7 +7648,7 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TApp
                                                (TApp
                                                   (TCon
@@ -7690,7 +7690,7 @@
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
-                                            "Inspect"
+                                            "Show"
                                             [ TApp
                                                 (TApp
                                                    (TCon
@@ -7737,7 +7737,7 @@
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TApp
                                                        (TApp
                                                           (TCon
@@ -7807,7 +7807,7 @@
                                                        "Wish"
                                                        [ Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TApp
                                                                     (TApp
                                                                        (TCon
@@ -7866,7 +7866,7 @@
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TApp
                                                                     (TApp
                                                                        (TCon
@@ -7974,7 +7974,7 @@
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TApp
                                                              (TApp
                                                                 (TCon
@@ -8027,7 +8027,7 @@
                                                            (LStr "\"Wish(\"")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TApp
                                                                     (TApp
                                                                        (TCon
@@ -8091,7 +8091,7 @@
                                                            (App
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TApp
                                                                           (TApp
                                                                              (TCon
@@ -8232,10 +8232,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "inspect" False))
+                                                                 (Var "show" False))
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TApp
                                                                           (TApp
                                                                              (TCon
@@ -8408,8 +8408,8 @@
                                    ])))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
-                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
                            ] :=>
                              TApp
                                (TApp
@@ -8426,11 +8426,11 @@
         , Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
-               "Inspect"
+               "Show"
                []
-               (IsIn "Inspect" [ TCon (TC "Todo" Star) "Module.mad" ] Nothing)
+               (IsIn "Show" [ TCon (TC "Todo" Star) "Module.mad" ] Nothing)
                (fromList
-                  [ ( "inspect"
+                  [ ( "show"
                     , ( Typed
                           ([] :=>
                              TApp
@@ -8440,7 +8440,7 @@
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
-                             "inspect"
+                             "show"
                              (Typed
                                 ([] :=>
                                    TApp
@@ -8452,11 +8452,11 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Inspect"
+                                           "Show"
                                            [ TCon (TC "Boolean" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
@@ -8465,11 +8465,11 @@
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
-                                            "Inspect"
+                                            "Show"
                                             [ TCon (TC "String" Star) "prelude" ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
-                                            "Inspect"
+                                            "Show"
                                             [ TCon (TC "Boolean" Star) "prelude" ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
@@ -8482,11 +8482,11 @@
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TCon (TC "String" Star) "prelude" ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
-                                                   "Inspect"
+                                                   "Show"
                                                    [ TCon (TC "Boolean" Star) "prelude" ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
@@ -8506,13 +8506,13 @@
                                                        "Todo"
                                                        [ Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -8523,13 +8523,13 @@
                                                            (PVar "a0")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "Boolean" Star) "prelude"
                                                                 ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "Boolean" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -8541,11 +8541,11 @@
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TCon (TC "String" Star) "prelude" ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
-                                                         "Inspect"
+                                                         "Show"
                                                          [ TCon (TC "Boolean" Star) "prelude" ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
@@ -8559,7 +8559,7 @@
                                                            (LStr "\"Todo(\"")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "String" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -8570,7 +8570,7 @@
                                                            (App
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "String" Star)
                                                                           "prelude"
@@ -8593,10 +8593,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "inspect" False))
+                                                                 (Var "show" False))
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "String" Star)
                                                                           "prelude"
@@ -8618,7 +8618,7 @@
                                                            (LStr "\", \"")
                                                        , Typed
                                                            ([ IsIn
-                                                                "Inspect"
+                                                                "Show"
                                                                 [ TCon (TC "Boolean" Star) "prelude"
                                                                 ]
                                                                 (Just
@@ -8629,7 +8629,7 @@
                                                            (App
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "Boolean" Star)
                                                                           "prelude"
@@ -8652,10 +8652,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "inspect" False))
+                                                                 (Var "show" False))
                                                               (Typed
                                                                  ([ IsIn
-                                                                      "Inspect"
+                                                                      "Show"
                                                                       [ TCon
                                                                           (TC "Boolean" Star)
                                                                           "prelude"
