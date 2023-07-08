@@ -71,6 +71,7 @@ import Text.Show.Pretty
   false       { Token _ _ (TokenBool _) }
   true        { Token _ _ (TokenBool _) }
   'extern'    { Token _ _ TokenExtern }
+  'derive'    { Token _ _ TokenDerive }
   'import'    { Token _ _ TokenImport }
   'export'    { Token _ _ TokenExport }
   'texport'   { Token _ _ TokenTypeExport }
@@ -127,8 +128,8 @@ ast :: { Src.AST }
   | importDecls ast           %shift { $2 { Src.aimports = Src.aimports $2 <> $1, Src.apath = Nothing } }
   | interface ast             %shift { $2 { Src.ainterfaces = $1 : (Src.ainterfaces $2), Src.apath = Nothing } }
   | instance ast              %shift { $2 { Src.ainstances = $1 : (Src.ainstances $2), Src.apath = Nothing } }
-  | {- empty -}               %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
-  | 'ret'                     %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
+  | {- empty -}               %shift { Src.AST { Src.aimports = [], Src.aderived = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
+  | 'ret'                     %shift { Src.AST { Src.aimports = [], Src.aderived = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret' ast                 %shift { $2 }
   | '#iftarget' ast           %shift { $2 { Src.aexps = Src.Source (tokenArea $1) (tokenTarget $1) (Src.IfTarget (tokenTarget $1)) : Src.aexps $2 } }
   | '#elseif' ast             %shift { $2 { Src.aexps = Src.Source (tokenArea $1) (tokenTarget $1) (Src.ElseIfTarget (tokenTarget $1)) : Src.aexps $2 } }
@@ -138,7 +139,11 @@ ast :: { Src.AST }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping 'ret' 'export' name '=' exp ast
       %shift { $9 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (Src.getArea $8)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $8)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $6) (Src.getArea $8)) (tokenTarget $1) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
+  | 'derive' name deriveDecl ast  %shift { $4 { Src.aderived = $3 : (Src.aderived $4) } }
   -- | error ast                        { $2 }
+
+deriveDecl :: { Src.Derived }
+  : name { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }

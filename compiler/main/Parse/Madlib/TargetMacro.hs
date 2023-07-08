@@ -11,6 +11,7 @@ resolveMacros target ast =
     , atypedecls  = filter (matchTarget target) (atypedecls ast)
     , ainterfaces = filter (matchTarget target) (ainterfaces ast)
     , ainstances  = filter (matchTarget target) (ainstances ast)
+    , aderived    = filter (matchTarget target) (aderived ast)
     }
 
 

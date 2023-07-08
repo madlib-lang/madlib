@@ -241,6 +241,10 @@ isTypeExport exp = case exp of
     False
 
 
+getConstructorName :: Constructor -> String
+getConstructorName (Canonical _ (Constructor name _ _ _)) = name
+
+
 isAccess :: Exp -> Bool
 isAccess exp = case exp of
   Canonical _ (Access _ _) ->

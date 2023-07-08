@@ -61,6 +61,7 @@ runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized t
             , optInsertInstancePlaholders = True
             , optMustHaveMain = True
             , optOptimizationLevel = optLevel'
+            , optParseOnly = False
             }
 
     when verbose $ do

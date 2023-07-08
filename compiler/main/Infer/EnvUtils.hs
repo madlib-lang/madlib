@@ -268,6 +268,17 @@ initialEnv = Env
                   ) M.empty
                 ]
         )
+      , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing]
+                        [ Instance ([] :=> IsIn "Comparable" [tInteger] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tShort] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tFloat] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tByte] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tStr] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tChar] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tBool] Nothing) M.empty
+                        , Instance ([] :=> IsIn "Comparable" [tUnit] Nothing) M.empty
+                        ]
+        )
       , ("Eq", Interface [TV "a" Star] []
                 [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tShort] Nothing) M.empty
@@ -399,7 +410,8 @@ initialEnv = Env
       , (">="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("<="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-      , ("show"      , Forall [Star] $ [IsIn "Show" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
+      , ("compare"      , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tInteger))
+      , ("show"         , Forall [Star] $ [IsIn "Show" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
 
       , ("|"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("&"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
