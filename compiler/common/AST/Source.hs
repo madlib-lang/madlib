@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module AST.Source where
 
 import           Explain.Location
@@ -18,14 +19,23 @@ data Source a = Source Area SourceTarget a deriving(Eq, Show, Generic, Hashable)
 
 data AST =
   AST
-    { aimports    :: [Import]
-    , aexps       :: [Exp]
-    , atypedecls  :: [TypeDecl]
+    { aimports :: [Import]
+    , aexps :: [Exp]
+    , atypedecls :: [TypeDecl]
     , ainterfaces :: [Interface]
-    , ainstances  :: [Instance]
-    , apath       :: Maybe FilePath
+    , ainstances :: [Instance]
+    , aderived :: [Derived]
+    , apath :: Maybe FilePath
     }
     deriving(Eq, Show, Generic, Hashable)
+
+
+type Derived = Source Derived_
+data Derived_
+  = DerivedADT String
+  | DerivedRecord [String]
+  deriving(Eq, Show, Generic, Hashable)
+
 
 type Import = Source Import_
 -- The second FilePath parameter is the absolute path to that module
@@ -208,6 +218,7 @@ emptyAST =
     , atypedecls = []
     , ainterfaces = []
     , ainstances = []
+    , aderived = []
     , apath = Just "__REPL__"
     }
 
@@ -225,6 +236,15 @@ isMacroExp exp = case exp of
 
   _ ->
     False
+
+
+getTypeDeclName :: TypeDecl -> String
+getTypeDeclName td = case td of
+  Source _ _ ADT { adtname } ->
+    adtname
+
+  Source _ _ Alias { aliasname } ->
+    aliasname
 
 
 isTypeImport :: Import -> Bool

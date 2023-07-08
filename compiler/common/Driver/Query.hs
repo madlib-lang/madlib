@@ -49,6 +49,7 @@ data Query a where
   -- Canonicalization
   CanonicalizedASTWithEnv :: FilePath -> Query (Can.AST, CanEnv.Env, [InstanceToDerive])
   CanonicalizedInterface :: FilePath -> String -> Query (Maybe CanEnv.Interface)
+  ForeignCanTypeDeclaration :: FilePath -> String -> Query (Maybe Can.TypeDecl)
   ForeignADTType :: FilePath -> String -> Query (Maybe Type)
   ForeignConstructorInfos :: FilePath -> String -> Query (Maybe [CanEnv.ConstructorInfo])
 
@@ -124,74 +125,77 @@ instance Hashable (Query a) where
     CanonicalizedInterface path name ->
       hashWithSalt salt (path, name, 8 :: Int)
 
-    ForeignADTType modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 9 :: Int)
+    ForeignCanTypeDeclaration path typeName ->
+      hashWithSalt salt (path, typeName, 9 :: Int)
 
-    ForeignConstructorInfos modulePath typeName ->
+    ForeignADTType modulePath typeName ->
       hashWithSalt salt (modulePath <> "." <> typeName, 10 :: Int)
 
+    ForeignConstructorInfos modulePath typeName ->
+      hashWithSalt salt (modulePath <> "." <> typeName, 11 :: Int)
+
     SolvedASTWithEnv path ->
-      hashWithSalt salt (path, 11 :: Int)
+      hashWithSalt salt (path, 12 :: Int)
 
     AllSolvedASTsWithEnvs ->
-      hashWithSalt salt (101 :: Int)
+      hashWithSalt salt (13 :: Int)
 
     SolvedInterface path name ->
-      hashWithSalt salt (path, name, 12 :: Int)
+      hashWithSalt salt (path, name, 14 :: Int)
 
     ForeignScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 13 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 15 :: Int)
 
     ForeignExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 14 :: Int)
+      hashWithSalt salt (modulePath <> "." <> expName, 16 :: Int)
 
     ForeignMethod modulePath methodName methodType ->
-      hashWithSalt salt (modulePath, methodName, methodType, 15 :: Int)
+      hashWithSalt salt (modulePath, methodName, methodType, 17 :: Int)
 
     SolvedMethodNode methodName methodType ->
-      hashWithSalt salt (methodName, methodType, 16 :: Int)
+      hashWithSalt salt (methodName, methodType, 18 :: Int)
 
     DefinesInterfaceForMethod modulePath methodName ->
-      hashWithSalt salt (modulePath, methodName, 17 :: Int)
+      hashWithSalt salt (modulePath, methodName, 19 :: Int)
 
     ForeignConstructor modulePath constructorName ->
-      hashWithSalt salt (modulePath <> "." <> constructorName, 18 :: Int)
+      hashWithSalt salt (modulePath <> "." <> constructorName, 20 :: Int)
 
     ForeignTypeDeclaration modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 19 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 21 :: Int)
 
     MonomorphizedProgram ->
-      hashWithSalt salt (21 :: Int)
+      hashWithSalt salt (22 :: Int)
 
     MonomorphizedAST path ->
-      hashWithSalt salt (path, 22 :: Int)
-
-    CoreAST path ->
       hashWithSalt salt (path, 23 :: Int)
 
-    PropagatedAST path ->
+    CoreAST path ->
       hashWithSalt salt (path, 24 :: Int)
 
+    PropagatedAST path ->
+      hashWithSalt salt (path, 25 :: Int)
+
     ForeignCoreExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 25 :: Int)
+      hashWithSalt salt (modulePath <> "." <> expName, 26 :: Int)
 
     BuiltObjectFile path ->
-      hashWithSalt salt (path, 26 :: Int)
-
-    GeneratedJSModule path ->
       hashWithSalt salt (path, 27 :: Int)
 
-    BuiltJSModule path ->
+    GeneratedJSModule path ->
       hashWithSalt salt (path, 28 :: Int)
 
-    BuiltTarget path ->
+    BuiltJSModule path ->
       hashWithSalt salt (path, 29 :: Int)
 
-    StaticLibPathsToLink path ->
+    BuiltTarget path ->
       hashWithSalt salt (path, 30 :: Int)
 
+    StaticLibPathsToLink path ->
+      hashWithSalt salt (path, 31 :: Int)
+
     EnvVar name ->
-      hashWithSalt salt (name, 31 :: Int)
+      hashWithSalt salt (name, 32 :: Int)
 
 
 instance Hashable (Some Query) where

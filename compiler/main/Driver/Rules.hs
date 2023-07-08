@@ -142,6 +142,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     (can, Can.CanonicalState { Can.warnings }) <- runCanonicalM $ do
       (ast, env, instancesToDerive) <- Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
+      -- liftIO $ putStrLn $ ppShow ast
       ast' <-
         if optCoverage options then
           Coverage.addTrackers options ast
@@ -162,6 +163,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       Left err ->
         return ((Can.emptyAST, CanEnv.initialEnv, mempty), (warnings, [err]))
+
+  ForeignCanTypeDeclaration modulePath typeName -> nonInput $ do
+    (Can.AST { Can.atypedecls }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+
+    let found = List.find ((== typeName) . Can.getTypeDeclName) atypedecls
+    return (found, (mempty, mempty))
 
   CanonicalizedInterface modulePath name -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST modulePath
@@ -557,7 +564,7 @@ globalChecks = do
 
 -- TODO: Move to AST.Source module
 emptySrcAST :: Src.AST
-emptySrcAST = Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainstances = [], Src.ainterfaces = [], Src.apath = Nothing }
+emptySrcAST = Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainstances = [], Src.ainterfaces = [], Src.aderived = [], Src.apath = Nothing }
 
 -- TODO: Move to AST.Solved module
 emptySlvAST :: Slv.AST

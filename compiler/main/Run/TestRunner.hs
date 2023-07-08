@@ -257,10 +257,11 @@ generateTestMainAST testMainPath preludeModulePaths suitePaths =
       testSuiteList     = generateTestSuiteListExp testSuiteItems
       runAllTestSuites  = generateRunTestSuitesExp testSuiteList
   in  AST
-        { aimports    = preludeImports ++ imports
-        , aexps       = [runAllTestSuites]
-        , atypedecls  = []
+        { aimports = preludeImports ++ imports
+        , aexps = [runAllTestSuites]
+        , atypedecls = []
         , ainterfaces = []
-        , ainstances  = []
-        , apath       = Just testMainPath
+        , ainstances = []
+        , aderived = []
+        , apath = Just testMainPath
         }

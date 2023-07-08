@@ -186,7 +186,8 @@ checkUnusedImports env imports = do
       return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
-      pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
+      when (name /= "__BUILTINS__") $
+        pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
     )
     (withJSCheck ++ unusedTypes)
 
@@ -297,6 +298,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   exps                  <- mapM (canonicalize env''' (optTarget options)) $ Src.aexps sourceAst
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
   instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
+  derivedInstances      <- deriveInstances env'''' typeDecls $ Src.aderived sourceAst
 
   when (optMustHaveMain options && astPath == optEntrypoint options) $ do
     if any ((== Just "main") . Can.getExpName) exps then
@@ -318,6 +320,11 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
           mapMaybe (deriveShowInstance astPath) typeDeclarationsToDerive'
         else
           []
+      -- derivedCompareInstances   =
+      --   if optGenerateDerivedInstances options then
+      --     mapMaybe (deriveComparableInstance astPath) typeDeclarationsToDerive'
+      --   else
+      --     []
   
   addDerivedTypes (S.fromList typeDeclarationsToDerive')
   resetToDerive
@@ -326,7 +333,8 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
-                                 , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ instances
+                                 , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ derivedInstances ++ instances
+                                --  , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ derivedCompareInstances ++ instances
                                  , Can.apath       = Src.apath sourceAst
                                  }
 

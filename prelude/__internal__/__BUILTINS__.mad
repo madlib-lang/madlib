@@ -493,3 +493,17 @@ instance (
       `#[${show(a)}, ${show(b)}, ${show(c)}, ${show(d)}, ${show(e)}, ${show(f)}, ${show(g)}, ${show(h)}, ${show(i)}]`
   }
 }
+
+
+// Compare
+export MORE = 1
+export LESS = -1
+export EQUAL = 0
+
+instance Comparable (a -> b) {
+  compare = (_, _) => EQUAL
+}
+
+instance Comparable {} {
+  compare = (_, _) => EQUAL
+}

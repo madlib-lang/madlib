@@ -351,61 +351,69 @@ chars = (:"") <$> ['a'..]
 
 
 -- TODO: Move to Infer.Derive
-buildEnvForDerivedInstance :: Env -> InstanceToDerive -> Env
-buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case instanceToDerive of
-  TypeDeclToDerive (Can.Canonical _ Can.ADT { Can.adtparams, Can.adtconstructors, Can.adtType }) ->
-        -- Env
-    let constructorTypes = Can.getCtorType <$> adtconstructors
-        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
-        instPreds interfaceName =
-          (\varInType ->
-              IsIn interfaceName [varInType] Nothing
-          ) <$> varsInType
-        eqInstPreds = instPreds "Eq"
-        showInstPreds = instPreds "Show"
-        eqInstanceForEnv = Instance (eqInstPreds :=> IsIn "Eq" [adtType] Nothing) mempty
-        showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [adtType] Nothing) mempty
-        newEqInterface = case M.lookup "Eq" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (eqInstanceForEnv : instances)
+-- buildEnvForDerivedInstance :: Env -> InstanceToDerive -> Env
+-- buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case instanceToDerive of
+--   TypeDeclToDerive (Can.Canonical _ Can.ADT { Can.adtparams, Can.adtconstructors, Can.adtType }) ->
+--     let constructorTypes = Can.getCtorType <$> adtconstructors
+--         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
+--         instPreds interfaceName =
+--           (\varInType ->
+--               IsIn interfaceName [varInType] Nothing
+--           ) <$> varsInType
+--         eqInstPreds = instPreds "Eq"
+--         showInstPreds = instPreds "Show"
+--         comparableInstPreds = instPreds "Comparable"
+--         eqInstanceForEnv = Instance (eqInstPreds :=> IsIn "Eq" [adtType] Nothing) mempty
+--         showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [adtType] Nothing) mempty
+--         comparableInstanceForEnv = Instance (comparableInstPreds :=> IsIn "Comparable" [adtType] Nothing) mempty
+--         newEqInterface = case M.lookup "Eq" envInterfaces of
+--                           Just (Interface vars preds instances) ->
+--                             Interface vars preds (eqInstanceForEnv : instances)
 
-                          _ ->
-                            undefined
-        newShowInterface = case M.lookup "Show" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (showInstanceForEnv : instances)
+--                           _ ->
+--                             undefined
+--         newComparableInterface = case M.lookup "Comparable" envInterfaces of
+--                           Just (Interface vars preds instances) ->
+--                             Interface vars preds (comparableInstanceForEnv : instances)
 
-                          _ ->
-                            undefined
-        updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
-    in  env { envInterfaces = updatedInterfaces }
+--                           _ ->
+--                             undefined
+--         newShowInterface = case M.lookup "Show" envInterfaces of
+--                           Just (Interface vars preds instances) ->
+--                             Interface vars preds (showInstanceForEnv : instances)
 
-  RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
-        recordType         = TRecord fields Nothing mempty
-        instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
-        showInstPreds = instPreds "Show"
-        eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
-        showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [recordType] Nothing) mempty
-        newEqInterface = case M.lookup "Eq" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (eqInstanceForEnv : instances)
+--                           _ ->
+--                             undefined
+--         updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
+--         -- updatedInterfaces = M.insert "Comparable" newComparableInterface $ M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
+--     in  env { envInterfaces = updatedInterfaces }
 
-                          _ ->
-                            undefined
-        newShowInterface = case M.lookup "Show" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (showInstanceForEnv : instances)
+--   RecordToDerive fieldNames ->
+--     let fieldNamesWithVars = zip (Set.toList fieldNames) chars
+--         fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
+--         recordType         = TRecord fields Nothing mempty
+--         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
+--         showInstPreds = instPreds "Show"
+--         eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
+--         showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [recordType] Nothing) mempty
+--         newEqInterface = case M.lookup "Eq" envInterfaces of
+--                           Just (Interface vars preds instances) ->
+--                             Interface vars preds (eqInstanceForEnv : instances)
 
-                          _ ->
-                            undefined
-        updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
-    in  env { envInterfaces = updatedInterfaces }
+--                           _ ->
+--                             undefined
+--         newShowInterface = case M.lookup "Show" envInterfaces of
+--                           Just (Interface vars preds instances) ->
+--                             Interface vars preds (showInstanceForEnv : instances)
 
-buildEnvForDerivedInstances :: Env -> [InstanceToDerive] -> Env
-buildEnvForDerivedInstances env instancesToDerive =
-  foldr (flip buildEnvForDerivedInstance) env instancesToDerive
+--                           _ ->
+--                             undefined
+--         updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
+--     in  env { envInterfaces = updatedInterfaces }
+
+-- buildEnvForDerivedInstances :: Env -> [InstanceToDerive] -> Env
+-- buildEnvForDerivedInstances env instancesToDerive =
+--   foldr (flip buildEnvForDerivedInstance) env instancesToDerive
 
 
 verifyTopLevelExp :: FilePath -> Slv.Exp -> Infer ()
@@ -464,9 +472,12 @@ deriveExtra options env derivedTypes extra = do
 
 inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
 inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
-  let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive
-      namespacesInScope = namespacesInScopeFromImports aimports
-      envWithNamespaces = setNamespacesInScope envWithDerivedInstances namespacesInScope
+      -- TODO: I think this should go as it doesn't seem needed and instances should already be in the Env?
+      -- Or is it needed to handle cases of co-dependency where one user instance requires another derived
+      -- instance or something similar?
+  -- let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive
+  let namespacesInScope = namespacesInScopeFromImports aimports
+      envWithNamespaces = setNamespacesInScope env namespacesInScope
       envWithImportInfo = buildImportInfos envWithNamespaces ast
   -- TODO: remove this and make the instance retrieval be recursive to add up all instances
   envWithImports                      <- solveImports envWithImportInfo aimports

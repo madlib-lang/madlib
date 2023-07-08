@@ -77,6 +77,7 @@ tokens :-
   -- <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*                                           ; -- Comments
   <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*[\n]?                                      ; -- Comments
 
+  <0> derive                                                                                  { mapToken (\_ -> TokenDerive) }
   <0> import                                                                                  { mapToken (\_ -> TokenImport) }
   <0> export                                                                                  { decideTokenExport }
   <0> from                                                                                    { mapToken (\_ -> TokenFrom) }
@@ -677,6 +678,7 @@ data TokenClass
  | TokenRightArrow
  | TokenFatArrow
  | TokenEOF
+ | TokenDerive
  | TokenImport
  | TokenExport
  | TokenTypeExport
