@@ -1,8 +1,0 @@
-import { assertEquals, test } from "Test"
-import { MORE, LESS, EQUAL } from "./Compare"
-import {} from "Boolean"
-
-
-test("compare Boolean - MORE", (_) => assertEquals(compare(true, false), MORE))
-test("compare Boolean - LESS", (_) => assertEquals(compare(false, true), LESS))
-test("compare Boolean - EQUAL", (_) => assertEquals(compare(false, false), EQUAL))

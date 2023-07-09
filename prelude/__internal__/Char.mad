@@ -1,58 +1,6 @@
 import String from "String"
 
 
-#iftarget js
-
-import { MORE, LESS, EQUAL } from "Compare"
-
-
-_compare :: Comparable a => Integer -> Integer -> Integer -> a -> a -> Integer
-_compare = (more, less, equal, a, b) => #- {
-  return a > b
-    ? more
-    : a === b 
-      ? equal
-      : less
-} -#
-
-/**
- * Comparable implementation for characters
- *
- * @since 0.13.0
- * @example
- * compare('a', 'b') // MORE
- * compare('b', 'a') // LESS
- * compare('a', 'a') // EQUAL
- */
-instance Comparable Char {
-  compare = (a, b) => _compare(MORE, LESS, EQUAL, a, b)
-}
-
-#elseif llvm
-
-import type { ComparisonResult } from "Compare"
-import {} from "Compare"
-
-
-charCompare :: Char -> Char -> ComparisonResult
-charCompare = extern "madlib__char__compare"
-
-
-/**
- * Comparable implementation for characters
- *
- * @since 0.13.0
- * @example
- * compare('a', 'b') // MORE
- * compare('b', 'a') // LESS
- * compare('a', 'a') // EQUAL
- */
-instance Comparable Char {
-  compare = charCompare
-}
-
-#endif
-
 
 #iftarget js
 

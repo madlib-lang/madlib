@@ -171,13 +171,29 @@ findASTM table path = case M.lookup path table of
   Nothing -> throwError $ CompilationError (ImportNotFound path) NoContext
 
 
-extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Vars
-extractImportedConstructors env ast imp =
-  let exportedADTs        = Slv.getValue <$> filter Slv.isADTExported (Slv.atypedecls ast)
+extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Infer Vars
+extractImportedConstructors env ast imp = do
+  let nameExports         = mapMaybe Slv.maybeNameExport (Slv.aexps ast)
+      exportedADTs        = Slv.getValue <$> filter Slv.isADTExported (Slv.atypedecls ast)
       exportedCtors       = concat $ Slv.adtconstructors <$> exportedADTs
+      notExportedADTs     = Slv.getValue <$> filter (\td -> not (Slv.isADTExported td) && not (Slv.isAlias td)) (Slv.atypedecls ast)
+      notExportedCtors    = concat $ Slv.adtconstructors <$> notExportedADTs
       exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
-      exportedCtorSchemes = M.restrictKeys (envVars env) $ S.fromList exportedCtorNames
-  in  filterExportsByImport imp exportedCtorSchemes
+      additionalCtorNames = filter (`elem` nameExports) $ Slv.getConstructorName <$> notExportedCtors
+
+      nameExportsInImports =
+        mapMaybe
+          (\n -> do
+            path <- Slv.findForeignModuleForImportedName n ast
+            return (n, path)
+          )
+          nameExports
+  chainedExports <- forM nameExportsInImports $ \(n, path) -> do
+    (ast, env') <- Rock.fetch $ Query.SolvedASTWithEnv path
+    extractImportedConstructors env' ast imp
+
+  let exportedCtorSchemes = M.restrictKeys (envVars env) $ S.fromList (exportedCtorNames ++ additionalCtorNames)
+  return $ filterExportsByImport imp exportedCtorSchemes <> mconcat chainedExports
 
 
 extractImportedVars :: Env -> Slv.AST -> Can.Import -> Infer Vars
@@ -213,7 +229,7 @@ solveImport env imp = do
   let path = Can.getImportAbsolutePath imp
   (ast, env') <- Rock.fetch $ Query.SolvedASTWithEnv path
   importedVars <- extractImportedVars env' ast imp
-  let constructorImports = extractImportedConstructors env' ast imp
+  constructorImports <- extractImportedConstructors env' ast imp
   let env'' = mergeEnv' env env'
   return
     env''

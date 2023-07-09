@@ -1,13 +1,9 @@
 import type { Maybe } from "Maybe"
-
-import { EQUAL, LESS, MORE } from "Compare"
 import {} from "Scan"
 
 
 
-instance Comparable Float {
-  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
-}
+
 
 
 #iftarget js

@@ -1,7 +1,7 @@
-import type { ComparisonResult } from "Compare"
+import type { Comparison } from "Compare"
 import type { Maybe } from "Maybe"
 
-import { MORE } from "Compare"
+import { LT, EQ, GT } from "Compare"
 import Function from "Function"
 import { Just, Nothing } from "Maybe"
 import {} from "Monad"
@@ -580,10 +580,10 @@ export uniqueBy = (f) => reduce(
   [],
 )
 
-descending :: (a -> a -> ComparisonResult) -> a -> List a -> List a -> List (List a)
+descending :: (a -> a -> Comparison) -> a -> List a -> List a -> List (List a)
 descending = (compareFn, a, as, xs) => where(xs) {
   [b, ...bs] =>
-    compareFn(a, b) == MORE
+    compareFn(a, b) == GT
       ? descending(compareFn, b, [a, ...as], bs)
       : [[a, ...as], ...sequences(compareFn, xs)]
 
@@ -592,10 +592,10 @@ descending = (compareFn, a, as, xs) => where(xs) {
 }
 
 
-ascending :: (a -> a -> ComparisonResult) -> a -> (List a -> List a) -> List a -> List (List a)
+ascending :: (a -> a -> Comparison) -> a -> (List a -> List a) -> List a -> List (List a)
 ascending = (compareFn, a, as, xs) => where(xs) {
   [b, ...bs] =>
-    compareFn(a, b) != MORE
+    compareFn(a, b) != GT
       ? ascending(compareFn, b, (ys) => as([a, ...ys]), bs)
       : [as([a]), ...sequences(compareFn, xs)]
 
@@ -604,10 +604,10 @@ ascending = (compareFn, a, as, xs) => where(xs) {
 }
 
 
-sequences :: (a -> a -> ComparisonResult) -> List a -> List (List a)
+sequences :: (a -> a -> Comparison) -> List a -> List (List a)
 sequences = (compareFn, list) => where(list) {
   [a, b, ...xs] =>
-    compareFn(a, b) == MORE
+    compareFn(a, b) == GT
       ? descending(compareFn, b, [a], xs)
       : ascending(compareFn, b, (l) => [a, ...l], xs)
 
@@ -621,12 +621,12 @@ sequences = (compareFn, list) => where(list) {
  *
  * @since 0.11.0
  */
-sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
+sortBy :: (a -> a -> Comparison) -> List a -> List a
 export sortBy = (compareFn, list) => {
   merge :: List a -> List a -> List a
   merge = (listA, listB) => where(#[listA, listB]) {
     #[[a, ...as], [b, ...bs]] =>
-      compareFn(a, b) == MORE
+      compareFn(a, b) == GT
         ? [b, ...merge(listA, bs)]
         : [a, ...merge(as, listB)]
 
@@ -684,6 +684,18 @@ sortAsc :: Comparable a => List a -> List a
 export sortAsc = sort
 
 
+reverseCmp :: Comparison -> Comparison
+reverseCmp = (cmp) => where(cmp) {
+  LT =>
+    GT
+
+  GT =>
+    LT
+
+  EQ =>
+    EQ
+}
+
 /**
  * Sorts a list of Comparable values in descendant order.
  *
@@ -692,7 +704,7 @@ export sortAsc = sort
  * sortDesc([3, 1, 2]) // [3, 2, 1]
  */
 sortDesc :: Comparable a => List a -> List a
-export sortDesc = sortBy((a, b) => compare(a, b) * -1)
+export sortDesc = sortBy((a, b) => reverseCmp(compare(a, b)))
 
 
 /**

@@ -1,5 +1,5 @@
 import {} from "Char"
-import { EQUAL, LESS, MORE, eq } from "Compare"
+import { EQ, LT, GT, eq } from "Compare"
 import { Just } from "Maybe"
 import { assertEquals, test } from "Test"
 
@@ -7,9 +7,9 @@ import String from "./String"
 
 
 
-test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE))
-test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LESS))
-test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUAL))
+test("compare String - MORE", (_) => assertEquals(compare("John", "James"), GT))
+test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LT))
+test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQ))
 
 
 test(

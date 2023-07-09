@@ -196,8 +196,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   SolvedASTWithEnv path -> nonInput $ do
     (canAst, _, instancesToDerive) <- Rock.fetch $ CanonicalizedASTWithEnv path
+    initialEnvRes <- runInfer initialEnv
+    let Right (initialEnv', _) = initialEnvRes
     res <- runInfer $ do
-      (ast', env) <- inferAST options initialEnv instancesToDerive canAst
+      (ast', env) <- inferAST options initialEnv' instancesToDerive canAst
 
       wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
       listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
@@ -215,7 +217,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((ast { Slv.apath = Just path }, env), (warnings, errors))
 
       Left error ->
-        return ((emptySlvAST { Slv.apath = Just path }, initialEnv), (mempty, [error]))
+        return ((emptySlvAST { Slv.apath = Just path }, initialEnv'), (mempty, [error]))
 
   AllSolvedASTsWithEnvs -> nonInput $ do
     pathsToBuild <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)

@@ -502,14 +502,105 @@ export type Comparison
   | EQ
   | GT
 
-export MORE = 1
-export LESS = -1
-export EQUAL = 0
 
 instance Comparable (a -> b) {
-  compare = (_, _) => EQUAL
+  compare = (_, _) => EQ
 }
 
 instance Comparable {} {
-  compare = (_, _) => EQUAL
+  compare = (_, _) => EQ
+}
+
+
+#iftarget js
+
+_compare :: Comparable a => Comparison -> Comparison -> Comparison -> a -> a -> Comparison
+_compare = (more, less, equal, a, b) => #- {
+  return a > b
+    ? more
+    : a === b 
+      ? equal
+      : less
+} -#
+
+/**
+ * Comparable implementation for characters
+ *
+ * @since 0.13.0
+ * @example
+ * compare('a', 'b') // MORE
+ * compare('b', 'a') // LESS
+ * compare('a', 'a') // EQUAL
+ */
+instance Comparable Char {
+  compare = (a, b) => _compare(GT, LT, EQ, a, b)
+}
+
+#elseif llvm
+
+charCompare :: Char -> Char -> Comparison
+charCompare = extern "madlib__char__compare"
+
+
+/**
+ * Comparable implementation for characters
+ *
+ * @since 0.13.0
+ * @example
+ * compare('a', 'b') // MORE
+ * compare('b', 'a') // LESS
+ * compare('a', 'a') // EQUAL
+ */
+instance Comparable Char {
+  compare = charCompare
+}
+
+#endif
+
+#iftarget js
+
+instance Comparable String {
+  compare = (a, b) => #- a > b -# ? GT : #- a === b -# ? EQ : LT
+}
+
+#elseif llvm
+
+stringCompare :: String -> String -> Comparison
+stringCompare = extern "madlib__string__compare"
+
+instance Comparable String {
+  compare = stringCompare
+}
+
+#endif
+
+/**
+ * Comparable implementation for booleans
+ *
+ * @since 0.11.0
+ * @example
+ * compare(true, false) // MORE
+ * compare(false, true) // LESS
+ * compare(true, true) // EQUAL
+ * compare(false, false) // EQUAL
+ */
+instance Comparable Boolean {
+  compare = (a, b) => where(#[a, b]) {
+    #[true, false] =>
+      GT
+
+    #[false, true] =>
+      LT
+
+    _ =>
+      EQ
+  }
+}
+
+instance Comparable Integer {
+  compare = (a, b) => a > b ? GT : a == b ? EQ : LT
+}
+
+instance Comparable Float {
+  compare = (a, b) => a > b ? GT : a == b ? EQ : LT
 }
