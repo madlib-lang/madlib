@@ -266,22 +266,22 @@ buildArgsComparisons index args = case args of
           [ ec (Assignment resultName (ec (App (ec (App (ec (Var "compare")) (ec (Var argLeft)) False)) (ec (Var argRight)) True)))
           , ec
               (If
-                (ec (App (ec (App (ec (Var "==")) (ec (Var resultName)) False)) (builtinsAccess "EQUAL") True))
+                (ec (App (ec (App (ec (Var "==")) (ec (Var resultName)) False)) (builtinsAccess "EQ") True))
                 (buildArgsComparisons (index + 1) nextArgs)
                 (ec (Var resultName)))
           ])
 
   [] ->
-    builtinsAccess "EQUAL"
+    builtinsAccess "EQ"
 
 
 buildMoreBranches :: [Constructor] -> [Is]
 buildMoreBranches ctors = case ctors of
   [] ->
-    [ec (Is (ec PAny) (builtinsAccess "LESS"))]
+    [ec (Is (ec PAny) (builtinsAccess "LT"))]
 
   Canonical _ (Constructor name typings _ _) : next ->
-    let current = ec (Is (ec $ PCon name (ec PAny <$ typings)) (builtinsAccess "MORE"))
+    let current = ec (Is (ec $ PCon name (ec PAny <$ typings)) (builtinsAccess "GT"))
     in  current : buildMoreBranches next
 
 
@@ -295,7 +295,7 @@ buildConstructorIsForCompare allConstructors ctor = case ctor of
         constructorsBefore = filter ((== GT) . compareConstructors ctor) allConstructors
         differentCtorsBranchBody =
           if null constructorsBefore then
-            builtinsAccess "LESS"
+            builtinsAccess "LT"
           else
             ec (Where (ec $ Var "__other__") (buildMoreBranches constructorsBefore))
         otherPVar =
@@ -322,13 +322,13 @@ buildFieldComparisons index fieldNames = case fieldNames of
                           True)))
           , ec
               (If
-                (ec (App (ec (App (ec (Var "==")) (ec (Var resultName)) False)) (builtinsAccess "EQUAL") True))
+                (ec (App (ec (App (ec (Var "==")) (ec (Var resultName)) False)) (builtinsAccess "EQ") True))
                 (buildFieldComparisons (index + 1) nextFields)
                 (ec (Var resultName)))
           ])
 
   [] ->
-    builtinsAccess "EQUAL"
+    builtinsAccess "EQ"
 
 
 

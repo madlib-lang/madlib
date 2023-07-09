@@ -1,8 +1,10 @@
-export alias ComparisonResult = Integer
+import type { Comparison } from "__BUILTINS__"
+import { LT, EQ, GT } from "__BUILTINS__"
 
-export MORE = 1
-export LESS = -1
-export EQUAL = 0
+export type Comparison
+export LT
+export EQ
+export GT
 
 
 /**
@@ -36,7 +38,7 @@ export EQUAL = 0
  * eq(3, 3) // true
  */
 eq :: Comparable a => a -> a -> Boolean
-export eq = (a, b) => compare(a, b) == EQUAL
+export eq = (a, b) => compare(a, b) == EQ
 
 
 /**
@@ -48,7 +50,7 @@ export eq = (a, b) => compare(a, b) == EQUAL
  * notEq(3, 3) // false
  */
 notEq :: Comparable a => a -> a -> Boolean
-export notEq = (a, b) => compare(a, b) != EQUAL
+export notEq = (a, b) => compare(a, b) != EQ
 
 
 /**
@@ -61,7 +63,7 @@ export notEq = (a, b) => compare(a, b) != EQUAL
  * gt(3, 3) // false
  */
 gt :: Comparable a => a -> a -> Boolean
-export gt = (a, b) => compare(a, b) == MORE
+export gt = (a, b) => compare(a, b) == GT
 
 
 /**
@@ -75,7 +77,7 @@ export gt = (a, b) => compare(a, b) == MORE
  * gt(3, 3) // true
  */
 ge :: Comparable a => a -> a -> Boolean
-export ge = (a, b) => compare(a, b) >= EQUAL
+export ge = (a, b) => compare(a, b) != LT
 
 
 /**
@@ -89,7 +91,7 @@ export ge = (a, b) => compare(a, b) >= EQUAL
  * lt(3, 3) // false
  */
 lt :: Comparable a => a -> a -> Boolean
-export lt = (a, b) => compare(a, b) == LESS
+export lt = (a, b) => compare(a, b) == LT
 
 
 /**
@@ -104,4 +106,4 @@ export lt = (a, b) => compare(a, b) == LESS
  * le(3, 3) // true
  */
 le :: Comparable a => a -> a -> Boolean
-export le = (a, b) => compare(a, b) <= EQUAL
+export le = (a, b) => compare(a, b) != GT

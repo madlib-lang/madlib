@@ -391,6 +391,15 @@ isTypedExp a = case a of
     False
 
 
+maybeNameExport :: Exp -> Maybe Name
+maybeNameExport e = case e of
+  Typed _ _ (NameExport name) ->
+    Just name
+
+  _ ->
+    Nothing
+
+
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of
   Typed _ _ (NameExport name) ->

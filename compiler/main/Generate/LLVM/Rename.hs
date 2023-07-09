@@ -10,9 +10,9 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
 import           AST.Core
-import Debug.Trace
-import Text.Show.Pretty
 import Utils.Hash (generateHashFromPath)
+import Debug.Trace
+import Text.Show.Pretty (ppShow)
 
 
 

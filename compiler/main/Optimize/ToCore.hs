@@ -379,8 +379,8 @@ monoImportTypeToCore importType = case importType of
 
 
 -- TODO: remove first param
-generateImports :: [Slv.Import] -> FilePath -> PostProcess [Core.Import]
-generateImports _ modulePath = do
+generateImports :: FilePath -> PostProcess [Core.Import]
+generateImports modulePath = do
   -- TODO: remove this and fetch from Rock
   allImports <- liftIO $ readIORef MonomorphizationState.monomorphizationImports
   let importedNames = Map.toList $ Maybe.fromMaybe mempty $ Map.lookup modulePath allImports
@@ -402,7 +402,7 @@ generateImports _ modulePath = do
 
 instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
-    imports    <- generateImports (Slv.aimports ast) (Maybe.fromMaybe "" $ Slv.apath ast)
+    imports    <- generateImports (Maybe.fromMaybe "" $ Slv.apath ast)
     exps       <- mapM (toCore enabled) $ Slv.aexps ast
     typeDecls  <- mapM (toCore enabled) $ filter Slv.isADT (Slv.atypedecls ast)
 

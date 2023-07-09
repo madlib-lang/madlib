@@ -1,10 +1,10 @@
-import { EQUAL, LESS, MORE } from "Compare"
+import { EQ, LT, GT } from "Compare"
 import { assertEquals, test } from "Test"
 
 
 
-test("Compare Integer - MORE", (_) => assertEquals(compare(3, 2), MORE))
+test("Compare Integer - GT", (_) => assertEquals(compare(3, 2), GT))
 
-test("Compare Integer - LESS", (_) => assertEquals(compare(1, 2), LESS))
+test("Compare Integer - LT", (_) => assertEquals(compare(1, 2), LT))
 
-test("Compare Integer - EQUAL", (_) => assertEquals(compare(2, 2), EQUAL))
+test("Compare Integer - EQ", (_) => assertEquals(compare(2, 2), EQ))

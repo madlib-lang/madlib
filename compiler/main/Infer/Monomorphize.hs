@@ -53,7 +53,9 @@ findCtorForeignModulePath moduleWhereItsUsed ctorName = do
   (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
   case findForeignModuleForImportedName ctorName ast of
     Just foreignModulePath -> do
-      return foreignModulePath
+      findCtorForeignModulePath foreignModulePath ctorName
+      -- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
+      -- return foreignModulePath
 
     _ ->
       return moduleWhereItsUsed

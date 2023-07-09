@@ -1,6 +1,6 @@
 import type { Parser } from "Parse"
 
-import {} from "Compare"
+import { EQ } from "Compare"
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
 import List from "List"
@@ -33,7 +33,7 @@ instance Comparable Value {
   // only Eq eliminates elements which is derived correctly.
   // This should most likely be correctly defined for the future AST of
   // the madlib parser, which will be based on this.
-  compare = (_, _) => 0
+  compare = (_, _) => EQ
 }
 
 
