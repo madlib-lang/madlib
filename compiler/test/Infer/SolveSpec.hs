@@ -34,6 +34,7 @@ import qualified Driver.Query as Query
 import           GHC.IO (unsafePerformIO)
 import           Control.Monad (forM)
 import           System.FilePath (normalise)
+import Explain.Location
 
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -71,8 +72,8 @@ buildOptions entrypoint pathUtils =
 
 renameBuiltinsImport :: Slv.Import -> Slv.Import
 renameBuiltinsImport imp = case imp of
-  Slv.Untyped area (Slv.NamedImport [] "__BUILTINS__" _) ->
-    Slv.Untyped area (Slv.NamedImport [] "__BUILTINS__" "__BUILTINS__")
+  Slv.Untyped area (Slv.DefaultImport (Slv.Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__") "__BUILTINS__" _) ->
+    Slv.Untyped area (Slv.DefaultImport (Slv.Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__") "__BUILTINS__" "__BUILTINS__")
 
   or ->
     or

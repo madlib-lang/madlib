@@ -496,6 +496,12 @@ instance (
 
 
 // Compare
+
+export type Comparison
+  = LT
+  | EQ
+  | GT
+
 export MORE = 1
 export LESS = -1
 export EQUAL = 0

@@ -142,7 +142,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     (can, Can.CanonicalState { Can.warnings }) <- runCanonicalM $ do
       (ast, env, instancesToDerive) <- Can.canonicalizeAST dictModulePath options CanEnv.initialEnv sourceAst
-      -- liftIO $ putStrLn $ ppShow ast
       ast' <-
         if optCoverage options then
           Coverage.addTrackers options ast
