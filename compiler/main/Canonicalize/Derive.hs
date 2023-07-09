@@ -308,6 +308,30 @@ buildConstructorIsForCompare allConstructors ctor = case ctor of
 
 
 
+buildFieldComparisons :: Int -> [String] -> Exp
+buildFieldComparisons index fieldNames = case fieldNames of
+  [fieldName] ->
+    ec (App (ec (App (ec (Var "compare")) (ec (Access (ec (Var "__$a__")) (ec (Var ('.' : fieldName))))) False)) (ec (Access (ec (Var "__$b__")) (ec (Var ('.' : fieldName))))) True)
+
+  fieldName : nextFields ->
+    let resultName = "__r__" <> show index
+    in  ec (Do
+          [ ec (Assignment resultName (ec (App (ec (App (ec (Var "compare"))
+                          (ec (Access (ec (Var "__$a__")) (ec (Var ('.' : fieldName))))) False))
+                          (ec (Access (ec (Var "__$b__")) (ec (Var ('.' : fieldName)))))
+                          True)))
+          , ec
+              (If
+                (ec (App (ec (App (ec (Var "==")) (ec (Var resultName)) False)) (builtinsAccess "EQUAL") True))
+                (buildFieldComparisons (index + 1) nextFields)
+                (ec (Var resultName)))
+          ])
+
+  [] ->
+    builtinsAccess "EQUAL"
+
+
+
 compareConstructors :: Constructor -> Constructor -> Ordering
 compareConstructors a b = compare (getConstructorName a) (getConstructorName b) 
 
@@ -374,69 +398,20 @@ deriveInstances env localTypeDecls derived = case derived of
       Nothing ->
         deriveInstances env localTypeDecls next
 
+  Src.Source _ _ (Src.DerivedRecord fieldNames) : next -> do
+    let (instPreds, recordType) = generateRecordPredsAndType (Can.envCurrentPath env) "Comparable" fieldNames
+        derivedInstance = ec (Instance "Comparable" instPreds (IsIn "Comparable" [recordType] Nothing) (
+            Map.singleton
+            "compare"
+            (
+              ec (Assignment "==" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
+                buildFieldComparisons 0 fieldNames
+              ]]))
+            )
+          ))
+
+    nextInstances <- deriveInstances env localTypeDecls next
+    return $ derivedInstance : nextInstances
+
   [] ->
     return []
-
--- inst = ec
---   (Instance
---     "Comparable"
---     [ IsIn "Comparable" [ TVar (TV "e" Star) ] Nothing
---     , IsIn "Comparable" [ TVar (TV "a" Star) ] Nothing
---     ]
---     (IsIn
---       "Comparable"
---       [ TApp
---           (TApp
---               (TCon
---                 (TC "Either" (Kfun Star (Kfun Star Star)))
---                 "/Users/arnaudboeglin/Code/madlib/fixtures/Compare.mad")
---               (TVar (TV "e" Star)))
---           (TVar (TV "a" Star))
---       ]
---       Nothing)
---     (Map.fromList
---       [ ( "compare"
---         , ec (Assignment "compare" (ec (Abs (ec "a") [ ec (Abs (ec "b") [
---             ec (Where
---               (ec (TupleConstructor [ec (Var "a"), ec (Var "b")]))
---               [ ec (Is
---                 (ec (PTuple [ec (PCon "Both" [ec (PVar "a1"), ec (PVar "a2")]), ec (PCon "Both" [ec (PVar "b1"), ec (PVar "b2")])]))
---                 (ec (Do
---                   [ ec (Assignment "r1" (ec (App (ec (App (ec (Var "compare")) (ec (Var "a1")) False)) (ec (Var "b1")) True)))
---                   , ec
---                       (If
---                           (ec (App (ec (App (ec (Var "==")) (ec (Var "r1")) False)) (ec (Var "EQUAL")) True))
---                           (ec (App (ec (App (ec (Var "compare")) (ec (Var "a2")) False)) (ec (Var "b2")) True))
---                           (ec (Var "r1")))
---                   ])))
---               , ec (Is
---                 (ec (PTuple [ec (PCon "Both" [ec PAny, ec PAny]), ec (PVar "other")]))
---                 (ec (Where (ec (Var "other")) [ec (Is (ec PAny) (ec (Var "LESS")))])))
---               , ec (Is
---                     (ec (PTuple [ec (PCon "Left" [ec (PVar "a1")]), ec (PCon "Left" [ec (PVar "b1") ])]))
---                     (ec (App
---                       (ec (App (ec (Var "compare")) (ec (Var "a1")) False))
---                       (ec (Var "b1"))
---                       True)))
---               , ec (Is (ec (PTuple [ ec (PCon "Left" [ec PAny]), ec (PVar "other")]))
---                 (ec (Where
---                   (ec (Var "other"))
---                   [ ec (Is
---                     (ec (PCon "Both" [ec PAny , ec PAny]))
---                     (ec (Var "MORE")))
---                   , ec (Is (ec PAny) (ec (Var "LESS")))
---                   ])))
---               , ec (Is
---                 (ec (PTuple
---                   [ ec (PCon "Right" [ec (PVar "a1")])
---                   , ec (PCon "Right" [ec (PVar "b1")])
---                   ]))
---                 (ec (App
---                   (ec (App (ec (Var "compare")) (ec (Var "a1")) False))
---                   (ec (Var "b1"))
---                   True)))
---               , ec (Is (ec PAny) (ec (Var "MORE")))
---               ])
---             ])
---           ]))))
---       ]))

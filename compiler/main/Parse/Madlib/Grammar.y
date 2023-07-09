@@ -143,7 +143,14 @@ ast :: { Src.AST }
   -- | error ast                        { $2 }
 
 deriveDecl :: { Src.Derived }
-  : name { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
+  : name                          { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
+  | '{' deriveDeclFieldNames '}'  { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedRecord $2) }
+
+deriveDeclFieldNames :: { [String] }
+  : name ',' deriveDeclFieldNames %shift { strV $1 : $3 }
+  | name ',' name                 %shift { [strV $1, strV $3] }
+  | name                          %shift { [strV $1] }
+
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }

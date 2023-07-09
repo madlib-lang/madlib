@@ -151,6 +151,8 @@ initialEnv = Env
                   ]
         )
       , ("Show", Interface [TV "a" Star] []
+                -- These are needed for the tests at the moment otherwise the generated instances
+                -- fail if they can't find an instance for one of those
                 [ Instance ([] :=> IsIn "Show" [tStr] Nothing) M.empty
                 , Instance ([] :=> IsIn "Show" [tChar] Nothing) M.empty
                 , Instance ([] :=> IsIn "Show" [tInteger] Nothing) M.empty
@@ -268,18 +270,19 @@ initialEnv = Env
                   ) M.empty
                 ]
         )
-      , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing]
-                        [ Instance ([] :=> IsIn "Comparable" [tInteger] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tShort] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tFloat] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tByte] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tStr] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tChar] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tBool] Nothing) M.empty
-                        , Instance ([] :=> IsIn "Comparable" [tUnit] Nothing) M.empty
-                        ]
+      , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing] []
+                        -- [ Instance ([] :=> IsIn "Comparable" [tInteger] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tShort] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tFloat] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tByte] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tStr] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tChar] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tBool] Nothing) M.empty
+                        -- , Instance ([] :=> IsIn "Comparable" [tUnit] Nothing) M.empty
+                        -- ]
         )
       , ("Eq", Interface [TV "a" Star] []
+                -- These are needed for the JS backend where Eq is a special generic function
                 [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tShort] Nothing) M.empty
                 , Instance ([] :=> IsIn "Eq" [tFloat] Nothing) M.empty
