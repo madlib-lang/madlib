@@ -5,7 +5,6 @@ import { LT, EQ, GT } from "Compare"
 import Function from "Function"
 import { Just, Nothing } from "Maybe"
 import {} from "Monad"
-import {} from "Monoid"
 
 
 /**
@@ -112,22 +111,6 @@ instance Monad List {
   )(xs)
 
   of = pure
-}
-
-instance Semigroup (List a) {
-  assoc = (list1, list2) => where(list1) {
-    [item, ...more] =>
-      [item, ...assoc(more, list2)]
-
-    [] =>
-      list2
-  }
-}
-
-instance Monoid (List a) {
-  mconcat = assoc
-
-  mempty = []
 }
 
 /**

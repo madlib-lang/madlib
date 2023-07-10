@@ -503,6 +503,19 @@ export type Comparison
   | GT
 
 
+gt :: Comparable a => a -> a -> Boolean
+export gt = (a, b) => compare(a, b) == GT
+
+ge :: Comparable a => a -> a -> Boolean
+export ge = (a, b) => compare(a, b) != LT
+
+lt :: Comparable a => a -> a -> Boolean
+export lt = (a, b) => compare(a, b) == LT
+
+le :: Comparable a => a -> a -> Boolean
+export le = (a, b) => compare(a, b) != GT
+
+
 instance Comparable (a -> b) {
   compare = (_, _) => EQ
 }
@@ -514,8 +527,8 @@ instance Comparable {} {
 
 #iftarget js
 
-_compare :: Comparable a => Comparison -> Comparison -> Comparison -> a -> a -> Comparison
-_compare = (more, less, equal, a, b) => #- {
+_compareChar :: Comparable a => Comparison -> Comparison -> Comparison -> a -> a -> Comparison
+_compareChar = (more, less, equal, a, b) => #- {
   return a > b
     ? more
     : a === b 
@@ -533,7 +546,7 @@ _compare = (more, less, equal, a, b) => #- {
  * compare('a', 'a') // EQUAL
  */
 instance Comparable Char {
-  compare = (a, b) => _compare(GT, LT, EQ, a, b)
+  compare = (a, b) => _compareChar(GT, LT, EQ, a, b)
 }
 
 #elseif llvm
@@ -565,11 +578,20 @@ instance Comparable String {
 
 #elseif llvm
 
-stringCompare :: String -> String -> Comparison
+stringCompare :: String -> String -> Integer
 stringCompare = extern "madlib__string__compare"
 
 instance Comparable String {
-  compare = stringCompare
+  compare = (a, b) => where(stringCompare(a, b)) {
+    1 =>
+      GT
+
+    -1 =>
+      LT
+
+    _ =>
+      EQ
+  }
 }
 
 #endif
@@ -604,3 +626,476 @@ instance Comparable Integer {
 instance Comparable Float {
   compare = (a, b) => a > b ? GT : a == b ? EQ : LT
 }
+
+instance Comparable Short {
+  compare = (a, b) => a > b ? GT : a == b ? EQ : LT
+}
+
+instance Comparable Byte {
+  compare = (a, b) => a > b ? GT : a == b ? EQ : LT
+}
+
+instance Comparable a => Comparable (List a) {
+  compare = (a, b) => where(#[a, b]) {
+    #[[], []] =>
+      EQ
+
+    #[[], _] =>
+      LT
+
+    #[_, []] =>
+      GT
+
+    #[[itemA, ...xsa], [itemB, ...xsb]] =>
+      do {
+        r = compare(itemA, itemB)
+
+        return if (r == EQ) {
+          compare(xsa, xsb)
+        } else {
+          r
+        }
+      }
+  }
+}
+
+
+instance Comparable a => Comparable (Array a) {
+  compare = (a, b) => compare(arrayToList(a), arrayToList(b))
+}
+
+#iftarget llvm
+
+byteArraytoList :: ByteArray -> List Byte
+export byteArraytoList = extern "madlib__bytearray__toList"
+
+#elseif js
+
+byteArraytoList :: ByteArray -> List Byte
+export byteArraytoList = (array) => #- {
+  let list = {}
+  let start = list
+
+  array.forEach(item => {
+    list = list.n = { v: item, n: null }
+  })
+
+  return start.n
+} -#
+
+#endif
+
+instance Comparable ByteArray {
+  compare = (a, b) => compare(byteArraytoList(a), byteArraytoList(b))
+}
+
+instance (Comparable a, Comparable b) => Comparable (Dictionary a b) {
+  compare = (a, b) => where(#[a, b]) {
+    #[Dictionary(itemsA), Dictionary(itemsB)] =>
+      compare(itemsA, itemsB)
+  }
+}
+
+instance (Comparable a, Comparable b) => Comparable #[a, b] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2], #[b1, b2]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) {
+          compare(a2, b2)
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c) => Comparable #[a, b, c] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3], #[b1, b2, b3]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) {
+            compare(a3, b3)
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d) => Comparable #[a, b, c, d] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4], #[b1, b2, b3, b4]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) {
+              compare(a4, b4)
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e) => Comparable #[a, b, c, d, e] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5], #[b1, b2, b3, b4, b5]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) {
+                compare(a5, b5)
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, Comparable f) => Comparable #[a, b, c, d, e, f] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6], #[b1, b2, b3, b4, b5, b6]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) do {
+                r4 = compare(a5, b5)
+      
+                return if (r4 == EQ) {
+                  compare(a6, b6)
+                } else {
+                  r4
+                }
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, Comparable f, Comparable g) => Comparable #[a, b, c, d, e, f, g] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7], #[b1, b2, b3, b4, b5, b6, b7]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) do {
+                r4 = compare(a5, b5)
+      
+                return if (r4 == EQ) do {
+                  r5 = compare(a6, b6)
+        
+                  return if (r5 == EQ) {
+                    compare(a7, b7)
+                  } else {
+                    r5
+                  }
+                } else {
+                  r4
+                }
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, Comparable f, Comparable g, Comparable h) => Comparable #[a, b, c, d, e, f, g, h] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7, a8], #[b1, b2, b3, b4, b5, b6, b7, b8]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) do {
+                r4 = compare(a5, b5)
+      
+                return if (r4 == EQ) do {
+                  r5 = compare(a6, b6)
+        
+                  return if (r5 == EQ) do {
+                    r6 = compare(a7, b7)
+          
+                    return if (r6 == EQ) {
+                      compare(a8, b8)
+                    } else {
+                      r6
+                    }
+                  } else {
+                    r5
+                  }
+                } else {
+                  r4
+                }
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, Comparable f, Comparable g, Comparable h, Comparable i) => Comparable #[a, b, c, d, e, f, g, h, i] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7, a8, a9], #[b1, b2, b3, b4, b5, b6, b7, b8, b9]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) do {
+                r4 = compare(a5, b5)
+      
+                return if (r4 == EQ) do {
+                  r5 = compare(a6, b6)
+        
+                  return if (r5 == EQ) do {
+                    r6 = compare(a7, b7)
+          
+                    return if (r6 == EQ) do {
+                      r7 = compare(a8, b8)
+            
+                      return if (r7 == EQ) {
+                        compare(a9, b9)
+                      } else {
+                        r7
+                      }
+                    } else {
+                      r6
+                    }
+                  } else {
+                    r5
+                  }
+                } else {
+                  r4
+                }
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, Comparable f, Comparable g, Comparable h, Comparable i, Comparable j) => Comparable #[a, b, c, d, e, f, g, h, i, j] {
+  compare = (a, b) => where(#[a, b]) {
+    #[#[a1, a2, a3, a4, a5, a6, a7, a8, a9, a10], #[b1, b2, b3, b4, b5, b6, b7, b8, b9, b10]] =>
+      do {
+        r0 = compare(a1, b1)
+
+        return if (r0 == EQ) do {
+          r1 = compare(a2, b2)
+
+          return if (r1 == EQ) do {
+            r2 = compare(a3, b3)
+  
+            return if (r2 == EQ) do {
+              r3 = compare(a4, b4)
+    
+              return if (r3 == EQ) do {
+                r4 = compare(a5, b5)
+      
+                return if (r4 == EQ) do {
+                  r5 = compare(a6, b6)
+        
+                  return if (r5 == EQ) do {
+                    r6 = compare(a7, b7)
+          
+                    return if (r6 == EQ) do {
+                      r7 = compare(a8, b8)
+            
+                      return if (r7 == EQ) do {
+                        r8 = compare(a9, b9)
+              
+                        return if (r8 == EQ) {
+                          compare(a10, b10)
+                        } else {
+                          r8
+                        }
+                      } else {
+                        r7
+                      }
+                    } else {
+                      r6
+                    }
+                  } else {
+                    r5
+                  }
+                } else {
+                  r4
+                }
+              } else {
+                r3
+              }
+            } else {
+              r2
+            }
+          } else {
+            r1
+          }
+        } else {
+          r0
+        }
+      }
+  }
+}
+
+
+// Concat
+
+interface Semigroup a {
+  assoc :: a -> a -> a
+}
+
+interface Semigroup w => Monoid w {
+  mempty :: w
+  mconcat :: w -> w -> w
+}
+
+
+#iftarget llvm
+
+concatString :: String -> String -> String
+concatString = extern "madlib__string__concat"
+
+#elseif js
+
+concatString :: String -> String -> String
+concatString = (a, b) => #- a + b -#
+
+#endif
+
+instance Semigroup String {
+  assoc = (a, b) => a ++ b
+}
+
+instance Monoid String {
+  mempty = ""
+  mconcat = concatString
+}
+
+instance Semigroup (List a) {
+  assoc = (list1, list2) => where(list1) {
+    [item, ...more] =>
+      [item, ...assoc(more, list2)]
+
+    [] =>
+      list2
+  }
+}
+
+instance Monoid (List a) {
+  mconcat = assoc
+
+  mempty = []
+}
+
+
+

@@ -1,5 +1,5 @@
 import type { Comparison } from "__BUILTINS__"
-import { LT, EQ, GT } from "__BUILTINS__"
+import { LT, EQ, GT, gt, ge, lt, le } from "__BUILTINS__"
 
 export type Comparison
 export LT
@@ -62,8 +62,7 @@ export notEq = (a, b) => compare(a, b) != EQ
  * gt(3, 2) // true
  * gt(3, 3) // false
  */
-gt :: Comparable a => a -> a -> Boolean
-export gt = (a, b) => compare(a, b) == GT
+export gt
 
 
 /**
@@ -76,8 +75,7 @@ export gt = (a, b) => compare(a, b) == GT
  * gt(3, 2) // true
  * gt(3, 3) // true
  */
-ge :: Comparable a => a -> a -> Boolean
-export ge = (a, b) => compare(a, b) != LT
+export ge
 
 
 /**
@@ -90,8 +88,7 @@ export ge = (a, b) => compare(a, b) != LT
  * lt(3, 4) // true
  * lt(3, 3) // false
  */
-lt :: Comparable a => a -> a -> Boolean
-export lt = (a, b) => compare(a, b) == LT
+export lt
 
 
 /**
@@ -105,5 +102,4 @@ export lt = (a, b) => compare(a, b) == LT
  * le(3, 4) // true
  * le(3, 3) // true
  */
-le :: Comparable a => a -> a -> Boolean
-export le = (a, b) => compare(a, b) != GT
+export le

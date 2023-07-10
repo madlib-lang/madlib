@@ -6,9 +6,7 @@ import           Data.Aeson.Text                ( encodeToLazyText )
 import           Data.Text.Lazy                 ( unpack )
 import qualified AST.Solved                     as Slv
 import qualified AST.Source                     as Src
-import           Data.Maybe                     ( isJust
-                                                , fromMaybe
-                                                )
+import           Data.Maybe
 import qualified Data.Bifunctor
 import           Data.List                      ( intercalate
                                                 , find
@@ -70,10 +68,11 @@ prepareExportedExps ast =
   let exps                      = Slv.aexps ast
       exports                   = filter Slv.isExportOnly exps
       exportsWithNames = (\export -> (Slv.getExpName export, export)) <$> (exports ++ nameExportTargetExps)
-      filteredExportedWithNames = filter (isJust . fst) exportsWithNames
+      nameExportsWithNames = (\export -> (Slv.maybeExportName export, export)) <$> (exports ++ nameExportTargetExps)
+      filteredExportedWithNames = filter (isJust . fst) (exportsWithNames ++ nameExportsWithNames)
       nameExportNames           = Slv.getNameExportName <$> filter Slv.isNameExport exps
       nameExportTargetExps =
-          Maybe.mapMaybe (\name -> find (\export -> Slv.getExpName export == Just name) exps) nameExportNames
+        Maybe.mapMaybe (\name -> find (\export -> Slv.getExpName export == Just name) exps) nameExportNames
   in  Data.Bifunctor.first (fromMaybe "") <$> filteredExportedWithNames
 
 

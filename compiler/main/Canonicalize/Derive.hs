@@ -178,7 +178,7 @@ showFields fieldNames =
             let fieldNameStr = ec $ LStr ("\""<> fieldName <> ": \"")
                 fieldValue   = ec $ Access (ec $ Var "__$a__") (ec $ Var ('.':fieldName))
                 showedFieldValue = ec $ App (ec $ Var "show") fieldValue True
-            in  ec $ App (ec $ App (ec $ Var "++") fieldNameStr False) showedFieldValue True
+            in  ec $ App (ec $ App (ec $ Var "mconcat") fieldNameStr False) showedFieldValue True
         ) <$> fieldNames
       commaSeparated = List.intersperse (ec $ LStr "\", \"") fields
   in  ec $ TemplateString ([ec $ LStr "\"{ \""] ++ commaSeparated ++ [ec $ LStr "\" }\""])

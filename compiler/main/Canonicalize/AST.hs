@@ -320,11 +320,6 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
           mapMaybe (deriveShowInstance astPath) typeDeclarationsToDerive'
         else
           []
-      -- derivedCompareInstances   =
-      --   if optGenerateDerivedInstances options then
-      --     mapMaybe (deriveComparableInstance astPath) typeDeclarationsToDerive'
-      --   else
-      --     []
   
   addDerivedTypes (S.fromList typeDeclarationsToDerive')
   resetToDerive
@@ -334,7 +329,6 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
                                  , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ derivedInstances ++ instances
-                                --  , Can.ainstances  = derivedEqInstances ++ derivedShowInstances ++ derivedCompareInstances ++ instances
                                  , Can.apath       = Src.apath sourceAst
                                  }
 
