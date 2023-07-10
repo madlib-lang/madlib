@@ -7,9 +7,9 @@ import String from "./String"
 
 
 
-test("compare String - MORE", (_) => assertEquals(compare("John", "James"), GT))
-test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LT))
-test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQ))
+test("compare String - GT", (_) => assertEquals(compare("John", "James"), GT))
+test("compare String - LT", (_) => assertEquals(compare("John", "Paul"), LT))
+test("compare String - EQ", (_) => assertEquals(compare("John", "John"), EQ))
 
 
 test(

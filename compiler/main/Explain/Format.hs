@@ -652,6 +652,17 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Maybe you forgot to import it?\n"
     <> "Hint: Maybe you have a typo?"
 
+  DerivingAliasNotAllowed n ->
+    "Deriving Alias Not Allowed\n\n"
+    <> "The type '" <> n <> "' is an alias.\n\n"
+    <> "Hint: Aliases can't be derived, use the aliased type isntead\n"
+
+  InvalidInterfaceDerived n ->
+    "Invalid Interface Derived\n\n"
+    <> "The interface '" <> n <> "' can't be derived.\n\n"
+    <> "Note: Eq and Show are automatically derived\n"
+    <> "Hint: Currently only Comparable can be derived\n"
+
   SignatureTooGeneral scGiven scInferred ->
     let (scInferred', scGiven') = renderSchemesWithDiff color scInferred scGiven
         scGiven''    = unlines $ ("  "<>) <$> lines scGiven'
@@ -1158,6 +1169,44 @@ createErrorDiagnostic color context typeError = case typeError of
           "Unbound Type"
           []
           [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
+
+  DerivingAliasNotAllowed n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Deriving Alias Not Allowed"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The type '" <> n <> "' is an alias."
+            )
+          ]
+          [Diagnose.Hint "Aliases can't be derived, use the aliased type isntead"]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Deriving Alias Not Allowed"
+          []
+          [Diagnose.Hint "Aliases can't be derived, use the aliased type isntead"]
+
+  InvalidInterfaceDerived n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Invalid Interface Derived"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The interface '" <> n <> "' can't be derived."
+            )
+          ]
+          [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Invalid Interface Derived"
+          []
+          [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
 
   SignatureTooGeneral scGiven scInferred ->
     let (scInferred', scGiven') = renderSchemesWithDiff color scInferred scGiven

@@ -2,7 +2,7 @@ import type { Maybe } from "Maybe"
 import type { Version } from "./Version"
 
 import { assertEquals, test } from "Test"
-import { EQUAL, LESS, MORE } from "Compare"
+import { EQ, LT, GT } from "Compare"
 import { Just, Nothing } from "Maybe"
 
 import {
@@ -14,19 +14,19 @@ import {
 } from "./Version"
 
 
-test("compare   - MORE", (_) => pipe(
+test("compare   - GT", (_) => pipe(
   compare($, Version(0, 9, 0)),
-  assertEquals($, MORE)
+  assertEquals($, GT)
 )(Version(1, 0, 0)))
 
-test("compare   - EQUAL", (_) => pipe(
+test("compare   - EQ", (_) => pipe(
   compare($, Version(1, 0, 0)),
-  assertEquals($, EQUAL)
+  assertEquals($, EQ)
 )(Version(1, 0, 0)))
 
-test("compare   - LESS", (_) => pipe(
+test("compare   - LT", (_) => pipe(
   compare($, Version(1, 0, 0)),
-  assertEquals($, LESS)
+  assertEquals($, LT)
 )(Version(0, 7, 2)))
 
 test("scan      - good", (_) => pipe(

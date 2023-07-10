@@ -2,11 +2,23 @@
     { aimports =
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
-            (NamedImport [] "__BUILTINS__" "__BUILTINS__")
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing ] :=>
+            ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
+             , IsIn
+                 "Comparable"
+                 [ TVar (TV "y24" Star) ]
+                 (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+             , IsIn
+                 "Eq"
+                 [ TVar (TV "y24" Star) ]
+                 (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+             ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -17,7 +29,7 @@
                "fib"
                (Typed
                   ([ IsIn
-                       "Number"
+                       "Comparable"
                        [ TVar (TV "y24" Star) ]
                        (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                    , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
@@ -30,12 +42,20 @@
                        [ TVar (TV "y24" Star) ]
                        (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                    , IsIn
+                       "Comparable"
+                       [ TVar (TV "y24" Star) ]
+                       (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                   , IsIn
                        "Number"
                        [ TVar (TV "y24" Star) ]
                        (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
                    , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
                    , IsIn
                        "Number"
+                       [ TVar (TV "y24" Star) ]
+                       (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                   , IsIn
+                       "Comparable"
                        [ TVar (TV "y24" Star) ]
                        (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                    , IsIn
@@ -53,7 +73,7 @@
                   (Abs
                      (Typed
                         ([ IsIn
-                             "Number"
+                             "Comparable"
                              [ TVar (TV "y24" Star) ]
                              (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                          , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
@@ -66,12 +86,20 @@
                              [ TVar (TV "y24" Star) ]
                              (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                          , IsIn
+                             "Comparable"
+                             [ TVar (TV "y24" Star) ]
+                             (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                         , IsIn
                              "Number"
                              [ TVar (TV "y24" Star) ]
                              (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
                          , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
                          , IsIn
                              "Number"
+                             [ TVar (TV "y24" Star) ]
+                             (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                         , IsIn
+                             "Comparable"
                              [ TVar (TV "y24" Star) ]
                              (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                          , IsIn
@@ -85,7 +113,7 @@
                         "n")
                      [ Typed
                          ([ IsIn
-                              "Number"
+                              "Comparable"
                               [ TVar (TV "y24" Star) ]
                               (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                           , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
@@ -98,12 +126,20 @@
                               [ TVar (TV "y24" Star) ]
                               (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                           , IsIn
+                              "Comparable"
+                              [ TVar (TV "y24" Star) ]
+                              (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                          , IsIn
                               "Number"
                               [ TVar (TV "y24" Star) ]
                               (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
                           , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
                           , IsIn
                               "Number"
+                              [ TVar (TV "y24" Star) ]
+                              (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                          , IsIn
+                              "Comparable"
                               [ TVar (TV "y24" Star) ]
                               (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                           , IsIn
@@ -117,7 +153,7 @@
                          (If
                             (Typed
                                ([ IsIn
-                                    "Number"
+                                    "Comparable"
                                     [ TVar (TV "y24" Star) ]
                                     (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                                 , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
@@ -127,7 +163,7 @@
                                (App
                                   (Typed
                                      ([ IsIn
-                                          "Number"
+                                          "Comparable"
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                                       ] :=>
@@ -140,7 +176,8 @@
                                      (Area (Loc 17 1 18) (Loc 22 1 23))
                                      (App
                                         (Typed
-                                           ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing ] :=>
+                                           ([ IsIn "Comparable" [ TVar (TV "y24" Star) ] Nothing
+                                            ] :=>
                                               TApp
                                                 (TApp
                                                    (TCon
@@ -158,7 +195,7 @@
                                            (Var "<" False))
                                         (Typed
                                            ([ IsIn
-                                                "Number"
+                                                "Comparable"
                                                 [ TVar (TV "y24" Star) ]
                                                 (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                                             ] :=>
@@ -168,7 +205,7 @@
                                         False))
                                   (Typed
                                      ([ IsIn
-                                          "Number"
+                                          "Comparable"
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                                       , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
@@ -191,12 +228,20 @@
                                     [ TVar (TV "y24" Star) ]
                                     (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                                 , IsIn
+                                    "Comparable"
+                                    [ TVar (TV "y24" Star) ]
+                                    (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                                , IsIn
                                     "Number"
                                     [ TVar (TV "y24" Star) ]
                                     (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
                                 , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
                                 , IsIn
                                     "Number"
+                                    [ TVar (TV "y24" Star) ]
+                                    (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                                , IsIn
+                                    "Comparable"
                                     [ TVar (TV "y24" Star) ]
                                     (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                                 , IsIn
@@ -215,6 +260,10 @@
                                           (Just (Area (Loc 48 1 49) (Loc 49 1 50)))
                                       , IsIn
                                           "Number"
+                                          [ TVar (TV "y24" Star) ]
+                                          (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                                      , IsIn
+                                          "Comparable"
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                                       , IsIn
@@ -258,6 +307,10 @@
                                                 [ TVar (TV "y24" Star) ]
                                                 (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                                             , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "y24" Star) ]
+                                                (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                                            , IsIn
                                                 "Number"
                                                 [ TVar (TV "y24" Star) ]
                                                 (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
@@ -268,6 +321,10 @@
                                            (App
                                               (Typed
                                                  ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "y24" Star) ]
+                                                      (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                                                   ] :=>
                                                     TApp
                                                       (TApp
@@ -281,6 +338,10 @@
                                               (Typed
                                                  ([ IsIn
                                                       "Number"
+                                                      [ TVar (TV "y24" Star) ]
+                                                      (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                                                  , IsIn
+                                                      "Comparable"
                                                       [ TVar (TV "y24" Star) ]
                                                       (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                                                   , IsIn
@@ -379,12 +440,20 @@
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
                                       , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "y24" Star) ]
+                                          (Just (Area (Loc 37 1 38) (Loc 40 1 41)))
+                                      , IsIn
                                           "Number"
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 43 1 44) (Loc 45 1 46)))
                                       , IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
                                       , IsIn
                                           "Number"
+                                          [ TVar (TV "y24" Star) ]
+                                          (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                                      , IsIn
+                                          "Comparable"
                                           [ TVar (TV "y24" Star) ]
                                           (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                                       , IsIn
@@ -397,7 +466,12 @@
                                      (Area (Loc 50 1 51) (Loc 60 1 61))
                                      (App
                                         (Typed
-                                           ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing ] :=>
+                                           ([ IsIn "Number" [ TVar (TV "y24" Star) ] Nothing
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "y24" Star) ]
+                                                (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
+                                            ] :=>
                                               TApp
                                                 (TApp
                                                    (TCon
@@ -410,6 +484,10 @@
                                         (Typed
                                            ([ IsIn
                                                 "Number"
+                                                [ TVar (TV "y24" Star) ]
+                                                (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
+                                            , IsIn
+                                                "Comparable"
                                                 [ TVar (TV "y24" Star) ]
                                                 (Just (Area (Loc 50 1 51) (Loc 53 1 54)))
                                             , IsIn

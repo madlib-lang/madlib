@@ -1,25 +1,25 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
+import { __6e99d6477a3318de16862152aff3e34c__mconcat__10, __6e99d6477a3318de16862152aff3e34c__mempty__4 } from "./.prelude/__BUILTINS__.mjs";
+
 export let __568c75136c0c369c440814a7af59434a__WriterT = (a => ({ __constructor: "WriterT", __args: [ a ] }));
 export let __568c75136c0c369c440814a7af59434a__Identity = (a => ({ __constructor: "Identity", __args: [ a ] }));
 export let __568c75136c0c369c440814a7af59434a__StateT = (a => ({ __constructor: "StateT", __args: [ a ] }));
 export let __568c75136c0c369c440814a7af59434a__of__1 = (a => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__of__2()(([a, s])))));
-export let __568c75136c0c369c440814a7af59434a__put__40 = (s => __568c75136c0c369c440814a7af59434a__StateT((_ => __568c75136c0c369c440814a7af59434a__of__23()(([({ __constructor: "Unit", __args: [] }), s])))));
-export let __568c75136c0c369c440814a7af59434a__mempty__4 = (_ => (null));
+export let __568c75136c0c369c440814a7af59434a__put__41 = (s => __568c75136c0c369c440814a7af59434a__StateT((_ => __568c75136c0c369c440814a7af59434a__of__24()(([({ __constructor: "Unit", __args: [] }), s])))));
 export let __568c75136c0c369c440814a7af59434a__of__2 = (_ => __568c75136c0c369c440814a7af59434a__pure__3);
-export let __568c75136c0c369c440814a7af59434a__of__23 = (_ => __568c75136c0c369c440814a7af59434a__pure__24);
-export let __568c75136c0c369c440814a7af59434a__pure__21 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
-export let __568c75136c0c369c440814a7af59434a__of__20 = (_ => __568c75136c0c369c440814a7af59434a__pure__21());
+export let __568c75136c0c369c440814a7af59434a__of__24 = (_ => __568c75136c0c369c440814a7af59434a__pure__25);
+export let __568c75136c0c369c440814a7af59434a__pure__22 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__21 = (_ => __568c75136c0c369c440814a7af59434a__pure__22());
 export let __568c75136c0c369c440814a7af59434a__pure__5 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
-export let __568c75136c0c369c440814a7af59434a__of__11 = (_ => __568c75136c0c369c440814a7af59434a__pure__5());
-export let __568c75136c0c369c440814a7af59434a__pure__25 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
-export let __568c75136c0c369c440814a7af59434a__of__29 = (_ => __568c75136c0c369c440814a7af59434a__pure__25());
-export let __568c75136c0c369c440814a7af59434a__mappend__10 = (xs1 => xs2 =>  xs1.concat(xs2) );
-export let __568c75136c0c369c440814a7af59434a__tell__18 = (__P__7 => __568c75136c0c369c440814a7af59434a__lift__22(__568c75136c0c369c440814a7af59434a__tell__19(__P__7)));
-export let __568c75136c0c369c440814a7af59434a__tell__19 = (v => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__of__20()(([({ __constructor: "Unit", __args: [] }), v]))));
-export let __568c75136c0c369c440814a7af59434a__pure__3 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__5()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
-export let __568c75136c0c369c440814a7af59434a__pure__24 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__25()(([x, __568c75136c0c369c440814a7af59434a__mempty__4()]))));
-export let __568c75136c0c369c440814a7af59434a__map__14 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__map__15((__W__11 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__of__12 = (_ => __568c75136c0c369c440814a7af59434a__pure__5());
+export let __568c75136c0c369c440814a7af59434a__pure__26 = (_ => __568c75136c0c369c440814a7af59434a__Identity);
+export let __568c75136c0c369c440814a7af59434a__of__30 = (_ => __568c75136c0c369c440814a7af59434a__pure__26());
+export let __568c75136c0c369c440814a7af59434a__tell__19 = (__P__7 => __568c75136c0c369c440814a7af59434a__lift__23(__568c75136c0c369c440814a7af59434a__tell__20(__P__7)));
+export let __568c75136c0c369c440814a7af59434a__tell__20 = (v => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__of__21()(([({ __constructor: "Unit", __args: [] }), v]))));
+export let __568c75136c0c369c440814a7af59434a__pure__3 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__5()(([x, __6e99d6477a3318de16862152aff3e34c__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__pure__25 = (x => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__pure__26()(([x, __6e99d6477a3318de16862152aff3e34c__mempty__4()]))));
+export let __568c75136c0c369c440814a7af59434a__map__15 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__map__16((__W__11 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return ([f(a), ss]);
@@ -41,10 +41,10 @@ export let __568c75136c0c369c440814a7af59434a__chain__6 = (f => m => __568c75136
     throw 'non exhaustive patterns!';
   }
 })(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
-export let __568c75136c0c369c440814a7af59434a__chain__34 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__36((__W__8 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__chain__35 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__37((__W__8 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
-    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+    return __568c75136c0c369c440814a7af59434a__runStateT__36(f(a))(ss);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -52,7 +52,7 @@ export let __568c75136c0c369c440814a7af59434a__chain__34 = (f => m => __568c7513
     throw 'non exhaustive patterns!';
   }
 })(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__7(m)(s)))));
-export let __568c75136c0c369c440814a7af59434a__chain__42 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__43((__W__8 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__chain__43 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__44((__W__8 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
     return __568c75136c0c369c440814a7af59434a__runStateT__7(f(a))(ss);
@@ -62,40 +62,40 @@ export let __568c75136c0c369c440814a7af59434a__chain__42 = (f => m => __568c7513
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
-export let __568c75136c0c369c440814a7af59434a__chain__38 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__39((__W__8 => ((__x__) => {
+})(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__36(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__39 = (f => m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__40((__W__8 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,ss] = __x__;
-    return __568c75136c0c369c440814a7af59434a__runStateT__35(f(a))(ss);
+    return __568c75136c0c369c440814a7af59434a__runStateT__36(f(a))(ss);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__35(m)(s)))));
-export let __568c75136c0c369c440814a7af59434a__chain__26 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__32((__W__12 => ((__x__) => {
+})(__W__8)))(__568c75136c0c369c440814a7af59434a__runStateT__36(m)(s)))));
+export let __568c75136c0c369c440814a7af59434a__chain__27 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__33((__W__12 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return __568c75136c0c369c440814a7af59434a__chain__30((__W__13 => ((__x__) => {
+    return __568c75136c0c369c440814a7af59434a__chain__31((__W__13 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+    return __568c75136c0c369c440814a7af59434a__of__30()(([b, __6e99d6477a3318de16862152aff3e34c__mconcat__10()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__29(f(a)));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__27(m))));
-export let __568c75136c0c369c440814a7af59434a__map__15 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__map__16((__W__14 => ((__x__) => {
+})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
+export let __568c75136c0c369c440814a7af59434a__map__16 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__map__17((__W__14 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
     return ([f(a), w]);
@@ -106,13 +106,13 @@ export let __568c75136c0c369c440814a7af59434a__map__15 = (f => m => __568c75136c
     throw 'non exhaustive patterns!';
   }
 })(__W__14)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__8 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__12((__W__12 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__chain__8 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__13((__W__12 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return __568c75136c0c369c440814a7af59434a__chain__12((__W__13 => ((__x__) => {
+    return __568c75136c0c369c440814a7af59434a__chain__13((__W__13 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+    return __568c75136c0c369c440814a7af59434a__of__12()(([b, __6e99d6477a3318de16862152aff3e34c__mconcat__10()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -127,20 +127,20 @@ export let __568c75136c0c369c440814a7af59434a__chain__8 = (f => m => __568c75136
     throw 'non exhaustive patterns!';
   }
 })(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__36 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__37((__W__12 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__chain__37 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__38((__W__12 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return __568c75136c0c369c440814a7af59434a__chain__30((__W__13 => ((__x__) => {
+    return __568c75136c0c369c440814a7af59434a__chain__31((__W__13 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+    return __568c75136c0c369c440814a7af59434a__of__30()(([b, __6e99d6477a3318de16862152aff3e34c__mconcat__10()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__29(f(a)));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -148,13 +148,13 @@ export let __568c75136c0c369c440814a7af59434a__chain__36 = (f => m => __568c7513
     throw 'non exhaustive patterns!';
   }
 })(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__9(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__43 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__44((__W__12 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__chain__44 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__45((__W__12 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return __568c75136c0c369c440814a7af59434a__chain__12((__W__13 => ((__x__) => {
+    return __568c75136c0c369c440814a7af59434a__chain__13((__W__13 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return __568c75136c0c369c440814a7af59434a__of__11()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+    return __568c75136c0c369c440814a7af59434a__of__12()(([b, __6e99d6477a3318de16862152aff3e34c__mconcat__10()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -168,37 +168,37 @@ export let __568c75136c0c369c440814a7af59434a__chain__43 = (f => m => __568c7513
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__39 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__30((__W__12 => ((__x__) => {
+})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__29(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__40 = (f => m => __568c75136c0c369c440814a7af59434a__WriterT(__568c75136c0c369c440814a7af59434a__chain__31((__W__12 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,w] = __x__;
-    return __568c75136c0c369c440814a7af59434a__chain__30((__W__13 => ((__x__) => {
+    return __568c75136c0c369c440814a7af59434a__chain__31((__W__13 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [b,ww] = __x__;
-    return __568c75136c0c369c440814a7af59434a__of__29()(([b, __568c75136c0c369c440814a7af59434a__mappend__10(w)(ww)]));
+    return __568c75136c0c369c440814a7af59434a__of__30()(([b, __6e99d6477a3318de16862152aff3e34c__mconcat__10()(w)(ww)]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(f(a)));
+})(__W__13)))(__568c75136c0c369c440814a7af59434a__runWriterT__29(f(a)));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__28(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__32 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__33(mm)));
-export let __568c75136c0c369c440814a7af59434a__chain__12 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
-export let __568c75136c0c369c440814a7af59434a__chain__37 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__13(mm)));
-export let __568c75136c0c369c440814a7af59434a__map__16 = (f => m => __568c75136c0c369c440814a7af59434a__Identity(f(__568c75136c0c369c440814a7af59434a__runIdentity__13(m))));
-export let __568c75136c0c369c440814a7af59434a__chain__44 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
-export let __568c75136c0c369c440814a7af59434a__chain__30 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__31(mm)));
-export let __568c75136c0c369c440814a7af59434a__lift__22 = (m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__26((a => __568c75136c0c369c440814a7af59434a__of__23()(([a, s]))))(m))));
-export let __568c75136c0c369c440814a7af59434a__andDo__41 = (b => a => __568c75136c0c369c440814a7af59434a__chain__42((_ => b))(a));
-export let __568c75136c0c369c440814a7af59434a__runWriterT__27 = (__W__1 => ((__x__) => {
+})(__W__12)))(__568c75136c0c369c440814a7af59434a__runWriterT__29(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__33 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__34(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__13 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__14(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__38 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__14(mm)));
+export let __568c75136c0c369c440814a7af59434a__map__17 = (f => m => __568c75136c0c369c440814a7af59434a__Identity(f(__568c75136c0c369c440814a7af59434a__runIdentity__14(m))));
+export let __568c75136c0c369c440814a7af59434a__chain__45 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__32(mm)));
+export let __568c75136c0c369c440814a7af59434a__chain__31 = (f => mm => f(__568c75136c0c369c440814a7af59434a__runIdentity__32(mm)));
+export let __568c75136c0c369c440814a7af59434a__lift__23 = (m => __568c75136c0c369c440814a7af59434a__StateT((s => __568c75136c0c369c440814a7af59434a__chain__27((a => __568c75136c0c369c440814a7af59434a__of__24()(([a, s]))))(m))));
+export let __568c75136c0c369c440814a7af59434a__andDo__42 = (b => a => __568c75136c0c369c440814a7af59434a__chain__43((_ => b))(a));
+export let __568c75136c0c369c440814a7af59434a__runWriterT__28 = (__W__1 => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let m = __x__.__args[0];
     return m;
@@ -220,7 +220,7 @@ export let __568c75136c0c369c440814a7af59434a__runWriterT__9 = (__W__1 => ((__x_
     throw 'non exhaustive patterns!';
   }
 })(__W__1));
-export let __568c75136c0c369c440814a7af59434a__runWriterT__28 = (__W__1 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runWriterT__29 = (__W__1 => ((__x__) => {
   if (__x__.__constructor === "WriterT" && true) {
     let m = __x__.__args[0];
     return m;
@@ -231,7 +231,7 @@ export let __568c75136c0c369c440814a7af59434a__runWriterT__28 = (__W__1 => ((__x
     throw 'non exhaustive patterns!';
   }
 })(__W__1));
-export let __568c75136c0c369c440814a7af59434a__runIdentity__33 = (__W__2 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runIdentity__34 = (__W__2 => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a = __x__.__args[0];
     return a;
@@ -242,7 +242,7 @@ export let __568c75136c0c369c440814a7af59434a__runIdentity__33 = (__W__2 => ((__
     throw 'non exhaustive patterns!';
   }
 })(__W__2));
-export let __568c75136c0c369c440814a7af59434a__runIdentity__13 = (__W__2 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runIdentity__14 = (__W__2 => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a = __x__.__args[0];
     return a;
@@ -253,7 +253,7 @@ export let __568c75136c0c369c440814a7af59434a__runIdentity__13 = (__W__2 => ((__
     throw 'non exhaustive patterns!';
   }
 })(__W__2));
-export let __568c75136c0c369c440814a7af59434a__runIdentity__31 = (__W__2 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runIdentity__32 = (__W__2 => ((__x__) => {
   if (__x__.__constructor === "Identity" && true) {
     let a = __x__.__args[0];
     return a;
@@ -275,7 +275,7 @@ export let __568c75136c0c369c440814a7af59434a__runStateT__7 = (m => ((__x__) => 
     throw 'non exhaustive patterns!';
   }
 })(m));
-export let __568c75136c0c369c440814a7af59434a__runStateT__35 = (m => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__runStateT__36 = (m => ((__x__) => {
   if (__x__.__constructor === "StateT" && true) {
     let f = __x__.__args[0];
     return (a => f(a));
@@ -286,14 +286,14 @@ export let __568c75136c0c369c440814a7af59434a__runStateT__35 = (m => ((__x__) =>
     throw 'non exhaustive patterns!';
   }
 })(m));
-let __568c75136c0c369c440814a7af59434a__hep__17 = __568c75136c0c369c440814a7af59434a__tell__18;
-let __568c75136c0c369c440814a7af59434a__sumAndLog__45 = (__P__3 => __568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(x))(__568c75136c0c369c440814a7af59434a__tell__18(({ v: `Summed 18`, n: null })))))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((x + 18))))(__568c75136c0c369c440814a7af59434a__of__1(__P__3))));
-let __568c75136c0c369c440814a7af59434a__runStack__46 = (x => __P__4 => __568c75136c0c369c440814a7af59434a__runIdentity__13(__568c75136c0c369c440814a7af59434a__runWriterT__9(__568c75136c0c369c440814a7af59434a__runStateT__7(__P__4)(x))));
+let __568c75136c0c369c440814a7af59434a__hep__18 = __568c75136c0c369c440814a7af59434a__tell__19;
+let __568c75136c0c369c440814a7af59434a__sumAndLog__46 = (__P__3 => __568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__andDo__42(__568c75136c0c369c440814a7af59434a__of__1(x))(__568c75136c0c369c440814a7af59434a__tell__19(({ v: `Summed 18`, n: null })))))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((x + 18))))(__568c75136c0c369c440814a7af59434a__of__1(__P__3))));
+let __568c75136c0c369c440814a7af59434a__runStack__47 = (x => __P__4 => __568c75136c0c369c440814a7af59434a__runIdentity__14(__568c75136c0c369c440814a7af59434a__runWriterT__9(__568c75136c0c369c440814a7af59434a__runStateT__7(__P__4)(x))));
 let __568c75136c0c369c440814a7af59434a__main = (_ => {
-    __568c75136c0c369c440814a7af59434a__runStack__46(37)(__568c75136c0c369c440814a7af59434a__chain__6(__568c75136c0c369c440814a7af59434a__sumAndLog__45)(__568c75136c0c369c440814a7af59434a__andDo__41(__568c75136c0c369c440814a7af59434a__of__1(5))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HAP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__put__40(157)))(__568c75136c0c369c440814a7af59434a__chain__38((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HIP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__34((_ => __568c75136c0c369c440814a7af59434a__hep__17(({ v: `HOP`, n: null }))))(__568c75136c0c369c440814a7af59434a__map__14((x => (x * 17)))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((29 * x))))(__568c75136c0c369c440814a7af59434a__of__1(3))))))))));
+    __568c75136c0c369c440814a7af59434a__runStack__47(37)(__568c75136c0c369c440814a7af59434a__chain__6(__568c75136c0c369c440814a7af59434a__sumAndLog__46)(__568c75136c0c369c440814a7af59434a__andDo__42(__568c75136c0c369c440814a7af59434a__of__1(5))(__568c75136c0c369c440814a7af59434a__chain__39((_ => __568c75136c0c369c440814a7af59434a__hep__18(({ v: `HAP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__39((_ => __568c75136c0c369c440814a7af59434a__put__41(157)))(__568c75136c0c369c440814a7af59434a__chain__39((_ => __568c75136c0c369c440814a7af59434a__hep__18(({ v: `HIP`, n: null }))))(__568c75136c0c369c440814a7af59434a__chain__35((_ => __568c75136c0c369c440814a7af59434a__hep__18(({ v: `HOP`, n: null }))))(__568c75136c0c369c440814a7af59434a__map__15((x => (x * 17)))(__568c75136c0c369c440814a7af59434a__chain__6((x => __568c75136c0c369c440814a7af59434a__of__1((29 * x))))(__568c75136c0c369c440814a7af59434a__of__1(3))))))))));
     return ({ __constructor: "Unit", __args: [] });
 });
-export default { __568c75136c0c369c440814a7af59434a__of__1, __568c75136c0c369c440814a7af59434a__put__40, __568c75136c0c369c440814a7af59434a__mempty__4, __568c75136c0c369c440814a7af59434a__of__2, __568c75136c0c369c440814a7af59434a__of__23, __568c75136c0c369c440814a7af59434a__pure__21, __568c75136c0c369c440814a7af59434a__of__20, __568c75136c0c369c440814a7af59434a__pure__5, __568c75136c0c369c440814a7af59434a__of__11, __568c75136c0c369c440814a7af59434a__pure__25, __568c75136c0c369c440814a7af59434a__of__29, __568c75136c0c369c440814a7af59434a__mappend__10, __568c75136c0c369c440814a7af59434a__tell__18, __568c75136c0c369c440814a7af59434a__tell__19, __568c75136c0c369c440814a7af59434a__pure__3, __568c75136c0c369c440814a7af59434a__pure__24, __568c75136c0c369c440814a7af59434a__map__14, __568c75136c0c369c440814a7af59434a__chain__6, __568c75136c0c369c440814a7af59434a__chain__34, __568c75136c0c369c440814a7af59434a__chain__42, __568c75136c0c369c440814a7af59434a__chain__38, __568c75136c0c369c440814a7af59434a__chain__26, __568c75136c0c369c440814a7af59434a__map__15, __568c75136c0c369c440814a7af59434a__chain__8, __568c75136c0c369c440814a7af59434a__chain__36, __568c75136c0c369c440814a7af59434a__chain__43, __568c75136c0c369c440814a7af59434a__chain__39, __568c75136c0c369c440814a7af59434a__chain__32, __568c75136c0c369c440814a7af59434a__chain__12, __568c75136c0c369c440814a7af59434a__chain__37, __568c75136c0c369c440814a7af59434a__map__16, __568c75136c0c369c440814a7af59434a__chain__44, __568c75136c0c369c440814a7af59434a__chain__30, __568c75136c0c369c440814a7af59434a__lift__22, __568c75136c0c369c440814a7af59434a__andDo__41, __568c75136c0c369c440814a7af59434a__runWriterT__27, __568c75136c0c369c440814a7af59434a__runWriterT__9, __568c75136c0c369c440814a7af59434a__runWriterT__28, __568c75136c0c369c440814a7af59434a__runIdentity__33, __568c75136c0c369c440814a7af59434a__runIdentity__13, __568c75136c0c369c440814a7af59434a__runIdentity__31, __568c75136c0c369c440814a7af59434a__runStateT__7, __568c75136c0c369c440814a7af59434a__runStateT__35, __568c75136c0c369c440814a7af59434a__WriterT, __568c75136c0c369c440814a7af59434a__Identity, __568c75136c0c369c440814a7af59434a__StateT };
+export default { __568c75136c0c369c440814a7af59434a__of__1, __568c75136c0c369c440814a7af59434a__put__41, __568c75136c0c369c440814a7af59434a__of__2, __568c75136c0c369c440814a7af59434a__of__24, __568c75136c0c369c440814a7af59434a__pure__22, __568c75136c0c369c440814a7af59434a__of__21, __568c75136c0c369c440814a7af59434a__pure__5, __568c75136c0c369c440814a7af59434a__of__12, __568c75136c0c369c440814a7af59434a__pure__26, __568c75136c0c369c440814a7af59434a__of__30, __568c75136c0c369c440814a7af59434a__tell__19, __568c75136c0c369c440814a7af59434a__tell__20, __568c75136c0c369c440814a7af59434a__pure__3, __568c75136c0c369c440814a7af59434a__pure__25, __568c75136c0c369c440814a7af59434a__map__15, __568c75136c0c369c440814a7af59434a__chain__6, __568c75136c0c369c440814a7af59434a__chain__35, __568c75136c0c369c440814a7af59434a__chain__43, __568c75136c0c369c440814a7af59434a__chain__39, __568c75136c0c369c440814a7af59434a__chain__27, __568c75136c0c369c440814a7af59434a__map__16, __568c75136c0c369c440814a7af59434a__chain__8, __568c75136c0c369c440814a7af59434a__chain__37, __568c75136c0c369c440814a7af59434a__chain__44, __568c75136c0c369c440814a7af59434a__chain__40, __568c75136c0c369c440814a7af59434a__chain__33, __568c75136c0c369c440814a7af59434a__chain__13, __568c75136c0c369c440814a7af59434a__chain__38, __568c75136c0c369c440814a7af59434a__map__17, __568c75136c0c369c440814a7af59434a__chain__45, __568c75136c0c369c440814a7af59434a__chain__31, __568c75136c0c369c440814a7af59434a__lift__23, __568c75136c0c369c440814a7af59434a__andDo__42, __568c75136c0c369c440814a7af59434a__runWriterT__28, __568c75136c0c369c440814a7af59434a__runWriterT__9, __568c75136c0c369c440814a7af59434a__runWriterT__29, __568c75136c0c369c440814a7af59434a__runIdentity__34, __568c75136c0c369c440814a7af59434a__runIdentity__14, __568c75136c0c369c440814a7af59434a__runIdentity__32, __568c75136c0c369c440814a7af59434a__runStateT__7, __568c75136c0c369c440814a7af59434a__runStateT__36, __568c75136c0c369c440814a7af59434a__WriterT, __568c75136c0c369c440814a7af59434a__Identity, __568c75136c0c369c440814a7af59434a__StateT };
 const __makeArgs = () => {
   let list = {}
   let start = list

@@ -7,7 +7,6 @@ import String from "String"
 import FilePath from "FilePath"
 import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
-import { EQUAL } from "Compare"
 import Integer from "Integer"
 import { always, when } from "Function"
 // needed as an import is generated in Canonicalize.Coverage
@@ -46,8 +45,13 @@ makeHitCounter = (initial) => {
 }
 
 type CoverableLine = CoverableLine(Integer)
+derive Comparable CoverableLine
+
 type CoverableFunction = CoverableFunction(Integer, String)
+derive Comparable CoverableFunction
+
 type CoverableBranch = CoverableBranch(Integer, Integer, Integer)
+derive Comparable CoverableBranch
 
 alias CoverageData = {
   coverableLines :: Dictionary CoverableLine HitCounter,
@@ -177,59 +181,6 @@ stringifySection = (section) =>
 
 stringify :: LcovInfo -> String
 export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
-
-
-instance Comparable CoverableLine {
-  compare = (a, b) => where(#[a, b]) {
-    #[CoverableLine(la), CoverableLine(lb)] =>
-      compare(la, lb)
-  }
-}
-
-instance Comparable CoverableFunction {
-  compare = (a, b) => where(#[a, b]) {
-    #[CoverableFunction(la, na), CoverableFunction(lb, nb)] =>
-      do {
-        lineComparison = compare(la, lb)
-
-        return lineComparison == EQUAL
-          ? compare(na, nb)
-          : lineComparison
-      }
-  }
-}
-
-instance Comparable CoverableBranch {
-  compare = (a, b) => where(#[a, b]) {
-    #[CoverableBranch(la, blockA, branchA), CoverableBranch(lb, blockB, branchB)] =>
-      where(#[
-        compare(la, lb),
-        compare(blockA, blockB),
-        compare(branchA, branchB)
-      ]) {
-        #[-1, _, _] =>
-          -1
-
-        #[1, _, _] =>
-          1
-
-        #[_, -1, _] =>
-          -1
-
-        #[_, 1, _] =>
-          1
-
-        #[_, _, -1] =>
-          -1
-
-        #[_, _, 1] =>
-          1
-
-        _ =>
-          0
-      }
-  }
-}
 
 
 processModuleResult :: String -> CoverageData -> LcovSection

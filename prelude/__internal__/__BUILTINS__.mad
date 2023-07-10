@@ -551,7 +551,7 @@ instance Comparable Char {
 
 #elseif llvm
 
-charCompare :: Char -> Char -> Comparison
+charCompare :: Char -> Char -> Integer
 charCompare = extern "madlib__char__compare"
 
 
@@ -565,7 +565,16 @@ charCompare = extern "madlib__char__compare"
  * compare('a', 'a') // EQUAL
  */
 instance Comparable Char {
-  compare = charCompare
+  compare = (a, b) => where(charCompare(a, b)) {
+    1 =>
+      GT
+
+    -1 =>
+      LT
+
+    _ =>
+      EQ
+  }
 }
 
 #endif

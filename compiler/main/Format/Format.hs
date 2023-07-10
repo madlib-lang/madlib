@@ -1297,13 +1297,13 @@ targetToString sourceTarget = case sourceTarget of
 
 derivedToDoc :: [Comment] -> Derived -> (Pretty.Doc ann, [Comment])
 derivedToDoc comments derived = case derived of
-  (Source area _ (DerivedADT adtName)) ->
+  (Source area _ (DerivedADT interfaceName adtName)) ->
     let (commentDoc, comments') = insertComments False area comments
-    in  (commentDoc <> Pretty.pretty "derive Comparable " <> Pretty.pretty adtName, comments')
+    in  (commentDoc <> Pretty.pretty "derive " <> Pretty.pretty interfaceName <> Pretty.space <> Pretty.pretty adtName, comments')
 
-  (Source area _ (DerivedRecord fields)) ->
+  (Source area _ (DerivedRecord interfaceName fields)) ->
     let (commentDoc, comments') = insertComments False area comments
-    in  (commentDoc <> Pretty.pretty "derive Comparable " <> Pretty.encloseSep Pretty.lbrace Pretty.rbrace (Pretty.pretty ", ") (map Pretty.pretty fields), comments')
+    in  (commentDoc <> Pretty.pretty "derive " <> Pretty.pretty interfaceName <> Pretty.space <> Pretty.encloseSep Pretty.lbrace Pretty.rbrace (Pretty.pretty ", ") (map Pretty.pretty fields), comments')
 
 
 importNamesToDoc :: [Comment] -> [Source Name] -> ([Pretty.Doc ann], [Comment])

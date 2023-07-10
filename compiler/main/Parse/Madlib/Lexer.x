@@ -150,6 +150,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag> @head\/                        { mapToken (\_ -> TokenSlash) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\%                                      { mapToken (\_ -> TokenPercent) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\>                                    { mapToken (\_ -> TokenPipeOperator) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\<\|\>                                  { mapToken (\_ -> TokenAlternativeOperator) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\&\&$tail*                              { mapToken (\_ -> TokenDoubleAmpersand) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\|$tail*                              { mapToken (\_ -> TokenDoublePipe) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>             { decideTokenRightChevron }
@@ -685,6 +686,7 @@ data TokenClass
  | TokenFrom
  | TokenPipe
  | TokenPipeOperator
+ | TokenAlternativeOperator
  | TokenSpreadOperator
  | TokenType
  | TokenAlias

@@ -10,6 +10,7 @@ import { ge, le } from "Compare"
 
 
 export type Version = Version(Integer, Integer, Integer)
+derive Comparable Version
 
 
 export type VersionRange
@@ -31,11 +32,6 @@ export showVersion = (version) => {
 
 instance Scan Version {
   scan = parse
-}
-
-
-instance Comparable Version {
-  compare = (a, b) => compare(showVersion(a), showVersion(b))
 }
 
 

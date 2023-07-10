@@ -131,8 +131,6 @@ initialEnv = do
                         , ("||"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                         , ("!"            , Forall [] $ [] :=> (tBool `fn` tBool))
 
-                        -- , ("++"           , Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
-
                         , (">"            , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                         , ("<"            , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                         , (">="           , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
@@ -277,7 +275,18 @@ initialEnv = do
                     ) M.empty
                   ]
           )
-        , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing] [])
+        , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing]
+                  -- These are needed for some tests
+                  [ Instance ([] :=> IsIn "Comparable" [tInteger] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tShort] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tFloat] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tByte] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tStr] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tChar] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tBool] Nothing) M.empty
+                  , Instance ([] :=> IsIn "Comparable" [tUnit] Nothing) M.empty
+                  ]
+          )
         , ("Eq", Interface [TV "a" Star] []
                   -- These are needed for the JS backend where Eq is a special generic function
                   [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
