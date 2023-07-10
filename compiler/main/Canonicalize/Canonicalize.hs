@@ -126,6 +126,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       Src.Source area srcTarget (Src.Var "++") -> do
         buildApp env target area (Src.Source area srcTarget (Src.Var "mconcat")) [argL, argR]
 
+      Src.Source area srcTarget (Src.Var "<|>") -> do
+        buildApp env target area (Src.Source area srcTarget (Src.Var "alt")) [argL, argR]
+
       Src.Source area srcTarget (Src.Var "!=") | target == TLLVM -> do
         equalCheck <- buildApp env target area (Src.Source area srcTarget (Src.Var "==")) [argL, argR]
         return $ Can.Canonical area (Can.App (Can.Canonical area (Can.Var "!")) equalCheck True)

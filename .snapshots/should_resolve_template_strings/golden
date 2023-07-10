@@ -2,7 +2,10 @@
     { aimports =
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
-            (NamedImport [] "__BUILTINS__" "__BUILTINS__")
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
         ]
     , aexps =
         [ Typed
@@ -94,7 +97,7 @@
                                       (LStr "\"3 + 7 is \"")
                                   , Typed
                                       ([ IsIn
-                                           "Number"
+                                           "Comparable"
                                            [ TCon (TC "Integer" Star) "prelude" ]
                                            (Just (Area (Loc 111 5 24) (Loc 112 5 25)))
                                        , IsIn
@@ -113,7 +116,7 @@
                                       (If
                                          (Typed
                                             ([ IsIn
-                                                 "Number"
+                                                 "Comparable"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
                                                  (Just (Area (Loc 111 5 24) (Loc 112 5 25)))
                                              , IsIn
@@ -138,7 +141,7 @@
                                             (App
                                                (Typed
                                                   ([ IsIn
-                                                       "Number"
+                                                       "Comparable"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
                                                        (Just (Area (Loc 111 5 24) (Loc 112 5 25)))
                                                    , IsIn
@@ -166,7 +169,7 @@
                                                   (App
                                                      (Typed
                                                         ([ IsIn
-                                                             "Number"
+                                                             "Comparable"
                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                              Nothing
                                                          ] :=>
@@ -196,7 +199,7 @@
                                                         (Var ">" False))
                                                      (Typed
                                                         ([ IsIn
-                                                             "Number"
+                                                             "Comparable"
                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                              (Just
                                                                 (Area
@@ -354,7 +357,7 @@
                                                      False))
                                                (Typed
                                                   ([ IsIn
-                                                       "Number"
+                                                       "Comparable"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
                                                        (Just (Area (Loc 111 5 24) (Loc 112 5 25)))
                                                    , IsIn

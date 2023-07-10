@@ -1,5 +1,6 @@
 import {} from "Monad"
 import {} from "Bifunctor"
+import {} from "Alternative"
 import { sortBy, length } from "List"
 import Tuple from "Tuple"
 import {} from "Integer"
@@ -44,6 +45,7 @@ instance Applicative (Wish e) {
   )
 }
 
+
 instance Monad (Wish e) {
   of = pure
 
@@ -51,6 +53,7 @@ instance Monad (Wish e) {
     Wish(run) => run(badCB, (x) => where(f(x)) { Wish(r) => r(badCB, goodCB) })
   })
 }
+
 
 instance Bifunctor Wish {
   bimap = (leftF, rightF, m) => Wish((badCB, goodCB) => where(m) {
@@ -111,8 +114,13 @@ export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
 good :: a -> Wish e a
 export good = (a) => Wish((_, goodCB) => goodCB(a))
 
+
 bad :: e -> Wish e a
 export bad = (e) => Wish((badCB, _) => badCB(e))
+
+
+withRej :: f -> Wish e a -> Wish f a
+export withRej = (rej, wish) => mapRej(() => rej, wish)
 
 
 parallelN :: Integer -> List (Wish e a) -> Wish e (List a)

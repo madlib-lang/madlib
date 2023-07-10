@@ -45,6 +45,8 @@ data TypeError
   | NameAlreadyExported String
   | ShouldBeTypedOrAbove String
   | ContextTooWeak [Pred]
+  | DerivingAliasNotAllowed String
+  | InvalidInterfaceDerived String
   | FatalError
   | ASTHasNoPath
   | Error

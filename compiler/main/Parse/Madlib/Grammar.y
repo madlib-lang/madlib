@@ -85,6 +85,7 @@ import Text.Show.Pretty
   '>>>'       { Token _ _ TokenTripleRightChevron }
   'pipe'      { Token _ _ TokenPipeKeyword }
   '|>'        { Token _ _ TokenPipeOperator }
+  '<|>'       { Token _ _ TokenAlternativeOperator }
   '...'       { Token _ _ TokenSpreadOperator }
   'type'      { Token _ _ TokenType }
   'alias'     { Token _ _ TokenAlias }
@@ -108,6 +109,7 @@ import Text.Show.Pretty
 %nonassoc LOWEST
 %left ':' '->' '|' where is 'else' '='
 %left '?' 'if'
+%left '<|>'
 %left '|>'
 %left '||'
 %left '&&'
@@ -139,17 +141,18 @@ ast :: { Src.AST }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping 'ret' 'export' name '=' exp ast
       %shift { $9 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (Src.getArea $8)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $8)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $6) (Src.getArea $8)) (tokenTarget $1) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
-  | 'derive' name deriveDecl ast  %shift { $4 { Src.aderived = $3 : (Src.aderived $4) } }
+  | 'derive' name name ast                  %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedADT (strV $2) (strV $3)) : (Src.aderived $4) } }
+  | 'derive' name deriveDeclFieldNames ast  %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (snd $3)) (tokenTarget $1) (Src.DerivedRecord (strV $2) (fst $3)) : (Src.aderived $4) } }
   -- | error ast                        { $2 }
 
-deriveDecl :: { Src.Derived }
-  : name                          { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
-  | '{' deriveDeclFieldNames '}'  { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedRecord $2) }
+-- deriveDecl :: { Src.Derived }
+--   : name                          { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
+--   | '{' deriveDeclFieldNames '}'  { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedRecord $2) }
 
-deriveDeclFieldNames :: { [String] }
-  : name ',' deriveDeclFieldNames %shift { strV $1 : $3 }
-  | name ',' name                 %shift { [strV $1, strV $3] }
-  | name                          %shift { [strV $1] }
+deriveDeclFieldNames :: { ([String], Area) }
+  : name ',' deriveDeclFieldNames %shift { (strV $1 : fst $3, snd $3) }
+  | name ',' name                 %shift { ([strV $1, strV $3], emptyArea) }
+  | name                          %shift { ([strV $1], tokenArea $1) }
 
 
 importDecls :: { [Src.Import] }
@@ -628,6 +631,8 @@ operation :: { Src.Exp }
       { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.UnOp (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var "!")) $2) }
   | '~' exp
       { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.UnOp (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var "~")) $2) }
+  | exp '<|>' exp
+      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.getSourceTarget $1) (Src.BinOp $1 (Src.Source (tokenArea $2) (tokenTarget $2) (Src.Var "<|>")) $3) }
   | exp '|>' exp
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.getSourceTarget $1) (Src.BinOp $1 (Src.Source (tokenArea $2) (tokenTarget $2) (Src.Var "|>")) $3) }
 

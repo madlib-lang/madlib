@@ -502,6 +502,14 @@ getTConPath t = case t of
   _ ->
     ""
 
+getAliasPath :: Type -> String
+getAliasPath t = case t of
+  TAlias path _ _ _ ->
+    path
+
+  _ ->
+    ""
+
 getReturnType :: Type -> Type
 getReturnType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) _) r ->

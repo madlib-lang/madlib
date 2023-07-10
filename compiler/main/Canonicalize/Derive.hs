@@ -16,10 +16,14 @@ import           Data.ByteString.Char8 (intersperse)
 import qualified Data.List                              as List
 import qualified Data.Maybe                             as Maybe
 import qualified Canonicalize.Env                       as Can
-import Utils.Hash
-import Utils.Record (generateRecordPredsAndType)
+import           Utils.Hash
+import           Utils.Record (generateRecordPredsAndType)
 import qualified Rock
 import qualified Driver.Query as Query
+import           Control.Monad.Except (throwError, MonadError (catchError))
+import           Error.Error
+import           Error.Context
+import           Canonicalize.EnvUtils (lookupADT)
 
 
 searchTypeInConstructor :: Id -> Type -> Maybe Type
@@ -342,7 +346,6 @@ deriveComparableADTInstance adt = case adt of
     let constructorTypes = getCtorType <$> adtconstructors
         varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
         instPreds   = (\varInType -> IsIn "Comparable" [varInType] Nothing) <$> varsInType
-        -- TODO: make generic
         sortedConstructors = List.sortBy compareConstructors adtconstructors
         branches = sortedConstructors >>= buildConstructorIsForCompare sortedConstructors
         inst =
@@ -367,38 +370,46 @@ deriveComparableADTInstance adt = case adt of
     in  Just inst
 
   _ ->
-    -- TODO: implement
     Nothing
 
 
 deriveInstances :: Can.Env -> [TypeDecl] -> [Src.Derived] -> CanonicalM [Instance]
 deriveInstances env localTypeDecls derived = case derived of
-  Src.Source _ _ (Src.DerivedADT adtName) : next ->
-    case Map.lookup adtName (Can.envTypeDecls env) of
-      Just t -> do
-        let path = getTConPath t
-        maybeADT <-
-          if path == Can.envCurrentPath env then
-            return $ List.find ((== adtName) . getTypeDeclName) localTypeDecls
-          else
-            Rock.fetch $ Query.ForeignCanTypeDeclaration path adtName
+  Src.Source area _ (Src.DerivedADT interfaceName _) : _ | interfaceName /= "Comparable" ->
+    throwError $ CompilationError (InvalidInterfaceDerived interfaceName) (Context (Can.envCurrentPath env) area)
 
-        case maybeADT of
-          Just adt -> do
-            let derivedInstance = deriveComparableADTInstance adt
-            nextInstances <- deriveInstances env localTypeDecls next
+  Src.Source area _ (Src.DerivedRecord interfaceName _) : _ | interfaceName /= "Comparable" ->
+    throwError $ CompilationError (InvalidInterfaceDerived interfaceName) (Context (Can.envCurrentPath env) area)
 
-            case derivedInstance of
-              Just inst ->
-                return $ inst : nextInstances
+  Src.Source area _ (Src.DerivedADT _ adtName) : next -> do
+    t <- catchError
+      (lookupADT env adtName)
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (Can.envCurrentPath env) area))
+
+    let path = getTConPath t
+    let path' = if null path then getAliasPath t else path
+    maybeADT <-
+      if path' == Can.envCurrentPath env then
+        return $ List.find ((== adtName) . getTypeDeclName) localTypeDecls
+      else
+        Rock.fetch $ Query.ForeignCanTypeDeclaration path' adtName
+
+    case maybeADT of
+      Just adt -> do
+        let derivedInstance = deriveComparableADTInstance adt
+        nextInstances <- deriveInstances env localTypeDecls next
+
+        case derivedInstance of
+          Just inst ->
+            return $ inst : nextInstances
 
           Nothing ->
-            deriveInstances env localTypeDecls next
+            throwError $ CompilationError (DerivingAliasNotAllowed adtName) (Context (Can.envCurrentPath env) area)
 
       Nothing ->
-        deriveInstances env localTypeDecls next
+        throwError $ CompilationError (UnboundType adtName) (Context (Can.envCurrentPath env) area)
 
-  Src.Source _ _ (Src.DerivedRecord fieldNames) : next -> do
+  Src.Source _ _ (Src.DerivedRecord _ fieldNames) : next -> do
     let (instPreds, recordType) = generateRecordPredsAndType (Can.envCurrentPath env) "Comparable" fieldNames
         derivedInstance = ec (Instance "Comparable" instPreds (IsIn "Comparable" [recordType] Nothing) (
             Map.singleton

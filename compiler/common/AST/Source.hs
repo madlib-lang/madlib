@@ -35,8 +35,8 @@ data AST =
 -- for records.
 type Derived = Source Derived_
 data Derived_
-  = DerivedADT String
-  | DerivedRecord [String]
+  = DerivedADT String String
+  | DerivedRecord String [String]
   deriving(Eq, Show, Generic, Hashable)
 
 
