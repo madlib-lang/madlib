@@ -1,5 +1,4 @@
 import type { Maybe } from "Maybe"
-import {} from "Monoid"
 import List from "List"
 
 #iftarget js
@@ -8,16 +7,6 @@ import { Just, Nothing } from "Maybe"
 
 #endif
 
-
-
-instance Semigroup String {
-  assoc = (a, b) => a ++ b
-}
-
-instance Monoid String {
-  mempty = ""
-  mconcat = (a, b) => a ++ b
-}
 
 #iftarget js
 

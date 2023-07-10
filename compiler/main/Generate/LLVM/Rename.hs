@@ -415,6 +415,11 @@ populateInitialEnv exps env = case exps of
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
+    Typed _ _ _ (Export (Typed _ _ _ (Extern _ name _))) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
     _ ->
       populateInitialEnv next env
 

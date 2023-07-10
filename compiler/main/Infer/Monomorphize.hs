@@ -261,10 +261,21 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
       case foundExp of
         Just (fnDefinition, fnModulePath) ->
           if isExtern fnDefinition then do
-            -- For now we skip externs completely
-            liftIO $ setRequestResult fnName' fnModulePath False (getType fnDefinition) fnDefinition
-            addImport envCurrentModulePath fnModulePath fnName' typeItIsCalledWith (DefinitionImport $ length $ getParamTypes typeItIsCalledWith)
-            return fnName'
+            -- For now we skip externs completely and simply rename them to avoid collisions
+            let typeForExtern = getType fnDefinition
+            let fnId = FunctionId fnName' fnModulePath typeForExtern
+
+            case Map.lookup fnId state of
+              Just MonomorphizationRequest { mrIndex } -> do
+                let monomorphicName = buildMonomorphizedName fnName' mrIndex
+                addImport envCurrentModulePath fnModulePath monomorphicName typeForExtern (DefinitionImport $ length $ getParamTypes typeForExtern)
+                return monomorphicName
+
+              Nothing -> do
+                monomorphicName <- liftIO $ newRequest fnName' fnModulePath False typeForExtern
+                liftIO $ setRequestResult fnName' fnModulePath False typeForExtern (updateName monomorphicName fnDefinition)
+                addImport envCurrentModulePath fnModulePath monomorphicName typeForExtern (DefinitionImport $ length $ getParamTypes typeForExtern)
+                return monomorphicName
           else do
             let fnId = FunctionId fnName' fnModulePath typeItIsCalledWith
 
@@ -377,11 +388,15 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
 
 blackList :: [String]
 blackList =
-  [">", "<", ">=", "<=", "&&", "||", "+", "-", "*", "/", "!=", "++", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
+  ["&&", "||", "+", "-", "*", "/", "!=", "++", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
 
 eqExcludeTypes :: [Type]
 eqExcludeTypes =
   [tInteger, tShort, tByte, tFloat, tStr, tBool, tUnit, tChar]
+
+comparableExcludeTypes :: [Type]
+comparableExcludeTypes =
+  [tInteger, tShort, tByte, tFloat, tBool, tUnit, tChar]
 
 monomorphizeApp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
@@ -431,8 +446,17 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
       fnName `List.elem` blackList
       || fnName `Set.member` envLocalBindingsToExclude env
       || (fnName == "==" && head (getParamTypes $ apply envSubstitution $ getQualified qt) `List.elem` eqExcludeTypes)
+      || (fnName `List.elem` [">", "<", ">=", "<="] && head (getParamTypes $ apply envSubstitution $ getQualified qt) `List.elem` comparableExcludeTypes)
     then
       return $ Typed (applyAndCleanQt envSubstitution qt) area (Var fnName False)
+    else if fnName == ">" then
+      monomorphizeApp target env (Typed qt area (Var "__BUILTINS__.gt" False))
+    else if fnName == ">=" then
+      monomorphizeApp target env (Typed qt area (Var "__BUILTINS__.ge" False))
+    else if fnName == "<" then
+      monomorphizeApp target env (Typed qt area (Var "__BUILTINS__.lt" False))
+    else if fnName == "<=" then
+      monomorphizeApp target env (Typed qt area (Var "__BUILTINS__.le" False))
     else do
       let callType = genType $ apply envSubstitution $ getQualified qt
       monomorphicName <- monomorphizeDefinition target False env fnName callType

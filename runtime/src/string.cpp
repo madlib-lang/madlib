@@ -432,6 +432,10 @@ char *madlib__string__internal__concat(char *s1, char *s2) {
   return result;
 }
 
+char *madlib__string__concat(char *s1, char *s2) {
+  return madlib__string__internal__concat(s1, s2);
+}
+
 char *stripTrailingZeros(char *number) {
   int length = strlen(number);
   char *end = number + strlen(number) - 1;

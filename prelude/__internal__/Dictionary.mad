@@ -28,6 +28,19 @@ Dictionary = extern "madlib__dictionary__typeConstructor"
 #endif
 
 
+instance Comparable k => Semigroup (Dictionary k a) {
+  assoc = (a, b) => where(#[a, b]) {
+    #[Dictionary(itemsA), Dictionary(itemsB)] =>
+      fromList(mconcat(itemsA, itemsB))
+  }
+}
+
+instance Comparable k => Monoid (Dictionary k a) {
+  mconcat = assoc
+  mempty = empty
+}
+
+
 removeConsecutiveDoubles :: Eq k => List #[k, v] -> List #[k, v]
 removeConsecutiveDoubles = (list) => where(list) {
   [#[k1, v1], #[k2, v2], ...xs] =>

@@ -30,6 +30,9 @@ data AST =
     deriving(Eq, Show, Generic, Hashable)
 
 
+-- TODO: Add derived instance name here
+-- For now we only keep the name of the derived type or the list of fields
+-- for records.
 type Derived = Source Derived_
 data Derived_
   = DerivedADT String

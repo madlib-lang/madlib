@@ -323,10 +323,13 @@ isADT td = case td of
 
 isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
-  (Typed _ _ (Export _)) ->
+  Typed _ _ (Export _) ->
     True
 
-  (Typed _ _ (TypedExp (Typed _ _ (Export _)) _ _)) ->
+  Typed _ _ (TypedExp (Typed _ _ (Export _)) _ _) ->
+    True
+
+  Typed _ _ (NameExport _) ->
     True
 
   _ ->
@@ -423,6 +426,15 @@ isExport a = case a of
 getValue :: Solved a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a ) = a
+
+
+maybeExportName :: Exp -> Maybe String
+maybeExportName exp = case exp of
+  Typed _ _ (NameExport n) ->
+    Just n
+
+  _ ->
+    Nothing
 
 
 getExpName :: Exp -> Maybe String

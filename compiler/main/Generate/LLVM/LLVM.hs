@@ -1223,6 +1223,21 @@ generateExp env symbolTable exp = case exp of
           result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
+
     Core.Typed _ _ _ (Var "<" False) ->
       case getType (List.head args) of
         IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
@@ -1248,6 +1263,21 @@ generateExp env symbolTable exp = case exp of
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
 
     Core.Typed _ _ _ (Var ">=" False) ->
       case getType (List.head args) of
@@ -1275,6 +1305,21 @@ generateExp env symbolTable exp = case exp of
           result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
+
     Core.Typed _ _ _ (Var "<=" False) ->
       case getType (List.head args) of
         IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
@@ -1300,6 +1345,21 @@ generateExp env symbolTable exp = case exp of
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
     _ | Core.isPlainRecursiveCall metadata -> do
         let llvmType      = buildLLVMType env symbolTable (getQualType exp)

@@ -28,6 +28,7 @@ data Node
   | TypeDeclNode TypeDecl
   | InterfaceNode Interface
   | InstanceNode Instance
+  | DerivedDecl Derived
   deriving(Eq, Show)
 
 
@@ -47,6 +48,9 @@ getNodeArea node = case node of
 
   InstanceNode inst ->
     getArea inst
+
+  DerivedDecl decl ->
+    getArea decl
 
 
 nodesLineDiff :: [Comment] -> Node -> Node -> Int
@@ -77,11 +81,13 @@ astToNodeList ast =
       tds        = atypedecls ast
       interfaces = ainterfaces ast
       instances  = ainstances ast
+      derived    = aderived ast
   in  (ImportNode <$> imports)
       ++ (ExpNode <$> exps)
       ++ (TypeDeclNode <$> tds)
       ++ (InterfaceNode <$> interfaces)
       ++ (InstanceNode <$> instances)
+      ++ (DerivedDecl <$> derived)
 
 
 sortASTNodes :: [Node] -> [Node]
@@ -1288,6 +1294,18 @@ targetToString sourceTarget = case sourceTarget of
     "all"
 
 
+
+derivedToDoc :: [Comment] -> Derived -> (Pretty.Doc ann, [Comment])
+derivedToDoc comments derived = case derived of
+  (Source area _ (DerivedADT adtName)) ->
+    let (commentDoc, comments') = insertComments False area comments
+    in  (commentDoc <> Pretty.pretty "derive Comparable " <> Pretty.pretty adtName, comments')
+
+  (Source area _ (DerivedRecord fields)) ->
+    let (commentDoc, comments') = insertComments False area comments
+    in  (commentDoc <> Pretty.pretty "derive Comparable " <> Pretty.encloseSep Pretty.lbrace Pretty.rbrace (Pretty.pretty ", ") (map Pretty.pretty fields), comments')
+
+
 importNamesToDoc :: [Comment] -> [Source Name] -> ([Pretty.Doc ann], [Comment])
 importNamesToDoc comments names = case names of
   (Source area _ name : more) ->
@@ -1644,6 +1662,15 @@ nodesToDocs comments nodes = case nodes of
                   grouper = \(_, (importTypeA, _)) (_, (importTypeB, _)) -> importTypeA == importTypeB
                   sorted = intercalate [Pretty.hardline] $ map (fst <$>) $ groupBy grouper $ sortBy sorter (zip imports' importInfo)
               in  (Pretty.hcat sorted <> Pretty.hardline <> Pretty.hardline <> Pretty.hardline, comments'', more')
+
+            DerivedDecl decl ->
+              let (exp', comments'') = derivedToDoc comments' decl
+                  emptyLinesToAdd    =
+                    if null more then
+                      Pretty.hardline
+                    else
+                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+              in  (exp' <> emptyLinesToAdd, comments'', more)
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td
