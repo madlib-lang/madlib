@@ -2,7 +2,10 @@
     { aimports =
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
-            (NamedImport [] "__BUILTINS__" "__BUILTINS__")
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
         ]
     , aexps =
         [ Typed
@@ -14,7 +17,7 @@
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TCon (TC "String" Star) "prelude")))
                  (TCon (TC "{}" Star) "prelude"))
-            (Area (Loc 340 17 1) (Loc 379 19 2))
+            (Area (Loc 574 35 1) (Loc 613 37 2))
             (TypedExp
                (Typed
                   ([] :=>
@@ -25,7 +28,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TCon (TC "String" Star) "prelude")))
                        (TCon (TC "{}" Star) "prelude"))
-                  (Area (Loc 340 17 1) (Loc 379 19 2))
+                  (Area (Loc 574 35 1) (Loc 613 37 2))
                   (Assignment
                      "main"
                      (Typed
@@ -37,20 +40,20 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude")))
                              (TCon (TC "{}" Star) "prelude"))
-                        (Area (Loc 347 17 8) (Loc 379 19 2))
+                        (Area (Loc 581 35 8) (Loc 613 37 2))
                         (Abs
                            (Typed
                               ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
-                              (Area (Loc 378 19 1) (Loc 378 19 1))
+                              (Area (Loc 612 37 1) (Loc 612 37 1))
                               "_")
                            [ Typed
                                ([ IsIn "Inspect" [ TCon (TC "Boolean" Star) "prelude" ] Nothing
                                 ] :=>
                                   TCon (TC "String" Star) "prelude")
-                               (Area (Loc 357 18 3) (Loc 377 18 23))
+                               (Area (Loc 591 36 3) (Loc 611 36 23))
                                (App
                                   (Typed
                                      ([ IsIn
@@ -77,7 +80,7 @@
                                                    (TCon (TC "Integer" Star) "prelude"))
                                                 (TCon (TC "Boolean" Star) "prelude")))
                                           (TCon (TC "String" Star) "prelude"))
-                                     (Area (Loc 357 18 3) (Loc 364 18 10))
+                                     (Area (Loc 591 36 3) (Loc 598 36 10))
                                      (Var "inspect" False))
                                   (Typed
                                      ([ IsIn
@@ -90,7 +93,7 @@
                                                  (TCon (TC "Integer" Star) "prelude"))
                                               (TCon (TC "Boolean" Star) "prelude")
                                           ]
-                                          (Just (Area (Loc 357 18 3) (Loc 364 18 10)))
+                                          (Just (Area (Loc 591 36 3) (Loc 598 36 10)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TApp
@@ -99,7 +102,7 @@
                                                 (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TCon (TC "Integer" Star) "prelude"))
                                           (TCon (TC "Boolean" Star) "prelude"))
-                                     (Area (Loc 365 18 11) (Loc 376 18 22))
+                                     (Area (Loc 599 36 11) (Loc 610 36 22))
                                      (TupleConstructor
                                         [ Typed
                                             ([ IsIn
@@ -108,11 +111,11 @@
                                                  Nothing
                                              ] :=>
                                                TCon (TC "Integer" Star) "prelude")
-                                            (Area (Loc 367 18 13) (Loc 368 18 14))
+                                            (Area (Loc 601 36 13) (Loc 602 36 14))
                                             (LNum "1")
                                         , Typed
                                             ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                            (Area (Loc 370 18 16) (Loc 375 18 21))
+                                            (Area (Loc 604 36 16) (Loc 609 36 21))
                                             (LBool "false")
                                         ]))
                                   True)
@@ -146,6 +149,87 @@
         [ Untyped
             (Area (Loc 0 1 1) (Loc 48 3 2))
             (Interface
+               "Semigroup"
+               []
+               [ TV "a" Star ]
+               (fromList
+                  [ ( "assoc"
+                    , Forall
+                        [ Star ]
+                        ([ IsIn "Semigroup" [ TGen 0 ] Nothing ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TGen 0)))
+                    )
+                  ])
+               (fromList
+                  [ ( "assoc"
+                    , Untyped
+                        (Area (Loc 35 2 12) (Loc 46 2 23))
+                        (TRArr
+                           (Untyped (Area (Loc 35 2 12) (Loc 36 2 13)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 40 2 17) (Loc 46 2 23))
+                              (TRArr
+                                 (Untyped (Area (Loc 40 2 17) (Loc 41 2 18)) (TRSingle "a"))
+                                 (Untyped (Area (Loc 45 2 22) (Loc 46 2 23)) (TRSingle "a")))))
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 50 5 1) (Loc 126 8 2))
+            (Interface
+               "Monoid"
+               [ IsIn "Semigroup" [ TVar (TV "w" Star) ] Nothing ]
+               [ TV "w" Star ]
+               (fromList
+                  [ ( "mconcat"
+                    , Forall
+                        [ Star ]
+                        ([ IsIn "Monoid" [ TGen 0 ] Nothing
+                         , IsIn "Semigroup" [ TGen 0 ] Nothing
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TGen 0)))
+                    )
+                  , ( "mempty"
+                    , Forall
+                        [ Star ]
+                        ([ IsIn "Monoid" [ TGen 0 ] Nothing
+                         , IsIn "Semigroup" [ TGen 0 ] Nothing
+                         ] :=>
+                           TGen 0)
+                    )
+                  ])
+               (fromList
+                  [ ( "mconcat"
+                    , Untyped
+                        (Area (Loc 113 7 14) (Loc 124 7 25))
+                        (TRArr
+                           (Untyped (Area (Loc 113 7 14) (Loc 114 7 15)) (TRSingle "w"))
+                           (Untyped
+                              (Area (Loc 118 7 19) (Loc 124 7 25))
+                              (TRArr
+                                 (Untyped (Area (Loc 118 7 19) (Loc 119 7 20)) (TRSingle "w"))
+                                 (Untyped (Area (Loc 123 7 24) (Loc 124 7 25)) (TRSingle "w")))))
+                    )
+                  , ( "mempty"
+                    , Untyped (Area (Loc 98 6 13) (Loc 99 6 14)) (TRSingle "w")
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 234 19 1) (Loc 282 21 2))
+            (Interface
                "Inspect"
                []
                [ TV "a" Star ]
@@ -163,16 +247,130 @@
                (fromList
                   [ ( "inspect"
                     , Untyped
-                        (Area (Loc 35 2 14) (Loc 46 2 25))
+                        (Area (Loc 269 20 14) (Loc 280 20 25))
                         (TRArr
-                           (Untyped (Area (Loc 35 2 14) (Loc 36 2 15)) (TRSingle "a"))
-                           (Untyped (Area (Loc 40 2 19) (Loc 46 2 25)) (TRSingle "String")))
+                           (Untyped (Area (Loc 269 20 14) (Loc 270 20 15)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 274 20 19) (Loc 280 20 25)) (TRSingle "String")))
                     )
                   ]))
         ]
     , ainstances =
         [ Untyped
-            (Area (Loc 50 5 1) (Loc 118 7 2))
+            (Area (Loc 128 10 1) (Loc 172 12 2))
+            (Instance
+               "Semigroup"
+               []
+               (IsIn "Semigroup" [ TCon (TC "String" Star) "prelude" ] Nothing)
+               (fromList
+                  [ ( "assoc"
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "String" Star) "prelude"))
+                                  (TCon (TC "String" Star) "prelude")))
+                          (Area (Loc 158 11 3) (Loc 170 11 15))
+                          (Assignment
+                             "assoc"
+                             (Typed
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "String" Star) "prelude"))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TCon (TC "String" Star) "prelude"))
+                                        (TCon (TC "String" Star) "prelude")))
+                                (Area (Loc 166 11 11) (Loc 170 11 15))
+                                (JSExp "")))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "String" Star) "prelude"))
+                                  (TCon (TC "String" Star) "prelude")))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 174 14 1) (Loc 232 17 2))
+            (Instance
+               "Monoid"
+               []
+               (IsIn "Monoid" [ TCon (TC "String" Star) "prelude" ] Nothing)
+               (fromList
+                  [ ( "mconcat"
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "String" Star) "prelude"))
+                                  (TCon (TC "String" Star) "prelude")))
+                          (Area (Loc 215 16 3) (Loc 230 16 18))
+                          (Assignment
+                             "mconcat"
+                             (Typed
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "String" Star) "prelude"))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TCon (TC "String" Star) "prelude"))
+                                        (TCon (TC "String" Star) "prelude")))
+                                (Area (Loc 225 16 13) (Loc 230 16 18))
+                                (Var "assoc" False)))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "String" Star) "prelude"))
+                                  (TCon (TC "String" Star) "prelude")))
+                      )
+                    )
+                  , ( "mempty"
+                    , ( Typed
+                          ([] :=> TCon (TC "String" Star) "prelude")
+                          (Area (Loc 201 15 3) (Loc 212 15 14))
+                          (Assignment
+                             "mempty"
+                             (Typed
+                                ([] :=> TCon (TC "String" Star) "prelude")
+                                (Area (Loc 210 15 12) (Loc 212 15 14))
+                                (LStr "\"\"")))
+                      , Forall [] ([] :=> TCon (TC "String" Star) "prelude")
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 284 23 1) (Loc 352 25 2))
             (Instance
                "Inspect"
                []
@@ -186,7 +384,7 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TCon (TC "Boolean" Star) "prelude"))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 79 6 3) (Loc 116 6 40))
+                          (Area (Loc 313 24 3) (Loc 350 24 40))
                           (Assignment
                              "inspect"
                              (Typed
@@ -196,27 +394,27 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TCon (TC "Boolean" Star) "prelude"))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 89 6 13) (Loc 116 6 40))
+                                (Area (Loc 323 24 13) (Loc 350 24 40))
                                 (Abs
                                    (Typed
                                       ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                      (Area (Loc 90 6 14) (Loc 91 6 15))
+                                      (Area (Loc 324 24 14) (Loc 325 24 15))
                                       "b")
                                    [ Typed
                                        ([] :=> TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 96 6 20) (Loc 116 6 40))
+                                       (Area (Loc 330 24 20) (Loc 350 24 40))
                                        (If
                                           (Typed
                                              ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                             (Area (Loc 96 6 20) (Loc 97 6 21))
+                                             (Area (Loc 330 24 20) (Loc 331 24 21))
                                              (Var "b" False))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                             (Area (Loc 100 6 24) (Loc 106 6 30))
+                                             (Area (Loc 334 24 24) (Loc 340 24 30))
                                              (LStr "\"True\""))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                             (Area (Loc 109 6 33) (Loc 116 6 40))
+                                             (Area (Loc 343 24 33) (Loc 350 24 40))
                                              (LStr "\"False\"")))
                                    ])))
                       , Forall
@@ -231,7 +429,7 @@
                     )
                   ]))
         , Untyped
-            (Area (Loc 120 9 1) (Loc 201 11 2))
+            (Area (Loc 354 27 1) (Loc 435 29 2))
             (Instance
                "Inspect"
                []
@@ -245,7 +443,7 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TCon (TC "Integer" Star) "prelude"))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 149 10 3) (Loc 199 10 53))
+                          (Area (Loc 383 28 3) (Loc 433 28 53))
                           (Assignment
                              "inspect"
                              (Typed
@@ -255,15 +453,15 @@
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TCon (TC "Integer" Star) "prelude"))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 159 10 13) (Loc 199 10 53))
+                                (Area (Loc 393 28 13) (Loc 433 28 53))
                                 (Abs
                                    (Typed
                                       ([] :=> TCon (TC "Integer" Star) "prelude")
-                                      (Area (Loc 160 10 14) (Loc 161 10 15))
+                                      (Area (Loc 394 28 14) (Loc 395 28 15))
                                       "n")
                                    [ Typed
                                        ([] :=> TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 167 10 21) (Loc 198 10 52))
+                                       (Area (Loc 401 28 21) (Loc 432 28 52))
                                        (JSExp " new Integer(n).toString() ")
                                    ])))
                       , Forall
@@ -278,7 +476,7 @@
                     )
                   ]))
         , Untyped
-            (Area (Loc 203 13 1) (Loc 338 15 2))
+            (Area (Loc 437 31 1) (Loc 572 33 2))
             (Instance
                "Inspect"
                [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
@@ -303,15 +501,15 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TVar (TV "q16" Star)))
-                                     (TVar (TV "r17" Star))))
+                                        (TVar (TV "v21" Star)))
+                                     (TVar (TV "w22" Star))))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 258 14 3) (Loc 336 14 81))
+                          (Area (Loc 492 32 3) (Loc 570 32 81))
                           (Assignment
                              "inspect"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV "q16" Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV "r17" Star) ] Nothing
+                                ([ IsIn "Inspect" [ TVar (TV "v21" Star) ] Nothing
+                                 , IsIn "Inspect" [ TVar (TV "w22" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -320,41 +518,105 @@
                                            (TApp
                                               (TCon
                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "q16" Star)))
-                                           (TVar (TV "r17" Star))))
+                                              (TVar (TV "v21" Star)))
+                                           (TVar (TV "w22" Star))))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 268 14 13) (Loc 336 14 81))
+                                (Area (Loc 502 32 13) (Loc 570 32 81))
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Inspect"
-                                           [ TVar (TV "q16" Star) ]
-                                           (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                       , IsIn
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
                                        , IsIn
                                            "Inspect"
-                                           [ TVar (TV "r17" Star) ]
-                                           (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
+                                           [ TVar (TV "v21" Star) ]
+                                           (Just (Area (Loc 529 32 40) (Loc 536 32 47)))
+                                       , IsIn
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                       , IsIn
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                       , IsIn
+                                           "Inspect"
+                                           [ TVar (TV "w22" Star) ]
+                                           (Just (Area (Loc 551 32 62) (Loc 558 32 69)))
                                        ] :=>
                                          TApp
                                            (TApp
                                               (TCon
                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "q16" Star)))
-                                           (TVar (TV "r17" Star)))
+                                              (TVar (TV "v21" Star)))
+                                           (TVar (TV "w22" Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__W__1")
                                    [ Typed
                                        ([ IsIn
-                                            "Inspect"
-                                            [ TVar (TV "q16" Star) ]
-                                            (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
+                                            "Monoid"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                        , IsIn
+                                            "Semigroup"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                        , IsIn
+                                            "Monoid"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
+                                        , IsIn
+                                            "Semigroup"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
                                         , IsIn
                                             "Inspect"
-                                            [ TVar (TV "r17" Star) ]
-                                            (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
+                                            [ TVar (TV "v21" Star) ]
+                                            (Just (Area (Loc 529 32 40) (Loc 536 32 47)))
+                                        , IsIn
+                                            "Monoid"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                        , IsIn
+                                            "Semigroup"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                        , IsIn
+                                            "Monoid"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                        , IsIn
+                                            "Semigroup"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                        , IsIn
+                                            "Inspect"
+                                            [ TVar (TV "w22" Star) ]
+                                            (Just (Area (Loc 551 32 62) (Loc 558 32 69)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 268 14 13) (Loc 336 14 81))
+                                       (Area (Loc 502 32 13) (Loc 570 32 81))
                                        (Where
                                           (Typed
                                              ([] :=>
@@ -363,19 +625,51 @@
                                                      (TCon
                                                         (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                         "prelude")
-                                                     (TVar (TV "q16" Star)))
-                                                  (TVar (TV "r17" Star)))
+                                                     (TVar (TV "v21" Star)))
+                                                  (TVar (TV "w22" Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__W__1" False))
                                           [ Typed
                                               ([ IsIn
-                                                   "Inspect"
-                                                   [ TVar (TV "q16" Star) ]
-                                                   (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
+                                                   "Monoid"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                               , IsIn
+                                                   "Semigroup"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                               , IsIn
+                                                   "Monoid"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
+                                               , IsIn
+                                                   "Semigroup"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 540 32 51) (Loc 542 32 53)))
                                                , IsIn
                                                    "Inspect"
-                                                   [ TVar (TV "r17" Star) ]
-                                                   (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
+                                                   [ TVar (TV "v21" Star) ]
+                                                   (Just (Area (Loc 529 32 40) (Loc 536 32 47)))
+                                               , IsIn
+                                                   "Monoid"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                               , IsIn
+                                                   "Semigroup"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                               , IsIn
+                                                   "Monoid"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                               , IsIn
+                                                   "Semigroup"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                               , IsIn
+                                                   "Inspect"
+                                                   [ TVar (TV "w22" Star) ]
+                                                   (Just (Area (Loc 551 32 62) (Loc 558 32 69)))
                                                ] :=>
                                                  TApp
                                                    (TApp
@@ -389,10 +683,10 @@
                                                                   "(,)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "q16" Star)))
-                                                         (TVar (TV "r17" Star))))
+                                                            (TVar (TV "v21" Star)))
+                                                         (TVar (TV "w22" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
-                                              (Area (Loc 276 14 21) (Loc 334 14 79))
+                                              (Area (Loc 510 32 21) (Loc 568 32 79))
                                               (Is
                                                  (Typed
                                                     ([] :=>
@@ -403,66 +697,120 @@
                                                                   "(,)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "q16" Star)))
-                                                         (TVar (TV "r17" Star)))
-                                                    (Area (Loc 276 14 21) (Loc 283 14 28))
+                                                            (TVar (TV "v21" Star)))
+                                                         (TVar (TV "w22" Star)))
+                                                    (Area (Loc 510 32 21) (Loc 517 32 28))
                                                     (PTuple
                                                        [ Typed
                                                            ([ IsIn
                                                                 "Inspect"
-                                                                [ TVar (TV "q16" Star) ]
+                                                                [ TVar (TV "v21" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 295 14 40)
-                                                                      (Loc 302 14 47)))
+                                                                      (Loc 529 32 40)
+                                                                      (Loc 536 32 47)))
                                                             , IsIn
                                                                 "Inspect"
-                                                                [ TVar (TV "q16" Star) ]
+                                                                [ TVar (TV "v21" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 295 14 40)
-                                                                      (Loc 302 14 47)))
+                                                                      (Loc 529 32 40)
+                                                                      (Loc 536 32 47)))
                                                             ] :=>
-                                                              TVar (TV "q16" Star))
-                                                           (Area (Loc 278 14 23) (Loc 279 14 24))
+                                                              TVar (TV "v21" Star))
+                                                           (Area (Loc 512 32 23) (Loc 513 32 24))
                                                            (PVar "a")
                                                        , Typed
                                                            ([ IsIn
                                                                 "Inspect"
-                                                                [ TVar (TV "r17" Star) ]
+                                                                [ TVar (TV "w22" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 317 14 62)
-                                                                      (Loc 324 14 69)))
+                                                                      (Loc 551 32 62)
+                                                                      (Loc 558 32 69)))
                                                             , IsIn
                                                                 "Inspect"
-                                                                [ TVar (TV "r17" Star) ]
+                                                                [ TVar (TV "w22" Star) ]
                                                                 (Just
                                                                    (Area
-                                                                      (Loc 317 14 62)
-                                                                      (Loc 324 14 69)))
+                                                                      (Loc 551 32 62)
+                                                                      (Loc 558 32 69)))
                                                             ] :=>
-                                                              TVar (TV "r17" Star))
-                                                           (Area (Loc 281 14 26) (Loc 282 14 27))
+                                                              TVar (TV "w22" Star))
+                                                           (Area (Loc 515 32 26) (Loc 516 32 27))
                                                            (PVar "b")
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
-                                                         "Inspect"
-                                                         [ TVar (TV "q16" Star) ]
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
                                                          (Just
-                                                            (Area (Loc 295 14 40) (Loc 302 14 47)))
+                                                            (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 526 32 37) (Loc 528 32 39)))
+                                                     , IsIn
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 540 32 51) (Loc 542 32 53)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 540 32 51) (Loc 542 32 53)))
                                                      , IsIn
                                                          "Inspect"
-                                                         [ TVar (TV "r17" Star) ]
+                                                         [ TVar (TV "v21" Star) ]
                                                          (Just
-                                                            (Area (Loc 317 14 62) (Loc 324 14 69)))
+                                                            (Area (Loc 529 32 40) (Loc 536 32 47)))
+                                                     , IsIn
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 548 32 59) (Loc 550 32 61)))
+                                                     , IsIn
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just
+                                                            (Area (Loc 562 32 73) (Loc 564 32 75)))
+                                                     , IsIn
+                                                         "Inspect"
+                                                         [ TVar (TV "w22" Star) ]
+                                                         (Just
+                                                            (Area (Loc 551 32 62) (Loc 558 32 69)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 287 14 32) (Loc 334 14 79))
+                                                    (Area (Loc 526 32 37) (Loc 568 32 79))
                                                     (App
                                                        (Typed
-                                                          ([] :=>
+                                                          ([ IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 526 32 37)
+                                                                     (Loc 528 32 39)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 526 32 37)
+                                                                     (Loc 528 32 39)))
+                                                           ] :=>
                                                              TApp
                                                                (TApp
                                                                   (TCon
@@ -474,10 +822,24 @@
                                                                   (TCon
                                                                      (TC "String" Star) "prelude"))
                                                                (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 287 14 32) (Loc 334 14 79))
+                                                          (Area (Loc 526 32 37) (Loc 528 32 39))
                                                           (App
                                                              (Typed
-                                                                ([] :=>
+                                                                ([ IsIn
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     Nothing
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     Nothing
+                                                                 ] :=>
                                                                    TApp
                                                                      (TApp
                                                                         (TCon
@@ -507,43 +869,139 @@
                                                                            (TC "String" Star)
                                                                            "prelude")))
                                                                 (Area
-                                                                   (Loc 292 14 37) (Loc 294 14 39))
-                                                                (Var "++" False))
+                                                                   (Loc 526 32 37) (Loc 528 32 39))
+                                                                (Var "mconcat" False))
                                                              (Typed
-                                                                ([] :=>
+                                                                ([ IsIn
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 526 32 37)
+                                                                           (Loc 528 32 39)))
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 526 32 37)
+                                                                           (Loc 528 32 39)))
+                                                                 ] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 287 14 32) (Loc 291 14 36))
+                                                                   (Loc 521 32 32) (Loc 525 32 36))
                                                                 (LStr "\"#[\""))
                                                              False))
                                                        (Typed
                                                           ([ IsIn
-                                                               "Inspect"
-                                                               [ TVar (TV "q16" Star) ]
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 295 14 40)
-                                                                     (Loc 302 14 47)))
+                                                                     (Loc 526 32 37)
+                                                                     (Loc 528 32 39)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 526 32 37)
+                                                                     (Loc 528 32 39)))
+                                                           , IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 540 32 51)
+                                                                     (Loc 542 32 53)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 540 32 51)
+                                                                     (Loc 542 32 53)))
                                                            , IsIn
                                                                "Inspect"
-                                                               [ TVar (TV "r17" Star) ]
+                                                               [ TVar (TV "v21" Star) ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 317 14 62)
-                                                                     (Loc 324 14 69)))
+                                                                     (Loc 529 32 40)
+                                                                     (Loc 536 32 47)))
+                                                           , IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 548 32 59)
+                                                                     (Loc 550 32 61)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 548 32 59)
+                                                                     (Loc 550 32 61)))
+                                                           , IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 562 32 73)
+                                                                     (Loc 564 32 75)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 562 32 73)
+                                                                     (Loc 564 32 75)))
+                                                           , IsIn
+                                                               "Inspect"
+                                                               [ TVar (TV "w22" Star) ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 551 32 62)
+                                                                     (Loc 558 32 69)))
                                                            ] :=>
                                                              TCon (TC "String" Star) "prelude")
-                                                          (Area (Loc 295 14 40) (Loc 334 14 79))
+                                                          (Area (Loc 540 32 51) (Loc 568 32 79))
                                                           (App
                                                              (Typed
                                                                 ([ IsIn
-                                                                     "Inspect"
-                                                                     [ TVar (TV "q16" Star) ]
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 295 14 40)
-                                                                           (Loc 302 14 47)))
+                                                                           (Loc 540 32 51)
+                                                                           (Loc 542 32 53)))
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 540 32 51)
+                                                                           (Loc 542 32 53)))
+                                                                 , IsIn
+                                                                     "Inspect"
+                                                                     [ TVar (TV "v21" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 529 32 40)
+                                                                           (Loc 536 32 47)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -561,10 +1019,24 @@
                                                                         (TC "String" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 295 14 40) (Loc 334 14 79))
+                                                                   (Loc 540 32 51) (Loc 542 32 53))
                                                                 (App
                                                                    (Typed
-                                                                      ([] :=>
+                                                                      ([ IsIn
+                                                                           "Monoid"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           Nothing
+                                                                       , IsIn
+                                                                           "Semigroup"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           Nothing
+                                                                       ] :=>
                                                                          TApp
                                                                            (TApp
                                                                               (TCon
@@ -599,30 +1071,50 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")))
                                                                       (Area
-                                                                         (Loc 306 14 51)
-                                                                         (Loc 308 14 53))
-                                                                      (Var "++" False))
+                                                                         (Loc 540 32 51)
+                                                                         (Loc 542 32 53))
+                                                                      (Var "mconcat" False))
                                                                    (Typed
                                                                       ([ IsIn
-                                                                           "Inspect"
-                                                                           [ TVar (TV "q16" Star) ]
+                                                                           "Monoid"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 295 14 40)
-                                                                                 (Loc 302 14 47)))
+                                                                                 (Loc 540 32 51)
+                                                                                 (Loc 542 32 53)))
+                                                                       , IsIn
+                                                                           "Semigroup"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 540 32 51)
+                                                                                 (Loc 542 32 53)))
+                                                                       , IsIn
+                                                                           "Inspect"
+                                                                           [ TVar (TV "v21" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 529 32 40)
+                                                                                 (Loc 536 32 47)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 295 14 40)
-                                                                         (Loc 305 14 50))
+                                                                         (Loc 529 32 40)
+                                                                         (Loc 539 32 50))
                                                                       (App
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
-                                                                                     (TV "q16" Star)
+                                                                                     (TV "v21" Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -639,7 +1131,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "q16"
+                                                                                          "v21"
                                                                                           Star)))
                                                                                  (TCon
                                                                                     (TC
@@ -647,54 +1139,134 @@
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 295 14 40)
-                                                                               (Loc 302 14 47))
+                                                                               (Loc 529 32 40)
+                                                                               (Loc 536 32 47))
                                                                             (Var "inspect" False))
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
-                                                                                     (TV "q16" Star)
+                                                                                     (TV "v21" Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          295 14 40)
+                                                                                          529 32 40)
                                                                                        (Loc
-                                                                                          302
-                                                                                          14
+                                                                                          536
+                                                                                          32
                                                                                           47)))
                                                                              ] :=>
-                                                                               TVar (TV "q16" Star))
+                                                                               TVar (TV "v21" Star))
                                                                             (Area
-                                                                               (Loc 303 14 48)
-                                                                               (Loc 304 14 49))
+                                                                               (Loc 537 32 48)
+                                                                               (Loc 538 32 49))
                                                                             (Var "a" False))
                                                                          True))
                                                                    False))
                                                              (Typed
                                                                 ([ IsIn
-                                                                     "Inspect"
-                                                                     [ TVar (TV "q16" Star) ]
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 295 14 40)
-                                                                           (Loc 302 14 47)))
+                                                                           (Loc 540 32 51)
+                                                                           (Loc 542 32 53)))
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 540 32 51)
+                                                                           (Loc 542 32 53)))
                                                                  , IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV "r17" Star) ]
+                                                                     [ TVar (TV "v21" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 317 14 62)
-                                                                           (Loc 324 14 69)))
+                                                                           (Loc 529 32 40)
+                                                                           (Loc 536 32 47)))
+                                                                 , IsIn
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 548 32 59)
+                                                                           (Loc 550 32 61)))
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 548 32 59)
+                                                                           (Loc 550 32 61)))
+                                                                 , IsIn
+                                                                     "Monoid"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 562 32 73)
+                                                                           (Loc 564 32 75)))
+                                                                 , IsIn
+                                                                     "Semigroup"
+                                                                     [ TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude"
+                                                                     ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 562 32 73)
+                                                                           (Loc 564 32 75)))
+                                                                 , IsIn
+                                                                     "Inspect"
+                                                                     [ TVar (TV "w22" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 551 32 62)
+                                                                           (Loc 558 32 69)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 309 14 54) (Loc 334 14 79))
+                                                                   (Loc 548 32 59) (Loc 568 32 79))
                                                                 (App
                                                                    (Typed
-                                                                      ([] :=>
+                                                                      ([ IsIn
+                                                                           "Monoid"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 548 32 59)
+                                                                                 (Loc 550 32 61)))
+                                                                       , IsIn
+                                                                           "Semigroup"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 548 32 59)
+                                                                                 (Loc 550 32 61)))
+                                                                       ] :=>
                                                                          TApp
                                                                            (TApp
                                                                               (TCon
@@ -713,11 +1285,29 @@
                                                                               (TC "String" Star)
                                                                               "prelude"))
                                                                       (Area
-                                                                         (Loc 309 14 54)
-                                                                         (Loc 334 14 79))
+                                                                         (Loc 548 32 59)
+                                                                         (Loc 550 32 61))
                                                                       (App
                                                                          (Typed
-                                                                            ([] :=>
+                                                                            ([ IsIn
+                                                                                 "Monoid"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 Nothing
+                                                                             , IsIn
+                                                                                 "Semigroup"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 Nothing
+                                                                             ] :=>
                                                                                TApp
                                                                                  (TApp
                                                                                     (TCon
@@ -756,48 +1346,152 @@
                                                                                           Star)
                                                                                        "prelude")))
                                                                             (Area
-                                                                               (Loc 314 14 59)
-                                                                               (Loc 316 14 61))
-                                                                            (Var "++" False))
+                                                                               (Loc 548 32 59)
+                                                                               (Loc 550 32 61))
+                                                                            (Var "mconcat" False))
                                                                          (Typed
-                                                                            ([] :=>
+                                                                            ([ IsIn
+                                                                                 "Monoid"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          548 32 59)
+                                                                                       (Loc
+                                                                                          550
+                                                                                          32
+                                                                                          61)))
+                                                                             , IsIn
+                                                                                 "Semigroup"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          548 32 59)
+                                                                                       (Loc
+                                                                                          550
+                                                                                          32
+                                                                                          61)))
+                                                                             ] :=>
                                                                                TCon
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 309 14 54)
-                                                                               (Loc 313 14 58))
+                                                                               (Loc 543 32 54)
+                                                                               (Loc 547 32 58))
                                                                             (LStr "\", \""))
                                                                          False))
                                                                    (Typed
                                                                       ([ IsIn
-                                                                           "Inspect"
-                                                                           [ TVar (TV "r17" Star) ]
+                                                                           "Monoid"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 317 14 62)
-                                                                                 (Loc 324 14 69)))
+                                                                                 (Loc 548 32 59)
+                                                                                 (Loc 550 32 61)))
+                                                                       , IsIn
+                                                                           "Semigroup"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 548 32 59)
+                                                                                 (Loc 550 32 61)))
+                                                                       , IsIn
+                                                                           "Monoid"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 562 32 73)
+                                                                                 (Loc 564 32 75)))
+                                                                       , IsIn
+                                                                           "Semigroup"
+                                                                           [ TCon
+                                                                               (TC "String" Star)
+                                                                               "prelude"
+                                                                           ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 562 32 73)
+                                                                                 (Loc 564 32 75)))
+                                                                       , IsIn
+                                                                           "Inspect"
+                                                                           [ TVar (TV "w22" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 551 32 62)
+                                                                                 (Loc 558 32 69)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 317 14 62)
-                                                                         (Loc 334 14 79))
+                                                                         (Loc 562 32 73)
+                                                                         (Loc 568 32 79))
                                                                       (App
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Inspect"
-                                                                                 [ TVar
-                                                                                     (TV "r17" Star)
+                                                                                 "Monoid"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          317 14 62)
+                                                                                          562 32 73)
                                                                                        (Loc
-                                                                                          324
-                                                                                          14
+                                                                                          564
+                                                                                          32
+                                                                                          75)))
+                                                                             , IsIn
+                                                                                 "Semigroup"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          562 32 73)
+                                                                                       (Loc
+                                                                                          564
+                                                                                          32
+                                                                                          75)))
+                                                                             , IsIn
+                                                                                 "Inspect"
+                                                                                 [ TVar
+                                                                                     (TV "w22" Star)
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          551 32 62)
+                                                                                       (Loc
+                                                                                          558
+                                                                                          32
                                                                                           69)))
                                                                              ] :=>
                                                                                TApp
@@ -822,11 +1516,29 @@
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 317 14 62)
-                                                                               (Loc 334 14 79))
+                                                                               (Loc 562 32 73)
+                                                                               (Loc 564 32 75))
                                                                             (App
                                                                                (Typed
-                                                                                  ([] :=>
+                                                                                  ([ IsIn
+                                                                                       "Monoid"
+                                                                                       [ TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"
+                                                                                       ]
+                                                                                       Nothing
+                                                                                   , IsIn
+                                                                                       "Semigroup"
+                                                                                       [ TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"
+                                                                                       ]
+                                                                                       Nothing
+                                                                                   ] :=>
                                                                                      TApp
                                                                                        (TApp
                                                                                           (TCon
@@ -865,27 +1577,65 @@
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 328 14 73)
+                                                                                     (Loc 562 32 73)
                                                                                      (Loc
-                                                                                        330 14 75))
-                                                                                  (Var "++" False))
+                                                                                        564 32 75))
+                                                                                  (Var
+                                                                                     "mconcat"
+                                                                                     False))
                                                                                (Typed
                                                                                   ([ IsIn
+                                                                                       "Monoid"
+                                                                                       [ TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"
+                                                                                       ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                562
+                                                                                                32
+                                                                                                73)
+                                                                                             (Loc
+                                                                                                564
+                                                                                                32
+                                                                                                75)))
+                                                                                   , IsIn
+                                                                                       "Semigroup"
+                                                                                       [ TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"
+                                                                                       ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                562
+                                                                                                32
+                                                                                                73)
+                                                                                             (Loc
+                                                                                                564
+                                                                                                32
+                                                                                                75)))
+                                                                                   , IsIn
                                                                                        "Inspect"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              "r17"
+                                                                                              "w22"
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
                                                                                           (Area
                                                                                              (Loc
-                                                                                                317
-                                                                                                14
+                                                                                                551
+                                                                                                32
                                                                                                 62)
                                                                                              (Loc
-                                                                                                324
-                                                                                                14
+                                                                                                558
+                                                                                                32
                                                                                                 69)))
                                                                                    ] :=>
                                                                                      TCon
@@ -894,16 +1644,16 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 317 14 62)
+                                                                                     (Loc 551 32 62)
                                                                                      (Loc
-                                                                                        327 14 72))
+                                                                                        561 32 72))
                                                                                   (App
                                                                                      (Typed
                                                                                         ([ IsIn
                                                                                              "Inspect"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "r17"
+                                                                                                    "w22"
                                                                                                     Star)
                                                                                              ]
                                                                                              Nothing
@@ -921,7 +1671,7 @@
                                                                                                    "prelude")
                                                                                                 (TVar
                                                                                                    (TV
-                                                                                                      "r17"
+                                                                                                      "w22"
                                                                                                       Star)))
                                                                                              (TCon
                                                                                                 (TC
@@ -930,12 +1680,12 @@
                                                                                                 "prelude"))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              317
-                                                                                              14
+                                                                                              551
+                                                                                              32
                                                                                               62)
                                                                                            (Loc
-                                                                                              324
-                                                                                              14
+                                                                                              558
+                                                                                              32
                                                                                               69))
                                                                                         (Var
                                                                                            "inspect"
@@ -945,32 +1695,32 @@
                                                                                              "Inspect"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    "r17"
+                                                                                                    "w22"
                                                                                                     Star)
                                                                                              ]
                                                                                              (Just
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      317
-                                                                                                      14
+                                                                                                      551
+                                                                                                      32
                                                                                                       62)
                                                                                                    (Loc
-                                                                                                      324
-                                                                                                      14
+                                                                                                      558
+                                                                                                      32
                                                                                                       69)))
                                                                                          ] :=>
                                                                                            TVar
                                                                                              (TV
-                                                                                                "r17"
+                                                                                                "w22"
                                                                                                 Star))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              325
-                                                                                              14
+                                                                                              559
+                                                                                              32
                                                                                               70)
                                                                                            (Loc
-                                                                                              326
-                                                                                              14
+                                                                                              560
+                                                                                              32
                                                                                               71))
                                                                                         (Var
                                                                                            "b"
@@ -979,25 +1729,57 @@
                                                                                False))
                                                                          (Typed
                                                                             ([ IsIn
-                                                                                 "Inspect"
-                                                                                 [ TVar
-                                                                                     (TV "r17" Star)
+                                                                                 "Monoid"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          317 14 62)
+                                                                                          562 32 73)
                                                                                        (Loc
-                                                                                          324
-                                                                                          14
+                                                                                          564
+                                                                                          32
+                                                                                          75)))
+                                                                             , IsIn
+                                                                                 "Semigroup"
+                                                                                 [ TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)
+                                                                                     "prelude"
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          562 32 73)
+                                                                                       (Loc
+                                                                                          564
+                                                                                          32
+                                                                                          75)))
+                                                                             , IsIn
+                                                                                 "Inspect"
+                                                                                 [ TVar
+                                                                                     (TV "w22" Star)
+                                                                                 ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          551 32 62)
+                                                                                       (Loc
+                                                                                          558
+                                                                                          32
                                                                                           69)))
                                                                              ] :=>
                                                                                TCon
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 331 14 76)
-                                                                               (Loc 334 14 79))
+                                                                               (Loc 565 32 76)
+                                                                               (Loc 568 32 79))
                                                                             (LStr "\"]\""))
                                                                          True))
                                                                    True))

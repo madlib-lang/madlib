@@ -1,4 +1,4 @@
-// Eq
+// ------------ Eq ----------------------------------------
 
 #iftarget llvm
 
@@ -181,7 +181,8 @@ const escapeChar = (c) => {
 }
 -#
 
-// Show
+
+// ------------ Show --------------------------------------
 
 instance Show Byte {
   show = (n) => #- {
@@ -495,7 +496,7 @@ instance (
 }
 
 
-// Compare
+// ------------ Comparable --------------------------------
 
 export type Comparison
   = LT
@@ -1057,15 +1058,16 @@ instance (Comparable a, Comparable b, Comparable c, Comparable d, Comparable e, 
 }
 
 
-// Concat
+// ------------ Concat ------------------------------------
 
 interface Semigroup a {
   assoc :: a -> a -> a
 }
 
-interface Semigroup w => Monoid w {
-  mempty :: w
-  mconcat :: w -> w -> w
+interface Semigroup a => Monoid a {
+  mempty :: a
+  mconcat :: a -> a -> a
+  // mconcat :: List a -> a
 }
 
 
@@ -1082,12 +1084,12 @@ concatString = (a, b) => #- a + b -#
 #endif
 
 instance Semigroup String {
-  assoc = (a, b) => a ++ b
+  assoc = concatString
 }
 
 instance Monoid String {
   mempty = ""
-  mconcat = concatString
+  mconcat = assoc
 }
 
 instance Semigroup (List a) {
@@ -1102,9 +1104,5 @@ instance Semigroup (List a) {
 
 instance Monoid (List a) {
   mconcat = assoc
-
   mempty = []
 }
-
-
-

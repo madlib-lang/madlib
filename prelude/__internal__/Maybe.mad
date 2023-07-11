@@ -99,6 +99,25 @@ instance Monad Maybe {
 }
 
 
+instance Semigroup a => Semigroup (Maybe a) {
+  assoc = (a, b) => where(#[a, b]) {
+    #[Just(_a), Just(_b)] =>
+      Just(assoc(_a, _b))
+
+    #[Nothing, or] =>
+      or
+
+    #[or, _] =>
+      or
+  }
+}
+
+instance Semigroup a => Monoid (Maybe a) {
+  mconcat = assoc
+  mempty = Nothing
+}
+
+
 /**
  * Extricate the value contained in a Just, or the given fallback value if given a Nothing
  *
