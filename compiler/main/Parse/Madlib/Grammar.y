@@ -145,9 +145,6 @@ ast :: { Src.AST }
   | 'derive' name deriveDeclFieldNames ast  %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (snd $3)) (tokenTarget $1) (Src.DerivedRecord (strV $2) (fst $3)) : (Src.aderived $4) } }
   -- | error ast                        { $2 }
 
--- deriveDecl :: { Src.Derived }
---   : name                          { Src.Source (tokenArea $1) (tokenTarget $1) (Src.DerivedADT (strV $1)) }
---   | '{' deriveDeclFieldNames '}'  { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedRecord $2) }
 
 deriveDeclFieldNames :: { ([String], Area) }
   : name ',' deriveDeclFieldNames %shift { (strV $1 : fst $3, snd $3) }
