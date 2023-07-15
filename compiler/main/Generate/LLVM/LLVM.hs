@@ -920,9 +920,36 @@ generateExp env symbolTable exp = case exp of
   --   generateExp env { isLast = False } symbolTable e
 
   Core.Typed _ area metadata (Core.Assignment name e) -> do
-    (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+    -- TODO: here we possibly need to first create a NULL placeholder for the result
+    -- let typ = buildLLVMParamType env symbolTable (Core.getType e)
+    -- res <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' typ), [])]
+    -- let st = Map.insert name (localVarSymbol res res) symbolTable
+    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
+    -- res' <- safeBitcast res (ptr typ)
+    -- store res' 0 exp''
+    -- exp' <- load res 0
+
+    -- let typ = buildLLVMParamType env symbolTable (Core.getType e)
+    -- res <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' typ), [])]
+    -- let st = Map.insert name (localVarSymbol res res) symbolTable
+    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
+    -- store res 0 exp''
+    -- exp' <- load res 0
+    -- res <- alloca (buildLLVMParamType env symbolTable (Core.getType e)) Nothing 0
+    -- let st = Map.insert name (localVarSymbol res res) symbolTable
+    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
+    -- store res 0 exp''
+    -- exp' <- load res 0
+
+    -- (_, exp', _) <-
+    --   generateExp
+    --     env { isLast = False, isTopLevel = False }
+    --     (Map.insert name (varSymbol exp') symbolTable)
+    --     e
+
 
     if isTopLevel env then do
+      (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
       store g 0 exp'
@@ -930,14 +957,23 @@ generateExp env symbolTable exp = case exp of
       return (Map.insert name (topLevelSymbol g) symbolTable, exp', Nothing)
     else
       if Core.isReferenceAllocation metadata then do
-        let expType = typeOf exp'
+        let expType = buildLLVMType env symbolTable (Core.getQualType exp) --typeOf exp'
             ptrType = Type.ptr expType
         ptr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' expType), [])]
         declareVariable env area False name ptr
         ptr' <- safeBitcast ptr ptrType
+        v <- load ptr' 0
+
+        (_, exp', _) <-
+          generateExp
+            env { isLast = False, isTopLevel = False }
+            (Map.insert name (localVarSymbol ptr v) symbolTable)
+            e
+
         store ptr' 0 exp'
         return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr')
-      else if Core.isReferenceStore metadata then
+      else if Core.isReferenceStore metadata then do
+        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         case Map.lookup name symbolTable of
           Just (Symbol (LocalVariableSymbol ptr) _) -> do
             ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
@@ -947,6 +983,7 @@ generateExp env symbolTable exp = case exp of
           or ->
             error $ "found: " <> ppShow or
       else do
+        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         Monad.when (envIsDebugBuild env) $ do
           ptr <- alloca (typeOf exp') Nothing 0
           declareVariable env area False name ptr
@@ -1408,11 +1445,21 @@ generateExp env symbolTable exp = case exp of
         let argsApplied = List.length args
         let argc        = i32ConstOp (fromIntegral argsApplied)
 
-        pap' <-
-          if symbolType == TopLevelAssignment then
+        pap' <- case symbolType of
+          TopLevelAssignment ->
             load pap 0
-          else
+
+          -- LocalVariableSymbol p ->
+          --   load p 0
+
+          _ ->
             return pap
+          -- if symbolType == TopLevelAssignment then
+          --   load pap 0
+          -- -- else if symbolType == LocalVariableSymbol then
+          -- --   load pap 0
+          -- else
+          --   return pap
 
         pap'' <- safeBitcast pap' boxType
 
@@ -2799,6 +2846,7 @@ buildObjectFile options astModule = do
             $ \pm -> do
               runPassManager pm mod'
               return mod'
+          -- writeLLVMAssemblyToFile (File "") mod''
           moduleObject target mod''
           -- moduleLLVMAssembly mod''
 

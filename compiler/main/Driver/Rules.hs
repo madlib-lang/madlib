@@ -412,7 +412,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
                 FoldCalls.foldAST closureConverted
               else
                 closureConverted
-
+        -- when ("Wish.mad" `List.isInfixOf` path) $
+        --   liftIO $ putStrLn $ ppShow closureConverted
         return (folded, (mempty, mempty))
 
       _ -> do

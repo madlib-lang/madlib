@@ -290,8 +290,9 @@ findMutationsInExp params exp = case exp of
   Typed _ _ _ (Assignment n e) | n `elem` params ->
     n : findMutationsInExp params e
 
-  Typed _ _ _ (Assignment _ e) ->
+  Typed _ _ _ (Assignment n e) ->
     findMutationsInExp params e
+    -- findMutationsInExp (n : params) e
 
   Typed _ _ _ (Call fn args) ->
     let fnMutations  = findMutationsInExp params fn
@@ -333,6 +334,13 @@ findMutationsInExp params exp = case exp of
 
 findMutationsInBody :: [String] -> [Exp] -> [String]
 findMutationsInBody params body = case body of
+  -- (Typed _ _ _ (Assignment name e)) : next | name `elem` params ->
+  --   name : findMutationsInExp params e ++ findMutationsInBody params next
+
+  -- (Typed _ _ _ (Assignment name e)) : next ->
+  --   findMutationsInExp (name : params) e ++ findMutationsInBody params next
+    -- findMutationsInExp (name : params) e ++ findMutationsInBody (name : params) next
+
   exp : next ->
     findMutationsInExp params exp ++ findMutationsInBody params next
 
@@ -345,8 +353,8 @@ findAllMutationsInExp params exp = case exp of
   Typed _ _ _ (Assignment n e) | n `elem` params ->
     n : findAllMutationsInExp params e
 
-  Typed _ _ _ (Assignment _ e) ->
-    findAllMutationsInExp params e
+  Typed _ _ _ (Assignment n e) ->
+    findAllMutationsInExp (n : params) e
 
   Typed _ _ _ (Call fn args) ->
     let fnMutations  = findAllMutationsInExp params fn
@@ -386,8 +394,9 @@ findAllMutationsInExp params exp = case exp of
 
 findAllMutationsInExps :: [String] -> [Exp] -> [String]
 findAllMutationsInExps params exps = case exps of
-  exp@(Typed _ _ _ (Assignment n _)) : next ->
-    findAllMutationsInExp params exp ++ findAllMutationsInExps (n : params) next
+  exp@(Typed _ _ _ (Assignment name _)) : next ->
+    findAllMutationsInExp params exp ++ findAllMutationsInExps (name : params) next
+    -- findAllMutationsInExp (name : params) exp ++ findAllMutationsInExps (name : params) next
 
   exp : next ->
     findAllMutationsInExp params exp ++ findAllMutationsInExps params next
@@ -425,15 +434,17 @@ convertBody exclusionVars env body = case body of
       return $ exp' : next
 
     Typed _ _ _ (Assignment name _) -> do
-      e'   <- convert env exp
-      let (e'', env') =
-            -- TODO: we may need this for the above 2 as well
-            if name `elem` mutationsInScope env && name `notElem` allocatedMutations env then
-              (Typed (getQualType e') (getArea e') (ReferenceAllocation : getMetadata e') (getValue e'), env { allocatedMutations = name : allocatedMutations env })
-            else if name `elem` mutationsInScope env && name `elem` allocatedMutations env then
-              (Typed (getQualType e') (getArea e') (ReferenceStore : getMetadata e') (getValue e'), env)
-            else
-              (e', env)
+      (e'', env') <- do
+        if name `elem` mutationsInScope env && name `elem` allocatedMutations env then do
+          e' <- convert env exp
+          return (Typed (getQualType e') (getArea e') (ReferenceStore : getMetadata e') (getValue e'), env)
+        else if name `elem` mutationsInScope env && name `notElem` allocatedMutations env then do
+          let nextEnv = env { allocatedMutations = name : allocatedMutations env }
+          e' <- convert nextEnv exp
+          return (Typed (getQualType e') (getArea e') (ReferenceAllocation : getMetadata e') (getValue e'), nextEnv)
+        else do
+          e' <- convert env exp
+          return (e', env)
       next <- convertBody (name : exclusionVars) env' es
       return $ e'' : next
 
@@ -446,7 +457,7 @@ convertBody exclusionVars env body = case body of
 convertDefinition :: Env -> String -> [(String, Exp)] -> Exp -> Convert Exp
 convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Definition params body)) = do
   if stillTopLevel env then do
-    let mutations = findMutationsInBody (getValue <$> params) body
+    let mutations = []--findMutationsInBody (getValue <$> params) body
     let allMutations = findAllMutationsInExps (getValue <$> params) body
     body'' <- convertBody [] env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations } body
 
