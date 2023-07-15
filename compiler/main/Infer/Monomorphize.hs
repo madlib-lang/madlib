@@ -32,6 +32,7 @@ import System.Console.ANSI
 import GHC.IO.Handle (hFlush)
 import GHC.IO.Handle.FD (stdout)
 import System.Environment (lookupEnv)
+import Control.Applicative
 
 
 genUnify :: Type -> Type -> Substitution
@@ -103,7 +104,13 @@ findForeignExpByNameInNamespace moduleWhereItsUsed expName namespace = do
   case findForeignModuleForImportedName namespace ast of
     Just foreignModulePath -> do
       found <- Rock.fetch $ ForeignExp foreignModulePath expName
-      return $ (,foreignModulePath) <$> found
+
+      case found of
+        Just exp ->
+          return $ Just (exp, foreignModulePath)
+
+        Nothing ->
+          findExpByName foreignModulePath expName
 
     _ ->
       return Nothing

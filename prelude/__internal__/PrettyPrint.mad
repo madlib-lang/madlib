@@ -26,6 +26,10 @@ export type SimpleDoc
   | SLine(Integer, SimpleDoc)
 
 
+instance Semigroup Doc {
+  assoc = beside
+}
+
 
 empty :: Doc
 export empty = EmptyDoc

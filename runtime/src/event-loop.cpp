@@ -274,12 +274,20 @@ void forwardTimeoutCallback(uv_timer_t *handle) {
   __applyPAP__(callback, 1, NULL);
 }
 
-void __setTimeout__(PAP_t *pap, int64_t millis) {
-  uv_timer_t *timer_req1 =
+void __clearTimeout__(uv_timer_t *handle) {
+  if (!uv_is_closing((uv_handle_t*) handle)) {
+    uv_close((uv_handle_t*) handle, onTimeoutHandleClose);
+  }
+}
+
+uv_timer_t *__setTimeout__(PAP_t *pap, int64_t millis) {
+  uv_timer_t *handle =
       (uv_timer_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_timer_t));
-  timer_req1->data = (void *)pap;
-  uv_timer_init(loop, timer_req1);
-  uv_timer_start(timer_req1, forwardTimeoutCallback, millis, 0);
+  handle->data = (void *)pap;
+  uv_timer_init(loop, handle);
+  uv_timer_start(handle, forwardTimeoutCallback, millis, 0);
+
+  return handle;
 }
 
 #ifdef __cplusplus

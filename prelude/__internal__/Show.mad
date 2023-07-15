@@ -1,6 +1,5 @@
 import type { Parser } from "Parse"
 
-import { EQ } from "Compare"
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
 import List from "List"
@@ -26,22 +25,17 @@ type Value
   | Byte(String)
   | ByteArray(List Value)
 
+derive Comparable Value
 
-instance Comparable Value {
-  // note: this should work fine for now because we never insert anything
-  // but just construct an initial value and never insert. And for creation
-  // only Eq eliminates elements which is derived correctly.
-  // This should most likely be correctly defined for the future AST of
-  // the madlib parser, which will be based on this.
-  compare = (_, _) => EQ
-}
 
+maybeMinus :: Parser (List Char)
+maybeMinus = map(of, Parse.char('-')) <|> pure([])
 
 // -------- Integer ---------------------------------------
 
 integer :: Parser Value
 integer = do {
-  minus <- alt(map(of, Parse.char('-')), pure([]))
+  minus <- maybeMinus
   digits <- Parse.some(Parse.digit)
 
   return pipe(
@@ -56,7 +50,7 @@ integer = do {
 
 float :: Parser Value
 float = do {
-  minus <- alt(map(of, Parse.char('-')), pure([]))
+  minus <- maybeMinus
   before <- Parse.some(Parse.digit)
   dot <- Parse.char('.')
   after <- Parse.some(Parse.digit)
@@ -118,7 +112,7 @@ string = do {
     map(String.singleton),
     alt($, escapedChar),
     Parse.many,
-    map(List.reduce(mconcat, "")),
+    map(List.reduce(mappend, "")),
     map((s) => `"${s}"`),
   )(Parse.notOneOf(['"', '\\']))
   _ <- Parse.char('"')
@@ -167,7 +161,7 @@ constructor = do {
     return of(Constructor(name, []))
   }
 
-  return alt(nary, nullary)
+  return nary <|> nullary
 }
 
 
@@ -215,7 +209,7 @@ record :: Parser Value
 record = do {
   _ <- Parse.symbol("{")
   fields <- Parse.sepBy(recordField, Parse.symbol(","))
-  _ <- alt(Parse.symbol(","), pure(""))
+  _ <- Parse.symbol(",") <|> pure("")
   _ <- Parse.symbol("}")
 
   return pipe(
@@ -241,7 +235,7 @@ dictionary :: Parser Value
 dictionary = do {
   _ <- Parse.symbol("{{")
   fields <- Parse.maybeSepBy(dictionaryField, Parse.symbol(","))
-  _ <- alt(Parse.symbol(","), pure(""))
+  _ <- Parse.symbol(",") <|> pure("")
   _ <- Parse.symbol("}}")
 
   return pipe(
@@ -284,8 +278,6 @@ value = Parse.choice([
   constructor,
 ])
 
-
-// DictionaryConstructor(Dictionary Value Value)
 
 valueToDoc :: Boolean -> Value -> PP.Doc
 valueToDoc = (colored, v) => where(v) {

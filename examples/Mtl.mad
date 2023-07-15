@@ -28,8 +28,7 @@ instance (Applicative m, Monoid w) => Applicative (WriterT w m) {
   pure = (x) => WriterT(pure(#[x, mempty]))
 
   ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1) {
-      // #[a, w] => where(x2) { #[b, ww] => #[a(b), w] }
-      #[a, w] => where(x2) { #[b, ww] => #[a(b), mconcat(w, ww)] }
+      #[a, w] => where(x2) { #[b, ww] => #[a(b), w ++ ww] }
     }, runWriterT(mf), runWriterT(mm)))
 }
 
@@ -39,8 +38,7 @@ instance (Monoid w, Monad m) => Monad (WriterT w m) {
   chain = (f, m) => WriterT(
     chain(
       where { #[a, w] => chain(
-        // where { #[b, ww] => of(#[b, w])
-        where { #[b, ww] => of(#[b, mconcat(w, ww)])
+        where { #[b, ww] => of(#[b, w ++ ww])
         }, runWriterT(f(a)))
       }, runWriterT(m))
   )

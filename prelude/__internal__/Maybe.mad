@@ -113,8 +113,9 @@ instance Semigroup a => Semigroup (Maybe a) {
 }
 
 instance Semigroup a => Monoid (Maybe a) {
-  mconcat = assoc
   mempty = Nothing
+  mappend = assoc
+  mconcat = __BUILTINS__.reduceLeft(mappend, mempty)
 }
 
 

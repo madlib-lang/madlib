@@ -31,13 +31,14 @@ Dictionary = extern "madlib__dictionary__typeConstructor"
 instance Comparable k => Semigroup (Dictionary k a) {
   assoc = (a, b) => where(#[a, b]) {
     #[Dictionary(itemsA), Dictionary(itemsB)] =>
-      fromList(mconcat(itemsA, itemsB))
+      fromList(itemsA ++ itemsB)
   }
 }
 
 instance Comparable k => Monoid (Dictionary k a) {
-  mconcat = assoc
   mempty = empty
+  mappend = assoc
+  mconcat = List.reduceLeft(mappend, mempty)
 }
 
 

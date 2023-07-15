@@ -1,15 +1,15 @@
 // file: Module.mad
 import {} from "./__internals__.mjs"
-import { __6e99d6477a3318de16862152aff3e34c__mconcat__3 } from "./.prelude/__BUILTINS__.mjs";
+import { __6e99d6477a3318de16862152aff3e34c__assoc__3 } from "./.prelude/__BUILTINS__.mjs";
 
 let __568c75136c0c369c440814a7af59434a__Right = (a => ({ __constructor: "Right", __args: [ a ] }));
 let __568c75136c0c369c440814a7af59434a__Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 export let __568c75136c0c369c440814a7af59434a__inspect__2 = (b => (b ? `True` : `False`));
-export let __568c75136c0c369c440814a7af59434a__inspect__6 = (n =>  new Integer(n).toString() );
+export let __568c75136c0c369c440814a7af59434a__inspect__5 = (n =>  new Integer(n).toString() );
 export let __568c75136c0c369c440814a7af59434a__inspect__1 = (__W__3 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return __6e99d6477a3318de16862152aff3e34c__mconcat__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__6(a))(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__2(b))(`]`))));
+    return __6e99d6477a3318de16862152aff3e34c__assoc__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__5(a))(__6e99d6477a3318de16862152aff3e34c__assoc__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__2(b))(`]`))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -17,10 +17,10 @@ export let __568c75136c0c369c440814a7af59434a__inspect__1 = (__W__3 => ((__x__) 
     throw 'non exhaustive patterns!';
   }
 })(__W__3));
-export let __568c75136c0c369c440814a7af59434a__inspect__8 = (__W__3 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__inspect__7 = (__W__3 => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return __6e99d6477a3318de16862152aff3e34c__mconcat__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__6(a))(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__6(b))(`]`))));
+    return __6e99d6477a3318de16862152aff3e34c__assoc__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__5(a))(__6e99d6477a3318de16862152aff3e34c__assoc__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__5(b))(`]`))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -28,14 +28,14 @@ export let __568c75136c0c369c440814a7af59434a__inspect__8 = (__W__3 => ((__x__) 
     throw 'non exhaustive patterns!';
   }
 })(__W__3));
-export let __568c75136c0c369c440814a7af59434a__inspect__7 = (__W__1 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__inspect__6 = (__W__1 => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
-    return __6e99d6477a3318de16862152aff3e34c__mconcat__3()(`Right `)(__568c75136c0c369c440814a7af59434a__inspect__6(a));
+    return __6e99d6477a3318de16862152aff3e34c__assoc__3()(`Right `)(__568c75136c0c369c440814a7af59434a__inspect__5(a));
   }
   else if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
-    return __6e99d6477a3318de16862152aff3e34c__mconcat__3()(`Left `)(__568c75136c0c369c440814a7af59434a__inspect__6(e));
+    return __6e99d6477a3318de16862152aff3e34c__assoc__3()(`Left `)(__568c75136c0c369c440814a7af59434a__inspect__5(e));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -43,10 +43,10 @@ export let __568c75136c0c369c440814a7af59434a__inspect__7 = (__W__1 => ((__x__) 
     throw 'non exhaustive patterns!';
   }
 })(__W__1));
-export let __568c75136c0c369c440814a7af59434a__inspect__9 = (__W__2 => ((__x__) => {
+export let __568c75136c0c369c440814a7af59434a__inspect__8 = (__W__2 => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return __6e99d6477a3318de16862152aff3e34c__mconcat__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__2(a))(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__6(b))(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__mconcat__3()(__568c75136c0c369c440814a7af59434a__inspect__2(c))(`]`))))));
+    return __6e99d6477a3318de16862152aff3e34c__assoc__3()(`#[`)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__2(a))(__6e99d6477a3318de16862152aff3e34c__assoc__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__5(b))(__6e99d6477a3318de16862152aff3e34c__assoc__3()(`, `)(__6e99d6477a3318de16862152aff3e34c__assoc__3()(__568c75136c0c369c440814a7af59434a__inspect__2(c))(`]`))))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -56,12 +56,12 @@ export let __568c75136c0c369c440814a7af59434a__inspect__9 = (__W__2 => ((__x__) 
 })(__W__2));
 let __568c75136c0c369c440814a7af59434a__main = (_ => {
     __568c75136c0c369c440814a7af59434a__inspect__1(([1, false]));
-    __568c75136c0c369c440814a7af59434a__inspect__7(__568c75136c0c369c440814a7af59434a__Right(3));
-    __568c75136c0c369c440814a7af59434a__inspect__8(([1, 1]));
-    __568c75136c0c369c440814a7af59434a__inspect__9(([false, 42, true]));
+    __568c75136c0c369c440814a7af59434a__inspect__6(__568c75136c0c369c440814a7af59434a__Right(3));
+    __568c75136c0c369c440814a7af59434a__inspect__7(([1, 1]));
+    __568c75136c0c369c440814a7af59434a__inspect__8(([false, 42, true]));
     return ({ __constructor: "Unit", __args: [] });
 });
-export default { __568c75136c0c369c440814a7af59434a__inspect__2, __568c75136c0c369c440814a7af59434a__inspect__6, __568c75136c0c369c440814a7af59434a__inspect__1, __568c75136c0c369c440814a7af59434a__inspect__8, __568c75136c0c369c440814a7af59434a__inspect__7, __568c75136c0c369c440814a7af59434a__inspect__9 };
+export default { __568c75136c0c369c440814a7af59434a__inspect__2, __568c75136c0c369c440814a7af59434a__inspect__5, __568c75136c0c369c440814a7af59434a__inspect__1, __568c75136c0c369c440814a7af59434a__inspect__7, __568c75136c0c369c440814a7af59434a__inspect__6, __568c75136c0c369c440814a7af59434a__inspect__8 };
 const __makeArgs = () => {
   let list = {}
   let start = list

@@ -124,7 +124,7 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.BinOp argL op argR -> case op of
       Src.Source area srcTarget (Src.Var "++") -> do
-        buildApp env target area (Src.Source area srcTarget (Src.Var "mconcat")) [argL, argR]
+        buildApp env target area (Src.Source area srcTarget (Src.Var "assoc")) [argL, argR]
 
       Src.Source area srcTarget (Src.Var "<|>") -> do
         buildApp env target area (Src.Source area srcTarget (Src.Var "alt")) [argL, argR]

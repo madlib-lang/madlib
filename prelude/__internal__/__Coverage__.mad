@@ -418,7 +418,7 @@ renderModulePath :: String -> String
 renderModulePath = (modulePath) => pipe(
   FilePath.splitPath,
   (parts) => {
-    path = pipe(List.init, FilePath.joinPath, mconcat($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
+    path = pipe(List.init, FilePath.joinPath, mappend($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
     fileName = pipe(
       List.last,
       fromMaybe("")

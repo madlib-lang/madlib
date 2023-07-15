@@ -65,6 +65,11 @@ instance Bifunctor Wish {
 }
 
 
+instance Semigroup (Wish e a) {
+  assoc = (a, b) => chainRej(() => b, a)
+}
+
+
 /**
  * Maps over the rejected value.
  *
@@ -121,6 +126,80 @@ export bad = (e) => Wish((badCB, _) => badCB(e))
 
 withRej :: f -> Wish e a -> Wish f a
 export withRej = (rej, wish) => mapRej(() => rej, wish)
+
+
+putLine :: String -> {}
+export putLine = extern "madlib__stdio__putLine"
+
+// putLine :: String -> {}
+// putLine = #- console.log -#
+
+chainManyN :: Integer -> (a -> Wish e b) -> List (Wish e a) -> List (Wish e b)
+export chainManyN = (concurrent, f, wishes) => {
+  runningWishes = 0
+
+  runners :: List (a -> {})
+  runners = []
+
+  next :: a -> {}
+  next = () => {
+    where(runners) {
+      [run, ...rs] =>
+        do {
+          runners = rs
+          run()
+        }
+
+      [] =>
+        {}
+    }
+  }
+
+  return map(
+    (wish) =>
+      Wish((badCB, goodCB) =>
+        where(wish) {
+          Wish(run) =>
+            run(
+              (err) => {
+                runningWishes = runningWishes - 1
+                badCB(err)
+                next()
+              },
+              (res) => {
+                runner = () => {
+                  // putLine("runner")
+                  runningWishes = runningWishes + 1
+                  where(f(res)) {
+                    Wish(r) =>
+                      r(
+                        (err) => {
+                          badCB(err)
+                          runningWishes = runningWishes - 1
+                          next()
+                        },
+                        (_res) => {
+                          goodCB(_res)
+                          runningWishes = runningWishes - 1
+                          next()
+                        },
+                      )
+                  }
+                }
+
+                if (runningWishes < concurrent) do {
+                  runner()
+                  next()
+                } else do {
+                  runners = [runner, ...runners]
+                }
+              },
+            )
+        }
+      ),
+      reverse(wishes),
+  )
+}
 
 
 parallelN :: Integer -> List (Wish e a) -> Wish e (List a)
