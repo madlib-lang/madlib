@@ -1,10 +1,12 @@
 import {} from "Monad"
 import {} from "Bifunctor"
 import {} from "Alternative"
-import { sortBy, length } from "List"
+import { sortBy, length, reverse } from "List"
 import Tuple from "Tuple"
 import {} from "Integer"
 
+
+type TimerId = __TimerId__
 
 /**
  * Wish represents an async computation that needs to be fulfilled. It is
@@ -12,6 +14,225 @@ import {} from "Integer"
  */
 
 export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {})
+
+
+
+export type CancellableWish e a = CancellableWish((e -> {}) -> (a -> {}) -> ({} -> {}))
+
+afterC :: Integer -> a -> CancellableWish e a
+export afterC = (time, a) => CancellableWish((_, goodCB) => {
+  id = setTimeout(() => { goodCB(a)}, time)
+  return () => {
+    // console.log('TRIGGERED', time)
+    putLine("canceled")
+    putLine(show(time))
+    clearTimeout(id)
+  }
+})
+
+fulfillC :: (e -> {}) -> (a -> {}) -> CancellableWish e a -> ({} -> {})
+export fulfillC = (badCB, goodCB, m) => where(m) {
+  CancellableWish(run) =>
+    run(badCB, goodCB)
+}
+
+
+
+
+export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
+  return where(m) {
+    CancellableWish(run) =>
+      do {
+        cancelK = run(
+          (err) => {
+            cancelK()
+            badCB(err)
+          },
+          (x) => {
+            cancelK = where(f(x)) {
+              CancellableWish(r) =>
+                r(badCB, goodCB)
+            }
+          },
+        )
+
+        return () => { cancelK() }
+      }
+  }
+})
+
+// // That one is somehow working for now
+
+// makeSetter = (initial) => {
+//   value = initial
+
+//   set = (v) => {
+//     value = v
+//   }
+
+//   get = () => value
+
+//   return { get, set }
+// }
+
+// export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
+//   return where(m) {
+//     CancellableWish(run) =>
+//       do {
+//         setter = makeSetter(() => {})
+
+//         c = run(
+//           (err) => {
+//             // cancelK()
+//             // c()
+//             setter.get()()
+//             badCB(err)
+//           },
+//           (x) => where(f(x)) {
+//             CancellableWish(r) =>
+//               do {
+//                 cancelK = r(badCB, goodCB)
+//                 setter.set(cancelK)
+//                 // r(badCB, goodCB)
+//               }
+//           },
+//         )
+
+//         setter.set(c)
+
+//         return () => { setter.get()() }
+//       }
+//   }
+// })
+
+badC :: e -> CancellableWish e a
+export badC = (e) => CancellableWish((badCB, _) => {
+  badCB(e)
+  return () => {}
+})
+
+
+#iftarget js
+
+setTimeout :: ({} -> {}) -> Integer -> TimerId
+setTimeout = (cb, ms) => #- global.setTimeout(cb, ms) -#
+
+clearTimeout :: TimerId -> {}
+clearTimeout = (id) => #- clearTimeout(id) -#
+
+#elseif llvm
+
+setTimeout :: ({} -> {}) -> Integer -> TimerId
+setTimeout = extern "__setTimeout__"
+
+clearTimeout :: TimerId -> {}
+clearTimeout =  extern "__clearTimeout__"
+
+#endif
+
+timeoutC :: Integer -> e -> CancellableWish e a -> CancellableWish e a
+export timeoutC = (ms, err, wish) => CancellableWish((badCB, goodCB) => {
+  done = false
+  timeoutId = __TimerId__
+
+  return where(wish) {
+    CancellableWish(run) =>
+      do {
+        cancel = run(
+          (x) => {
+            if (!done) {
+              badCB(x)
+            }
+          },
+          (x) => {
+            if (!done) do {
+              done = true
+              clearTimeout(timeoutId)
+              goodCB(x)
+            }
+          }
+        )
+
+        timeoutId = setTimeout(() => {
+          if (!done) do {
+            done = true
+            cancel()
+            badCB(err)
+          }
+        }, ms)
+
+        return cancel
+      }
+  }
+
+  
+})
+
+
+// export type CancellableWish e a = CancellableWish((e -> {}) -> (a -> {}) -> (({} -> {}) -> {}) -> {})
+
+// afterC :: Integer -> a -> CancellableWish e a
+// export afterC = (time, a) => CancellableWish((_, goodCB, cancel) => #- {
+//   const id = setTimeout(() => goodCB(a), time);
+//   // console.log(stop);
+//   cancel(() => {
+//     console.log('TRIGGERED')
+//     clearTimeout(id)
+//   })
+// } -#)
+
+// makeCanceller :: a -> {
+//   get :: b -> { cancel :: c -> {} },
+//   set :: { cancel :: c -> {} } -> {}
+// }
+// makeCanceller = () => {
+//   cancel = { cancel: () => {} }
+
+//   set = (c) => {
+//     cancel = c
+//   }
+
+//   get = () => cancel
+
+//   return { get, set }
+// }
+
+// fulfillC :: (e -> {}) -> (a -> {}) -> CancellableWish e a -> ({} -> {})
+// export fulfillC = (badCB, goodCB, m) => {
+//   return where(m) {
+//     CancellableWish(run) =>
+//       do {
+//         canceller = makeCanceller()
+//         run(badCB, goodCB, (_c) => {
+//           canceller.set({ cancel: _c })
+//         })
+
+//         return () => {
+//           canceller.get().cancel()
+//         }
+//       }
+//   }
+// }
+
+// export chainC = (f, m) => CancellableWish((badCB, goodCB, cancel) => {
+//   return where(m) {
+//     CancellableWish(run) =>
+//       do {
+//         run(
+//           (err) => {
+//             badCB(err)
+//           },
+//           (x) => where(f(x)) {
+//             CancellableWish(r) =>
+//               do {
+//                 r(badCB, goodCB, cancel)
+//               }
+//           },
+//           cancel,
+//         )
+//       }
+//   }
+// })
 
 /**
  * The functor instance of Wish provides a way to map over the value it contains.
@@ -276,7 +497,8 @@ export discardError = (recover, wish) => Wish((_, goodCB) => where(wish) {
 fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
-    Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
+    Wish(run) => run(badCB, goodCB)
+    // Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
   }
 
   return {}
@@ -294,18 +516,21 @@ fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) =>
-      setTimeout(() => run(badCB, goodCB), 0)
+      run(badCB, goodCB)
+      // setTimeout(() => run(badCB, goodCB), 0)
   }
 
   return {}
 }
 
 
-setTimeout :: ({} -> a) -> Integer -> {}
-setTimeout = extern "__setTimeout__"
+// setTimeout :: ({} -> {}) -> Integer -> TimerId
+// setTimeout = extern "__setTimeout__"
 
 
 after :: Integer -> a -> Wish e a
-export after = (time, a) => Wish((_, goodCB) => setTimeout(() => goodCB(a), time))
+export after = (time, a) => Wish((_, goodCB) => {
+  setTimeout(() => goodCB(a), time)}
+)
 
 #endif
