@@ -1,3 +1,14 @@
+// ------------ List --------------------------------------
+reduceLeft :: (a -> b -> a) -> a -> List b -> a
+export reduceLeft = (f, acc, list) => where(list) {
+  [a, ...xs] =>
+    reduceLeft(f, f(acc, a), xs)
+
+  [] =>
+    acc
+}
+
+
 // ------------ Eq ----------------------------------------
 
 #iftarget llvm
@@ -1066,8 +1077,8 @@ interface Semigroup a {
 
 interface Semigroup a => Monoid a {
   mempty :: a
-  mconcat :: a -> a -> a
-  // mconcat :: List a -> a
+  mappend :: a -> a -> a
+  mconcat :: List a -> a
 }
 
 
@@ -1089,7 +1100,8 @@ instance Semigroup String {
 
 instance Monoid String {
   mempty = ""
-  mconcat = assoc
+  mappend = assoc
+  mconcat = reduceLeft(assoc, mempty)
 }
 
 instance Semigroup (List a) {
@@ -1103,6 +1115,7 @@ instance Semigroup (List a) {
 }
 
 instance Monoid (List a) {
-  mconcat = assoc
   mempty = []
+  mappend = assoc
+  mconcat = reduceLeft(assoc, mempty)
 }

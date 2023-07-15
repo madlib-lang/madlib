@@ -538,10 +538,6 @@
                      "mash"
                      (Typed
                         ([ IsIn
-                             "Monoid"
-                             [ TCon (TC "String" Star) "prelude" ]
-                             (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                         , IsIn
                              "Semigroup"
                              [ TCon (TC "String" Star) "prelude" ]
                              (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -559,10 +555,6 @@
                         (Abs
                            (Typed
                               ([ IsIn
-                                   "Monoid"
-                                   [ TCon (TC "String" Star) "prelude" ]
-                                   (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                               , IsIn
                                    "Semigroup"
                                    [ TCon (TC "String" Star) "prelude" ]
                                    (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -572,10 +564,6 @@
                               "a")
                            [ Typed
                                ([ IsIn
-                                    "Monoid"
-                                    [ TCon (TC "String" Star) "prelude" ]
-                                    (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                , IsIn
                                     "Semigroup"
                                     [ TCon (TC "String" Star) "prelude" ]
                                     (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -589,10 +577,6 @@
                                (Abs
                                   (Typed
                                      ([ IsIn
-                                          "Monoid"
-                                          [ TCon (TC "String" Star) "prelude" ]
-                                          (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                      , IsIn
                                           "Semigroup"
                                           [ TCon (TC "String" Star) "prelude" ]
                                           (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -602,10 +586,6 @@
                                      "b")
                                   [ Typed
                                       ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                       , IsIn
                                            "Semigroup"
                                            [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -615,10 +595,6 @@
                                       (App
                                          (Typed
                                             ([ IsIn
-                                                 "Monoid"
-                                                 [ TCon (TC "String" Star) "prelude" ]
-                                                 (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                             , IsIn
                                                  "Semigroup"
                                                  [ TCon (TC "String" Star) "prelude" ]
                                                  (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -634,10 +610,6 @@
                                             (App
                                                (Typed
                                                   ([ IsIn
-                                                       "Monoid"
-                                                       [ TCon (TC "String" Star) "prelude" ]
-                                                       Nothing
-                                                   , IsIn
                                                        "Semigroup"
                                                        [ TCon (TC "String" Star) "prelude" ]
                                                        Nothing
@@ -659,13 +631,9 @@
                                                              (TCon (TC "String" Star) "prelude"))
                                                           (TCon (TC "String" Star) "prelude")))
                                                   (Area (Loc 704 38 21) (Loc 706 38 23))
-                                                  (Var "mconcat" False))
+                                                  (Var "assoc" False))
                                                (Typed
                                                   ([ IsIn
-                                                       "Monoid"
-                                                       [ TCon (TC "String" Star) "prelude" ]
-                                                       (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                                   , IsIn
                                                        "Semigroup"
                                                        [ TCon (TC "String" Star) "prelude" ]
                                                        (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
@@ -676,10 +644,6 @@
                                                False))
                                          (Typed
                                             ([ IsIn
-                                                 "Monoid"
-                                                 [ TCon (TC "String" Star) "prelude" ]
-                                                 (Just (Area (Loc 704 38 21) (Loc 706 38 23)))
-                                             , IsIn
                                                  "Semigroup"
                                                  [ TCon (TC "String" Star) "prelude" ]
                                                  (Just (Area (Loc 704 38 21) (Loc 706 38 23)))

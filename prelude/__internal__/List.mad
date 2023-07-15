@@ -1,3 +1,4 @@
+import { reduceLeft } from "__BUILTINS__"
 import type { Comparison } from "Compare"
 import type { Maybe } from "Maybe"
 
@@ -31,6 +32,31 @@ instance Functor List {
 }
 
 
+instance Applicative List {
+  ap = (mf, ma) => pipe(
+    map((f) => map(f, ma)),
+    flatten,
+  )(mf)
+
+  pure = (x) => [x]
+}
+
+instance Monad List {
+  chain = (f, xs) => pipe(
+    map(f),
+    flatten,
+  )(xs)
+
+  of = pure
+}
+
+
+instance Alternative List {
+  aempty = []
+  alt = mappend
+}
+
+
 /**
  * Given a mapping function that returns a Maybe, returns a list of mapped
  * elements, where Nothing values are discarded.
@@ -52,6 +78,19 @@ export mapMaybe = (f, list) => where(list) {
 
   [] =>
     []
+}
+
+
+forEach :: (a -> {}) -> List a -> {}
+export forEach = (f, list) => where(list) {
+  [a, ...xs] =>
+    do {
+      f(a)
+      return forEach(f, xs)
+    }
+
+  [] =>
+    {}
 }
 
 
@@ -94,24 +133,6 @@ export repeatWith = (f, count) => {
 range :: Integer -> Integer -> List Integer
 export range = (start, end) => repeatWith((i) => i + start, end - start)
 
-
-instance Applicative List {
-  ap = (mf, ma) => pipe(
-    map((f) => map(f, ma)),
-    flatten,
-  )(mf)
-
-  pure = (x) => [x]
-}
-
-instance Monad List {
-  chain = (f, xs) => pipe(
-    map(f),
-    flatten,
-  )(xs)
-
-  of = pure
-}
 
 /**
  * Maps a list with a function returning an Applicative and returns an
@@ -218,9 +239,6 @@ export intersperseWithIndex = (f, list) => {
 
   return go(0, list)
 }
-
-
-
 
 
 /**
@@ -390,14 +408,7 @@ export reduceRight = (f, acc, list) => pipe(
  *
  * @since 0.0.5
  */
-reduceLeft :: (a -> b -> a) -> a -> List b -> a
-export reduceLeft = (f, acc, list) => where(list) {
-  [a, ...xs] =>
-    reduceLeft(f, f(acc, a), xs)
-
-  [] =>
-    acc
-}
+export reduceLeft
 
 
 /**

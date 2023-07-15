@@ -2081,10 +2081,10 @@
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "n221" Star)))
+                               (TVar (TV "t201" Star)))
                             (TApp
                                (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                               (TVar (TV "n221" Star)))))
+                               (TVar (TV "t201" Star)))))
                   , Untyped
                       (Area (Loc 259 19 26) (Loc 266 19 33))
                       (Constructor
@@ -2092,7 +2092,7 @@
                          []
                          (TApp
                             (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                            (TVar (TV "o222" Star))))
+                            (TVar (TV "u202" Star))))
                   ]
               , adtType =
                   TApp
@@ -2144,7 +2144,7 @@
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "p223" Star)))
+                                           (TVar (TV "v203" Star)))
                                         (TCon (TC "{}" Star) "prelude")))
                                   (TApp
                                      (TApp
@@ -2153,14 +2153,14 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "q224" Star)))
+                                              (TVar (TV "w204" Star)))
                                            (TCon (TC "{}" Star) "prelude")))
                                      (TCon (TC "{}" Star) "prelude"))))
                             (TApp
                                (TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                  (TVar (TV "p223" Star)))
-                               (TVar (TV "q224" Star)))))
+                                  (TVar (TV "v203" Star)))
+                               (TVar (TV "w204" Star)))))
                   ]
               , adtType =
                   TApp
@@ -7039,513 +7039,6 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Show"
-               [ IsIn
-                   "Show"
-                   [ TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star) ]
-                   Nothing
-               , IsIn
-                   "Show"
-                   [ TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star) ]
-                   Nothing
-               ]
-               (IsIn
-                  "Show"
-                  [ TRecord
-                      (fromList
-                         [ ( "input"
-                           , TVar (TV "f_0568c75136c0c369c440814a7af59434a" Star)
-                           )
-                         , ( "todos"
-                           , TVar (TV "f_1568c75136c0c369c440814a7af59434a" Star)
-                           )
-                         ])
-                      Nothing
-                      (fromList [])
-                  ]
-                  Nothing)
-               (fromList
-                  [ ( "show"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList
-                                        [ ( "input" , TVar (TV "m168" Star) )
-                                        , ( "todos" , TVar (TV "u176" Star) )
-                                        ])
-                                     Nothing
-                                     (fromList
-                                        [ ( "input" , TVar (TV "m168" Star) )
-                                        , ( "todos" , TVar (TV "u176" Star) )
-                                        ])))
-                               (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                          (Assignment
-                             "show"
-                             (Typed
-                                ([ IsIn "Show" [ TVar (TV "m168" Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV "u176" Star) ] Nothing
-                                 ] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList
-                                              [ ( "input" , TVar (TV "m168" Star) )
-                                              , ( "todos" , TVar (TV "u176" Star) )
-                                              ])
-                                           Nothing
-                                           (fromList [])))
-                                     (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                (Abs
-                                   (Typed
-                                      ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Show"
-                                           [ TVar (TV "m168" Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Show"
-                                           [ TVar (TV "u176" Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       ] :=>
-                                         TRecord
-                                           (fromList
-                                              [ ( "input" , TVar (TV "m168" Star) )
-                                              , ( "todos" , TVar (TV "u176" Star) )
-                                              ])
-                                           Nothing
-                                           (fromList
-                                              [ ( "input" , TVar (TV "m168" Star) )
-                                              , ( "todos" , TVar (TV "u176" Star) )
-                                              ]))
-                                      (Area (Loc 0 0 0) (Loc 0 0 0))
-                                      "__$a__")
-                                   [ Typed
-                                       ([] :=> TCon (TC "String" Star) "prelude")
-                                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                                       (TemplateString
-                                          [ Typed
-                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (LStr "\"{ \"")
-                                          , Typed
-                                              ([ IsIn
-                                                   "Monoid"
-                                                   [ TCon (TC "String" Star) "prelude" ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               , IsIn
-                                                   "Semigroup"
-                                                   [ TCon (TC "String" Star) "prelude" ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               , IsIn
-                                                   "Show"
-                                                   [ TVar (TV "m168" Star) ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               ] :=>
-                                                 TCon (TC "String" Star) "prelude")
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (App
-                                                 (Typed
-                                                    ([ IsIn
-                                                         "Monoid"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Semigroup"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     ] :=>
-                                                       TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TCon (TC "String" Star) "prelude"))
-                                                         (TCon (TC "String" Star) "prelude"))
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (App
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Monoid"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
-                                                           , IsIn
-                                                               "Semigroup"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
-                                                           ] :=>
-                                                             TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TCon
-                                                                     (TC "String" Star) "prelude"))
-                                                               (TApp
-                                                                  (TApp
-                                                                     (TCon
-                                                                        (TC
-                                                                           "(->)"
-                                                                           (Kfun
-                                                                              Star
-                                                                              (Kfun Star Star)))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "String" Star)
-                                                                        "prelude"))
-                                                                  (TCon
-                                                                     (TC "String" Star) "prelude")))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "mconcat" False))
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Monoid"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           , IsIn
-                                                               "Semigroup"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           ] :=>
-                                                             TCon (TC "String" Star) "prelude")
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (LStr "\"input: \""))
-                                                       False))
-                                                 (Typed
-                                                    ([ IsIn
-                                                         "Monoid"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Semigroup"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Show"
-                                                         [ TVar (TV "m168" Star) ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     ] :=>
-                                                       TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (App
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Show"
-                                                               [ TVar (TV "m168" Star) ]
-                                                               Nothing
-                                                           ] :=>
-                                                             TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TVar (TV "m168" Star)))
-                                                               (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "show" False))
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Show"
-                                                               [ TVar (TV "m168" Star) ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           ] :=>
-                                                             TVar (TV "m168" Star))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Access
-                                                             (Typed
-                                                                ([] :=>
-                                                                   TRecord
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV "m168" Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV "u176" Star)
-                                                                          )
-                                                                        ])
-                                                                     Nothing
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV "m168" Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV "u176" Star)
-                                                                          )
-                                                                        ]))
-                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                (Var "__$a__" False))
-                                                             (Typed
-                                                                ([] :=>
-                                                                   TApp
-                                                                     (TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "(->)"
-                                                                              (Kfun
-                                                                                 Star
-                                                                                 (Kfun Star Star)))
-                                                                           "prelude")
-                                                                        (TRecord
-                                                                           (fromList
-                                                                              [ ( "input"
-                                                                                , TVar
-                                                                                    (TV "m168" Star)
-                                                                                )
-                                                                              ])
-                                                                           (Just
-                                                                              (TVar
-                                                                                 (TV "o170" Star)))
-                                                                           (fromList [])))
-                                                                     (TVar (TV "m168" Star)))
-                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                (Var ".input" False))))
-                                                       True))
-                                                 True)
-                                          , Typed
-                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (LStr "\", \"")
-                                          , Typed
-                                              ([ IsIn
-                                                   "Monoid"
-                                                   [ TCon (TC "String" Star) "prelude" ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               , IsIn
-                                                   "Semigroup"
-                                                   [ TCon (TC "String" Star) "prelude" ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               , IsIn
-                                                   "Show"
-                                                   [ TVar (TV "u176" Star) ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               ] :=>
-                                                 TCon (TC "String" Star) "prelude")
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (App
-                                                 (Typed
-                                                    ([ IsIn
-                                                         "Monoid"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Semigroup"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     ] :=>
-                                                       TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TCon (TC "String" Star) "prelude"))
-                                                         (TCon (TC "String" Star) "prelude"))
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (App
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Monoid"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
-                                                           , IsIn
-                                                               "Semigroup"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
-                                                           ] :=>
-                                                             TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TCon
-                                                                     (TC "String" Star) "prelude"))
-                                                               (TApp
-                                                                  (TApp
-                                                                     (TCon
-                                                                        (TC
-                                                                           "(->)"
-                                                                           (Kfun
-                                                                              Star
-                                                                              (Kfun Star Star)))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "String" Star)
-                                                                        "prelude"))
-                                                                  (TCon
-                                                                     (TC "String" Star) "prelude")))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "mconcat" False))
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Monoid"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           , IsIn
-                                                               "Semigroup"
-                                                               [ TCon (TC "String" Star) "prelude" ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           ] :=>
-                                                             TCon (TC "String" Star) "prelude")
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (LStr "\"todos: \""))
-                                                       False))
-                                                 (Typed
-                                                    ([ IsIn
-                                                         "Monoid"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Semigroup"
-                                                         [ TCon (TC "String" Star) "prelude" ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     , IsIn
-                                                         "Show"
-                                                         [ TVar (TV "u176" Star) ]
-                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                     ] :=>
-                                                       TCon (TC "String" Star) "prelude")
-                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (App
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Show"
-                                                               [ TVar (TV "u176" Star) ]
-                                                               Nothing
-                                                           ] :=>
-                                                             TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TVar (TV "u176" Star)))
-                                                               (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Var "show" False))
-                                                       (Typed
-                                                          ([ IsIn
-                                                               "Show"
-                                                               [ TVar (TV "u176" Star) ]
-                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                           ] :=>
-                                                             TVar (TV "u176" Star))
-                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (Access
-                                                             (Typed
-                                                                ([] :=>
-                                                                   TRecord
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV "m168" Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV "u176" Star)
-                                                                          )
-                                                                        ])
-                                                                     Nothing
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV "m168" Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV "u176" Star)
-                                                                          )
-                                                                        ]))
-                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                (Var "__$a__" False))
-                                                             (Typed
-                                                                ([] :=>
-                                                                   TApp
-                                                                     (TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "(->)"
-                                                                              (Kfun
-                                                                                 Star
-                                                                                 (Kfun Star Star)))
-                                                                           "prelude")
-                                                                        (TRecord
-                                                                           (fromList
-                                                                              [ ( "todos"
-                                                                                , TVar
-                                                                                    (TV "u176" Star)
-                                                                                )
-                                                                              ])
-                                                                           Nothing
-                                                                           (fromList
-                                                                              [ ( "input"
-                                                                                , TVar
-                                                                                    (TV "m168" Star)
-                                                                                )
-                                                                              , ( "todos"
-                                                                                , TVar
-                                                                                    (TV "u176" Star)
-                                                                                )
-                                                                              ])))
-                                                                     (TVar (TV "u176" Star)))
-                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                (Var ".todos" False))))
-                                                       True))
-                                                 True)
-                                          , Typed
-                                              ([] :=> TCon (TC "String" Star) "prelude")
-                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                              (LStr "\" }\"")
-                                          ])
-                                   ])))
-                      , Forall
-                          [ Star , Star ]
-                          ([ IsIn "Show" [ TGen 0 ] Nothing
-                           , IsIn "Show" [ TGen 1 ] Nothing
-                           ] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "input" , TGen 0 ) , ( "todos" , TGen 1 ) ])
-                                     Nothing
-                                     (fromList [])))
-                               (TCon (TC "String" Star) "prelude"))
-                      )
-                    )
-                  ]))
-        , Untyped
-            (Area (Loc 0 0 0) (Loc 0 0 0))
-            (Instance
-               "Show"
                [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing ]
                (IsIn
                   "Show"
@@ -7563,37 +7056,37 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TApp
                                      (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                     (TVar (TV "c184" Star))))
+                                     (TVar (TV "i164" Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV "c184" Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV "i164" Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "c184" Star))))
+                                           (TVar (TV "i164" Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
                                       ([ IsIn
                                            "Show"
-                                           [ TVar (TV "c184" Star) ]
+                                           [ TVar (TV "i164" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "c184" Star)))
+                                           (TVar (TV "i164" Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
                                             "Show"
-                                            [ TVar (TV "c184" Star) ]
+                                            [ TVar (TV "i164" Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")
@@ -7603,13 +7096,13 @@
                                              ([] :=>
                                                 TApp
                                                   (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                  (TVar (TV "c184" Star)))
+                                                  (TVar (TV "i164" Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
                                                    "Show"
-                                                   [ TVar (TV "c184" Star) ]
+                                                   [ TVar (TV "i164" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TApp
@@ -7621,7 +7114,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star))))
+                                                         (TVar (TV "i164" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -7631,30 +7124,30 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star)))
+                                                         (TVar (TV "i164" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon
                                                        "Just"
                                                        [ Typed
                                                            ([ IsIn
                                                                 "Show"
-                                                                [ TVar (TV "c184" Star) ]
+                                                                [ TVar (TV "i164" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
                                                                 "Show"
-                                                                [ TVar (TV "c184" Star) ]
+                                                                [ TVar (TV "i164" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
-                                                              TVar (TV "c184" Star))
+                                                              TVar (TV "i164" Star))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
                                                          "Show"
-                                                         [ TVar (TV "c184" Star) ]
+                                                         [ TVar (TV "i164" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -7668,7 +7161,7 @@
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
-                                                                [ TVar (TV "c184" Star) ]
+                                                                [ TVar (TV "i164" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
@@ -7678,7 +7171,7 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TVar (TV "c184" Star) ]
+                                                                      [ TVar (TV "i164" Star) ]
                                                                       Nothing
                                                                   ] :=>
                                                                     TApp
@@ -7690,7 +7183,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "c184" Star)))
+                                                                         (TVar (TV "i164" Star)))
                                                                       (TCon
                                                                          (TC "String" Star)
                                                                          "prelude"))
@@ -7699,13 +7192,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TVar (TV "c184" Star) ]
+                                                                      [ TVar (TV "i164" Star) ]
                                                                       (Just
                                                                          (Area
                                                                             (Loc 0 0 0)
                                                                             (Loc 0 0 0)))
                                                                   ] :=>
-                                                                    TVar (TV "c184" Star))
+                                                                    TVar (TV "i164" Star))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (Var "a0" False))
                                                               True)
@@ -7726,7 +7219,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star))))
+                                                         (TVar (TV "i164" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -7736,7 +7229,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star)))
+                                                         (TVar (TV "i164" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon "Nothing" []))
                                                  (Typed
@@ -7754,7 +7247,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star))))
+                                                         (TVar (TV "i164" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -7764,7 +7257,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "c184" Star)))
+                                                         (TVar (TV "i164" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
                                                  (Typed
@@ -7810,15 +7303,15 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TVar (TV "q198" Star)))
-                                     (TVar (TV "r199" Star))))
+                                        (TVar (TV "w178" Star)))
+                                     (TVar (TV "x179" Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV "r199" Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV "q198" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV "x179" Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV "w178" Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -7828,8 +7321,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "q198" Star)))
-                                           (TVar (TV "r199" Star))))
+                                              (TVar (TV "w178" Star)))
+                                           (TVar (TV "x179" Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
@@ -7846,7 +7339,7 @@
                                                         (TCon
                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TVar (TV "q198" Star)))
+                                                        (TVar (TV "w178" Star)))
                                                      (TCon (TC "{}" Star) "prelude")))
                                                (TApp
                                                   (TApp
@@ -7860,7 +7353,7 @@
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star)))
                                                               "prelude")
-                                                           (TVar (TV "r199" Star)))
+                                                           (TVar (TV "x179" Star)))
                                                         (TCon (TC "{}" Star) "prelude")))
                                                   (TCon (TC "{}" Star) "prelude"))
                                            ]
@@ -7871,8 +7364,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "q198" Star)))
-                                           (TVar (TV "r199" Star)))
+                                              (TVar (TV "w178" Star)))
+                                           (TVar (TV "x179" Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -7888,7 +7381,7 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "q198" Star)))
+                                                         (TVar (TV "w178" Star)))
                                                       (TCon (TC "{}" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -7902,7 +7395,7 @@
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "r199" Star)))
+                                                            (TVar (TV "x179" Star)))
                                                          (TCon (TC "{}" Star) "prelude")))
                                                    (TCon (TC "{}" Star) "prelude"))
                                             ]
@@ -7918,8 +7411,8 @@
                                                      (TCon
                                                         (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                         "Module.mad")
-                                                     (TVar (TV "q198" Star)))
-                                                  (TVar (TV "r199" Star)))
+                                                     (TVar (TV "w178" Star)))
+                                                  (TVar (TV "x179" Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__$a__" False))
                                           [ Typed
@@ -7938,7 +7431,7 @@
                                                                       "(->)"
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
-                                                                (TVar (TV "q198" Star)))
+                                                                (TVar (TV "w178" Star)))
                                                              (TCon (TC "{}" Star) "prelude")))
                                                        (TApp
                                                           (TApp
@@ -7955,7 +7448,7 @@
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "r199" Star)))
+                                                                   (TVar (TV "x179" Star)))
                                                                 (TCon (TC "{}" Star) "prelude")))
                                                           (TCon (TC "{}" Star) "prelude"))
                                                    ]
@@ -7973,8 +7466,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "q198" Star)))
-                                                         (TVar (TV "r199" Star))))
+                                                            (TVar (TV "w178" Star)))
+                                                         (TVar (TV "x179" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -7987,8 +7480,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "q198" Star)))
-                                                         (TVar (TV "r199" Star)))
+                                                            (TVar (TV "w178" Star)))
+                                                         (TVar (TV "x179" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon
                                                        "Wish"
@@ -8016,7 +7509,7 @@
                                                                                          Star)))
                                                                                 "prelude")
                                                                              (TVar
-                                                                                (TV "q198" Star)))
+                                                                                (TV "w178" Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -8043,7 +7536,7 @@
                                                                                    "prelude")
                                                                                 (TVar
                                                                                    (TV
-                                                                                      "r199" Star)))
+                                                                                      "x179" Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -8075,7 +7568,7 @@
                                                                                          Star)))
                                                                                 "prelude")
                                                                              (TVar
-                                                                                (TV "q198" Star)))
+                                                                                (TV "w178" Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -8102,7 +7595,7 @@
                                                                                    "prelude")
                                                                                 (TVar
                                                                                    (TV
-                                                                                      "r199" Star)))
+                                                                                      "x179" Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -8129,7 +7622,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "q198" Star)))
+                                                                         (TVar (TV "w178" Star)))
                                                                       (TCon
                                                                          (TC "{}" Star) "prelude")))
                                                                 (TApp
@@ -8151,7 +7644,7 @@
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                "prelude")
-                                                                            (TVar (TV "r199" Star)))
+                                                                            (TVar (TV "x179" Star)))
                                                                          (TCon
                                                                             (TC "{}" Star)
                                                                             "prelude")))
@@ -8178,7 +7671,7 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "prelude")
-                                                                      (TVar (TV "q198" Star)))
+                                                                      (TVar (TV "w178" Star)))
                                                                    (TCon (TC "{}" Star) "prelude")))
                                                              (TApp
                                                                 (TApp
@@ -8197,7 +7690,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "r199" Star)))
+                                                                         (TVar (TV "x179" Star)))
                                                                       (TCon
                                                                          (TC "{}" Star) "prelude")))
                                                                 (TCon (TC "{}" Star) "prelude"))
@@ -8236,7 +7729,7 @@
                                                                                          Star)))
                                                                                 "prelude")
                                                                              (TVar
-                                                                                (TV "q198" Star)))
+                                                                                (TV "w178" Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -8263,7 +7756,7 @@
                                                                                    "prelude")
                                                                                 (TVar
                                                                                    (TV
-                                                                                      "r199" Star)))
+                                                                                      "x179" Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -8303,7 +7796,7 @@
                                                                                       "prelude")
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "q198"
+                                                                                         "w178"
                                                                                          Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
@@ -8332,7 +7825,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "r199"
+                                                                                            "x179"
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -8376,7 +7869,7 @@
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "q198"
+                                                                                           "w178"
                                                                                            Star)))
                                                                                   (TCon
                                                                                      (TC "{}" Star)
@@ -8405,7 +7898,7 @@
                                                                                            "prelude")
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "r199"
+                                                                                              "x179"
                                                                                               Star)))
                                                                                      (TCon
                                                                                         (TC
@@ -8447,7 +7940,7 @@
                                                                                       "prelude")
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "q198"
+                                                                                         "w178"
                                                                                          Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
@@ -8476,7 +7969,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "r199"
+                                                                                            "x179"
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -8511,7 +8004,7 @@
                                                                                            Star)))
                                                                                   "prelude")
                                                                                (TVar
-                                                                                  (TV "q198" Star)))
+                                                                                  (TV "w178" Star)))
                                                                             (TCon
                                                                                (TC "{}" Star)
                                                                                "prelude")))
@@ -8538,7 +8031,7 @@
                                                                                      "prelude")
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "r199"
+                                                                                        "x179"
                                                                                         Star)))
                                                                                (TCon
                                                                                   (TC "{}" Star)
@@ -8569,8 +8062,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "q198" Star)))
-                                                         (TVar (TV "r199" Star))))
+                                                            (TVar (TV "w178" Star)))
+                                                         (TVar (TV "x179" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -8583,8 +8076,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "q198" Star)))
-                                                         (TVar (TV "r199" Star)))
+                                                            (TVar (TV "w178" Star)))
+                                                         (TVar (TV "x179" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
                                                  (Typed
@@ -9096,6 +8589,12 @@
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 1166 57 41) (Loc 1171 57 46)
+        }
+  , CompilationError
+      (UnboundVariable "mappend")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 0 0) (Loc 0 0 0)
         }
   ]
 )

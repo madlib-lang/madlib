@@ -88,19 +88,19 @@ instance Applicative Validate {
       NotValid(warnings, f(a))
 
     #[NotValid(warningsA, f), NotValid(warningsB, a)] =>
-      NotValid(mconcat(warningsA, warningsB), f(a))
+      NotValid(warningsA ++ warningsB, f(a))
 
     #[NotValid(warningsA, f), ValidationError(warningsB, err, maybeA)] =>
-      ValidationError(mconcat(warningsA, warningsB), err, map(f, maybeA))
+      ValidationError(warningsA ++ warningsB, err, map(f, maybeA))
 
     #[ValidationError(warningsA, errA, maybeF), ValidationError(warningsB, errB, maybeA)] =>
-      ValidationError(mconcat(warningsA, warningsB), errA, ap(maybeF, maybeA))
+      ValidationError(warningsA ++ warningsB, errA, ap(maybeF, maybeA))
 
     #[ValidationError(warnings, err, maybeF), Valid(a)] =>
       ValidationError(warnings, err, ap(maybeF, Just(a)))
 
     #[ValidationError(warningsA, err, maybeF), NotValid(warningsB, a)] =>
-      ValidationError(mconcat(warningsA, warningsB), err, ap(maybeF, Just(a)))
+      ValidationError(warningsA ++ warningsB, err, ap(maybeF, Just(a)))
   }
 }
 
@@ -175,24 +175,24 @@ export combine = (a, b) => where(#[a, b]) {
     NotValid(warnings, x)
 
   #[NotValid(warningsA, _), NotValid(warningsB, x)] =>
-    NotValid(mconcat(warningsA, warningsB), x)
+    NotValid(warningsA ++ warningsB, x)
 
   #[NotValid(warningsA, _), ValidationError(warningsB, error, x)] =>
-    ValidationError(mconcat(warningsA, warningsB), error, x)
+    ValidationError(warningsA ++ warningsB, error, x)
 
   #[ValidationError(warnings, error, maybeA), Valid(v)] =>
     ValidationError(warnings, error, map(always(v), maybeA))
 
   #[ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)] =>
     ValidationError(
-      mconcat(warningsA, warningsB),
+      warningsA ++ warningsB,
       error,
       map(always(v), maybeA)
     )
 
   #[ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)] =>
     ValidationError(
-      mconcat(warningsA, warningsB),
+      warningsA ++ warningsB,
       error,
       m
     )

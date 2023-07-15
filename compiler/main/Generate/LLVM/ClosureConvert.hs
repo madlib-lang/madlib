@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,7 +7,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
 {-# HLINT ignore "Use lambda-case" #-}
-{-# LANGUAGE LambdaCase #-}
+{-# HLINT ignore "Use list comprehension" #-}
 module Generate.LLVM.ClosureConvert where
 
 import qualified Control.Monad.State           as MonadState

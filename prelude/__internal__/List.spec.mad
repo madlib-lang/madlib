@@ -66,8 +66,8 @@ test(
 )
 
 test(
-  "mconcat should join two lists together",
-  () => assertEquals(mconcat(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"]),
+  "mappend should join two lists together",
+  () => assertEquals(mappend(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"]),
 )
 
 test("mempty should return an empty list", () => assertEquals(mempty, []))

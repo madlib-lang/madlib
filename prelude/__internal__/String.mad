@@ -114,7 +114,7 @@ export split = extern "madlib__string__split"
 join :: String -> List String -> String
 export join = (a, xs) => pipe(
   List.intersperse(a),
-  List.reduce(mconcat, "")
+  List.reduce(mappend, "")
 )(xs)
 
 /**

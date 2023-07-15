@@ -211,7 +211,7 @@ prepareSuitePath = (colorful, suitePath) => {
       path = pipe(
         List.init,
         FilePath.joinPath,
-        mconcat($, "/"),
+        mappend($, "/"),
         when(always(colorful && IS_COLOR_ENABLED), IO.grey),
       )(parts)
       fileName = pipe(

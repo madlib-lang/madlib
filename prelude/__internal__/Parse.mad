@@ -365,7 +365,7 @@ export manyTill = (p, end) => Parser(
  */
 someTill :: Parser a -> Parser b -> Parser (List a)
 export someTill = (p, end) => chain(
-  (first) => map((rest) => mconcat([first], rest), manyTill(p, end)),
+  (first) => map((rest) => mappend([first], rest), manyTill(p, end)),
   p,
 )
 

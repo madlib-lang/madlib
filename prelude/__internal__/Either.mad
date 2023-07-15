@@ -97,6 +97,17 @@ instance Bifunctor Either {
 }
 
 
+instance Semigroup (Either e a) {
+  assoc = (a, b) => where(#[a, b]) {
+    #[Left(_), _b] =>
+      _b
+
+    #[_a, _] =>
+      _a
+  }
+}
+
+
 /**
  * An alias for `map`, use `mapRight` to transform the interior value of a Right.
  *

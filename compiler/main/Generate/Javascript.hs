@@ -407,7 +407,7 @@ instance Compilable Exp where
 
         Assignment name exp ->
           let safeName = generateSafeName name
-              content = compile env config exp
+              content = compile env { varsInScope = S.insert name (varsInScope env) } config exp
               needsModifier = notElem safeName $ varsInScope env
               assignment = (if needsModifier then "let " else "") <> safeName <> " = " <> content
               methodGlobal =
@@ -476,13 +476,32 @@ instance Compilable Exp where
         TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
         Do exps ->
-          let compiledExps = compile env config <$> exps
-              allExceptLast = init compiledExps
-              l = last compiledExps
+          -- let compiledExps = compile env config <$> exps
+          --     allExceptLast = init compiledExps
+          --     l = last compiledExps
+          -- in "(() => {\n  "
+          --     <> intercalate ";\n  " allExceptLast
+          --     <> "\n  return " <> l
+          --     <> "\n})()"
+          let compiledExps = compileBody' env exps
           in "(() => {\n  "
-              <> intercalate ";\n  " allExceptLast
-              <> "\n  return " <> l
+              <> compiledExps
               <> "\n})()"
+          where
+            compileBody' :: Env -> [Exp] -> String
+            compileBody' env [exp] = case exp of
+              (Typed _ _ _ (JSExp _)) ->
+                compile env config exp
+
+              _ ->
+                "    return " <> compile env config exp <> ";\n"
+            compileBody' e (exp : es) = case exp of
+              Core.Typed _ _ _ (Core.Assignment name _) ->
+                let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
+                in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
+
+              _ -> "    " <> compile e config exp <> ";\n" <> compileBody' e es
+
 
         Where exp (first : cs) ->
           "((__x__) => {\n  "
