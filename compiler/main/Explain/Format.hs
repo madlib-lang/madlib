@@ -611,6 +611,15 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "This value depends on a closure doing mutation and can't be generic\n\n"
     <> "Hint: Add a type definition with concrete types"
 
+  MutatingFunction n ->
+    "You are trying to mutate the function '" <> n <> "'. It is currently not allowed\n\n"
+    <> "Hint: Wrap it in a record\n"
+    <> "Hint: Use a closure that returns a setter and getter to mutate it"
+
+  MethodNameAlreadyDefined ->
+    "You are trying to redefine a method name\n\n"
+    <> "Hint: Use a different name for the method"
+
   NotADefinition ->
     "Not a definition\n\n"
     <> "It is not a definition and is not allowed\n\n"
@@ -984,6 +993,33 @@ createErrorDiagnostic color context typeError = case typeError of
             )
           ]
           [Diagnose.Hint "Add a type definition with concrete types"]
+
+  MutatingFunction n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Mutation function"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "You are trying to mutate the function '" <> n <> "'. It is currently not allowed."
+            )
+          ]
+          [ Diagnose.Hint "Wrap it in a record"
+          , Diagnose.Hint "Use a closure that returns a setter and getter to mutate it"
+          ]
+
+  MethodNameAlreadyDefined ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Method name already defined"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "You are trying to redefine a method name"
+            )
+          ]
+          [ Diagnose.Hint "Use a different name for the method"
+          ]
 
   NotADefinition ->
     case context of

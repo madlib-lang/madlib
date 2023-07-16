@@ -36,9 +36,18 @@ canonicalizeInterfaces env = foldM
   (env, [])
 
 
+getAllInterfaceMethodNames :: Env -> [String]
+getAllInterfaceMethodNames env =
+  concatMap (\case { Interface _ _ ms -> ms}) (M.elems $ envInterfaces env)
+
+
 canonicalizeInterface :: Env -> Src.Interface -> CanonicalM (Env, Can.Interface)
 canonicalizeInterface env (Src.Source area _ interface) = case interface of
   Src.Interface constraints n vars ms -> do
+    let allKnownMethodNames = getAllInterfaceMethodNames env
+    when (any (`elem` allKnownMethodNames) (M.keys ms)) $
+      throwError $ CompilationError MethodNameAlreadyDefined (Context (envCurrentPath env) area)
+
     ts <- mapM (typingToType env AnyKind) ms
 
     let ts' = addConstraints n vars <$> ts
@@ -58,9 +67,11 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
 
     let tvs' = (\(TVar tv) -> tv) <$> tvs
 
-    env' <- if null tvs'
-      then throwError $ CompilationError FatalError (Context (envCurrentPath env) area)
-      else return $ env { envInterfaces = M.insert n (Interface tvs' supers (M.keys ms)) (envInterfaces env) }
+    env' <-
+      if null tvs' then
+        throwError $ CompilationError FatalError (Context (envCurrentPath env) area)
+      else
+        return $ env { envInterfaces = M.insert n (Interface tvs' supers (M.keys ms)) (envInterfaces env) }
 
     canMs <- mapM canonicalizeTyping ms
     return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
@@ -100,7 +111,7 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
     case maybeInterface of
       Just found ->
         return found
-      
+
       Nothing ->
         throwError $ CompilationError (InterfaceNotExisting name) (Context (envCurrentPath env) emptyArea)
 

@@ -920,34 +920,6 @@ generateExp env symbolTable exp = case exp of
   --   generateExp env { isLast = False } symbolTable e
 
   Core.Typed _ area metadata (Core.Assignment name e) -> do
-    -- TODO: here we possibly need to first create a NULL placeholder for the result
-    -- let typ = buildLLVMParamType env symbolTable (Core.getType e)
-    -- res <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' typ), [])]
-    -- let st = Map.insert name (localVarSymbol res res) symbolTable
-    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
-    -- res' <- safeBitcast res (ptr typ)
-    -- store res' 0 exp''
-    -- exp' <- load res 0
-
-    -- let typ = buildLLVMParamType env symbolTable (Core.getType e)
-    -- res <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' typ), [])]
-    -- let st = Map.insert name (localVarSymbol res res) symbolTable
-    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
-    -- store res 0 exp''
-    -- exp' <- load res 0
-    -- res <- alloca (buildLLVMParamType env symbolTable (Core.getType e)) Nothing 0
-    -- let st = Map.insert name (localVarSymbol res res) symbolTable
-    -- (_, exp'', _) <- generateExp env { isLast = False, isTopLevel = False } st e
-    -- store res 0 exp''
-    -- exp' <- load res 0
-
-    -- (_, exp', _) <-
-    --   generateExp
-    --     env { isLast = False, isTopLevel = False }
-    --     (Map.insert name (varSymbol exp') symbolTable)
-    --     e
-
-
     if isTopLevel env then do
       (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
       let t = typeOf exp'

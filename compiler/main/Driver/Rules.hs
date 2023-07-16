@@ -412,8 +412,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
                 FoldCalls.foldAST closureConverted
               else
                 closureConverted
-        -- when ("Wish.mad" `List.isInfixOf` path) $
-        --   liftIO $ putStrLn $ ppShow closureConverted
+
         return (folded, (mempty, mempty))
 
       _ -> do
@@ -466,7 +465,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
-    -- coreAst  <- Rock.fetch $ PropagatedAST path
     jsModule <- liftIO $ Javascript.generateJSModule options paths coreAst
     return (jsModule, (mempty, mempty))
 

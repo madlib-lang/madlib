@@ -60,6 +60,8 @@ data TypeError
   | ConstructorAccessTooManyConstructors String Int
   | MutationRestriction
   | TypeAnnotationNameMismatch String String
+  | MutatingFunction String
+  | MethodNameAlreadyDefined
   deriving (Show, Eq, Ord)
 
 
