@@ -30,13 +30,12 @@ export afterC = (time, a) => CancellableWish((_, goodCB) => {
   }
 })
 
+
 fulfillC :: (e -> {}) -> (a -> {}) -> CancellableWish e a -> ({} -> {})
 export fulfillC = (badCB, goodCB, m) => where(m) {
   CancellableWish(run) =>
     run(badCB, goodCB)
 }
-
-
 
 
 export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
@@ -61,55 +60,9 @@ export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
   }
 })
 
-// // That one is somehow working for now
-
-// makeSetter = (initial) => {
-//   value = initial
-
-//   set = (v) => {
-//     value = v
-//   }
-
-//   get = () => value
-
-//   return { get, set }
-// }
-
-// export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
-//   return where(m) {
-//     CancellableWish(run) =>
-//       do {
-//         setter = makeSetter(() => {})
-
-//         c = run(
-//           (err) => {
-//             // cancelK()
-//             // c()
-//             setter.get()()
-//             badCB(err)
-//           },
-//           (x) => where(f(x)) {
-//             CancellableWish(r) =>
-//               do {
-//                 cancelK = r(badCB, goodCB)
-//                 setter.set(cancelK)
-//                 // r(badCB, goodCB)
-//               }
-//           },
-//         )
-
-//         setter.set(c)
-
-//         return () => { setter.get()() }
-//       }
-//   }
-// })
 
 badC :: e -> CancellableWish e a
-export badC = (e) => CancellableWish((badCB, _) => {
-  badCB(e)
-  return () => {}
-})
+export badC = (e) => CancellableWish((badCB, _, _) => badCB(e))
 
 
 #iftarget js
@@ -161,7 +114,10 @@ export timeoutC = (ms, err, wish) => CancellableWish((badCB, goodCB) => {
           }
         }, ms)
 
-        return cancel
+        return () => {
+          done = true
+          cancel()
+        }
       }
   }
 
@@ -522,10 +478,6 @@ export fulfill = (badCB, goodCB, m) => {
 
   return {}
 }
-
-
-// setTimeout :: ({} -> {}) -> Integer -> TimerId
-// setTimeout = extern "__setTimeout__"
 
 
 after :: Integer -> a -> Wish e a

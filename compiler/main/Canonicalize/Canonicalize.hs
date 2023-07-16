@@ -158,8 +158,8 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Assignment "==" exp')
 
     Src.Assignment name exp -> do
-      exp' <- canonicalize env target exp
       pushNameDeclaration (Env.envExpPosition env) name
+      exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Assignment name exp')
 
     Src.Export exp -> do

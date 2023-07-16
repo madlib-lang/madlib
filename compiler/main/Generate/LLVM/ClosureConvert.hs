@@ -348,58 +348,70 @@ findMutationsInBody params body = case body of
     []
 
 
-findAllMutationsInExp :: [String] -> Exp -> [String]
-findAllMutationsInExp params exp = case exp of
-  Typed _ _ _ (Assignment n e) | n `elem` params ->
-    n : findAllMutationsInExp params e
+findAllMutationsInExp :: [String] -> [String] -> Exp -> [String]
+findAllMutationsInExp params assignments exp = case exp of
+  Typed _ _ _ (Var n False) | n `elem` assignments ->
+    [n]
+
+  Typed _ _ _ (Assignment n e) | n `elem` (params ++ assignments) ->
+    let nextAssignments =
+          if isDefinition e then
+            []
+          else
+            [n]
+    in  n : findAllMutationsInExp params (nextAssignments ++ assignments) e
 
   Typed _ _ _ (Assignment n e) ->
-    findAllMutationsInExp (n : params) e
+    let nextAssignments =
+          if isDefinition e then
+            []
+          else
+            [n]
+    in  findAllMutationsInExp params (nextAssignments ++ assignments) e
 
   Typed _ _ _ (Call fn args) ->
-    let fnMutations  = findAllMutationsInExp params fn
-        argMutations = concat $ findAllMutationsInExp params <$> args
+    let fnMutations  = findAllMutationsInExp params assignments fn
+        argMutations = concat $ findAllMutationsInExp params assignments <$> args
     in  fnMutations ++ argMutations
 
   Typed _ _ _ (Definition params' body) ->
-    findAllMutationsInExps (params ++ (getValue <$> params')) body
+    findAllMutationsInExps (params ++ (getValue <$> params')) assignments body
 
   Typed _ _ _ (Access rec _) ->
-    findAllMutationsInExp params rec
+    findAllMutationsInExp params assignments rec
 
   Typed _ _ _ (ListConstructor items) ->
-    concat $ findAllMutationsInExp params . getListItemExp <$> items
+    concat $ findAllMutationsInExp params assignments . getListItemExp <$> items
 
   Typed _ _ _ (TupleConstructor items) ->
-    concat $ findAllMutationsInExp params <$> items
+    concat $ findAllMutationsInExp params assignments <$> items
 
   Typed _ _ _ (Record fields) ->
-    concat $ findAllMutationsInExp params . getFieldExp <$> fields
+    concat $ findAllMutationsInExp params assignments . getFieldExp <$> fields
 
   Typed _ _ _ (If cond truthy falsy) ->
-    findAllMutationsInExp params cond
-    ++ findAllMutationsInExp params truthy
-    ++ findAllMutationsInExp params falsy
+    findAllMutationsInExp params assignments cond
+    ++ findAllMutationsInExp params assignments truthy
+    ++ findAllMutationsInExp params assignments falsy
 
   Typed _ _ _ (Do exps) ->
-    findAllMutationsInExps params exps
+    findAllMutationsInExps params assignments exps
 
   Typed _ _ _ (Where e iss) ->
-    findAllMutationsInExp params e
-    ++ concat (findAllMutationsInExp params . getIsExpression <$> iss)
+    findAllMutationsInExp params assignments e
+    ++ concat (findAllMutationsInExp params assignments . getIsExpression <$> iss)
 
   _ ->
     []
 
 
-findAllMutationsInExps :: [String] -> [Exp] -> [String]
-findAllMutationsInExps params exps = case exps of
+findAllMutationsInExps :: [String] -> [String] -> [Exp] -> [String]
+findAllMutationsInExps params assignments exps = case exps of
   exp@(Typed _ _ _ (Assignment name _)) : next ->
-    findAllMutationsInExp params exp ++ findAllMutationsInExps (name : params) next
-    -- findAllMutationsInExp (name : params) exp ++ findAllMutationsInExps (name : params) next
+    findAllMutationsInExp params assignments exp ++ findAllMutationsInExps (name : params) assignments next
 
   exp : next ->
-    findAllMutationsInExp params exp ++ findAllMutationsInExps params next
+    findAllMutationsInExp params assignments exp ++ findAllMutationsInExps params assignments next
 
   [] ->
     []
@@ -457,8 +469,8 @@ convertBody exclusionVars env body = case body of
 convertDefinition :: Env -> String -> [(String, Exp)] -> Exp -> Convert Exp
 convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Definition params body)) = do
   if stillTopLevel env then do
-    let mutations = []--findMutationsInBody (getValue <$> params) body
-    let allMutations = findAllMutationsInExps (getValue <$> params) body
+    let mutations = []
+    let allMutations = findAllMutationsInExps (getValue <$> params) [] body
     body'' <- convertBody [] env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations } body
 
     let params' =
@@ -582,7 +594,7 @@ instance Convertable Exp Exp where
       let env' =
             if stillTopLevel env then
               let mutations = findMutationsInBody [] [exp]
-                  allMutations = findAllMutationsInExps [] [exp]
+                  allMutations = findAllMutationsInExps [] [] [exp]
               in  env { stillTopLevel = False, allocatedMutations = allocatedMutations env ++ mutations, mutationsInScope = allMutations }
             else
               env

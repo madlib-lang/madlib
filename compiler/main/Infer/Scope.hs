@@ -61,6 +61,7 @@ checkAST env ast = do
         expsFromGlobalScope  = getAllExpsFromGlobalScope ast
     checkExps env ast expsFromGlobalScope topLevelAssignements initialNamesInScope M.empty (methods ++ exps)
     checkConstructors env (S.fromList defaultImportNames) (atypedecls ast)
+    mapM_ (verifyMutations env mempty) exps
 
 
 -- We need this extra check for constructors as the type checking is only
@@ -478,3 +479,71 @@ buildPatternScope (Typed _ _ pat) = case pat of
   PSpread pat           -> buildPatternScope pat
   _                     -> S.empty
 
+
+verifyMutations :: Env -> M.Map String Bool -> Exp -> Infer ()
+verifyMutations env scope exp = case exp of
+  Typed _ area (Assignment n e) -> do
+    -- liftIO $ putStrLn $ "n:" <> n
+    -- liftIO $ putStrLn $ "scope:" <> ppShow scope
+    -- liftIO $ putStrLn $ "e:" <> ppShow e
+    let inScope = M.lookup n scope
+    when ((isAbs e && isJust inScope) || inScope == Just True) $
+      throwError (CompilationError (MutatingFunction n) (Context (envCurrentPath env) area))
+
+    let nextScope = M.insert n (isAbs e) scope
+    verifyMutations env nextScope e
+
+  Typed _ _ (App f e _) -> do
+    verifyMutations env scope f
+    verifyMutations env scope e
+
+  Typed _ _ (Abs _ es) -> do
+    verifyMutationsInBody env scope es
+
+  Typed _ _ (Do es) ->
+    verifyMutationsInBody env scope es
+
+  Typed _ _ (Access rec field) -> do
+    verifyMutations env scope rec
+    verifyMutations env scope field
+
+  Typed _ _ (TemplateString es) ->
+    mapM_ (verifyMutations env scope) es
+
+  Typed _ _ (TupleConstructor es) ->
+    mapM_ (verifyMutations env scope) es
+
+  Typed _ _ (ListConstructor items) ->
+    mapM_ (verifyMutations env scope . getListItemExp) items
+
+  Typed _ _ (Record fields) ->
+    mapM_ (verifyMutations env scope . getFieldExp) fields
+
+  Typed _ _ (Where e iss) -> do
+    verifyMutations env scope e
+    mapM_ (verifyMutations env scope . getIsExpression) iss
+
+  Typed _ _ (If cond truthy falsy) -> do
+    verifyMutations env scope cond
+    verifyMutations env scope truthy
+    verifyMutations env scope falsy
+
+  Typed _ _ (Export e) ->
+    verifyMutations env scope e
+
+  _ ->
+    return ()
+
+verifyMutationsInBody :: Env -> M.Map String Bool -> [Exp] -> Infer ()
+verifyMutationsInBody env scope exps = case exps of
+  e@(Typed _ _ (Assignment n _)) : es -> do
+    let nextScope = M.insert n (isAbs e) scope
+    verifyMutations env scope e
+    verifyMutationsInBody env nextScope es
+
+  e : es -> do
+    verifyMutations env scope e
+    verifyMutationsInBody env scope es
+
+  [] ->
+    return ()
