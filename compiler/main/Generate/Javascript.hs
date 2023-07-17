@@ -61,6 +61,7 @@ data Env
   , recursionData :: Maybe RecursionData
   , varsRewritten :: M.Map String String
   , methodNames :: S.Set String
+  , inBody :: Bool
   }
   deriving(Eq, Show)
 
@@ -71,6 +72,7 @@ initialEnv =
     , recursionData = Nothing
     , varsRewritten = M.empty
     , methodNames = S.empty
+    , inBody = False
     }
 
 allowedJSNames :: [String]
@@ -309,7 +311,7 @@ instance Compilable Exp where
             in  "("
                 <> params'
                 <> " => "
-                <> compileBody env{ varsInScope = varsInScope env <> S.fromList params} body
+                <> compileBody env { varsInScope = varsInScope env <> S.fromList params, inBody = True } body
                 <> ")"
 
           compileBody :: Env -> [Exp] -> String
@@ -415,7 +417,12 @@ instance Compilable Exp where
                   "\nglobal." <> name <> " = " <> name <> "\n"
                 else
                   ""
-          in  assignment <> methodGlobal
+          in  if needsModifier && inBody env then
+                "let " <> safeName <> "\n"
+                <> safeName <> " = " <> content
+              else
+                assignment <> methodGlobal
+          -- in  assignment <> methodGlobal
 
         Export e ->
           "export " <> compile env config e
@@ -483,7 +490,7 @@ instance Compilable Exp where
           --     <> intercalate ";\n  " allExceptLast
           --     <> "\n  return " <> l
           --     <> "\n})()"
-          let compiledExps = compileBody' env exps
+          let compiledExps = compileBody' env { inBody = True } exps
           in "(() => {\n  "
               <> compiledExps
               <> "\n})()"
