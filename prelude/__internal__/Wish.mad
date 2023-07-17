@@ -1,68 +1,22 @@
 import {} from "Monad"
 import {} from "Bifunctor"
 import {} from "Alternative"
-import { sortBy, length, reverse } from "List"
+import { sortBy, length, filter, forEach } from "List"
+import { Just, Nothing } from "Maybe"
 import Tuple from "Tuple"
 import {} from "Integer"
 
 
 type TimerId = __TimerId__
+export type TimerId
 
 /**
  * Wish represents an async computation that needs to be fulfilled. It is
  * cold and will only be run when fulfilled.
  */
 
-export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {})
+export type Wish e a = Wish((e -> {}) -> (a -> {}) -> ({} -> {}))
 
-
-
-export type CancellableWish e a = CancellableWish((e -> {}) -> (a -> {}) -> ({} -> {}))
-
-afterC :: Integer -> a -> CancellableWish e a
-export afterC = (time, a) => CancellableWish((_, goodCB) => {
-  id = setTimeout(() => { goodCB(a)}, time)
-  return () => {
-    // console.log('TRIGGERED', time)
-    putLine("canceled")
-    putLine(show(time))
-    clearTimeout(id)
-  }
-})
-
-
-fulfillC :: (e -> {}) -> (a -> {}) -> CancellableWish e a -> ({} -> {})
-export fulfillC = (badCB, goodCB, m) => where(m) {
-  CancellableWish(run) =>
-    run(badCB, goodCB)
-}
-
-
-export chainC = (f, m) => CancellableWish((badCB, goodCB) => {
-  return where(m) {
-    CancellableWish(run) =>
-      do {
-        cancelK = run(
-          (err) => {
-            cancelK()
-            badCB(err)
-          },
-          (x) => {
-            cancelK = where(f(x)) {
-              CancellableWish(r) =>
-                r(badCB, goodCB)
-            }
-          },
-        )
-
-        return () => { cancelK() }
-      }
-  }
-})
-
-
-badC :: e -> CancellableWish e a
-export badC = (e) => CancellableWish((badCB, _, _) => badCB(e))
 
 
 #iftarget js
@@ -83,112 +37,6 @@ clearTimeout =  extern "__clearTimeout__"
 
 #endif
 
-timeoutC :: Integer -> e -> CancellableWish e a -> CancellableWish e a
-export timeoutC = (ms, err, wish) => CancellableWish((badCB, goodCB) => {
-  done = false
-  timeoutId = __TimerId__
-
-  return where(wish) {
-    CancellableWish(run) =>
-      do {
-        cancel = run(
-          (x) => {
-            if (!done) {
-              badCB(x)
-            }
-          },
-          (x) => {
-            if (!done) do {
-              done = true
-              clearTimeout(timeoutId)
-              goodCB(x)
-            }
-          }
-        )
-
-        timeoutId = setTimeout(() => {
-          if (!done) do {
-            done = true
-            cancel()
-            badCB(err)
-          }
-        }, ms)
-
-        return () => {
-          done = true
-          cancel()
-        }
-      }
-  }
-
-  
-})
-
-
-// export type CancellableWish e a = CancellableWish((e -> {}) -> (a -> {}) -> (({} -> {}) -> {}) -> {})
-
-// afterC :: Integer -> a -> CancellableWish e a
-// export afterC = (time, a) => CancellableWish((_, goodCB, cancel) => #- {
-//   const id = setTimeout(() => goodCB(a), time);
-//   // console.log(stop);
-//   cancel(() => {
-//     console.log('TRIGGERED')
-//     clearTimeout(id)
-//   })
-// } -#)
-
-// makeCanceller :: a -> {
-//   get :: b -> { cancel :: c -> {} },
-//   set :: { cancel :: c -> {} } -> {}
-// }
-// makeCanceller = () => {
-//   cancel = { cancel: () => {} }
-
-//   set = (c) => {
-//     cancel = c
-//   }
-
-//   get = () => cancel
-
-//   return { get, set }
-// }
-
-// fulfillC :: (e -> {}) -> (a -> {}) -> CancellableWish e a -> ({} -> {})
-// export fulfillC = (badCB, goodCB, m) => {
-//   return where(m) {
-//     CancellableWish(run) =>
-//       do {
-//         canceller = makeCanceller()
-//         run(badCB, goodCB, (_c) => {
-//           canceller.set({ cancel: _c })
-//         })
-
-//         return () => {
-//           canceller.get().cancel()
-//         }
-//       }
-//   }
-// }
-
-// export chainC = (f, m) => CancellableWish((badCB, goodCB, cancel) => {
-//   return where(m) {
-//     CancellableWish(run) =>
-//       do {
-//         run(
-//           (err) => {
-//             badCB(err)
-//           },
-//           (x) => where(f(x)) {
-//             CancellableWish(r) =>
-//               do {
-//                 r(badCB, goodCB, cancel)
-//               }
-//           },
-//           cancel,
-//         )
-//       }
-//   }
-// })
 
 /**
  * The functor instance of Wish provides a way to map over the value it contains.
@@ -201,33 +49,66 @@ export timeoutC = (ms, err, wish) => CancellableWish((badCB, goodCB) => {
 instance Functor (Wish e) {
   map = (f, m) => Wish((badCB, goodCB) => where(m) {
     Wish(run) =>
-      run(badCB, (x) => (goodCB(f(x))))
+      run(badCB, (x) => goodCB(f(x)))
   })
 }
 
 
 instance Applicative (Wish e) {
-  pure = (a) => Wish((_, goodCB) => goodCB(a))
+  pure = good
 
   ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {
     #[Wish(runMF), Wish(runM)] =>
-      runM(
-        badCB,
-        (x) => runMF(
+      do {
+        cancel2 = () => {}
+        cancel1 = runM(
           badCB,
-          (f) => goodCB(f(x))
+          (x) => {
+            cancel2 = runMF(badCB, (f) => goodCB(f(x)))
+          }
         )
-      )
-    }
-  )
+
+        return () => {
+          cancel1()
+          cancel2()
+        }
+      }
+  })
 }
 
 
 instance Monad (Wish e) {
   of = pure
 
-  chain = (f, m) => Wish((badCB, goodCB) => where(m) {
-    Wish(run) => run(badCB, (x) => where(f(x)) { Wish(r) => r(badCB, goodCB) })
+  chain = (f, m) => Wish((badCB, goodCB) => {
+    return where(m) {
+      Wish(run) =>
+        do {
+          cancel = Nothing
+          r1 = run(
+            badCB,
+            (x) => {
+              r2 = where(f(x)) {
+                Wish(_run) =>
+                  _run(badCB, goodCB)
+              }
+              cancel = Just(r2)
+            },
+          )
+
+          if (cancel == Nothing) do { cancel = Just(r1) }
+
+          return () => {
+            where(cancel) {
+              Just(c) =>
+                c()
+
+              Nothing =>
+                {}
+            }
+          }
+        }
+    }
   })
 }
 
@@ -258,7 +139,10 @@ instance Semigroup (Wish e a) {
 mapRej :: (e -> f) -> Wish e a -> Wish f a
 export mapRej = (f, m) =>
   Wish((badCB, goodCB) =>
-    where(m) { Wish(run) => run((x) => (badCB(f(x))), goodCB) }
+    where(m) {
+      Wish(run) =>
+        run((x) => badCB(f(x)), goodCB)
+    }
   )
 
 
@@ -272,11 +156,32 @@ export mapRej = (f, m) =>
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
 export chainRej = (f, m) => Wish((badCB, goodCB) =>
   where(m) {
-    Wish(run) => run((x) => (
-      where(f(x)) {
-        Wish(r) => r(badCB, goodCB)
+    Wish(run) =>
+      do {
+        cancel = Nothing
+        r1 = run(
+          (err) => {
+            r2 = where(f(err)) {
+              Wish(_run) =>
+                _run(badCB, goodCB)
+            }
+            cancel = Just(r2)
+          },
+          (x) => { goodCB(x) }
+        )
+
+        if (cancel == Nothing) do { cancel = Just(r1) }
+
+        return () => {
+          where(cancel) {
+            Just(c) =>
+              c()
+
+            Nothing =>
+              {}
+          }
+        }
       }
-    ), goodCB)
   }
 )
 
@@ -285,20 +190,53 @@ bichain :: (a -> Wish c d) -> (b -> Wish c d) -> Wish a b -> Wish c d
 export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
   where(m) {
     Wish(run) =>
-      run(
-        (x) => where(badF(x)) { Wish(r) => r(badCB, goodCB) },
-        (x) => where(goodF(x)) { Wish(r) => r(badCB, goodCB) }
-      )
+      do {
+        cancel = Nothing
+        r1 = run(
+          (err) => {
+            r2 = where(badF(err)) {
+              Wish(r) =>
+                r(badCB, goodCB)
+            }
+            cancel = Just(r2)
+          },
+          (x) => {
+            r2 = where(goodF(x)) {
+              Wish(r) =>
+                r(badCB, goodCB)
+            }
+            cancel = Just(r2)
+          },
+        )
+
+        if (cancel == Nothing) do { cancel = Just(r1) }
+
+        return () => {
+          where(cancel) {
+            Just(c) =>
+              c()
+
+            Nothing =>
+              {}
+          }
+        }
+      }
   }
 )
 
 
 good :: a -> Wish e a
-export good = (a) => Wish((_, goodCB) => goodCB(a))
+export good = (a) => Wish((_, goodCB) => {
+  goodCB(a)
+  return () => {}
+})
 
 
 bad :: e -> Wish e a
-export bad = (e) => Wish((badCB, _) => badCB(e))
+export bad = (e) => Wish((badCB, _) => {
+  badCB(e)
+  return () => {}
+})
 
 
 withRej :: f -> Wish e a -> Wish f a
@@ -309,7 +247,8 @@ putLine :: String -> {}
 export putLine = extern "madlib__stdio__putLine"
 
 // putLine :: String -> {}
-// putLine = #- console.log -#
+// export putLine = #- console.log -#
+
 
 chainManyN :: Integer -> (a -> Wish e b) -> List (Wish e a) -> List (Wish e b)
 export chainManyN = (concurrent, f, wishes) => {
@@ -337,44 +276,61 @@ export chainManyN = (concurrent, f, wishes) => {
       Wish((badCB, goodCB) =>
         where(wish) {
           Wish(run) =>
-            run(
-              (err) => {
-                runningWishes = runningWishes - 1
-                badCB(err)
-                next()
-              },
-              (res) => {
-                runner = () => {
-                  // putLine("runner")
-                  runningWishes = runningWishes + 1
-                  where(f(res)) {
-                    Wish(r) =>
-                      r(
-                        (err) => {
-                          badCB(err)
-                          runningWishes = runningWishes - 1
-                          next()
-                        },
-                        (_res) => {
-                          goodCB(_res)
-                          runningWishes = runningWishes - 1
-                          next()
-                        },
-                      )
-                  }
-                }
-
-                if (runningWishes < concurrent) do {
-                  runner()
+            do {
+              cancel = Nothing
+              r1 = run(
+                (err) => {
+                  runningWishes = runningWishes - 1
+                  badCB(err)
                   next()
-                } else do {
-                  runners = [runner, ...runners]
+                },
+                (res) => {
+                  runner = () => {
+                    runningWishes = runningWishes + 1
+                    where(f(res)) {
+                      Wish(_run) =>
+                        do {
+                          r2 = _run(
+                            (err) => {
+                              badCB(err)
+                              runningWishes = runningWishes - 1
+                              next()
+                            },
+                            (_res) => {
+                              goodCB(_res)
+                              runningWishes = runningWishes - 1
+                              next()
+                            },
+                          )
+                          cancel = Just(r2)
+                        }
+                      }
+                  }
+  
+                  if (runningWishes < concurrent) do {
+                    runner()
+                    next()
+                  } else do {
+                    runners = runners ++ [runner]
+                  }
+                },
+              )
+
+              if (cancel == Nothing) do { cancel = Just(r1) }
+
+              return () => {
+                where(cancel) {
+                  Just(c) =>
+                    c()
+
+                  Nothing =>
+                    {}
                 }
-              },
-            )
+              }
+            }
         }
       ),
-      reverse(wishes),
+      wishes,
   )
 }
 
@@ -391,6 +347,9 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
   result :: List #[Integer, a]
   result = []
 
+  cancelationFunctions :: List #[Integer, {} -> {}]
+  cancelationFunctions = []
+
   fork :: Integer -> List (Wish e a) -> {}
   fork = (index, ws) => where(ws) {
     [wish, ...nextWishes] =>
@@ -401,25 +360,30 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
 
         where(wish) {
           Wish(run) =>
-            run(
-              (err) =>
-                if (!ko) do {
-                  ko = true
-                  return badCB(err)
-                },
-              (x) => {
-                result = [#[index, x], ...result]
-                ok = ok + 1
-                runningWishes = runningWishes - 1
-                return ok == amountOfWishesToProcess
-                  ? pipe(
-                      sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
-                      map(Tuple.snd),
-                      goodCB
-                    )(result)
-                  : fork(indexOfLastStartedWish + 1, wishesNotStarted)
-              }
-            )
+            do {
+              cancel = run(
+                (err) =>
+                  if (!ko) do {
+                    ko = true
+                    forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
+                    return badCB(err)
+                  },
+                (x) => {
+                  result = [#[index, x], ...result]
+                  ok = ok + 1
+                  runningWishes = runningWishes - 1
+                  cancelationFunctions = filter((cancelFunction) => Tuple.fst(cancelFunction) != index, cancelationFunctions)
+                  return ok == amountOfWishesToProcess
+                    ? pipe(
+                        sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+                        map(Tuple.snd),
+                        goodCB
+                      )(result)
+                    : fork(indexOfLastStartedWish + 1, wishesNotStarted)
+                }
+              )
+              cancelationFunctions = [#[index, cancel], ...cancelationFunctions]
+            }
         }
 
         if (concurrent < 0 || runningWishes < concurrent) {
@@ -433,7 +397,11 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
         : {}
   }
 
-  return fork(0, wishes)
+  fork(0, wishes)
+
+  return () => {
+    forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
+  }
 })
 
 
@@ -448,41 +416,62 @@ export discardError = (recover, wish) => Wish((_, goodCB) => where(wish) {
 })
 
 
-#iftarget js
-
-fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
-export fulfill = (badCB, goodCB, m) => {
-  where(m) {
-    Wish(run) => run(badCB, goodCB)
-    // Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
-  }
-
-  return {}
-}
-
-
-after :: Integer -> a -> Wish e a
-export after = (time, a) => Wish((_, goodCB) => #- {
-  setTimeout(() => goodCB(a), time);
-} -#)
-
-#elseif llvm
-
-fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {}
-export fulfill = (badCB, goodCB, m) => {
-  where(m) {
-    Wish(run) =>
-      run(badCB, goodCB)
-      // setTimeout(() => run(badCB, goodCB), 0)
-  }
-
-  return {}
+fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> ({} -> {})
+export fulfill = (badCB, goodCB, m) => where(m) {
+  Wish(run) =>
+    run(badCB, goodCB)
 }
 
 
 after :: Integer -> a -> Wish e a
 export after = (time, a) => Wish((_, goodCB) => {
-  setTimeout(() => goodCB(a), time)}
-)
+  id = setTimeout(() => { goodCB(a) }, time)
 
-#endif
+  return () => {
+    putLine("-- after: CANCEL: " ++ show(time))
+    clearTimeout(id)
+  }
+})
+
+
+withTimeout :: Integer -> e -> Wish e a -> Wish e a
+export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
+  done = false
+  timeoutId = __TimerId__
+
+  return where(wish) {
+    Wish(run) =>
+      do {
+        putLine("-- WITH TIMEOUT: START")
+        cancel = run(
+          (x) => {
+            if (!done) {
+              badCB(x)
+            }
+          },
+          (x) => {
+            if (!done) do {
+              putLine("GOOD")
+              done = true
+              clearTimeout(timeoutId)
+              goodCB(x)
+            }
+          }
+        )
+
+        timeoutId = setTimeout(() => {
+          if (!done) do {
+            putLine("-- WITH TIMEOUT: CANCEL")
+            done = true
+            cancel()
+            badCB(err)
+          }
+        }, ms)
+
+        return () => {
+          done = true
+          cancel()
+        }
+      }
+  }
+})

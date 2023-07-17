@@ -1,9 +1,12 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include <gc.h>
 #include <stdint.h>
+#include <curl/curl.h>
 #include "apply-pap.hpp"
 #include "record.hpp"
+#include "list.hpp"
 
 
 /**
@@ -131,15 +134,38 @@ typedef struct madlib__http__Method {
 extern "C" {
 #endif
 
+typedef struct RequestData {
+  // Request
+  curl_slist *requestHeaders;
+  void *goodCallback;
+  void *badCallback;
+  bool asBytes;
+
+  // Internals
+  CURL *curlEasy;
+  CURLM *curlHandle;
+  CURLU *curlURL;
+  curl_socket_t curlSocket;
+
+  // Response
+  size_t responseSize;
+  char *body;
+  long status;
+  // List Header
+  madlib__list__Node_t *headers;
+} RequestData_t;
+
 /**
  * madlib__http__request :: Request -> (Response String -> ()) -> ()
  */
-void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+RequestData_t *madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
 
 /**
  * madlib__http__requestBytes :: Request -> (Response ByteArray -> ()) -> ()
  */
-void madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+RequestData_t *madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+
+void madlib__http__cancel(RequestData_t *requestData);
 
 #ifdef __cplusplus
 }

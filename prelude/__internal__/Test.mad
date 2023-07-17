@@ -398,8 +398,8 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
 )(testsInSuite)
 
 
-runAllTestSuites :: Show a => List #[String, {} -> Wish a c, {} -> Wish a d, List (Wish String String)]
-  -> {}
+runAllTestSuites :: (Show e, Show f) => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish String String)]
+  -> ({} -> {})
 export runAllTestSuites = (testSuites) => pipe(
   map(
     where {

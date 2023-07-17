@@ -35,6 +35,9 @@ export write = (path, content) => Wish(
         good(path)
       }
     })
+
+    // TODO: handle cancellation function correctly
+    return () => {}
   } -#
 )
 
@@ -59,6 +62,9 @@ export writeBytes = (path, bytes) => Wish(
         good(null)
       }
     })
+
+    // TODO: handle cancellation function correctly
+    return () => {}
   } -#
 )
 
@@ -81,6 +87,9 @@ export read = (path) => Wish(
         good(d)
       }
     })
+
+    // TODO: handle cancellation function correctly
+    return () => {}
   } -#
 )
 
@@ -103,6 +112,9 @@ export readBytes = (path) => Wish(
         good(d)
       }
     })
+
+    // TODO: handle cancellation function correctly
+    return () => {}
   } -#
 )
 
@@ -125,6 +137,9 @@ export exists = (path) => Wish(
         good(true);
       }
     });
+
+    // TODO: handle cancellation function correctly
+    return () => {}
   } -#
 )
 
@@ -143,12 +158,17 @@ readFFI = extern "madlib__file__read"
  */
 read :: String -> Wish Error String
 export read = (path) => Wish(
-  (bad, good) => readFFI(
-    path,
-    (libuvError, fileContent) => libuvError != 0
-      ? bad(Error.fromLibuvError(libuvError))
-      : good(fileContent)
-  )
+  (bad, good) => {
+    readFFI(
+      path,
+      (libuvError, fileContent) => libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good(fileContent)
+    )
+
+    // TODO: handle cancellation function correctly
+    return () => {}
+  }
 )
 
 readBytesFFI :: String -> (Integer -> ByteArray -> {}) -> {}
@@ -164,12 +184,17 @@ readBytesFFI = extern "madlib__file__readBytes"
  */
 readBytes :: String -> Wish Error ByteArray
 export readBytes = (path) => Wish(
-  (bad, good) => readBytesFFI(
-    path,
-    (libuvError, fileContent) => libuvError != 0
-      ? bad(Error.fromLibuvError(libuvError))
-      : good(fileContent)
-  )
+  (bad, good) => {
+    readBytesFFI(
+      path,
+      (libuvError, fileContent) => libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good(fileContent)
+    )
+
+    // TODO: handle cancellation function correctly
+    return () => {}
+  }
 )
 
 
@@ -188,11 +213,16 @@ writeFFI = extern "madlib__file__write"
  */
 write :: String -> String -> Wish Error {}
 export write = (path, content) => Wish(
-  (bad, good) => writeFFI(
-    path,
-    content,
-    (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
-  )
+  (bad, good) => {
+    writeFFI(
+      path,
+      content,
+      (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+    )
+
+    // TODO: handle cancellation function correctly
+    return () => {}
+  }
 )
 
 
@@ -211,11 +241,16 @@ writeBytesFFI = extern "madlib__file__writeBytes"
  */
 writeBytes :: String -> ByteArray -> Wish Error {}
 export writeBytes = (path, content) => Wish(
-  (bad, good) => writeBytesFFI(
-    path,
-    content,
-    (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
-  )
+  (bad, good) => {
+    writeBytesFFI(
+      path,
+      content,
+      (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+    )
+
+    // TODO: handle cancellation function correctly
+    return () => {}
+  }
 )
 
 existsFFI :: String -> (Boolean -> {}) -> {}
@@ -231,8 +266,11 @@ existsFFI = extern "madlib__file__exists"
  * fulfill(always(IO.putLine("does not exist")), always(IO.putLine("exists")), exists("/"))
  */
 exists :: String -> Wish {} Boolean
-export exists = (path) => Wish((bad, good) =>
+export exists = (path) => Wish((bad, good) => {
   existsFFI(path, (g) => g ? good(true) : bad({}))
-)
+
+  // TODO: handle cancellation function correctly
+  return () => {}
+})
 
 #endif

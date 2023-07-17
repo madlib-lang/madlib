@@ -122,6 +122,9 @@ export getLine = Wish((bad, good) => #- {
   {Browser}
     bad("Not implemented for browsers!")
   {/Browser}
+
+  // TODO: handle cancellation function correctly
+  return () => {}
 } -#)
 
 
@@ -153,6 +156,9 @@ export get = Wish((bad, good) => #- {
   {Browser}
     bad("Not implemented for browsers!")
   {/Browser}
+
+  // TODO: handle cancellation function correctly
+  return () => {}
 } -#)
 
 #elseif llvm
@@ -167,14 +173,17 @@ getLineFFI = extern "madlib__stdio__getLine"
  * @since 0.11.0
  */
 getLine :: Wish Error String
-export getLine = Wish((bad, good) =>
+export getLine = Wish((bad, good) => {
   getLineFFI(
     (libuvError, line) =>
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(line)
   )
-)
+
+  // TODO: handle cancellation function correctly
+  return () => {}
+})
 
 
 getFFI :: (Integer -> String -> {}) -> {}
@@ -187,14 +196,17 @@ getFFI = extern "madlib__stdio__get"
  * @since 0.11.0
  */
 get :: Wish Error String
-export get = Wish((bad, good) =>
+export get = Wish((bad, good) => {
   getFFI(
     (libuvError, line) =>
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(line)
   )
-)
+
+  // TODO: handle cancellation function correctly
+  return () => {}
+})
 
 
 /**

@@ -29,7 +29,7 @@ import prelude_directory_fs from "fs"
  */
 read :: String -> Wish Error (List String)
 export read = (path) => Wish((bad, good) => #- {
-  prelude_file_fs.readdir(path, (err, files) => {
+  prelude_directory_fs.readdir(path, (err, files) => {
     if (err) {
       bad({ __constructor: "UnknownError", __args: [] })
     } else {
@@ -45,6 +45,9 @@ export read = (path) => Wish((bad, good) => #- {
       }
     }
   })
+
+  // TODO: handle cancellation function correctly
+  return () => {}
 } -#)
 
 #elseif llvm
@@ -66,7 +69,7 @@ readFFI = extern "madlib__directory__read"
  * // ["bin", "dev", "etc", "home", "opt", "tmp", "usr"]
  */
 read :: String -> Wish Error (List String)
-export read = (path) => Wish((bad, good) =>
+export read = (path) => Wish((bad, good) => {
   readFFI(
     path,
     (libuvError, result) =>
@@ -74,6 +77,9 @@ export read = (path) => Wish((bad, good) =>
         ? bad(Error.fromLibuvError(libuvError))
         : good(result)
   )
-)
+
+  // TODO: handle cancellation function correctly
+  return () => {}
+})
 
 #endif

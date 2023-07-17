@@ -10,7 +10,6 @@ import String from "String"
 import { Wish } from "Wish"
 
 
-
 #iftarget js
 import { isJust } from "Maybe"
 
@@ -270,6 +269,10 @@ _request = (_isJust, config) => Wish(
           good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
         }
       }
+
+      return () => {
+        xhr.abort()
+      }
     {/Browser}
     {Node}
       const headers = prelude_http_buildHeaderObj(config.headers)
@@ -337,12 +340,17 @@ _request = (_isJust, config) => Wish(
       }
 
       req.on('error', (err) => {
-        if (!isDone) {
+        if (!isDone && err.name !== "AbortError") {
           bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
         }
       })
       req.end();
+
+      return () => {
+        req.abort()
+      }
     {/Node}
+
   }-#
 )
 
@@ -436,6 +444,10 @@ export _requestBytes = (_isJust, config) => Wish(
           good({ body: ui8, status: xhr.status, headers: headersList })
         }
       }
+
+      return () => {
+        xhr.abort()
+      }
     {/Browser}
     {Node}
       const headers = prelude_http_buildHeaderObj(config.headers)
@@ -502,12 +514,16 @@ export _requestBytes = (_isJust, config) => Wish(
 
       req.on('error', (err) => {
         // TODO: need to check error and build it correctly
-        if (!isDone) {
+        if (!isDone && err.name !== "AbortError") {
           bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
         }
       })
       req.end();
     {/Node}
+
+    return () => {
+      req.abort()
+    }
   }-#
 )
 
@@ -533,8 +549,14 @@ export requestBytes = (req) => pipe(
 
 #elseif llvm
 
-requestFFI :: Request String -> (Error String -> {}) -> (Response String -> {}) -> {}
+type RequestId = __Id__
+
+requestFFI :: Request String -> (Error String -> {}) -> (Response String -> {}) -> RequestId
 requestFFI = extern "madlib__http__request"
+
+
+cancelFFI :: RequestId -> {}
+cancelFFI = extern "madlib__http__cancel"
 
 
 /**
@@ -550,10 +572,16 @@ requestFFI = extern "madlib__http__request"
  * }))
  */
 request :: Request String -> Wish (Error String) (Response String)
-export request = (config) => Wish((bad, good) => requestFFI(config, bad, good))
+export request = (config) => Wish((bad, good) => {
+  id = requestFFI(config, bad, good)
+
+  return () => {
+    cancelFFI(id)
+  }
+})
 
 
-requestBytesFFI :: Request ByteArray -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> {}
+requestBytesFFI :: Request ByteArray -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> RequestId
 requestBytesFFI = extern "madlib__http__requestBytes"
 
 
@@ -570,7 +598,13 @@ requestBytesFFI = extern "madlib__http__requestBytes"
  * }))
  */
 requestBytes :: Request ByteArray -> Wish (Error ByteArray) (Response ByteArray)
-export requestBytes = (config) => Wish((bad, good) => requestBytesFFI(config, bad, good))
+export requestBytes = (config) => Wish((bad, good) => {
+  id = requestBytesFFI(config, bad, good)
+
+  return () => {
+    cancelFFI(id)
+  }
+})
 
 #endif
 
