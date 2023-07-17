@@ -158,6 +158,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Assignment "==" exp')
 
     Src.Assignment name exp -> do
+      declared <- getAllDeclaredNames
+      when (name `Set.member` Set.map (\(Declared _ n') -> n') declared) $
+        pushNameAccess name
       pushNameDeclaration (Env.envExpPosition env) name
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Assignment name exp')
@@ -232,7 +235,46 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.If cond' truthy' falsy')
 
     Src.Do exps -> do
+      -- TODO: merge the logic with the one in processAbs
+      allAccessesBeforeAbs <- getAllAccesses
+      allDeclaredBeforeAbs <- getAllDeclaredNames
+
+      resetNameAccesses
+
       exps' <- canonicalizeDoExps exps
+
+
+      allAccessesInAbs   <- getAllAccesses
+      nameAccessesInAbs  <- getAllNameAccesses
+      namesDeclaredInAbs <- getAllDeclaredNames
+
+      setAccesses (allAccessesInAbs <> allAccessesBeforeAbs)
+      setDeclaredNames (namesDeclaredInAbs <> allDeclaredBeforeAbs)
+
+      let localDecls   = map (\(e, i) -> (Src.getLocalOrNotExportedAssignmentName e, i + Env.envExpPosition env)) (zip exps [0..])
+      let localDecls'  = map (\(Just x, i) -> (x, i)) $ filter (Maybe.isJust . fst) localDecls
+      let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` (Set.map (\(Declared _ n') -> n') allDeclaredBeforeAbs)) localDecls'
+      let unusedDecls  =
+            filter
+              (\(Src.Source _ _ n, i) ->
+                n /= "_"
+                && n `Set.notMember` nameAccessesInAbs
+                && n `Set.notMember` (Set.map (\(Declared _ n') -> n') $ Set.filter (\(Declared pos _) -> pos > i) namesDeclaredInAbs)
+              )
+              localDecls''
+      let unusedDecls' = map fst unusedDecls
+
+      allJS <- getJS
+
+      unusedDecls'' <-
+        if null unusedDecls' then
+          return unusedDecls'
+        else do
+          return $ filter (not . (allJS =~) . (\(Src.Source _ _ n) -> n)) unusedDecls'
+
+      forM_ unusedDecls'' $ \(Src.Source area' _ n) -> do
+        pushWarning $ CompilationWarning (UnusedDeclaration n) (Context (Env.envCurrentPath env) area')
+
       return $ Can.Canonical area (Can.Do exps')
       where
         canonicalizeDoExps :: [Src.Exp] -> CanonicalM [Can.Exp]
@@ -326,7 +368,7 @@ processAbs env target area params body = do
   allDeclaredBeforeAbs <- getAllDeclaredNames
 
   resetNameAccesses
-  resetNamesDeclared
+  -- resetNamesDeclared
 
   abs'               <- buildAbs env target area params body
 
