@@ -1,14 +1,11 @@
-#include <gc.h>
 #include "http.hpp"
 
 #include <ctype.h>
-#include <curl/curl.h>
 #include <stdlib.h>
 #include <uv.h>
 #include <string.h>
 
 #include "event-loop.hpp"
-#include "list.hpp"
 #include "bytearray.hpp"
 #include "maybe.hpp"
 
@@ -17,25 +14,7 @@ extern "C" {
 #endif
 
 
-typedef struct RequestData {
-  // Request
-  curl_slist *requestHeaders;
-  void *goodCallback;
-  void *badCallback;
-  bool asBytes;
 
-  // Internals
-  CURLM *curlHandle;
-  CURLU *curlURL;
-  curl_socket_t curlSocket;
-
-  // Response
-  size_t responseSize;
-  char *body;
-  long status;
-  // List Header
-  madlib__list__Node_t *headers;
-} RequestData_t;
 
 // utility
 void toUpper(char *dest, char *src, size_t length) {
@@ -421,7 +400,8 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 }
 
 
-void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
+
+RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
   char *url = (char *)madlib__record__internal__selectField((char *)"url", request);
 
   madlib__http__Method_t *boxedMethod =
@@ -475,6 +455,7 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
       curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, -1L);
     }
   }
+  requestData->curlEasy = handle;
 
   CURLU *urlp = curl_url();
   CURLUcode urlParseResponse = curl_url_set(urlp, CURLUPART_URL, url, 0);
@@ -484,6 +465,7 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
   if (urlParseResponse == 0) {
     curl_easy_setopt(handle, CURLOPT_CURLU, urlp);
     curl_multi_add_handle(multiHandle, handle);
+    return requestData;
   } else {
     // call bad callback
     madlib__http__ClientError_1_t *clientError =
@@ -505,17 +487,28 @@ void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *g
     curl_url_cleanup(urlp);
     GC_FREE(timerHandle);
     GC_FREE(requestData);
+    return NULL;
   }
 }
 
 // madlib__http__request :: Request String -> (Error String) -> (Response String -> ()) -> ()
-void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
-  makeRequest(request, badCallback, goodCallback, false);
+RequestData_t *madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+  return makeRequest(request, badCallback, goodCallback, false);
 }
 
 // madlib__http__requestBytes :: Request ByteArray -> (Error ByteArray) -> (Response ByteArray -> ()) -> ()
-void madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
-  makeRequest(request, badCallback, goodCallback, true);
+RequestData_t *madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+  return makeRequest(request, badCallback, goodCallback, true);
+}
+
+void madlib__http__cancel(RequestData_t *requestData) {
+  if (!requestData) {
+    return;
+  }
+
+  curl_multi_remove_handle(requestData->curlHandle, requestData->curlEasy);
+  curl_easy_cleanup(requestData->curlEasy);
+  GC_FREE(requestData);
 }
 
 #ifdef __cplusplus

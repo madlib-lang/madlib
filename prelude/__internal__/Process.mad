@@ -66,6 +66,9 @@ export exec = (command, args, options) => Wish((bad, good) => #- {
       bad(result)
     }
   });
+
+  // TODO: handle cancellation function correctly
+  return () => {}
 } -#)
 
 #-
@@ -186,7 +189,7 @@ execFFI = extern "madlib__process__exec"
 
 
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
-export exec = (command, args, options) => Wish((bad, good) =>
+export exec = (command, args, options) => Wish((bad, good) => {
   execFFI(
     command,
     args,
@@ -196,7 +199,10 @@ export exec = (command, args, options) => Wish((bad, good) =>
         ? bad(makeCommandResult(exitCode, stdout, stderr))
         : good(makeCommandResult(exitCode, stdout, stderr))
   )
-)
+
+  // TODO: handle cancellation function correctly
+  return () => {}
+})
 
 exit :: Integer -> {}
 export exit = extern "exit"
