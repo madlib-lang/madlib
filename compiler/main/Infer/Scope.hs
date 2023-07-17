@@ -483,9 +483,6 @@ buildPatternScope (Typed _ _ pat) = case pat of
 verifyMutations :: Env -> M.Map String Bool -> Exp -> Infer ()
 verifyMutations env scope exp = case exp of
   Typed _ area (Assignment n e) -> do
-    -- liftIO $ putStrLn $ "n:" <> n
-    -- liftIO $ putStrLn $ "scope:" <> ppShow scope
-    -- liftIO $ putStrLn $ "e:" <> ppShow e
     let inScope = M.lookup n scope
     when ((isAbs e && isJust inScope) || inScope == Just True) $
       throwError (CompilationError (MutatingFunction n) (Context (envCurrentPath env) area))
@@ -529,6 +526,9 @@ verifyMutations env scope exp = case exp of
     verifyMutations env scope falsy
 
   Typed _ _ (Export e) ->
+    verifyMutations env scope e
+
+  Typed _ _ (TypedExp e _ _) ->
     verifyMutations env scope e
 
   _ ->
