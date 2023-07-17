@@ -395,7 +395,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
 
 blackList :: [String]
 blackList =
-  ["&&", "||", "+", "-", "*", "/", "!=", "++", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
+  ["&&", "||", "+", "-", "*", "/", "!=", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
 
 eqExcludeTypes :: [Type]
 eqExcludeTypes =
@@ -555,7 +555,10 @@ replaceLocalFunctions requests exp = case getExpName exp of
     let matchingRequests = Map.elems $ Map.filterWithKey (\fnId _ -> fiFunctionName fnId == name) requests
     in  case matchingRequests of
       [] ->
-        [exp]
+        if isAbs exp then
+          []
+        else
+          [exp]
 
       reqs ->
         map (Maybe.fromMaybe undefined . mrResult) reqs
@@ -599,11 +602,7 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     poppedScopeState <- popScopeState env
     let requestsFromScope = ssRequests poppedScopeState
 
-    let es'' =
-          if not (Map.null requestsFromScope) then
-            es' >>= replaceLocalFunctions requestsFromScope
-          else
-            es'
+    let es'' = es' >>= replaceLocalFunctions requestsFromScope
 
     return $
       Typed (applyAndCleanQt envSubstitution qt) area
@@ -615,11 +614,7 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     poppedScopeState <- popScopeState env
     let requestsFromScope = ssRequests poppedScopeState
 
-    let es'' =
-          if not (Map.null requestsFromScope) then
-            es' >>= replaceLocalFunctions requestsFromScope
-          else
-            es'
+    let es'' = es' >>= replaceLocalFunctions requestsFromScope
 
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Do es'')
 
