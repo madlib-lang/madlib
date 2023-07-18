@@ -1,10 +1,22 @@
-import type { Error } from "__IOError__"
 import type { Wish } from "Wish"
+import type { Error } from "__IOError__"
 
-import Error from "__IOError__"
 import { Wish } from "Wish"
+import Error from "__IOError__"
+import {
+  AddressAlreadyInUse,
+  ArgumentListToLong,
+  PermissionDenied,
+  UnknownError,
+} from "__IOError__"
+
+
 
 export type Error
+export AddressAlreadyInUse
+export ArgumentListToLong
+export PermissionDenied
+export UnknownError
 
 #iftarget js
 
@@ -27,18 +39,22 @@ import prelude_file_fs from "fs"
 write :: String -> String -> Wish Error {}
 export write = (path, content) => Wish(
   (bad, good) => #- {
-    prelude_file_fs.writeFile(path, content, (err) => {
+    const abortController = new AbortController()
+    prelude_file_fs.writeFile(path, content, { signal: abortController.signal }, (err) => {
       if (err) {
-        bad({ __constructor: "UnknownError", __args: [] });
+        if (err.name !== "AbortError") {
+          bad({ __constructor: "UnknownError", __args: [] })
+        }
       }
       else {
         good(path)
       }
     })
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  } -#
+    return () => {
+      abortController.abort()
+    }
+  } -#,
 )
 
 
@@ -54,18 +70,22 @@ export write = (path, content) => Wish(
 writeBytes :: String -> ByteArray -> Wish Error {}
 export writeBytes = (path, bytes) => Wish(
   (bad, good) => #- {
-    prelude_file_fs.writeFile(path, bytes, (err) => {
+    const abortController = new AbortController()
+    prelude_file_fs.writeFile(path, bytes, { signal: abortController.signal }, (err) => {
       if (err) {
-        bad({ __constructor: "UnknownError", __args: [] });
+        if (err.name !== "AbortError") {
+          bad({ __constructor: "UnknownError", __args: [] });
+        }
       }
       else {
         good(null)
       }
     })
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  } -#
+    return () => {
+      abortController.abort()
+    }
+  } -#,
 )
 
 
@@ -79,18 +99,22 @@ export writeBytes = (path, bytes) => Wish(
 read :: String -> Wish Error String
 export read = (path) => Wish(
   (bad, good) => #- {
-    prelude_file_fs.readFile(path, "utf8", (err, d) => {
+    const abortController = new AbortController()
+    prelude_file_fs.readFile(path, { signal: abortController.signal, encoding: "utf8" }, (err, d) => {
       if (err) {
-        bad({ __constructor: "UnknownError", __args: [] });
+        if (err.name !== "AbortError") {
+          bad({ __constructor: "UnknownError", __args: [] })
+        }
       }
       else {
         good(d)
       }
     })
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  } -#
+    return () => {
+      abortController.abort()
+    }
+  } -#,
 )
 
 
@@ -104,18 +128,22 @@ export read = (path) => Wish(
 readBytes :: String -> Wish Error ByteArray
 export readBytes = (path) => Wish(
   (bad, good) => #- {
-    prelude_file_fs.readFile(path, (err, d) => {
+    const abortController = new AbortController()
+    prelude_file_fs.readFile(path, { signal: abortController.signal }, (err, d) => {
       if (err) {
-        bad({ __constructor: "UnknownError", __args: [] });
+        if (err.name !== "AbortError") {
+          bad({ __constructor: "UnknownError", __args: [] })
+        }
       }
       else {
         good(d)
       }
     })
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  } -#
+    return () => {
+      abortController.abort()
+    }
+  } -#,
 )
 
 
@@ -140,12 +168,22 @@ export exists = (path) => Wish(
 
     // TODO: handle cancellation function correctly
     return () => {}
-  } -#
+  } -#,
 )
 
 #elseif llvm
 
-readFFI :: String -> (Integer -> String -> {}) -> {}
+type OperationId = OperationId(OperationId)
+
+
+cancelRead :: OperationId -> {}
+cancelRead = extern "madlib__file__cancelRead"
+
+cancelWrite :: OperationId -> {}
+cancelWrite = extern "madlib__file__cancelWrite"
+
+
+readFFI :: String -> (Integer -> String -> {}) -> OperationId
 readFFI = extern "madlib__file__read"
 
 
@@ -159,19 +197,22 @@ readFFI = extern "madlib__file__read"
 read :: String -> Wish Error String
 export read = (path) => Wish(
   (bad, good) => {
-    readFFI(
+    done = false
+    id = readFFI(
       path,
-      (libuvError, fileContent) => libuvError != 0
-        ? bad(Error.fromLibuvError(libuvError))
-        : good(fileContent)
+      (libuvError, fileContent) => do {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(fileContent)
+      },
     )
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  }
+    return () => {
+      if (!done) { cancelRead(id) }
+    }
+  },
 )
 
-readBytesFFI :: String -> (Integer -> ByteArray -> {}) -> {}
+readBytesFFI :: String -> (Integer -> ByteArray -> {}) -> OperationId
 readBytesFFI = extern "madlib__file__readBytes"
 
 
@@ -185,20 +226,23 @@ readBytesFFI = extern "madlib__file__readBytes"
 readBytes :: String -> Wish Error ByteArray
 export readBytes = (path) => Wish(
   (bad, good) => {
-    readBytesFFI(
+    done = false
+    id = readBytesFFI(
       path,
-      (libuvError, fileContent) => libuvError != 0
-        ? bad(Error.fromLibuvError(libuvError))
-        : good(fileContent)
+      (libuvError, fileContent) => {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(fileContent)
+      },
     )
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  }
+    return () => {
+      if (!done) { cancelRead(id) }
+    }
+  },
 )
 
 
-writeFFI :: String -> String -> (Integer -> {} -> {}) -> {}
+writeFFI :: String -> String -> (Integer -> {} -> {}) -> OperationId
 writeFFI = extern "madlib__file__write"
 
 
@@ -214,19 +258,24 @@ writeFFI = extern "madlib__file__write"
 write :: String -> String -> Wish Error {}
 export write = (path, content) => Wish(
   (bad, good) => {
-    writeFFI(
+    done = false
+    id = writeFFI(
       path,
       content,
-      (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+      (libuvError, _) => {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+      },
     )
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  }
+    return () => {
+      if (!done) { cancelWrite(id) }
+    }
+  },
 )
 
 
-writeBytesFFI :: String -> ByteArray -> (Integer -> {} -> {}) -> {}
+writeBytesFFI :: String -> ByteArray -> (Integer -> {} -> {}) -> OperationId
 writeBytesFFI = extern "madlib__file__writeBytes"
 
 
@@ -242,15 +291,20 @@ writeBytesFFI = extern "madlib__file__writeBytes"
 writeBytes :: String -> ByteArray -> Wish Error {}
 export writeBytes = (path, content) => Wish(
   (bad, good) => {
-    writeBytesFFI(
+    done = false
+    id = writeBytesFFI(
       path,
       content,
-      (libuvError, _) => libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+      (libuvError, _) => {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
+      },
     )
 
-    // TODO: handle cancellation function correctly
-    return () => {}
-  }
+    return () => {
+      if (!done) { cancelWrite(id) }
+    }
+  },
 )
 
 existsFFI :: String -> (Boolean -> {}) -> {}
@@ -266,11 +320,13 @@ existsFFI = extern "madlib__file__exists"
  * fulfill(always(IO.putLine("does not exist")), always(IO.putLine("exists")), exists("/"))
  */
 exists :: String -> Wish {} Boolean
-export exists = (path) => Wish((bad, good) => {
-  existsFFI(path, (g) => g ? good(true) : bad({}))
+export exists = (path) => Wish(
+  (bad, good) => {
+    existsFFI(path, (g) => g ? good(true) : bad({}))
 
-  // TODO: handle cancellation function correctly
-  return () => {}
-})
+    // TODO: handle cancellation function correctly
+    return () => {}
+  },
+)
 
 #endif
