@@ -1,8 +1,6 @@
-#include <gc.h>
 #include "file.hpp"
 
 #include <stdlib.h>
-#include <uv.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -15,21 +13,15 @@ extern "C" {
 
 const size_t BUFFER_SIZE = 32 * 1024; // 32KB
 
-// read file
-typedef struct ReadData {
-  void *callback;
-  uv_fs_t *readRequest;
-  uv_fs_t *openRequest;
-  uv_buf_t uvBuffer;
-  char *dataBuffer;
-  char *fileContent;
-  int64_t currentSize;
 
-  // if true returns an a ByteArray instead of String
-  bool readBytes;
-} ReadData_t;
 
 void onReadError(uv_fs_t *req) {
+  ((ReadData_t *)req->data)->closed = true;
+
+  if (((ReadData_t *)req->data)->canceled) {
+    return;
+  }
+
   char *result = (char*)"";
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
@@ -55,9 +47,16 @@ void onReadError(uv_fs_t *req) {
 
 void onRead(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
+
+  ((ReadData_t *)req->data)->reading = true;
+  if ((ReadData_t *)((ReadData_t *)req->data)->canceled) {
+    return;
+  }
+
   if (req->result < 0) {
     onReadError(req);
   } else if (req->result == 0) {
+    ((ReadData_t *)req->data)->closed = true;
     // close file
     uv_fs_t closeReq;
     uv_fs_close(getLoop(), &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
@@ -118,6 +117,12 @@ void onRead(uv_fs_t *req) {
 
 void onReadFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
+  if ((ReadData_t *)((ReadData_t *)req->data)->canceled) {
+    return;
+  }
+
+  ((ReadData_t *)req->data)->opened = true;
+
   if (req->result >= 0) {
     uv_buf_t uvBuffer = uv_buf_init(((ReadData_t *)req->data)->dataBuffer, BUFFER_SIZE);
     ((ReadData_t *)((ReadData_t *)req->data)->readRequest->data)->uvBuffer = uvBuffer;
@@ -127,7 +132,7 @@ void onReadFileOpen(uv_fs_t *req) {
   }
 }
 
-void madlib__file__read(char *filepath, PAP_t *callback) {
+ReadData_t *madlib__file__read(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
@@ -142,14 +147,20 @@ void madlib__file__read(char *filepath, PAP_t *callback) {
   ((ReadData_t *)readReq->data)->fileContent = (char*)"";
   ((ReadData_t *)readReq->data)->currentSize = 0;
   ((ReadData_t *)readReq->data)->readBytes = false;
+  ((ReadData_t *)readReq->data)->canceled = false;
+  ((ReadData_t *)readReq->data)->opened = false;
+  ((ReadData_t *)readReq->data)->reading = false;
+  ((ReadData_t *)readReq->data)->closed = false;
 
   openReq->data = readReq->data;
 
   // we open the file
   uv_fs_open(getLoop(), openReq, filepath, O_RDONLY, 0, onReadFileOpen);
+
+  return (ReadData_t*) readReq->data;
 }
 
-void madlib__file__readBytes(char *filepath, PAP_t *callback) {
+ReadData_t *madlib__file__readBytes(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
@@ -163,22 +174,42 @@ void madlib__file__readBytes(char *filepath, PAP_t *callback) {
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
   ((ReadData_t *)readReq->data)->currentSize = 0;
   ((ReadData_t *)readReq->data)->readBytes = true;
+  ((ReadData_t *)readReq->data)->canceled = false;
+  ((ReadData_t *)readReq->data)->opened = false;
+  ((ReadData_t *)readReq->data)->reading = false;
+  ((ReadData_t *)readReq->data)->closed = false;
 
   openReq->data = readReq->data;
 
   // we open the file
   uv_fs_open(getLoop(), openReq, filepath, O_RDONLY, 0, onReadFileOpen);
+
+  return (ReadData_t*) readReq->data;
+}
+
+
+void madlib__file__cancelRead(ReadData_t *req) {
+  req->canceled = true;
+
+  if (req->reading) {
+    uv_fs_t closeReq;
+    uv_close((uv_handle_t*) req->readRequest, NULL);
+    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+  } else if (req->opened) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+  }
 }
 
 // write file
-typedef struct WriteData {
-  void *callback;
-  uv_fs_t *writeRequest;
-  uv_fs_t *openRequest;
-  uv_buf_t contentBuffer;
-} WriteData_t;
+
 
 void onWriteError(uv_fs_t *req) {
+  ((WriteData_t *)req->data)->closed = true;
+  if (((WriteData_t *)req->data)->canceled) {
+    return;
+  }
+
   char *result = (char *)"\0";
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
@@ -199,6 +230,12 @@ void onWriteError(uv_fs_t *req) {
 
 void onWrite(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
+
+  ((WriteData_t *)req->data)->writing = true;
+  if ((WriteData_t *)((WriteData_t *)req->data)->canceled) {
+    return;
+  }
+
   if (req->result < 0) {
     onWriteError(req);
   } else {
@@ -225,6 +262,11 @@ void onWrite(uv_fs_t *req) {
 
 void onWriteFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
+  if ((WriteData_t *)((WriteData_t *)req->data)->canceled) {
+    return;
+  }
+  ((ReadData_t *)req->data)->opened = true;
+
   if (req->result >= 0) {
     uv_fs_write(getLoop(), ((WriteData_t *)req->data)->writeRequest, req->result,
                 &((WriteData_t *)req->data)->contentBuffer, 1, -1, onWrite);
@@ -234,7 +276,7 @@ void onWriteFileOpen(uv_fs_t *req) {
 }
 
 // Callback receives unit in case of success
-void madlib__file__write(char *filepath, char *content, PAP_t *callback) {
+WriteData_t *madlib__file__write(char *filepath, char *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
   uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
@@ -246,15 +288,21 @@ void madlib__file__write(char *filepath, char *content, PAP_t *callback) {
   ((WriteData_t *)writeReq->data)->openRequest = openReq;
   ((WriteData_t *)writeReq->data)->contentBuffer.base = content;
   ((WriteData_t *)writeReq->data)->contentBuffer.len = strlen(content);
+  ((WriteData_t *)writeReq->data)->canceled = false;
+  ((WriteData_t *)writeReq->data)->opened = false;
+  ((WriteData_t *)writeReq->data)->writing = false;
+  ((WriteData_t *)writeReq->data)->closed = false;
 
   openReq->data = writeReq->data;
 
   // we open the file
   uv_fs_open(getLoop(), openReq, filepath, UV_FS_O_TRUNC | O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR, onWriteFileOpen);
+
+  return (WriteData_t*) openReq->data;
 }
 
 // Callback receives unit in case of success
-void madlib__file__writeBytes(char *filepath, madlib__bytearray__ByteArray_t *content, PAP_t *callback) {
+WriteData_t *madlib__file__writeBytes(char *filepath, madlib__bytearray__ByteArray_t *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
   uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
@@ -266,12 +314,32 @@ void madlib__file__writeBytes(char *filepath, madlib__bytearray__ByteArray_t *co
   ((WriteData_t *)writeReq->data)->openRequest = openReq;
   ((WriteData_t *)writeReq->data)->contentBuffer.base = (char *)content->bytes;
   ((WriteData_t *)writeReq->data)->contentBuffer.len = content->length;
+  ((WriteData_t *)writeReq->data)->canceled = false;
+  ((WriteData_t *)writeReq->data)->opened = false;
+  ((WriteData_t *)writeReq->data)->writing = false;
+  ((WriteData_t *)writeReq->data)->closed = false;
 
   openReq->data = writeReq->data;
 
   // we open the file
   uv_fs_open(getLoop(), openReq, filepath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR, onWriteFileOpen);
+
+  return (WriteData_t*) openReq->data;
 }
+
+void madlib__file__cancelWrite(WriteData_t *req) {
+  req->canceled = true;
+
+  if (req->writing) {
+    uv_fs_t closeReq;
+    uv_close((uv_handle_t*) req->writeRequest, NULL);
+    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+  } else if (req->opened) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+  }
+}
+
 
 typedef struct FileExistData {
   void *callback;
@@ -291,6 +359,7 @@ void onFileExists(uv_fs_t *req) {
   GC_FREE(req->data);
   GC_FREE(req);
 }
+
 
 void madlib__file__exists(char *filepath, PAP_t *callback) {
   uv_fs_t *accessReq = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));

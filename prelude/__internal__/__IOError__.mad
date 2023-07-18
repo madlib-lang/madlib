@@ -1,7 +1,7 @@
 export type Error
-  = ArgumentListToLong
+  = AddressAlreadyInUse
+  | ArgumentListToLong
   | PermissionDenied
-  | AddressAlreadyInUse
   | UnknownError
 
 fromLibuvError :: Integer -> Error

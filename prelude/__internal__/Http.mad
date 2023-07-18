@@ -549,7 +549,8 @@ export requestBytes = (req) => pipe(
 
 #elseif llvm
 
-type RequestId = __Id__
+type RequestId = RequestId(RequestId)
+
 
 requestFFI :: Request String -> (Error String -> {}) -> (Response String -> {}) -> RequestId
 requestFFI = extern "madlib__http__request"

@@ -8,7 +8,7 @@ import {} from "Integer"
 
 
 type TimerId = __TimerId__
-export type TimerId
+
 
 /**
  * Wish represents an async computation that needs to be fulfilled. It is
@@ -445,7 +445,8 @@ export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
         putLine("-- WITH TIMEOUT: START")
         cancel = run(
           (x) => {
-            if (!done) {
+            if (!done) do {
+              clearTimeout(timeoutId)
               badCB(x)
             }
           },
