@@ -421,12 +421,14 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
 
   -- Constructors
   Typed qt area (Var ctorName True) -> do
-    -- TODO: Handle case of constructors accessed via namespace
     if "." `List.isInfixOf` ctorName then do
       let namespace = takeWhile (/= '.') ctorName
       let realCtorName = tail $ dropWhile (/= '.') ctorName
-      foreignModulePath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+      firstLevelForeignPath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+
+      foreignModulePath <- findCtorForeignModulePath firstLevelForeignPath realCtorName
       ctor <- Rock.fetch $ ForeignConstructor foreignModulePath realCtorName
+
       case ctor of
         Just (Untyped _ (Constructor _ _ t)) ->
           addImport (envCurrentModulePath env) foreignModulePath realCtorName t ConstructorImport
