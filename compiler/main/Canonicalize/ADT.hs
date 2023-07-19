@@ -149,6 +149,7 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
   let name   = Src.adtname adt
       ctors  = Src.adtconstructors adt
       params = Src.adtparams adt
+      importedNames = map iiName $ filter (not . isTypeImport) (envImportInfo env)
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
   let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
@@ -157,6 +158,9 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
                   ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
     (\(_, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
+      when (name `elem` importedNames) $
+        throwError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area)
+
       let cf = foldr1 fn $ ts <> [rt]
           sc = quantify (collectVars (apply s cf)) ([] :=> apply s cf)
       typings' <- mapM canonicalizeTyping typings
