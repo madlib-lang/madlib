@@ -345,7 +345,10 @@ inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) =
 -- INFER ASSIGNMENT
 
 inferAssignment :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAssignment options env e@(Can.Canonical _ (Can.Assignment name exp)) = do
+inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = do
+  when (name `Set.member` envNamespacesInScope env) $ do
+    pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area)
+
   currentScheme <- case M.lookup name (envVars env) of
     Just sc ->
       return sc

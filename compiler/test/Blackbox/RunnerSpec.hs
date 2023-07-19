@@ -113,7 +113,6 @@ spec = do
         result `shouldBe` expected
 
 
-
 compile :: Driver.State CompilationError -> Options -> [FilePath] -> IO String
 compile state options invalidatedPaths = do
   result <-

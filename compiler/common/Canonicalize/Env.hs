@@ -43,6 +43,15 @@ data ImportInfo
     deriving(Eq, Show, Generic, Hashable)
 
 
+isTypeImport :: ImportInfo -> Bool
+isTypeImport ii = case iiType ii of
+  TypeImport ->
+    True
+
+  _ ->
+    False
+
+
 data Env
   = Env
     { envImportInfo :: [ImportInfo]
