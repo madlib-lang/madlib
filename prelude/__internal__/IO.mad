@@ -2,6 +2,12 @@ import type { Wish } from "Wish"
 import { Wish } from "Wish"
 import type { Error } from "__IOError__"
 import Error from "__IOError__"
+import {
+  AddressAlreadyInUse,
+  ArgumentListToLong,
+  PermissionDenied,
+  UnknownError,
+} from "__IOError__"
 
 import { mapWithIndex } from "List"
 import { equals, when } from "Function"
@@ -10,6 +16,10 @@ import { pShow, cShow } from "Show"
 import Terminal from "Terminal"
 
 export type Error
+export AddressAlreadyInUse
+export ArgumentListToLong
+export PermissionDenied
+export UnknownError
 
 prettyCase :: (String -> String) -> String -> String
 prettyCase = (color, str) => pipe(
@@ -123,8 +133,9 @@ export getLine = Wish((bad, good) => #- {
     bad("Not implemented for browsers!")
   {/Browser}
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    rl.close()
+  }
 } -#)
 
 
@@ -136,6 +147,7 @@ export getLine = Wish((bad, good) => #- {
 get :: Wish Error String
 export get = Wish((bad, good) => #- {
   {Node}
+    let canceled = false;
     const lines = [];
 
     const rl = prelude_readline.createInterface({
@@ -149,7 +161,10 @@ export get = Wish((bad, good) => #- {
     })
 
     rl.on("close", () => {
-      rl.close()
+      if (canceled) {
+        return
+      }
+
       good(lines.join("\n"))
     })
   {/Node}
@@ -157,13 +172,21 @@ export get = Wish((bad, good) => #- {
     bad("Not implemented for browsers!")
   {/Browser}
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return function cancel() {
+    canceled = true;
+    rl.close()
+  }
 } -#)
 
 #elseif llvm
 
-getLineFFI :: (Integer -> String -> {}) -> {}
+type Handle = Handle(Handle)
+
+cancelGet :: Handle -> {}
+cancelGet = extern "madlib__stdio__cancelGet"
+
+
+getLineFFI :: (Integer -> String -> {}) -> Handle
 getLineFFI = extern "madlib__stdio__getLine"
 
 
@@ -174,19 +197,23 @@ getLineFFI = extern "madlib__stdio__getLine"
  */
 getLine :: Wish Error String
 export getLine = Wish((bad, good) => {
-  getLineFFI(
-    (libuvError, line) =>
+  done = false
+  id = getLineFFI(
+    (libuvError, line) => {
+      done = true
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(line)
+    }
   )
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    if (!done) { cancelGet(id) }
+  }
 })
 
 
-getFFI :: (Integer -> String -> {}) -> {}
+getFFI :: (Integer -> String -> {}) -> Handle
 getFFI = extern "madlib__stdio__get"
 
 
@@ -197,15 +224,19 @@ getFFI = extern "madlib__stdio__get"
  */
 get :: Wish Error String
 export get = Wish((bad, good) => {
-  getFFI(
-    (libuvError, line) =>
+  done = false
+  id = getFFI(
+    (libuvError, line) => {
+      done = true
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(line)
+    }
   )
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    if (!done) { cancelGet(id) }
+  }
 })
 
 

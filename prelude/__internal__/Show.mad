@@ -22,6 +22,7 @@ type Value
   | Str(String)
   | DictionaryConstructor(Dictionary Value Value)
   | ListConstructor(List Value)
+  | TupleConstructor(List Value)
   | Byte(String)
   | ByteArray(List Value)
 
@@ -260,6 +261,20 @@ list = do {
 }
 
 
+// -------- Tuple -----------------------------------------
+
+tuple :: Parser Value
+tuple = do {
+  _ <- Parse.symbol("#[")
+  items <- Parse.maybeSepBy(value, Parse.symbol(","))
+  _ <- Parse.symbol("]")
+  return pipe(
+    TupleConstructor,
+    of,
+  )(items)
+}
+
+
 // -------- Value -----------------------------------------
 
 value :: Parser Value
@@ -270,6 +285,7 @@ value = Parse.choice([
   string,
   float,
   integer,
+  tuple,
   list,
   dictionary,
   record,
@@ -350,6 +366,23 @@ valueToDoc = (colored, v) => where(v) {
   ListConstructor(items) =>
     PP.group(
       PP.hcat([
+        PP.lbracket,
+        PP.nest(
+          2,
+          PP.hcat([
+            PP.linebreak,
+            PP.sepBy(PP.hcat([PP.comma, PP.line]), map(valueToDoc(colored), items)),
+          ]),
+        ),
+        PP.linebreak,
+        PP.rbracket,
+      ]),
+    )
+
+  TupleConstructor(items) =>
+    PP.group(
+      PP.hcat([
+        PP.text("#"),
         PP.lbracket,
         PP.nest(
           2,

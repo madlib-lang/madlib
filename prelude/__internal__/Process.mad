@@ -7,6 +7,7 @@ import String from "String"
 import List from "List"
 import { fromMaybe } from "Maybe"
 
+type Handle = Handle(Handle)
 
 export alias CommandResult = {
   exitCode :: Integer,
@@ -67,8 +68,11 @@ export exec = (command, args, options) => Wish((bad, good) => #- {
     }
   });
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    proc.stdin.pause();
+    proc.stderr.pause();
+    proc.kill();
+  }
 } -#)
 
 #-
@@ -184,24 +188,34 @@ makeCommandResult = (exitCode, stdout, stderr) => ({
   stderr,
 })
 
-execFFI :: String -> List String -> CommandOptions -> (Integer -> String -> String -> {}) -> {}
+
+
+cancelExec :: Handle -> {}
+cancelExec = extern "madlib__process__cancelExec"
+
+
+execFFI :: String -> List String -> CommandOptions -> (Integer -> String -> String -> {}) -> Handle
 execFFI = extern "madlib__process__exec"
 
 
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
 export exec = (command, args, options) => Wish((bad, good) => {
-  execFFI(
+  done = false
+  handle = execFFI(
     command,
     args,
     { cwd: options.cwd, env: Dictionary.merge(Env, options.env) },
-    (exitCode, stdout, stderr) =>
+    (exitCode, stdout, stderr) => {
+      done = true
       exitCode != 0
         ? bad(makeCommandResult(exitCode, stdout, stderr))
         : good(makeCommandResult(exitCode, stdout, stderr))
+    }
   )
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    if (!done) { cancelExec(handle) }
+  }
 })
 
 exit :: Integer -> {}

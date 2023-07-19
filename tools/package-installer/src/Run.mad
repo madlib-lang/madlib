@@ -154,7 +154,7 @@ formatCopyError = (err) => pipe(
     ),
     pipe(
       List.slice(0, 5),
-      mconcat($, ["...",])
+      mappend($, ["...",])
     ),
     identity
   ),
@@ -295,7 +295,7 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
         (validationResult) => validationResult.shouldCopy
           ? #[
             validationResult.context,
-            mconcat(
+            mappend(
               Tuple.snd(previousContextAndDeps),
               fromMaybe([], validationResult.madlibDotJson.dependencies)
             )

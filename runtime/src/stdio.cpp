@@ -1,25 +1,11 @@
 
-#include <gc.h>
 #include "stdio.hpp"
-
-
-#include <stdlib.h>
-#include <uv.h>
 #include <string.h>
-
 #include "event-loop.hpp"
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-typedef struct StdinData {
-  void *callback;
-  char *data;
-  int64_t currentSize;
-} StdinData_t;
 
 
 void onError(StdinData_t *stdinData, int libUvError) {
@@ -48,6 +34,7 @@ void onStdinReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
   StdinData_t *stdinData = (StdinData_t*)stream->data;
 
   if (nread < 0) {
+    stdinData->done = true;
     // error
     uv_read_stop(stream);
     onError(stdinData, nread);
@@ -74,6 +61,7 @@ void onStdinReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
     stdinData->currentSize += bytesToUse;
 
     if (foundLineReturn) {
+      stdinData->done = true;
       void *cb = stdinData->callback;
       void *result = stdinData->data;
 
@@ -97,11 +85,12 @@ void onStdinRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
   StdinData_t *stdinData = (StdinData_t*)stream->data;
 
   if (nread < 0) {
+    stdinData->done = true;
     if (nread == UV_EOF) {
       uv_read_stop(stream);
       char *result = NULL;
       if (stdinData->data == NULL) {
-        result = (char*)"\0";
+        result = (char*)"";
       } else {
         result = stdinData->data;
       }
@@ -140,32 +129,48 @@ void allocBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
 }
 
 
-void madlib__stdio__getLine(PAP_t *callback) {
+StdinData_t *madlib__stdio__getLine(PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_tty_t));
-  
-  StdinData_t *data = (StdinData_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(StdinData_t));
+  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
+
+  StdinData_t *data = (StdinData_t *)GC_MALLOC(sizeof(StdinData_t));
   data->callback = callback;
   data->currentSize = 0;
+  data->done = false;
+  data->stream = stdIn;
 
   stdIn->data = data;
 
   uv_tty_init(getLoop(), stdIn, STDIN, 1);
   uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinReadLine);
+
+  return data;
 }
 
-void madlib__stdio__get(PAP_t *callback) {
+StdinData_t *madlib__stdio__get(PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_tty_t));
-  
-  StdinData_t *data = (StdinData_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(StdinData_t));
+  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
+
+  StdinData_t *data = (StdinData_t *)GC_MALLOC(sizeof(StdinData_t));
   data->callback = callback;
   data->currentSize = 0;
+  data->done = false;
+  data->stream = stdIn;
 
   stdIn->data = data;
 
   uv_tty_init(getLoop(), stdIn, STDIN, 1);
   uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinRead);
+
+  return data;
+}
+
+
+void madlib__stdio__cancelGet(StdinData_t *handle) {
+  if (!handle->done) {
+    uv_read_stop((uv_stream_t*) handle->stream);
+    uv_close((uv_handle_t*) handle->stream, onStdInPipeClose);
+  }
 }
 
 

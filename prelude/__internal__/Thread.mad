@@ -50,7 +50,12 @@ threadFFI = extern "madlib__process__thread"
 
 
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
-export create = (handler) => Wish((bad, good) => { threadFFI(handler, bad, good) })
+export create = (handler) => Wish((bad, good) => {
+  threadFFI(handler, bad, good)
+
+  // TODO: implement cancellation function
+  return () => {}
+})
 
 
 #elseif js
@@ -88,6 +93,11 @@ export mutexUnlock = () => ({})
 
 
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
-export create = (handler) => Wish(handler)
+export create = (handler) => Wish((bad, good) => {
+  handler(bad, good)
+
+  // TODO: implement cancellation function
+  return () => {}
+})
 
 #endif
