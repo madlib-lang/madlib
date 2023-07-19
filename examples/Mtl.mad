@@ -185,6 +185,6 @@ main = () => {
     andDo(of(5)),
     chain((x) => sumAndLog(x)),
     (m) => runStack(37, m),
-    IO.log
+    IO.cLog,
   )(state)
 }

@@ -3,8 +3,19 @@ import type { Error } from "__IOError__"
 
 import { Wish } from "Wish"
 import Error from "__IOError__"
+import {
+  AddressAlreadyInUse,
+  ArgumentListToLong,
+  PermissionDenied,
+  UnknownError,
+} from "__IOError__"
 
 export type Error
+export AddressAlreadyInUse
+export ArgumentListToLong
+export PermissionDenied
+export UnknownError
+
 
 #iftarget js
 
@@ -46,13 +57,18 @@ export read = (path) => Wish((bad, good) => #- {
     }
   })
 
-  // TODO: handle cancellation function correctly
+  // It seems readdir currently does not work with AbortController
   return () => {}
 } -#)
 
 #elseif llvm
 
-readFFI :: String -> (Integer -> List String -> {}) -> {}
+type Handle = Handle(Handle)
+
+cancelRead :: Handle -> {}
+cancelRead = extern "madlib__directory__cancelRead"
+
+readFFI :: String -> (Integer -> List String -> {}) -> Handle
 readFFI = extern "madlib__directory__read"
 
 /**
@@ -70,16 +86,20 @@ readFFI = extern "madlib__directory__read"
  */
 read :: String -> Wish Error (List String)
 export read = (path) => Wish((bad, good) => {
-  readFFI(
+  done = false
+  id = readFFI(
     path,
-    (libuvError, result) =>
+    (libuvError, result) => {
+      done = true
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(result)
+    }
   )
 
-  // TODO: handle cancellation function correctly
-  return () => {}
+  return () => {
+    if (!done) { cancelRead(id) }
+  }
 })
 
 #endif

@@ -470,6 +470,7 @@ export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
         }, ms)
 
         return () => {
+          clearTimeout(timeoutId)
           done = true
           cancel()
         }

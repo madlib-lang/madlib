@@ -1,7 +1,6 @@
 #ifndef GC_THREADS
   #define GC_THREADS
 #endif
-#include <uv.h>
 #include "process.hpp"
 #include <sys/mman.h>
 #include <cstring>
@@ -12,7 +11,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <time.h>
-#include <gc.h>
 
 #ifndef __MINGW32__
   #include <glob.h>
@@ -138,17 +136,6 @@ char *madlib__process__internal__getCurrentPath() {
 
 
 // exec
-typedef struct ExecData {
-  void *callback;
-  uv_stream_t *stdoutPipe;
-  uv_stream_t *stderrPipe;
-  uv_process_options_t *options;
-
-  char *stdoutOutput;
-  char *stderrOutput;
-  size_t stdoutSize;
-  size_t stderrSize;
-} ExecData_t;
 
 
 void onChildClose(uv_handle_t *handle) {}
@@ -156,6 +143,7 @@ void onChildClose(uv_handle_t *handle) {}
 
 void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
   ExecData_t *data = (ExecData_t*)req->data;
+  data->stopped = true;
 
   int64_t *boxedStatus = (int64_t*)exitCode;
 
@@ -176,8 +164,9 @@ void onPipeClose(uv_handle_t *handle) {}
 
 
 void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  ExecData_t *data = (ExecData_t*)stream->data;
+
   if (nread > 0) {
-    ExecData_t *data = (ExecData_t*)stream->data;
     size_t newSize = data->stdoutSize + nread;
     char *newOutput = (char*)GC_MALLOC_ATOMIC(newSize + 1);
 
@@ -193,14 +182,16 @@ void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     data->stdoutOutput = newOutput;
     data->stdoutSize = newSize;
   } else {
+    data->stopped = true;
     // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
 
 void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  ExecData_t *data = (ExecData_t*)stream->data;
+
   if (nread > 0) {
-    ExecData_t *data = (ExecData_t*)stream->data;
     size_t newSize = data->stderrSize + nread;
     char *newOutput = (char*)GC_MALLOC_ATOMIC(newSize + 1);
 
@@ -216,12 +207,13 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     data->stderrOutput = newOutput;
     data->stderrSize = newSize;
   } else {
+    data->stopped = true;
     // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
 
-void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback) {
+ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback) {
   uv_process_t *childReq = (uv_process_t*)GC_MALLOC(sizeof(uv_process_t));
   uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC(sizeof(uv_process_options_t));
   uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
@@ -229,6 +221,7 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
 
   ExecData_t *data = (ExecData_t*)GC_MALLOC(sizeof(ExecData_t));
   data->callback = callback;
+  data->req = childReq;
   data->options = options;
   data->stdoutSize = 0;
   data->stderrSize = 0;
@@ -238,6 +231,9 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
   (data->stderrOutput)[0] = '\0';
   data->stdoutPipe = (uv_stream_t *)stdoutPipe;
   data->stderrPipe = (uv_stream_t *)stderrPipe;
+  data->canceled = false;
+  data->started = false;
+  data->stopped = false;
 
   childReq->data = data;
   stdoutPipe->data = data;
@@ -332,13 +328,29 @@ void madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib_
 
     size_t stdoutLength = strlen(data->stdoutOutput);
     size_t stderrLength = strlen(data->stderrOutput);
+    data->stopped = true;
 
     __applyPAP__(callback, 3, boxedStatus, data->stdoutOutput, data->stderrOutput);
+
+    return NULL;
   } else {
+    data->started = true;
     int rout = uv_read_start((uv_stream_t *)stdoutPipe, allocExecBuffer, onExecStdoutRead);
     int rerr = uv_read_start((uv_stream_t *)stderrPipe, allocExecBuffer, onExecStderrRead);
+
+    return data;
+  }
+}
+
+void madlib__process__cancelExec(ExecData_t *data) {
+  data->canceled = true;
+  if (!data || data->stopped) {
+    return;
   }
 
+  uv_close((uv_handle_t*) data->stdoutPipe, onPipeClose);
+  uv_close((uv_handle_t*) data->stderrPipe, onPipeClose);
+  uv_close((uv_handle_t*) data->req, onChildClose);
 }
 
 

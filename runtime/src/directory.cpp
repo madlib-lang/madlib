@@ -1,9 +1,7 @@
-
-#include <gc.h>
+#include "directory.hpp"
 #include <string.h>
 #include "event-loop.hpp"
 #include "list.hpp"
-#include "apply-pap.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,10 +40,17 @@ void onDirScan(uv_fs_t *req) {
 }
 
 
-void madlib__directory__read(char *dir, PAP_t *callback) {
-  uv_fs_t *req = (uv_fs_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_fs_t));
+uv_fs_t *madlib__directory__read(char *dir, PAP_t *callback) {
+  uv_fs_t *req = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
   req->data = callback;
   uv_fs_scandir(getLoop(), req, dir, 0, onDirScan);
+
+  return req;
+}
+
+void madlib__directory__cancelRead(uv_fs_t *req) {
+  uv_fs_t closeReq;
+  uv_fs_close(getLoop(), &closeReq, req->result, NULL);
 }
 
 #ifdef __cplusplus

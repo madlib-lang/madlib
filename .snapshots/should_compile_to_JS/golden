@@ -7,7 +7,8 @@ let __568c75136c0c369c440814a7af59434a__half__1 = (x => (x / 2));
 let __568c75136c0c369c440814a7af59434a__main = (_ => {
     __568c75136c0c369c440814a7af59434a__double__2(__568c75136c0c369c440814a7af59434a__half__1(3));
     __eq__(3, 5);
-    let carResponse = ({ cars: (null) });
+    let carResponse
+carResponse = ({ cars: (null) });
     ((__x__) => {
   if (true) {
     let { cars: cs } = __x__;
@@ -53,8 +54,10 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
   }
 })(true);
     (true ? `OK` : `NOT OK`);
-    let might = __568c75136c0c369c440814a7af59434a__Just(3);
-    let q = ((__x__) => {
+    let might
+might = __568c75136c0c369c440814a7af59434a__Just(3);
+    let q
+q = ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
     return a;
@@ -81,8 +84,10 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
     !(true);
     !(false) && !(true);
     !(false) || !(true);
-    let arr = ({ v: 1, n: { v: 2, n: { v: 3, n: null } } });
-    let all = ({ v: 4, n: { v: 5, n: { v: 6, n: arr } } });
+    let arr
+arr = ({ v: 1, n: { v: 2, n: { v: 3, n: null } } });
+    let all
+all = ({ v: 4, n: { v: 5, n: { v: 6, n: arr } } });
     ((__x__) => {
   if (__x__ !== null && __x__.v === 1 && __x__.n !== null && __x__.n.v === 2 && __x__.n.n !== null && __x__.n.n.v === 3 && __x__.n.n.n === null) {
     return 1;
@@ -165,7 +170,8 @@ let __568c75136c0c369c440814a7af59434a__main = (_ => {
     throw 'non exhaustive patterns!';
   }
 })(({ x: 4, name: `John` }));
-    let tup = ([1, 2, 3]);
+    let tup
+tup = ([1, 2, 3]);
     __eq__(([1, 2, 3]), ([1, 2, 3]));
     ((__x__) => {
   if (__x__.length === 2 && true && true) {
@@ -194,7 +200,8 @@ let __568c75136c0c369c440814a7af59434a__fst__3 = (tuple => ((__x__) => {
   }
 })(tuple));
 let __568c75136c0c369c440814a7af59434a__snd__4 = (tuple => {
-    let b = ((__x__) => {
+    let b
+b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [,b1] = __x__;
     return b1;

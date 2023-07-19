@@ -12,14 +12,16 @@ BASE_DATE_INFO = {
   milliseconds: 363,
 }
 
-test("fromDateInfo", (_) =>
+test("compare - greater", () => assertEquals(Date.DateTime(10) > Date.DateTime(0), true))
+
+test("fromDateInfo", () =>
   assertEquals(
     Date.fromDateInfo(BASE_DATE_INFO),
     Date.DateTime(1657913122363)
   )
 )
 
-test("fromDateInfo - december", (_) =>
+test("fromDateInfo - december", () =>
   assertEquals(
     Date.fromDateInfo({
       year: 2022,
@@ -34,14 +36,14 @@ test("fromDateInfo - december", (_) =>
   )
 )
 
-test("toDateInfo", (_) =>
+test("toDateInfo", () =>
   assertEquals(
     Date.toDateInfo(Date.DateTime(1657913122363)),
     BASE_DATE_INFO
   )
 )
 
-test("addMilliseconds", (_) =>
+test("addMilliseconds", () =>
   assertEquals(
     pipe(
       Date.DateTime,
@@ -51,7 +53,7 @@ test("addMilliseconds", (_) =>
   )
 )
 
-test("addSeconds", (_) =>
+test("addSeconds", () =>
   assertEquals(
     pipe(
       Date.DateTime,
@@ -61,7 +63,7 @@ test("addSeconds", (_) =>
   )
 )
 
-test("addMinutes", (_) =>
+test("addMinutes", () =>
   assertEquals(
     pipe(
       Date.fromDateInfo,
@@ -71,7 +73,7 @@ test("addMinutes", (_) =>
   )
 )
 
-test("addHours", (_) =>
+test("addHours", () =>
   assertEquals(
     pipe(
       Date.fromDateInfo,
@@ -81,7 +83,7 @@ test("addHours", (_) =>
   )
 )
 
-test("addDays", (_) =>
+test("addDays", () =>
   assertEquals(
     pipe(
       Date.fromDateInfo,

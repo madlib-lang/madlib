@@ -12,6 +12,7 @@ import String from "String"
 import Terminal from "Terminal"
 import Tuple from "Tuple"
 import Wish from "Wish"
+import { pShow } from "Show"
 
 
 
@@ -151,6 +152,25 @@ export assertEquals = (actual, expected) => actual == expected
   : Wish.bad(AssertionError(expected, actual))
 
 
+indent :: Integer -> String -> String
+indent = (amount, x) => pipe(
+  String.lines,
+  map((line) => pipe(
+    spaces,
+    mappend($, line)
+  )(amount)),
+  String.unlines
+)(x)
+
+
+renderValue :: Show a => (String -> String) -> a -> String
+renderValue = (colorize, value) => pipe(
+  pShow,
+  indent(4),
+  colorize,
+)(value)
+
+
 test :: Show a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   testImpl,
@@ -159,10 +179,10 @@ export test = (description, testImpl) => pipe(
     where {
       AssertionError(expected, actual) =>
         IO.red(`${CHAR_CROSS} ${description}`)
-          ++ "\n  expected:\n    "
-          ++ Terminal.text.brightGreen(show(expected))
-          ++ "\n  actual:\n    "
-          ++ Terminal.text.brightRed(show(actual))
+          ++ "\n  expected:\n"
+          ++ renderValue(Terminal.text.brightGreen, expected)
+          ++ "\n  actual:\n"
+          ++ renderValue(Terminal.text.brightRed, actual)
           ++ "\n"
 
       ErrorWithMessage(message) =>
