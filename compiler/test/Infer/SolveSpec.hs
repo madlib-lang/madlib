@@ -385,7 +385,7 @@ spec = do
         codeB = unlines
           [ "import P from \"./ModuleA\""
           , "main = () => {"
-          , "p = P.Point(#[2, 4])"
+          , "  p = P.Point(#[2, 4])"
           , "  where(p) {"
           , "    P.Point(#[a, b]) => a + b"
           , "  }"

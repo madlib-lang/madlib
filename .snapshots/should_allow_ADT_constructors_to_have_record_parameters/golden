@@ -1532,7 +1532,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TCon (TC "String" Star) "prelude")))
                        (TCon (TC "{}" Star) "prelude"))
-                  (Area (Loc 26 2 1) (Loc 110 7 2))
+                  (Area (Loc 26 2 1) (Loc 112 7 2))
                   (TypedExp
                      (Typed
                         ([] :=>
@@ -1543,7 +1543,7 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude")))
                              (TCon (TC "{}" Star) "prelude"))
-                        (Area (Loc 26 2 1) (Loc 110 7 2))
+                        (Area (Loc 26 2 1) (Loc 112 7 2))
                         (Assignment
                            "main"
                            (Typed
@@ -1555,18 +1555,18 @@
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TCon (TC "String" Star) "prelude")))
                                    (TCon (TC "{}" Star) "prelude"))
-                              (Area (Loc 33 2 8) (Loc 110 7 2))
+                              (Area (Loc 33 2 8) (Loc 112 7 2))
                               (Abs
                                  (Typed
                                     ([] :=>
                                        TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TCon (TC "String" Star) "prelude"))
-                                    (Area (Loc 109 7 1) (Loc 109 7 1))
+                                    (Area (Loc 111 7 1) (Loc 111 7 1))
                                     "_")
                                  [ Typed
                                      ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
-                                     (Area (Loc 41 3 1) (Loc 61 3 21))
+                                     (Area (Loc 43 3 3) (Loc 63 3 23))
                                      (Assignment
                                         "p"
                                         (Typed
@@ -1580,7 +1580,7 @@
                                                 Nothing
                                             ] :=>
                                               TCon (TC "Point" Star) "./ModuleA.mad")
-                                           (Area (Loc 45 3 5) (Loc 61 3 21))
+                                           (Area (Loc 47 3 7) (Loc 63 3 23))
                                            (App
                                               (Typed
                                                  ([] :=>
@@ -1599,7 +1599,7 @@
                                                                (TCon (TC "Integer" Star) "prelude"))
                                                             (TCon (TC "Integer" Star) "prelude")))
                                                       (TCon (TC "Point" Star) "./ModuleA.mad"))
-                                                 (Area (Loc 45 3 5) (Loc 52 3 12))
+                                                 (Area (Loc 47 3 7) (Loc 54 3 14))
                                                  (Var "P.Point" True))
                                               (Typed
                                                  ([ IsIn
@@ -1618,7 +1618,7 @@
                                                             "prelude")
                                                          (TCon (TC "Integer" Star) "prelude"))
                                                       (TCon (TC "Integer" Star) "prelude"))
-                                                 (Area (Loc 53 3 13) (Loc 60 3 20))
+                                                 (Area (Loc 55 3 15) (Loc 62 3 22))
                                                  (TupleConstructor
                                                     [ Typed
                                                         ([ IsIn
@@ -1627,7 +1627,7 @@
                                                              Nothing
                                                          ] :=>
                                                            TCon (TC "Integer" Star) "prelude")
-                                                        (Area (Loc 55 3 15) (Loc 56 3 16))
+                                                        (Area (Loc 57 3 17) (Loc 58 3 18))
                                                         (LNum "2")
                                                     , Typed
                                                         ([ IsIn
@@ -1636,23 +1636,23 @@
                                                              Nothing
                                                          ] :=>
                                                            TCon (TC "Integer" Star) "prelude")
-                                                        (Area (Loc 58 3 18) (Loc 59 3 19))
+                                                        (Area (Loc 60 3 20) (Loc 61 3 21))
                                                         (LNum "4")
                                                     ]))
                                               True)))
                                  , Typed
                                      ([] :=> TCon (TC "Integer" Star) "prelude")
-                                     (Area (Loc 64 4 3) (Loc 108 6 4))
+                                     (Area (Loc 66 4 3) (Loc 110 6 4))
                                      (Where
                                         (Typed
                                            ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
-                                           (Area (Loc 70 4 9) (Loc 71 4 10))
+                                           (Area (Loc 72 4 9) (Loc 73 4 10))
                                            (Var "p" False))
                                         [ Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
-                                                 (Just (Area (Loc 101 5 27) (Loc 102 5 28)))
+                                                 (Just (Area (Loc 103 5 27) (Loc 104 5 28)))
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -1661,11 +1661,11 @@
                                                        "prelude")
                                                     (TCon (TC "Point" Star) "./ModuleA.mad"))
                                                  (TCon (TC "Integer" Star) "prelude"))
-                                            (Area (Loc 79 5 5) (Loc 104 5 30))
+                                            (Area (Loc 81 5 5) (Loc 106 5 30))
                                             (Is
                                                (Typed
                                                   ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
-                                                  (Area (Loc 79 5 5) (Loc 95 5 21))
+                                                  (Area (Loc 81 5 5) (Loc 97 5 21))
                                                   (PCon
                                                      "P.Point"
                                                      [ Typed
@@ -1679,7 +1679,7 @@
                                                                     "prelude")
                                                                  (TVar (TV "r17" Star)))
                                                               (TVar (TV "s18" Star)))
-                                                         (Area (Loc 87 5 13) (Loc 94 5 20))
+                                                         (Area (Loc 89 5 13) (Loc 96 5 20))
                                                          (PTuple
                                                             [ Typed
                                                                 ([ IsIn
@@ -1690,8 +1690,8 @@
                                                                      ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 101 5 27)
-                                                                           (Loc 102 5 28)))
+                                                                           (Loc 103 5 27)
+                                                                           (Loc 104 5 28)))
                                                                  , IsIn
                                                                      "Number"
                                                                      [ TCon
@@ -1700,12 +1700,12 @@
                                                                      ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 101 5 27)
-                                                                           (Loc 102 5 28)))
+                                                                           (Loc 103 5 27)
+                                                                           (Loc 104 5 28)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "Integer" Star) "prelude")
-                                                                (Area (Loc 89 5 15) (Loc 90 5 16))
+                                                                (Area (Loc 91 5 15) (Loc 92 5 16))
                                                                 (PVar "a")
                                                             , Typed
                                                                 ([ IsIn
@@ -1716,8 +1716,8 @@
                                                                      ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 101 5 27)
-                                                                           (Loc 102 5 28)))
+                                                                           (Loc 103 5 27)
+                                                                           (Loc 104 5 28)))
                                                                  , IsIn
                                                                      "Number"
                                                                      [ TCon
@@ -1726,12 +1726,12 @@
                                                                      ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 101 5 27)
-                                                                           (Loc 102 5 28)))
+                                                                           (Loc 103 5 27)
+                                                                           (Loc 104 5 28)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "Integer" Star) "prelude")
-                                                                (Area (Loc 92 5 18) (Loc 93 5 19))
+                                                                (Area (Loc 94 5 18) (Loc 95 5 19))
                                                                 (PVar "b")
                                                             ])
                                                      ]))
@@ -1739,10 +1739,10 @@
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
-                                                       (Just (Area (Loc 101 5 27) (Loc 102 5 28)))
+                                                       (Just (Area (Loc 103 5 27) (Loc 104 5 28)))
                                                    ] :=>
                                                      TCon (TC "Integer" Star) "prelude")
-                                                  (Area (Loc 99 5 25) (Loc 104 5 30))
+                                                  (Area (Loc 101 5 25) (Loc 106 5 30))
                                                   (App
                                                      (Typed
                                                         ([ IsIn
@@ -1750,7 +1750,7 @@
                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                              (Just
                                                                 (Area
-                                                                   (Loc 101 5 27) (Loc 102 5 28)))
+                                                                   (Loc 103 5 27) (Loc 104 5 28)))
                                                          ] :=>
                                                            TApp
                                                              (TApp
@@ -1762,7 +1762,7 @@
                                                                 (TCon
                                                                    (TC "Integer" Star) "prelude"))
                                                              (TCon (TC "Integer" Star) "prelude"))
-                                                        (Area (Loc 99 5 25) (Loc 104 5 30))
+                                                        (Area (Loc 101 5 25) (Loc 106 5 30))
                                                         (App
                                                            (Typed
                                                               ([ IsIn
@@ -1799,7 +1799,7 @@
                                                                       (TCon
                                                                          (TC "Integer" Star)
                                                                          "prelude")))
-                                                              (Area (Loc 101 5 27) (Loc 102 5 28))
+                                                              (Area (Loc 103 5 27) (Loc 104 5 28))
                                                               (Var "+" False))
                                                            (Typed
                                                               ([ IsIn
@@ -1809,11 +1809,11 @@
                                                                    ]
                                                                    (Just
                                                                       (Area
-                                                                         (Loc 101 5 27)
-                                                                         (Loc 102 5 28)))
+                                                                         (Loc 103 5 27)
+                                                                         (Loc 104 5 28)))
                                                                ] :=>
                                                                  TCon (TC "Integer" Star) "prelude")
-                                                              (Area (Loc 99 5 25) (Loc 100 5 26))
+                                                              (Area (Loc 101 5 25) (Loc 102 5 26))
                                                               (Var "a" False))
                                                            False))
                                                      (Typed
@@ -1822,10 +1822,10 @@
                                                              [ TCon (TC "Integer" Star) "prelude" ]
                                                              (Just
                                                                 (Area
-                                                                   (Loc 101 5 27) (Loc 102 5 28)))
+                                                                   (Loc 103 5 27) (Loc 104 5 28)))
                                                          ] :=>
                                                            TCon (TC "Integer" Star) "prelude")
-                                                        (Area (Loc 103 5 29) (Loc 104 5 30))
+                                                        (Area (Loc 105 5 29) (Loc 106 5 30))
                                                         (Var "b" False))
                                                      True)))
                                         ])

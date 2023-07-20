@@ -14,12 +14,14 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Data.List
 import           Error.Context
 import           Error.Error
 import           Control.Monad.Except
 import           Data.Foldable
 import qualified Data.Maybe as Maybe
+import Explain.Location (Area)
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Slv.Pattern], [Pred], Vars, [Type])
@@ -130,8 +132,10 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     tv                    <- newTVar Star
     sc                    <- catchError
       (lookupVar env n)
-      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area)
-      )
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area))
+
+    verifyConstructor env area n
+
     (ps' :=> t) <- instantiate sc
     s           <- contextualUnify env p t (foldr fn tv ts)
 
@@ -140,3 +144,9 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     return (Slv.Typed ([] :=> t) area (Slv.PCon n pats'), ps <> ps', M.map (apply s) vars, t)
 
   _ -> undefined
+
+
+verifyConstructor :: Env -> Area -> String -> Infer ()
+verifyConstructor env area name = do
+  unless (isConstructor env name || name == "Dictionary") $ do
+    throwError $ CompilationError (NotAConstructor name) (Context (envCurrentPath env) area)

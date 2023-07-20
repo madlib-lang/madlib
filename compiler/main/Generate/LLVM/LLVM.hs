@@ -722,7 +722,7 @@ buildReferencePAP symbolTable env area arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
-  Core.Typed qt area metadata (Core.Call (Core.Typed _ _ _ (Var "+" _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
+  Core.Typed _ _ metadata (Core.Call (Core.Typed _ _ _ (Var "+" _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
     | Core.isLeftAdditionRecursiveCall metadata || Core.isLeftMultiplicationRecursiveCall metadata -> do
       let Just params   = boxedParams <$> recursionData env
       let Just holePtr' = holePtr <$> recursionData env

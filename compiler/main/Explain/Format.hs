@@ -616,6 +616,10 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Wrap it in a record\n"
     <> "Hint: Use a closure that returns a setter and getter to mutate it"
 
+  NotAConstructor n ->
+    "You are trying to match '" <> n <> "', but it is not a constructor\n\n"
+    <> "Hint: Only constructors can be used in patterns\n"
+
   MethodNameAlreadyDefined ->
     "You are trying to redefine a method name\n\n"
     <> "Hint: Use a different name for the method"
@@ -1006,6 +1010,19 @@ createErrorDiagnostic color context typeError = case typeError of
           ]
           [ Diagnose.Hint "Wrap it in a record"
           , Diagnose.Hint "Use a closure that returns a setter and getter to mutate it"
+          ]
+
+  NotAConstructor n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Not a constructor"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "You are trying to match '" <> n <> "', but it is not a constructor"
+            )
+          ]
+          [ Diagnose.Hint "Only constructors can be used in patterns"
           ]
 
   MethodNameAlreadyDefined ->
