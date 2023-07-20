@@ -2677,6 +2677,11 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
+  (t1@(TApp _ _), t2@(TApp _ _)) | length (gatherAllConstructorArgs t1) /= length (gatherAllConstructorArgs t2) ->
+    let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
+        (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
+    in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
+
   (TApp _ _, TApp _ _) ->
     let allArgs = gatherAllConstructorArgsForDiff t1 t2
         (vars1', vars2', ctor1 : args1, ctor2 : args2) = constructorAndFunctionArgsToDocsWithDiff False vars1 vars2 allArgs
