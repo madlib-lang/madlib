@@ -106,6 +106,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/recursion-from-closure"
         , "compiler/test/Blackbox/test-cases/record-instances"
         , "compiler/test/Blackbox/test-cases/record-instance-not-found"
+        , "compiler/test/Blackbox/test-cases/derive-comparable"
         ]
   forM_ cases $ \casePath -> do
     before (compileAndRun casePath) $ describe "" $ do

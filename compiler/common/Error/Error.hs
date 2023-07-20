@@ -62,6 +62,7 @@ data TypeError
   | TypeAnnotationNameMismatch String String
   | MutatingFunction String
   | MethodNameAlreadyDefined
+  | NotAConstructor String
   deriving (Show, Eq, Ord)
 
 
