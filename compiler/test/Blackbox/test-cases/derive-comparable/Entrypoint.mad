@@ -1,0 +1,8 @@
+import IO from "IO"
+
+type User = User(String, Integer)
+derive Comparable User
+
+main = () => {
+  IO.log(User("John", 13) > User("John", 19))
+}

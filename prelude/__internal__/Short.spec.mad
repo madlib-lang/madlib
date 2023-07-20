@@ -1,0 +1,15 @@
+import { assertEquals, test } from "Test"
+import { EQ, LT, GT } from "Compare"
+import Short from "./Short"
+
+test("toInteger - positive", () => assertEquals(Short.toInteger(3), 3))
+test("toInteger - negative", () => assertEquals(Short.toInteger(-3), -3))
+
+test("toByte - normal", () => assertEquals(Short.toByte(3), 3))
+test("toByte - overflow", () => assertEquals(Short.toByte(257), 1))
+
+test("Compare Integer - GT", () => assertEquals(compare((3 :: Short), 2), GT))
+
+test("Compare Integer - LT", () => assertEquals(compare((1 :: Short), 2), LT))
+
+test("Compare Integer - EQ", () => assertEquals(compare((2 :: Short), 2), EQ))
