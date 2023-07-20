@@ -141,8 +141,8 @@ ast :: { Src.AST }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping 'ret' 'export' name '=' exp ast
       %shift { $9 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (Src.getArea $8)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $8)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $6) (Src.getArea $8)) (tokenTarget $1) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
-  | 'derive' name name ast                  %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedADT (strV $2) (strV $3)) : (Src.aderived $4) } }
-  | 'derive' name deriveDeclFieldNames ast  %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (snd $3)) (tokenTarget $1) (Src.DerivedRecord (strV $2) (fst $3)) : (Src.aderived $4) } }
+  | 'derive' name name ast                          %shift { $4 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.DerivedADT (strV $2) (strV $3)) : (Src.aderived $4) } }
+  | 'derive' name '{' deriveDeclFieldNames '}' ast  %shift { $6 { Src.aderived = Src.Source (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) (Src.DerivedRecord (strV $2) (fst $4)) : (Src.aderived $6) } }
   -- | error ast                        { $2 }
 
 

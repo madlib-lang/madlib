@@ -1,8 +1,15 @@
 import IO from "IO"
 
-type User = User(String, Integer)
+type User
+  = User(String, Integer)
+  | Unknown
 derive Comparable User
+
+derive Comparable { x, y }
 
 main = () => {
   IO.log(User("John", 13) > User("John", 19))
+  IO.log(User("John", 13) > Unknown)
+  IO.log({ x: 3, y: 4 } > { x: 3, y: 7 })
+  IO.log({ x: 3, y: 4 } >= { x: 3, y: 4 })
 }
