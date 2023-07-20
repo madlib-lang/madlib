@@ -1,8 +1,15 @@
 import { assertEquals, test } from "Test"
+import { EQ, LT, GT } from "Compare"
 import Float from "./Float"
 
-test("toInteger - positive", (_) => assertEquals(Float.toInteger(3.4), 3))
-test("toInteger - negative", (_) => assertEquals(Float.toInteger(-3.4), -3))
+test("toInteger - positive", () => assertEquals(Float.toInteger(3.4), 3))
+test("toInteger - negative", () => assertEquals(Float.toInteger(-3.4), -3))
 
-test("toByte - normal", (_) => assertEquals(Float.toByte(3.4), 3))
-test("toByte - overflow", (_) => assertEquals(Float.toByte(257.4), 1))
+test("toByte - normal", () => assertEquals(Float.toByte(3.4), 3))
+test("toByte - overflow", () => assertEquals(Float.toByte(257.4), 1))
+
+test("Compare Integer - GT", () => assertEquals(compare(3.3, 2.2), GT))
+
+test("Compare Integer - LT", () => assertEquals(compare(1.1, 2.2), LT))
+
+test("Compare Integer - EQ", () => assertEquals(compare(2.2, 2.2), EQ))
