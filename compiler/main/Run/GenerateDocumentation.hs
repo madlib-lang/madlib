@@ -51,7 +51,7 @@ getFilesForDoc fp = do
       withoutPreludePrivateFiles =
         filter
           (\path ->
-            not ("prelude/__internal__" `isInfixOf` path) ||
+            not ("prelude/__internal__" `isInfixOf` path || "prelude\\__internal__" `isInfixOf` path) ||
             not ("__" `isPrefixOf` takeBaseName path && "__" `isSuffixOf` takeBaseName path)
           )
           withoutSpecFiles

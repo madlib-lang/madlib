@@ -72,7 +72,7 @@ generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Sou
 
 validatePreludePrivateModules :: Options -> AST -> IO (Either CompilationError AST)
 validatePreludePrivateModules options ast@AST{ aimports, apath = Just path } = do
-  if "prelude/__internal__" `isInfixOf` path then
+  if "prelude/__internal__" `isInfixOf` path || "prelude\\__internal__" `isInfixOf` path then
     return $ Right ast
   else do
     updatedImports <- computeAbsoluteImportPaths (optPathUtils options) (not $ optParseOnly options) path (optRootPath options) aimports

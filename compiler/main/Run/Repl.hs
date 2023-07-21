@@ -202,7 +202,15 @@ findTypeOfName ast name =
 
 cleanBuiltinsImport :: Src.AST -> Src.AST
 cleanBuiltinsImport ast@Src.AST{ Src.aimports } =
-  ast{ Src.aimports = filter (\imp -> not $ "prelude/__internal__/__BUILTINS__.mad" `List.isSuffixOf` Src.getImportAbsolutePath imp) aimports }
+  ast
+    { Src.aimports =
+        filter
+          (\imp ->
+            not ("prelude/__internal__/__BUILTINS__.mad" `List.isSuffixOf` Src.getImportAbsolutePath imp)
+            && not ("prelude\\__internal__\\__BUILTINS__.mad" `List.isSuffixOf` Src.getImportAbsolutePath imp)
+          )
+          aimports
+    }
 
 
 evalMadlibCode :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult

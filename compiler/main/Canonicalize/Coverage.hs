@@ -20,7 +20,7 @@ import Control.Monad.State
 addTrackers :: Options -> AST -> CanonicalM AST
 addTrackers _ ast@AST{ apath = Nothing } = return ast
 addTrackers options ast@AST{ apath = Just path } = do
-  let isPrelude = "prelude/__internal__" `isInfixOf` path
+  let isPrelude = "prelude/__internal__" `isInfixOf` path || "prelude\\__internal__" `isInfixOf` path
   let isPackage = "madlib_modules" `isInfixOf` path
   let isTest    = ".spec.mad" `isSuffixOf` path
   coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"

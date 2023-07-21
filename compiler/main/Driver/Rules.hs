@@ -95,7 +95,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
     let importPaths = Src.getImportAbsolutePath <$> aimports
     importPaths' <-
-          if optCoverage options && not ("prelude/__internal__" `List.isInfixOf` entrypoint) then do
+          if optCoverage options && not ("prelude/__internal__" `List.isInfixOf` entrypoint) && not ("prelude\\__internal__" `List.isInfixOf` entrypoint) then do
             coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
             return $ coverageModulePath : importPaths
           else
