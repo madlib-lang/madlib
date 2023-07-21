@@ -22,7 +22,7 @@ export type Wish e a = Wish((e -> {}) -> (a -> {}) -> ({} -> {}))
 #iftarget js
 
 setTimeout :: ({} -> {}) -> Integer -> TimerId
-setTimeout = (cb, ms) => #- global.setTimeout(cb, ms) -#
+setTimeout = (cb, ms) => #- setTimeout(cb, ms) -#
 
 clearTimeout :: TimerId -> {}
 clearTimeout = (id) => #- clearTimeout(id) -#
@@ -243,13 +243,6 @@ withRej :: f -> Wish e a -> Wish f a
 export withRej = (rej, wish) => mapRej(() => rej, wish)
 
 
-putLine :: String -> {}
-export putLine = extern "madlib__stdio__putLine"
-
-// putLine :: String -> {}
-// export putLine = #- console.log -#
-
-
 chainManyN :: Integer -> (a -> Wish e b) -> List (Wish e a) -> List (Wish e b)
 export chainManyN = (concurrent, f, wishes) => {
   runningWishes = 0
@@ -427,10 +420,7 @@ after :: Integer -> a -> Wish e a
 export after = (time, a) => Wish((_, goodCB) => {
   id = setTimeout(() => { goodCB(a) }, time)
 
-  return () => {
-    putLine("-- after: CANCEL: " ++ show(time))
-    clearTimeout(id)
-  }
+  return () => { clearTimeout(id) }
 })
 
 
@@ -442,7 +432,6 @@ export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
   return where(wish) {
     Wish(run) =>
       do {
-        putLine("-- WITH TIMEOUT: START")
         cancel = run(
           (x) => {
             if (!done) do {
@@ -452,7 +441,6 @@ export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
           },
           (x) => {
             if (!done) do {
-              putLine("GOOD")
               done = true
               clearTimeout(timeoutId)
               goodCB(x)
@@ -462,7 +450,6 @@ export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
 
         timeoutId = setTimeout(() => {
           if (!done) do {
-            putLine("-- WITH TIMEOUT: CANCEL")
             done = true
             cancel()
             badCB(err)

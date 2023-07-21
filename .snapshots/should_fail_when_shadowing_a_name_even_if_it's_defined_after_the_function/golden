@@ -20,8 +20,14 @@
                "g"
                (Typed
                   ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
-                   , IsIn "__MUTATION__" [] Nothing
-                   , IsIn "__MUTATION__" [] (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
+                   , IsIn
+                       "__MUTATION__"
+                       [ TVar (TV "h7" Star) ]
+                       (Just (Area (Loc 15 2 3) (Loc 20 2 8)))
+                   , IsIn
+                       "__MUTATION__"
+                       [ TVar (TV "h7" Star) ]
+                       (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
                    ] :=>
                      TApp
                        (TApp
@@ -32,8 +38,14 @@
                   (Abs
                      (Typed
                         ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
-                         , IsIn "__MUTATION__" [] Nothing
-                         , IsIn "__MUTATION__" [] (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
+                         , IsIn
+                             "__MUTATION__"
+                             [ TVar (TV "h7" Star) ]
+                             (Just (Area (Loc 15 2 3) (Loc 20 2 8)))
+                         , IsIn
+                             "__MUTATION__"
+                             [ TVar (TV "h7" Star) ]
+                             (Just (Area (Loc 30 3 10) (Loc 31 3 11)))
                          ] :=>
                            TVar (TV "f5" Star))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
@@ -49,7 +61,12 @@
                                (Area (Loc 19 2 7) (Loc 20 2 8))
                                (LNum "2")))
                      , Typed
-                         ([ IsIn "__MUTATION__" [] Nothing ] :=> TVar (TV "h7" Star))
+                         ([ IsIn
+                              "__MUTATION__"
+                              [ TVar (TV "h7" Star) ]
+                              (Just (Area (Loc 15 2 3) (Loc 20 2 8)))
+                          ] :=>
+                            TVar (TV "h7" Star))
                          (Area (Loc 30 3 10) (Loc 31 3 11))
                          (Var "a" False)
                      ])))
