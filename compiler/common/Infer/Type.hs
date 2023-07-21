@@ -290,6 +290,10 @@ predTypes :: Pred -> [Type]
 predTypes (IsIn _ ts _) = ts
 
 
+predArea :: Pred -> Maybe Area
+predArea (IsIn _ _ area) = area
+
+
 type Id = String
 
 data Kind

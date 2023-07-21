@@ -52,6 +52,9 @@ mutationInterface = "__MUTATION__"
 mutationPred :: Pred
 mutationPred = IsIn mutationInterface [] Nothing
 
+makeMutationPred :: Type -> Area -> Pred
+makeMutationPred t area = IsIn mutationInterface [t] (Just area)
+
 
 infer :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer options env lexp = do
@@ -357,12 +360,6 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
       tVar <- newTVar Star
       return $ Forall [] ([] :=> tVar)
 
-  let mutationPs =
-        if name `Set.member` envNamesInScope env && envInBody env then
-          [mutationPred]
-        else
-          []
-
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer options env' exp
@@ -370,6 +367,12 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
   let s  = s1 `compose` s2
   let t2 = apply s t1
+
+  let mutationPs =
+        if name `Set.member` envNamesInScope env && envInBody env then
+          [makeMutationPred (apply s t2) area]
+        else
+          []
 
   return (s, currentPreds ++ ps1 ++ mutationPs, apply s t2, applyAssignmentSolve e name e1 (apply s $ (currentPreds ++ ps1) :=> t2))
 
@@ -967,7 +970,13 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
   let sFinal = sSplit `compose` sDefaults `compose` s''
 
-  let mutPS = List.filter (\(IsIn cls _ _) -> cls == mutationInterface) ps
+  let mutPS =
+        List.filter
+          (\(IsIn cls ts _) ->
+            let freeTVs = ftv (apply s' ts) \\ ftv (apply s' env')
+            in  cls == mutationInterface && not (null freeTVs)
+          )
+          ps
 
   let sc =
         if isLet && not (Slv.isNamedAbs e) then
@@ -978,7 +987,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
           -- scheme
           apply sFinal $ quantify gs (apply sDefaults $ (rs'' ++ mutPS) :=> t')
 
-  when (not isLet && not (null mutPS) && not (null (ftv t')) && not (Slv.isNamedAbs e)) $ do
+  when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   case Can.getExpName exp of
@@ -1036,9 +1045,15 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
         throwError $ CompilationError e c
     )
 
-  let mutPS = List.filter (\(IsIn cls _ _) -> cls == mutationInterface) ps
+  let mutPS =
+        List.filter
+          (\(IsIn cls ts _) ->
+            let freeTVs = ftv (apply s' ts) \\ ftv (apply s' env')
+            in  cls == mutationInterface && not (null freeTVs)
+          )
+          ps
 
-  when (not isLet && not (null mutPS) && not (null (ftv t''')) && not (Slv.isNamedAbs e)) $ do
+  when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   -- TODO: now that we don't generate placeholders anymore we should be able
@@ -1055,7 +1070,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   else do
     let e'   = updateQualType e (ds :=> t''')
 
-    let qt'  = qs'' :=> t'''
+    let qt'  = (qs'' ++ mutPS) :=> t'''
     let sc'' = quantify gs qt'
     let env'' = case Can.getExpName exp of
           Just n  ->
@@ -1063,7 +1078,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
           Nothing ->
             env'
 
-    return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+    return (substDefaultResolution `compose` s', qs'' ++ mutPS, env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ = undefined
 
