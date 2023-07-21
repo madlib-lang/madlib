@@ -1,0 +1,12 @@
+import Fn from "Function"
+import Math from "Math"
+import Integer from "Integer"
+
+
+randomPoint :: Float -> Float -> Float
+export randomPoint = (max, size) => pipe(
+  Math.floor,
+  Fn.when((v) => v + size > max, Fn.always(Integer.toFloat(Math.max(1, max - size - 1)))),
+)((max - size) / 2)
+
+main = () => {}
