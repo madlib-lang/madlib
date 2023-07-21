@@ -993,7 +993,7 @@ createErrorDiagnostic color context typeError = case typeError of
           Nothing
           "Mutation restriction"
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "This value depends on a closure doing mutation and can't be generic"
+            , Diagnose.This "This value depends on a closure doing mutation and can't be generic"
             )
           ]
           [Diagnose.Hint "Add a type definition with concrete types"]

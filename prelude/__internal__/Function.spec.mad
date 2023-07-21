@@ -46,121 +46,123 @@ divide :: Float -> Float -> Float
 divide = (a, b) => a / b
 
 
-test("identity should return whatever it is given", (_) => pipe(
+test("identity should return whatever it is given", () => pipe(
   identity,
   assertEquals($, 3)
 )(3))
 
-test("equals - two equal numbers", (_) => pipe(
+test("equals - two equal numbers", () => pipe(
   equals($, 3),
   assertEquals($, true)
 )(3))
 
-test("equals - two different numbers", (_) => pipe(
+test("equals - two different numbers", () => pipe(
   equals($, 4),
   assertEquals($, false)
 )(3))
 
-test("equals - two equal lists", (_) => pipe(
+test("equals - two equal lists", () => pipe(
   equals($, [1, 2, 3]),
   assertEquals($, true)
 )([1, 2, 3]))
 
-test("notEquals - two equal numbers", (_) => pipe(
+test("notEquals - two equal numbers", () => pipe(
   notEquals($, 3),
   assertEquals($, false)
 )(3))
 
-test("ifElse - truthy", (_) => pipe(
+test("ifElse - truthy", () => pipe(
   ifElse(equals(4), (x) => x + 1, (x) => x * 2),
   assertEquals($, 5)
 )(4))
 
-test("ifElse - falsy", (_) => pipe(
+test("ifElse - falsy", () => pipe(
   ifElse(equals(4), (x) => x + 1, (x) => x * 2),
   assertEquals($, 10)
 )(5))
 
-test("when - truthy", (_) => pipe(
+test("when - truthy", () => pipe(
   when(equals(4), (x) => x * 2),
   assertEquals($, 8)
 )(4))
 
-test("when - falsy", (_) => pipe(
+test("when - falsy", () => pipe(
   when(equals(4), (x) => x * 2),
   assertEquals($, 5)
 )(5))
 
-test("not - true", (_) => pipe(
+test("not - true", () => pipe(
   not,
   assertEquals($, false)
 )(true))
 
-test("not - false", (_) => pipe(
+test("not - false", () => pipe(
   not,
   assertEquals($, true)
 )(false))
 
-test("flip", (_) => pipe(
+test("flip", () => pipe(
   flip,
   (flipped) => flipped(4, 2),
   assertEquals($, 0.5)
 )(divide))
 
-test("complement", (_) => {
+test("complement", () => {
   isEven = (x) => x % 2 == 0
   isOdd  = complement(isEven)
 
   return assertEquals(isOdd(2), false)
 })
 
-test("always", (_) => assertEquals(always(true, "1"), true))
-test("always - map", (_) => assertEquals(
+test("always", () => assertEquals(always(true, "1"), true))
+test("always - map", () => assertEquals(
   map(always(true), [1, 2 ,3]),
   [true, true, true]
 ))
 
-test("any - true", (_) => assertEquals(
+test("any - true", () => assertEquals(
   any((x) => x > 4, [1, 3, 5]),
   true
 ))
 
-test("any - false", (_) => assertEquals(
+test("any - false", () => assertEquals(
   any((x) => x > 4, [1, 3, 2]),
   false
 ))
 
-test("all - true", (_) => assertEquals(
+test("all - true", () => assertEquals(
   all((x) => x > 4, [5, 8, 10]),
   true
 ))
 
-test("all - false", (_) => assertEquals(
+test("all - false", () => assertEquals(
   all((x) => x > 4, [1, 2, 10]),
   false
 ))
 
-test("either - true", (_) => assertEquals(
+test("either - true", () => assertEquals(
   either(equals("A"), equals("B"))("B"),
   true
 ))
 
-test("either - false", (_) => assertEquals(
+test("either - false", () => assertEquals(
   either(equals("A"), equals("B"))("C"),
   false
 ))
 
-test("both - true", (_) => assertEquals(
+test("both - true", () => assertEquals(
   both(lt(50), equals(60))(60),
   true
 ))
 
-test("both - false", (_) => assertEquals(
+test("both - false", () => assertEquals(
   both(lt(50), equals(60))(55),
   false
 ))
 
-test("memoize - should not call the memoized function if called with the same argument", (_) => {
+
+test("memoize - should not call the memoized function if called with the same argument", () => {
+  count :: Integer
   count = 0
 
   add :: Integer -> Integer
@@ -177,21 +179,3 @@ test("memoize - should not call the memoized function if called with the same ar
 
   return assertEquals(count, 1)
 })
-
-// test("memoize - should call the function again once per different arg", (_) => {
-//   count = 0
-
-//   f = memoize((x) => {
-//     count = count + 1
-//     return x
-//   })
-
-//   f(1)
-//   f(1)
-//   f(2)
-//   f(2)
-//   f(3)
-//   f(3)
-
-//   return assertEquals(count, 3)
-// })
