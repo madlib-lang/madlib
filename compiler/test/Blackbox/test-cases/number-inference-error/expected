@@ -1,0 +1,12 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/number-inference-error/Entrypoint.mad@9:34-9:89
+     │
+   9 │   Fn.when((v) => v + size > max, Fn.always(Integer.toFloat(Math.max(1, max - size - 1)))),
+     •                                  ┬────────────────────────────────────────────────────── 
+     •                                  ╰╸ expected:
+     •                                         Integer -> Integer
+     •                                     
+     •                                     but found:
+     •                                         Integer -> Float
+     •                                     
+─────╯
+
