@@ -1,4 +1,5 @@
 // ------------ List --------------------------------------
+
 reduceLeft :: (a -> b -> a) -> a -> List b -> a
 export reduceLeft = (f, acc, list) => where(list) {
   [a, ...xs] =>

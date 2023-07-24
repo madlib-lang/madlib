@@ -85,7 +85,7 @@ validatePreludePrivateModules options ast@AST{ aimports, apath = Just path } = d
                   res
                 else
                   let importPath = getImportAbsolutePath imp
-                  in  if not ("prelude/__internal__" `isInfixOf` path) then
+                  in  if not ("prelude/__internal__" `isInfixOf` path) && not ("prelude\\__internal__" `isInfixOf` path) then
                         let fileName = takeBaseName importPath
                         in  if "__" `isPrefixOf` fileName && "__" `isSuffixOf` fileName then
                           Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp))
