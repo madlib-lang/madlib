@@ -1,6 +1,8 @@
 import { assertEquals, test } from "./Test"
 import {} from "List"
 import { lt } from "Compare"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
 import { memoize } from "./Memoize"
 
 #iftarget js
@@ -18,7 +20,10 @@ import {
   ifElse,
   not,
   notEquals,
-  when
+  when,
+  tailRec,
+  Loop,
+  Done,
 } from "./Function"
 
 
@@ -37,7 +42,10 @@ import {
   ifElse,
   not,
   notEquals,
-  when
+  when,
+  tailRec,
+  Loop,
+  Done,
 } from "./Function"
 
 #endif
@@ -159,6 +167,27 @@ test("both - false", () => assertEquals(
   both(lt(50), equals(60))(55),
   false
 ))
+
+
+test("tailRec - monadic", () => {
+  maybeMillion :: Integer -> Maybe Integer
+  maybeMillion = (x) => {
+    go = (value) => where(value) {
+      Just(v) =>
+        v < 1000000
+          ? Loop(chain((a) => Just(a + 1), value))
+          : Done(value)
+
+      Nothing =>
+        Done(Nothing)
+    }
+
+
+    return tailRec(go, Just(x))
+  }
+
+  return assertEquals(maybeMillion(0), Just(1000000))
+})
 
 
 test("memoize - should not call the memoized function if called with the same argument", () => {

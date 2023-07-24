@@ -1,4 +1,22 @@
-import {} from "Compare"
+export type Step a b
+  = Loop(a)
+  | Done(b)
+
+// inspired from:
+// https://github.com/purescript/purescript-tailrec/blob/master/src/Control/Monad/Rec/Class.purs
+tailRec :: (a -> Step a b) -> a -> b
+export tailRec = (f, a) => {
+  go = (step) => where(step) {
+    Loop(x) =>
+      go(f(x))
+
+    Done(b) =>
+      b
+  }
+
+  return pipe(f, go)(a)
+}
+
 
 /**
  * Wraps a predicate function and make it return the inverse. So if for a value
