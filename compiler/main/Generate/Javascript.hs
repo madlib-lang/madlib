@@ -458,6 +458,18 @@ instance Compilable Exp where
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
           in  "($_end_ = $_end_.n = { v: "<> compiledLi <>" }, " <> intercalate ", " updateParams <> ", $_continue_ = true)"
 
+        Core.ListConstructor [
+            Core.Typed _ _ _ (Core.ListItem li1),
+            Core.Typed _ _ _ (Core.ListItem li2),
+            Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
+          ] | Core.isRightListRecursiveCall metadata ->
+          let compiledLi1    = compile env config li1
+              compiledLi2    = compile env config li2
+              Just params   = rdParams <$> recursionData env
+              compiledArgs  = compile env config <$> args
+              updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
+          in  "($_end_.n = { v: "<> compiledLi1 <>", n: { v: "<> compiledLi2 <>" }}, $_end_ = $_end_.n.n, " <> intercalate ", " updateParams <> ", $_continue_ = true)"
+
         ListConstructor elems   -> "(" <> compileListElements elems <> ")"
           where
             compileListElements :: [ListItem] -> String

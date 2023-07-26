@@ -468,11 +468,6 @@ isFunctionType t = case t of
     False
 
 
-isPlaceholderDict :: Qual Type -> Bool
-isPlaceholderDict qt =
-  qt == [] :=> TVar (TV "dict" Star)
-
-
 isTCon :: Type -> Bool
 isTCon t = case t of
   TCon _ _ ->
