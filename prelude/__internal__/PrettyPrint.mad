@@ -12,7 +12,7 @@ export type Doc
   | CharDoc(Char)
   | TextDoc(Integer, String)
   | LineDoc(Boolean)
-  | CatDoc(Doc, Doc)
+  | CatDoc({} -> Doc, {} -> Doc)
   | NestDoc(Integer, {} -> Doc)
   | UnionDoc(Doc, Doc)
   | ColumnDoc(Integer -> Doc)
@@ -138,7 +138,7 @@ export group = (x) => UnionDoc(flatten(x), x)
 flatten :: Doc -> Doc
 export flatten = (doc) => where(doc) {
   CatDoc(x, y) =>
-    CatDoc(flatten(x), flatten(y))
+    CatDoc(() => flatten(x()), () => flatten(y()))
 
   NestDoc(i, x) =>
     NestDoc(i, () => flatten(x()))
@@ -178,7 +178,7 @@ export enclose = (l, r, x) => pipe(
 
 
 beside :: Doc -> Doc -> Doc
-export beside = (x, y) => CatDoc(x, y)
+export beside = (x, y) => CatDoc(() => x, () => y)
 
 
 hcat :: List Doc -> Doc
@@ -238,7 +238,7 @@ export renderPretty = (_, w, doc) => {
           SLine(i, best(i, i, ds))
 
         CatDoc(x, y) =>
-          best(n, k, [#[i, x], #[i, y], ...ds])
+          best(n, k, [#[i, x()], #[i, y()], ...ds])
 
         NestDoc(j, x) =>
           best(n, k, [#[i + j, x()], ...ds])

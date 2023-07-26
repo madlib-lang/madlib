@@ -1,10 +1,12 @@
 import {} from "Monad"
 import {} from "Bifunctor"
 import {} from "Alternative"
-import { sortBy, length, filter, forEach } from "List"
+import { sortBy, length, forEach, range } from "List"
 import { Just, Nothing } from "Maybe"
 import Tuple from "Tuple"
 import {} from "Integer"
+import {} from "MonadRec"
+import { Done, Loop } from "Function"
 
 
 type TimerId = __TimerId__
@@ -125,6 +127,37 @@ instance Bifunctor Wish {
 
 instance Semigroup (Wish e a) {
   assoc = (a, b) => chainRej(() => b, a)
+}
+
+// TODO: handle badCB and cancellation
+instance MonadRec (Wish e) {
+  tailRecM = (f, a) => Wish((badCB, goodCB) => {
+    run = (v) => {
+      where(f(v)) {
+        Wish(r) =>
+          r(
+            (err) => { badCB(err) },
+            (res) => {
+              where(res) {
+                Done(x) =>
+                  do {
+                    goodCB(x)
+                  }
+
+                Loop(x) =>
+                  do {
+                    setTimeout(() => run(x), 0)
+                  }
+              }
+            }
+          )
+      }
+    }
+
+    run(a)
+
+    return () => {}
+  })
 }
 
 
@@ -327,6 +360,11 @@ export chainManyN = (concurrent, f, wishes) => {
   )
 }
 
+// putLine :: String -> {}
+// export putLine = (a) => #- { console.log(a) } -#
+
+// putLine :: String -> {}
+// export putLine = extern "madlib__stdio__putLine"
 
 parallelN :: Integer -> List (Wish e a) -> Wish e (List a)
 export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
@@ -354,33 +392,34 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
         where(wish) {
           Wish(run) =>
             do {
+              done = false
               cancel = run(
                 (err) =>
                   if (!ko) do {
                     ko = true
                     forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
-                    return badCB(err)
+                    badCB(err)
                   },
                 (x) => {
+                  done = true
                   result = [#[index, x], ...result]
                   ok = ok + 1
                   runningWishes = runningWishes - 1
-                  cancelationFunctions = filter((cancelFunction) => Tuple.fst(cancelFunction) != index, cancelationFunctions)
-                  return ok == amountOfWishesToProcess
-                    ? pipe(
-                        sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
-                        map(Tuple.snd),
-                        goodCB
-                      )(result)
-                    : fork(indexOfLastStartedWish + 1, wishesNotStarted)
+
+                  if (ok == amountOfWishesToProcess) {
+                    pipe(
+                      sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+                      map(Tuple.snd),
+                      goodCB
+                    )(result)
+                  } else do {
+                    setTimeout(() => fork(indexOfLastStartedWish + 1, wishesNotStarted), 0)
+                  }
                 }
               )
-              cancelationFunctions = [#[index, cancel], ...cancelationFunctions]
-            }
-        }
 
-        if (concurrent < 0 || runningWishes < concurrent) {
-          fork(indexOfLastStartedWish, wishesNotStarted)
+              cancelationFunctions = [#[index, () => if (!done) { cancel() }], ...cancelationFunctions]
+            }
         }
       }
 
@@ -390,7 +429,11 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
         : {}
   }
 
-  fork(0, wishes)
+  setTimeout(() => {
+    forEach((i) => {
+      fork(i, wishesNotStarted)
+    }, range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent))
+  }, 0)
 
   return () => {
     forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)

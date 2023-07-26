@@ -167,7 +167,7 @@ renderValue :: Show a => (String -> String) -> a -> String
 renderValue = (colorize, value) => pipe(
   pShow,
   indent(4),
-  colorize,
+  (s) => IS_COLOR_ENABLED ? colorize(s) : s,
 )(value)
 
 
@@ -186,13 +186,19 @@ export test = (description, testImpl) => pipe(
           ++ "\n"
 
       ErrorWithMessage(message) =>
-        IO.red(`${CHAR_CROSS} ${message}\n`)
+        IS_COLOR_ENABLED
+          ? IO.red(`${CHAR_CROSS} ${message}\n`)
+          : `${CHAR_CROSS} ${message}\n`
 
       Error(err) =>
-        IO.red(`${CHAR_CROSS} ${show(err)}`)
+        IS_COLOR_ENABLED
+          ? IO.red(`${CHAR_CROSS} ${show(err)}`)
+          : `${CHAR_CROSS} ${show(err)}`
 
       NotImplemented =>
-        IO.red(`${CHAR_CROSS} not implemented`)
+        IS_COLOR_ENABLED
+          ? IO.red(`${CHAR_CROSS} not implemented`)
+          : `${CHAR_CROSS} not implemented`
     },
   ),
 )(description)

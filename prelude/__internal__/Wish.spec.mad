@@ -1,14 +1,17 @@
+import type { AssertionError } from "Test"
 import { assertEquals, test, ErrorWithMessage } from "Test"
-import { always } from "Function"
-import { bad, good, bichain, mapRej, parallel } from "./Wish"
+import { always, Loop, Done } from "Function"
+import List from "List"
+import type { Wish } from "./Wish"
+import { bad, good, bichain, mapRej, parallel, parallelN } from "./Wish"
 
 
-test("map should map over a value if it's a good Wish", (_) => pipe(
+test("map should map over a value if it's a good Wish", () => pipe(
   map((x) => x + 1),
   chain(assertEquals($, 4))
 )(good(3)))
 
-test("map should be identity if it's a bad Wish", (_) => pipe(
+test("map should be identity if it's a bad Wish", () => pipe(
   map((x) => x + 1),
   bichain(
     assertEquals($, 3),
@@ -16,7 +19,7 @@ test("map should be identity if it's a bad Wish", (_) => pipe(
   )
 )(bad(3)))
 
-test("mapRej should map over a value if it's a bad Wish", (_) => pipe(
+test("mapRej should map over a value if it's a bad Wish", () => pipe(
   mapRej((x) => x + 1),
   bichain(
     assertEquals($, 4),
@@ -24,7 +27,7 @@ test("mapRej should map over a value if it's a bad Wish", (_) => pipe(
   )
 )(bad(3)))
 
-test("mapRej should be identity if it's a good Wish", (_) => pipe(
+test("mapRej should be identity if it's a good Wish", () => pipe(
   mapRej((x) => x + 1),
   bichain(
     always(bad(ErrorWithMessage("Wish should be good"))),
@@ -32,12 +35,12 @@ test("mapRej should be identity if it's a good Wish", (_) => pipe(
   )
 )(good(3)))
 
-test("ap should apply a function wrapped in a good Wish to a good Wish", (_) => pipe(
+test("ap should apply a function wrapped in a good Wish to a good Wish", () => pipe(
   ap(good((x) => x + 1)),
   chain(assertEquals($, 4))
 )(good(3)))
 
-test("ap should not apply a function wrapped in a good Wish to a bad Wish", (_) => pipe(
+test("ap should not apply a function wrapped in a good Wish to a bad Wish", () => pipe(
   ap(good((x) => x + 1)),
   bichain(
     assertEquals($, 3),
@@ -45,7 +48,7 @@ test("ap should not apply a function wrapped in a good Wish to a bad Wish", (_) 
   )
 )(bad(3)))
 
-test("bimap should map over the bad value if given a bad wish", (_) => pipe(
+test("bimap should map over the bad value if given a bad wish", () => pipe(
   bimap((x) => x + 1, (x) => x * 2),
   bichain(
     assertEquals($, 4),
@@ -53,7 +56,7 @@ test("bimap should map over the bad value if given a bad wish", (_) => pipe(
   )
 )(bad(3)))
 
-test("bimap should map over the good value if given a good wish", (_) => pipe(
+test("bimap should map over the good value if given a good wish", () => pipe(
   bimap((x) => x + 1, (x) => x * 2),
   bichain(
     always(bad(ErrorWithMessage("wish should be good"))),
@@ -61,15 +64,39 @@ test("bimap should map over the good value if given a good wish", (_) => pipe(
   )
 )(good(3)))
 
-test("parallel should return the result of all given wishes in a list", (_) => pipe(
+test("parallel should return the result of all given wishes in a list", () => pipe(
   parallel,
   chain(assertEquals($, [1, 2, 3]))
 )([good(1), good(2), good(3)]))
 
-test("parallel should return a bad Wish if one of the given wishes is bad", (_) => pipe(
+test("parallel should return a bad Wish if one of the given wishes is bad", () => pipe(
   parallel,
   bichain(
     assertEquals($, 2),
     always(bad(ErrorWithMessage("Wish should be bad")))
   )
 )([good(1), bad(2), good(3), bad(4)]))
+
+test("parallel - lots of items", () => pipe(
+  map(of),
+  parallelN(200),
+  chain(
+    assertEquals($, List.range(0, 10000)),
+  )
+)(List.range(0, 10000)))
+
+test("tailRecM", () => do {
+  millionWish :: Integer -> Wish (AssertionError Integer) Integer
+  millionWish = (x) => {
+    go = (value) =>
+      value < 5000
+        ? good(Loop(value + 1))
+        : good(Done(value))
+
+    return tailRecM(go, x)
+  }
+
+  million <- millionWish(0)
+
+  return assertEquals(million, 5000)
+})
