@@ -730,12 +730,11 @@ generateExp env symbolTable exp = case exp of
 
       (_, arg2', _) <- generateExp env symbolTable arg2
 
-      let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) recArgs
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) recArgs
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
       -- We need to reverse because we may have some closured variables in the params and these need not be updated
-      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> recArgs) (List.reverse params) (List.reverse unboxedArgs)
       mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdateData
 
       holeValue <- load holePtr' 0
@@ -852,13 +851,11 @@ generateExp env symbolTable exp = case exp of
 
             storeWithMetadata (makeDILocation env area) continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-            let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) recArgs
-
             recArgs' <- mapM (generateExp env { isLast = False } symbolTable) recArgs
             let unboxedArgs = (\(_, x, _) -> x) <$> recArgs'
 
             -- We need to reverse because we may have some closured variables in the params and these need not be updated
-            let paramUpdatesData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+            let paramUpdatesData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> recArgs) (List.reverse params) (List.reverse unboxedArgs)
             mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
 
             return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
@@ -1376,13 +1373,11 @@ generateExp env symbolTable exp = case exp of
         let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-        let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) args
-
-        args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
+        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
         -- We need to reverse because we may have some closured variables in the params and these need not be updated
-        let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+        let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> args) (List.reverse params) (List.reverse unboxedArgs)
         mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdateData
 
         return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
@@ -1551,9 +1546,7 @@ generateExp env symbolTable exp = case exp of
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-      let filteredArgs = List.filter (not . IT.isPlaceholderDict . Core.getQualType) args
-
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) filteredArgs
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
       (_, item, maybeBoxedItem) <- generateExp env symbolTable li
@@ -1575,7 +1568,62 @@ generateExp env symbolTable exp = case exp of
       store endPtr 0 newNode'
 
       -- We need to reverse because we may have some closured variables in the params and these need not be updated
-      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> filteredArgs) (List.reverse params) (List.reverse unboxedArgs)
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> args) (List.reverse params) (List.reverse unboxedArgs)
+      mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) paramUpdateData
+
+      -- return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
+      return (symbolTable, Operand.ConstantOperand (Constant.Undef (typeOf endValue)), Nothing)
+
+  Core.Typed _ _ metadata (Core.ListConstructor [
+      Core.Typed _ area1 _ (Core.ListItem li1),
+      Core.Typed _ area2 _ (Core.ListItem li2),
+      Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
+    ]) | Core.isRightListRecursiveCall metadata -> do
+      let Just continue = continueRef <$> recursionData env
+      let Just params   = boxedParams <$> recursionData env
+      let Just endPtr   = end <$> recursionData env
+      endValue <- load endPtr 0
+
+      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      let unboxedArgs = (\(_, x, _) -> x) <$> args'
+
+      (_, item1, maybeBoxedItem1) <- generateExp env symbolTable li1
+      item1' <- case maybeBoxedItem1 of
+        Just boxed ->
+          return boxed
+
+        Nothing ->
+          box item1
+
+      (_, item2, maybeBoxedItem2) <- generateExp env symbolTable li2
+      item2' <- case maybeBoxedItem2 of
+        Just boxed ->
+          return boxed
+
+        Nothing ->
+          box item2
+
+      newNode1 <- callWithMetadata (makeDILocation env area1) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode1' <- addrspacecast newNode1 listType
+      storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 0)
+      storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 1)
+      storeItem endValue () (item1', 0)
+      storeItem endValue () (newNode1, 1)
+
+      newNode2 <- callWithMetadata (makeDILocation env area2) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode2' <- addrspacecast newNode2 listType
+      storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 0)
+      storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 1)
+      storeItem newNode1' () (item2', 0)
+      storeItem newNode1' () (newNode2, 1)
+
+      -- end = end.next
+      store endPtr 0 newNode2'
+
+      -- We need to reverse because we may have some closured variables in the params and these need not be updated
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> args) (List.reverse params) (List.reverse unboxedArgs)
       mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) paramUpdateData
 
       -- return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)

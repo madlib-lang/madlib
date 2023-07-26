@@ -5,6 +5,8 @@ import qualified Data.Maybe          as Maybe
 import qualified Data.Bifunctor      as Bifunctor
 import           Infer.Type
 import           Explain.Location
+import Text.Show.Pretty
+import Debug.Trace
 
 
 newtype Env
@@ -65,6 +67,14 @@ markDefinition env exp = case exp of
 
           Nothing ->
             Typed qt area metadata (Definition params (markDefinition env { envCurrentName = Nothing } <$> body))
+
+  -- TODO: we need to enable that at some point but currently the LLVM backend
+  -- gets confused when it's mixed with mutations
+  -- Typed qt area metadata (Definition params body) ->
+  --   Typed qt area metadata (Definition params (markDefinition env { envCurrentName = Nothing } <$> body))
+
+  -- Typed qt area metadata (Call fn args) ->
+  --   Typed qt area metadata (Call fn (markDefinition env { envCurrentName = Nothing } <$> args))
 
   _ ->
     exp
@@ -165,6 +175,21 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
     else
       Typed qt area (RecursionEnd recursionKind : metadata) (ListConstructor [
         Typed qtLi areaLi metadataLi (ListItem li),
+        Typed qtSpread areaSpread metadataSpread (ListSpread spread)
+      ])
+
+  Typed qt area metadata (ListConstructor [Typed qtLi1 areaLi1 metadataLi1 (ListItem li1), Typed qtLi2 areaLi2 metadataLi2 (ListItem li2), Typed qtSpread areaSpread metadataSpread (ListSpread spread)]) ->
+    -- we probably need to mark this node as being ListRecursion
+    if containsRecursion True fnType fnName spread then
+      Typed qt area (RecursiveCall (ListRecursion RightRecursion) : metadata) (ListConstructor [
+        Typed qtLi1 areaLi1 metadataLi1 (ListItem li1),
+        Typed qtLi2 areaLi2 metadataLi2 (ListItem li2),
+        Typed qtSpread areaSpread metadataSpread (ListSpread (markTRCCalls recursionKind fnType fnName spread))
+      ])
+    else
+      Typed qt area (RecursionEnd recursionKind : metadata) (ListConstructor [
+        Typed qtLi1 areaLi1 metadataLi1 (ListItem li1),
+        Typed qtLi2 areaLi1 metadataLi1 (ListItem li2),
         Typed qtSpread areaSpread metadataSpread (ListSpread spread)
       ])
 
@@ -311,6 +336,12 @@ findRecursionKind fnType fnName params exps = case exps of
       else
         Nothing
 
+    Typed _ _ _ (ListConstructor [Typed _ _ _ (ListItem li1), Typed _ _ _ (ListItem li2), Typed _ _ _ (ListSpread spread)]) ->
+      if not (containsRecursion False fnType fnName li1) && not (containsRecursion False fnType fnName li2) && containsRecursion True fnType fnName spread then
+        Just (ListRecursion RightRecursion)
+      else
+        Nothing
+
     _ ->
       Nothing
 
@@ -322,7 +353,7 @@ findRecursionKind fnType fnName params exps = case exps of
 containsRecursion :: Bool -> Type -> String  -> Exp -> Bool
 containsRecursion direct fnType fnName exp = case exp of
   Typed (_ :=> t) _ _ (Call _ args) ->
-    Just fnName == getAppName exp && t == getReturnType fnType && (getType <$> args) == (filter (/= TVar (TV "dict" Star)) (getParamTypes fnType))
+    Just fnName == getAppName exp && t == getReturnType fnType && (getType <$> args) == getParamTypes fnType
 
   Typed _ _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnType fnName rec || containsRecursion direct fnType fnName accessor)
