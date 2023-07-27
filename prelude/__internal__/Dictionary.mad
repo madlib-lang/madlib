@@ -1,266 +1,319 @@
+import type { Dictionary, NodeColor } from "__BUILTINS__"
+import { Empty, Node, BlackNode, RedNode } from "__BUILTINS__"
+import __BUILTINS__ from "__BUILTINS__"
 import type { Maybe } from "Maybe"
+import { Nothing, Just } from "Maybe"
 
-import { eq, gt } from "Compare"
 import List from "List"
-import Tuple from "Tuple"
+
 
 /**
  * Dictionary represents a key - value data structure.
- *
+ * It is implemented as a red black tree
  */
 
 
-#iftarget js // Dictionary
+instance Functor (Dictionary k) {
+  map = (f, dict) => where(dict) {
+    Empty =>
+      Empty
 
-Dictionary :: List #[k, v] -> Dictionary k v
-Dictionary = (items) => #- {
-  return ({
-    __constructor: "Dictionary",
-    __args: [items],
-  })
-} -#
-
-#elseif llvm
-
-Dictionary :: List #[k, v] -> Dictionary k v
-Dictionary = extern "madlib__dictionary__typeConstructor"
-
-#endif
-
-
-instance Comparable k => Semigroup (Dictionary k a) {
-  assoc = (a, b) => where(#[a, b]) {
-    #[Dictionary(itemsA), Dictionary(itemsB)] =>
-      fromList(itemsA ++ itemsB)
+    Node(c, k, v, left, right) =>
+      Node(c, k, f(v), map(f, left), map(f, right))
   }
 }
 
-instance Comparable k => Monoid (Dictionary k a) {
-  mempty = empty
-  mappend = assoc
-  mconcat = List.reduceLeft(mappend, mempty)
+
+mapM :: Monad m => (a -> m b) -> Dictionary k a -> m (Dictionary k b)
+export mapM = (f, dict) => where(dict) {
+  Empty =>
+    pure(Empty)
+
+  Node(c, k, v, left, right) =>
+    do {
+      _v <- f(v)
+      _left <- mapM(f, left)
+      _right <- mapM(f, right)
+
+      return of(Node(c, k, _v, _left, _right))
+    }
 }
 
 
-removeConsecutiveDoubles :: Eq k => List #[k, v] -> List #[k, v]
-removeConsecutiveDoubles = (list) => where(list) {
-  [#[k1, v1], #[k2, v2], ...xs] =>
-    k1 == k2
-      ? [#[k2, v2], ...removeConsecutiveDoubles(xs)]
-      : [#[k1, v1], ...removeConsecutiveDoubles([#[k2, v2], ...xs])]
+mapWithKey :: (a -> b -> c) -> Dictionary a b -> Dictionary a c
+export mapWithKey = (f, dict) => where(dict) {
+  Empty =>
+    Empty
 
-  [last] =>
-    [last]
-
-  [] =>
-    []
+  Node(c, k, v, left, right) =>
+    Node(c, k, f(k, v), mapWithKey(f, left), mapWithKey(f, right))
 }
 
 
-/**
- * Creates a Dictionary from a list of <key, value> tuples
- *
- * @since 0.0.5
- * @example
- * fromList([#["one", 2], #["two", 2]])
- * fromList([#["a", 2], #["b", 2], #["c", 3]])
- */
+filter :: Comparable k => (v -> Boolean) -> Dictionary k v -> Dictionary k v
+export filter = (f, dict) =>
+  reduceLeft((k, v, d) => f(v) ? insert(k, v, d) : d, empty, dict)
+
+
+filterWithKey :: Comparable k => (k -> v -> Boolean) -> Dictionary k v -> Dictionary k v
+export filterWithKey = (f, dict) =>
+  reduceLeft((k, v, d) => f(k, v) ? insert(k, v, d) : d, empty, dict)
+
+
 fromList :: Comparable k => List (#[k, v]) -> Dictionary k v
-export fromList = pipe(
-  List.sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
-  removeConsecutiveDoubles,
-  Dictionary
-)
-
-
-/**
- * The empty Dictionary
- *
- * @since 0.0.5
- */
-empty :: Dictionary k v
-export empty = Dictionary([])
-
-
-insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
-export insert = (key, value, dict) => {
-  helper = (list) => where(list) {
-    [] =>
-      [#[key, value]]
-
-    [#[k, v], ...xs] =>
-      if (eq(k, key)) {
-        [#[key, value], ...xs]
-      } else if (gt(k, key)) {
-        [#[key, value], #[k, v], ...xs]
-      } else {
-        [#[k, v], ...helper(xs)]
-      }
-  }
-
-  return where(dict) {
-    Dictionary(items) =>
-      Dictionary(helper(items))
-  }
-}
-
-
-update :: Comparable k => (v -> v) -> k -> Dictionary k v -> Dictionary k v
-export update = (fn, key, dict) => {
-  helper = (list) => where(list) {
-    [] =>
-      []
-
-    [#[k, v], ...xs] =>
-      if (eq(k, key)) {
-        [#[key, fn(v)], ...xs]
-      } else if (gt(k, key)) {
-        [#[k, v], ...xs]
-      } else {
-        [#[k, v], ...helper(xs)]
-      }
-  }
-
-  return where(dict) {
-    Dictionary(items) =>
-      Dictionary(helper(items))
-  }
-}
-
-
-/**
- * Get a value from a Dictionary given a key.
- *
- * @since 0.0.5
- * @example
- * get("john", fromList([#["john", { age: 32 }]])) // Just({ age: 32 })
- * get("paul", fromList([#["john", { age: 32 }]])) // Nothing
- */
-get :: Comparable k => k -> Dictionary k v -> Maybe v
-export get = (k) => where {
-  Dictionary(items) => pipe(
-    List.find((item) => where(item) {
-      #[kk, _] => k == kk
-    }),
-    map(Tuple.snd)
-  )(items)
-}
-
-
-/**
- * Combine two Dictionaries together.
- *
- * @since 0.0.5
- */
-merge :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => where(#[a, b]) {
-  #[Dictionary(itemsA), Dictionary(itemsB)] =>
-    fromList(List.concat(itemsA, itemsB))
-}
-
-
-/**
- * Enumerate the number of keys in a Dictionary
- *
- * @since 0.0.5
- * @example
- * length(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
- */
-length :: Dictionary k v -> Integer
-export length = (dictionary) => where(dictionary) {
-  Dictionary(items) =>
-    List.length(items)
-}
+export fromList = __BUILTINS__.dictFromList
 
 
 toList :: Dictionary k v -> List #[k, v]
-export toList = (dict) => where(dict) {
-  Dictionary(items) =>
-    items
+export toList = __BUILTINS__.dictToList
+
+
+reduceLeft :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
+export reduceLeft = (f, acc, dict) => where(dict) {
+  Empty =>
+    acc
+
+  Node(_, k, v, left, right) =>
+    reduceLeft(f, f(k, v, reduceLeft(f, acc, left)), right)
 }
 
 
-/**
- * Map over a Dictionary with a function that takes the value and transforms it.
- *
- * @since 0.0.5
- * @example
- * map((x) => x / 2, fromList([#["Sidney", 3], #["New York", 18], #["London", 2]]))
- * // fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]])
- */
-instance Functor (Dictionary k) {
-  map = (fn) => where {
-    Dictionary(items) =>
-      pipe(
-        map((i) => #[Tuple.fst(i), fn(Tuple.snd(i))]),
-        Dictionary
-      )(items)
-  }
+reduce :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
+export reduce = reduceLeft
+
+
+reduceRight :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
+export reduceRight = __BUILTINS__.dictReduceRight
+
+
+get :: Comparable k => k -> Dictionary k v -> Maybe v
+export get = (k, dict) => where(dict) {
+  Empty =>
+    Nothing
+
+  Node(_, _k, _v, left, right) =>
+    if (k == _k) {
+      Just(_v)
+    } else if (k > _k) {
+      get(k, right)
+    } else {
+      get(k, left)
+    }
 }
 
 
-mapM :: Applicative m => (a -> m b) -> Dictionary k a -> m (Dictionary k b)
-export mapM = (f, dict) => where(dict) {
-  Dictionary(items) =>
-    pipe(
-      List.mapM(where {
-        #[k, v] =>
-          map((mapped) => #[k, mapped], f(v))
-      }),
-      map(Dictionary)
-    )(items)
+includes :: Comparable k => k -> Dictionary k v -> Boolean
+export includes = (k, dict) => where(get(k, dict)) {
+  Just(_) =>
+    true
+
+  Nothing =>
+    false
 }
 
 
-/**
- * Map over a Dictionary with a function that takes the key and value and returns the new value. 
- *
- * @since 0.0.5
- * @example
- * mapWithKey(
- *   (city, x) => city == "Sidney" ? 9 : x / 2,
- *   fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
- * )
- * // fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
- */
-mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
-export mapWithKey = (fn) => where {
-  Dictionary(items) =>
-    pipe(
-      map((i) => #[Tuple.fst(i), fn(Tuple.fst(i), Tuple.snd(i))]),
-      Dictionary
-    )(items)
+insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+export insert = __BUILTINS__.dictInsert
+
+
+empty :: Dictionary k v
+export empty = Empty
+
+
+keys :: Dictionary a b -> List a
+export keys = (dict) => reduceRight((k, _, ks) => [k, ...ks], [], dict)
+
+
+values :: Dictionary a b -> List b
+export values = (dict) => reduceRight((_, v, vs) => [v, ...vs], [], dict)
+
+
+length :: Dictionary a b -> Integer
+export length = (dict) => where(dict) {
+  Empty =>
+    0
+
+  Node(_, _, _, left, right) =>
+    1 + length(left) + length(right)
 }
 
 
-/**
- * List all keys in a Dictionary
- *
- * @since 0.0.5
- * @example
- * keys(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // [true, false]
- */
-keys :: Dictionary k v -> List k
-export keys = (m) => where(m) {
-  Dictionary(items) =>
-    map(Tuple.fst, items)
+singleton :: k -> v -> Dictionary k v
+export singleton = (k, v) => Node(BlackNode, k, v, Empty, Empty)
+
+
+merge :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
+export merge = (a, b) => reduceLeft((k, v, dict) => insert(k, v, dict), a, b)
+
+
+update :: Comparable k => (v -> v) -> k -> Dictionary k v -> Dictionary k v
+export update = (f, k, dict) => where(get(k, dict)) {
+  Just(v) =>
+    __BUILTINS__.dictInsert(k, f(v), dict)
+
+  Nothing =>
+    dict
 }
 
 
-/**
- * List all values in a Dictionary
- *
- * @since 0.0.5
- * @example
- * values(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // ["Go for it", "NOGO"]
- */
-values :: Dictionary k v -> List v
-export values = (m) => where(m) {
-  Dictionary(items) =>
-   map(Tuple.snd, items)
+remove :: Comparable k => k -> Dictionary k v -> Dictionary k v
+export remove = (key, dict) => where(removeHelp(key, dict)) {
+  Node(RedNode, k, v, left, right) =>
+    Node(BlackNode, k, v, left, right)
+
+  or =>
+    or
 }
 
-// TODO: add remove
-// TODO: add includes
-// TODO: add filter
-// TODO: add reduce
+
+removeHelp :: Comparable k => k -> Dictionary k v -> Dictionary k v
+removeHelp = (targetKey, dict) => where(dict) {
+  Empty =>
+    Empty
+
+  Node(color, key, value, left, right) =>
+    if (targetKey < key) {
+      where(left) {
+        Node(BlackNode, _, _, lLeft, _) =>
+          where(lLeft) {
+            Node(RedNode, _, _, _, _) =>
+              Node(color, key, value, removeHelp(targetKey, left), right)
+
+            _ =>
+              where(moveRedLeft(dict)) {
+                Node(nColor, nKey, nValue, nLeft, nRight) =>
+                  __BUILTINS__.balanceDict(nColor, nKey, nValue, removeHelp(targetKey, nLeft), nRight)
+
+                Empty =>
+                  Empty
+              }
+          }
+
+        _ =>
+          Node(color, key, value, removeHelp(targetKey, left), right)
+      }
+    } else {
+      removeHelpEQGT(targetKey, removeHelpPrepEQGT(dict, color, key, value, left, right))
+    }
+}
+
+
+removeHelpPrepEQGT :: Comparable k => Dictionary k v -> NodeColor -> k -> v -> Dictionary k v -> Dictionary k v -> Dictionary k v
+removeHelpPrepEQGT = (dict, color, key, value, left, right) => where(left) {
+  Node(RedNode, lK, lV, lLeft, lRight) =>
+    Node(color, lK, lV, lLeft, Node(RedNode, key, value, lRight, right))
+
+  _ =>
+    where(right) {
+      Node(BlackNode, _, _, Node(BlackNode, _, _, _, _), _) =>
+        moveRedRight(dict)
+
+      Node(BlackNode, _, _, Empty, _) =>
+        moveRedRight(dict)
+
+      _ =>
+        dict
+    }
+}
+
+
+removeHelpEQGT :: Comparable k => k -> Dictionary k v -> Dictionary k v
+removeHelpEQGT = (targetKey, dict) => where(dict) {
+  Node(c, k, v, left, right) =>
+    if (targetKey == k) {
+      where(getMin(right)) {
+        Node(_, minKey, minValue, _, _) =>
+          __BUILTINS__.balanceDict(c, minKey, minValue, left, removeMin(right))
+
+        Empty =>
+          Empty
+      }
+    } else {
+      __BUILTINS__.balanceDict(c, k, v, left, removeHelp(targetKey, right))
+    }
+
+  Empty =>
+    Empty
+}
+
+
+getMin :: Dictionary k v -> Dictionary k v
+getMin = (dict) => where(dict) {
+  Node(_, _, _, left, _) =>
+    where(left) {
+      Node(_, _, _, _, _) =>
+        getMin(left)
+
+      _ =>
+        dict
+    }
+
+  _ =>
+    dict
+}
+
+
+removeMin :: Dictionary k v -> Dictionary k v
+removeMin = (dict) => where(dict) {
+  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), right) =>
+    where(lC) {
+      BlackNode =>
+        where(lLeft) {
+          Node(RedNode, _, _, _, _) =>
+            Node(c, k, v, removeMin(Node(lC, lK, lV, lLeft, lRight)), right)
+
+          _ =>
+            where(moveRedLeft(dict)) {
+              Node(nC, nK, nV, nLeft, nRight) =>
+                __BUILTINS__.balanceDict(nC, nK, nV, removeMin(nLeft), nRight)
+
+              Empty =>
+                Empty
+            }
+        }
+
+      _ =>
+        Node(c, k, v, removeMin(Node(lC, lK, lV, lLeft, lRight)), right)
+    }
+
+  _ =>
+    Empty
+}
+
+
+moveRedLeft :: Dictionary k v -> Dictionary k v
+moveRedLeft = (dict) => where(dict) {
+  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, Node(RedNode, rlK, rlV, rlL, rlR), rRight)) =>
+    Node(RedNode, rlK, rlV, Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), rlL), Node(BlackNode, rK, rV, rlR, rRight))
+
+  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, rLeft, rRight)) =>
+    where(c) {
+      BlackNode =>
+        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+
+      RedNode =>
+        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+    }
+
+  _ =>
+    dict
+}
+
+
+moveRedRight :: Dictionary k v -> Dictionary k v
+moveRedRight = (dict) => where(dict) {
+  Node(c, k, v, Node(lC, lK, lV, Node(RedNode, llK, llV, llLeft, llRight), lRight), Node(rC, rK, rV, rLeft, rRight)) =>
+    Node(RedNode, lK, lV, Node(BlackNode, llK, llV, llLeft, llRight), Node(BlackNode, k, v, lRight, Node(RedNode, rK, rV, rLeft, rRight)))
+
+  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, rLeft, rRight)) =>
+    where(c) {
+      BlackNode =>
+        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+
+      RedNode =>
+        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+    }
+
+  _ =>
+    dict
+}

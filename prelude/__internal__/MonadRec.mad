@@ -1,0 +1,5 @@
+import type { Step } from "Function"
+
+interface MonadRec m {
+  tailRecM :: (a -> m (Step a b)) -> a -> m b
+}

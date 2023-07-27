@@ -192,9 +192,9 @@ applyPAP2 :: Operand
 applyPAP2 =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType, boxType] False) (AST.mkName "__applyPAP2__"))
 
-dictCtor :: Operand
-dictCtor =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) (AST.mkName "__dict_ctor__"))
+-- dictCtor :: Operand
+-- dictCtor =
+--   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) (AST.mkName "__dict_ctor__"))
 
 buildRecord :: Operand
 buildRecord =
@@ -456,7 +456,7 @@ recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
 tConExclude :: [String]
-tConExclude = ["Array", "Dictionary", "ByteArray", "(->)", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,)"]
+tConExclude = ["Array", "ByteArray", "(->)", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,)"]
 
 
 retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
@@ -1904,6 +1904,8 @@ generateListSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModul
 generateListSubPatternTest env symbolTable basePtr pats = case pats of
   (pat : next) -> case pat of
     Core.Typed _ _ _ (Core.PSpread _) ->
+      -- This is ok for now because spread can only be PVar or PAny because the grammar
+      -- forces it
       return true
 
     _ -> do
@@ -2048,23 +2050,18 @@ generateBranchTest env symbolTable pat value = case pat of
     Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
 
   Core.Typed _ _ _ (Core.PCon name pats) -> mdo
-    idTestBlock <- currentBlock--block `named` "idTestBlock"
+    currentBlock
+    br idTestBlock
+    idTestBlock <- block `named` "idTestBlock"
     let constructorId = case Map.lookup name symbolTable of
           Just (Symbol (ConstructorSymbol id _) _) ->
             i64ConstOp $ fromIntegral id
 
           _ ->
-            -- This is necessary to make the special case of Dictionary constructor
-            if "Dictionary" `List.isSuffixOf` name then
-              i64ConstOp 0
-            else
-              error $ "Core.Constructor '" <> name <> "' not found!"
+            error $ "Core.Constructor '" <> name <> "' not found!"
 
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
     constructor' <- safeBitcast value constructorType
-    let argIds = fromIntegral <$> List.take (List.length pats) [1..]
-    constructorArgPtrs <- getStructPointers argIds constructor'
-    let patsWithPtrs = List.zip pats constructorArgPtrs
 
     id  <- gep constructor' [i32ConstOp 0, i32ConstOp 0]
     id' <- load id 0
@@ -2072,11 +2069,15 @@ generateBranchTest env symbolTable pat value = case pat of
     condBr idTest subPatternsTestBlock testResultBlock
 
     subPatternsTestBlock <- block `named` "subPatternsTestBlock"
+    let argIds = fromIntegral <$> List.take (List.length pats) [1..]
+    constructorArgPtrs <- getStructPointers argIds constructor'
+    let patsWithPtrs = List.zip pats constructorArgPtrs
     subPatternsTest <- Monad.foldM (generateSubPatternTest env symbolTable) true patsWithPtrs
+    subPatternsTestBlock' <- currentBlock
     br testResultBlock
 
     testResultBlock <- block `named` "testResultBlock"
-    phi [(subPatternsTest, subPatternsTestBlock), (idTest, idTestBlock)]
+    phi [(idTest, idTestBlock), (subPatternsTest, subPatternsTestBlock')]
 
   _ ->
     undefined
@@ -2686,7 +2687,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
 
   symbolTableWithConstructors <- generateConstructors env' initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env')) symbolTableWithConstructors (aexps ast)
-      symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithTopLevel
+      -- symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithTopLevel
 
   let moduleHash = hashModulePath ast
   let moduleFunctionName =
@@ -2697,7 +2698,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
 
-  symbolTable <- generateTopLevelFunctions env' symbolTableWithDefaults (topLevelFunctions $ aexps ast)
+  symbolTable <- generateTopLevelFunctions env' symbolTableWithTopLevel (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
@@ -2708,7 +2709,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
   -- nofree nosync nounwind readnone speculatable willreturn
   declareWithAttributes [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline] (AST.mkName "llvm.dbg.declare")                             [Type.MetadataType, Type.MetadataType, Type.MetadataType] Type.void
 
-  extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
+  -- extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
@@ -2766,7 +2767,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
         retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
-  Writer.tell symbolTableWithDefaults
+  Writer.tell symbolTableWithTopLevel
 
 
 generateModule :: (MonadIO m, Rock.MonadFetch Query.Query m, Writer.MonadFix m) => Options -> AST -> m (AST.Module, SymbolTable, Env)

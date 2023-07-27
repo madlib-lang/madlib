@@ -208,7 +208,7 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.Var name isConstructor ->
       case name of
-        '.':fieldName -> do
+        '.' : fieldName -> do
           let expPreds    = preds qt
               recordType  = head (getParamTypes (getQualified qt))
               recordPreds = selectPredsForType expPreds recordType
