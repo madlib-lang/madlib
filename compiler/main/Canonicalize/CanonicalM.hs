@@ -165,9 +165,11 @@ getAllTypeAccesses = gets (Set.map getAccessName . Set.filter isTypeAccess . nam
 
 
 pushTypeDeclToDerive :: TypeDecl -> CanonicalM ()
-pushTypeDeclToDerive td = do
-  s <- get
-  put s { typesToDerive = typesToDerive s <> [TypeDeclToDerive td] }
+pushTypeDeclToDerive td@(Canonical _ td') = do
+  let typeName = adtname td'
+  when (typeName /= "Dictionary") $ do
+    s <- get
+    put s { typesToDerive = typesToDerive s <> [TypeDeclToDerive td] }
 
 pushRecordToDerive :: [String] -> CanonicalM ()
 pushRecordToDerive fieldNames = do

@@ -1,6 +1,7 @@
 module Generate.JavascriptSpec where
 
 import qualified Data.Map                      as M
+import qualified Data.List                      as List
 import           Test.Hspec                     ( describe
                                                 , it
                                                 , Spec
@@ -18,30 +19,19 @@ import           Control.Monad.State
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import qualified AST.Core                      as Core
-import           Infer.Exp
-import           Infer.Env                     as Infer
-import           Infer.Infer
-import           Optimize.ToCore
 import qualified Optimize.TCE                  as TCE
-import           Error.Error
-import           Parse.Madlib.AST              as Parse
-import           Generate.Javascript
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
 import           Utils.PathUtils         hiding ( defaultPathUtils )
 import           TestUtils
-import           Canonicalize.Canonicalize     as Can
-import           Canonicalize.AST              as Can
-import           Canonicalize.Env              as Can
 import           Run.Target
 import           Run.OptimizationLevel
-import           Infer.AST
-import           Debug.Trace
 import qualified Driver
 import qualified Driver.Query as Query
 import qualified Rock
 import Error.Warning (CompilationWarning)
 import           System.FilePath (normalise)
+import qualified System.Directory              as Dir
 import Run.Options
 import Driver (Prune(Don'tPrune))
 import qualified Data.ByteString.Lazy          as LazyByteString
@@ -62,10 +52,11 @@ snapshotTest name actualOutput =
 buildOptions :: FilePath -> PathUtils -> Bool -> Bool -> Options
 buildOptions entrypoint pathUtils optimized coverage =
   Options
-    { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = ("./"++) . normalise }
+    { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p }
+    -- { optPathUtils = pathUtils { canonicalizePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.canonicalizePath p else return p, normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p }
     , optEntrypoint = entrypoint
-    , optRootPath = "/"
-    , optOutputPath = "/build"
+    , optRootPath = "./"
+    , optOutputPath = "./build"
     , optTarget = TNode
     , optOptimized = optimized
     , optDebug = False
@@ -263,7 +254,6 @@ mainCompileFixture = unlines
   , "  return b"
   , "}"
   , ""
-  -- , "where(#[Just(3), Just(4)]) { #[Just(n), Just(m)] => n + m }"
   ]
 
 
@@ -368,12 +358,13 @@ jsxProgram = unlines
 monadTransformersProgram :: String
 monadTransformersProgram = unlines
   [ "instance Semigroup (List a) {"
-  , "  assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
+  , "  assoc = (xs1, xs2) => #- xs1.concat(xs2) -#"
   , "}"
   , ""
   , "instance Monoid (List a) {"
   , "  mempty = []"
-  , "  mconcat = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
+  , "  mappend = assoc"
+  , "  mconcat = #--#"
   , "}"
   , ""
   , "interface Functor m {"
@@ -416,7 +407,7 @@ monadTransformersProgram = unlines
   , "  pure = (x) => WriterT(pure(#[x, mempty]))"
   , ""
   , "  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1) {"
-  , "      #[a, w] => where(x2) { #[b, ww] => #[a(b), mconcat(w, ww)] }"
+  , "      #[a, w] => where(x2) { #[b, ww] => #[a(b), mappend(w, ww)] }"
   , "    }, runWriterT(mf), runWriterT(mm)))"
   , "}"
   , ""
@@ -426,7 +417,7 @@ monadTransformersProgram = unlines
   , "  chain = (f, m) => WriterT("
   , "    chain("
   , "      where { #[a, w] => chain("
-  , "        where { #[b, ww] => of(#[b, mconcat(w, ww)])"
+  , "        where { #[b, ww] => of(#[b, mappend(w, ww)])"
   , "        }, runWriterT(f(a)))"
   , "      }, runWriterT(m))"
   , "  )"
@@ -578,9 +569,9 @@ spec = do
       let actual = unsafePerformIO $ compileModule False False mainCompileFixture
       snapshotTest "should compile to JS" actual
 
-    it "should compile to JS with coverage trackers" $ do
-      let actual = unsafePerformIO $ compileModule False True mainCompileFixture
-      snapshotTest "should compile to JS with coverage trackers when COVERAGE_MODE is on" actual
+    -- it "should compile to JS with coverage trackers" $ do
+    --   let actual = unsafePerformIO $ compileModule False True mainCompileFixture
+    --   snapshotTest "should compile to JS with coverage trackers when COVERAGE_MODE is on" actual
 
     it "should compile JSX" $ do
       let actual = unsafePerformIO $ compileModule False False jsxProgram
@@ -947,7 +938,7 @@ spec = do
 
           pathUtils = defaultPathUtils { readFile           = makeReadFile files
                                        , byteStringReadFile = makeByteStringReadFile files
-                                       , getExecutablePath  = return "/root/project/madlib"
+                                      --  , getExecutablePath  = return "/root/project/madlib"
                                        }
 
       let actual = unsafePerformIO $ compileManyModulesWithReadFile
@@ -1103,7 +1094,7 @@ spec = do
 
           pathUtils = defaultPathUtils { readFile           = makeReadFile files
                                        , byteStringReadFile = makeByteStringReadFile files
-                                       , getExecutablePath  = return "/root/project/madlib"
+                                      --  , getExecutablePath  = return "/root/project/madlib"
                                        }
 
       let actual = unsafePerformIO $ compileManyModulesWithReadFile

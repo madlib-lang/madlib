@@ -542,7 +542,7 @@ instance Compilable Exp where
           buildListLengthCheck :: String -> [Pattern] -> String
           buildListLengthCheck scope pats = case pats of
             [pat@(Typed _ _ _ (PSpread _))] ->
-                compilePattern scope pat
+              compilePattern scope pat
 
             [] ->
               scope <> " === null"
@@ -599,10 +599,6 @@ instance Compilable Exp where
             PCon n [] ->
               scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\""
 
-            PCon "Dictionary" ps ->
-              let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope "Dictionary" <$> zip [0 ..] ps
-              in  scope <> ".__constructor === " <> "\"" <> "Dictionary" <> "\" && " <> args
-
             PCon n ps ->
               let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
               in  scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\"" <> if not (null args)
@@ -643,13 +639,20 @@ instance Compilable Exp where
                 <> v
                 <> ";\n"
 
-            PList  items -> buildListVars v items
-            PTuple items -> buildTupleVars v items
+            PList  items ->
+              buildListVars v items
 
-            PCon _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
-            PVar n       -> "    let " <> generateSafeName n <> " = " <> v <> ";\n"
+            PTuple items ->
+              buildTupleVars v items
 
-            _            -> ""
+            PCon _ ps ->
+              concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
+
+            PVar n ->
+              "    let " <> generateSafeName n <> " = " <> v <> ";\n"
+
+            _ ->
+              ""
 
           buildFieldVar :: String -> Pattern -> String
           buildFieldVar _ Untyped{} = undefined
@@ -686,7 +689,7 @@ instance Compilable Exp where
             PTuple pats ->
               name <> ": [" <> intercalate ", " (buildTupleItemVar <$> pats) <> "]"
 
-            _           ->
+            _ ->
               ""
 
 
@@ -710,7 +713,11 @@ instance Compilable Exp where
               in  if null packed then
                     ""
                   else
-                    "    let " <> packListVars' itemsStr <> " = " <> scope <> ";\n"
+                    let varName = packListVars' itemsStr
+                    in  if null varName then
+                          ""
+                        else
+                          "    let " <> varName <> " = " <> scope <> ";\n"
 
           buildListItemVar :: Pattern -> String
           buildListItemVar Untyped{} = undefined
@@ -734,8 +741,8 @@ instance Compilable Exp where
             PRecord fields ->
               "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
 
-            _              ->
-              ""
+            _ ->
+              "_"
 
 
           packListVars :: [String] -> String

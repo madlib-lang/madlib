@@ -115,9 +115,6 @@ listItemType t = case t of
     itemType
 
 
-tDictionary :: Type
-tDictionary = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") (TVar (TV "a" Star))) (TVar (TV "b" Star))
-
 
 tArrayOf :: Type -> Type
 tArrayOf = TApp (TCon (TC "Array" (Kfun Star Star)) "prelude")
@@ -129,10 +126,6 @@ tArray = tArrayOf (TVar (TV "a" Star))
 
 tByteArray :: Type
 tByteArray = TCon (TC "ByteArray" Star) "prelude"
-
-
-tDictionaryOf :: Type -> Type -> Type
-tDictionaryOf keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") keyType)
 
 
 tTuple2Of :: Type -> Type -> Type

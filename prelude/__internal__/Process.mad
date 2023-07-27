@@ -20,18 +20,31 @@ export alias CommandOptions = {
   env :: Dictionary String String
 }
 
+export alias FFICommandOptions = {
+  cwd :: String,
+  env :: List #[String, String]
+}
+
 
 #iftarget js
 
 #- import { spawn as prelude_spawn } from "child_process" -#
 
+
 exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult
-export exec = (command, args, options) => Wish((bad, good) => #- {
+export exec = (command, args, options) => _exec(
+  command,
+  args,
+  { cwd: options.cwd, env: Dictionary.toList(Dictionary.merge(Env, options.env)) },
+)
+
+_exec :: String -> List String -> FFICommandOptions -> Wish CommandResult CommandResult
+_exec = (command, args, options) => Wish((bad, good) => #- {
   let stdoutChunks = []
   let stderrChunks = []
 
   const env = {};
-  const envItems = __listToJSArray__(options.env.__args[0]);
+  const envItems = __listToJSArray__(options.env);
   envItems.forEach(([key, value]) => { env[key] = value; })
 
   const proc = prelude_spawn(
@@ -194,7 +207,7 @@ cancelExec :: Handle -> {}
 cancelExec = extern "madlib__process__cancelExec"
 
 
-execFFI :: String -> List String -> CommandOptions -> (Integer -> String -> String -> {}) -> Handle
+execFFI :: String -> List String -> FFICommandOptions -> (Integer -> String -> String -> {}) -> Handle
 execFFI = extern "madlib__process__exec"
 
 
@@ -204,7 +217,7 @@ export exec = (command, args, options) => Wish((bad, good) => {
   handle = execFFI(
     command,
     args,
-    { cwd: options.cwd, env: Dictionary.merge(Env, options.env) },
+    { cwd: options.cwd, env: Dictionary.toList(Dictionary.merge(Env, options.env)) },
     (exitCode, stdout, stderr) => {
       done = true
       exitCode != 0

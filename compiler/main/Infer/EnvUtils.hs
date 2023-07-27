@@ -106,6 +106,10 @@ setNamespacesInScope :: Env -> Set.Set String -> Env
 setNamespacesInScope env ns = env { envNamespacesInScope = ns }
 
 
+tDictionaryOf :: FilePath -> Type -> Type -> Type
+tDictionaryOf builtinsPath keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) builtinsPath) keyType)
+
+
 mergeEnv :: Env -> Env -> Env
 mergeEnv initial env = Env { envVars                 = envVars initial <> envVars env
                            , envMethods              = envMethods initial <> envMethods env
@@ -139,7 +143,6 @@ initialEnv = do
                         , ("%"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                         , ("|>"           , Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                         , ("$"            , Forall [Star] $ [] :=> TGen 0)
-                        , ("__dict_ctor__", Forall [Star, Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
                         ]
     , envInterfaces = M.fromList
         [ ("Number", Interface [TV "a" Star] []
@@ -172,7 +175,7 @@ initialEnv = do
                   , Instance ([
                       IsIn "Show" [TVar (TV "a" Star)] Nothing,
                       IsIn "Show" [TVar (TV "b" Star)] Nothing
-                    ] :=> IsIn "Show" [tDictionaryOf (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
+                    ] :=> IsIn "Show" [tDictionaryOf builtinsModulePath (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
                   , Instance ([] :=> IsIn "Show" [TVar (TV "a" Star) `fn` TVar (TV "b" Star)] Nothing) M.empty
                   , Instance ([
                         IsIn "Show" [TVar (TV "a" Star)] Nothing,
@@ -300,7 +303,7 @@ initialEnv = do
                   , Instance ([
                       IsIn "Eq" [TVar (TV "a" Star)] Nothing,
                       IsIn "Eq" [TVar (TV "b" Star)] Nothing
-                    ] :=> IsIn "Eq" [tDictionaryOf (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
+                    ] :=> IsIn "Eq" [tDictionaryOf builtinsModulePath (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
                   , Instance ([] :=> IsIn "Eq" [TVar (TV "a" Star) `fn` TVar (TV "b" Star)] Nothing) M.empty
                   , Instance ([IsIn "Eq" [TVar (TV "a" Star)] Nothing] :=> IsIn "Eq" [tListOf (TVar (TV "a" Star))] Nothing) M.empty
                   , Instance ([IsIn "Eq" [TVar (TV "a" Star)] Nothing] :=> IsIn "Eq" [tArrayOf (TVar (TV "a" Star))] Nothing) M.empty

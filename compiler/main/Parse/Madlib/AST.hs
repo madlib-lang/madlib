@@ -24,7 +24,6 @@ import qualified System.Environment.Executable    as E
 import           Explain.Location
 import           Data.List
 import           Parse.Madlib.TargetMacro
-import           Parse.Madlib.Dictionary
 import           Run.Options
 import           Text.Read (readMaybe)
 import           Text.Show.Pretty (ppShow)
@@ -114,13 +113,13 @@ buildAST options path code = case parse code of
 
       Right _ -> do
         let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
-        astWithDictImport <- addDictionaryImportIfNeeded (optPathUtils options) (dropFileName path) astWithProcessedMacros
         let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
+        let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
         let astWithBuiltinsImport =
-              if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithDictImport) then
-                astWithDictImport
+              if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros) then
+                astWithProcessedMacros
               else
-                astWithDictImport { aimports = builtinsImport : aimports astWithDictImport }
+                astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
         astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
         case astWithAbsoluteImportPaths of
           Right astWithAbsoluteImportPaths' -> do

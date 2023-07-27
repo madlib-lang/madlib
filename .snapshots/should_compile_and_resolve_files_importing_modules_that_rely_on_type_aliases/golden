@@ -1,7 +1,9 @@
 // file: /root/project/src/Main.mad
 import {} from "./../__internals__.mjs"
+import { __10be04cdd31eea37e3c6923f02674352__assoc__1 } from "./../.prelude/__BUILTINS__.mjs";
+
 let __8feea6ce806b7cafa9202cfec09ac2f8__main = ( => {
-    __W__fulfill(( => ({ __constructor: "Unit", __args: [] })))(( => ({ __constructor: "Unit", __args: [] })))(map(( => assoc(x)(`!`)))(chain(( => of(`finally a string`)))(chain(( => of((x * 3))))(map(( => x % 2))(of(3))))));
+    __W__fulfill(( => ({ __constructor: "Unit", __args: [] })))(( => ({ __constructor: "Unit", __args: [] })))(map(( => __10be04cdd31eea37e3c6923f02674352__assoc__1()(x)(`!`)))(chain(( => of(`finally a string`)))(chain(( => of((x * 3))))(map(( => x % 2))(of(3))))));
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};

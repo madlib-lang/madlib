@@ -10,6 +10,94 @@ export reduceLeft = (f, acc, list) => where(list) {
 }
 
 
+// ------------ Dictionary --------------------------------
+
+export type NodeColor
+  = BlackNode
+  | RedNode
+
+export type Dictionary k v
+  = Empty
+  | Node(NodeColor, k, v, Dictionary k v, Dictionary k v)
+
+
+dictFromList :: Comparable k => List #[k, v] -> Dictionary k v
+export dictFromList = (items) =>
+  reduceLeft(
+    (dict, item) => where(item) {
+      #[k, v] =>
+        dictInsert(k, v, dict)
+    },
+    Empty,
+    items,
+  )
+
+
+dictReduceRight :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
+export dictReduceRight = (f, acc, dict) => where(dict) {
+  Empty =>
+    acc
+
+  Node(_, k, v, left, right) =>
+    dictReduceRight(f, f(k, v, dictReduceRight(f, acc, right)), left)
+}
+
+
+dictToList :: Dictionary k v -> List #[k, v]
+export dictToList = (dict) => dictReduceRight((k, v, list) => [#[k, v], ...list], [], dict)
+
+
+dictInsert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+export dictInsert = (key, value, dict) => where(insertHelp(key, value, dict)) {
+  Node(RedNode, k, v, left, right) =>
+    Node(BlackNode, k, v, left, right)
+
+  or =>
+    or
+}
+
+
+insertHelp :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+insertHelp = (key, value, dict) => where(dict) {
+  Empty =>
+    Node(RedNode, key, value, Empty, Empty)
+
+  Node(nColor, nKey, nValue, nLeft, nRight) =>
+    where(compare(key, nKey)) {
+      LT =>
+        balanceDict(nColor, nKey, nValue, insertHelp(key, value, nLeft), nRight)
+
+      EQ =>
+        Node(nColor, nKey, value, nLeft, nRight)
+
+      GT =>
+        balanceDict(nColor, nKey, nValue, nLeft, insertHelp(key, value, nRight))
+    }
+}
+
+
+balanceDict :: NodeColor -> k -> v -> Dictionary k v -> Dictionary k v -> Dictionary k v
+export balanceDict = (color, k, v, left, right) => where(right) {
+  Node(RedNode, rK, rV, rLeft, rRight) =>
+    where(left) {
+      Node(RedNode, lK, lV, lLeft, lRight) =>
+        Node(RedNode, k, v, Node(BlackNode, lK, lV, lLeft, lRight), Node(BlackNode, rK, rV, rLeft, rRight))
+
+      _ =>
+        Node(color, rK, rV, Node(RedNode, k, v, left, rLeft), rRight)
+    }
+
+  _ =>
+    where(left) {
+      Node(RedNode, lK, lV, Node(RedNode, llK, llV, llLeft, llRight), lRight) =>
+        Node(RedNode, lK, lV, Node(BlackNode, llK, llV, llLeft, llRight), Node(BlackNode, k, v, lRight, right))
+
+      _ =>
+        Node(color, k, v, left, right)
+    }
+}
+
+
 // ------------ Eq ----------------------------------------
 
 #iftarget llvm
@@ -66,10 +154,7 @@ instance Eq a => Eq (List a) {
 }
 
 instance (Eq a, Eq b) => Eq (Dictionary a b) {
-  __EQ__ = (a, b) => where(#[a, b]) {
-    #[Dictionary(itemsA), Dictionary(itemsB)] =>
-      itemsA == itemsB
-  }
+  __EQ__ = (a, b) => dictToList(a) == dictToList(b)
 }
 
 instance (Eq a, Eq b) => Eq #[a, b] {
@@ -321,20 +406,6 @@ instance Show a => Show (List a) {
   }
 }
 
-#iftarget js
-
-Dictionary :: List #[k, v] -> Dictionary k v
-Dictionary = (items) => #- ({
-  __constructor: "Dictionary",
-  __args: [items],
-}) -#
-
-#elseif llvm
-
-Dictionary :: List #[k, v] -> Dictionary k v
-Dictionary = extern "madlib__dictionary__typeConstructor"
-
-#endif
 
 instance (Show a, Show b) => Show (Dictionary a b) {
   show = (dict) => {
@@ -353,10 +424,12 @@ instance (Show a, Show b) => Show (Dictionary a b) {
           : showItems(next, `${acc}, ${show(key)}: ${show(value)}`)
     }
 
-    return where(dict) {
-      Dictionary(items) =>
-        `{{ ${showItems(items, "")} }}`
-    }
+    renderedItems = pipe(
+      dictToList,
+      showItems($, ""),
+    )(dict)
+
+    return `{{ ${renderedItems} }}`
   }
 }
 
@@ -712,10 +785,7 @@ instance Comparable ByteArray {
 }
 
 instance (Comparable a, Comparable b) => Comparable (Dictionary a b) {
-  compare = (a, b) => where(#[a, b]) {
-    #[Dictionary(itemsA), Dictionary(itemsB)] =>
-      compare(itemsA, itemsB)
-  }
+  compare = (a, b) => compare(dictToList(a), dictToList(b))
 }
 
 instance (Comparable a, Comparable b) => Comparable #[a, b] {

@@ -68,7 +68,7 @@ data Env
 
 
 initialEnv :: Env
-initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary), ("Array", tArray), ("ByteArray", tByteArray)]
+initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Array", tArray), ("ByteArray", tByteArray)]
                  , envConstructorInfos = M.empty
                  , envInterfaces =
                     M.fromList

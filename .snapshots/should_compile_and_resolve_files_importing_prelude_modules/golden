@@ -1,13 +1,9 @@
 // file: /root/project/prelude/__internal__/List.mad
-import {} from "./../__internals__.mjs"
-export let __bce05bd0768155bcead5c5b787efa6b3__map__1 = (f => xs =>  xs.map(f) );
-export default { __bce05bd0768155bcead5c5b787efa6b3__map__1 };
+export default {};
 // file: /root/project/src/Main.mad
 import {} from "./../__internals__.mjs"
-import { __bce05bd0768155bcead5c5b787efa6b3__map__1 } from "./../.prelude/List.mjs";
-
-let __8feea6ce806b7cafa9202cfec09ac2f8__main = (_ => {
-    __bce05bd0768155bcead5c5b787efa6b3__map__1((x => (x * 2)))(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
+let __8feea6ce806b7cafa9202cfec09ac2f8__main = ( => {
+    __L__map(( => (x * 2)))(({ v: 1, n: { v: 2, n: { v: 3, n: null } } }));
     return ({ __constructor: "Unit", __args: [] });
 });
 export default {};

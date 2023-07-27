@@ -148,5 +148,5 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
 verifyConstructor :: Env -> Area -> String -> Infer ()
 verifyConstructor env area name = do
-  unless (isConstructor env name || name == "Dictionary") $ do
+  unless (isConstructor env name) $ do
     throwError $ CompilationError (NotAConstructor name) (Context (envCurrentPath env) area)

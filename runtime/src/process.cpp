@@ -285,8 +285,7 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
   child_stdio[2].data.stream = (uv_stream_t *)stderrPipe;
   options->stdio = child_stdio;
 
-  madlib__dictionary__Dictionary_t *envFromOptions = (madlib__dictionary__Dictionary_t *) madlib__record__internal__selectField((char*)"env", commandOptions);
-  madlib__list__Node_t *envItems = envFromOptions->items;
+  madlib__list__Node_t *envItems = (madlib__list__Node_t *) madlib__record__internal__selectField((char*)"env", commandOptions);
   int itemCount = madlib__list__length(envItems);
   char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
   int index = 0;

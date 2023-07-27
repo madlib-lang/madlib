@@ -29,6 +29,8 @@ import qualified Driver
 import           Run.Options
 import           Utils.PathUtils
 import           Driver (Prune(Don'tPrune))
+import qualified Data.List                     as List
+import qualified System.Directory              as Dir
 import qualified Rock
 import qualified Driver.Query as Query
 import           GHC.IO (unsafePerformIO)
@@ -53,7 +55,7 @@ snapshotTest name actualOutput =
 buildOptions :: FilePath -> PathUtils -> Options
 buildOptions entrypoint pathUtils =
   Options
-    { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = ("./"++) . normalise }
+    { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p }
     , optEntrypoint = entrypoint
     , optRootPath = "./"
     , optOutputPath = "./build"
@@ -82,7 +84,7 @@ renameBuiltinsImport imp = case imp of
 inferModule :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModule code = do
   let modulePath = "Module.mad"
-  let options = buildOptions modulePath defaultPathUtils { doesFileExist = (\_ -> return True) }
+  let options = buildOptions modulePath defaultPathUtils
   initialState <- Driver.initialState
   ((ast, _), warnings, errors) <- Driver.runIncrementalTask
     initialState
@@ -97,7 +99,7 @@ inferModule code = do
 inferModuleWithoutMain :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
 inferModuleWithoutMain code = do
   let modulePath = "Module.mad"
-  let options = (buildOptions modulePath defaultPathUtils { doesFileExist = (\_ -> return True) }) { optMustHaveMain = False }
+  let options = (buildOptions modulePath defaultPathUtils { doesFileExist = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.doesFileExist p else return True }) { optMustHaveMain = False }
   initialState <- Driver.initialState
   ((ast, _), warnings, errors) <- Driver.runIncrementalTask
     initialState
@@ -112,7 +114,11 @@ inferModuleWithoutMain code = do
 
 inferManyModules :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModules entrypoint modules = do
-  let options = buildOptions entrypoint defaultPathUtils { doesFileExist = (\_ -> return True) }
+  let options =
+        buildOptions
+          entrypoint
+          defaultPathUtils
+            { doesFileExist = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.doesFileExist p else return True }
   initialState <- Driver.initialState
   let task = do
         solved <- forM (M.keys modules) $ \path -> do
@@ -132,7 +138,7 @@ inferManyModules entrypoint modules = do
 
 inferManyModulesWithoutMain :: FilePath -> M.Map FilePath String -> IO (M.Map FilePath Slv.AST, [CompilationWarning], [CompilationError])
 inferManyModulesWithoutMain entrypoint modules = do
-  let options = (buildOptions entrypoint defaultPathUtils { doesFileExist = (\_ -> return True) }) { optMustHaveMain = False }
+  let options = (buildOptions entrypoint defaultPathUtils { doesFileExist = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.doesFileExist p else return True }) { optMustHaveMain = False }
   initialState <- Driver.initialState
   let task = do
         solved <- forM (M.keys modules) $ \path -> do
@@ -261,22 +267,14 @@ spec = do
 
     it "should infer adts with record constructors" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "type Result = Success({ value :: String }) | Error({ message :: String })"
@@ -291,22 +289,14 @@ spec = do
 
     it "should infer params for adts" $ do
       let code = unlines
-                  [ "interface Semigroup a {"
-                  , "  assoc :: a -> a -> a"
-                  , "}"
-                  , ""
-                  , "interface Semigroup w => Monoid w {"
-                  , "  mempty :: w"
-                  , "  mconcat :: w -> w -> w"
-                  , "}"
-                  , ""
-                  , "instance Semigroup String {"
+                  [ "instance Semigroup String {"
                   , "  assoc = #--#"
                   , "}"
                   , ""
                   , "instance Monoid String {"
                   , "  mempty = \"\""
-                  , "  mconcat = assoc"
+                  , "  mappend = assoc"
+                  , "  mconcat = #--#"
                   , "}"
                   , ""
                   , "type Result = Success({ value :: String })"
@@ -580,22 +570,14 @@ spec = do
 
     it "should resolve constrained instances" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "interface Inspect a {"
@@ -623,22 +605,14 @@ spec = do
 
     it "should fail for instances missing constraints" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "interface Inspect a {"
@@ -666,22 +640,14 @@ spec = do
 
     it "should fail when no instance is found" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "interface Inspect a {"
@@ -713,22 +679,14 @@ spec = do
 
     it "should infer a record field access" $ do
       let code   = unlines
-                    [ "interface Semigroup a {"
-                    , "  assoc :: a -> a -> a"
-                    , "}"
-                    , ""
-                    , "interface Semigroup w => Monoid w {"
-                    , "  mempty :: w"
-                    , "  mconcat :: w -> w -> w"
-                    , "}"
-                    , ""
-                    , "instance Semigroup String {"
+                    [ "instance Semigroup String {"
                     , "  assoc = #--#"
                     , "}"
                     , ""
                     , "instance Monoid String {"
                     , "  mempty = \"\""
-                    , "  mconcat = assoc"
+                    , "  mappend = assoc"
+                    , "  mconcat = #--#"
                     , "}"
                     , ""
                     , "main = () => {"
@@ -741,22 +699,14 @@ spec = do
 
     it "should infer an App with a record" $ do
       let code   = unlines
-                    [ "interface Semigroup a {"
-                    , "  assoc :: a -> a -> a"
-                    , "}"
-                    , ""
-                    , "interface Semigroup w => Monoid w {"
-                    , "  mempty :: w"
-                    , "  mconcat :: w -> w -> w"
-                    , "}"
-                    , ""
-                    , "instance Semigroup String {"
+                    [ "instance Semigroup String {"
                     , "  assoc = #--#"
                     , "}"
                     , ""
                     , "instance Monoid String {"
                     , "  mempty = \"\""
-                    , "  mconcat = assoc"
+                    , "  mappend = assoc"
+                    , "  mconcat = #--#"
                     , "}"
                     , ""
                     , "main = () => {"
@@ -770,22 +720,14 @@ spec = do
 
     it "should fail to infer record if their fields do not match" $ do
       let code   = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "main = () => { { x: 3, y: 5 } == { name: \"John\" } }"
@@ -795,22 +737,14 @@ spec = do
 
     it "should infer a record with a type annotation" $ do
       let code   = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "main = () => { ({ x: 3, y: 7 } :: { x :: Integer, y :: Integer }) }"
@@ -825,22 +759,14 @@ spec = do
 
     it "should infer abstraction param that have a record exp as body" $ do
       let code   = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
@@ -855,22 +781,14 @@ spec = do
 
     it "correctly infer various record transformations" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "main = () => {"
@@ -926,22 +844,14 @@ spec = do
             , "  | EQ"
             , "  | GT"
             , ""
-            , "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
             , "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "interface Functor m {"
@@ -979,22 +889,14 @@ spec = do
 
     it "should infer record params that are partially used in abstractions" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "type Maybe a = Just(a) | Nothing"
@@ -1065,22 +967,14 @@ spec = do
 
     it "should infer extensible records with typed holes" $ do
       let code   = unlines
-                    [ "interface Semigroup a {"
-                    , "  assoc :: a -> a -> a"
-                    , "}"
-                    , ""
-                    , "interface Semigroup w => Monoid w {"
-                    , "  mempty :: w"
-                    , "  mconcat :: w -> w -> w"
-                    , "}"
-                    , ""
-                    , "instance Semigroup String {"
+                    [ "instance Semigroup String {"
                     , "  assoc = #--#"
                     , "}"
                     , ""
                     , "instance Monoid String {"
                     , "  mempty = \"\""
-                    , "  mconcat = assoc"
+                    , "  mappend = assoc"
+                    , "  mconcat = #--#"
                     , "}"
                     , ""
                     , "type DateTime = DateTime"
@@ -1173,22 +1067,14 @@ spec = do
 
     it "should infer applications where the abstraction results from an application" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "type Maybe a = Just(a) | Nothing"
@@ -1226,22 +1112,14 @@ spec = do
 
     it "should fail to infer applications when a variable is used with different types" $ do
       let code = unlines
-            [ "interface Semigroup a {"
-            , "  assoc :: a -> a -> a"
-            , "}"
-            , ""
-            , "interface Semigroup w => Monoid w {"
-            , "  mempty :: w"
-            , "  mconcat :: w -> w -> w"
-            , "}"
-            , ""
-            , "instance Semigroup String {"
+            [ "instance Semigroup String {"
             , "  assoc = #--#"
             , "}"
             , ""
             , "instance Monoid String {"
             , "  mempty = \"\""
-            , "  mconcat = assoc"
+            , "  mappend = assoc"
+            , "  mconcat = #--#"
             , "}"
             , ""
             , "type Maybe a = Just(a) | Nothing"

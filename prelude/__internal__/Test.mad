@@ -274,7 +274,6 @@ printSuiteResults = (results) => {
             prefix = total == success + failed
               ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS
               : PREFIX_RUNS
-            message = `${prefix} ${preparedSuitePath}  [${coloredCounts}]`
 
             return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
           }

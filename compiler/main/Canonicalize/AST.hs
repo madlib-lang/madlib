@@ -186,7 +186,7 @@ checkUnusedImports env imports = do
       return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
-      when (name /= "__BUILTINS__") $
+      when (name /= "__BUILTINS__" && name /= "Dictionary") $
         pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
     )
     (withJSCheck ++ unusedTypes)
