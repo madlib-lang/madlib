@@ -1,51 +1,87 @@
+import { EQ, GT, LT } from "Compare"
 import { assertEquals, test } from "Test"
+
 import Set from "./Set"
 
 
-test("fromList", (_) =>
-  assertEquals(show(Set.fromList([2, 1, 1])), "Set([1, 2])")
+
+test("fromList", () => assertEquals(show(Set.fromList([2, 1, 1])), "Set([1, 2])"))
+
+test("toList", () => assertEquals(Set.toList(Set.fromList([2, 1, 1])), [1, 2]))
+
+test("insert", () => assertEquals(Set.insert(1, Set.fromList([0, 2])), Set.fromList([0, 1, 2])))
+
+test(
+  "insert - double",
+  () => assertEquals(Set.insert(2, Set.fromList([0, 2])), Set.fromList([0, 2])),
 )
 
-test("toList", (_) =>
-  assertEquals(Set.toList(Set.fromList([2, 1, 1])), [1, 2])
+test(
+  "insert - after",
+  () => assertEquals(Set.insert(3, Set.fromList([0, 2])), Set.fromList([0, 2, 3])),
 )
 
-test("insert", (_) =>
-  assertEquals(Set.insert(1, Set.fromList([0, 2])), Set.fromList([0, 1, 2]))
+test(
+  "insert - before",
+  () => assertEquals(Set.insert(-1, Set.fromList([0, 2])), Set.fromList([-1, 0, 2])),
 )
 
-test("insert - double", (_) =>
-  assertEquals(Set.insert(2, Set.fromList([0, 2])), Set.fromList([0, 2]))
+test(
+  "remove",
+  () => assertEquals(
+    Set.remove(4, Set.fromList([41, 13, 4, 19, 10])),
+    Set.fromList([41, 13, 19, 10]),
+  ),
 )
 
-test("insert - after", (_) =>
-  assertEquals(Set.insert(3, Set.fromList([0, 2])), Set.fromList([0, 2, 3]))
+test("map", () => assertEquals(map((x) => x * 2, Set.fromList([1, 2, 3])), Set.fromList([2, 4, 6])))
+
+test(
+  "filter",
+  () => assertEquals(Set.filter((x) => x < 3, Set.fromList([1, 2, 3])), Set.fromList([1, 2])),
 )
 
-test("insert - before", (_) =>
-  assertEquals(Set.insert(-1, Set.fromList([0, 2])), Set.fromList([-1, 0, 2]))
+test("reduce", () => assertEquals(Set.reduce((a, b) => a + b, 0, Set.fromList([1, 2, 3])), 6))
+
+test(
+  "merge",
+  () => assertEquals(
+    Set.merge(Set.fromList([1, 3, 5]), Set.fromList([2, 3, 6])),
+    Set.fromList([1, 2, 3, 5, 6]),
+  ),
 )
 
-test("map", (_) =>
-  assertEquals(map((x) => x * 2, Set.fromList([1, 2, 3])), Set.fromList([2, 4, 6]))
+test("includes - yes", () => assertEquals(Set.includes(7, Set.fromList([2193, 7])), true))
+
+test("includes - no", () => assertEquals(Set.includes(7, Set.fromList([2193, 71])), false))
+
+test(
+  "intersect",
+  () => assertEquals(
+    Set.intersect(Set.fromList([1, 3, 7, 9]), Set.fromList([1, 2, 3, 4, 5])),
+    Set.fromList([1, 3]),
+  ),
 )
 
-test("filter", (_) =>
-  assertEquals(Set.filter((x) => x < 3, Set.fromList([1, 2, 3])), Set.fromList([1, 2]))
+test(
+  "diff",
+  () => assertEquals(
+    Set.diff(Set.fromList([1, 3, 7, 9]), Set.fromList([1, 2, 3, 4, 5])),
+    Set.fromList([7, 9]),
+  ),
 )
 
-test("reduce", (_) =>
-  assertEquals(Set.reduce((a, b) => a + b, 0, Set.fromList([1, 2, 3])), 6)
+test(
+  "compare - LT",
+  () => assertEquals(compare(Set.fromList([1, 2, 3]), Set.fromList([2, 3, 4])), LT),
 )
 
-test("merge", (_) =>
-  assertEquals(Set.merge(Set.fromList([1, 3, 5]), Set.fromList([2, 3, 6])), Set.fromList([1, 2, 3, 5, 6]))
+test(
+  "compare - EQ",
+  () => assertEquals(compare(Set.fromList([1, 2, 3]), Set.fromList([1, 2, 3])), EQ),
 )
 
-test("includes - yes", (_) =>
-  assertEquals(Set.includes(7, Set.fromList([2193, 7])), true)
-)
-
-test("includes - no", (_) =>
-  assertEquals(Set.includes(7, Set.fromList([2193, 71])), false)
+test(
+  "compare - GT",
+  () => assertEquals(compare(Set.fromList([2, 3, 4]), Set.fromList([1, 2, 3])), GT),
 )

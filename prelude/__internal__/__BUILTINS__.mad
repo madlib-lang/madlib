@@ -13,12 +13,12 @@ export reduceLeft = (f, acc, list) => where(list) {
 // ------------ Dictionary --------------------------------
 
 export type NodeColor
-  = BlackNode
-  | RedNode
+  = DictRBBlack
+  | DictRBRed
 
 export type Dictionary k v
-  = Empty
-  | Node(NodeColor, k, v, Dictionary k v, Dictionary k v)
+  = DictRBEmpty
+  | DictRBNode(NodeColor, k, v, Dictionary k v, Dictionary k v)
 
 
 dictFromList :: Comparable k => List #[k, v] -> Dictionary k v
@@ -28,17 +28,17 @@ export dictFromList = (items) =>
       #[k, v] =>
         dictInsert(k, v, dict)
     },
-    Empty,
+    DictRBEmpty,
     items,
   )
 
 
 dictReduceRight :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
 export dictReduceRight = (f, acc, dict) => where(dict) {
-  Empty =>
+  DictRBEmpty =>
     acc
 
-  Node(_, k, v, left, right) =>
+  DictRBNode(_, k, v, left, right) =>
     dictReduceRight(f, f(k, v, dictReduceRight(f, acc, right)), left)
 }
 
@@ -49,8 +49,8 @@ export dictToList = (dict) => dictReduceRight((k, v, list) => [#[k, v], ...list]
 
 dictInsert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
 export dictInsert = (key, value, dict) => where(insertHelp(key, value, dict)) {
-  Node(RedNode, k, v, left, right) =>
-    Node(BlackNode, k, v, left, right)
+  DictRBNode(DictRBRed, k, v, left, right) =>
+    DictRBNode(DictRBBlack, k, v, left, right)
 
   or =>
     or
@@ -59,16 +59,16 @@ export dictInsert = (key, value, dict) => where(insertHelp(key, value, dict)) {
 
 insertHelp :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
 insertHelp = (key, value, dict) => where(dict) {
-  Empty =>
-    Node(RedNode, key, value, Empty, Empty)
+  DictRBEmpty =>
+    DictRBNode(DictRBRed, key, value, DictRBEmpty, DictRBEmpty)
 
-  Node(nColor, nKey, nValue, nLeft, nRight) =>
+  DictRBNode(nColor, nKey, nValue, nLeft, nRight) =>
     where(compare(key, nKey)) {
       LT =>
         balanceDict(nColor, nKey, nValue, insertHelp(key, value, nLeft), nRight)
 
       EQ =>
-        Node(nColor, nKey, value, nLeft, nRight)
+        DictRBNode(nColor, nKey, value, nLeft, nRight)
 
       GT =>
         balanceDict(nColor, nKey, nValue, nLeft, insertHelp(key, value, nRight))
@@ -78,22 +78,22 @@ insertHelp = (key, value, dict) => where(dict) {
 
 balanceDict :: NodeColor -> k -> v -> Dictionary k v -> Dictionary k v -> Dictionary k v
 export balanceDict = (color, k, v, left, right) => where(right) {
-  Node(RedNode, rK, rV, rLeft, rRight) =>
+  DictRBNode(DictRBRed, rK, rV, rLeft, rRight) =>
     where(left) {
-      Node(RedNode, lK, lV, lLeft, lRight) =>
-        Node(RedNode, k, v, Node(BlackNode, lK, lV, lLeft, lRight), Node(BlackNode, rK, rV, rLeft, rRight))
+      DictRBNode(DictRBRed, lK, lV, lLeft, lRight) =>
+        DictRBNode(DictRBRed, k, v, DictRBNode(DictRBBlack, lK, lV, lLeft, lRight), DictRBNode(DictRBBlack, rK, rV, rLeft, rRight))
 
       _ =>
-        Node(color, rK, rV, Node(RedNode, k, v, left, rLeft), rRight)
+        DictRBNode(color, rK, rV, DictRBNode(DictRBRed, k, v, left, rLeft), rRight)
     }
 
   _ =>
     where(left) {
-      Node(RedNode, lK, lV, Node(RedNode, llK, llV, llLeft, llRight), lRight) =>
-        Node(RedNode, lK, lV, Node(BlackNode, llK, llV, llLeft, llRight), Node(BlackNode, k, v, lRight, right))
+      DictRBNode(DictRBRed, lK, lV, DictRBNode(DictRBRed, llK, llV, llLeft, llRight), lRight) =>
+        DictRBNode(DictRBRed, lK, lV, DictRBNode(DictRBBlack, llK, llV, llLeft, llRight), DictRBNode(DictRBBlack, k, v, lRight, right))
 
       _ =>
-        Node(color, k, v, left, right)
+        DictRBNode(color, k, v, left, right)
     }
 }
 

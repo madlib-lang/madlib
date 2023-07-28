@@ -1,5 +1,5 @@
 import type { Dictionary, NodeColor } from "__BUILTINS__"
-import { Empty, Node, BlackNode, RedNode } from "__BUILTINS__"
+import { DictRBEmpty, DictRBNode, DictRBBlack, DictRBRed } from "__BUILTINS__"
 import __BUILTINS__ from "__BUILTINS__"
 import type { Maybe } from "Maybe"
 import { Nothing, Just } from "Maybe"
@@ -15,38 +15,38 @@ import List from "List"
 
 instance Functor (Dictionary k) {
   map = (f, dict) => where(dict) {
-    Empty =>
-      Empty
+    DictRBEmpty =>
+      DictRBEmpty
 
-    Node(c, k, v, left, right) =>
-      Node(c, k, f(v), map(f, left), map(f, right))
+    DictRBNode(c, k, v, left, right) =>
+      DictRBNode(c, k, f(v), map(f, left), map(f, right))
   }
 }
 
 
 mapM :: Monad m => (a -> m b) -> Dictionary k a -> m (Dictionary k b)
 export mapM = (f, dict) => where(dict) {
-  Empty =>
-    pure(Empty)
+  DictRBEmpty =>
+    pure(DictRBEmpty)
 
-  Node(c, k, v, left, right) =>
+  DictRBNode(c, k, v, left, right) =>
     do {
       _v <- f(v)
       _left <- mapM(f, left)
       _right <- mapM(f, right)
 
-      return of(Node(c, k, _v, _left, _right))
+      return of(DictRBNode(c, k, _v, _left, _right))
     }
 }
 
 
 mapWithKey :: (a -> b -> c) -> Dictionary a b -> Dictionary a c
 export mapWithKey = (f, dict) => where(dict) {
-  Empty =>
-    Empty
+  DictRBEmpty =>
+    DictRBEmpty
 
-  Node(c, k, v, left, right) =>
-    Node(c, k, f(k, v), mapWithKey(f, left), mapWithKey(f, right))
+  DictRBNode(c, k, v, left, right) =>
+    DictRBNode(c, k, f(k, v), mapWithKey(f, left), mapWithKey(f, right))
 }
 
 
@@ -70,10 +70,10 @@ export toList = __BUILTINS__.dictToList
 
 reduceLeft :: (k -> v -> a -> a) -> a -> Dictionary k v -> a
 export reduceLeft = (f, acc, dict) => where(dict) {
-  Empty =>
+  DictRBEmpty =>
     acc
 
-  Node(_, k, v, left, right) =>
+  DictRBNode(_, k, v, left, right) =>
     reduceLeft(f, f(k, v, reduceLeft(f, acc, left)), right)
 }
 
@@ -88,10 +88,10 @@ export reduceRight = __BUILTINS__.dictReduceRight
 
 get :: Comparable k => k -> Dictionary k v -> Maybe v
 export get = (k, dict) => where(dict) {
-  Empty =>
+  DictRBEmpty =>
     Nothing
 
-  Node(_, _k, _v, left, right) =>
+  DictRBNode(_, _k, _v, left, right) =>
     if (k == _k) {
       Just(_v)
     } else if (k > _k) {
@@ -117,7 +117,7 @@ export insert = __BUILTINS__.dictInsert
 
 
 empty :: Dictionary k v
-export empty = Empty
+export empty = DictRBEmpty
 
 
 keys :: Dictionary a b -> List a
@@ -130,20 +130,46 @@ export values = (dict) => reduceRight((_, v, vs) => [v, ...vs], [], dict)
 
 length :: Dictionary a b -> Integer
 export length = (dict) => where(dict) {
-  Empty =>
+  DictRBEmpty =>
     0
 
-  Node(_, _, _, left, right) =>
+  DictRBNode(_, _, _, left, right) =>
     1 + length(left) + length(right)
 }
 
 
 singleton :: k -> v -> Dictionary k v
-export singleton = (k, v) => Node(BlackNode, k, v, Empty, Empty)
+export singleton = (k, v) => DictRBNode(DictRBBlack, k, v, DictRBEmpty, DictRBEmpty)
 
 
+/**
+ * Merges the second dictionary into the first. If keys collide, the value from
+ * the dict of the second parameter is chosen.
+ *
+ * @since 0.21.1
+ */
 merge :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => reduceLeft((k, v, dict) => insert(k, v, dict), a, b)
+export merge = (a, b) => reduceLeft(insert, a, b)
+
+
+/**
+ * Returns the dict given as first parameter, without the key/value pairs for
+ * which the key doesn't exist in the second dictionary.
+ *
+ * @since 0.21.1
+ */
+intersect :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
+export intersect = (a, b) => filterWithKey((k, _) => includes(k, b), a)
+
+
+/**
+ * Returns the dict given as first parameter, without the key/value pairs for
+ * which the key exists in the second dictionary.
+ *
+ * @since 0.21.1
+ */
+diff :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
+export diff = (a, b) => reduceLeft((k, _, dict) => remove(k, dict), a, b)
 
 
 update :: Comparable k => (v -> v) -> k -> Dictionary k v -> Dictionary k v
@@ -158,8 +184,8 @@ export update = (f, k, dict) => where(get(k, dict)) {
 
 remove :: Comparable k => k -> Dictionary k v -> Dictionary k v
 export remove = (key, dict) => where(removeHelp(key, dict)) {
-  Node(RedNode, k, v, left, right) =>
-    Node(BlackNode, k, v, left, right)
+  DictRBNode(DictRBRed, k, v, left, right) =>
+    DictRBNode(DictRBBlack, k, v, left, right)
 
   or =>
     or
@@ -168,29 +194,29 @@ export remove = (key, dict) => where(removeHelp(key, dict)) {
 
 removeHelp :: Comparable k => k -> Dictionary k v -> Dictionary k v
 removeHelp = (targetKey, dict) => where(dict) {
-  Empty =>
-    Empty
+  DictRBEmpty =>
+    DictRBEmpty
 
-  Node(color, key, value, left, right) =>
+  DictRBNode(color, key, value, left, right) =>
     if (targetKey < key) {
       where(left) {
-        Node(BlackNode, _, _, lLeft, _) =>
+        DictRBNode(DictRBBlack, _, _, lLeft, _) =>
           where(lLeft) {
-            Node(RedNode, _, _, _, _) =>
-              Node(color, key, value, removeHelp(targetKey, left), right)
+            DictRBNode(DictRBRed, _, _, _, _) =>
+              DictRBNode(color, key, value, removeHelp(targetKey, left), right)
 
             _ =>
               where(moveRedLeft(dict)) {
-                Node(nColor, nKey, nValue, nLeft, nRight) =>
+                DictRBNode(nColor, nKey, nValue, nLeft, nRight) =>
                   __BUILTINS__.balanceDict(nColor, nKey, nValue, removeHelp(targetKey, nLeft), nRight)
 
-                Empty =>
-                  Empty
+                DictRBEmpty =>
+                  DictRBEmpty
               }
           }
 
         _ =>
-          Node(color, key, value, removeHelp(targetKey, left), right)
+          DictRBNode(color, key, value, removeHelp(targetKey, left), right)
       }
     } else {
       removeHelpEQGT(targetKey, removeHelpPrepEQGT(dict, color, key, value, left, right))
@@ -200,15 +226,15 @@ removeHelp = (targetKey, dict) => where(dict) {
 
 removeHelpPrepEQGT :: Comparable k => Dictionary k v -> NodeColor -> k -> v -> Dictionary k v -> Dictionary k v -> Dictionary k v
 removeHelpPrepEQGT = (dict, color, key, value, left, right) => where(left) {
-  Node(RedNode, lK, lV, lLeft, lRight) =>
-    Node(color, lK, lV, lLeft, Node(RedNode, key, value, lRight, right))
+  DictRBNode(DictRBRed, lK, lV, lLeft, lRight) =>
+    DictRBNode(color, lK, lV, lLeft, DictRBNode(DictRBRed, key, value, lRight, right))
 
   _ =>
     where(right) {
-      Node(BlackNode, _, _, Node(BlackNode, _, _, _, _), _) =>
+      DictRBNode(DictRBBlack, _, _, DictRBNode(DictRBBlack, _, _, _, _), _) =>
         moveRedRight(dict)
 
-      Node(BlackNode, _, _, Empty, _) =>
+      DictRBNode(DictRBBlack, _, _, DictRBEmpty, _) =>
         moveRedRight(dict)
 
       _ =>
@@ -219,29 +245,29 @@ removeHelpPrepEQGT = (dict, color, key, value, left, right) => where(left) {
 
 removeHelpEQGT :: Comparable k => k -> Dictionary k v -> Dictionary k v
 removeHelpEQGT = (targetKey, dict) => where(dict) {
-  Node(c, k, v, left, right) =>
+  DictRBNode(c, k, v, left, right) =>
     if (targetKey == k) {
       where(getMin(right)) {
-        Node(_, minKey, minValue, _, _) =>
+        DictRBNode(_, minKey, minValue, _, _) =>
           __BUILTINS__.balanceDict(c, minKey, minValue, left, removeMin(right))
 
-        Empty =>
-          Empty
+        DictRBEmpty =>
+          DictRBEmpty
       }
     } else {
       __BUILTINS__.balanceDict(c, k, v, left, removeHelp(targetKey, right))
     }
 
-  Empty =>
-    Empty
+  DictRBEmpty =>
+    DictRBEmpty
 }
 
 
 getMin :: Dictionary k v -> Dictionary k v
 getMin = (dict) => where(dict) {
-  Node(_, _, _, left, _) =>
+  DictRBNode(_, _, _, left, _) =>
     where(left) {
-      Node(_, _, _, _, _) =>
+      DictRBNode(_, _, _, _, _) =>
         getMin(left)
 
       _ =>
@@ -255,44 +281,44 @@ getMin = (dict) => where(dict) {
 
 removeMin :: Dictionary k v -> Dictionary k v
 removeMin = (dict) => where(dict) {
-  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), right) =>
+  DictRBNode(c, k, v, DictRBNode(lC, lK, lV, lLeft, lRight), right) =>
     where(lC) {
-      BlackNode =>
+      DictRBBlack =>
         where(lLeft) {
-          Node(RedNode, _, _, _, _) =>
-            Node(c, k, v, removeMin(Node(lC, lK, lV, lLeft, lRight)), right)
+          DictRBNode(DictRBRed, _, _, _, _) =>
+            DictRBNode(c, k, v, removeMin(DictRBNode(lC, lK, lV, lLeft, lRight)), right)
 
           _ =>
             where(moveRedLeft(dict)) {
-              Node(nC, nK, nV, nLeft, nRight) =>
+              DictRBNode(nC, nK, nV, nLeft, nRight) =>
                 __BUILTINS__.balanceDict(nC, nK, nV, removeMin(nLeft), nRight)
 
-              Empty =>
-                Empty
+              DictRBEmpty =>
+                DictRBEmpty
             }
         }
 
       _ =>
-        Node(c, k, v, removeMin(Node(lC, lK, lV, lLeft, lRight)), right)
+        DictRBNode(c, k, v, removeMin(DictRBNode(lC, lK, lV, lLeft, lRight)), right)
     }
 
   _ =>
-    Empty
+    DictRBEmpty
 }
 
 
 moveRedLeft :: Dictionary k v -> Dictionary k v
 moveRedLeft = (dict) => where(dict) {
-  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, Node(RedNode, rlK, rlV, rlL, rlR), rRight)) =>
-    Node(RedNode, rlK, rlV, Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), rlL), Node(BlackNode, rK, rV, rlR, rRight))
+  DictRBNode(c, k, v, DictRBNode(lC, lK, lV, lLeft, lRight), DictRBNode(rC, rK, rV, DictRBNode(DictRBRed, rlK, rlV, rlL, rlR), rRight)) =>
+    DictRBNode(DictRBRed, rlK, rlV, DictRBNode(DictRBBlack, k, v, DictRBNode(DictRBRed, lK, lV, lLeft, lRight), rlL), DictRBNode(DictRBBlack, rK, rV, rlR, rRight))
 
-  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, rLeft, rRight)) =>
+  DictRBNode(c, k, v, DictRBNode(lC, lK, lV, lLeft, lRight), DictRBNode(rC, rK, rV, rLeft, rRight)) =>
     where(c) {
-      BlackNode =>
-        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+      DictRBBlack =>
+        DictRBNode(DictRBBlack, k, v, DictRBNode(DictRBRed, lK, lV, lLeft, lRight), DictRBNode(DictRBRed, rK, rV, rLeft, rRight))
 
-      RedNode =>
-        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+      DictRBRed =>
+        DictRBNode(DictRBBlack, k, v, DictRBNode(DictRBRed, lK, lV, lLeft, lRight), DictRBNode(DictRBRed, rK, rV, rLeft, rRight))
     }
 
   _ =>
@@ -302,16 +328,16 @@ moveRedLeft = (dict) => where(dict) {
 
 moveRedRight :: Dictionary k v -> Dictionary k v
 moveRedRight = (dict) => where(dict) {
-  Node(c, k, v, Node(lC, lK, lV, Node(RedNode, llK, llV, llLeft, llRight), lRight), Node(rC, rK, rV, rLeft, rRight)) =>
-    Node(RedNode, lK, lV, Node(BlackNode, llK, llV, llLeft, llRight), Node(BlackNode, k, v, lRight, Node(RedNode, rK, rV, rLeft, rRight)))
+  DictRBNode(c, k, v, DictRBNode(lC, lK, lV, DictRBNode(DictRBRed, llK, llV, llLeft, llRight), lRight), DictRBNode(rC, rK, rV, rLeft, rRight)) =>
+    DictRBNode(DictRBRed, lK, lV, DictRBNode(DictRBBlack, llK, llV, llLeft, llRight), DictRBNode(DictRBBlack, k, v, lRight, DictRBNode(DictRBRed, rK, rV, rLeft, rRight)))
 
-  Node(c, k, v, Node(lC, lK, lV, lLeft, lRight), Node(rC, rK, rV, rLeft, rRight)) =>
+  DictRBNode(c, k, v, DictRBNode(lC, lK, lV, lLeft, lRight), DictRBNode(rC, rK, rV, rLeft, rRight)) =>
     where(c) {
-      BlackNode =>
-        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+      DictRBBlack =>
+        DictRBNode(DictRBBlack, k, v, DictRBNode(DictRBRed, lK, lV, lLeft, lRight), DictRBNode(DictRBRed, rK, rV, rLeft, rRight))
 
-      RedNode =>
-        Node(BlackNode, k, v, Node(RedNode, lK, lV, lLeft, lRight), Node(RedNode, rK, rV, rLeft, rRight))
+      DictRBRed =>
+        DictRBNode(DictRBBlack, k, v, DictRBNode(DictRBRed, lK, lV, lLeft, lRight), DictRBNode(DictRBRed, rK, rV, rLeft, rRight))
     }
 
   _ =>

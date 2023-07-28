@@ -129,34 +129,49 @@ instance Semigroup (Wish e a) {
   assoc = (a, b) => chainRej(() => b, a)
 }
 
-// TODO: handle badCB and cancellation
+
 instance MonadRec (Wish e) {
   tailRecM = (f, a) => Wish((badCB, goodCB) => {
+    cancel = Nothing
+
     run = (v) => {
       where(f(v)) {
         Wish(r) =>
-          r(
-            (err) => { badCB(err) },
-            (res) => {
-              where(res) {
-                Done(x) =>
-                  do {
-                    goodCB(x)
-                  }
-
-                Loop(x) =>
-                  do {
-                    setTimeout(() => run(x), 0)
-                  }
+          do {
+            c = r(
+              badCB,
+              (res) => {
+                cancel = Nothing
+                where(res) {
+                  Done(x) =>
+                    do {
+                      goodCB(x)
+                    }
+  
+                  Loop(x) =>
+                    do {
+                      setTimeout(() => run(x), 0)
+                    }
+                }
               }
-            }
-          )
+            )
+
+            cancel = Just(c)
+          }
       }
     }
 
     run(a)
 
-    return () => {}
+    return () => {
+      where(cancel) {
+        Just(c) =>
+          c()
+
+        Nothing =>
+          {}
+      }
+    }
   })
 }
 

@@ -1,106 +1,127 @@
+import { EQ, GT, LT } from "Compare"
+import { Just, Nothing } from "Maybe"
+import {} from "String"
 import { assertEquals, test } from "Test"
+
 import {
+  diff,
   empty,
+  filter,
   fromList,
   get,
   insert,
+  intersect,
   keys,
   length,
   mapWithKey,
   merge,
+  remove,
   update,
   values,
-  remove,
-  filter,
 } from "./Dictionary"
-import { Just, Nothing } from "Maybe"
-import {} from "String"
 
 
-test("fromList", () =>
-  assertEquals(
+
+test(
+  "fromList",
+  () => assertEquals(
     fromList([#[1, 2], #[2, 2]]),
     pipe(
       insert(1, 2),
-      insert(2, 2)
-    )(empty)
-  )
+      insert(2, 2),
+    )(empty),
+  ),
 )
 
-test("fromList - should dedupe keys", () =>
-  assertEquals(
-    fromList([#[1, 2], #[2, 2], #[2, 3]]),
-    {{ 1: 2, 2: 3 }}
-  )
+test(
+  "fromList - should dedupe keys",
+  () => assertEquals(fromList([#[1, 2], #[2, 2], #[2, 3]]), {{ 1: 2, 2: 3 }}),
 )
 
-test("insert - no existing", () =>
-  assertEquals(insert(1, 2, empty), fromList([#[1, 2]]))
+test("insert - no existing", () => assertEquals(insert(1, 2, empty), fromList([#[1, 2]])))
+
+test("insert - update", () => assertEquals(insert(1, 7, {{ 1: 2 }}), fromList([#[1, 7]])))
+
+test(
+  "get - Just",
+  () => assertEquals(get("john", fromList([#["john", { age: 32 }]])), Just({ age: 32 })),
 )
 
-test("insert - update", () =>
-  assertEquals(insert(1, 7, {{ 1: 2 }}), fromList([#[1, 7]]))
+test("get - Nothing", () => assertEquals(get("john", fromList([#["paul", { age: 32 }]])), Nothing))
+
+test("keys", () => assertEquals(keys({{ true: "GO", false: "NOGO" }}), [false, true]))
+
+test("values", () => assertEquals(values({{ true: "GO", false: "NOGO" }}), ["NOGO", "GO"]))
+
+test(
+  "length",
+  () => assertEquals(length(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])), 3),
 )
 
-test("get - Just", () =>
-  assertEquals(get("john", fromList([#["john", { age: 32 }]])), Just({ age: 32 }))
-)
-
-test("get - Nothing", () =>
-  assertEquals(get("john", fromList([#["paul", { age: 32 }]])), Nothing)
-)
-
-test("keys", () =>
-  assertEquals(keys({{ true: "GO", false: "NOGO" }}), [false, true])
-)
-
-test("values", () =>
-  assertEquals(values({{ true: "GO", false: "NOGO" }}), ["NOGO", "GO"])
-)
-
-test("length", () =>
-  assertEquals(length(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])), 3)
-)
-
-test("map", () =>
-  assertEquals(
+test(
+  "map",
+  () => assertEquals(
     map((x) => x / 2, fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])),
-    fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]])
-  )
+    fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]]),
+  ),
 )
 
-test("mapWithKey", () =>
-  assertEquals(
+test(
+  "mapWithKey",
+  () => assertEquals(
     mapWithKey(
       (city, x) => city == "Sidney" ? 9 : x / 2,
-      fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
+      fromList([#["Sidney", 3], #["New York", 18], #["London", 2]]),
     ),
-    fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
-  )
+    fromList([#["Sidney", 9], #["New York", 9], #["London", 1]]),
+  ),
 )
 
-test("update", () =>
-  assertEquals(
-    update((x) => x + 1, "key", {{ "key": 4 }}),
-    {{ "key": 5 }}
-  )
-)
+test("update", () => assertEquals(update((x) => x + 1, "key", {{ "key": 4 }}), {{ "key": 5 }}))
 
 test("remove", () => assertEquals(remove(3, {{ 7: 0, 3: 0, 1: 0 }}), {{ 7: 0, 1: 0 }}))
 
-test("merge", () => {
-  dictLeft = fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
-  dictRight = fromList([#["Paris", 13], #["Berlin", 5], #["London", 17]])
+test(
+  "merge",
+  () => {
+    dictLeft = fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
+    dictRight = fromList([#["Paris", 13], #["Berlin", 5], #["London", 17]])
 
-  expected = fromList([
-    #["Sidney", 3],
-    #["New York", 18],
-    #["London", 17],
-    #["Paris", 13],
-    #["Berlin", 5]
-  ])
+    expected = fromList([
+      #["Sidney", 3],
+      #["New York", 18],
+      #["London", 17],
+      #["Paris", 13],
+      #["Berlin", 5],
+    ])
 
-  return assertEquals(merge(dictLeft, dictRight), expected)
-})
+    return assertEquals(merge(dictLeft, dictRight), expected)
+  },
+)
 
-test("filter", () => assertEquals(filter((a) => a > 10, {{ 2: 24, 0: 11, 1: 7, 3: 2 }}), {{ 2: 24, 0: 11 }}))
+test(
+  "filter",
+  () => assertEquals(filter((a) => a > 10, {{ 2: 24, 0: 11, 1: 7, 3: 2 }}), {{ 2: 24, 0: 11 }}),
+)
+
+test("compare - LT", () => assertEquals(compare({{ 1: "1", 2: "2" }}, {{ 1: "1", 2: "two" }}), LT))
+
+test("compare - EQ", () => assertEquals(compare({{ 1: "1", 2: "2" }}, {{ 1: "1", 2: "2" }}), EQ))
+
+test("compare - GT", () => assertEquals(compare({{ 1: "1", 3: "3" }}, {{ 1: "1", 2: "2" }}), GT))
+
+test(
+  "intersect",
+  () => assertEquals(
+    intersect({{ 1: "1", 34: "34", 310: "310" }}, {{ 1: "one", 34: "thirty four" }}),
+    {{ 1: "1", 34: "34" }},
+  ),
+)
+
+test(
+  "diff",
+  () => assertEquals(
+    diff({{ 1: "1", 34: "34", 310: "310" }}, {{ 1: "one", 34: "thirty four" }}),
+    {{ 310: "310" }},
+  ),
+)

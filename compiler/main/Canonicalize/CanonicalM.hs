@@ -14,6 +14,7 @@ import           Canonicalize.Coverable
 import qualified Data.List as List
 import qualified Driver.Query as Query
 import qualified Rock
+import Canonicalize.Env (Env (envCurrentPath))
 
 
 data Accessed
@@ -164,10 +165,10 @@ getAllTypeAccesses :: CanonicalM (Set.Set String)
 getAllTypeAccesses = gets (Set.map getAccessName . Set.filter isTypeAccess . namesAccessed)
 
 
-pushTypeDeclToDerive :: TypeDecl -> CanonicalM ()
-pushTypeDeclToDerive td@(Canonical _ td') = do
+pushTypeDeclToDerive :: Env -> TypeDecl -> CanonicalM ()
+pushTypeDeclToDerive env td@(Canonical _ td') = do
   let typeName = adtname td'
-  when (typeName /= "Dictionary") $ do
+  when (typeName /= "Dictionary" && (typeName /= "Set" || not ("prelude/__internal__" `List.isInfixOf` envCurrentPath env))) $ do
     s <- get
     put s { typesToDerive = typesToDerive s <> [TypeDeclToDerive td] }
 
