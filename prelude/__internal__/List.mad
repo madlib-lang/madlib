@@ -1,11 +1,12 @@
-import { reduceLeft } from "__BUILTINS__"
 import type { Comparison } from "Compare"
 import type { Maybe } from "Maybe"
 
-import { LT, EQ, GT } from "Compare"
+import { EQ, GT, LT } from "Compare"
 import Function from "Function"
 import { Just, Nothing } from "Maybe"
 import {} from "Monad"
+import { reduceLeft } from "__BUILTINS__"
+
 
 
 /**
@@ -53,6 +54,7 @@ instance Monad List {
 
 instance Alternative List {
   aempty = []
+
   alt = mappend
 }
 
@@ -382,6 +384,50 @@ export nth = (i, list) => where(list) {
     i == 0 ? Just(a) : nth(i - 1, xs)
 }
 
+/**
+ * Modify a mapping function to be a mapping function which takes a secondary index value
+ * @example
+ * addIndex(map, (x, i) => x + i, [1,2,3]) // [1, 3, 5]
+ */
+addIndex :: ((a -> b) -> List a -> List b) -> (a -> Integer -> b) -> List a -> List b
+export addIndex = (fn, y, xs) => {
+  i = 0
+  return fn(
+    (x) => {
+      result = y(x, i)
+      i = i + 1
+      return result
+    },
+    xs,
+  )
+}
+
+/**
+ * Set a value at a specific index
+ */
+set :: Integer -> a -> List a -> List a
+export set = (n, x, list) => {
+  _set = (j, l2) => where(l2) {
+    [] =>
+      []
+
+    [a, ...xs] =>
+      j == n ? [x, ...xs] : [a, ..._set(j + 1, xs)]
+  }
+  return _set(0, list)
+}
+
+/**
+ * Set a value at a specific index, maybe
+ */
+setMaybe :: Integer -> Maybe a -> List a -> List a
+export setMaybe = (n, m, list) => where(m) {
+  Nothing =>
+    list
+
+  Just(x) =>
+    set(n, x, list)
+}
 
 /**
  * Aggregate a single value by iterating over a list, from right-to-left.
@@ -524,8 +570,12 @@ export slice = (start, end, list) => {
       []
 
     [a, ...xs] =>
-      if (start_ == 0 && end_ > 0) { [a, ...helper(0, end_ - 1, xs)] } else {
-        if (start_ > 0) { helper(start_ - 1, end_ - 1, xs) } else { [] }
+      if (start_ == 0 && end_ > 0) {
+        [a, ...helper(0, end_ - 1, xs)]
+      } else if (start_ > 0) {
+        helper(start_ - 1, end_ - 1, xs)
+      } else {
+        []
       }
   }
 
@@ -626,9 +676,7 @@ export sortBy = (compareFn, list) => {
   merge :: List a -> List a -> List a
   merge = (listA, listB) => where(#[listA, listB]) {
     #[[a, ...as], [b, ...bs]] =>
-      compareFn(a, b) == GT
-        ? [b, ...merge(listA, bs)]
-        : [a, ...merge(as, listB)]
+      compareFn(a, b) == GT ? [b, ...merge(listA, bs)] : [a, ...merge(as, listB)]
 
     #[[], bs] =>
       bs
@@ -756,6 +804,8 @@ export includes = (x, list) => where(list) {
   [a, ...xs] =>
     a == x || includes(x, xs)
 }
+// a == x ? true : includes(x, xs)
+
 
 
 /**

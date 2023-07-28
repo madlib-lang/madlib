@@ -1,0 +1,190 @@
+import Float from "Float"
+import Math from "Math"
+import { Just } from "Maybe"
+import String from "String"
+
+import {
+  LCG_A,
+  LCG_C,
+  LCG_M,
+  SEED_MAX,
+  SEED_MIN,
+  Seed,
+  apply,
+  generate,
+  generateFromString,
+  intGradient,
+  iterateBinary,
+  mkSeed,
+  mkSeedFromString,
+  modClamp,
+  next,
+  perturbation,
+  seededShuffle,
+  stepN,
+  unSeed,
+} from "./Random"
+import { assertEquals, test } from "./Test"
+
+
+
+ALPHABET = String.split("", "abcdefghjiklmnopqrtuvwxyz")
+// Tests are async so we don't wanna have a shared random generator here
+TEST_SEED = 1000
+
+naiveRandom = () => Float.toInteger(Math.floor(Math.random() * 10000))
+
+test("mkSeed will clamp values over the max", () => assertEquals(mkSeed(SEED_MAX + 1), Seed(2)))
+
+test(
+  "mkSeed will clamp values under the min",
+  () => assertEquals(mkSeed(SEED_MIN - 1), Seed(2147483646)),
+)
+test(
+  "unSeed",
+  () => {
+    x = 100
+    return assertEquals(x, unSeed(Seed(x)))
+  },
+)
+test("apply", () => assertEquals(Seed(100), apply((x) => x * 2, Seed(50))))
+test(
+  "step",
+  () => {
+    a = mkSeed(100)
+    b = next(a)
+    return assertEquals(unSeed(b), 4827100)
+  },
+)
+
+
+test(
+  "stepN",
+  () => pipe(
+    stepN(5),
+    assertEquals($, Seed(1708473988)),
+  )(mkSeed(100)),
+)
+
+
+test("perturbation", () => assertEquals(perturbation(LCG_C, LCG_A, 23, LCG_M), 23))
+test("perturbation zeroes", () => assertEquals(perturbation(0, 0, 0, 1), 0))
+test("perturbation ones", () => assertEquals(perturbation(1, 2, 3, 2), 1))
+
+threeClamped = modClamp($, $, 3)
+test("modClamp - under", () => assertEquals(threeClamped(7, 21), 24))
+test("modClamp - over", () => assertEquals(threeClamped(1, 1000), 3))
+
+test("intGradient", () => assertEquals(500, intGradient(0, 1000, 0.5)))
+
+test(
+  "iterateBinary",
+  () => {
+    seed = mkSeedFromString("iterateBinary")
+    shuffled = pipe(
+      iterateBinary(2, seededShuffle, ALPHABET),
+      map(String.join("")),
+    )(seed)
+    return assertEquals(
+      shuffled,
+      ["kmjbgzxorpvuqtadlfhynwcei", "vqpmxicafdrylhkbuzoetwjgn", "rlwqcnjkzbfeuovmydaghipxt"],
+    )
+  },
+)
+
+
+test(
+  "two random instances should have identical outputs in cycle - boolean",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    _ <- assertEquals(r1.boolean(), r2.boolean())
+    _ <- assertEquals(r1.boolean(), r2.boolean())
+    _ <- assertEquals(r1.boolean(), r2.boolean())
+    _ <- assertEquals(r1.boolean(), r2.boolean())
+    return assertEquals(r1.boolean(), r2.boolean())
+  },
+)
+
+test(
+  "two random instances should have identical outputs in cycle - integer",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    a = 1
+    z = 10000
+    _ <- assertEquals(r1.integer(a, z), r2.integer(a, z))
+    _ <- assertEquals(r1.integer(a, z), r2.integer(a, z))
+    _ <- assertEquals(r1.integer(a, z), r2.integer(a, z))
+    _ <- assertEquals(r1.integer(a, z), r2.integer(a, z))
+    return assertEquals(r1.integer(a, z), r2.integer(a, z))
+  },
+)
+
+
+test(
+  "two random instances should have identical outputs in cycle - float",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    _ <- assertEquals(r1.float(), r2.float())
+    _ <- assertEquals(r1.float(), r2.float())
+    _ <- assertEquals(r1.float(), r2.float())
+    _ <- assertEquals(r1.float(), r2.float())
+    return assertEquals(r1.float(), r2.float())
+  },
+)
+
+test(
+  "two random instances should have identical outputs in cycle - pick",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    _ <- assertEquals(r1.pick(ALPHABET), r2.pick(ALPHABET))
+    _ <- assertEquals(r1.pick(ALPHABET), r2.pick(ALPHABET))
+    _ <- assertEquals(r1.pick(ALPHABET), r2.pick(ALPHABET))
+    _ <- assertEquals(r1.pick(ALPHABET), r2.pick(ALPHABET))
+    return assertEquals(r1.pick(ALPHABET), r2.pick(ALPHABET))
+  },
+)
+
+test(
+  "two random instances should have identical outputs in cycle - shuffle",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    _ <- assertEquals(
+      pipe(
+        r1.shuffle,
+        String.join(""),
+      )(ALPHABET),
+      pipe(
+        r2.shuffle,
+        String.join(""),
+      )(ALPHABET),
+    )
+    return assertEquals(
+      pipe(
+        r1.shuffle,
+        String.join(""),
+      )(ALPHABET),
+      pipe(
+        r2.shuffle,
+        String.join(""),
+      )(ALPHABET),
+    )
+  },
+)
+
+test(
+  "generateFromString - works like `generate` but can take a string as a seed",
+  () => do {
+    r = generateFromString("cool")
+    return assertEquals(r.float(), 0.583066370609713)
+  },
+)

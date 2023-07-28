@@ -8,11 +8,11 @@ import { Just, Nothing, fromMaybe } from "Maybe"
 import Monad from "Monad"
 import {} from "Number"
 import Process from "Process"
+import { pShow } from "Show"
 import String from "String"
 import Terminal from "Terminal"
 import Tuple from "Tuple"
 import Wish from "Wish"
-import { pShow } from "Show"
 
 
 
@@ -97,9 +97,9 @@ collector = makeResultCollector()
 
 // Test API
 
-export type AssertionError a
-  = AssertionError(a, a)
-  | Error(a)
+export type AssertionError
+  = AssertionError(String, String)
+  | Error(String)
   | ErrorWithMessage(String)
   | NotImplemented
 
@@ -161,32 +161,33 @@ mergeReports = (t1, t2) => TestReport(
 )
 
 
-assertEquals :: Eq a => a -> a -> Wish.Wish (AssertionError a) {}
+assertEquals :: (Show a, Eq a) => a -> a -> Wish.Wish AssertionError {}
 export assertEquals = (actual, expected) => actual == expected
   ? of({})
-  : Wish.bad(AssertionError(expected, actual))
+  : Wish.bad(AssertionError(pShow(expected), pShow(actual)))
 
 
 indent :: Integer -> String -> String
 indent = (amount, x) => pipe(
   String.lines,
-  map((line) => pipe(
-    spaces,
-    mappend($, line)
-  )(amount)),
-  String.unlines
+  map(
+    (line) => pipe(
+      spaces,
+      mappend($, line),
+    )(amount),
+  ),
+  String.unlines,
 )(x)
 
 
-renderValue :: Show a => (String -> String) -> a -> String
+renderValue :: (String -> String) -> String -> String
 renderValue = (colorize, value) => pipe(
-  pShow,
   indent(4),
   (s) => IS_COLOR_ENABLED ? colorize(s) : s,
 )(value)
 
 
-renderAssertionError :: Show a => String -> AssertionError a -> String
+renderAssertionError :: String -> AssertionError -> String
 renderAssertionError = (description, assertionError) => where(assertionError) {
   AssertionError(expected, actual) =>
     IO.red(`${CHAR_CROSS} ${description}`)
@@ -195,21 +196,15 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
       ++ "\n  actual:\n"
       ++ renderValue(Terminal.text.brightRed, actual)
       ++ "\n"
-  
+
   ErrorWithMessage(message) =>
-    IS_COLOR_ENABLED
-      ? IO.red(`${CHAR_CROSS} ${message}\n`)
-      : `${CHAR_CROSS} ${message}\n`
-  
+    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${message}\n`) : `${CHAR_CROSS} ${message}\n`
+
   Error(err) =>
-    IS_COLOR_ENABLED
-      ? IO.red(`${CHAR_CROSS} ${show(err)}`)
-      : `${CHAR_CROSS} ${show(err)}`
-  
+    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${show(err)}`) : `${CHAR_CROSS} ${show(err)}`
+
   NotImplemented =>
-    IS_COLOR_ENABLED
-      ? IO.red(`${CHAR_CROSS} not implemented`)
-      : `${CHAR_CROSS} not implemented`
+    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} not implemented`) : `${CHAR_CROSS} not implemented`
 }
 
 
@@ -254,10 +249,17 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
 // )(t)
 
 
-test :: Show a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish TestResult TestResult
+
+test :: String -> (String -> Wish.Wish AssertionError {}) -> Wish.Wish TestResult TestResult
 export test = (description, testFunction) => pipe(
   testFunction,
-  bimap(pipe(renderAssertionError(description), Failure(description)), always(Success(description))),
+  bimap(
+    pipe(
+      renderAssertionError(description),
+      Failure(description),
+    ),
+    always(Success(description)),
+  ),
 )(description)
 
 
@@ -327,7 +329,9 @@ printSuiteResults = (results) => {
             preparedSuitePath = prepareSuitePath(true, suitePath)
             coloredCounts = if (IS_COLOR_ENABLED) {
               failed > 0 ? Terminal.text.brightRed(counts) : Terminal.text.brightGreen(counts)
-            } else { counts }
+            } else {
+              counts
+            }
             prefix = total == success + failed
               ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS
               : PREFIX_RUNS
@@ -480,8 +484,11 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
 )(testsInSuite)
 
 
-runAllTestSuites :: (Show e, Show f) => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish TestResult TestResult)]
-  -> ({} -> {})
+
+runAllTestSuites :: (
+  Show e,
+  Show f
+) => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish TestResult TestResult)] -> {} -> {}
 export runAllTestSuites = (testSuites) => pipe(
   map(
     where {
@@ -490,7 +497,9 @@ export runAllTestSuites = (testSuites) => pipe(
     },
   ),
   (suites) => {
-    if (IS_COLOR_ENABLED) { printSuiteResults(collector.getResults()) }
+    if (IS_COLOR_ENABLED) {
+      printSuiteResults(collector.getResults())
+    }
     return suites
   },
   Wish.parallel,
@@ -498,14 +507,18 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.fulfill(
     () => ({}),
     (report) => {
-      if (!IS_COLOR_ENABLED) { printSuiteResults(collector.getResults()) }
+      if (!IS_COLOR_ENABLED) {
+        printSuiteResults(collector.getResults())
+      }
       IO.put(getMessage(report))
       IO.putLine(
         `Test suites: ${show(List.length(testSuites))}  tests: ${show(getTotal(report))}  passed: ${
           show(getSuccessCount(report))
         }  failed: ${show(getFailureCount(report))}`,
       )
-      if (getFailureCount(report) > 0) { Process.exit(1) }
+      if (getFailureCount(report) > 0) {
+        Process.exit(1)
+      }
     },
   ),
 )(testSuites)

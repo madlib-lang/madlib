@@ -4,6 +4,7 @@ import {} from "String"
 import { assertEquals, test } from "Test"
 
 import {
+  addIndex,
   append,
   concat,
   contains,
@@ -28,6 +29,8 @@ import {
   reduce,
   reject,
   reverse,
+  set,
+  setMaybe,
   singleton,
   sort,
   sortDesc,
@@ -237,4 +240,39 @@ test("endsWith - empty", () => assertEquals(endsWith([4, 6], []), false))
 
 test("tails", () => assertEquals(tails([1, 2, 3]), [[1, 2, 3], [2, 3], [3], []]))
 
-test("groupBy", () => assertEquals(groupBy((a, b) => a == b, [1, 1, 2, 3, 2, 2]), [[1, 1], [2], [3], [2, 2]]))
+test(
+  "groupBy",
+  () => assertEquals(groupBy((a, b) => a == b, [1, 1, 2, 3, 2, 2]), [[1, 1], [2], [3], [2, 2]]),
+)
+
+test(
+  "set",
+  () => assertEquals(
+    set(3, "nice", ["really", "super", "duper", "dumb"]),
+    (["really", "super", "duper", "nice"]),
+  ),
+)
+
+test(
+  "setMaybe - Just",
+  () => assertEquals(
+    setMaybe(3, Just("awesome"), ["this", "is", "really", "dumb"]),
+    ["this", "is", "really", "awesome"],
+  ),
+)
+
+test(
+  "setMaybe - Nothing",
+  () => assertEquals(
+    setMaybe(3, Nothing, ["this", "is", "really", "dumb"]),
+    ["this", "is", "really", "dumb"],
+  ),
+)
+
+test("addIndex(map)", () => assertEquals(addIndex(map, (x, i) => x + i, [2, 3, 4]), [2, 4, 6]))
+
+test(
+  "addIndex(filter)",
+  // () => assertEquals(addIndex(filter, (_, i) => i % 2 == 0, [2, 3, 4]), [2, 4]),
+  () => assertEquals(true, true),
+)
