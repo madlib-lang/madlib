@@ -1,95 +1,377 @@
 import List from "List"
-import { eq, gt } from "Compare"
+import { LT, GT, EQ } from "Compare"
 
-type Set a = Set(List a)
+type NodeColor
+  = SetRBBlack
+  | SetRBRed
+
+type Set a
+  = SetRBEmpty
+  | SetRBNode(NodeColor, a, Set a, Set a)
 export type Set
 
 
 
-removeConsecutiveDoubles :: Eq a => List a -> List a
-removeConsecutiveDoubles = (list) => where(list) {
-  [a1, a2, ...xs] =>
-    a1 == a2
-      ? [a2, ...removeConsecutiveDoubles(xs)]
-      : [a1, ...removeConsecutiveDoubles([a2, ...xs])]
-
-  [last] =>
-    [last]
-
-  [] =>
-    []
+instance Eq a => Eq (Set a) {
+  __EQ__ = (a, b) => toList(a) == toList(b)
 }
 
 
-fromList :: Comparable a => List a -> Set a
-export fromList = (list) => pipe(
-  List.sortBy(compare),
-  removeConsecutiveDoubles,
-  Set
-)(list)
+instance Show a => Show (Set a) {
+  show = (s) => {
+    items = pipe(
+      toList,
+      show,
+    )(s)
 
-
-toList :: Set a -> List a
-export toList = (set) => where(set) {
-  Set(items) =>
-    items
+    return `Set(${items})`
+  }
 }
 
 
-insert :: Comparable a => a -> Set a -> Set a
-export insert = (item, set) => {
-  helper = (items) => where(items) {
-    [] =>
-      [item]
-
-    [a, ...xs] =>
-      if (eq(a, item)) {
-        [item, ...xs]
-      } else if (gt(a, item)) {
-        [item, a, ...xs]
-      } else {
-        [a, ...helper(xs)]
-      }
-  }
-
-  return where(set) {
-    Set(items) =>
-      Set(helper(items))
-  }
+instance Comparable a => Comparable (Set a) {
+  compare = (a, b) => compare(toList(a), toList(b))
 }
 
 
 instance Functor Set {
-  map = (f, set) => where(set) {
-    Set(items) =>
-      Set(map(f, items))
+  map = (f, s) => where(s) {
+    SetRBEmpty =>
+      SetRBEmpty
+
+    SetRBNode(c, v, left, right) =>
+      SetRBNode(c, f(v), map(f, left), map(f, right))
   }
 }
 
 
-filter :: (a -> Boolean) -> Set a -> Set a
-export filter = (predicate, set) => where(set) {
-  Set(items) =>
-    Set(List.filter(predicate, items))
+mapM :: Monad m => (a -> m b) -> Set a -> m (Set b)
+export mapM = (f, s) => where(s) {
+  SetRBEmpty =>
+    pure(SetRBEmpty)
+
+  SetRBNode(c, v, left, right) =>
+    do {
+      _v <- f(v)
+      _left <- mapM(f, left)
+      _right <- mapM(f, right)
+
+      return of(SetRBNode(c, _v, _left, _right))
+    }
 }
 
 
-reduce :: (a -> b -> a) -> a -> Set b -> a
-export reduce = (f, initial, set) => where(set) {
-  Set(items) =>
-    List.reduce(f, initial, items)
+insert :: Comparable a => a -> Set a -> Set a
+export insert = (value, s) => where(insertHelp(value, s)) {
+  SetRBNode(SetRBRed, v, left, right) =>
+    SetRBNode(SetRBBlack, v, left, right)
+
+  or =>
+    or
 }
+
+
+insertHelp :: Comparable a => a -> Set a -> Set a
+insertHelp = (value, s) => where(s) {
+  SetRBEmpty =>
+    SetRBNode(SetRBRed, value, SetRBEmpty, SetRBEmpty)
+
+  SetRBNode(nColor, nValue, nLeft, nRight) =>
+    where(compare(value, nValue)) {
+      LT =>
+        balance(nColor, nValue, insertHelp(value, nLeft), nRight)
+
+      EQ =>
+        SetRBNode(nColor, value, nLeft, nRight)
+
+      GT =>
+        balance(nColor, nValue, nLeft, insertHelp(value, nRight))
+    }
+}
+
+
+balance :: NodeColor -> a -> Set a -> Set a -> Set a
+export balance = (color, v, left, right) => where(right) {
+  SetRBNode(SetRBRed, rV, rLeft, rRight) =>
+    where(left) {
+      SetRBNode(SetRBRed, lV, lLeft, lRight) =>
+        SetRBNode(SetRBRed, v, SetRBNode(SetRBBlack, lV, lLeft, lRight), SetRBNode(SetRBBlack, rV, rLeft, rRight))
+
+      _ =>
+        SetRBNode(color, rV, SetRBNode(SetRBRed, v, left, rLeft), rRight)
+    }
+
+  _ =>
+    where(left) {
+      SetRBNode(SetRBRed, lV, SetRBNode(SetRBRed, llV, llLeft, llRight), lRight) =>
+        SetRBNode(SetRBRed, lV, SetRBNode(SetRBBlack, llV, llLeft, llRight), SetRBNode(SetRBBlack, v, lRight, right))
+
+      _ =>
+        SetRBNode(color, v, left, right)
+    }
+}
+
+
+reduceLeft :: (v -> a -> a) -> a -> Set v -> a
+export reduceLeft = (f, acc, s) => where(s) {
+  SetRBEmpty =>
+    acc
+
+  SetRBNode(_, v, left, right) =>
+    reduceLeft(f, f(v, reduceLeft(f, acc, left)), right)
+}
+
+
+reduce :: (v -> a -> a) -> a -> Set v -> a
+export reduce = reduceLeft
+
+
+reduceRight :: (v -> a -> a) -> a -> Set v -> a
+export reduceRight = (f, acc, s) => where(s) {
+  SetRBEmpty =>
+    acc
+
+  SetRBNode(_, v, left, right) =>
+    reduceRight(f, f(v, reduceRight(f, acc, right)), left)
+}
+
+
+fromList :: Comparable a => List a -> Set a
+export fromList = (items) =>
+  List.reduceLeft(
+    (s, item) => insert(item, s),
+    SetRBEmpty,
+    items,
+  )
+
+
+toList :: Set a -> List a
+export toList = (s) => reduceRight((v, list) => [v, ...list], [], s)
+
+
+filter :: Comparable a => (a -> Boolean) -> Set a -> Set a
+export filter = (f, s) =>
+  reduceLeft((v, d) => f(v) ? insert(v, d) : d, empty, s)
+
+
+empty :: Set a
+export empty = SetRBEmpty
+
+
+length :: Set a -> Integer
+export length = (s) => where(s) {
+  SetRBEmpty =>
+    0
+
+  SetRBNode(_, _, left, right) =>
+    1 + length(left) + length(right)
+}
+
+
+singleton :: a -> Set a
+export singleton = (v) => SetRBNode(SetRBBlack, v, SetRBEmpty, SetRBEmpty)
 
 
 merge :: Comparable a => Set a -> Set a -> Set a
-export merge = (setA, setB) => where(#[setA, setB]) {
-  #[Set(itemsA), Set(itemsB)] =>
-    fromList(List.concat(itemsA, itemsB))
+export merge = (a, b) => reduceLeft(insert, a, b)
+
+
+/**
+ * Returns the set given as first parameter, without the values that don't
+ * exist in the second set.
+ *
+ * @since 0.21.1
+ */
+intersect :: Comparable a => Set a -> Set a -> Set a
+export intersect = (a, b) => filter((k) => includes(k, b), a)
+ 
+ 
+ /**
+ * Returns the set given as first parameter, without the values that don't
+ * exist in the second set.
+ *
+ * @since 0.21.1
+ */
+diff :: Comparable a => Set a -> Set a -> Set a
+export diff = (a, b) => reduceLeft((v, s) => remove(v, s), a, b)
+
+
+includes :: Comparable a => a -> Set a -> Boolean
+export includes = (v, s) => where(s) {
+  SetRBEmpty =>
+    false
+
+  SetRBNode(_, _v, left, right) =>
+    if (v == _v) {
+      true
+    } else if (v > _v) {
+      includes(v, right)
+    } else {
+      includes(v, left)
+    }
 }
 
 
-includes :: Eq a => a -> Set a -> Boolean
-export includes = (item, set) => where(set) {
-  Set(items) =>
-    List.includes(item, items)
+
+remove :: Comparable a => a -> Set a -> Set a
+export remove = (value, s) => where(removeHelp(value, s)) {
+  SetRBNode(SetRBRed, v, left, right) =>
+    SetRBNode(SetRBBlack, v, left, right)
+
+  or =>
+    or
 }
+
+
+removeHelp :: Comparable a => a -> Set a -> Set a
+removeHelp = (targetValue, s) => where(s) {
+  SetRBEmpty =>
+    SetRBEmpty
+
+  SetRBNode(color, value, left, right) =>
+    if (targetValue < value) {
+      where(left) {
+        SetRBNode(SetRBBlack, _, lLeft, _) =>
+          where(lLeft) {
+            SetRBNode(SetRBRed, _, _, _) =>
+              SetRBNode(color, value, removeHelp(targetValue, left), right)
+
+            _ =>
+              where(moveRedLeft(s)) {
+                SetRBNode(nColor, nValue, nLeft, nRight) =>
+                  balance(nColor, nValue, removeHelp(targetValue, nLeft), nRight)
+
+                SetRBEmpty =>
+                  SetRBEmpty
+              }
+          }
+
+        _ =>
+          SetRBNode(color, value, removeHelp(targetValue, left), right)
+      }
+    } else {
+      removeHelpEQGT(targetValue, removeHelpPrepEQGT(s, color, value, left, right))
+    }
+}
+
+
+removeHelpPrepEQGT :: Comparable a => Set a -> NodeColor -> a -> Set a -> Set a -> Set a
+removeHelpPrepEQGT = (dict, color, value, left, right) => where(left) {
+  SetRBNode(SetRBRed, lV, lLeft, lRight) =>
+    SetRBNode(color, lV, lLeft, SetRBNode(SetRBRed, value, lRight, right))
+
+  _ =>
+    where(right) {
+      SetRBNode(SetRBBlack, _, SetRBNode(SetRBBlack, _, _, _), _) =>
+        moveRedRight(dict)
+
+      SetRBNode(SetRBBlack, _, SetRBEmpty, _) =>
+        moveRedRight(dict)
+
+      _ =>
+        dict
+    }
+}
+
+
+removeHelpEQGT :: Comparable a => a -> Set a -> Set a
+removeHelpEQGT = (targetValue, dict) => where(dict) {
+  SetRBNode(c, v, left, right) =>
+    if (targetValue == v) {
+      where(getMin(right)) {
+        SetRBNode(_, minValue, _, _) =>
+          balance(c, minValue, left, removeMin(right))
+
+        SetRBEmpty =>
+          SetRBEmpty
+      }
+    } else {
+      balance(c, v, left, removeHelp(targetValue, right))
+    }
+
+  SetRBEmpty =>
+    SetRBEmpty
+}
+
+
+getMin :: Set a -> Set a
+getMin = (s) => where(s) {
+  SetRBNode(_, _, left, _) =>
+    where(left) {
+      SetRBNode(_, _, _, _) =>
+        getMin(left)
+
+      _ =>
+        s
+    }
+
+  _ =>
+    s
+}
+
+
+removeMin :: Set a -> Set a
+removeMin = (s) => where(s) {
+  SetRBNode(c, v, SetRBNode(lC, lV, lLeft, lRight), right) =>
+    where(lC) {
+      SetRBBlack =>
+        where(lLeft) {
+          SetRBNode(SetRBRed, _, _, _) =>
+            SetRBNode(c, v, removeMin(SetRBNode(lC, lV, lLeft, lRight)), right)
+
+          _ =>
+            where(moveRedLeft(s)) {
+              SetRBNode(nC, nV, nLeft, nRight) =>
+                balance(nC, nV, removeMin(nLeft), nRight)
+
+              SetRBEmpty =>
+                SetRBEmpty
+            }
+        }
+
+      _ =>
+        SetRBNode(c, v, removeMin(SetRBNode(lC, lV, lLeft, lRight)), right)
+    }
+
+  _ =>
+    SetRBEmpty
+}
+
+
+moveRedLeft :: Set a -> Set a
+moveRedLeft = (s) => where(s) {
+  SetRBNode(c, v, SetRBNode(lC, lV, lLeft, lRight), SetRBNode(rC, rV, SetRBNode(SetRBRed, rlV, rlL, rlR), rRight)) =>
+    SetRBNode(SetRBRed, rlV, SetRBNode(SetRBBlack, v, SetRBNode(SetRBRed, lV, lLeft, lRight), rlL), SetRBNode(SetRBBlack, rV, rlR, rRight))
+
+  SetRBNode(c, v, SetRBNode(lC, lV, lLeft, lRight), SetRBNode(rC, rV, rLeft, rRight)) =>
+    where(c) {
+      SetRBBlack =>
+        SetRBNode(SetRBBlack, v, SetRBNode(SetRBRed, lV, lLeft, lRight), SetRBNode(SetRBRed, rV, rLeft, rRight))
+
+      SetRBRed =>
+        SetRBNode(SetRBBlack, v, SetRBNode(SetRBRed, lV, lLeft, lRight), SetRBNode(SetRBRed, rV, rLeft, rRight))
+    }
+
+  _ =>
+    s
+}
+
+
+moveRedRight :: Set a -> Set a
+moveRedRight = (s) => where(s) {
+  SetRBNode(c, v, SetRBNode(lC, lV, SetRBNode(SetRBRed, llV, llLeft, llRight), lRight), SetRBNode(rC, rV, rLeft, rRight)) =>
+    SetRBNode(SetRBRed, lV, SetRBNode(SetRBBlack, llV, llLeft, llRight), SetRBNode(SetRBBlack, v, lRight, SetRBNode(SetRBRed, rV, rLeft, rRight)))
+
+  SetRBNode(c, v, SetRBNode(lC, lV, lLeft, lRight), SetRBNode(rC, rV, rLeft, rRight)) =>
+    where(c) {
+      SetRBBlack =>
+        SetRBNode(SetRBBlack, v, SetRBNode(SetRBRed, lV, lLeft, lRight), SetRBNode(SetRBRed, rV, rLeft, rRight))
+
+      SetRBRed =>
+        SetRBNode(SetRBBlack, v, SetRBNode(SetRBRed, lV, lLeft, lRight), SetRBNode(SetRBRed, rV, rLeft, rRight))
+    }
+
+  _ =>
+    s
+}
+

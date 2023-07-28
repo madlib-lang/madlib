@@ -422,16 +422,12 @@ instance Compilable Exp where
                 <> safeName <> " = " <> content
               else
                 assignment <> methodGlobal
-          -- in  assignment <> methodGlobal
 
         Export e ->
           "export " <> compile env config e
 
         NameExport _ ->
           ""
-
-        -- NameExport name   ->
-        --   "export { " <> generateSafeName name <> " }"
 
         Record     fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
@@ -742,11 +738,14 @@ instance Compilable Exp where
               "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
 
             _ ->
-              "_"
+              ""
 
 
           packListVars :: [String] -> String
           packListVars items = case items of
+            [""] ->
+              ""
+
             [last] ->
               "{ v: " <> last <> " }"
 
