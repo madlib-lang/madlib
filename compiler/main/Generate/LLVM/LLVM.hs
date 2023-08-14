@@ -1387,7 +1387,7 @@ generateExp env symbolTable exp = case exp of
         let constructorType = IT.getReturnType t
         let maxArity = retrieveConstructorMaxArity symbolTable constructorType
 
-        if List.length args == maxArity then do
+        if List.length args == arity then do
           -- optimize known calls to constructors to simple allocations without function call
           args'   <- mapM (generateExp env { isLast = False } symbolTable) args
           args''  <- retrieveArgs (Core.getMetadata <$> args) args'
