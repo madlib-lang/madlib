@@ -789,7 +789,7 @@ tryDefaults env ps = case ps of
       (nextSubst, nextPS) <- tryDefaults env next
 
       let vars = getTypeVarsInType t
-      if null vars then
+      if null vars || isTVar t then
         return (nextSubst, nextPS)
       else do
         let tvs  = getTV <$> vars
@@ -801,7 +801,10 @@ tryDefaults env ps = case ps of
       (nextSubst, nextPS) <- tryDefaults env next
 
       let vars = getTypeVarsInType t
-      if null vars then
+
+      -- if it's a tvar we don't want to force it to {}
+      -- because it should actually never be called
+      if null vars || isTVar t then
         return (nextSubst, nextPS)
       else do
         let tvs  = getTV <$> vars
@@ -946,6 +949,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   --     && not (Slv.isExtern e)
   --     && not (null (ds ++ rs))
   --     && not (Can.isNamedAbs exp)
+  --     && not (Can.isTopLevelAssignment exp)
   --     && not (isFunctionType t')
   --     -- TODO: we need to update that and only default preds for values that aren't behind a function
   --     -- So the record might still have direct values that should be defaulted ( like mempty )
@@ -965,9 +969,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   --     return (ds, rs, mempty)
   let (ds', rs', sDefaults) = (ds, rs, mempty)
 
-  rsWithParentPreds <- getAllParentPreds env rs'
-  rsWithInstancePreds <- mapM (getAllInstancePreds env) rsWithParentPreds
-  let rs'' = dedupePreds (rsWithParentPreds ++ concat rsWithInstancePreds)
+  let rs'' = dedupePreds rs'
   let sFinal = sSplit `compose` sDefaults `compose` s''
 
   let mutPS =
@@ -1056,11 +1058,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
-  -- TODO: now that we don't generate placeholders anymore we should be able
-  -- to remove this
-  psWithParents <- getAllParentPreds env (dedupePreds qs')
-  psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents
-  let qs'' = dedupePreds (psWithParents ++ concat psWithInstancePreds)
+  let qs'' = dedupePreds qs'
 
   let scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   if sc /= scCheck then

@@ -542,8 +542,14 @@ export slice = (start, end, list) => {
  *
  * @since 0.0.5
  */
-isEmpty :: Eq a => List a -> Boolean
-export isEmpty = (xs) => xs == []
+isEmpty :: List a -> Boolean
+export isEmpty = (xs) => where(xs) {
+  [] =>
+    true
+
+  _ =>
+    false
+}
 
 
 /**

@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use list comprehension" #-}
 {-# HLINT ignore "Use guards" #-}
+{-# LANGUAGE LambdaCase #-}
 module Format.Format where
 
 import           Data.List
@@ -674,8 +675,8 @@ typingToDoc canBreak comments typing = case typing of
 
 templateStringExpsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
-  (e@(Source _ _ LStr{}) : more) ->
-    let (e', comments')     = expToDoc comments e
+  (e@(Source area target (LStr s)) : more) ->
+    let (e', comments')     = expToDoc comments (Source area target (LStr $ escapeBackticks s))
         (more', comments'') = templateStringExpsToDoc comments' more
     in  (e' <> more', comments'')
 
@@ -763,6 +764,15 @@ renderChar c = case c of
 
   c ->
     ['\'', c, '\'']
+
+
+escapeBackticks :: String -> String
+escapeBackticks s = s >>= \case
+  '`' ->
+    "\\`"
+
+  c ->
+    [c]
 
 
 expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])

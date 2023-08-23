@@ -1,0 +1,27 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@3:12-3:13
+     │
+   3 │   return a + \"\"
+     •            ┬ 
+     •            ╰╸ No instance for 'Number String' was found.
+     •               
+     •
+     │ Hint: Verify that you imported the module where the Number
+     │       instance for 'String' is defined
+     │ Note: Remember that instance methods are automatically imported when the module
+     │       is imported, directly, or indirectly.
+─────╯
+
+
+
+     ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@7:11-7:18
+     │
+   7 │   true && \"Hello\"
+     •           ┬──────
+     •           ╰╸ expected:
+     •                  Boolean
+     •              
+     •              but found:
+     •                  String
+     •              
+─────╯
+

@@ -379,3 +379,18 @@ isAbs exp = case exp of
 
   _ ->
     False
+
+
+isTopLevelAssignment :: Exp -> Bool
+isTopLevelAssignment exp = case exp of
+  Canonical _ (Assignment _ _) ->
+    True
+
+  Canonical _ (Export (Canonical _ (Assignment _ _))) ->
+    True
+
+  Canonical _ (TypedExp e _ _) ->
+    isTopLevelAssignment e
+
+  _ ->
+    False

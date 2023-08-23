@@ -63,6 +63,7 @@ data TypeError
   | MutatingFunction String
   | MethodNameAlreadyDefined
   | NotAConstructor String
+  | TestNotValid Type
   deriving (Show, Eq, Ord)
 
 

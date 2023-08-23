@@ -589,6 +589,14 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
     in  "Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1''
 
+  TestNotValid t ->
+    let prettyType = renderType t
+        prettyType' = unlines $ ("  "<>) <$> lines prettyType
+    in  "Test not valid\n\n" <> "The test has type\n" <> prettyType'
+              <> "\nIt should be one of the following:\n"
+              <> "- Wish TestResult TestResult\n"
+              <> "- List (Wish TestResult TestResult)"
+
   TypingHasWrongKind t expectedKind actualKind ->
     let expectedStr = if color then "\x1b[0mexpected:\n  " else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n  " else "\nbut found:\n  "
@@ -936,6 +944,34 @@ createErrorDiagnostic color context typeError = case typeError of
         Diagnose.Err
           Nothing
           ("Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
+          []
+          []
+
+  TestNotValid t ->
+    let prettyType = renderType t
+        prettyType' = unlines $ ("  "<>) <$> lines prettyType
+    in  case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Test not valid"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The test has type\n" <> prettyType'
+              <> "\nIt should be one of the following:\n"
+              <> "- Wish TestResult TestResult\n"
+              <> "- List (Wish TestResult TestResult)"
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          ("Test not valid\n\n" <> "The test has type\n" <> prettyType'
+              <> "\nIt should be one of the following:\n"
+              <> "- Wish TestResult TestResult\n"
+              <> "- List (Wish TestResult TestResult)"
+          )
           []
           []
 

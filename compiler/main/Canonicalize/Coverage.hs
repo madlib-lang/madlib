@@ -145,6 +145,9 @@ addLineTrackerForLine astPath line exp = do
 
 addFunctionTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
 addFunctionTrackerToBody astPath line name body = case body of
+  [Canonical _ (JSExp _)] -> do
+    return body
+
   [Canonical area (Abs p body')] -> do
     body'' <- addFunctionTrackerToBody astPath line name body'
     return [Canonical area (Abs p body'')]
@@ -291,8 +294,8 @@ addTrackersToExp options astPath exp = case exp of
     lis' <- mapM (addTrackersToListItem options astPath) lis
     return $ Canonical area (ListConstructor lis')
 
-  Canonical area (JSExp code) -> do
-    addLineTracker astPath $ Canonical area (JSExp code)
+  -- Canonical area (JSExp code) -> do
+  --   addLineTracker astPath $ Canonical area (JSExp code)
 
   or ->
     return or
