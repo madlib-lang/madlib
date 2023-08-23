@@ -21,7 +21,7 @@ import           Error.Context
 import           Explain.Location
 import           Data.List                      ( (\\)
                                                 , partition
-                                                , foldl'
+                                                , foldl', intersect
                                                 )
 import           Infer.Infer
 import           Infer.Type
@@ -912,9 +912,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   -- to handle recursion errors. We probably need to improve that solution at
   -- some point!
   -- (s2, ps, t, e) <- infer options (apply s1 env''' { envNamesInScope = M.keysSet (envVars env) }) exp
-  (s2, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  (s, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
   -- let s = s1 `compose` s2
-  let s = s2
 
   -- let env'' = apply s env'''
   let env'' = apply s env'
@@ -978,7 +977,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   let mutPS =
         List.filter
           (\(IsIn cls ts _) ->
-            let freeTVs = ftv (apply s' ts) \\ ftv (apply s' env')
+            let freeTVs = ftv (apply s' ts) `intersect` ftv (apply s' t)
             in  cls == mutationInterface && not (null freeTVs)
           )
           ps
@@ -1009,12 +1008,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
   env' <- case Can.getExpName exp of
         Just n  -> do
-          -- TODO: this can probably go now
-          -- We convert say Applicative f => .. to (Functor f, Applicative f) => ..
-          -- so that we generate the right dictionary placeholders.
-          psWithParents <- getAllParentPreds env (dedupePreds qs)
-          psWithInstancePreds <- mapM (getAllInstancePreds env) psWithParents
-          let scWithParents = quantify (ftv qt) ((psWithParents ++ concat psWithInstancePreds) :=> t')
+          let scWithParents = quantify (ftv qt) (qs :=> t')
           return $ extendVars env (n, scWithParents)
 
         Nothing ->
@@ -1053,7 +1047,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   let mutPS =
         List.filter
           (\(IsIn cls ts _) ->
-            let freeTVs = ftv (apply s' ts) \\ ftv (apply s' env')
+            let freeTVs = ftv (apply s' ts) `intersect` ftv (apply s t)
             in  cls == mutationInterface && not (null freeTVs)
           )
           ps
