@@ -117,3 +117,7 @@ export max = (a, b) =>
   a > b
     ? a
     : b
+
+
+abs :: (Number a, Comparable a) => a -> a
+export abs = (a) => a < 0 ? -a : a

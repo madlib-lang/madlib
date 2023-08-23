@@ -42,8 +42,8 @@ PREFIX_FAIL = IS_COLOR_ENABLED
   ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], " FAIL ")
   : "FAIL "
 
-CHAR_CHECK :: String
-CHAR_CHECK = "✓"
+// CHAR_CHECK :: String
+// CHAR_CHECK = "✓"
 
 CHAR_CROSS :: String
 CHAR_CROSS = "×"
@@ -60,7 +60,16 @@ CWD = Process.getCurrentWorkingDirectory()
 // SuiteResult(total, succeeded, failed)
 type SuiteResult = SuiteResult(Integer, Integer, Integer)
 
-type TestResult = Success | Failure
+type TestResult = Success(String) | Failure(String, String)
+
+isSuccess :: TestResult -> Boolean
+isSuccess = (res) => where(res) {
+  Success(_) =>
+    true
+
+  _ =>
+    false
+}
 
 makeResultCollector :: {}
   -> {
@@ -129,12 +138,18 @@ getFailureCount = where {
 }
 
 
-failureReport :: String -> TestReport
-failureReport = (message) => TestReport(message, 1, 0, 1)
+resultToReport :: TestResult -> TestReport
+resultToReport = (result) => where(result) {
+  Failure(_, message) =>
+    TestReport(message, 1, 0, 1)
+
+  Success(_) =>
+    TestReport("", 1, 1, 0)
+}
 
 
-successReport :: String -> TestReport
-successReport = (_) => TestReport("", 1, 1, 0)
+// successReport :: String -> TestReport
+// successReport = (_) => TestReport("", 1, 1, 0)
 
 
 mergeReports :: TestReport -> TestReport -> TestReport
@@ -171,40 +186,82 @@ renderValue = (colorize, value) => pipe(
 )(value)
 
 
-test :: Show a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
-export test = (description, testImpl) => pipe(
-  testImpl,
-  map(() => Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)),
-  Wish.mapRej(
-    where {
-      AssertionError(expected, actual) =>
-        IO.red(`${CHAR_CROSS} ${description}`)
-          ++ "\n  expected:\n"
-          ++ renderValue(Terminal.text.brightGreen, expected)
-          ++ "\n  actual:\n"
-          ++ renderValue(Terminal.text.brightRed, actual)
-          ++ "\n"
+renderAssertionError :: Show a => String -> AssertionError a -> String
+renderAssertionError = (description, assertionError) => where(assertionError) {
+  AssertionError(expected, actual) =>
+    IO.red(`${CHAR_CROSS} ${description}`)
+      ++ "\n  expected:\n"
+      ++ renderValue(Terminal.text.brightGreen, expected)
+      ++ "\n  actual:\n"
+      ++ renderValue(Terminal.text.brightRed, actual)
+      ++ "\n"
+  
+  ErrorWithMessage(message) =>
+    IS_COLOR_ENABLED
+      ? IO.red(`${CHAR_CROSS} ${message}\n`)
+      : `${CHAR_CROSS} ${message}\n`
+  
+  Error(err) =>
+    IS_COLOR_ENABLED
+      ? IO.red(`${CHAR_CROSS} ${show(err)}`)
+      : `${CHAR_CROSS} ${show(err)}`
+  
+  NotImplemented =>
+    IS_COLOR_ENABLED
+      ? IO.red(`${CHAR_CROSS} not implemented`)
+      : `${CHAR_CROSS} not implemented`
+}
 
-      ErrorWithMessage(message) =>
-        IS_COLOR_ENABLED
-          ? IO.red(`${CHAR_CROSS} ${message}\n`)
-          : `${CHAR_CROSS} ${message}\n`
 
-      Error(err) =>
-        IS_COLOR_ENABLED
-          ? IO.red(`${CHAR_CROSS} ${show(err)}`)
-          : `${CHAR_CROSS} ${show(err)}`
+// processTestOutput :: Show a => Wish.Wish TestResult TestResult -> Wish.Wish String String
+// processTestOutput = (t) => pipe(
+//   map(where {
+//     Success(description) =>
+//       Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)
 
-      NotImplemented =>
-        IS_COLOR_ENABLED
-          ? IO.red(`${CHAR_CROSS} not implemented`)
-          : `${CHAR_CROSS} not implemented`
-    },
-  ),
+//     _ =>
+//       ???
+//   }),
+//   Wish.mapRej(
+//     where {
+//       Failure(description, AssertionError(expected, actual)) =>
+//         IO.red(`${CHAR_CROSS} ${description}`)
+//           ++ "\n  expected:\n"
+//           ++ renderValue(Terminal.text.brightGreen, expected)
+//           ++ "\n  actual:\n"
+//           ++ renderValue(Terminal.text.brightRed, actual)
+//           ++ "\n"
+
+//       Failure(_, ErrorWithMessage(message)) =>
+//         IS_COLOR_ENABLED
+//           ? IO.red(`${CHAR_CROSS} ${message}\n`)
+//           : `${CHAR_CROSS} ${message}\n`
+
+//       Failure(_, Error(err)) =>
+//         IS_COLOR_ENABLED
+//           ? IO.red(`${CHAR_CROSS} ${show(err)}`)
+//           : `${CHAR_CROSS} ${show(err)}`
+
+//       Failure(_, NotImplemented) =>
+//         IS_COLOR_ENABLED
+//           ? IO.red(`${CHAR_CROSS} not implemented`)
+//           : `${CHAR_CROSS} not implemented`
+
+//       _ =>
+//         ???
+//     },
+//   ),
+// )(t)
+
+
+test :: Show a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish TestResult TestResult
+export test = (description, testFunction) => pipe(
+  testFunction,
+  bimap(pipe(renderAssertionError(description), Failure(description)), always(Success(description))),
 )(description)
 
 
-generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String
+generateReportSuiteEndMessage :: List (Wish.Wish e a) -> String
 generateReportSuiteEndMessage = pipe(
   List.length,
   ifElse(equals(0), always("No test found\n\n"), always("")),
@@ -323,13 +380,13 @@ failSuite = (suitePath) => {
 }
 
 
-updateSuiteResult :: String -> TestResult -> a -> a
-updateSuiteResult = (suitePath, result, a) => {
+updateSuiteResult :: String -> TestResult -> TestResult
+updateSuiteResult = (suitePath, result) => {
   pipe(
     Dictionary.update(
       where {
         SuiteResult(total, success, failed) =>
-          result == Success
+          isSuccess(result)
             ? SuiteResult(total, success + 1, failed)
             : SuiteResult(total, success, failed + 1)
       },
@@ -343,14 +400,14 @@ updateSuiteResult = (suitePath, result, a) => {
     printSuiteResults(collector.getResults())
   }
 
-  return a
+  return result
 }
 
 
 runTestSuite :: (Show e, Show f) => String
   -> ({} -> Wish e a)
   -> ({} -> Wish f b)
-  -> List (Wish String String)
+  -> List (Wish TestResult TestResult)
   -> Wish {} TestReport
 runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   (tests) => {
@@ -364,13 +421,13 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
   map(
     Wish.bichain(
       pipe(
-        updateSuiteResult(suitePath, Failure),
-        failureReport,
+        updateSuiteResult(suitePath),
+        resultToReport,
         of,
       ),
       pipe(
-        updateSuiteResult(suitePath, Success),
-        successReport,
+        updateSuiteResult(suitePath),
+        resultToReport,
         of,
       ),
     ),
@@ -423,7 +480,7 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
 )(testsInSuite)
 
 
-runAllTestSuites :: (Show e, Show f) => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish String String)]
+runAllTestSuites :: (Show e, Show f) => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish TestResult TestResult)]
   -> ({} -> {})
 export runAllTestSuites = (testSuites) => pipe(
   map(
@@ -439,7 +496,7 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.parallel,
   map(List.reduce(mergeReports, EMPTY_REPORT)),
   Wish.fulfill(
-    (_) => ({}),
+    () => ({}),
     (report) => {
       if (!IS_COLOR_ENABLED) { printSuiteResults(collector.getResults()) }
       IO.put(getMessage(report))

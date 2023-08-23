@@ -50,9 +50,7 @@
                               (Area (Loc 501 29 1) (Loc 501 29 1))
                               "_")
                            [ Typed
-                               ([ IsIn "Inspect" [ TCon (TC "Boolean" Star) "prelude" ] Nothing
-                                ] :=>
-                                  TCon (TC "String" Star) "prelude")
+                               ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 480 28 3) (Loc 500 28 23))
                                (App
                                   (Typed

@@ -1060,6 +1060,9 @@ generateExp env symbolTable exp = case exp of
           result                <- mul leftOperand' (C.int8 (-1))
           return (symbolTable, result, Nothing)
 
+        _ ->
+          error $ "bad args: " <> ppShow args
+
     Core.Typed _ _ _ (Var "*" False) ->
       case getType (List.head args) of
         IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do

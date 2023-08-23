@@ -70,6 +70,7 @@ library
       Infer.Scheme
       Infer.Scope
       Infer.Substitute
+      Infer.Test
       Infer.ToSolved
       Infer.Typing
       Infer.Unify
@@ -353,7 +354,6 @@ test-suite madlib-test
   other-modules:
       Blackbox.RunnerSpec
       Explain.FormatSpec
-      Generate.JavascriptSpec
       Generate.JSInternalsSpec
       Infer.SolveSpec
       TestUtils

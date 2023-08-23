@@ -55,8 +55,6 @@ findCtorForeignModulePath moduleWhereItsUsed ctorName = do
   case findForeignModuleForImportedName ctorName ast of
     Just foreignModulePath -> do
       findCtorForeignModulePath foreignModulePath ctorName
-      -- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-      -- return foreignModulePath
 
     _ ->
       return moduleWhereItsUsed
@@ -232,7 +230,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
           monomorphized <-
             monomorphize
               target
-              env { envSubstitution = s }
+              env { envSubstitution = s `compose` envSubstitution env }
               (updateName monomorphicName fnDefinition)
 
           liftIO $ atomicModifyIORef
@@ -315,7 +313,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                   monomorphize
                     target
                     env
-                      { envSubstitution = s
+                      { envSubstitution = s `compose` envSubstitution env
                       , envCurrentModulePath = fnModulePath
                       , envLocalState = makeLocalMonomorphizationState ()
                       , envLocalBindingsToExclude = mempty
@@ -373,7 +371,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                     monomorphize
                       target
                       env
-                        { envSubstitution = s
+                        { envSubstitution = s `compose` envSubstitution env
                         , envCurrentModulePath = methodModulePath
                         , envLocalState = makeLocalMonomorphizationState ()
                         , envLocalBindingsToExclude = mempty
@@ -410,7 +408,7 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
   Typed qt area (App fn arg final) -> do
     arg' <- monomorphize target env arg
     fn'  <- monomorphizeApp target env fn
-    return $Typed (applyAndCleanQt envSubstitution qt) area (App fn' arg' final)
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (App fn' arg' final)
 
   -- case of record field access
   Typed qt area (Var ('.' : fieldName) False) -> do

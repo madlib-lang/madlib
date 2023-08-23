@@ -78,6 +78,7 @@ import qualified Optimize.FoldCalls as FoldCalls
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 import Run.OptimizationLevel
+import Infer.Test
 
 
 
@@ -203,7 +204,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
       listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
-      let ast'' = updateTestExports wishModulePath listModulePath ast'
+      testModulePath <- Rock.fetch $ AbsolutePreludePath "Test"
+      let ast'' = updateTestExports wishModulePath testModulePath listModulePath ast'
+      verifyTests ast''
       forM_ (Slv.aexps ast'') $ \e ->
         catchError (verifyTopLevelExp path e) (\err -> pushError err >> return ())
 
@@ -803,14 +806,14 @@ generateTestAssignment index exp = case exp of
     (TApp
       (TCon (TC "List" (Kfun Star Star)) "prelude")
       (TApp
-        (TApp (TCon (TC "Wish" _) _) (TCon (TC "String" _) _))
-        (TCon (TC "String" _) _))))
+        (TApp (TCon (TC "Wish" _) _) (TCon (TC "TestResult" _) _))
+        (TCon (TC "TestResult" _) _))))
     area
     _ ->
       let assignmentName = "__t" <> show index <> "__"
       in (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (BatchTest assignmentName))
 
-  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _) (TCon (TC "String" _) _)) (TCon (TC "String" _) _)) area _ ->
+  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _) (TCon (TC "TestResult" _) _)) (TCon (TC "TestResult" _) _)) area _ ->
     let assignmentName = "__t" <> show index <> "__"
     in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
 
@@ -818,67 +821,69 @@ generateTestAssignment index exp = case exp of
     (exp, Nothing)
 
 
-testType :: FilePath -> Type
-testType wishPath =
-  TApp (TApp (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath) tStr) tStr
+testType :: FilePath -> FilePath -> Type
+testType wishPath testModulePath =
+  TApp (TApp (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath)
+    (TCon (TC "TestResult" (Kfun Star Star)) testModulePath))
+    (TCon (TC "TestResult" (Kfun Star Star)) testModulePath)
 
-testListType :: FilePath -> Type
-testListType wishPath =
+
+testListType :: FilePath -> FilePath -> Type
+testListType wishPath testModulePath =
   TApp
     (TCon (TC "List" (Kfun Star Star)) "prelude")
-    (testType wishPath)
+    (testType wishPath testModulePath)
 
 
-
-addTestsToSuite :: FilePath -> Slv.Exp -> [TestAssignment] -> Slv.Exp
-addTestsToSuite wishPath currentTests assignments = case assignments of
+addTestsToSuite :: FilePath -> FilePath -> Slv.Exp -> [TestAssignment] -> Slv.Exp
+addTestsToSuite wishPath testModulePath currentTests assignments = case assignments of
   [] ->
     currentTests
 
   (SingleTest name : more) ->
     let testExp =
           Slv.Typed
-            ([] :=> tListOf (testListType wishPath))
+            ([] :=> tListOf (testListType wishPath testModulePath))
             emptyArea
             (Slv.ListConstructor
-              [Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.ListItem (Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.Var name False)))])
+              [Slv.Typed ([] :=> testListType wishPath testModulePath) emptyArea (Slv.ListItem (Slv.Typed ([] :=> testListType wishPath testModulePath) emptyArea (Slv.Var name False)))])
         added =
           Slv.Typed
-            ([] :=> testListType wishPath)
+            ([] :=> testListType wishPath testModulePath)
             emptyArea
             (Slv.App
               (Slv.Typed
-                ([] :=> (testListType wishPath `fn` testListType wishPath))
+                ([] :=> (testListType wishPath testModulePath `fn` testListType wishPath testModulePath))
                 emptyArea
                 (Slv.App
-                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "__List__.concat" False))
+                  (Slv.Typed ([] :=> (testListType wishPath testModulePath `fn` testListType wishPath testModulePath `fn` testListType wishPath testModulePath)) emptyArea (Slv.Var "__List__.concat" False))
                   currentTests
                   False))
               testExp
               True)
-    in  addTestsToSuite wishPath added more
+    in  addTestsToSuite wishPath testModulePath added more
 
   (BatchTest name : more) ->
     let batchTestExp =
           Slv.Typed
-            ([] :=> tListOf (testListType wishPath))
+            ([] :=> tListOf (testListType wishPath testModulePath))
             emptyArea
             (Slv.Var name False)
         added =
           Slv.Typed
-            ([] :=> testListType wishPath)
+            ([] :=> testListType wishPath testModulePath)
             emptyArea
             (Slv.App
               (Slv.Typed
-                ([] :=> (testListType wishPath `fn` testListType wishPath))
+                ([] :=> (testListType wishPath testModulePath `fn` testListType wishPath testModulePath))
                 emptyArea
                 (Slv.App
-                  (Slv.Typed ([] :=> (testListType wishPath `fn` testListType wishPath `fn` testListType wishPath)) emptyArea (Slv.Var "__List__.concat" False))
+                  (Slv.Typed ([] :=> (testListType wishPath testModulePath `fn` testListType wishPath testModulePath `fn` testListType wishPath testModulePath)) emptyArea (Slv.Var "__List__.concat" False))
                   currentTests
                   False))
               batchTestExp
               True)
-    in  addTestsToSuite wishPath added more
+    in  addTestsToSuite wishPath testModulePath added more
 
 
 listImport :: FilePath -> Slv.Import
@@ -886,27 +891,27 @@ listImport listModulePath =
   Slv.Untyped emptyArea (Slv.DefaultImport (Slv.Untyped emptyArea "__List__") "List" listModulePath)
 
 
-updateTestExports :: FilePath -> FilePath -> Slv.AST -> Slv.AST
-updateTestExports wishPath listPath ast@Slv.AST{ Slv.apath = Just apath, Slv.aexps } =
+updateTestExports :: FilePath -> FilePath -> FilePath -> Slv.AST -> Slv.AST
+updateTestExports wishPath testModulePath listPath ast@Slv.AST{ Slv.apath = Just apath, Slv.aexps } =
   if ".spec.mad" `List.isSuffixOf` apath && not (null aexps) then
     let exps              = init aexps
         assigned          = uncurry generateTestAssignment <$> zip [0..] exps
         exps'             = fst <$> assigned
         testAssignments   = Maybe.mapMaybe snd assigned
-        initialTests      = Slv.Typed ([] :=> testListType wishPath) emptyArea (Slv.ListConstructor [])
+        initialTests      = Slv.Typed ([] :=> testListType wishPath testModulePath) emptyArea (Slv.ListConstructor [])
         testsExport       =
           Slv.Typed
-            ([] :=> tListOf (testListType wishPath))
+            ([] :=> tListOf (testListType wishPath testModulePath))
             emptyArea
             (Slv.Export
               (Slv.Typed
-                ([] :=> tListOf (testListType wishPath))
+                ([] :=> tListOf (testListType wishPath testModulePath))
                 emptyArea
                 (Slv.Assignment
                   "__tests__"
-                  (addTestsToSuite wishPath initialTests testAssignments))))
+                  (addTestsToSuite wishPath testModulePath initialTests testAssignments))))
     in  ast { Slv.aexps = exps' ++ [testsExport], Slv.aimports = listImport listPath : Slv.aimports ast }
   else
     ast
-updateTestExports _ _ ast =
+updateTestExports _ _ _ ast =
   ast

@@ -491,25 +491,14 @@ instance Compilable Exp where
         TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
         Do exps ->
-          -- let compiledExps = compile env config <$> exps
-          --     allExceptLast = init compiledExps
-          --     l = last compiledExps
-          -- in "(() => {\n  "
-          --     <> intercalate ";\n  " allExceptLast
-          --     <> "\n  return " <> l
-          --     <> "\n})()"
           let compiledExps = compileBody' env { inBody = True } exps
           in "(() => {\n  "
               <> compiledExps
               <> "\n})()"
           where
             compileBody' :: Env -> [Exp] -> String
-            compileBody' env [exp] = case exp of
-              (Typed _ _ _ (JSExp _)) ->
-                compile env config exp
-
-              _ ->
-                "    return " <> compile env config exp <> ";\n"
+            compileBody' env [exp] =
+              "    return " <> compile env config exp <> ";\n"
             compileBody' e (exp : es) = case exp of
               Core.Typed _ _ _ (Core.Assignment name _) ->
                 let nextEnv = e { varsInScope = S.insert name (varsInScope e) }

@@ -62,17 +62,17 @@ instance Applicative (Wish e) {
   ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {
     #[Wish(runMF), Wish(runM)] =>
       do {
-        cancel2 = () => {}
+        cancel2 = { run: () => {} }
         cancel1 = runM(
           badCB,
           (x) => {
-            cancel2 = runMF(badCB, (f) => goodCB(f(x)))
+            cancel2 = { run: runMF(badCB, (f) => goodCB(f(x))) }
           }
         )
 
         return () => {
           cancel1()
-          cancel2()
+          cancel2.run()
         }
       }
   })

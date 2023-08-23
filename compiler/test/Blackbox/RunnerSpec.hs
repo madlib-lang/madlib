@@ -40,10 +40,10 @@ sanitizeExpected :: String -> String
 sanitizeExpected s = read $ "\"" <> s <> "\""
 
 
-compileAndRun :: FilePath -> IO (String, String)
-compileAndRun casePath = do
+llvmCompileAndRun :: FilePath -> IO (String, String)
+llvmCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
-  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected"])
+  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
   let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
   let outputPath   = joinPath [casePath, ".tests/run"]
   let outputFolder = joinPath [casePath, ".tests"]
@@ -70,6 +70,48 @@ compileAndRun casePath = do
 
   if errorsAndWarnings == "" then do
     runResult <- try $ readProcessWithExitCode outputPath [] ""
+    callCommand $ "rm -r " <> outputFolder
+    case (runResult :: Either IOError (ExitCode, String, String)) of
+        Right (_, result, _) ->
+          return (expected, result)
+
+        Left e ->
+          return (ppShow e, "")
+  else
+    return (expected, errorsAndWarnings)
+
+
+jsCompileAndRun :: FilePath -> IO (String, String)
+jsCompileAndRun casePath = do
+  setEnv "NO_COLOR" "true"
+  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-js"])
+  let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
+  let outputPath   = joinPath [casePath, ".tests/Entrypoint.mjs"]
+  let runPath      = joinPath [casePath, ".tests", casePath, "Entrypoint.mjs"]
+  let outputFolder = joinPath [casePath, ".tests"]
+
+  let options = Options
+          { optPathUtils = Path.defaultPathUtils
+          , optEntrypoint = entrypoint
+          , optRootPath = casePath
+          , optOutputPath = outputPath
+          , optTarget = TNode
+          , optOptimized = False
+          , optBundle = False
+          , optDebug = False
+          , optCoverage = False
+          , optGenerateDerivedInstances = True
+          , optInsertInstancePlaholders = True
+          , optParseOnly = False
+          , optMustHaveMain = True
+          , optOptimizationLevel = O3
+          }
+
+  state <- Driver.initialState
+  errorsAndWarnings <- compile state options [entrypoint]
+
+  if errorsAndWarnings == "" then do
+    runResult <- try $ readProcessWithExitCode "node" [outputPath] ""
     callCommand $ "rm -r " <> outputFolder
     case (runResult :: Either IOError (ExitCode, String, String)) of
         Right (_, result, _) ->
@@ -109,9 +151,15 @@ spec = do
         , "compiler/test/Blackbox/test-cases/derive-comparable"
         , "compiler/test/Blackbox/test-cases/number-inference-error"
         ]
+
   forM_ cases $ \casePath -> do
-    before (compileAndRun casePath) $ describe "" $ do
-      it ("case: " <> casePath) $ \(expected, result) -> do
+    before (llvmCompileAndRun casePath) $ describe "" $ do
+      it ("llvm case: " <> casePath) $ \(expected, result) -> do
+        result `shouldBe` expected
+
+  forM_ cases $ \casePath -> do
+    before (jsCompileAndRun casePath) $ describe "" $ do
+      it ("js case: " <> casePath) $ \(expected, result) -> do
         result `shouldBe` expected
 
 

@@ -1,0 +1,13 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/record-instance-not-found/Entrypoint.mad@19:3-19:25
+     │
+  19 │   f({ y: { name: \"\" } })
+     •   ┬─────────────────────
+     •   ╰╸ No instance for 'ShowX String' was found.
+     •      
+     •
+     │ Hint: Verify that you imported the module where the ShowX
+     │       instance for 'String' is defined
+     │ Note: Remember that instance methods are automatically imported when the module
+     │       is imported, directly, or indirectly.
+─────╯
+

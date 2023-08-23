@@ -1,0 +1,21 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/import-cycle/Entrypoint.mad@1:1-1:26
+     │
+   1 │ import {} from \"./Import\"
+     • ┬────────────────────────
+     • ╰╸ I found an import cycle:
+     •    
+     •    Entrypoint.mad
+     •      -> Import.mad
+     •        -> Entrypoint.mad
+     •    
+     •
+     │ Note: Import cycles are not allowed and usually show a design issue.
+     │ Hint: Consider splitting things in more modules in order to have
+     │       both modules import a common dependency instead of having
+     │       them being co-dependent.
+     │ Hint: Another solution would be to move
+     │       things that depend on the other module from the cycle into
+     │       the other in order to collocate things that depend on each
+     │       other.
+─────╯
+

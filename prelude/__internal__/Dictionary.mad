@@ -138,6 +138,10 @@ export length = (dict) => where(dict) {
 }
 
 
+isEmpty :: Dictionary a b -> Boolean
+export isEmpty = (dict) => length(dict) == 0
+
+
 singleton :: k -> v -> Dictionary k v
 export singleton = (k, v) => DictRBNode(DictRBBlack, k, v, DictRBEmpty, DictRBEmpty)
 
