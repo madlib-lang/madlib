@@ -457,7 +457,7 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
 
 
 parallel :: List (Wish e a) -> Wish e (List a)
-export parallel = parallelN(-1)
+export parallel = (wishes) => parallelN(-1, wishes)
 
 
 discardError :: (e -> a) -> Wish e a -> Wish {} a
