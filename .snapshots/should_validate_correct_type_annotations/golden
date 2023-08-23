@@ -188,14 +188,14 @@
                                ([] :=>
                                   TApp
                                     (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                    (TVar (TV "n13" Star)))
+                                    (TVar (TV "k10" Star)))
                                (Area (Loc 117 8 4) (Loc 135 8 22))
                                (TypedExp
                                   (Typed
                                      ([] :=>
                                         TApp
                                           (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                          (TVar (TV "n13" Star)))
+                                          (TVar (TV "k10" Star)))
                                      (Area (Loc 117 8 4) (Loc 124 8 11))
                                      (Var "Nothing" True))
                                   (Untyped
@@ -303,10 +303,10 @@
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "c54" Star)))
+                               (TVar (TV "w48" Star)))
                             (TApp
                                (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                               (TVar (TV "c54" Star)))))
+                               (TVar (TV "w48" Star)))))
                   , Untyped
                       (Area (Loc 73 4 26) (Loc 80 4 33))
                       (Constructor
@@ -314,7 +314,7 @@
                          []
                          (TApp
                             (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                            (TVar (TV "d55" Star))))
+                            (TVar (TV "x49" Star))))
                   ]
               , adtType =
                   TApp
@@ -346,49 +346,49 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TApp
                                      (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                     (TVar (TV "c28" Star))))
+                                     (TVar (TV "w22" Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TApp
                                         (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                        (TVar (TV "c28" Star))))
+                                        (TVar (TV "w22" Star))))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV "c28" Star) ] Nothing ] :=>
+                                ([ IsIn "Eq" [ TVar (TV "w22" Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "c28" Star))))
+                                           (TVar (TV "w22" Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TApp
                                               (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                              (TVar (TV "c28" Star))))
+                                              (TVar (TV "w22" Star))))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TVar (TV "c28" Star) ]
+                                           [ TVar (TV "w22" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "c28" Star)))
+                                           (TVar (TV "w22" Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TVar (TV "c28" Star) ]
+                                            [ TVar (TV "w22" Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -398,25 +398,25 @@
                                                   "prelude")
                                                (TApp
                                                   (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                  (TVar (TV "c28" Star))))
+                                                  (TVar (TV "w22" Star))))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV "c28" Star) ]
+                                                  [ TVar (TV "w22" Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TApp
                                                   (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                  (TVar (TV "c28" Star)))
+                                                  (TVar (TV "w22" Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TVar (TV "c28" Star) ]
+                                                   [ TVar (TV "w22" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -435,12 +435,12 @@
                                                                (TCon
                                                                   (TC "Maybe" (Kfun Star Star))
                                                                   "Module.mad")
-                                                               (TVar (TV "c28" Star))))
+                                                               (TVar (TV "w22" Star))))
                                                          (TApp
                                                             (TCon
                                                                (TC "Maybe" (Kfun Star Star))
                                                                "Module.mad")
-                                                            (TVar (TV "c28" Star))))
+                                                            (TVar (TV "w22" Star))))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TupleConstructor
                                                        [ Typed
@@ -449,7 +449,7 @@
                                                                 (TCon
                                                                    (TC "Maybe" (Kfun Star Star))
                                                                    "Module.mad")
-                                                                (TVar (TV "c28" Star)))
+                                                                (TVar (TV "w22" Star)))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$a__" False)
                                                        , Typed
@@ -458,14 +458,14 @@
                                                                 (TCon
                                                                    (TC "Maybe" (Kfun Star Star))
                                                                    "Module.mad")
-                                                                (TVar (TV "c28" Star)))
+                                                                (TVar (TV "w22" Star)))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$b__" False)
                                                        ]))
                                                  [ Typed
                                                      ([ IsIn
                                                           "Eq"
-                                                          [ TVar (TV "c28" Star) ]
+                                                          [ TVar (TV "w22" Star) ]
                                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                       ] :=>
                                                         TApp
@@ -489,12 +489,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star)))))
+                                                                   (TVar (TV "w22" Star)))))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -514,12 +514,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star))))
+                                                                   (TVar (TV "w22" Star))))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
                                                               [ Typed
@@ -530,14 +530,14 @@
                                                                              "Maybe"
                                                                              (Kfun Star Star))
                                                                           "Module.mad")
-                                                                       (TVar (TV "c28" Star)))
+                                                                       (TVar (TV "w22" Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Just"
                                                                      [ Typed
                                                                          ([ IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -545,7 +545,7 @@
                                                                                     (Loc 0 0 0)))
                                                                           , IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -553,14 +553,14 @@
                                                                                     (Loc 0 0 0)))
                                                                           , IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
                                                                                     (Loc 0 0 0)
                                                                                     (Loc 0 0 0)))
                                                                           ] :=>
-                                                                            TVar (TV "c28" Star))
+                                                                            TVar (TV "w22" Star))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "a0")
@@ -573,14 +573,14 @@
                                                                              "Maybe"
                                                                              (Kfun Star Star))
                                                                           "Module.mad")
-                                                                       (TVar (TV "c28" Star)))
+                                                                       (TVar (TV "w22" Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Just"
                                                                      [ Typed
                                                                          ([ IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -588,7 +588,7 @@
                                                                                     (Loc 0 0 0)))
                                                                           , IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
@@ -596,14 +596,14 @@
                                                                                     (Loc 0 0 0)))
                                                                           , IsIn
                                                                               "Eq"
-                                                                              [ TVar (TV "c28" Star)
+                                                                              [ TVar (TV "w22" Star)
                                                                               ]
                                                                               (Just
                                                                                  (Area
                                                                                     (Loc 0 0 0)
                                                                                     (Loc 0 0 0)))
                                                                           ] :=>
-                                                                            TVar (TV "c28" Star))
+                                                                            TVar (TV "w22" Star))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "b0")
@@ -612,7 +612,7 @@
                                                         (Typed
                                                            ([ IsIn
                                                                 "Eq"
-                                                                [ TVar (TV "c28" Star) ]
+                                                                [ TVar (TV "w22" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
@@ -622,7 +622,7 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Eq"
-                                                                      [ TVar (TV "c28" Star) ]
+                                                                      [ TVar (TV "w22" Star) ]
                                                                       (Just
                                                                          (Area
                                                                             (Loc 0 0 0)
@@ -688,7 +688,7 @@
                                                                     (Typed
                                                                        ([ IsIn
                                                                             "Eq"
-                                                                            [ TVar (TV "c28" Star) ]
+                                                                            [ TVar (TV "w22" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 0 0 0)
@@ -705,7 +705,7 @@
                                                                                   "Eq"
                                                                                   [ TVar
                                                                                       (TV
-                                                                                         "c28" Star)
+                                                                                         "w22" Star)
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -726,7 +726,7 @@
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "c28"
+                                                                                           "w22"
                                                                                            Star)))
                                                                                   (TCon
                                                                                      (TC
@@ -742,7 +742,7 @@
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "c28"
+                                                                                               "w22"
                                                                                                Star)
                                                                                         ]
                                                                                         Nothing
@@ -760,7 +760,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "c28"
+                                                                                                 "w22"
                                                                                                  Star)))
                                                                                         (TApp
                                                                                            (TApp
@@ -775,7 +775,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "c28"
+                                                                                                    "w22"
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -791,7 +791,7 @@
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "c28"
+                                                                                               "w22"
                                                                                                Star)
                                                                                         ]
                                                                                         (Just
@@ -807,7 +807,7 @@
                                                                                     ] :=>
                                                                                       TVar
                                                                                         (TV
-                                                                                           "c28"
+                                                                                           "w22"
                                                                                            Star))
                                                                                    (Area
                                                                                       (Loc 0 0 0)
@@ -819,7 +819,7 @@
                                                                                   "Eq"
                                                                                   [ TVar
                                                                                       (TV
-                                                                                         "c28" Star)
+                                                                                         "w22" Star)
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -828,7 +828,7 @@
                                                                                            0 0 0)))
                                                                               ] :=>
                                                                                 TVar
-                                                                                  (TV "c28" Star))
+                                                                                  (TV "w22" Star))
                                                                              (Area
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
@@ -838,7 +838,7 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Eq"
-                                                                      [ TVar (TV "c28" Star) ]
+                                                                      [ TVar (TV "w22" Star) ]
                                                                       (Just
                                                                          (Area
                                                                             (Loc 0 0 0)
@@ -872,12 +872,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star)))))
+                                                                   (TVar (TV "w22" Star)))))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -897,12 +897,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star))))
+                                                                   (TVar (TV "w22" Star))))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
                                                               [ Typed
@@ -913,7 +913,7 @@
                                                                              "Maybe"
                                                                              (Kfun Star Star))
                                                                           "Module.mad")
-                                                                       (TVar (TV "c28" Star)))
+                                                                       (TVar (TV "w22" Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Nothing" [])
                                                               , Typed
@@ -924,7 +924,7 @@
                                                                              "Maybe"
                                                                              (Kfun Star Star))
                                                                           "Module.mad")
-                                                                       (TVar (TV "c28" Star)))
+                                                                       (TVar (TV "w22" Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Nothing" [])
                                                               ]))
@@ -956,12 +956,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star)))))
+                                                                   (TVar (TV "w22" Star)))))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -981,12 +981,12 @@
                                                                             "Maybe"
                                                                             (Kfun Star Star))
                                                                          "Module.mad")
-                                                                      (TVar (TV "c28" Star))))
+                                                                      (TVar (TV "w22" Star))))
                                                                 (TApp
                                                                    (TCon
                                                                       (TC "Maybe" (Kfun Star Star))
                                                                       "Module.mad")
-                                                                   (TVar (TV "c28" Star))))
+                                                                   (TVar (TV "w22" Star))))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
                                                         (Typed
@@ -1034,37 +1034,37 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TApp
                                      (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                     (TVar (TV "t45" Star))))
+                                     (TVar (TV "n39" Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV "t45" Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV "n39" Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "t45" Star))))
+                                           (TVar (TV "n39" Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
                                       ([ IsIn
                                            "Show"
-                                           [ TVar (TV "t45" Star) ]
+                                           [ TVar (TV "n39" Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                           (TVar (TV "t45" Star)))
+                                           (TVar (TV "n39" Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
                                             "Show"
-                                            [ TVar (TV "t45" Star) ]
+                                            [ TVar (TV "n39" Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")
@@ -1074,13 +1074,13 @@
                                              ([] :=>
                                                 TApp
                                                   (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
-                                                  (TVar (TV "t45" Star)))
+                                                  (TVar (TV "n39" Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__$a__" False))
                                           [ Typed
                                               ([ IsIn
                                                    "Show"
-                                                   [ TVar (TV "t45" Star) ]
+                                                   [ TVar (TV "n39" Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TApp
@@ -1092,7 +1092,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star))))
+                                                         (TVar (TV "n39" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -1102,30 +1102,30 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star)))
+                                                         (TVar (TV "n39" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon
                                                        "Just"
                                                        [ Typed
                                                            ([ IsIn
                                                                 "Show"
-                                                                [ TVar (TV "t45" Star) ]
+                                                                [ TVar (TV "n39" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             , IsIn
                                                                 "Show"
-                                                                [ TVar (TV "t45" Star) ]
+                                                                [ TVar (TV "n39" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
-                                                              TVar (TV "t45" Star))
+                                                              TVar (TV "n39" Star))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        ]))
                                                  (Typed
                                                     ([ IsIn
                                                          "Show"
-                                                         [ TVar (TV "t45" Star) ]
+                                                         [ TVar (TV "n39" Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -1139,7 +1139,7 @@
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
-                                                                [ TVar (TV "t45" Star) ]
+                                                                [ TVar (TV "n39" Star) ]
                                                                 (Just
                                                                    (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                             ] :=>
@@ -1149,7 +1149,7 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TVar (TV "t45" Star) ]
+                                                                      [ TVar (TV "n39" Star) ]
                                                                       Nothing
                                                                   ] :=>
                                                                     TApp
@@ -1161,7 +1161,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "t45" Star)))
+                                                                         (TVar (TV "n39" Star)))
                                                                       (TCon
                                                                          (TC "String" Star)
                                                                          "prelude"))
@@ -1170,13 +1170,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TVar (TV "t45" Star) ]
+                                                                      [ TVar (TV "n39" Star) ]
                                                                       (Just
                                                                          (Area
                                                                             (Loc 0 0 0)
                                                                             (Loc 0 0 0)))
                                                                   ] :=>
-                                                                    TVar (TV "t45" Star))
+                                                                    TVar (TV "n39" Star))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (Var "a0" False))
                                                               True)
@@ -1197,7 +1197,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star))))
+                                                         (TVar (TV "n39" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -1207,7 +1207,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star)))
+                                                         (TVar (TV "n39" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon "Nothing" []))
                                                  (Typed
@@ -1225,7 +1225,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star))))
+                                                         (TVar (TV "n39" Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -1235,7 +1235,7 @@
                                                          (TCon
                                                             (TC "Maybe" (Kfun Star Star))
                                                             "Module.mad")
-                                                         (TVar (TV "t45" Star)))
+                                                         (TVar (TV "n39" Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
                                                  (Typed

@@ -881,40 +881,43 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       tv <- newTVar Star
       return (env, tv)
 
-  (s1, ps1, t1, _) <- infer options env' exp
+  -- (s1, ps1, t1, _) <- infer options env' exp
 
-  let envWithVarsExcluded = env'
-        { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env' }
-      ps' = apply s1 ps1
-      t'  = apply s1 tv
-      fs  = ftv (apply s1 envWithVarsExcluded)
-  (_, rs, _) <- catchError
-    (split False envWithVarsExcluded fs (ftv t') ps')
-    (\case
-      (CompilationError e NoContext) -> do
-        throwError $ CompilationError e (Context (envCurrentPath env) area)
+  -- let envWithVarsExcluded = env'
+  --       { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env' }
+  --     ps' = apply s1 ps1
+  --     t'  = apply s1 tv
+  --     fs  = ftv (apply s1 envWithVarsExcluded)
+  -- (_, rs, _) <- catchError
+  --   (split False envWithVarsExcluded fs (ftv t') ps')
+  --   (\case
+  --     (CompilationError e NoContext) -> do
+  --       throwError $ CompilationError e (Context (envCurrentPath env) area)
 
-      (CompilationError e c) -> do
-        throwError $ CompilationError e c
-    )
+  --     (CompilationError e c) -> do
+  --       throwError $ CompilationError e c
+  --   )
 
-  -- We need to update the env again in case the inference of the function resulted in overloading so that
-  -- we can have the predicates to generate the correct placeholders when fetching the var from the env
-  -- NB: mostly relevant for recursive definitions
-  env''' <- case Can.getExpName exp of
-    Just n ->
-      return $ extendVars env' (n, Forall [] $ rs :=> t1)
+  -- -- We need to update the env again in case the inference of the function resulted in overloading so that
+  -- -- we can have the predicates to generate the correct placeholders when fetching the var from the env
+  -- -- NB: mostly relevant for recursive definitions
+  -- env''' <- case Can.getExpName exp of
+  --   Just n ->
+  --     return $ extendVars env' (n, Forall [] $ rs :=> t1)
 
-    Nothing ->
-      return env'
+  --   Nothing ->
+  --     return env'
 
   -- Once we have gattered clues we update the env types and infer it again
   -- to handle recursion errors. We probably need to improve that solution at
   -- some point!
-  (s2, ps, t, e) <- infer options (apply s1 env''' { envNamesInScope = M.keysSet (envVars env) }) exp
-  let s = s1 `compose` s2
+  -- (s2, ps, t, e) <- infer options (apply s1 env''' { envNamesInScope = M.keysSet (envVars env) }) exp
+  (s2, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  -- let s = s1 `compose` s2
+  let s = s2
 
-  let env'' = apply s env'''
+  -- let env'' = apply s env'''
+  let env'' = apply s env'
 
   s' <- contextualUnify env'' exp (apply s tv) t
   -- let s'' = s `compose` s1 `compose` s'

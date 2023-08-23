@@ -13,7 +13,7 @@
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TVar (TV "e30" Star)))
+                    (TVar (TV "b1" Star)))
                  (TCon (TC "{}" Star) "prelude"))
             (Area (Loc 1 1 2) (Loc 139 14 2))
             (Assignment
@@ -23,12 +23,12 @@
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "e30" Star)))
+                          (TVar (TV "b1" Star)))
                        (TCon (TC "{}" Star) "prelude"))
                   (Area (Loc 9 1 10) (Loc 139 14 2))
                   (Abs
                      (Typed
-                        ([] :=> TVar (TV "e30" Star))
+                        ([] :=> TVar (TV "b1" Star))
                         (Area (Loc 138 14 1) (Loc 138 14 1))
                         "_")
                      [ Typed
