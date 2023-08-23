@@ -15,10 +15,10 @@
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "d3" Star)))
+                          (TVar (TV "b1" Star)))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "d3" Star))))
+                          (TVar (TV "b1" Star))))
                   (Area (Loc 0 1 1) (Loc 31 1 32))
                   (Export
                      (Typed
@@ -26,10 +26,10 @@
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "d3" Star)))
+                                (TVar (TV "b1" Star)))
                              (TApp
                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TVar (TV "d3" Star))))
+                                (TVar (TV "b1" Star))))
                         (Area (Loc 0 1 1) (Loc 31 1 32))
                         (Assignment
                            "singleton"
@@ -38,29 +38,29 @@
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "d3" Star)))
+                                      (TVar (TV "b1" Star)))
                                    (TApp
                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TVar (TV "d3" Star))))
+                                      (TVar (TV "b1" Star))))
                               (Area (Loc 19 1 20) (Loc 31 1 32))
                               (Abs
                                  (Typed
-                                    ([] :=> TVar (TV "d3" Star))
+                                    ([] :=> TVar (TV "b1" Star))
                                     (Area (Loc 20 1 21) (Loc 21 1 22))
                                     "a")
                                  [ Typed
                                      ([] :=>
                                         TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "d3" Star)))
+                                          (TVar (TV "b1" Star)))
                                      (Area (Loc 27 1 28) (Loc 30 1 31))
                                      (ListConstructor
                                         [ Typed
-                                            ([] :=> TVar (TV "d3" Star))
+                                            ([] :=> TVar (TV "b1" Star))
                                             (Area (Loc 28 1 29) (Loc 29 1 30))
                                             (ListItem
                                                (Typed
-                                                  ([] :=> TVar (TV "d3" Star))
+                                                  ([] :=> TVar (TV "b1" Star))
                                                   (Area (Loc 28 1 29) (Loc 29 1 30))
                                                   (Var "a" False)))
                                         ])
