@@ -39,13 +39,13 @@ genUnify :: Type -> Type -> Substitution
 genUnify t1 t2 =
   let s = gentleUnify t1 t2
       tvs = ftv $ Map.elems s
-      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV ("G_" ++ show index) k))) [0..] tvs
+      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
   in  Map.map (apply sWithGens) s
 
 genType :: Type -> Type
 genType t =
   let tvs = ftv t
-      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV ("G_" ++ show index) k))) [0..] tvs
+      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
   in  apply sWithGens t
 
 

@@ -32,6 +32,13 @@ import qualified Prettyprinter.Internal.Type as Pretty
 import Debug.Trace
 
 
+letters :: [Char]
+letters = ['a' .. 'z']
+
+renderTVar :: Int -> String
+renderTVar s = letters !! (s `mod` 26) : show s
+
+
 indentationSize :: Int
 indentationSize = 2
 
@@ -706,7 +713,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   AmbiguousType (TV n _, []) ->
     "Ambiguous type\n\n"
-    <> "An ambiguity for the type variable '" <> n <> "' could not be resolved\n\n"
+    <> "An ambiguity for the type variable '" <> (renderTVar n) <> "' could not be resolved\n\n"
     <> "Hint: You can add a type annotation to make it resolvable."
 
   InterfaceNotExisting cls ->
@@ -1381,7 +1388,7 @@ createErrorDiagnostic color context typeError = case typeError of
           Nothing
           "Ambiguous type"
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "An ambiguity for the type variable '" <> n <> "' could not be resolved"
+            , Diagnose.This $ "An ambiguity for the type variable '" <> renderTVar n <> "' could not be resolved"
             )
           ]
           [Diagnose.Hint "You can add a type annotation to make it resolvable."]
@@ -2080,10 +2087,6 @@ showAreaInSource' before after json start end code =
   in  unlines $ before' ++ expContent ++ [formattedArea] ++ after'
 
 
-letters :: [Char]
-letters = ['a' ..]
-
-
 hkLetters :: [Char]
 hkLetters = ['m' ..]
 
@@ -2109,7 +2112,7 @@ schemeToStr (Forall _ (ps :=> t)) =
       predStr <> " => " <> typeStr
 
 
-predsToStr :: Bool -> (M.Map String Int, M.Map String Int) -> [Pred] -> (M.Map String Int, M.Map String Int, String)
+predsToStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> [Pred] -> (M.Map Int Int, M.Map Int Int, String)
 predsToStr _ (vars, hkVars) [] = (vars, hkVars, "")
 predsToStr rewrite (vars, hkVars) [p] = predToStr rewrite (vars, hkVars) p
 predsToStr rewrite (vars, hkVars) (p:ps)  =
@@ -2122,12 +2125,12 @@ predsToStr rewrite (vars, hkVars) (p:ps)  =
       in  (vars'', hkVars'', predStr <> ", " <> predStr'')
 
 
-predToStr :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
+predToStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> Pred -> (M.Map Int Int, M.Map Int Int, String)
 predToStr rewrite (vars, hkVars) p@(IsIn cls _ _) =
   let (vars', hkVars', predStr) = predToStr' rewrite (vars, hkVars) p
   in  (vars', hkVars', cls <> " " <> predStr)
 
-predToStr' :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
+predToStr' :: Bool -> (M.Map Int Int, M.Map Int Int) -> Pred -> (M.Map Int Int, M.Map Int Int, String)
 predToStr' _ (vars, hkVars) (IsIn _ [] _) = (vars, hkVars, "")
 predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts) _) =
   let (vars', hkVars', typeStr) = typeToParenWrappedStr rewrite (vars, hkVars) t
@@ -2138,7 +2141,7 @@ predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts) _) =
       let (vars'', hkVars'', typeStr'') = predToStr' rewrite (vars', hkVars') (IsIn cls ts Nothing)
       in  (vars'', hkVars'', typeStr <> " " <> typeStr'')
 
-typeToParenWrappedStr :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
+typeToParenWrappedStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, String)
 typeToParenWrappedStr rewrite (vars, hkVars) t =
   let (vars', hkVars', typeStr) = prettyPrintType' rewrite (vars, hkVars) t
   in  case t of
@@ -2178,7 +2181,7 @@ gatherAllFnArgsForDiff t1 t2 = case (t1, t2) of
     [(t1, t2)]
 
 
-constructorAndFunctionArgsToDocsWithDiff :: Bool -> (M.Map String Int, M.Map String Int) -> (M.Map String Int, M.Map String Int) -> [(Type, Type)] -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
+constructorAndFunctionArgsToDocsWithDiff :: Bool -> (M.Map Int Int, M.Map Int Int) -> (M.Map Int Int, M.Map Int Int) -> [(Type, Type)] -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
 constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1 vars2 ts = case ts of
   ((t1@(TApp _ _), t2@(TApp _ _)) : next) | not (isTuple t1 || isTuple t2) ->
     let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
@@ -2246,11 +2249,11 @@ gatherAllConstructorArgsForDiff t1 t2 = case (t1, t2) of
     [(t1, t2)]
 
 
-predsToDocsWithDiff :: (M.Map String Int, M.Map String Int)
-  -> (M.Map String Int, M.Map String Int)
+predsToDocsWithDiff :: (M.Map Int Int, M.Map Int Int)
+  -> (M.Map Int Int, M.Map Int Int)
   -> [Pred]
   -> [Pred]
-  -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
+  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
 predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) of
   (IsIn cls1 ts1 _ : more1, IsIn cls2 ts2 _ : more2) ->
     let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts1
@@ -2317,11 +2320,11 @@ predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) 
     ((vars1, hkVars1), (vars2, hkVars2), [], [])
 
 
-schemesToDocWithDiff :: (M.Map String Int, M.Map String Int)
-  -> (M.Map String Int, M.Map String Int)
+schemesToDocWithDiff :: (M.Map Int Int, M.Map Int Int)
+  -> (M.Map Int Int, M.Map Int Int)
   -> Scheme
   -> Scheme
-  -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
+  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
 schemesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) sc1 sc2 = case (sc1, sc2) of
   (Forall _ ([] :=> t1), Forall _ ([] :=> t2)) ->
     typesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) t1 t2
@@ -2371,11 +2374,11 @@ schemesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) sc1 sc2 = case (sc1, sc2)
         )
 
 
-typesToDocWithDiff :: (M.Map String Int, M.Map String Int)
-  -> (M.Map String Int, M.Map String Int)
+typesToDocWithDiff :: (M.Map Int Int, M.Map Int Int)
+  -> (M.Map Int Int, M.Map Int Int)
   -> Type
   -> Type
-  -> ((M.Map String Int, M.Map String Int), (M.Map String Int, M.Map String Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
+  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
 typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
   (TApp (TApp (TCon (TC "(->)" _) _) _) _, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
     let allArgs = gatherAllFnArgsForDiff t1 t2
@@ -2844,14 +2847,14 @@ prettyPrintType rewrite =
   lst . prettyPrintType' rewrite (mempty, mempty)
 
 
-prettyPrintType' :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
+prettyPrintType' :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, String)
 prettyPrintType' rewrite (vars, hkVars) t = case t of
   TCon (TC n _) _ ->
     (vars, hkVars, n)
 
   TVar (TV n k)   ->
     if not rewrite then
-      (vars, hkVars, n)
+      (vars, hkVars, renderTVar n)
     else
       case k of
         Star -> case M.lookup n vars of
@@ -2943,13 +2946,13 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     if not rewrite then
       (vars, hkVars, "T" <> show n)
     else
-      case M.lookup ("T" <> show n) vars of
+      case M.lookup (n - 1000) vars of
         Just x  ->
           (vars, hkVars, [letters !! x])
 
         Nothing ->
           let newIndex = M.size vars
-          in  (M.insert ("T" <> show n) newIndex vars, hkVars, [letters !! newIndex])
+          in  (M.insert (n - 1000) newIndex vars, hkVars, [letters !! newIndex])
 
   _ ->
     (vars, hkVars, "")
@@ -2976,7 +2979,7 @@ gatherAllConstructorArgs t = case t of
     [t]
 
 
-constructorAndFunctionArgsToDocs :: Bool -> (M.Map String Int, M.Map String Int) -> [Type] -> (M.Map String Int, M.Map String Int, [Pretty.Doc ann])
+constructorAndFunctionArgsToDocs :: Bool -> (M.Map Int Int, M.Map Int Int) -> [Type] -> (M.Map Int Int, M.Map Int Int, [Pretty.Doc ann])
 constructorAndFunctionArgsToDocs isFunctionArg (vars, hkVars) ts = case ts of
   (t@(TApp _ _) : next) | not (isTuple t) ->
     let (vars', hkVvars', t')     = typeToDoc (vars, hkVars) t
@@ -2998,7 +3001,7 @@ constructorAndFunctionArgsToDocs isFunctionArg (vars, hkVars) ts = case ts of
 
 
 
-predsToDocs :: (M.Map String Int, M.Map String Int) -> [Pred] -> (M.Map String Int, M.Map String Int, [Pretty.Doc ann])
+predsToDocs :: (M.Map Int Int, M.Map Int Int) -> [Pred] -> (M.Map Int Int, M.Map Int Int, [Pretty.Doc ann])
 predsToDocs (vars, hkVars) ps = case ps of
   (IsIn cls ts _ : more) ->
     let (vars', hkVars', ts')     = constructorAndFunctionArgsToDocs False (vars, hkVars) ts
@@ -3020,7 +3023,7 @@ predsToDocs (vars, hkVars) ps = case ps of
     (vars, hkVars, [])
 
 
-schemeToDoc :: (M.Map String Int, M.Map String Int) -> Scheme -> (M.Map String Int, M.Map String Int, Pretty.Doc ann)
+schemeToDoc :: (M.Map Int Int, M.Map Int Int) -> Scheme -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
 schemeToDoc (vars, hkVars) sc = case sc of
   Forall _ ([] :=> t) ->
     typeToDoc (vars, hkVars) t
@@ -3041,7 +3044,7 @@ schemeToDoc (vars, hkVars) sc = case sc of
         )
 
 
-typeToDoc :: (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, Pretty.Doc ann)
+typeToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
 typeToDoc (vars, hkVars) t = case t of
   TCon (TC n _) _ ->
     (vars, hkVars, Pretty.pretty n)
@@ -3309,13 +3312,13 @@ typeToDoc (vars, hkVars) t = case t of
     in  (finalVars, finalHkVars, compiled)
 
   TGen n ->
-    case M.lookup ("T" <> show n) vars of
+    case M.lookup (n - 1000) vars of
       Just x  ->
         (vars, hkVars, Pretty.pretty [letters !! x])
 
       Nothing ->
         let newIndex = M.size vars
-        in  (M.insert ("T" <> show n) newIndex vars, hkVars, Pretty.pretty [letters !! newIndex])
+        in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty [letters !! newIndex])
 
   _ ->
     (vars, hkVars, Pretty.emptyDoc)

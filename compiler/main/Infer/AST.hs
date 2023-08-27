@@ -45,6 +45,7 @@ import Run.Options
 import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
 import Utils.List (removeDuplicates)
 import Canonicalize.Derive (deriveEqInstance, deriveShowInstance)
+import Data.Hashable (hash)
 
 
 {-|
@@ -144,7 +145,7 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
 
     -- We add these to get errors when redefining a default import
     defaultImportNames <- buildDefaultImportNames [] env''' { envCurrentPath = apath } aimports
-    let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar "__defaultImport__") <$> defaultImportNames
+    let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar (-3)) <$> defaultImportNames
 
     return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
 
@@ -334,7 +335,7 @@ buildImportInfos env Can.AST { Can.aimports } =
   in  env { envImportInfo = info }
 
 
-searchTypeInConstructor :: Id -> Type -> Maybe Type
+searchTypeInConstructor :: Int -> Type -> Maybe Type
 searchTypeInConstructor id t = case t of
   TVar (TV n _) ->
     if n == id then Just t else Nothing
@@ -370,30 +371,31 @@ chars = (:"") <$> ['a'..]
 buildEnvForDerivedInstance :: Env -> InstanceToDerive -> Env
 buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case instanceToDerive of
   TypeDeclToDerive (Can.Canonical _ Can.ADT { Can.adtparams, Can.adtconstructors, Can.adtType }) ->
-    let constructorTypes = Can.getCtorType <$> adtconstructors
-        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
+    let adtparams' = hash <$> adtparams
+        constructorTypes = Can.getCtorType <$> adtconstructors
+        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams') <$> constructorTypes
         instPreds interfaceName =
           (\varInType ->
               IsIn interfaceName [varInType] Nothing
           ) <$> varsInType
         eqInstPreds = instPreds "Eq"
         showInstPreds = instPreds "Show"
-        comparableInstPreds = instPreds "Comparable"
+        -- comparableInstPreds = instPreds "Comparable"
         eqInstanceForEnv = Instance (eqInstPreds :=> IsIn "Eq" [adtType] Nothing) mempty
         showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [adtType] Nothing) mempty
-        comparableInstanceForEnv = Instance (comparableInstPreds :=> IsIn "Comparable" [adtType] Nothing) mempty
+        -- comparableInstanceForEnv = Instance (comparableInstPreds :=> IsIn "Comparable" [adtType] Nothing) mempty
         newEqInterface = case M.lookup "Eq" envInterfaces of
                           Just (Interface vars preds instances) ->
                             Interface vars preds (eqInstanceForEnv : instances)
 
                           _ ->
                             undefined
-        newComparableInterface = case M.lookup "Comparable" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (comparableInstanceForEnv : instances)
+        -- newComparableInterface = case M.lookup "Comparable" envInterfaces of
+        --                   Just (Interface vars preds instances) ->
+        --                     Interface vars preds (comparableInstanceForEnv : instances)
 
-                          _ ->
-                            undefined
+                          -- _ ->
+                          --   undefined
         newShowInterface = case M.lookup "Show" envInterfaces of
                           Just (Interface vars preds instances) ->
                             Interface vars preds (showInstanceForEnv : instances)
@@ -406,7 +408,7 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
 
   RecordToDerive fieldNames ->
     let fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . (`TV` Star) <$> M.fromList fieldNamesWithVars
+        fields             = TVar . ((`TV` Star) . hash) <$> M.fromList fieldNamesWithVars
         recordType         = TRecord fields Nothing mempty
         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
         showInstPreds = instPreds "Show"

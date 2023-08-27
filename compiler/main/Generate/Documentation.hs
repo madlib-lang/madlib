@@ -267,7 +267,7 @@ buildTypeDeclarationDocItem docStrings typeDecl = case typeDecl of
 
 buildInterfaceDocItem :: [DocString] -> Slv.Interface -> DocItem
 buildInterfaceDocItem docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
-  let vars'        = unwords $ (\(TV n _) -> n) <$> vars
+  let vars'        = unwords $ (\(TV n _) -> renderTVar n) <$> vars
       constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
         "()" ->
           ""

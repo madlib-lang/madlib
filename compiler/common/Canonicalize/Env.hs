@@ -72,9 +72,9 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Array", tArray)
                  , envConstructorInfos = M.empty
                  , envInterfaces =
                     M.fromList
-                      [ ("Eq", Interface [TV "a" Star] [] ["=="])
-                      , ("Comparable", Interface [TV "a" Star] [IsIn "Eq" [TVar $ TV "a" Star] Nothing] ["compare"])
-                      , ("Show", Interface [TV "a" Star] [] ["show"])
+                      [ ("Eq", Interface [TV 0 Star] [] ["=="])
+                      , ("Comparable", Interface [TV 0 Star] [IsIn "Eq" [TVar $ TV 0 Star] Nothing] ["compare"])
+                      , ("Show", Interface [TV 0 Star] [] ["show"])
                       ]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""

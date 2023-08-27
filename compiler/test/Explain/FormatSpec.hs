@@ -478,13 +478,13 @@ spec = do
 
   describe "prettyPrintQualType" $ do
     it "should pretty print a qualified type with multiple constraints" $ do
-      let qt   = ([IsIn "Monad" [TVar $ TV "m" (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV "rec" Star] Nothing] :=> (TVar (TV "m" (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV "rec" Star)) mempty `fn` tTuple2Of tBool tStr))
+      let qt   = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Star] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` tTuple2Of tBool tStr))
           actual   = prettyPrintQualType qt
           expected = "(Monad m, Monoid a) => m -> { ...base, x :: Integer } -> #[Boolean, String]"
       actual `shouldBe` expected
 
     it "should pretty print a qualified type with one constraint" $ do
-      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV "m" (Kfun Star Star)] Nothing] :=> (TVar (TV "m" (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV "rec" Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (TCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
+      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (TCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
           actual   = schemeToStr scheme
           expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
       actual `shouldBe` expected

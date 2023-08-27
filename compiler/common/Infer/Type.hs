@@ -19,7 +19,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.UTF8 as BSU
 
 
-data TVar = TV Id Kind
+data TVar = TV Int Kind
   deriving (Show, Eq, Ord, Generic, Hashable)
 
 data TCon = TC Id Kind
@@ -42,7 +42,7 @@ infixr `TApp`
 getTConId :: TCon -> Id
 getTConId (TC id _) = id
 
-getTVarId :: TVar -> Id
+getTVarId :: TVar -> Int
 getTVarId (TV id _) = id
 
 getTV :: Type -> TVar
@@ -54,12 +54,12 @@ getTV t = case t of
     undefined
 
 
-tVar :: String -> Type
+tVar :: Int -> Type
 tVar v = TVar (TV v Star)
 
 
 tNumber :: Type
-tNumber = TVar (TV "a" Star)
+tNumber = TVar (TV 0 Star)
 
 
 qtNumber :: Qual Type
@@ -83,7 +83,7 @@ tByte = TCon (TC "Byte" Star) "prelude"
 
 
 qNumber :: Qual Type
-qNumber = [IsIn "Number" [TVar (TV "a" Star)] Nothing] :=> TVar (TV "a" Star)
+qNumber = [IsIn "Number" [TVar (TV 0 Star)] Nothing] :=> TVar (TV 0 Star)
 
 
 tBool :: Type
@@ -103,7 +103,7 @@ tUnit = TCon (TC "{}" Star) "prelude"
 
 
 tList :: Type
-tList = tListOf (TVar (TV "a" Star))
+tList = tListOf (TVar (TV 0 Star))
 
 
 tListOf :: Type -> Type
@@ -121,7 +121,7 @@ tArrayOf = TApp (TCon (TC "Array" (Kfun Star Star)) "prelude")
 
 
 tArray :: Type
-tArray = tArrayOf (TVar (TV "a" Star))
+tArray = tArrayOf (TVar (TV 0 Star))
 
 
 tByteArray :: Type
@@ -354,7 +354,7 @@ unqualify :: Qual a -> a
 unqualify (_ :=> a) = a
 
 
-searchVarInType :: Id -> Type -> Maybe Type
+searchVarInType :: Int -> Type -> Maybe Type
 searchVarInType id t = case t of
   TVar (TV n _) ->
     if n == id then Just t else Nothing
@@ -590,7 +590,7 @@ selectPredsForType ps t = case ps of
     []
 
 
-findTypeVarInType :: String -> Type -> Maybe Type
+findTypeVarInType :: Int -> Type -> Maybe Type
 findTypeVarInType tvName t = case t of
   TApp l r ->
     findTypeVarInType tvName l <|> findTypeVarInType tvName r

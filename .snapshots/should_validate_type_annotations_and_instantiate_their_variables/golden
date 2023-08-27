@@ -16,17 +16,15 @@
                     (TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "e4" Star)))
-                       (TVar (TV "f5" Star))))
+                          (TVar (TV 4 Star)))
+                       (TVar (TV 5 Star))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TApp
-                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "e4" Star))))
+                          (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 4 Star))))
                     (TApp
-                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TVar (TV "f5" Star)))))
+                       (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 5 Star)))))
             (Area (Loc 0 1 1) (Loc 68 2 33))
             (TypedExp
                (Typed
@@ -37,17 +35,15 @@
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "e4" Star)))
-                             (TVar (TV "f5" Star))))
+                                (TVar (TV 4 Star)))
+                             (TVar (TV 5 Star))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TApp
-                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TVar (TV "e4" Star))))
+                                (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 4 Star))))
                           (TApp
-                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TVar (TV "f5" Star)))))
+                             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 5 Star)))))
                   (Area (Loc 36 2 1) (Loc 68 2 33))
                   (Assignment
                      "map"
@@ -59,17 +55,17 @@
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "e4" Star)))
-                                   (TVar (TV "f5" Star))))
+                                      (TVar (TV 4 Star)))
+                                   (TVar (TV 5 Star))))
                              (TApp
                                 (TApp
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TApp
                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TVar (TV "e4" Star))))
+                                      (TVar (TV 4 Star))))
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TVar (TV "f5" Star)))))
+                                   (TVar (TV 5 Star)))))
                         (Area (Loc 42 2 7) (Loc 68 2 33))
                         (Abs
                            (Typed
@@ -77,8 +73,8 @@
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "e4" Star)))
-                                   (TVar (TV "f5" Star)))
+                                      (TVar (TV 4 Star)))
+                                   (TVar (TV 5 Star)))
                               (Area (Loc 43 2 8) (Loc 44 2 9))
                               "f")
                            [ Typed
@@ -88,24 +84,24 @@
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "e4" Star))))
+                                          (TVar (TV 4 Star))))
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                       (TVar (TV "f5" Star))))
+                                       (TVar (TV 5 Star))))
                                (Area (Loc 42 2 7) (Loc 68 2 33))
                                (Abs
                                   (Typed
                                      ([] :=>
                                         TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                          (TVar (TV "e4" Star)))
+                                          (TVar (TV 4 Star)))
                                      (Area (Loc 46 2 11) (Loc 48 2 13))
                                      "xs")
                                   [ Typed
                                       ([] :=>
                                          TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TVar (TV "f5" Star)))
+                                           (TVar (TV 5 Star)))
                                       (Area (Loc 54 2 19) (Loc 67 2 32))
                                       (JSExp " some JS ")
                                   ])

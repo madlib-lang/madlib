@@ -54,7 +54,7 @@
                                   TApp
                                     (TApp
                                        (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                       (TVar (TV "d3" Star)))
+                                       (TVar (TV 3 Star)))
                                     (TCon (TC "Integer" Star) "prelude"))
                                (Area (Loc 76 3 3) (Loc 106 3 33))
                                (App
@@ -74,7 +74,7 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "d3" Star)))
+                                                         (TVar (TV 3 Star)))
                                                       (TCon (TC "{}" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -96,7 +96,7 @@
                                                 (TCon
                                                    (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                    "Module.mad")
-                                                (TVar (TV "d3" Star)))
+                                                (TVar (TV 3 Star)))
                                              (TCon (TC "Integer" Star) "prelude")))
                                      (Area (Loc 76 3 3) (Loc 80 3 7))
                                      (Var "Wish" True))
@@ -112,7 +112,7 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "d3" Star)))
+                                                   (TVar (TV 3 Star)))
                                                 (TCon (TC "{}" Star) "prelude")))
                                           (TApp
                                              (TApp
@@ -140,7 +140,7 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "d3" Star)))
+                                                   (TVar (TV 3 Star)))
                                                 (TCon (TC "{}" Star) "prelude"))
                                            (Area (Loc 82 3 9) (Loc 85 3 12))
                                            "bad")
@@ -284,7 +284,7 @@
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "t45" Star)))
+                                           (TVar (TV 45 Star)))
                                         (TCon (TC "{}" Star) "prelude")))
                                   (TApp
                                      (TApp
@@ -293,21 +293,21 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "u46" Star)))
+                                              (TVar (TV 46 Star)))
                                            (TCon (TC "{}" Star) "prelude")))
                                      (TCon (TC "{}" Star) "prelude"))))
                             (TApp
                                (TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                  (TVar (TV "t45" Star)))
-                               (TVar (TV "u46" Star)))))
+                                  (TVar (TV 45 Star)))
+                               (TVar (TV 46 Star)))))
                   ]
               , adtType =
                   TApp
                     (TApp
                        (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                       (TVar (TV "e" Star)))
-                    (TVar (TV "a" Star))
+                       (TVar (TV 590643385890189583 Star)))
+                    (TVar (TV 590647783936702427 Star))
               , adtexported = True
               }
         ]
@@ -317,16 +317,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Eq" [ TVar (TV "e" Star) ] Nothing
+               [ IsIn "Eq" [ TVar (TV 590643385890189583 Star) ] Nothing
+               , IsIn "Eq" [ TVar (TV 590647783936702427 Star) ] Nothing
                ]
                (IsIn
                   "Eq"
                   [ TApp
                       (TApp
                          (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                         (TVar (TV "e" Star)))
-                      (TVar (TV "a" Star))
+                         (TVar (TV 590643385890189583 Star)))
+                      (TVar (TV 590647783936702427 Star))
                   ]
                   Nothing)
                (fromList
@@ -339,8 +339,8 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TVar (TV "t19" Star)))
-                                     (TVar (TV "u20" Star))))
+                                        (TVar (TV 19 Star)))
+                                     (TVar (TV 20 Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -348,15 +348,15 @@
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                           (TVar (TV "t19" Star)))
-                                        (TVar (TV "u20" Star))))
+                                           (TVar (TV 19 Star)))
+                                        (TVar (TV 20 Star))))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV "u20" Star) ] Nothing
-                                 , IsIn "Eq" [ TVar (TV "t19" Star) ] Nothing
+                                ([ IsIn "Eq" [ TVar (TV 19 Star) ] Nothing
+                                 , IsIn "Eq" [ TVar (TV 20 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -366,8 +366,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "t19" Star)))
-                                           (TVar (TV "u20" Star))))
+                                              (TVar (TV 19 Star)))
+                                           (TVar (TV 20 Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -376,8 +376,8 @@
                                                  (TCon
                                                     (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                     "Module.mad")
-                                                 (TVar (TV "t19" Star)))
-                                              (TVar (TV "u20" Star))))
+                                                 (TVar (TV 19 Star)))
+                                              (TVar (TV 20 Star))))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
@@ -394,7 +394,7 @@
                                                         (TCon
                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TVar (TV "t19" Star)))
+                                                        (TVar (TV 19 Star)))
                                                      (TCon (TC "{}" Star) "prelude")))
                                                (TApp
                                                   (TApp
@@ -408,7 +408,7 @@
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star)))
                                                               "prelude")
-                                                           (TVar (TV "u20" Star)))
+                                                           (TVar (TV 20 Star)))
                                                         (TCon (TC "{}" Star) "prelude")))
                                                   (TCon (TC "{}" Star) "prelude"))
                                            ]
@@ -419,8 +419,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "t19" Star)))
-                                           (TVar (TV "u20" Star)))
+                                              (TVar (TV 19 Star)))
+                                           (TVar (TV 20 Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -436,7 +436,7 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "t19" Star)))
+                                                         (TVar (TV 19 Star)))
                                                       (TCon (TC "{}" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -450,7 +450,7 @@
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "u20" Star)))
+                                                            (TVar (TV 20 Star)))
                                                          (TCon (TC "{}" Star) "prelude")))
                                                    (TCon (TC "{}" Star) "prelude"))
                                             ]
@@ -466,8 +466,8 @@
                                                      (TCon
                                                         (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                         "Module.mad")
-                                                     (TVar (TV "t19" Star)))
-                                                  (TVar (TV "u20" Star))))
+                                                     (TVar (TV 19 Star)))
+                                                  (TVar (TV 20 Star))))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -486,7 +486,7 @@
                                                                      "(->)"
                                                                      (Kfun Star (Kfun Star Star)))
                                                                   "prelude")
-                                                               (TVar (TV "t19" Star)))
+                                                               (TVar (TV 19 Star)))
                                                             (TCon (TC "{}" Star) "prelude")))
                                                       (TApp
                                                          (TApp
@@ -503,7 +503,7 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV "u20" Star)))
+                                                                  (TVar (TV 20 Star)))
                                                                (TCon (TC "{}" Star) "prelude")))
                                                          (TCon (TC "{}" Star) "prelude"))
                                                   ]
@@ -514,8 +514,8 @@
                                                      (TCon
                                                         (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                         "Module.mad")
-                                                     (TVar (TV "t19" Star)))
-                                                  (TVar (TV "u20" Star)))
+                                                     (TVar (TV 19 Star)))
+                                                  (TVar (TV 20 Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -534,7 +534,7 @@
                                                                       "(->)"
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
-                                                                (TVar (TV "t19" Star)))
+                                                                (TVar (TV 19 Star)))
                                                              (TCon (TC "{}" Star) "prelude")))
                                                        (TApp
                                                           (TApp
@@ -551,7 +551,7 @@
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "u20" Star)))
+                                                                   (TVar (TV 20 Star)))
                                                                 (TCon (TC "{}" Star) "prelude")))
                                                           (TCon (TC "{}" Star) "prelude"))
                                                    ]
@@ -577,8 +577,8 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "Module.mad")
-                                                                  (TVar (TV "t19" Star)))
-                                                               (TVar (TV "u20" Star))))
+                                                                  (TVar (TV 19 Star)))
+                                                               (TVar (TV 20 Star))))
                                                          (TApp
                                                             (TApp
                                                                (TCon
@@ -586,8 +586,8 @@
                                                                      "Wish"
                                                                      (Kfun Star (Kfun Star Star)))
                                                                   "Module.mad")
-                                                               (TVar (TV "t19" Star)))
-                                                            (TVar (TV "u20" Star))))
+                                                               (TVar (TV 19 Star)))
+                                                            (TVar (TV 20 Star))))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TupleConstructor
                                                        [ Typed
@@ -600,8 +600,8 @@
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "Module.mad")
-                                                                   (TVar (TV "t19" Star)))
-                                                                (TVar (TV "u20" Star)))
+                                                                   (TVar (TV 19 Star)))
+                                                                (TVar (TV 20 Star)))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$a__" False)
                                                        , Typed
@@ -614,8 +614,8 @@
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "Module.mad")
-                                                                   (TVar (TV "t19" Star)))
-                                                                (TVar (TV "u20" Star)))
+                                                                   (TVar (TV 19 Star)))
+                                                                (TVar (TV 20 Star)))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (Var "__$b__" False)
                                                        ]))
@@ -638,7 +638,7 @@
                                                                                 Star
                                                                                 (Kfun Star Star)))
                                                                           "prelude")
-                                                                       (TVar (TV "t19" Star)))
+                                                                       (TVar (TV 19 Star)))
                                                                     (TCon
                                                                        (TC "{}" Star) "prelude")))
                                                               (TApp
@@ -659,7 +659,7 @@
                                                                                    (Kfun
                                                                                       Star Star)))
                                                                              "prelude")
-                                                                          (TVar (TV "u20" Star)))
+                                                                          (TVar (TV 20 Star)))
                                                                        (TCon
                                                                           (TC "{}" Star)
                                                                           "prelude")))
@@ -691,8 +691,8 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "Module.mad")
-                                                                         (TVar (TV "t19" Star)))
-                                                                      (TVar (TV "u20" Star))))
+                                                                         (TVar (TV 19 Star)))
+                                                                      (TVar (TV 20 Star))))
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -702,8 +702,8 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "Module.mad")
-                                                                      (TVar (TV "t19" Star)))
-                                                                   (TVar (TV "u20" Star)))))
+                                                                      (TVar (TV 19 Star)))
+                                                                   (TVar (TV 20 Star)))))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -726,8 +726,8 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "Module.mad")
-                                                                         (TVar (TV "t19" Star)))
-                                                                      (TVar (TV "u20" Star))))
+                                                                         (TVar (TV 19 Star)))
+                                                                      (TVar (TV 20 Star))))
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -737,8 +737,8 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "Module.mad")
-                                                                      (TVar (TV "t19" Star)))
-                                                                   (TVar (TV "u20" Star))))
+                                                                      (TVar (TV 19 Star)))
+                                                                   (TVar (TV 20 Star))))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
                                                               [ Typed
@@ -753,8 +753,8 @@
                                                                                    (Kfun
                                                                                       Star Star)))
                                                                              "Module.mad")
-                                                                          (TVar (TV "t19" Star)))
-                                                                       (TVar (TV "u20" Star)))
+                                                                          (TVar (TV 19 Star)))
+                                                                       (TVar (TV 20 Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Wish"
@@ -785,7 +785,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -816,7 +816,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -859,7 +859,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -890,7 +890,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -933,7 +933,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -964,7 +964,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -1006,7 +1006,7 @@
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "t19"
+                                                                                             19
                                                                                              Star)))
                                                                                     (TCon
                                                                                        (TC
@@ -1036,7 +1036,7 @@
                                                                                              "prelude")
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "u20"
+                                                                                                20
                                                                                                 Star)))
                                                                                        (TCon
                                                                                           (TC
@@ -1062,8 +1062,8 @@
                                                                                    (Kfun
                                                                                       Star Star)))
                                                                              "Module.mad")
-                                                                          (TVar (TV "t19" Star)))
-                                                                       (TVar (TV "u20" Star)))
+                                                                          (TVar (TV 19 Star)))
+                                                                       (TVar (TV 20 Star)))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Wish"
@@ -1094,7 +1094,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -1125,7 +1125,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -1168,7 +1168,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -1199,7 +1199,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -1242,7 +1242,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -1273,7 +1273,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -1315,7 +1315,7 @@
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "t19"
+                                                                                             19
                                                                                              Star)))
                                                                                     (TCon
                                                                                        (TC
@@ -1345,7 +1345,7 @@
                                                                                              "prelude")
                                                                                           (TVar
                                                                                              (TV
-                                                                                                "u20"
+                                                                                                20
                                                                                                 Star)))
                                                                                        (TCon
                                                                                           (TC
@@ -1383,7 +1383,7 @@
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "t19" Star)))
+                                                                             (TVar (TV 19 Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -1408,8 +1408,7 @@
                                                                                             Star
                                                                                             Star)))
                                                                                    "prelude")
-                                                                                (TVar
-                                                                                   (TV "u20" Star)))
+                                                                                (TVar (TV 20 Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -1448,9 +1447,7 @@
                                                                                                Star)))
                                                                                       "prelude")
                                                                                    (TVar
-                                                                                      (TV
-                                                                                         "t19"
-                                                                                         Star)))
+                                                                                      (TV 19 Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
                                                                                    "prelude")))
@@ -1478,7 +1475,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "u20"
+                                                                                            20
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -1576,7 +1573,7 @@
                                                                                             "prelude")
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "t19"
+                                                                                               19
                                                                                                Star)))
                                                                                       (TCon
                                                                                          (TC
@@ -1607,7 +1604,7 @@
                                                                                                "prelude")
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "u20"
+                                                                                                  20
                                                                                                   Star)))
                                                                                          (TCon
                                                                                             (TC
@@ -1656,7 +1653,7 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "t19"
+                                                                                                     19
                                                                                                      Star)))
                                                                                             (TCon
                                                                                                (TC
@@ -1687,7 +1684,7 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "u20"
+                                                                                                        20
                                                                                                         Star)))
                                                                                                (TCon
                                                                                                   (TC
@@ -1741,7 +1738,7 @@
                                                                                                     "prelude")
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "t19"
+                                                                                                       19
                                                                                                        Star)))
                                                                                               (TCon
                                                                                                  (TC
@@ -1772,7 +1769,7 @@
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "u20"
+                                                                                                          20
                                                                                                           Star)))
                                                                                                  (TCon
                                                                                                     (TC
@@ -1820,7 +1817,7 @@
                                                                                                         "prelude")
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "t19"
+                                                                                                           19
                                                                                                            Star)))
                                                                                                   (TCon
                                                                                                      (TC
@@ -1851,7 +1848,7 @@
                                                                                                            "prelude")
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "u20"
+                                                                                                              20
                                                                                                               Star)))
                                                                                                      (TCon
                                                                                                         (TC
@@ -1901,7 +1898,7 @@
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "t19"
+                                                                                                             19
                                                                                                              Star)))
                                                                                                     (TCon
                                                                                                        (TC
@@ -1932,7 +1929,7 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "u20"
+                                                                                                                20
                                                                                                                 Star)))
                                                                                                        (TCon
                                                                                                           (TC
@@ -1979,7 +1976,7 @@
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "t19"
+                                                                                                                19
                                                                                                                 Star)))
                                                                                                        (TCon
                                                                                                           (TC
@@ -2010,7 +2007,7 @@
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "u20"
+                                                                                                                   20
                                                                                                                    Star)))
                                                                                                           (TCon
                                                                                                              (TC
@@ -2058,7 +2055,7 @@
                                                                                                         "prelude")
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "t19"
+                                                                                                           19
                                                                                                            Star)))
                                                                                                   (TCon
                                                                                                      (TC
@@ -2089,7 +2086,7 @@
                                                                                                            "prelude")
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "u20"
+                                                                                                              20
                                                                                                               Star)))
                                                                                                      (TCon
                                                                                                         (TC
@@ -2137,7 +2134,7 @@
                                                                                                     "prelude")
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "t19"
+                                                                                                       19
                                                                                                        Star)))
                                                                                               (TCon
                                                                                                  (TC
@@ -2168,7 +2165,7 @@
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "u20"
+                                                                                                          20
                                                                                                           Star)))
                                                                                                  (TCon
                                                                                                     (TC
@@ -2212,7 +2209,7 @@
                                                                                                   "prelude")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "t19"
+                                                                                                     19
                                                                                                      Star)))
                                                                                             (TCon
                                                                                                (TC
@@ -2243,7 +2240,7 @@
                                                                                                      "prelude")
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "u20"
+                                                                                                        20
                                                                                                         Star)))
                                                                                                (TCon
                                                                                                   (TC
@@ -2286,7 +2283,7 @@
                                                                                               "prelude")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "t19"
+                                                                                                 19
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -2317,7 +2314,7 @@
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "u20"
+                                                                                                    20
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -2361,9 +2358,7 @@
                                                                                                Star)))
                                                                                       "prelude")
                                                                                    (TVar
-                                                                                      (TV
-                                                                                         "t19"
-                                                                                         Star)))
+                                                                                      (TV 19 Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
                                                                                    "prelude")))
@@ -2391,7 +2386,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "u20"
+                                                                                            20
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -2436,8 +2431,8 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "Module.mad")
-                                                                         (TVar (TV "t19" Star)))
-                                                                      (TVar (TV "u20" Star))))
+                                                                         (TVar (TV 19 Star)))
+                                                                      (TVar (TV 20 Star))))
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -2447,8 +2442,8 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "Module.mad")
-                                                                      (TVar (TV "t19" Star)))
-                                                                   (TVar (TV "u20" Star)))))
+                                                                      (TVar (TV 19 Star)))
+                                                                   (TVar (TV 20 Star)))))
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
@@ -2471,8 +2466,8 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "Module.mad")
-                                                                         (TVar (TV "t19" Star)))
-                                                                      (TVar (TV "u20" Star))))
+                                                                         (TVar (TV 19 Star)))
+                                                                      (TVar (TV 20 Star))))
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -2482,8 +2477,8 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "Module.mad")
-                                                                      (TVar (TV "t19" Star)))
-                                                                   (TVar (TV "u20" Star))))
+                                                                      (TVar (TV 19 Star)))
+                                                                   (TVar (TV 20 Star))))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
                                                         (Typed
@@ -2505,8 +2500,8 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TGen 1))
-                                     (TGen 0)))
+                                        (TGen 0))
+                                     (TGen 1)))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -2514,8 +2509,8 @@
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                           (TGen 1))
-                                        (TGen 0)))
+                                           (TGen 0))
+                                        (TGen 1)))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -2524,16 +2519,16 @@
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
                "Show"
-               [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
-               , IsIn "Show" [ TVar (TV "e" Star) ] Nothing
+               [ IsIn "Show" [ TVar (TV 590643385890189583 Star) ] Nothing
+               , IsIn "Show" [ TVar (TV 590647783936702427 Star) ] Nothing
                ]
                (IsIn
                   "Show"
                   [ TApp
                       (TApp
                          (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                         (TVar (TV "e" Star)))
-                      (TVar (TV "a" Star))
+                         (TVar (TV 590643385890189583 Star)))
+                      (TVar (TV 590647783936702427 Star))
                   ]
                   Nothing)
                (fromList
@@ -2546,15 +2541,15 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TVar (TV "i34" Star)))
-                                     (TVar (TV "j35" Star))))
+                                        (TVar (TV 34 Star)))
+                                     (TVar (TV 35 Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV "j35" Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV "i34" Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV 34 Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV 35 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -2564,8 +2559,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "i34" Star)))
-                                           (TVar (TV "j35" Star))))
+                                              (TVar (TV 34 Star)))
+                                           (TVar (TV 35 Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
@@ -2582,7 +2577,7 @@
                                                         (TCon
                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TVar (TV "i34" Star)))
+                                                        (TVar (TV 34 Star)))
                                                      (TCon (TC "{}" Star) "prelude")))
                                                (TApp
                                                   (TApp
@@ -2596,7 +2591,7 @@
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star)))
                                                               "prelude")
-                                                           (TVar (TV "j35" Star)))
+                                                           (TVar (TV 35 Star)))
                                                         (TCon (TC "{}" Star) "prelude")))
                                                   (TCon (TC "{}" Star) "prelude"))
                                            ]
@@ -2607,8 +2602,8 @@
                                               (TCon
                                                  (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                  "Module.mad")
-                                              (TVar (TV "i34" Star)))
-                                           (TVar (TV "j35" Star)))
+                                              (TVar (TV 34 Star)))
+                                           (TVar (TV 35 Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -2624,7 +2619,7 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "i34" Star)))
+                                                         (TVar (TV 34 Star)))
                                                       (TCon (TC "{}" Star) "prelude")))
                                                 (TApp
                                                    (TApp
@@ -2638,7 +2633,7 @@
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "j35" Star)))
+                                                            (TVar (TV 35 Star)))
                                                          (TCon (TC "{}" Star) "prelude")))
                                                    (TCon (TC "{}" Star) "prelude"))
                                             ]
@@ -2654,8 +2649,8 @@
                                                      (TCon
                                                         (TC "Wish" (Kfun Star (Kfun Star Star)))
                                                         "Module.mad")
-                                                     (TVar (TV "i34" Star)))
-                                                  (TVar (TV "j35" Star)))
+                                                     (TVar (TV 34 Star)))
+                                                  (TVar (TV 35 Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__$a__" False))
                                           [ Typed
@@ -2674,7 +2669,7 @@
                                                                       "(->)"
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
-                                                                (TVar (TV "i34" Star)))
+                                                                (TVar (TV 34 Star)))
                                                              (TCon (TC "{}" Star) "prelude")))
                                                        (TApp
                                                           (TApp
@@ -2691,7 +2686,7 @@
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "j35" Star)))
+                                                                   (TVar (TV 35 Star)))
                                                                 (TCon (TC "{}" Star) "prelude")))
                                                           (TCon (TC "{}" Star) "prelude"))
                                                    ]
@@ -2709,8 +2704,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "i34" Star)))
-                                                         (TVar (TV "j35" Star))))
+                                                            (TVar (TV 34 Star)))
+                                                         (TVar (TV 35 Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -2723,8 +2718,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "i34" Star)))
-                                                         (TVar (TV "j35" Star)))
+                                                            (TVar (TV 34 Star)))
+                                                         (TVar (TV 35 Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon
                                                        "Wish"
@@ -2751,7 +2746,7 @@
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "i34" Star)))
+                                                                             (TVar (TV 34 Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -2776,8 +2771,7 @@
                                                                                             Star
                                                                                             Star)))
                                                                                    "prelude")
-                                                                                (TVar
-                                                                                   (TV "j35" Star)))
+                                                                                (TVar (TV 35 Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -2808,7 +2802,7 @@
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "i34" Star)))
+                                                                             (TVar (TV 34 Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -2833,8 +2827,7 @@
                                                                                             Star
                                                                                             Star)))
                                                                                    "prelude")
-                                                                                (TVar
-                                                                                   (TV "j35" Star)))
+                                                                                (TVar (TV 35 Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -2861,7 +2854,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "i34" Star)))
+                                                                         (TVar (TV 34 Star)))
                                                                       (TCon
                                                                          (TC "{}" Star) "prelude")))
                                                                 (TApp
@@ -2883,7 +2876,7 @@
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                "prelude")
-                                                                            (TVar (TV "j35" Star)))
+                                                                            (TVar (TV 35 Star)))
                                                                          (TCon
                                                                             (TC "{}" Star)
                                                                             "prelude")))
@@ -2910,7 +2903,7 @@
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "prelude")
-                                                                      (TVar (TV "i34" Star)))
+                                                                      (TVar (TV 34 Star)))
                                                                    (TCon (TC "{}" Star) "prelude")))
                                                              (TApp
                                                                 (TApp
@@ -2929,7 +2922,7 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TVar (TV "j35" Star)))
+                                                                         (TVar (TV 35 Star)))
                                                                       (TCon
                                                                          (TC "{}" Star) "prelude")))
                                                                 (TCon (TC "{}" Star) "prelude"))
@@ -2967,7 +2960,7 @@
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "i34" Star)))
+                                                                             (TVar (TV 34 Star)))
                                                                           (TCon
                                                                              (TC "{}" Star)
                                                                              "prelude")))
@@ -2992,8 +2985,7 @@
                                                                                             Star
                                                                                             Star)))
                                                                                    "prelude")
-                                                                                (TVar
-                                                                                   (TV "j35" Star)))
+                                                                                (TVar (TV 35 Star)))
                                                                              (TCon
                                                                                 (TC "{}" Star)
                                                                                 "prelude")))
@@ -3032,9 +3024,7 @@
                                                                                                Star)))
                                                                                       "prelude")
                                                                                    (TVar
-                                                                                      (TV
-                                                                                         "i34"
-                                                                                         Star)))
+                                                                                      (TV 34 Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
                                                                                    "prelude")))
@@ -3062,7 +3052,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "j35"
+                                                                                            35
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -3106,7 +3096,7 @@
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "i34"
+                                                                                           34
                                                                                            Star)))
                                                                                   (TCon
                                                                                      (TC "{}" Star)
@@ -3135,7 +3125,7 @@
                                                                                            "prelude")
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "j35"
+                                                                                              35
                                                                                               Star)))
                                                                                      (TCon
                                                                                         (TC
@@ -3176,9 +3166,7 @@
                                                                                                Star)))
                                                                                       "prelude")
                                                                                    (TVar
-                                                                                      (TV
-                                                                                         "i34"
-                                                                                         Star)))
+                                                                                      (TV 34 Star)))
                                                                                 (TCon
                                                                                    (TC "{}" Star)
                                                                                    "prelude")))
@@ -3206,7 +3194,7 @@
                                                                                          "prelude")
                                                                                       (TVar
                                                                                          (TV
-                                                                                            "j35"
+                                                                                            35
                                                                                             Star)))
                                                                                    (TCon
                                                                                       (TC "{}" Star)
@@ -3240,8 +3228,7 @@
                                                                                            Star
                                                                                            Star)))
                                                                                   "prelude")
-                                                                               (TVar
-                                                                                  (TV "i34" Star)))
+                                                                               (TVar (TV 34 Star)))
                                                                             (TCon
                                                                                (TC "{}" Star)
                                                                                "prelude")))
@@ -3267,9 +3254,7 @@
                                                                                               Star)))
                                                                                      "prelude")
                                                                                   (TVar
-                                                                                     (TV
-                                                                                        "j35"
-                                                                                        Star)))
+                                                                                     (TV 35 Star)))
                                                                                (TCon
                                                                                   (TC "{}" Star)
                                                                                   "prelude")))
@@ -3299,8 +3284,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "i34" Star)))
-                                                         (TVar (TV "j35" Star))))
+                                                            (TVar (TV 34 Star)))
+                                                         (TVar (TV 35 Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
@@ -3313,8 +3298,8 @@
                                                                   "Wish"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "Module.mad")
-                                                            (TVar (TV "i34" Star)))
-                                                         (TVar (TV "j35" Star)))
+                                                            (TVar (TV 34 Star)))
+                                                         (TVar (TV 35 Star)))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
                                                  (Typed
@@ -3334,8 +3319,8 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "Module.mad")
-                                        (TGen 1))
-                                     (TGen 0)))
+                                        (TGen 0))
+                                     (TGen 1)))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )

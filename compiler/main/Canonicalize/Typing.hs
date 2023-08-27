@@ -28,6 +28,7 @@ import           Data.List
 import Debug.Trace
 import Text.Show.Pretty
 import qualified Data.Maybe as Maybe
+import Data.Hashable (hash)
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
@@ -115,7 +116,7 @@ constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
   let s = buildVarSubsts t
   ts <- mapM
     (\case
-      Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
+      Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV (hash var) Star
 
       fullTyping@(Src.Source _ _ (Src.TRComp _ _)) -> do
         apply s <$> typingToType env (KindRequired Star) fullTyping
@@ -144,7 +145,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
   | t == "String"  = return tStr
   | t == "Char"    = return tChar
   | t == "{}" = return tUnit
-  | isLower $ head t = return (TVar $ TV t Star)
+  | isLower $ head t = return (TVar $ TV (hash t) Star)
   | otherwise = do
     pushTypeAccess t
     h <- catchError
@@ -175,7 +176,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
 typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
   | isLower . head $ t = do
     params <- mapM (typingToType env AnyKind) ts
-    return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
+    return $ foldl' TApp (TVar $ TV (hash t) (buildKind (length ts))) params
   | otherwise = do
     pushTypeAccess t
     h <- catchError
@@ -279,7 +280,7 @@ updateAliasVars t args = do
                   return x
 
                 Nothing -> case tv of
-                  TV _ k -> return $ TVar (TV "p" k)
+                  TV _ k -> return $ TVar (TV (-2) k)
 
             TApp l r -> do
               l' <- update l

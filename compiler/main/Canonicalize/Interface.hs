@@ -25,6 +25,7 @@ import qualified Rock
 import qualified Driver.Query                  as Query
 import           Explain.Location (emptyArea)
 import           Error.Warning
+import Data.Hashable (hash)
 
 
 canonicalizeInterfaces :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
@@ -44,18 +45,19 @@ getAllInterfaceMethodNames env =
 canonicalizeInterface :: Env -> Src.Interface -> CanonicalM (Env, Can.Interface)
 canonicalizeInterface env (Src.Source area _ interface) = case interface of
   Src.Interface constraints n vars ms -> do
+    let vars' = hash <$> vars
     let allKnownMethodNames = getAllInterfaceMethodNames env
     when (any (`elem` allKnownMethodNames) (M.keys ms)) $
       throwError $ CompilationError MethodNameAlreadyDefined (Context (envCurrentPath env) area)
 
     ts <- mapM (typingToType env AnyKind) ms
 
-    let ts' = addConstraints n vars <$> ts
-    let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
+    let ts' = addConstraints n vars' <$> ts
+    let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars' <$> M.elems ts
 
     let supers = mapMaybe
           (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
-            (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs v
+            (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs (hash v)
           )
           constraints
 
@@ -77,14 +79,14 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
 
 
-findTypeVar :: [Type] -> String -> Maybe Type
+findTypeVar :: [Type] -> Int -> Maybe Type
 findTypeVar []       _ = Nothing
 findTypeVar (t : ts) n = case t of
   TVar (TV n' _) -> if n == n' then Just t else findTypeVar ts n
   _              -> findTypeVar ts n
 
 
-addConstraints :: Id -> [Id] -> Type -> Qual Type
+addConstraints :: Id -> [Int] -> Type -> Qual Type
 addConstraints n tvs t =
   let tvs'  = (`searchVarInType` t) <$> tvs
       tvs'' = catMaybes tvs'
@@ -150,7 +152,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
                 (Interface tvs _ _) <- lookupInterface env interface'
                 vars <- mapM
                     (\case
-                      (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
+                      (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV (hash v) k
                       (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
                     )
                     (zip args tvs)

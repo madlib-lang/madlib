@@ -24,9 +24,11 @@ import           Control.Monad.Except (throwError, MonadError (catchError))
 import           Error.Error
 import           Error.Context
 import           Canonicalize.EnvUtils (lookupADT)
+import qualified Data.Hashable as Hashable
 
 
-searchTypeInConstructor :: Id -> Type -> Maybe Type
+
+searchTypeInConstructor :: Int -> Type -> Maybe Type
 searchTypeInConstructor id t = case t of
   TVar (TV n _) ->
     if n == id then Just t else Nothing
@@ -127,8 +129,9 @@ buildFieldConditions =
 deriveEqInstance :: FilePath -> InstanceToDerive -> Maybe Instance
 deriveEqInstance astPath toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
-    let constructorTypes = getCtorType <$> adtconstructors
-        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
+    let adtparams' = Hashable.hash <$> adtparams
+        constructorTypes = getCtorType <$> adtconstructors
+        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams') <$> constructorTypes
         instPreds  =
           (\varInType ->
               IsIn "Eq" [varInType] Nothing
@@ -208,8 +211,9 @@ buildConstructorIsForShow ctor = case ctor of
 deriveShowInstance :: FilePath -> InstanceToDerive -> Maybe Instance
 deriveShowInstance astPath toDerive = case toDerive of
   TypeDeclToDerive (Canonical _ ADT { adtparams, adtconstructors, adtType }) ->
-    let constructorTypes = getCtorType <$> adtconstructors
-        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
+    let adtparams' = Hashable.hash <$> adtparams
+        constructorTypes = getCtorType <$> adtconstructors
+        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams') <$> constructorTypes
         instPreds   = (\varInType -> IsIn "Show" [varInType] Nothing) <$> varsInType
         inst =
           ec (
@@ -343,8 +347,9 @@ compareConstructors a b = compare (getConstructorName a) (getConstructorName b)
 deriveComparableADTInstance :: TypeDecl -> Maybe Instance
 deriveComparableADTInstance adt = case adt of
   Canonical _ ADT { adtparams, adtconstructors, adtType } ->
-    let constructorTypes = getCtorType <$> adtconstructors
-        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams) <$> constructorTypes
+    let adtparams' = Hashable.hash <$> adtparams
+        constructorTypes = getCtorType <$> adtconstructors
+        varsInType  = Set.toList $ Set.fromList $ concat $ (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams') <$> constructorTypes
         instPreds   = (\varInType -> IsIn "Comparable" [varInType] Nothing) <$> varsInType
         sortedConstructors = List.sortBy compareConstructors adtconstructors
         branches = sortedConstructors >>= buildConstructorIsForCompare sortedConstructors
