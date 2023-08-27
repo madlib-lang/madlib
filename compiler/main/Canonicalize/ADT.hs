@@ -21,6 +21,7 @@ import           Data.Char
 import Debug.Trace
 import Text.Show.Pretty
 import Explain.Location
+import Data.Hashable (hash)
 
 
 canonicalizeTypeDecls :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
@@ -96,7 +97,7 @@ addTypeToEnv astPath env (Src.Source area _ typeDecl) = case typeDecl of
         verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
         let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
-            vars  = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
+            vars  = (\n -> TVar (TV (hash n) Star)) <$> Src.adtparams adt
             t'    = foldl1 TApp (t : vars)
             env'  = addADT env (Src.adtname adt) t'
             -- env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
@@ -115,7 +116,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
       verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
       let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
-          vars  = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
+          vars  = (\n -> TVar (TV (hash n) Star)) <$> Src.adtparams adt
           t'    = foldl1 TApp (t : vars)
           env'  = addADT env (Src.adtname adt) t'
           env'' = addConstructorInfos env' (Src.adtname adt) (map (\(Src.Source _ _ (Src.Constructor name params)) -> ConstructorInfo name (length params)) (Src.adtconstructors adt))
@@ -124,7 +125,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
   alias@Src.Alias{} -> do
     verifyTypeVars area astPath (Src.aliasname alias) (Src.aliasparams alias)
     let name   = Src.aliasname alias
-    let params = (`TV` Star) <$> Src.aliasparams alias
+    let params = ((`TV` Star) . hash) <$> Src.aliasparams alias
     let typing = Src.aliastype alias
     typingType <- typingToType env (KindRequired Star) typing
     when (isRecordType typingType) $ do
@@ -155,7 +156,7 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
   let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
   let rt = foldl' TApp
                   (TCon (TC name (buildKind $ length params)) astPath)
-                  ((\x -> apply s $ TVar (TV x Star)) <$> params)
+                  ((\x -> apply s $ TVar (TV (hash x) Star)) <$> params)
   ctors' <- mapM
     (\(_, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
       when (name `elem` importedNames) $
@@ -199,15 +200,16 @@ resolveADTConstructorParams
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
 resolveADTConstructorParams env astPath _ params c@(Src.Source area _ (Src.Constructor cname cparams)) = do
+  let params' = hash <$> params
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
   forM_ ts $ \t -> do
     let varNames = map (\(TV n _) -> n) (ftv t)
     forM_ varNames $ \n ->
-      if n `elem` params then
+      if n `elem` params' then
         return ()
       else
-        throwError (CompilationError (UnboundVariable n) (Context astPath area))
+        throwError (CompilationError (UnboundVariable (show n)) (Context astPath area))
 
   let s = foldr (\t s -> buildCtorSubst t <> s) M.empty ts
 

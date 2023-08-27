@@ -375,11 +375,6 @@ export chainManyN = (concurrent, f, wishes) => {
   )
 }
 
-// putLine :: String -> {}
-// export putLine = (a) => #- { console.log(a) } -#
-
-// putLine :: String -> {}
-// export putLine = extern "madlib__stdio__putLine"
 
 parallelN :: Integer -> List (Wish e a) -> Wish e (List a)
 export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {

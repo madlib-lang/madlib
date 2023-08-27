@@ -153,10 +153,10 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\<\|\>                                  { mapToken (\_ -> TokenAlternativeOperator) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\&\&$tail*                              { mapToken (\_ -> TokenDoubleAmpersand) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\|$tail*                              { mapToken (\_ -> TokenDoublePipe) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>             { decideTokenRightChevron }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> \<                   { decideTokenLeftChevron }
-  <0, stringTemplateMadlib> \>\=                                                                        { mapToken (\_ -> TokenRightChevronEq) }
-  <0, stringTemplateMadlib> \<\=                                                                        { mapToken (\_ -> TokenLeftChevronEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> $head*\>       { decideTokenRightChevron }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> $head*\<             { decideTokenLeftChevron }
+  <0, stringTemplateMadlib> $head*\>\=                                                                  { mapToken (\_ -> TokenRightChevronEq) }
+  <0, stringTemplateMadlib> $head*\<\=                                                                  { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                            { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"                 { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \') \'  { mapCharToken }
@@ -186,13 +186,13 @@ toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = True, newSyntax = True } defaultExecOpt
 
 jsxTagOpen :: Regex
-jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{(.|\n|\t)*}))?)*[ \n\t]*>"
+jsxTagOpen = toRegex "\\`[ \t\n]*<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{(.|\n|\t)*}))?)*[ \n\t]*>"
 
 jsxTagSingle :: Regex
-jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{([^>]|\n|\t)*}))?)*[ \n\t]*\\/>"
+jsxTagSingle = toRegex "\\`[ \t\n]*<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+(=(\"(\\\"|[^\"])*\"|{([^>]|\n|\t)*}))?)*[ \n\t]*\\/>"
 
 jsxTagClose :: Regex
-jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+[ \n\t]*>"
+jsxTagClose = toRegex "\\`[ \t\n]*<\\/[a-zA-Z1-9]+[ \n\t]*>"
 
 constraintRegex :: Regex
 constraintRegex = toRegex "\\`([^={]|\n)*(=>)[^}]*"

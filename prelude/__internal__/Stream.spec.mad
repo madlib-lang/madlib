@@ -4,7 +4,6 @@ import type { Wish } from "Wish"
 import Date from "Date"
 import Integer from "Integer"
 import List from "List"
-import Math from "Math"
 import { AssertionError, test } from "Test"
 import { Wish, bad } from "Wish"
 
@@ -12,58 +11,45 @@ import Stream from "./Stream"
 
 
 
-PERCENT_TOLERANCE = 5
-
-type Event e a = Event(Integer, a) | Error(Integer, e) | Done(Integer)
+type Event e a = Event(a) | Error(e) | Done
+alias TimedEvent e a = { event :: Event e a, millisSincePreviousEvent :: Integer }
 
 currentTimestamp = () => Date.getTimestamp(Date.now())
 
 
-computeRelative = (start, end, timestamp) => {
-  range = end - start
-
-  return range == 0 ? 100 : Integer.fromFloat((timestamp - start) / range * 100)
-}
-
-
-absoluteToRelativeTimestamp :: Integer -> Integer -> Event e a -> Event e a
-absoluteToRelativeTimestamp = (start, end, event) => {
-  range = end - start
-
-  return where(event) {
-    Event(ts, a) =>
-      Event(computeRelative(start, end, ts), a)
-
-    Error(ts, e) =>
-      Error(computeRelative(start, end, ts), e)
-
-    Done(ts) =>
-      Done(computeRelative(start, end, ts))
-  }
-}
-
-
-
-collectEvents :: Stream e a -> Wish c (List (Event e a))
+collectEvents :: Stream e a -> Wish c (List (TimedEvent e a))
 collectEvents = (stream) => {
   events = []
 
   return Wish(
     (_, good) => {
-      startTimestamp = currentTimestamp()
+      previousMillis = currentTimestamp()
       Stream.subscribe(
         (e) => {
-          events = List.append(Error(currentTimestamp(), e), events)
-          endTimestamp = currentTimestamp()
-          good(map(absoluteToRelativeTimestamp(startTimestamp, endTimestamp), events))
+          millis = currentTimestamp()
+          events = List.append(
+            { event: Error(e), millisSincePreviousEvent: millis - previousMillis },
+            events,
+          )
+          previousMillis = millis
+          good(events)
         },
         (a) => {
-          events = List.append(Event(currentTimestamp(), a), events)
+          millis = currentTimestamp()
+          events = List.append(
+            { event: Event(a), millisSincePreviousEvent: millis - previousMillis },
+            events,
+          )
+          previousMillis = millis
         },
         () => {
-          events = List.append(Done(currentTimestamp()), events)
-          endTimestamp = currentTimestamp()
-          good(map(absoluteToRelativeTimestamp(startTimestamp, endTimestamp), events))
+          millis = currentTimestamp()
+          events = List.append(
+            { event: Done, millisSincePreviousEvent: millis - previousMillis },
+            events,
+          )
+          previousMillis = millis
+          good(events)
         },
         stream,
       )
@@ -74,27 +60,15 @@ collectEvents = (stream) => {
 }
 
 
-kindOfEq :: (Number a, Comparable a) => a -> a -> Boolean
-kindOfEq = (a, b) => Math.abs(a - b) < PERCENT_TOLERANCE
+compareEvent :: (Eq e, Eq a) => TimedEvent e a -> TimedEvent e a -> Boolean
+compareEvent = (expected, actual) => expected.event
+    == actual.event
+    && expected.millisSincePreviousEvent
+    <= actual.millisSincePreviousEvent
+    + 1
 
 
-compareEvent :: (Eq e, Eq a) => Event e a -> Event e a -> Boolean
-compareEvent = (expected, actual) => where(#[expected, actual]) {
-  #[Event(ts, a), Event(_ts, _a)] =>
-    a == _a && kindOfEq(ts, _ts)
-
-  #[Error(ts, e), Error(_ts, _e)] =>
-    e == _e && kindOfEq(ts, _ts)
-
-  #[Done(ts), Done(_ts)] =>
-    ts == _ts
-
-  _ =>
-    false
-}
-
-
-compareEvents :: (Eq e, Eq a) => List (Event e a) -> List (Event e a) -> Boolean
+compareEvents :: (Eq e, Eq a) => List (TimedEvent e a) -> List (TimedEvent e a) -> Boolean
 compareEvents = (expected, actual) => where(#[expected, actual]) {
   #[[], []] =>
     true
@@ -107,9 +81,9 @@ compareEvents = (expected, actual) => where(#[expected, actual]) {
 }
 
 
-assertStreamEvents :: (Eq e, Eq a) => List (Event e a)
+assertStreamEvents :: (Eq e, Eq a) => List (TimedEvent e a)
   -> Stream e a
-  -> Wish (AssertionError (List (Event e a))) {}
+  -> Wish (AssertionError (List (TimedEvent e a))) {}
 assertStreamEvents = (expected, stream) => pipe(
   collectEvents,
   chain(
@@ -131,14 +105,14 @@ test(
     Stream.retry(3),
     Stream.chainRej(() => pure(25)),
     assertStreamEvents([
-      Event(23, 0),
-      Event(30, 1),
-      Event(56, 0),
-      Event(63, 1),
-      Event(90, 0),
-      Event(96, 1),
-      Event(100, 25),
-      Done(100),
+      { event: Event(0), millisSincePreviousEvent: 30 },
+      { event: Event(1), millisSincePreviousEvent: 20 },
+      { event: Event(0), millisSincePreviousEvent: 30 },
+      { event: Event(1), millisSincePreviousEvent: 20 },
+      { event: Event(0), millisSincePreviousEvent: 30 },
+      { event: Event(1), millisSincePreviousEvent: 20 },
+      { event: Event(25), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
     ]),
   )(10),
 )
@@ -149,7 +123,12 @@ test(
   () => pipe(
     Stream.interval,
     Stream.take(3),
-    assertStreamEvents([Event(33, 0), Event(66, 1), Event(100, 2), Done(100)]),
+    assertStreamEvents([
+      { event: Event(0), millisSincePreviousEvent: 10 },
+      { event: Event(1), millisSincePreviousEvent: 10 },
+      { event: Event(2), millisSincePreviousEvent: 10 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
   )(10),
 )
 
@@ -166,14 +145,14 @@ test(
     Stream.retry(3),
     Stream.chainRej(() => pure(25)),
     assertStreamEvents([
-      Event(21, 0),
-      Event(25, 1),
-      Event(54, 0),
-      Event(58, 1),
-      Event(87, 0),
-      Event(92, 1),
-      Event(100, 25),
-      Done(100)
+      { event: Event(0), millisSincePreviousEvent: 25 },
+      { event: Event(1), millisSincePreviousEvent: 5 },
+      { event: Event(0), millisSincePreviousEvent: 25 },
+      { event: Event(1), millisSincePreviousEvent: 5 },
+      { event: Event(0), millisSincePreviousEvent: 25 },
+      { event: Event(1), millisSincePreviousEvent: 5 },
+      { event: Event(25), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
     ]),
   )(20),
 )
@@ -187,16 +166,24 @@ test(
     Stream.concatMap(
       (i) => i == 30 ? Stream.bad("Not that fast buddy!") : Stream.take(2, Stream.interval(400)),
     ),
-    assertStreamEvents([Error(100, "Error")]),
+    assertStreamEvents([{ event: Error("Error"), millisSincePreviousEvent: 50 }]),
   )(50),
 )
 
 
-test("concatMap", () => pipe(
-  Stream.range(0, 2),
-  Stream.concatMap((i) => (of("OK" ++ show(i)) :: Stream Integer String)),
-  assertStreamEvents([Event(100, "OK0"), Event(100, "OK1"), Event(100, "OK2"), Done(100)]),
-)(1))
+test(
+  "concatMap",
+  () => pipe(
+    Stream.range(0, 2),
+    Stream.concatMap((i) => (of("OK" ++ show(i)) :: Stream Integer String)),
+    assertStreamEvents([
+      { event: Event("OK0"), millisSincePreviousEvent: 0 },
+      { event: Event("OK1"), millisSincePreviousEvent: 0 },
+      { event: Event("OK2"), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(1),
+)
 
 test(
   "chain - source rejected",
@@ -204,21 +191,40 @@ test(
     Stream.interval,
     chain(() => Stream.bad("Error")),
     chain(() => Stream.take(2, Stream.interval(400))),
-    assertStreamEvents([Error(100, "Error")]),
+    assertStreamEvents([{ event: Error("Error"), millisSincePreviousEvent: 50 }]),
   )(50),
 )
 
-test("chain", () => pipe(
-  Stream.range(0, 2),
-  chain((i) => of("OK" ++ show(i))),
-  assertStreamEvents([Event(100, "OK0"), Event(100, "OK1"), Event(100, "OK2"), Done(100)]),
-)(1))
 
-test("mergeMap", () => pipe(
-  Stream.range(0, 2),
-  Stream.mergeMap((i) => of("OK" ++ show(i))),
-  assertStreamEvents([Event(100, "OK0"), Event(100, "OK1"), Event(100, "OK2"), Done(100)]),
-)(1))
+test(
+  "chain",
+  () => pipe(
+    Stream.range(0, 2),
+    chain((i) => of("OK" ++ show(i))),
+    assertStreamEvents([
+      { event: Event("OK0"), millisSincePreviousEvent: 0 },
+      { event: Event("OK1"), millisSincePreviousEvent: 0 },
+      { event: Event("OK2"), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(1),
+)
+
+
+test(
+  "mergeMap",
+  () => pipe(
+    Stream.range(0, 2),
+    Stream.mergeMap((i) => of("OK" ++ show(i))),
+    assertStreamEvents([
+      { event: Event("OK0"), millisSincePreviousEvent: 0 },
+      { event: Event("OK1"), millisSincePreviousEvent: 0 },
+      { event: Event("OK2"), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(1),
+)
+
 
 test(
   "filter",
@@ -227,49 +233,152 @@ test(
     Stream.filter((x) => x % 7 == 0),
     Stream.take(10),
     Stream.toList,
-    assertStreamEvents([Event(100, [0, 7, 14, 21, 28, 35, 42, 49, 56, 63]), Done(100)]),
+    assertStreamEvents([
+      { event: Event([0, 7, 14, 21, 28, 35, 42, 49, 56, 63]), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
   )(1),
 )
 
-test("merge", () => pipe(
-  Stream.merge,
-  assertStreamEvents([Event(100, 3), Event(100, 5), Done(100)])
-)([of(3), of(5)]))
+
+test(
+  "filter - fail",
+  () => pipe(
+    Stream.interval,
+    Stream.filter((x) => x % 2 == 0),
+    Stream.take(10),
+    chain(() => Stream.bad("NOPE")),
+    assertStreamEvents([
+      { event: Error("NOPE"), millisSincePreviousEvent: 5 },
+    ]),
+  )(5),
+)
 
 
-test("merge - error", () => pipe(
-  Stream.merge,
-  assertStreamEvents([Event(100, 3), Error(100, "NOOO")])
-)([of(3), Stream.bad("NOOO"), of(5)]))
+test(
+  "merge",
+  () => pipe(
+    Stream.merge,
+    assertStreamEvents([
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Event(5), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )([of(3), of(5)]),
+)
 
 
-test("merge - canceled", () => pipe(
-  Stream.merge,
-  chain(() => Stream.bad("NOOO")),
-  assertStreamEvents([Error(100, "NOOO")])
-)([of(3), Stream.bad("NOOO"), of(5)]))
+test(
+  "merge - error",
+  () => pipe(
+    Stream.merge,
+    assertStreamEvents([
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Error("NOOO"), millisSincePreviousEvent: 0 },
+    ]),
+  )([of(3), Stream.bad("NOOO"), of(5)]),
+)
 
 
-test("concat", () => pipe(
-  Stream.concat,
-  assertStreamEvents([Event(100, 3), Event(100, 5), Done(100)])
-)(([of(3), of(5)] :: List (Stream String Integer))))
+test(
+  "merge - canceled",
+  () => pipe(
+    Stream.merge,
+    chain(() => Stream.bad("NOOO")),
+    assertStreamEvents([{ event: Error("NOOO"), millisSincePreviousEvent: 0 }]),
+  )([of(3), Stream.bad("NOOO"), of(5)]),
+)
 
 
-test("concat - error", () => pipe(
-  Stream.concat,
-  assertStreamEvents([Event(100, 3), Error(100, "NOOO")])
-)(([of(3), Stream.bad("NOOO"), of(5)] :: List (Stream String Integer))))
+test(
+  "concat",
+  () => pipe(
+    Stream.concat,
+    assertStreamEvents([
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Event(5), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(([of(3), of(5)])),
+)
 
 
-test("concat - canceled", () => pipe(
-  Stream.concat,
-  chain(() => Stream.bad("NOOO")),
-  assertStreamEvents([Error(100, "NOOO")])
-)(([of(3), Stream.bad("NOOO"), of(5)] :: List (Stream String Integer))))
+test(
+  "concat - error",
+  () => pipe(
+    Stream.concat,
+    assertStreamEvents([
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Error("NOOO"), millisSincePreviousEvent: 0 },
+    ]),
+  )(([of(3), Stream.bad("NOOO"), of(5)])),
+)
 
 
-test("mergeN", () => pipe(
-  Stream.mergeN(2),
-  assertStreamEvents([Event(50, 0), Event(100, 0), Done(100)])
-)([Stream.take(1, Stream.interval(20)), Stream.take(1, Stream.interval(10))]))
+test(
+  "concat - canceled",
+  () => pipe(
+    Stream.concat,
+    chain(() => Stream.bad("NOOO")),
+    assertStreamEvents([{ event: Error("NOOO"), millisSincePreviousEvent: 0 }]),
+  )(([of(3), Stream.bad("NOOO"), of(5)])),
+)
+
+
+test(
+  "mergeN",
+  () => pipe(
+    Stream.mergeN(2),
+    assertStreamEvents([
+      { event: Event(0), millisSincePreviousEvent: 10 },
+      { event: Event(0), millisSincePreviousEvent: 0 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )([Stream.take(1, Stream.interval(20)), Stream.take(1, Stream.interval(10))]),
+)
+
+
+test(
+  "mergeN - sequential",
+  () => pipe(
+    Stream.mergeN(1),
+    assertStreamEvents([
+      { event: Event(0), millisSincePreviousEvent: 20 },
+      { event: Event(0), millisSincePreviousEvent: 10 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )([Stream.take(1, Stream.interval(20)), Stream.take(1, Stream.interval(10))]),
+)
+
+
+test(
+  "mergeN - fail",
+  () => pipe(
+    Stream.mergeN(2),
+    chain(() => Stream.bad("ERROR")),
+    assertStreamEvents([{ event: Error("ERROR"), millisSincePreviousEvent: 0 }]),
+  )([Stream.interval(20), Stream.interval(10)]),
+)
+
+
+test("ap", () => pipe(
+  Stream.interval,
+  Stream.take(5),
+  ap(
+    pipe(
+      Stream.interval,
+      map((i, x) => i + x),
+      Stream.take(3),
+    )(15)
+  ),
+  assertStreamEvents([
+    { event: Event(0), millisSincePreviousEvent: 15 },
+    { event: Event(1), millisSincePreviousEvent: 5 },
+    { event: Event(2), millisSincePreviousEvent: 5 },
+    { event: Event(3), millisSincePreviousEvent: 0 },
+    { event: Event(4), millisSincePreviousEvent: 10 },
+    { event: Event(5), millisSincePreviousEvent: 0 },
+    { event: Event(6), millisSincePreviousEvent: 5 },
+    { event: Done, millisSincePreviousEvent: 0 },
+  ]),
+)(10))

@@ -9,28 +9,28 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 113 9 1) (Loc 141 11 2))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 113 9 1) (Loc 141 11 2))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 120 9 8) (Loc 141 11 2))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star))
+                              ([] :=> TVar (TV (-1) Star))
                               (Area (Loc 140 11 1) (Loc 140 11 1))
                               "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 130 10 3) (Loc 139 10 12))
                                (App
                                   (Typed
-                                     ([] :=> TVar (TV "-" Star))
+                                     ([] :=> TVar (TV (-1) Star))
                                      (Area (Loc 130 10 3) (Loc 134 10 7))
                                      (Var "read" False))
                                   (Typed
@@ -70,7 +70,7 @@
             (Interface
                "Read"
                []
-               [ TV "a" Star ]
+               [ TV 590647783936702427 Star ]
                (fromList
                   [ ( "read"
                     , Forall
@@ -147,10 +147,10 @@
 , []
 , [ CompilationError
       (AmbiguousType
-         ( TV "c2" Star
+         ( TV 2 Star
          , [ IsIn
                "Read"
-               [ TVar (TV "c2" Star) ]
+               [ TVar (TV 2 Star) ]
                (Just (Area (Loc 130 10 3) (Loc 134 10 7)))
            ]
          ))

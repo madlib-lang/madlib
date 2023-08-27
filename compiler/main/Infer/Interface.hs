@@ -48,7 +48,7 @@ addInterface env area id tvs ps = case M.lookup id (envInterfaces env) of
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
 verifyInstancePredicates env p' p@(IsIn cls ts _) = do
   (Interface tvs _ _) <- lookupInterface env cls
-  let tvs' = (\(TV n k) -> TV ("_" <> n) k) <$> tvs
+  let tvs' = (\(TV n k) -> TV (n + 100000) k) <$> tvs
   catchError
     (unify (TVar <$> tvs') ts >> return True)
     (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)

@@ -19,7 +19,7 @@ newTVar :: Kind -> Infer Type
 newTVar k = do
   s <- get
   put s { count = count s + 1 }
-  return $ TVar $ TV (letters !! (count s `mod` 26) : show (count s)) k
+  return $ TVar $ TV (count s) k
 
 
 instantiate :: Scheme -> Infer (Qual Type)

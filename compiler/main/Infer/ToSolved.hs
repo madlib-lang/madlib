@@ -8,7 +8,7 @@ import qualified Data.Map                      as M
 
 
 tSubst :: Type
-tSubst = TVar (TV "-" Star)
+tSubst = TVar (TV (-1) Star)
 
 toSolved :: Can.Exp -> Slv.Exp
 toSolved (Can.Canonical area exp) = case exp of

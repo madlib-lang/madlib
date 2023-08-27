@@ -270,7 +270,7 @@ postProcessBody options env s expType es = do
 
                         _ ->
                           throwError $ CompilationError
-                            (AmbiguousType (TV "-" Star, apply subst unsolvedPs''))
+                            (AmbiguousType (TV (-1) Star, apply subst unsolvedPs''))
                             (Context (envCurrentPath env) area)
                       else
                         return []

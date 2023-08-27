@@ -9,39 +9,41 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 0 1 1) (Loc 31 1 32))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 0 1 1) (Loc 31 1 32))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 7 1 8) (Loc 31 1 32))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 30 1 31) (Loc 30 1 31)) "_")
+                              ([] :=> TVar (TV (-1) Star))
+                              (Area (Loc 30 1 31) (Loc 30 1 31))
+                              "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 15 1 16) (Loc 29 1 30))
                                (Record
                                   [ Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 17 1 18) (Loc 21 1 22))
                                       (FieldSpread
                                          (Typed
-                                            ([] :=> TVar (TV "a" Star))
+                                            ([] :=> TVar (TV 0 Star))
                                             (Area (Loc 20 1 21) (Loc 21 1 22))
                                             (LNum "3")))
                                   , Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 23 1 24) (Loc 27 1 28))
                                       (Field
                                          ( "x"
                                          , Typed
-                                             ([] :=> TVar (TV "a" Star))
+                                             ([] :=> TVar (TV 0 Star))
                                              (Area (Loc 26 1 27) (Loc 27 1 28))
                                              (LNum "1")
                                          ))
@@ -79,11 +81,10 @@
 , []
 , [ CompilationError
       (AmbiguousType
-         ( TV "-" Star
+         ( TV (-1) Star
          , [ IsIn
                "Number"
-               [ TRecord (fromList []) (Just (TVar (TV "e4" Star))) (fromList [])
-               ]
+               [ TRecord (fromList []) (Just (TVar (TV 4 Star))) (fromList []) ]
                Nothing
            ]
          ))

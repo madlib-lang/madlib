@@ -492,7 +492,7 @@ retrieveKind t = case t of
 
 
 failedQt :: Qual Type
-failedQt = [] :=> TVar (TV "-" Star)
+failedQt = [] :=> TVar (TV (-1) Star)
 
 
 sanitizeName :: String -> String

@@ -9,22 +9,22 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 0 1 1) (Loc 71 8 2))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 0 1 1) (Loc 71 8 2))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 7 1 8) (Loc 71 8 2))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 70 8 1) (Loc 70 8 1)) "_")
+                              ([] :=> TVar (TV (-1) Star)) (Area (Loc 70 8 1) (Loc 70 8 1)) "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 17 2 3) (Loc 69 7 4))
                                (If
                                   (Typed

@@ -9,42 +9,44 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 0 1 1) (Loc 36 1 37))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 0 1 1) (Loc 36 1 37))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 7 1 8) (Loc 36 1 37))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 35 1 36) (Loc 35 1 36)) "_")
+                              ([] :=> TVar (TV (-1) Star))
+                              (Area (Loc 35 1 36) (Loc 35 1 36))
+                              "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 15 1 16) (Loc 34 1 35))
                                (ListConstructor
                                   [ Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 17 1 18) (Loc 18 1 19))
                                       (ListItem
                                          (Typed
-                                            ([] :=> TVar (TV "a" Star))
+                                            ([] :=> TVar (TV 0 Star))
                                             (Area (Loc 17 1 18) (Loc 18 1 19))
                                             (LNum "1")))
                                   , Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 20 1 21) (Loc 33 1 34))
                                       (ListSpread
                                          (Typed
-                                            ([] :=> TVar (TV "-" Star))
+                                            ([] :=> TVar (TV (-1) Star))
                                             (Area (Loc 23 1 24) (Loc 33 1 34))
                                             (ListConstructor
                                                [ Typed
-                                                   ([] :=> TVar (TV "-" Star))
+                                                   ([] :=> TVar (TV (-1) Star))
                                                    (Area (Loc 24 1 25) (Loc 27 1 28))
                                                    (ListItem
                                                       (Typed
@@ -52,7 +54,7 @@
                                                          (Area (Loc 24 1 25) (Loc 27 1 28))
                                                          (LStr "\"1\"")))
                                                , Typed
-                                                   ([] :=> TVar (TV "-" Star))
+                                                   ([] :=> TVar (TV (-1) Star))
                                                    (Area (Loc 29 1 30) (Loc 32 1 33))
                                                    (ListItem
                                                       (Typed

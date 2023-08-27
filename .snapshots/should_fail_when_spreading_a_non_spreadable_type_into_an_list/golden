@@ -9,38 +9,40 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 0 1 1) (Loc 26 1 27))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 0 1 1) (Loc 26 1 27))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 7 1 8) (Loc 26 1 27))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 25 1 26) (Loc 25 1 26)) "_")
+                              ([] :=> TVar (TV (-1) Star))
+                              (Area (Loc 25 1 26) (Loc 25 1 26))
+                              "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 15 1 16) (Loc 24 1 25))
                                (ListConstructor
                                   [ Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 16 1 17) (Loc 17 1 18))
                                       (ListItem
                                          (Typed
-                                            ([] :=> TVar (TV "a" Star))
+                                            ([] :=> TVar (TV 0 Star))
                                             (Area (Loc 16 1 17) (Loc 17 1 18))
                                             (LNum "1")))
                                   , Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 19 1 20) (Loc 23 1 24))
                                       (ListSpread
                                          (Typed
-                                            ([] :=> TVar (TV "a" Star))
+                                            ([] :=> TVar (TV 0 Star))
                                             (Area (Loc 22 1 23) (Loc 23 1 24))
                                             (LNum "3")))
                                   ])
@@ -79,7 +81,7 @@
       (NoInstanceFound
          "Number"
          [ TApp
-             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "f5" Star))
+             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 5 Star))
          ])
       Context
         { ctxAstPath = "Module.mad"

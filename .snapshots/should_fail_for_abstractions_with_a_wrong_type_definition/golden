@@ -9,47 +9,47 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 0 1 1) (Loc 58 2 24))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 35 2 1) (Loc 58 2 24))
                   (Assignment
                      "fn"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 40 2 6) (Loc 58 2 24))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 41 2 7) (Loc 42 2 8)) "a")
+                              ([] :=> TVar (TV (-1) Star)) (Area (Loc 41 2 7) (Loc 42 2 8)) "a")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 40 2 6) (Loc 58 2 24))
                                (Abs
                                   (Typed
-                                     ([] :=> TVar (TV "-" Star))
+                                     ([] :=> TVar (TV (-1) Star))
                                      (Area (Loc 44 2 10) (Loc 45 2 11))
                                      "b")
                                   [ Typed
-                                      ([] :=> TVar (TV "-" Star))
+                                      ([] :=> TVar (TV (-1) Star))
                                       (Area (Loc 51 2 17) (Loc 57 2 23))
                                       (App
                                          (Typed
-                                            ([] :=> TVar (TV "-" Star))
+                                            ([] :=> TVar (TV (-1) Star))
                                             (Area (Loc 51 2 17) (Loc 57 2 23))
                                             (App
                                                (Typed
-                                                  ([] :=> TVar (TV "-" Star))
+                                                  ([] :=> TVar (TV (-1) Star))
                                                   (Area (Loc 53 2 19) (Loc 55 2 21))
                                                   (Var "==" False))
                                                (Typed
-                                                  ([] :=> TVar (TV "-" Star))
+                                                  ([] :=> TVar (TV (-1) Star))
                                                   (Area (Loc 51 2 17) (Loc 52 2 18))
                                                   (Var "a" False))
                                                False))
                                          (Typed
-                                            ([] :=> TVar (TV "-" Star))
+                                            ([] :=> TVar (TV (-1) Star))
                                             (Area (Loc 56 2 22) (Loc 57 2 23))
                                             (Var "b" False))
                                          True)
@@ -78,39 +78,41 @@
                              (TCon (TC "Integer" Star) "prelude"))
                           (TCon (TC "Boolean" Star) "prelude")))))
         , Typed
-            ([] :=> TVar (TV "-" Star))
+            ([] :=> TVar (TV (-1) Star))
             (Area (Loc 59 3 1) (Loc 84 3 26))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV "-" Star))
+                  ([] :=> TVar (TV (-1) Star))
                   (Area (Loc 59 3 1) (Loc 84 3 26))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV "-" Star))
+                        ([] :=> TVar (TV (-1) Star))
                         (Area (Loc 66 3 8) (Loc 84 3 26))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV "-" Star)) (Area (Loc 83 3 25) (Loc 83 3 25)) "_")
+                              ([] :=> TVar (TV (-1) Star))
+                              (Area (Loc 83 3 25) (Loc 83 3 25))
+                              "_")
                            [ Typed
-                               ([] :=> TVar (TV "-" Star))
+                               ([] :=> TVar (TV (-1) Star))
                                (Area (Loc 74 3 16) (Loc 81 3 23))
                                (App
                                   (Typed
-                                     ([] :=> TVar (TV "-" Star))
+                                     ([] :=> TVar (TV (-1) Star))
                                      (Area (Loc 74 3 16) (Loc 82 3 24))
                                      (App
                                         (Typed
-                                           ([] :=> TVar (TV "-" Star))
+                                           ([] :=> TVar (TV (-1) Star))
                                            (Area (Loc 74 3 16) (Loc 76 3 18))
                                            (Var "fn" False))
                                         (Typed
-                                           ([] :=> TVar (TV "a" Star))
+                                           ([] :=> TVar (TV 0 Star))
                                            (Area (Loc 77 3 19) (Loc 78 3 20))
                                            (LNum "3"))
                                         False))
                                   (Typed
-                                     ([] :=> TVar (TV "a" Star))
+                                     ([] :=> TVar (TV 0 Star))
                                      (Area (Loc 80 3 22) (Loc 81 3 23))
                                      (LNum "4"))
                                   True)

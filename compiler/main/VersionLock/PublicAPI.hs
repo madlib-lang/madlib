@@ -15,6 +15,7 @@ import qualified Data.List                     as List
 import           Crypto.Hash.MD5               ( hashlazy )
 import           Data.ByteString.Builder
 import           Data.Version
+import           Explain.Format
 
 
 import           MadlibDotJson.MadlibDotJson
@@ -73,7 +74,7 @@ computeAPIChange previousAPI currentAPI
 
 addInterface :: Slv.Interface -> PublicAPI -> PublicAPI
 addInterface (Slv.Untyped _ (Slv.Interface name supers vars _ methodTypings)) api =
-  let key     = name <> " " <> unwords (getTVarId <$> vars)
+  let key     = name <> " " <> unwords (renderTVar . getTVarId <$> vars)
       key'   =
         if not (null supers) then
           lst (predsToStr False mempty supers) <> " => " <> key
