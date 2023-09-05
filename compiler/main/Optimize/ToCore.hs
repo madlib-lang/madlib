@@ -14,7 +14,6 @@ import qualified AST.Solved                    as Slv
 import qualified AST.Core                      as Core
 import           Infer.Type
 import           Explain.Location
-import qualified Utils.Types                   as Types
 import           Text.Show.Pretty
 import qualified Rock
 import qualified Data.Maybe as Maybe

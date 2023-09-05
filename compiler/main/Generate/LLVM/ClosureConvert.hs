@@ -20,9 +20,9 @@ import Data.Maybe
 import Debug.Trace
 import Text.Show.Pretty
 import Explain.Location
-import qualified Utils.Types as Types
 import qualified Utils.Hash as Hash
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
+import Utils.Hash (addHashToName)
 
 
 data State
@@ -809,11 +809,6 @@ defaultGlobals =
   []
 
 
-addHashToName :: String -> String -> String
-addHashToName hash name =
-  "__" ++ hash ++ "__" ++ name
-
-
 instance Convertable AST AST where
   convert _ ast@AST{ apath = Nothing } = return ast
   convert env ast@AST{ apath = Just path } = do
@@ -821,7 +816,7 @@ instance Convertable AST AST where
         globalConstructors = getConstructorNames $ atypedecls ast
         globalsFromImports = getGlobalsFromImports $ aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
-        env' = env { freeVars = globalVars ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.hash (BLChar8.pack path) }
+        env' = env { freeVars = globalVars ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.generateHashFromPath path }
 
     imports    <- mapM (convert env') $ aimports ast
     exps       <- mapM (convert env') $ aexps ast

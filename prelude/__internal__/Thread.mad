@@ -50,12 +50,14 @@ threadFFI = extern "madlib__process__thread"
 
 
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
-export create = (handler) => Wish((bad, good) => {
-  threadFFI(handler, bad, good)
+export create = (handler) => Wish(
+  (bad, good) => {
+    threadFFI(handler, bad, good)
 
-  // TODO: implement cancellation function
-  return () => {}
-})
+    // TODO: implement cancellation function
+    return () => {}
+  },
+)
 
 
 #elseif js
@@ -69,35 +71,37 @@ export createLock = () => Lock
 
 
 writeLock :: Lock -> {}
-export writeLock = () => ({})
+export writeLock = () => {}
 
 
 writeUnlock :: Lock -> {}
-export writeUnlock = () => ({})
+export writeUnlock = () => {}
 
 
 readLock :: Lock -> {}
-export readLock = () => ({})
+export readLock = () => {}
 
 
 readUnlock :: Lock -> {}
-export readUnlock = () => ({})
+export readUnlock = () => {}
 
 
 mutexLock :: Mutex -> {}
-export mutexLock = () => ({})
+export mutexLock = () => {}
 
 
 mutexUnlock :: Mutex -> {}
-export mutexUnlock = () => ({})
+export mutexUnlock = () => {}
 
 
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
-export create = (handler) => Wish((bad, good) => {
-  handler(bad, good)
+export create = (handler) => Wish(
+  (bad, good) => {
+    handler(bad, good)
 
-  // TODO: implement cancellation function
-  return () => {}
-})
+    // TODO: implement cancellation function
+    return () => {}
+  },
+)
 
 #endif

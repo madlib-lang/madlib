@@ -25,7 +25,8 @@ clearTimeout = (id) => #- clearTimeout(id) -#
 setTimeout :: ({} -> {}) -> Integer -> TimerId
 setTimeout = extern "__setTimeout__"
 
-setImmediate = (cb) => setTimeout(cb, 0)
+setImmediate :: ({} -> {}) -> {}
+setImmediate = (cb) => { setTimeout(cb, 0) }
 
 clearTimeout :: TimerId -> {}
 clearTimeout = extern "__clearTimeout__"
@@ -121,13 +122,16 @@ export toList = (source) => Stream(
             (t, d) => {
               if (t == 0) do {
                 talkback = d
-                sink(0, where(d) {
-                  Talkback(cb) =>
-                    Talkback(cb)
+                sink(
+                  0,
+                  where(d) {
+                    Talkback(cb) =>
+                      Talkback(cb)
 
-                  _ =>
-                    NoMessage
-                })
+                    _ =>
+                      NoMessage
+                  },
+                )
               }
               if (t == 1) do {
                 where(d) {
@@ -183,9 +187,7 @@ export forEach = (operation, source) => {
             }
           }
 
-          if (t == 0 || t == 1) do {
-            runTalkback(talkback, 1)
-          }
+          if (t == 0 || t == 1) do { runTalkback(talkback, 1) }
         },
       )
   }
@@ -335,11 +337,6 @@ instance Applicative (Stream e) {
 
         talkback = (t) => {
           runTalkback(valueTalkback, t)
-
-          // talkback(1) probably only needs to happen for the function stream
-          // whenever the previous function has been received, and not when the
-          // talkback(1) comes from the returned stream ( which should then
-          // just pull a value ).
           runTalkback(functionTalkback, t)
         }
 
@@ -444,11 +441,7 @@ instance Monad (Stream e) {
                             (_t, _d) => {
                               if (_t == 0) do {
                                 runningCount = runningCount + 1
-                                cancelFunctions = Dictionary.insert(
-                                  index,
-                                  _d,
-                                  cancelFunctions,
-                                )
+                                cancelFunctions = Dictionary.insert(index, _d, cancelFunctions)
                                 currentIndex = currentIndex + 1
                               }
                               if (_t == 1 && !failed) { sink(_t, _d) }
@@ -561,9 +554,7 @@ export subscribe = (error, next, complete, source) => {
             }
           }
           // pull
-          if (t == 0 || t == 1) do {
-            runTalkback(talkback, 1)
-          }
+          if (t == 0 || t == 1) do { runTalkback(talkback, 1) }
           if (t == 2) {
             where(d) {
               Error(e) =>
@@ -593,25 +584,21 @@ fromWish :: Wish e a -> Stream e a
 export fromWish = (wish) => Stream(
   (start, sink) => {
     if (start == 0) do {
-      ended = false
-
       onFulfilled = (value) => {
-        if (!ended) do {
-          sink(1, Data(value))
-          sink(2, NoMessage)
-        }
+        sink(1, Data(value))
+        sink(2, NoMessage)
       }
 
       onRejected = (err) => {
-        if (!ended) { sink(2, Error(err)) }
+        sink(2, Error(err))
       }
 
-      where(wish) {
+      cancel = where(wish) {
         Wish(f) =>
           f(onRejected, onFulfilled)
       }
 
-      sink(0, Talkback((t) => { if (t == 2) do { ended = true } }))
+      sink(0, Talkback((t) => { if (t == 2) { cancel() } }))
     }
   },
 )
@@ -641,9 +628,7 @@ export concatMap = (project, source) => Stream(
         if (t == 2) do {
           runTalkback(innerTalkback, 2)
           runTalkback(sourceTalkback, 2)
-        } else {
-          runTalkback(sourceTalkback, t)
-        }
+        } else { runTalkback(sourceTalkback, t) }
       }
 
       innerSink :: Integer -> Message a b -> {}
@@ -671,9 +656,10 @@ export concatMap = (project, source) => Stream(
                 [] =>
                   {}
 
-                [NoMessage, ..._] => do {
-                  sink(2, NoMessage)
-                }
+                [NoMessage, ..._] =>
+                  do {
+                    sink(2, NoMessage)
+                  }
 
                 [Data(value), ...next] =>
                   do {
@@ -698,55 +684,58 @@ export concatMap = (project, source) => Stream(
 
       where(source) {
         Stream(src) =>
-          src(0, (t, d) => {
-            if (t == 0) do {
-              sourceTalkback = d
-              sink(0, Talkback(talkback))
-            }
-            if (t == 1 && !sourceCompleted) do {
-              where(d) {
-                Data(value) =>
-                  where(innerTalkback) {
-                    NoMessage =>
-                      where(project(value)) {
-                        Stream(_src) =>
-                          _src(0, innerSink)
-                      }
-
-                    _ =>
-                      do {
-                        queue = List.append(d, queue)
-                      }
-                  }
-
-                _ =>
-                  {}
+          src(
+            0,
+            (t, d) => {
+              if (t == 0) do {
+                sourceTalkback = d
+                sink(0, Talkback(talkback))
               }
-              runTalkback(sourceTalkback, 1)
-            }
-            if (t == 2) {
-              where(d) {
-                Error(e) =>
-                  do {
-                    sink(2, Error(e))
-                  }
+              if (t == 1 && !sourceCompleted) do {
+                where(d) {
+                  Data(value) =>
+                    where(innerTalkback) {
+                      NoMessage =>
+                        where(project(value)) {
+                          Stream(_src) =>
+                            _src(0, innerSink)
+                        }
 
-                _ =>
-                  where(innerTalkback) {
-                    NoMessage =>
-                      sink(2, NoMessage)
+                      _ =>
+                        do {
+                          queue = List.append(d, queue)
+                        }
+                    }
 
-                    _ =>
-                      do {
-                        queue = List.append(d, queue)
-                      }
-                  }
+                  _ =>
+                    {}
+                }
+                runTalkback(sourceTalkback, 1)
               }
-            }
-          })
+              if (t == 2) {
+                where(d) {
+                  Error(e) =>
+                    do {
+                      sink(2, Error(e))
+                    }
+
+                  _ =>
+                    where(innerTalkback) {
+                      NoMessage =>
+                        sink(2, NoMessage)
+
+                      _ =>
+                        do {
+                          queue = List.append(d, queue)
+                        }
+                    }
+                }
+              }
+            },
+          )
       }
     }
-  }
+  },
 )
 
 
@@ -838,181 +827,183 @@ export retry = (count, source) => Stream(
 
 
 merge :: List (Stream e a) -> Stream e a
-export merge = (streams) => Stream((start, sink) => {
-  if (start == 0) do {
-    talkbacks = {{}}
-    streamCount = List.length(streams)
-    streamsEnded = 0
-    failed = false
-    first = true
+export merge = (streams) => Stream(
+  (start, sink) => {
+    if (start == 0) do {
+      talkbacks = {{}}
+      streamCount = List.length(streams)
+      streamsEnded = 0
+      failed = false
+      first = true
 
-    talkback = (t) => {
-      List.forEach((_talkback) => {
-        runTalkback(_talkback, t)
-      }, Dictionary.values(talkbacks))
-    }
-
-    List.mapWithIndex((s, i) => {
-      where(s) {
-        Stream(source) =>
-          source(0, (t, d) => {
-            if (!failed) do {
-              if (t == 0) do {
-                talkbacks = Dictionary.insert(i, d, talkbacks)
-                if (first) do {
-                  first = false
-                  sink(0, Talkback(talkback))
-                }
-              }
-              if (t == 1) {
-                sink(1, d)
-              }
-              if (t == 2) do {
-                streamsEnded = streamsEnded + 1
-                talkbacks = Dictionary.remove(i, talkbacks)
-                where(d) {
-                  Error(e) =>
-                    do {
-                      failed = true
-                      talkback(2)
-                      sink(2, d)
-                    }
-  
-                  _ =>
-                    if (Dictionary.isEmpty(talkbacks) && streamsEnded == streamCount) {
-                      sink(2, NoMessage)
-                    }
-                }
-              }
-            }
-          })
+      talkback = (t) => {
+        List.forEach((_talkback) => { runTalkback(_talkback, t) }, Dictionary.values(talkbacks))
       }
-    }, streams)
-  }
-})
+
+      List.mapWithIndex(
+        (s, i) => {
+          where(s) {
+            Stream(source) =>
+              source(
+                0,
+                (t, d) => {
+                  if (!failed) do {
+                    if (t == 0) do {
+                      talkbacks = Dictionary.insert(i, d, talkbacks)
+                      if (first) do {
+                        first = false
+                        sink(0, Talkback(talkback))
+                      }
+                    }
+                    if (t == 1) { sink(1, d) }
+                    if (t == 2) do {
+                      streamsEnded = streamsEnded + 1
+                      talkbacks = Dictionary.remove(i, talkbacks)
+                      where(d) {
+                        Error(e) =>
+                          do {
+                            failed = true
+                            talkback(2)
+                            sink(2, d)
+                          }
+
+                        _ =>
+                          if (Dictionary.isEmpty(talkbacks) && streamsEnded == streamCount) {
+                            sink(2, NoMessage)
+                          }
+                      }
+                    }
+                  }
+                },
+              )
+          }
+        },
+        streams,
+      )
+    }
+  },
+)
 
 
 mergeN :: Integer -> List (Stream e a) -> Stream e a
-export mergeN = (concurrent, streams) => Stream((start, sink) => {
-  if (start == 0) do {
-    streamIndex = 0
-    allStreams = streams
-    talkbacks = {{}}
-    streamCount = List.length(streams)
-    streamsEnded = 0
-    failed = false
-    first = true
+export mergeN = (concurrent, streams) => Stream(
+  (start, sink) => {
+    if (start == 0) do {
+      streamIndex = 0
+      allStreams = streams
+      talkbacks = {{}}
+      streamCount = List.length(streams)
+      streamsEnded = 0
+      failed = false
+      first = true
 
-    talkback = (t) => {
-      List.forEach((_talkback) => {
-        runTalkback(_talkback, t)
-      }, Dictionary.values(talkbacks))
-    }
+      talkback = (t) => {
+        List.forEach((_talkback) => { runTalkback(_talkback, t) }, Dictionary.values(talkbacks))
+      }
 
-    runStreams :: {} -> {}
-    runStreams = () => where(allStreams) {
-      [] =>
-        {}
+      runStreams :: {} -> {}
+      runStreams = () => where(allStreams) {
+        [] =>
+          {}
 
-      [Stream(source), ...next] =>
-        do {
-          if (Dictionary.length(talkbacks) < concurrent) do {
-            allStreams = next
-            currentIndex = streamIndex
-            source(0, (t, d) => {
-              if (!failed) do {
-                if (t == 0) do {
-                  talkbacks = Dictionary.insert(currentIndex, d, talkbacks)
-                  if (first) do {
-                    first = false
-                    sink(0, Talkback(talkback))
-                  }
-                }
-                if (t == 1) {
-                  sink(1, d)
-                }
-                if (t == 2) do {
-                  streamsEnded = streamsEnded + 1
-                  talkbacks = Dictionary.remove(currentIndex, talkbacks)
-                  where(d) {
-                    Error(e) =>
-                      do {
-                        failed = true
-                        talkback(2)
-                        sink(2, d)
+        [Stream(source), ...next] =>
+          do {
+            if (Dictionary.length(talkbacks) < concurrent) do {
+              allStreams = next
+              currentIndex = streamIndex
+              source(
+                0,
+                (t, d) => {
+                  if (!failed) do {
+                    if (t == 0) do {
+                      talkbacks = Dictionary.insert(currentIndex, d, talkbacks)
+                      if (first) do {
+                        first = false
+                        sink(0, Talkback(talkback))
                       }
-    
-                    _ =>
-                      if (Dictionary.isEmpty(talkbacks) && streamsEnded == streamCount) {
-                        sink(2, NoMessage)
-                      } else {
-                        runStreams()
+                    }
+                    if (t == 1) { sink(1, d) }
+                    if (t == 2) do {
+                      streamsEnded = streamsEnded + 1
+                      talkbacks = Dictionary.remove(currentIndex, talkbacks)
+                      where(d) {
+                        Error(e) =>
+                          do {
+                            failed = true
+                            talkback(2)
+                            sink(2, d)
+                          }
+
+                        _ =>
+                          if (Dictionary.isEmpty(talkbacks) && streamsEnded == streamCount) {
+                            sink(2, NoMessage)
+                          } else { runStreams() }
                       }
+                    }
                   }
-                }
-              }
-            })
-            streamIndex = streamIndex + 1
-            runStreams()
+                },
+              )
+              streamIndex = streamIndex + 1
+              runStreams()
+            }
           }
-        }
+      }
+      runStreams()
     }
-    runStreams()
-  }
-})
+  },
+)
 
 
 concat :: List (Stream e a) -> Stream e a
-export concat = (streams) => Stream((start, sink) => {
-  if (start == 0) do {
-    allStreams = streams
-    currentTalkback = NoMessage
-    first = true
+export concat = (streams) => Stream(
+  (start, sink) => {
+    if (start == 0) do {
+      allStreams = streams
+      currentTalkback = NoMessage
+      first = true
 
-    talkback = (t) => {
-      runTalkback(currentTalkback, t)
-    }
-
-    startStream :: {} -> {}
-    startStream = () => {
-      where(allStreams) {
-        [Stream(source), ...next] =>
-          do {
-            allStreams = next
-            source(0, (t, d) => {
-              if (t == 0) do {
-                currentTalkback = d
-                if (first) do {
-                  first = false
-                  sink(0, Talkback(talkback))
-                }
-              }
-              if (t == 1) {
-                sink(1, d)
-              }
-              if (t == 2) do {
-                currentTalkback = NoMessage
-
-                where(d) {
-                  Error(e) =>
-                    sink(2, d)
-
-                  _ =>
-                    if (List.isEmpty(allStreams)) {
-                      sink(2, NoMessage)
-                    } else {
-                      startStream()
-                    }
-                }
-              }
-            })
-          }
-
-        [] =>
-          {}
+      talkback = (t) => {
+        runTalkback(currentTalkback, t)
       }
-    }
 
-    startStream()
-  }
-})
+      startStream :: {} -> {}
+      startStream = () => {
+        where(allStreams) {
+          [Stream(source), ...next] =>
+            do {
+              allStreams = next
+              source(
+                0,
+                (t, d) => {
+                  if (t == 0) do {
+                    currentTalkback = d
+                    if (first) do {
+                      first = false
+                      sink(0, Talkback(talkback))
+                    }
+                  }
+                  if (t == 1) { sink(1, d) }
+                  if (t == 2) do {
+                    currentTalkback = NoMessage
+
+                    where(d) {
+                      Error(e) =>
+                        sink(2, d)
+
+                      _ =>
+                        if (List.isEmpty(allStreams)) { sink(2, NoMessage) } else { startStream() }
+                    }
+                  }
+                },
+              )
+            }
+
+          [] =>
+            {}
+        }
+      }
+
+      startStream()
+    }
+  },
+)

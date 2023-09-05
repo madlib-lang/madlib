@@ -14,5 +14,11 @@ hash input =
 
 generateHashFromPath :: FilePath -> String
 generateHashFromPath =
-  hash . BLChar8.pack
-  -- take 5 . hash . BLChar8.pack
+  -- hash . BLChar8.pack
+  take 5 . hash . BLChar8.pack
+
+
+addHashToName :: String -> String -> String
+addHashToName hash name =
+  "_" ++ hash ++ "_" ++ name
+  -- "__" ++ hash ++ "__" ++ name

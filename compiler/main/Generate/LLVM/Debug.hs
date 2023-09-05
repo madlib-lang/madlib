@@ -88,7 +88,7 @@ makeDILocation env area =
 
 makeOriginalName :: String -> String
 makeOriginalName globalName =
-  let withoutHash = List.drop 36 globalName
+  let withoutHash = List.drop 8 globalName
   in  if '_' `List.notElem` withoutHash then
         withoutHash
       else
