@@ -411,7 +411,7 @@ buildLLVMType' (ps IT.:=> t) = case t of
           let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
           return
             ( Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
-            , Just (adtTypePath <> "__" <> adtTypeName, adtSymbol maxArity)
+            , Just (adtTypePath <> "_" <> adtTypeName, adtSymbol maxArity)
             )
           -- in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
       -- retrieveConstructorStructType env symbolTable t
@@ -463,7 +463,7 @@ retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
 retrieveConstructorStructType _ symbolTable t =
   let astPath = IT.getTConPath t
       tName   = IT.getTConName t
-      key     = astPath <> "__" <> tName
+      key     = astPath <> "_" <> tName
   in  case Map.lookup key symbolTable of
         Just (Symbol (ADTSymbol maxArity) _) ->
           Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
@@ -475,7 +475,7 @@ retrieveConstructorMaxArity :: SymbolTable -> IT.Type -> Int
 retrieveConstructorMaxArity symbolTable t =
   let astPath = IT.getTConPath t
       tName   = IT.getTConName t
-      key     = astPath <> "__" <> tName
+      key     = astPath <> "_" <> tName
   in  case Map.lookup key symbolTable of
         Just (Symbol (ADTSymbol maxArity) _) ->
           maxArity
@@ -2465,8 +2465,8 @@ generateConstructorsForADT env symbolTable adt = case adt of
     let sortedConstructors  = List.sortBy (\a b -> compare (getConstructorName a) (getConstructorName b)) adtconstructors
         indexedConstructors = List.zip sortedConstructors [0..]
         maxArity            = findMaximumConstructorArity adtconstructors
-        symbolTable'        = Map.insert (envASTPath env <> "__" <> adtname) (adtSymbol maxArity) symbolTable
-    Writer.tell $ Map.singleton (envASTPath env <> "__" <> adtname) (adtSymbol maxArity)
+        symbolTable'        = Map.insert (envASTPath env <> "_" <> adtname) (adtSymbol maxArity) symbolTable
+    Writer.tell $ Map.singleton (envASTPath env <> "_" <> adtname) (adtSymbol maxArity)
     Monad.foldM (generateConstructor maxArity env) symbolTable' indexedConstructors
 
   _ ->
@@ -2587,7 +2587,7 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
     let constructorIndex = case constructorInfos of
           Just infos ->
             let sortedInfos = List.sortBy (\(CanEnv.ConstructorInfo a _) (CanEnv.ConstructorInfo b _) -> compare a b) infos
-            in  case List.findIndex (\(CanEnv.ConstructorInfo n _) -> ("__" <> generateHashFromPath adtTypePath <> "__" <> n) == name) sortedInfos of
+            in  case List.findIndex (\(CanEnv.ConstructorInfo n _) -> ("_" <> generateHashFromPath adtTypePath <> "_" <> n) == name) sortedInfos of
                   Just index ->
                     index
 
@@ -2604,7 +2604,7 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
 
           Just (Slv.Untyped _ adt) ->
             let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
-            in  Map.singleton (adtTypePath <> "__" <> adtTypeName) (adtSymbol maxArity)
+            in  Map.singleton (adtTypePath <> "_" <> adtTypeName) (adtSymbol maxArity)
 
     return $ Map.singleton name (constructorSymbol fnRef constructorIndex arity) <> adtSym
 
@@ -2630,7 +2630,7 @@ hashModulePath ast =
 generateModuleFunctionExternals :: (MonadModuleBuilder m) => [FilePath] -> m ()
 generateModuleFunctionExternals allModulePaths = case allModulePaths of
   (path : next) -> do
-    let functionName = "__" <> generateHashFromPath path <> "__moduleFunction"
+    let functionName = "_" <> generateHashFromPath path <> "_moduleFunction"
     extern (AST.mkName functionName) [] Type.void
 
     generateModuleFunctionExternals next
@@ -2642,7 +2642,7 @@ generateModuleFunctionExternals allModulePaths = case allModulePaths of
 callModuleFunctions :: (MonadIRBuilder m, MonadModuleBuilder m) => [FilePath] -> m ()
 callModuleFunctions allModulePaths = case allModulePaths of
   (path : next) -> do
-    let functionName = "__" <> generateHashFromPath path <> "__moduleFunction"
+    let functionName = "_" <> generateHashFromPath path <> "_moduleFunction"
     call (Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName functionName)) []
 
     callModuleFunctions next
@@ -2697,7 +2697,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
         if isMain then
           "main"
         else
-          "__" <> moduleHash <> "__moduleFunction"
+          "_" <> moduleHash <> "_moduleFunction"
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
 
@@ -2740,7 +2740,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
   moduleFunction <-
     if isMain then do
       let getArgs     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [] False) "madlib__process__internal__getArgs")
-      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("__" <> moduleHash <> "__main") symbolTable
+      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("_" <> moduleHash <> "_main") symbolTable
       -- this function starts the runtime with a fresh stack etc
       function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"

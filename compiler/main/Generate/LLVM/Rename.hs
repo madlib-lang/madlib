@@ -10,7 +10,7 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
 import           AST.Core
-import Utils.Hash (generateHashFromPath)
+import Utils.Hash (generateHashFromPath, addHashToName)
 import Debug.Trace
 import Text.Show.Pretty (ppShow)
 
@@ -42,11 +42,6 @@ addDefaultImportNameUsage defaultImportName objectName env@Env{ usedDefaultImpor
   let setForName = Maybe.fromMaybe Set.empty $ Map.lookup defaultImportName usedDefaultImportNames
       extended   = Set.insert objectName setForName
   in  env { usedDefaultImportNames = Map.insert defaultImportName extended usedDefaultImportNames }
-
-
-addHashToName :: String -> String -> String
-addHashToName hash name =
-  "__" ++ hash ++ "__" ++ name
 
 
 hashName :: Env -> String -> String

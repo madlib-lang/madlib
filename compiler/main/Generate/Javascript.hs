@@ -45,7 +45,7 @@ import qualified Data.List as List
 import Data.IORef
 import Infer.MonomorphizationState
 import qualified Data.ByteString.Lazy.Char8 as BLChar8
-import Utils.Hash (generateHashFromPath)
+import Utils.Hash (generateHashFromPath, addHashToName)
 
 
 
@@ -142,7 +142,7 @@ instance Compilable Exp where
                   -- Based on the following input, we need to only use ConstructorName
                   -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
                   -- therefore we need to drop the first 36 characters
-                  newValue = "$newValue = { __constructor: \""<> drop 36  constructorName <>"\", __args: [] }"
+                  newValue = "$newValue = { __constructor: \""<> drop 7 constructorName <>"\", __args: [] }"
                   compiledArgs =
                     (\(index, arg) ->
                       if index == position then
@@ -582,11 +582,11 @@ instance Compilable Exp where
               scope <> " === " <> n
 
             PCon n [] ->
-              scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\""
+              scope <> ".__constructor === " <> "\"" <> drop 7 (removeNamespace n) <> "\""
 
             PCon n ps ->
               let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
-              in  scope <> ".__constructor === " <> "\"" <> drop 36 (removeNamespace n) <> "\"" <> if not (null args)
+              in  scope <> ".__constructor === " <> "\"" <> drop 7 (removeNamespace n) <> "\"" <> if not (null args)
                     then " && " <> args
                     else ""
 
@@ -832,7 +832,7 @@ instance Compilable Constructor where
       -- Based on the following input, we need to only use ConstructorName
       -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
       -- therefore we need to drop the first 36 characters
-      in  "({ __constructor: \"" <> drop 36 n <> "\", __args: [ " <> argStr <> " ] })"
+      in  "({ __constructor: \"" <> drop 7 n <> "\", __args: [ " <> argStr <> " ] })"
 
 
 compileImport :: CompilationConfig -> Import -> String
@@ -1026,7 +1026,7 @@ hashModulePath ast =
 generateMainCall :: Options -> String -> String
 generateMainCall options astPath =
   let moduleHash = generateHashFromPath astPath
-      mainName = "__" <> moduleHash <> "__main"
+      mainName = addHashToName moduleHash "main"
   in  if astPath == optEntrypoint options then
         if optTarget options == TNode then
           unlines

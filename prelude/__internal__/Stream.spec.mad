@@ -5,7 +5,7 @@ import Date from "Date"
 import Integer from "Integer"
 import List from "List"
 import { AssertionError, test } from "Test"
-import { Wish, bad } from "Wish"
+import { Wish, after, bad } from "Wish"
 
 import Stream from "./Stream"
 
@@ -21,9 +21,9 @@ collectEvents :: Stream e a -> Wish c (List (TimedEvent e a))
 collectEvents = (stream) => {
   events = []
 
+  previousMillis = currentTimestamp()
   return Wish(
     (_, good) => {
-      previousMillis = currentTimestamp()
       Stream.subscribe(
         (e) => {
           millis = currentTimestamp()
@@ -248,9 +248,7 @@ test(
     Stream.filter((x) => x % 2 == 0),
     Stream.take(10),
     chain(() => Stream.bad("NOPE")),
-    assertStreamEvents([
-      { event: Error("NOPE"), millisSincePreviousEvent: 5 },
-    ]),
+    assertStreamEvents([{ event: Error("NOPE"), millisSincePreviousEvent: 5 }]),
   )(5),
 )
 
@@ -344,7 +342,7 @@ test(
     Stream.mergeN(1),
     assertStreamEvents([
       { event: Event(0), millisSincePreviousEvent: 20 },
-      { event: Event(0), millisSincePreviousEvent: 10 },
+      { event: Event(0), millisSincePreviousEvent: 0 },
       { event: Done, millisSincePreviousEvent: 0 },
     ]),
   )([Stream.take(1, Stream.interval(20)), Stream.take(1, Stream.interval(10))]),
@@ -361,24 +359,82 @@ test(
 )
 
 
-test("ap", () => pipe(
-  Stream.interval,
-  Stream.take(5),
-  ap(
-    pipe(
-      Stream.interval,
-      map((i, x) => i + x),
-      Stream.take(3),
-    )(15)
-  ),
-  assertStreamEvents([
-    { event: Event(0), millisSincePreviousEvent: 15 },
-    { event: Event(1), millisSincePreviousEvent: 5 },
-    { event: Event(2), millisSincePreviousEvent: 5 },
-    { event: Event(3), millisSincePreviousEvent: 0 },
-    { event: Event(4), millisSincePreviousEvent: 10 },
-    { event: Event(5), millisSincePreviousEvent: 0 },
-    { event: Event(6), millisSincePreviousEvent: 5 },
-    { event: Done, millisSincePreviousEvent: 0 },
-  ]),
-)(10))
+test(
+  "ap",
+  () => pipe(
+    Stream.interval,
+    Stream.take(5),
+    ap(
+      pipe(
+        Stream.interval,
+        map((i, x) => i + x),
+        Stream.take(3),
+      )(15),
+    ),
+    assertStreamEvents([
+      { event: Event(0), millisSincePreviousEvent: 15 },
+      { event: Event(1), millisSincePreviousEvent: 5 },
+      { event: Event(2), millisSincePreviousEvent: 5 },
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Event(4), millisSincePreviousEvent: 5 },
+      { event: Event(5), millisSincePreviousEvent: 0 },
+      { event: Event(6), millisSincePreviousEvent: 5 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(10),
+)
+
+
+test(
+  "ap - pullable functions",
+  () => pipe(
+    Stream.interval,
+    Stream.take(5),
+    ap(
+      pipe(
+        Stream.range(0, 2),
+        map((i, x) => i + x),
+      )(1),
+    ),
+    assertStreamEvents([
+      { event: Event(0), millisSincePreviousEvent: 10 },
+      { event: Event(1), millisSincePreviousEvent: 0 },
+      { event: Event(2), millisSincePreviousEvent: 0 },
+      { event: Event(3), millisSincePreviousEvent: 0 },
+      { event: Event(4), millisSincePreviousEvent: 10 },
+      { event: Event(5), millisSincePreviousEvent: 10 },
+      { event: Event(6), millisSincePreviousEvent: 10 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(10),
+)
+
+
+test(
+  "fromWish",
+  () => pipe(
+    after(200),
+    Stream.fromWish,
+    assertStreamEvents([
+      { event: Event(3), millisSincePreviousEvent: 200 },
+      { event: Done, millisSincePreviousEvent: 0 },
+    ]),
+  )(3),
+)
+
+
+test(
+  "fromWish - canceled",
+  () => {
+    s1 = pipe(
+      after(200),
+      Stream.fromWish,
+    )(3)
+    s2 = Stream.bad("ERROR")
+
+    return pipe(
+      Stream.merge,
+      assertStreamEvents([{ event: Error("ERROR"), millisSincePreviousEvent: 0 }]),
+    )([s1, s2])
+  },
+)
