@@ -678,7 +678,7 @@ templateStringExpsToDoc comments exps = case exps of
   (e@(Source area target (LStr s)) : more) ->
     let (e', comments')     = expToDoc comments (Source area target (LStr $ escapeBackticks s))
         (more', comments'') = templateStringExpsToDoc comments' more
-    in  (e' <> more', comments'')
+    in  ((Pretty.nesting $ \x -> Pretty.nest (-x) $ e') <> more', comments'')
 
   (e : more) ->
     let (e', comments')     = expToDoc comments e

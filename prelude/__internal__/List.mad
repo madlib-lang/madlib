@@ -962,3 +962,43 @@ export endsWith = (subset, list) => where(dropLengthMaybe(subset, list)) {
   _ =>
     false
 }
+
+
+
+// groupBy :: (a -> a -> Bool) -> [a] -> [[a]]
+// groupBy _ [] = []
+// groupBy p' (x':xs') = (x' : ys') : zs'
+//   where
+//     (ys',zs') = go p' x' xs'
+//     go p z (x:xs)
+//       | p z x = (x : ys, zs)
+//       | otherwise = ([], (x : ys) : zs)
+//       where (ys,zs) = go p x xs
+//     go _ _ [] = ([], [])
+
+groupBy :: (a -> a -> Boolean) -> List a -> List (List a)
+export groupBy = (_eq, list) => {
+  go = (p, z, l) => do {
+    return where(l) {
+      [x, ...xs] =>
+        where(go(p, x, xs)) {
+          #[ys, zs] =>
+            p(z, x) ? #[[x, ...ys], zs] : #[[], [[x, ...ys], ...zs]]
+        }
+
+      _ =>
+        #[[], []]
+    }
+  }
+
+  return where(list) {
+    [] =>
+      []
+
+    [x, ...xs] =>
+      where(go(_eq, x, xs)) {
+        #[_ys, _zs] =>
+          [[x, ..._ys], ..._zs]
+      }
+  }
+}

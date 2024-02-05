@@ -14,6 +14,7 @@ import {
   filter,
   find,
   first,
+  groupBy,
   init,
   intercalate,
   intersperse,
@@ -235,3 +236,5 @@ test("endsWith - same end", () => assertEquals(endsWith([4, 6], [1, 2, 3, 4, 5, 
 test("endsWith - empty", () => assertEquals(endsWith([4, 6], []), false))
 
 test("tails", () => assertEquals(tails([1, 2, 3]), [[1, 2, 3], [2, 3], [3], []]))
+
+test("groupBy", () => assertEquals(groupBy((a, b) => a == b, [1, 1, 2, 3, 2, 2]), [[1, 1], [2], [3], [2, 2]]))
