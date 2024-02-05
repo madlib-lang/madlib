@@ -68,8 +68,10 @@ instance Substitutable Type where
     Just (TGen x) ->
       TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
 
-    bad ->
-      error $ "found: " <> ppShow bad
+    _ ->
+      TRecord fields (Just (TVar tv)) optionalFields
+    -- bad ->
+      -- error $ "found: " <> ppShow bad
 
   apply s (TRecord fields (Just (TRecord fields' base optionalFields')) optionalFields) =
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
