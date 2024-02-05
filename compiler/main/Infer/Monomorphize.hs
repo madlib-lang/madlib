@@ -230,7 +230,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
           monomorphized <-
             monomorphize
               target
-              env { envSubstitution = s `compose` envSubstitution env }
+              env { envSubstitution = s }
               (updateName monomorphicName fnDefinition)
 
           liftIO $ atomicModifyIORef
@@ -313,7 +313,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                   monomorphize
                     target
                     env
-                      { envSubstitution = s `compose` envSubstitution env
+                      { envSubstitution = s
                       , envCurrentModulePath = fnModulePath
                       , envLocalState = makeLocalMonomorphizationState ()
                       , envLocalBindingsToExclude = mempty
@@ -371,7 +371,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
                     monomorphize
                       target
                       env
-                        { envSubstitution = s `compose` envSubstitution env
+                        { envSubstitution = s
                         , envCurrentModulePath = methodModulePath
                         , envLocalState = makeLocalMonomorphizationState ()
                         , envLocalBindingsToExclude = mempty
