@@ -35,18 +35,24 @@ import System.Environment (lookupEnv)
 import Control.Applicative
 
 
-genUnify :: Type -> Type -> Substitution
-genUnify t1 t2 =
-  let s = gentleUnify t1 t2
-      tvs = ftv $ Map.elems s
+genType :: Substitution -> Type -> Type
+genType s t =
+  let t' = apply s t
+      tvs = ftv t'
       sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
-  in  Map.map (apply sWithGens) s
+  in  cleanRecords $ apply s $ apply sWithGens t'
 
-genType :: Type -> Type
-genType t =
-  let tvs = ftv t
-      sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
-  in  apply sWithGens t
+
+cleanRecords :: Type -> Type
+cleanRecords t = case t of
+  TRecord fields _ _ ->
+    TRecord (cleanRecords <$> fields) Nothing mempty
+
+  TApp l r ->
+    TApp (cleanRecords l) (cleanRecords r)
+
+  or ->
+    or
 
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
@@ -191,7 +197,7 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
     liftIO $ hFlush stdout
     liftIO restoreCursor
 
-  let typeItIsCalledWith = genType typeItIsCalledWith'
+  let typeItIsCalledWith = genType (envSubstitution env) typeItIsCalledWith'
 
   -- first we look in the local namespace
   localState <- liftIO $ readIORef envLocalState
@@ -465,7 +471,7 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
     else if fnName == "<=" then
       monomorphizeApp target env (Typed qt area (Var "__BUILTINS__.le" False))
     else do
-      let callType = genType $ apply envSubstitution $ getQualified qt
+      let callType = genType envSubstitution (getQualified qt)
       monomorphicName <- monomorphizeDefinition target False env fnName callType
 
 
