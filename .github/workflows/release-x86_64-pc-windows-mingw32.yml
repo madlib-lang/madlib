@@ -38,7 +38,7 @@ jobs:
           node-version: ${{ env.node-version }}
 
       - name: Install rollup
-        run: npm i -g rollup @rollup/plugin-node-resolve
+        run: npm i -g rollup@2.62.0 @rollup/plugin-node-resolve
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
