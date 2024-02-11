@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 stack build -j10
 TARGET=MACOS_ARM64 ./scripts/build-runtime-libs
 TARGET=MACOS_ARM64 AR=llvm-ar ./scripts/build-runtime
@@ -10,5 +9,13 @@ TARGET=MACOS_ARM64 AR=llvm-ar ./scripts/build-runtime
 mkdir ./madlib-arm64-apple-darwin/
 cp -R ./pkg/node_modules/binary-install/node_modules/.bin/* ./madlib-arm64-apple-darwin/
 cp -R ./prelude ./madlib-arm64-apple-darwin/
+
+# fix dynamic linking
+cp /opt/homebrew/opt/llvm@12/lib/libunwind.1.dylib ./madlib-arm64-apple-darwin/
+install_name_tool -add_rpath @executable_path ./madlib-arm64-apple-darwin/madlib
+install_name_tool -change /opt/homebrew/opt/llvm@12/lib/libunwind.1.dylib @rpath/libunwind.1.dylib ./madlib-arm64-apple-darwin/madlib
+install_name_tool -change /opt/homebrew/opt/llvm@12/lib/libc++.1.dylib /usr/lib/libc++.1.dylib ./madlib-arm64-apple-darwin/madlib
+
+# bundle
 tar -czvf madlib-arm64-apple-darwin.tar.gz madlib-arm64-apple-darwin
 rm -r ./madlib-arm64-apple-darwin
