@@ -6,7 +6,6 @@ import           System.Process
 import           Control.Exception              ( try )
 import           System.Environment             ( getEnv )
 import           System.Environment.Executable  ( getExecutablePath )
-import           Run.CommandLine
 
 
 runPackageInstaller :: IO ()
@@ -18,4 +17,4 @@ runPackageInstaller = do
       return $ takeDirectory executablePath <> "/package-installer.js"
     Right p -> return p
 
-  callCommand $ "node " <> packageInstallerPathChecked
+  callCommand $ "node \"" <> packageInstallerPathChecked <> "\""
