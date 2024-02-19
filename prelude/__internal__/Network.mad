@@ -1,0 +1,106 @@
+import type { Maybe } from "Maybe"
+
+import Byte from "Byte"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import Short from "Short"
+import String from "String"
+
+
+
+alias RawNetworkInterfaceFragment = {
+  ipv4 :: Maybe String,
+  ipv4Mask :: Maybe String,
+  ipv6 :: Maybe String,
+  ipv6Mask :: Maybe String,
+  isInternal :: Boolean,
+  name :: String,
+}
+
+type IpV4 = IpV4(Short, Short, Short, Short)
+
+alias InterfaceAddress = {
+  ipv4 :: Maybe IpV4,
+  ipv4Mask :: Maybe IpV4,
+  ipv6 :: Maybe String,
+  ipv6Mask :: Maybe String,
+  isInternal :: Boolean,
+}
+
+alias Interface = { addresses :: List InterfaceAddress, name :: String }
+
+readNetworkInterfacesFFI :: {} -> List RawNetworkInterfaceFragment
+readNetworkInterfacesFFI = extern "madlib__network__readNetworkInterfaces"
+
+
+ipv4FromString :: String -> Maybe IpV4
+ipv4FromString = (src) => pipe(
+  String.split("."),
+  map(scan),
+  where {
+    [Just(a), Just(b), Just(c), Just(d)] =>
+      Just(IpV4(a, b, c, d))
+
+    _ =>
+      Nothing
+  },
+)(src)
+
+// f :: { ...b, ipv4 :: Maybe String, name :: String }
+// -> {
+//   ipv4 :: Maybe IpV4,
+//   ipv4Mask :: Maybe IpV4,
+//   name :: String
+// }
+f= (fragment) => (
+    {
+      // ...fragment,
+      ipv4: chain(ipv4FromString, fragment.ipv4),
+      name: fragment.name,
+      ipv4Mask: chain(ipv4FromString, fragment.ipv4Mask),
+    }
+  )
+// readNetworkInterfaces :: {} -> List Interface
+export readNetworkInterfaces = () => pipe(
+  map(
+    f,
+  ),
+  //   List.reduce(
+  //     (result, addr) => List.upsertWith(
+  //       (entry) => entry.name == addr.name,
+  //       where {
+  //         Just({ name, addresses }) =>
+  //           {
+  //             name,
+  //             addresses: [
+  //               {
+  //                 isInternal: addr.isInternal,
+  //                 ipv4: addr.ipv4,
+  //                 ipv4Mask: addr.ipv4Mask,
+  //                 ipv6: addr.ipv6,
+  //                 ipv6Mask: addr.ipv6Mask,
+  //               },
+  //               ...addresses,
+  //             ],
+  //           }
+
+  //         Nothing =>
+  //           {
+  //             name: addr.name,
+  //             addresses: [
+  //               {
+  //                 isInternal: addr.isInternal,
+  //                 ipv4: addr.ipv4,
+  //                 ipv4Mask: addr.ipv4Mask,
+  //                 ipv6: addr.ipv6,
+  //                 ipv6Mask: addr.ipv6Mask,
+  //               },
+  //             ],
+  //           }
+  //       },
+  //       result,
+  //     ),
+  //     [],
+  //   ),
+
+)(readNetworkInterfacesFFI())

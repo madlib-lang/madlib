@@ -943,48 +943,46 @@ rollupNotFoundMessage = unlines
   , "You must have rollup installed in order to use the bundling option. Please visit this page in order to install it: https://rollupjs.org/guide/en/#installation"
   ]
 
-runBundle :: FilePath -> IO (Either String (String, String))
-runBundle entrypointCompiledPath = do
-  putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
-  rollupPath        <- try $ getEnv "ROLLUP_PATH"
-  rollupPathChecked <- case (rollupPath :: Either IOError String) of
-    Left _ -> do
-      r <-
-        try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
-      case r of
-        Left  err -> do
-          putStrLn $ ppShow err
-          return $ Left rollupNotFoundMessage
-        Right _ -> return $ Right "rollup"
-    Right p -> do
-      r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
-      case r of
-        Left err -> do
-          putStrLn $ ppShow err
-          r <-
-            try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
-              (Either SomeException (ExitCode, String, String))
-          case r of
-            Left  err -> do
-              putStrLn $ ppShow err
-              return $ Left rollupNotFoundMessage
-            Right _ -> return $ Right "rollup"
-        Right _ -> return $ Right p
+-- TODO: rework this
+runBundle :: FilePath -> Target -> IO (Either String (String, String))
+runBundle entrypointCompiledPath target = do
+  -- putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
+  -- rollupPath        <- try $ getEnv "ROLLUP_PATH"
+  -- rollupPathChecked <- case (rollupPath :: Either IOError String) of
+  --   Left _ -> do
+  --     r <-
+  --       try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+  --     case r of
+  --       Left  err -> do
+  --         putStrLn $ ppShow err
+  --         return $ Left rollupNotFoundMessage
+  --       Right _ -> return $ Right "rollup"
+  --   Right p -> do
+  --     r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+  --     case r of
+  --       Left err -> do
+  --         putStrLn $ ppShow err
+  --         r <-
+  --           try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
+  --             (Either SomeException (ExitCode, String, String))
+  --         case r of
+  --           Left  err -> do
+  --             putStrLn $ ppShow err
+  --             return $ Left rollupNotFoundMessage
+  --           Right _ -> return $ Right "rollup"
+  --       Right _ -> return $ Right p
 
-  case rollupPathChecked of
-    Right rollup -> do
+  -- esbuild build/src/client/Main.mjs --platform=node --bundle --outfile=out.js
+  let platform = if target == TNode then "node" else "browser"
+  case Right "esbuild" of
+    Right esbuild -> do
       r <-
         try
           (readProcessWithExitCode
-            rollup
+            esbuild
             [ entrypointCompiledPath
-            , "--format"
-            , "umd"
-            , "--name"
-            , "exe"
-            , "-p"
-            , "@rollup/plugin-node-resolve"
-            , "--silent"
+            , "--platform=" ++ platform
+            , "--bundle"
             ]
             ""
           ) :: IO (Either SomeException (ExitCode, String, String))

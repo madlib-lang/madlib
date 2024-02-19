@@ -510,7 +510,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       when (optBundle options) $ do
         let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
-        result <- liftIO $ Javascript.runBundle mainOutputPath
+        result <- liftIO $ Javascript.runBundle mainOutputPath (optTarget options)
         case result of
           Left err ->
             liftIO $ putStr err
