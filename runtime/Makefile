@@ -16,6 +16,7 @@ OBJS :=\
   $(BUILDDIR)/debugger.o\
   $(BUILDDIR)/dictionary.o\
   $(BUILDDIR)/record.o\
+  $(BUILDDIR)/network.o\
   $(BUILDDIR)/number.o\
   $(BUILDDIR)/math.o\
   $(BUILDDIR)/string.o\

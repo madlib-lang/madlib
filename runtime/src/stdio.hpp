@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 int STDIN = 0;
+int STDOUT = 1;
 
 typedef struct StdinData {
   void *callback;
@@ -24,6 +25,10 @@ typedef struct StdinData {
 
 StdinData_t *madlib__stdio__getLine(PAP_t *callback);
 StdinData_t *madlib__stdio__get(PAP_t *callback);
+
+void madlib__stdio__setTTYRawMode();
+void madlib__stdio__disableTTYRawMode();
+StdinData_t * madlib__stdio__onKeyPress(PAP_t *callback);
 
 void madlib__stdio__cancelGet(StdinData_t *handle);
 

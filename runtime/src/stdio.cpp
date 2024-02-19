@@ -2,6 +2,8 @@
 #include "stdio.hpp"
 #include <string.h>
 #include "event-loop.hpp"
+#include <iostream>
+#include <cstring>
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,6 +130,63 @@ void allocBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
   *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC_UNCOLLECTABLE(suggestedSize), suggestedSize);
 }
 
+
+void madlib__stdio__enableTTYRawMode() {
+  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
+  uv_tty_init(getLoop(), stdIn, STDIN, 1);
+
+  uv_tty_set_mode(stdIn, UV_TTY_MODE_RAW);
+}
+
+void madlib__stdio__disableTTYRawMode() {
+  uv_tty_reset_mode();
+}
+
+void onStdinKeyPress(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
+  StdinData_t *stdinData = (StdinData_t*)stream->data;
+
+  if (nread < 0) {
+    stdinData->done = true;
+    // error
+    uv_read_stop(stream);
+    onError(stdinData, nread);
+  } else if (nread > 0) {
+    int bytesToUse = 0;
+    bool foundLineReturn = false;
+    for (int i = 0; i < nread && !foundLineReturn; i++) {
+      int64_t *boxedError = (int64_t *)0;
+      void *cb = stdinData->callback;
+
+      char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (nread + 1));
+      memcpy(result, buffer->base, nread * sizeof(char));
+      result[nread] = '\0';
+
+      __applyPAP__(cb, 1, result);
+    }
+  }
+
+  if (buffer->base) {
+    GC_FREE(buffer->base);
+  }
+}
+
+StdinData_t * madlib__stdio__onKeyPress(PAP_t *callback) {
+  // we allocate request objects and the buffer
+  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
+
+  StdinData_t *data = (StdinData_t *)GC_MALLOC(sizeof(StdinData_t));
+  data->callback = callback;
+  data->currentSize = 0;
+  data->done = false;
+  data->stream = stdIn;
+
+  stdIn->data = data;
+
+  uv_tty_init(getLoop(), stdIn, STDIN, 1);
+  uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinKeyPress);
+
+  return data;
+}
 
 StdinData_t *madlib__stdio__getLine(PAP_t *callback) {
   // we allocate request objects and the buffer

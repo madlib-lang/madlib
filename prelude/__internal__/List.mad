@@ -990,3 +990,13 @@ export groupBy = (_eq, list) => {
       }
   }
 }
+
+
+upsertWith :: (a -> Boolean) -> (Maybe a -> a) -> List a -> List a
+export upsertWith = (pred, updater, list) => where(list) {
+  [x, ...xs] =>
+    pred(x) ? [updater(Just(x)), ...xs] : [x, ...upsertWith(pred, updater, xs)]
+
+  [] =>
+    [updater(Nothing)]
+}
