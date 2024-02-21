@@ -3,7 +3,7 @@ import { assertEquals, test, ErrorWithMessage } from "Test"
 import { always, Loop, Done } from "Function"
 import List from "List"
 import type { Wish } from "./Wish"
-import { bad, good, bichain, mapRej, parallel, parallelN } from "./Wish"
+import { after, bad, good, bichain, mapRej, parallel, parallelN, raceN } from "./Wish"
 
 
 test("map should map over a value if it's a good Wish", () => pipe(
@@ -84,6 +84,33 @@ test("parallel - lots of items", () => pipe(
     assertEquals($, List.range(0, 10000)),
   )
 )(List.range(0, 10000)))
+
+test("raceN", () => pipe(
+  raceN(2),
+  bichain(always(bad(ErrorWithMessage("It should have resolved"))), assertEquals($, "YOU")),
+)([
+  after(1000, "NOPE"),
+  after(300, "YOU"),
+]))
+
+test("raceN - first failed", () => pipe(
+  raceN(2),
+  bichain(always(bad(ErrorWithMessage("It should have resolved"))), assertEquals($, "YOU")),
+)([
+  chain(always(bad("OR NOT")), after(100, "MAYBE")),
+  after(300, "YOU"),
+]))
+
+test("raceN - some failed", () => pipe(
+  raceN(5),
+  bichain(always(bad(ErrorWithMessage("It should have resolved"))), assertEquals($, "YOU")),
+)([
+  chain(always(bad("OR NOT")), after(100, "MAYBE")),
+  chain(always(bad("OR NOT")), after(400, "MAYBE")),
+  after(400, "AFTER"),
+  after(300, "YOU"),
+  chain(always(bad("OR NOT")), after(200, "MAYBE")),
+]))
 
 test("tailRecM", () => do {
   millionWish :: Integer -> Wish (AssertionError Integer) Integer
