@@ -23,11 +23,9 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  -- | tv == TV "__NO_ARG__" Star = return M.empty
   | tv `elem` concat (ftv <$> fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
   | otherwise                         = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv      = return M.empty
-            --  | tv == TV "__NO_ARG__" Star = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
              | otherwise         = return $ M.singleton tv t
