@@ -663,6 +663,11 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The variable '" <> n <> "' has not been declared\n\n"
     <> "Hint: Verify that you don't have a typo."
 
+  UnboundUnknownTypeVariable ->
+    "Unbound type variable\n\n"
+    <> "A type variable has not been declared\n\n"
+    <> "Hint: Verify that you don't have a typo."
+
   UnboundVariableFromNamespace namespace name ->
     "Name not exported\n\n"
     <> "Function '" <> name <> "' not found in\ndefault import '" <> namespace <> "'\n\n"
@@ -1204,6 +1209,25 @@ createErrorDiagnostic color context typeError = case typeError of
         Diagnose.Err
           Nothing
           "Unbound variable"
+          []
+          [Diagnose.Hint "Verify that you don't have a typo"]
+
+  UnboundUnknownTypeVariable ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Unbound type variable"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "A type variable has not been declared"
+            )
+          ]
+          [Diagnose.Hint "Verify that you don't have a typo"]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Unbound type variable"
           []
           [Diagnose.Hint "Verify that you don't have a typo"]
 
