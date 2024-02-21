@@ -209,7 +209,7 @@ resolveADTConstructorParams env astPath _ params c@(Src.Source area _ (Src.Const
       if n `elem` params' then
         return ()
       else
-        throwError (CompilationError (UnboundVariable (show n)) (Context astPath area))
+        throwError $ CompilationError UnboundUnknownTypeVariable (Context astPath area)
 
   let s = foldr (\t s -> buildCtorSubst t <> s) M.empty ts
 

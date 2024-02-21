@@ -280,7 +280,7 @@ updateAliasVars t args = do
                   return x
 
                 Nothing -> case tv of
-                  TV _ k -> return $ TVar (TV (-2) k)
+                  TV i k -> return $ TVar (TV i k)
 
             TApp l r -> do
               l' <- update l
@@ -294,6 +294,7 @@ updateAliasVars t args = do
               fs'   <- mapM update fs
               base' <- mapM update base
               return $ TRecord fs' base' mempty
+
             _ -> undefined
       in  update t'
 
