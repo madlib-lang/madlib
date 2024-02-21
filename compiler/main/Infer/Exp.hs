@@ -7,6 +7,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# HLINT ignore "Use list comprehension" #-}
+{-# HLINT ignore "Use second" #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -483,7 +484,8 @@ inferRecord options env exp = do
   (subst, inferredFields) <- foldM (
         \(fieldSubst, result) field -> do
           (s, ps, ts, e) <- inferRecordField options (apply fieldSubst env) field
-          return (fieldSubst `compose` s, result ++ [(ps, ts, e)])
+          let nextSubst = s `compose` fieldSubst
+          return (nextSubst, result ++ [(ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e)])
       ) (mempty, []) fields
   let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
@@ -496,13 +498,13 @@ inferRecord options env exp = do
         (x : _) -> Just x
         _       -> Nothing
 
-  (recordType, extraSubst) <- case base of
+  (recordType, extraSubst) <- case apply subst <$> base of
     Just (TRecord fields baseBase optionalFields) ->
-      return (TRecord (M.fromList fieldTypes' <> fields) baseBase optionalFields, mempty)
+      return (TRecord (M.fromList fieldTypes' <> fields) (apply subst <$> baseBase) optionalFields, mempty)
 
     Just tBase -> do
       baseVar <- newTVar Star
-      s <- contextualUnify env exp tBase (TRecord mempty (Just baseVar) mempty)
+      s <- contextualUnify env exp (apply subst tBase) (TRecord mempty (Just baseVar) mempty)
       return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
 
     Nothing ->
