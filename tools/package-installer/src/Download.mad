@@ -1,58 +1,77 @@
 import type { Wish } from "Wish"
-import Process from "Process"
 
-import { bad, discardError, mapRej } from "Wish"
-import { always } from "Function"
-import { andDo } from "Monad"
-import { getHeader, Header } from "Http"
-
-import type { Dependency } from "./Dependency"
 import type { Config } from "./Config"
+import type { Dependency } from "./Dependency"
+
+import FilePath from "FilePath"
+import { always, ifElse } from "Function"
+import { Header, getHeader } from "Http"
+import { andDo } from "Monad"
+import Process from "Process"
+import String from "String"
+import { bad, discardError, mapRej } from "Wish"
 
 import Constants from "./Constants"
 
 
+
 export type DownloadFailure = DownloadFailure
 
-export type DownloadResult
-  = Downloaded(Dependency)
-  | DownloadError(String)
+export type DownloadResult = Downloaded(Dependency) | DownloadError(String)
 
 
 
 cleanUp :: Config -> String -> Wish DownloadFailure String
 cleanUp = (config, sanitizedUrl) => pipe(
-  (url) => ["-r", `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`, `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`],
+  (url) => [
+    "-r",
+    `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
+    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
+  ],
   config.exec("rm", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
-  mapRej(always(DownloadFailure))
+  mapRej(always(DownloadFailure)),
 )(sanitizedUrl)
 
 
 copyPackageToTmpRoot :: Config -> String -> Wish DownloadFailure String
 copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
-  (url) => ["-R", `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`, Constants.TEMPORARY_MODULES_PATH],
+  (url) => [
+    "-R",
+    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
+    Constants.TEMPORARY_MODULES_PATH,
+  ],
   config.exec("cp", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
-  mapRej(always(DownloadFailure))
+  mapRej(always(DownloadFailure)),
 )(sanitizedUrl)
 
 
 unzipPkg :: Config -> String -> Wish DownloadFailure String
 unzipPkg = (config, sanitizedUrl) => pipe(
-  (url) => ["-o", "-d", `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`, `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`],
+  (url) => [
+    "-o",
+    "-d",
+    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
+    `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
+  ],
   config.exec("unzip", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
-  mapRej(always(DownloadFailure))
+  mapRej(always(DownloadFailure)),
 )(sanitizedUrl)
 
 
 renameInnerFolder :: Config -> String -> Wish DownloadFailure String
 renameInnerFolder = (config, sanitizedUrl) => pipe(
-  (url) => ["-c", `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`],
+  (url) => [
+    "-c",
+    `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${
+      url
+    }-tmp/${url}`,
+  ],
   config.exec("sh", $, Process.DEFAULT_COMMAND_OPTIONS),
   map(.stdout),
-  mapRej(always(DownloadFailure))
+  mapRej(always(DownloadFailure)),
 )(sanitizedUrl)
 
 
@@ -61,7 +80,7 @@ extractArchive = (config, sanitizedUrl) => pipe(
   unzipPkg(config),
   andDo(renameInnerFolder(config, sanitizedUrl)),
   andDo(copyPackageToTmpRoot(config, sanitizedUrl)),
-  andDo(cleanUp(config, sanitizedUrl))
+  andDo(cleanUp(config, sanitizedUrl)),
 )(sanitizedUrl)
 
 
@@ -69,41 +88,80 @@ getPackageData :: Config -> String -> Wish DownloadFailure ByteArray
 getPackageData = (config, url) => pipe(
   config.getBytes,
   mapRej(always(DownloadFailure)),
-  chain((response) => where(response) {
-    { status: 302 } =>
-      pipe(
-        getHeader("Location"),
-        where {
-          [Header(_, redirectUrl) , ..._] =>
-            getPackageData(config, redirectUrl)
+  chain(
+    (response) => where(response) {
+      { status: 302 } =>
+        pipe(
+          getHeader("Location"),
+          where {
+            [Header(_, redirectUrl), ..._] =>
+              getPackageData(config, redirectUrl)
 
-          _ =>
-            bad(DownloadFailure)
-        }
-      )(response)
+            _ =>
+              bad(DownloadFailure)
+          },
+        )(response)
 
-    r =>
-      of(r.body)
-  }),
-  mapRej(always(DownloadFailure))
+      r =>
+        of(r.body)
+    },
+  ),
+  mapRej(always(DownloadFailure)),
 )(url)
 
 
 saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
 saveArchive = (config, dependency, data) => pipe(
   config.writeBytes(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
-  mapRej(always(DownloadFailure))
+  mapRej(always(DownloadFailure)),
 )(data)
+
+
+downloadPackageWithHttp :: Config -> Dependency -> String -> Wish {} DownloadResult
+downloadPackageWithHttp = (config, dependency, url) => pipe(
+  getPackageData(config),
+  chain(saveArchive(config, dependency)),
+  andDo(extractArchive(config, dependency.sanitizedUrl)),
+  andDo(of(Downloaded(dependency))),
+  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
+)(url)
+
+
+copyLocalPackage :: Config -> Dependency -> String -> Wish {} DownloadResult
+copyLocalPackage = (config, dependency, uri) => pipe(
+  String.drop(7),
+  (path) => pipe(
+    (p) => FilePath.joinPath([p, "madlib.json"]),
+    config.exists,
+    chain((exists) => exists ? of(path) : bad({})),
+  )(path),
+  chain((path) =>
+    pipe(
+      (p) => [
+        "-c",
+        `cp -R ${p} ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`,
+      ],
+      config.exec("sh", $, Process.DEFAULT_COMMAND_OPTIONS),
+      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/.git`], Process.DEFAULT_COMMAND_OPTIONS)),
+      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/madlib_modules`], Process.DEFAULT_COMMAND_OPTIONS)),
+      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/.module_cache`], Process.DEFAULT_COMMAND_OPTIONS)),
+      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/node_modules`], Process.DEFAULT_COMMAND_OPTIONS)),
+      mapRej(always({})),
+    )(path),
+  ),
+  andDo(of(Downloaded(dependency))),
+  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
+)(uri)
 
 
 downloadPackage :: Config -> Dependency -> Wish {} DownloadResult
 downloadPackage = (config, dependency) => pipe(
   .url,
-  getPackageData(config),
-  chain(saveArchive(config, dependency)),
-  andDo(extractArchive(config, dependency.sanitizedUrl)),
-  andDo(of(Downloaded(dependency))),
-  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
+  ifElse(
+    String.startsWith("file://"),
+    copyLocalPackage(config, dependency),
+    downloadPackageWithHttp(config, dependency),
+  ),
 )(dependency)
 
 
@@ -115,6 +173,6 @@ export downloadIfNotCached = (config, dependency) => pipe(
   chain(
     (alreadyDownloaded) => alreadyDownloaded
       ? of(Downloaded(dependency))
-      : downloadPackage(config, dependency)
-  )
+      : downloadPackage(config, dependency),
+  ),
 )(dependency)
