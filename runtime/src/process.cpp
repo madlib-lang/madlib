@@ -1,6 +1,7 @@
 #ifndef GC_THREADS
   #define GC_THREADS
 #endif
+#include "uv.h"
 #include "process.hpp"
 #include <sys/mman.h>
 #include <cstring>
@@ -361,14 +362,19 @@ typedef struct ThreadData {
   void *threadFn;
   void *result;
   bool isBad;
+  bool hasFinished;
 } ThreadData_t;
 
+void onThreadClose(uv_handle_t *handle) {}
 
 void goodCallbackFn(uv_work_t *req, void *result) {
   ThreadData_t *data = (ThreadData_t*) req->data;
   data->result = result;
   data->isBad = false;
+  data->hasFinished = true;
   uv_cancel((uv_req_t*)req);
+
+  __applyPAP__(data->goodCallback, 1, result);
 }
 
 
@@ -376,7 +382,10 @@ void badCallbackFn(uv_work_t *req, void *result) {
   ThreadData_t *data = (ThreadData_t*) req->data;
   data->result = result;
   data->isBad = true;
+  data->hasFinished = true;
   uv_cancel((uv_req_t*)req);
+
+  __applyPAP__(data->badCallback, 1, result);
 }
 
 
@@ -440,24 +449,32 @@ void afterThread(uv_work_t *req, int status) {
   void *goodCallback = data->goodCallback;
   void *result = data->result;
   bool isBad = data->isBad;
+  bool hasFinished = data->hasFinished;
   GC_FREE(data);
   GC_FREE(req);
 
-  if (isBad) {
+  if (!hasFinished) {
     __applyPAP__(badCallback, 1, result);
-  } else {
-    __applyPAP__(goodCallback, 1, result);
   }
+  // if (isBad || !hasFinished) {
+  //   __applyPAP__(badCallback, 1, result);
+  // } else {
+  //   __applyPAP__(goodCallback, 1, result);
+  // }
 }
 
-void madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback) {
+
+uv_work_t * madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback) {
   uv_work_t *req = (uv_work_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(uv_work_t));
   ThreadData_t *data = (ThreadData_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(ThreadData_t));
   data->badCallback = badCallback;
   data->goodCallback = goodCallback;
   data->threadFn = fn;
+  data->hasFinished = false;
   req->data = data;
   int r = uv_queue_work(getLoop(), req, runThread, afterThread);
+
+  return req;
 }
 
 

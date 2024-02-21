@@ -4,7 +4,6 @@
 #include <iostream>
 #include <stdint.h>
 #include "eq.hpp"
-#include "comparable.hpp"
 #include "list.hpp"
 
 typedef struct madlib__dictionary__Dictionary {

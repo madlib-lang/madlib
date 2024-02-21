@@ -17,9 +17,9 @@ alias RawNetworkInterfaceFragment = {
   name :: String,
 }
 
-type IpV4 = IpV4(Short, Short, Short, Short)
+export type IpV4 = IpV4(Short, Short, Short, Short)
 
-alias InterfaceAddress = {
+export alias InterfaceAddress = {
   ipv4 :: Maybe IpV4,
   ipv4Mask :: Maybe IpV4,
   ipv6 :: Maybe String,
@@ -27,10 +27,21 @@ alias InterfaceAddress = {
   isInternal :: Boolean,
 }
 
-alias Interface = { addresses :: List InterfaceAddress, name :: String }
+export alias Interface = { addresses :: List InterfaceAddress, name :: String }
 
 readNetworkInterfacesFFI :: {} -> List RawNetworkInterfaceFragment
 readNetworkInterfacesFFI = extern "madlib__network__readNetworkInterfaces"
+
+
+makeInterfaceAddress = (formattedFragment) => (
+  {
+    isInternal: formattedFragment.isInternal,
+    ipv4: formattedFragment.ipv4,
+    ipv4Mask: formattedFragment.ipv4Mask,
+    ipv6: formattedFragment.ipv6,
+    ipv6Mask: formattedFragment.ipv6Mask,
+  }
+)
 
 
 ipv4FromString :: String -> Maybe IpV4
@@ -46,61 +57,30 @@ ipv4FromString = (src) => pipe(
   },
 )(src)
 
-// f :: { ...b, ipv4 :: Maybe String, name :: String }
-// -> {
-//   ipv4 :: Maybe IpV4,
-//   ipv4Mask :: Maybe IpV4,
-//   name :: String
-// }
-f= (fragment) => (
-    {
-      // ...fragment,
-      ipv4: chain(ipv4FromString, fragment.ipv4),
-      name: fragment.name,
-      ipv4Mask: chain(ipv4FromString, fragment.ipv4Mask),
-    }
-  )
-// readNetworkInterfaces :: {} -> List Interface
-export readNetworkInterfaces = () => pipe(
+
+getInterfaces :: {} -> List Interface
+export getInterfaces = () => pipe(
   map(
-    f,
+    (fragment) => (
+      {
+        ...fragment,
+        ipv4: chain(ipv4FromString, fragment.ipv4),
+        ipv4Mask: chain(ipv4FromString, fragment.ipv4Mask),
+      }
+    ),
   ),
-  //   List.reduce(
-  //     (result, addr) => List.upsertWith(
-  //       (entry) => entry.name == addr.name,
-  //       where {
-  //         Just({ name, addresses }) =>
-  //           {
-  //             name,
-  //             addresses: [
-  //               {
-  //                 isInternal: addr.isInternal,
-  //                 ipv4: addr.ipv4,
-  //                 ipv4Mask: addr.ipv4Mask,
-  //                 ipv6: addr.ipv6,
-  //                 ipv6Mask: addr.ipv6Mask,
-  //               },
-  //               ...addresses,
-  //             ],
-  //           }
+  List.reduce(
+    (result, addr) => List.upsertWith(
+      (entry) => entry.name == addr.name,
+      where {
+        Just({ name, addresses }) =>
+          { name, addresses: [makeInterfaceAddress(addr), ...addresses] }
 
-  //         Nothing =>
-  //           {
-  //             name: addr.name,
-  //             addresses: [
-  //               {
-  //                 isInternal: addr.isInternal,
-  //                 ipv4: addr.ipv4,
-  //                 ipv4Mask: addr.ipv4Mask,
-  //                 ipv6: addr.ipv6,
-  //                 ipv6Mask: addr.ipv6Mask,
-  //               },
-  //             ],
-  //           }
-  //       },
-  //       result,
-  //     ),
-  //     [],
-  //   ),
-
+        Nothing =>
+          { name: addr.name, addresses: [makeInterfaceAddress(addr)] }
+      },
+      result,
+    ),
+    [],
+  ),
 )(readNetworkInterfacesFFI())

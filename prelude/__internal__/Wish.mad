@@ -423,7 +423,7 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
                       goodCB
                     )(result)
                   } else do {
-                    setTimeout(() => fork(indexOfLastStartedWish + 1, wishesNotStarted), 0)
+                    setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
                   }
                 }
               )
@@ -453,6 +453,74 @@ export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => parallelN(-1, wishes)
+
+
+raceN :: Integer -> List (Wish e a) -> Wish {} a
+export raceN = (concurrent, wishes) => Wish((badCB, goodCB) => {
+  amountOfWishesToProcess = length(wishes)
+  runWishes = 0
+  wishesNotStarted = wishes
+  indexOfLastStartedWish = 0
+  finished = false
+
+  cancelationFunctions :: List #[Integer, {} -> {}]
+  cancelationFunctions = []
+
+  fork :: Integer -> List (Wish e a) -> {}
+  fork = (index, ws) => where(ws) {
+    [wish, ...nextWishes] =>
+      do {
+        wishesNotStarted = nextWishes
+        indexOfLastStartedWish = indexOfLastStartedWish + 1
+
+        where(wish) {
+          Wish(run) =>
+            do {
+              done = false
+              cancel = run(
+                () => {
+                  done = true
+                  runWishes = runWishes + 1
+                  if (length(wishesNotStarted) > 0 && !finished) do {
+                    setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
+                  } else if (runWishes == amountOfWishesToProcess) do {
+                    finished = true
+                    badCB({})
+                  }
+                },
+                (x) => {
+                  done = true
+                  finished = true
+                  forEach((cancelFunction) => if (Tuple.fst(cancelFunction) != index) {
+                    Tuple.snd(cancelFunction)()
+                  }, cancelationFunctions)
+                  goodCB(x)
+                }
+              )
+
+              cancelationFunctions = [#[index, () => if (!done) { cancel() }], ...cancelationFunctions]
+            }
+        }
+      }
+
+    [] =>
+      {}
+  }
+
+  setTimeout(() => {
+    forEach((i) => {
+      fork(i, wishesNotStarted)
+    }, range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent))
+  }, 0)
+
+  return () => {
+    forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
+  }
+})
+
+
+race :: List (Wish e a) -> Wish {} a
+export race = (wishes) => raceN(-1, wishes)
 
 
 discardError :: (e -> a) -> Wish e a -> Wish {} a

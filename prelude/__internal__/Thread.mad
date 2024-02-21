@@ -1,6 +1,7 @@
 import type { Wish } from "Wish"
 
 import { Wish } from "Wish"
+import IO from "IO"
 
 
 
@@ -52,7 +53,7 @@ threadFFI = extern "madlib__process__thread"
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
 export create = (handler) => Wish(
   (bad, good) => {
-    threadFFI(handler, bad, good)
+    id = threadFFI(handler, bad, good)
 
     // TODO: implement cancellation function
     return () => {}
