@@ -1,10 +1,10 @@
 import type { Maybe } from "Maybe"
 
-import Byte from "Byte"
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import Short from "Short"
 import String from "String"
+import Math from "Math"
 
 
 
@@ -19,6 +19,14 @@ alias RawNetworkInterfaceFragment = {
 
 export type IpV4 = IpV4(Short, Short, Short, Short)
 
+alias NetworkInfo = {
+  broadcastIp :: IpV4,
+  // usually the router but not always
+  firstIp :: IpV4,
+  lastIp :: IpV4,
+  networkIp :: IpV4,
+}
+
 export alias InterfaceAddress = {
   ipv4 :: Maybe IpV4,
   ipv4Mask :: Maybe IpV4,
@@ -29,9 +37,30 @@ export alias InterfaceAddress = {
 
 export alias Interface = { addresses :: List InterfaceAddress, name :: String }
 
+#iftarget llvm
+
 readNetworkInterfacesFFI :: {} -> List RawNetworkInterfaceFragment
 readNetworkInterfacesFFI = extern "madlib__network__readNetworkInterfaces"
 
+#elseif js
+#- import madlib__prelude__os from "os" -#
+
+readNetworkInterfacesFFI :: {} -> List RawNetworkInterfaceFragment
+readNetworkInterfacesFFI = () => #- {
+  const interfaces = madlib__prelude__os.networkInterfaces()
+  const mapped = Object.keys(interfaces).flatMap((name) => interfaces[name].map((i) => ({
+    ipv4: i.family === "IPv4" ? { __constructor: "Just", __args: [i.address] } : { __constructor: "Nothing", __args: [] },
+    ipv4Mask: i.family === "IPv4" ? { __constructor: "Just", __args: [i.netmask] } : { __constructor: "Nothing", __args: [] },
+    ipv6: i.family === "IPv6" ? { __constructor: "Just", __args: [i.address] } : { __constructor: "Nothing", __args: [] },
+    ipv6Mask: i.family === "IPv6" ? { __constructor: "Just", __args: [i.netmask] } : { __constructor: "Nothing", __args: [] },
+    name,
+    isInternal: i.internal,
+  })))
+
+  return __jsArrayToList__(mapped)
+} -#
+
+#endif
 
 makeInterfaceAddress = (formattedFragment) => (
   {
@@ -84,3 +113,54 @@ export getInterfaces = () => pipe(
     [],
   ),
 )(readNetworkInterfacesFFI())
+
+
+getNetworkInfo :: IpV4 -> IpV4 -> NetworkInfo
+export getNetworkInfo = (ip, mask) => where(#[ip, mask]) {
+  #[IpV4(i1, i2, i3, i4), IpV4(m1, m2, m3, m4)] =>
+    {
+      networkIp: IpV4(i1 & m1, i2 & m2, i3 & m3, i4 & m4),
+      broadcastIp: IpV4(
+        (i1 & m1) | (255 - m1),
+        (i2 & m2) | (255 - m2),
+        (i3 & m3) | (255 - m3),
+        (i4 & m4) | (255 - m4),
+      ),
+      firstIp: IpV4(i1 & m1, i2 & m2, i3 & m3, i4 & m4 + 1),
+      lastIp: IpV4(
+        (i1 & m1) | (255 - m1),
+        (i2 & m2) | (255 - m2),
+        (i3 & m3) | (255 - m3),
+        (i4 & m4) | (255 - m4) - 1,
+      ),
+    }
+}
+
+
+ipV4ToInteger :: IpV4 -> Integer
+ipV4ToInteger = (ip) => where(ip) {
+  IpV4(i1, i2, i3, i4) =>
+    List.reduce((l, i) => (l << 8) + Short.toInteger(i), 0, [i1, i2, i3, i4]) >>> 0
+}
+
+
+ipV4FromInteger :: Integer -> IpV4
+ipV4FromInteger = (l) => IpV4(
+  Short.fromInteger(l >>> 24),
+  Short.fromInteger((l >> 16) & 255),
+  Short.fromInteger((l >> 8) & 255),
+  Short.fromInteger(l & 255),
+)
+
+
+getIpAddressesInRange :: IpV4 -> IpV4 -> List IpV4
+export getIpAddressesInRange = (start, end) => {
+  startInt = ipV4ToInteger(start)
+
+  return pipe(
+    ipV4ToInteger,
+    Math.add(1),
+    List.range(startInt),
+    map(ipV4FromInteger)
+  )(end)
+}

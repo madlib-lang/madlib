@@ -1,0 +1,46 @@
+import { assertEquals, test } from "Test"
+
+import { IpV4, getIpAddressesInRange, getNetworkInfo } from "./Network"
+
+
+
+test(
+  "getNetworkInfo",
+  () => {
+    expected = {
+      networkIp: IpV4(192, 168, 0, 0),
+      broadcastIp: IpV4(192, 168, 255, 255),
+      firstIp: IpV4(192, 168, 0, 1),
+      lastIp: IpV4(192, 168, 255, 254),
+    }
+    actual = getNetworkInfo(IpV4(192, 168, 36, 55), IpV4(255, 255, 0, 0))
+
+    return assertEquals(actual, expected)
+  },
+)
+
+test(
+  "getIpAddressesInRange",
+  () => {
+    expected = [IpV4(192, 168, 36, 55), IpV4(192, 168, 36, 56), IpV4(192, 168, 36, 57)]
+    actual = getIpAddressesInRange(IpV4(192, 168, 36, 55), IpV4(192, 168, 36, 57))
+
+    return assertEquals(actual, expected)
+  },
+)
+
+test(
+  "getIpAddressesInRange - edge",
+  () => {
+    expected = [
+      IpV4(192, 255, 68, 255),
+      IpV4(192, 255, 69, 0),
+      IpV4(192, 255, 69, 1),
+      IpV4(192, 255, 69, 2),
+      IpV4(192, 255, 69, 3),
+    ]
+    actual = getIpAddressesInRange(IpV4(192, 255, 68, 255), IpV4(192, 255, 69, 3))
+
+    return assertEquals(actual, expected)
+  },
+)
