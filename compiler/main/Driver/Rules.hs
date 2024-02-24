@@ -335,6 +335,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     let allConstructors = concat $ Maybe.mapMaybe Slv.getADTConstructors atypedecls
     return (List.find ((== name) . Slv.getConstructorName) allConstructors, (mempty, mempty))
 
+  ForeignExportedConstructor modulePath name -> nonInput $ do
+    (ast, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    let allConstructors = concat $ Maybe.mapMaybe Slv.getADTConstructors (Slv.extractExportedADTs ast)
+    return (List.find ((== name) . Slv.getConstructorName) allConstructors, (mempty, mempty))
+
   ForeignTypeDeclaration modulePath name -> nonInput $ do
     (Slv.AST { Slv.atypedecls }, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return ( List.find

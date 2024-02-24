@@ -12,12 +12,14 @@ import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
-import qualified Data.Set as Set
+import qualified Data.Set                      as Set
 import           Infer.Env
 import qualified Rock
-import qualified Driver.Query as Query
-import qualified Data.List as List
-import Control.Applicative
+import qualified Driver.Query                  as Query
+import qualified Data.List                     as List
+import qualified Data.Maybe                    as Maybe
+import           Control.Applicative
+import qualified AST.Solved                    as Slv
 
 
 
@@ -41,8 +43,22 @@ lookupVar env name = do
 
     Just (ImportInfo path NamespaceImport _) ->
       let afterNamespace = dropWhile (/= '.') name
-      in  if not (null afterNamespace) then
-            Rock.fetch $ Query.ForeignFunctionScheme path (tail afterNamespace)
+      in  if not (null afterNamespace) then do
+            let realName = tail afterNamespace
+            sc <- Rock.fetch $ Query.ForeignFunctionScheme path realName
+            exp <- Rock.fetch $ Query.ForeignExp path realName
+            ctor <- Rock.fetch $ Query.ForeignExportedConstructor path realName
+            (ast, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+            let nameExports = Maybe.mapMaybe Slv.maybeExportName (Slv.aexps ast)
+            case exp of
+              Just e | Slv.isExport e ->
+                return sc
+
+              _ ->
+                if Maybe.isJust ctor || realName `elem` nameExports then
+                  return sc
+                else
+                  return Nothing
           else
             Rock.fetch $ Query.ForeignFunctionScheme path ""
 
