@@ -64,6 +64,7 @@ data Query a where
   SolvedMethodNode :: String -> Type -> Query (Maybe (Slv.Exp, FilePath))
   DefinesInterfaceForMethod :: FilePath -> String -> Query Bool
   ForeignConstructor :: FilePath -> String -> Query (Maybe Slv.Constructor)
+  ForeignExportedConstructor :: FilePath -> String -> Query (Maybe Slv.Constructor)
   ForeignTypeDeclaration :: FilePath -> String -> Query (Maybe Slv.TypeDecl)
 
   -- Monomorphization
@@ -165,41 +166,44 @@ instance Hashable (Query a) where
     ForeignConstructor modulePath constructorName ->
       hashWithSalt salt (modulePath <> "." <> constructorName, 21 :: Int)
 
+    ForeignExportedConstructor modulePath constructorName ->
+      hashWithSalt salt (modulePath <> "." <> constructorName, 22 :: Int)
+
     ForeignTypeDeclaration modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 22 :: Int)
+      hashWithSalt salt (modulePath <> "." <> typeName, 23 :: Int)
 
     MonomorphizedProgram ->
-      hashWithSalt salt (23 :: Int)
+      hashWithSalt salt (24 :: Int)
 
     MonomorphizedAST path ->
-      hashWithSalt salt (path, 24 :: Int)
-
-    CoreAST path ->
       hashWithSalt salt (path, 25 :: Int)
 
-    PropagatedAST path ->
+    CoreAST path ->
       hashWithSalt salt (path, 26 :: Int)
 
+    PropagatedAST path ->
+      hashWithSalt salt (path, 27 :: Int)
+
     ForeignCoreExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 27 :: Int)
+      hashWithSalt salt (modulePath <> "." <> expName, 28 :: Int)
 
     BuiltObjectFile path ->
-      hashWithSalt salt (path, 28 :: Int)
-
-    GeneratedJSModule path ->
       hashWithSalt salt (path, 29 :: Int)
 
-    BuiltJSModule path ->
+    GeneratedJSModule path ->
       hashWithSalt salt (path, 30 :: Int)
 
-    BuiltTarget path ->
+    BuiltJSModule path ->
       hashWithSalt salt (path, 31 :: Int)
 
-    StaticLibPathsToLink path ->
+    BuiltTarget path ->
       hashWithSalt salt (path, 32 :: Int)
 
+    StaticLibPathsToLink path ->
+      hashWithSalt salt (path, 33 :: Int)
+
     EnvVar name ->
-      hashWithSalt salt (name, 33 :: Int)
+      hashWithSalt salt (name, 34 :: Int)
 
 
 instance Hashable (Some Query) where
