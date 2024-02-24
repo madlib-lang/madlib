@@ -882,8 +882,8 @@ expToDoc comments exp =
                 _ ->
                     Pretty.pretty "do "
                   <> Pretty.lbrace
-                  <> Pretty.nest indentSize (Pretty.line <> exps' <> commentsAfterBody')
-                  <> Pretty.line
+                  <> Pretty.nest indentSize (Pretty.hardline <> exps' <> commentsAfterBody')
+                  <> Pretty.hardline
                   <> Pretty.rbrace
           in  ( doc
               , comments'''
@@ -925,6 +925,13 @@ expToDoc comments exp =
 
                 _ ->
                   False
+
+              isElseIf = case falsy of
+                Source _ _ (If _ _ _) ->
+                  True
+
+                _ ->
+                  False
           in  ( Pretty.group
                 (
                   Pretty.pretty "if ("
@@ -936,16 +943,16 @@ expToDoc comments exp =
                       Pretty.rparen <> Pretty.space <> truthy'
                     else
                       Pretty.pretty ") {"
-                      <> Pretty.nest indentSize (Pretty.line <> truthy') <> Pretty.line <> Pretty.rbrace
+                      <> Pretty.nest indentSize (Pretty.hardline <> truthy') <> Pretty.hardline <> Pretty.rbrace
                   )
               <>  (
-                    if isElseDo then
+                    if isElseDo || isElseIf then
                       Pretty.group (Pretty.pretty " else "  <> falsy')
                     else if showElse then
                       Pretty.group
                         (
                           Pretty.pretty " else {"
-                          <> Pretty.nest indentSize (Pretty.line <> falsy') <> Pretty.line <> Pretty.rbrace
+                          <> Pretty.nest indentSize (Pretty.hardline <> falsy') <> Pretty.hardline <> Pretty.rbrace
                         )
                     else
                       Pretty.emptyDoc
