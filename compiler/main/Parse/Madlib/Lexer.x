@@ -24,6 +24,7 @@ module Parse.Madlib.Lexer
   , tokenTarget
   , strV
   , charData
+  , enableFormatterMode
   )
 where
 
@@ -159,7 +160,7 @@ tokens :-
   <0, stringTemplateMadlib> $head*\<\=                                                                  { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                            { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"                 { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \') \'  { mapCharToken }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \\x | \\x. | \\x.. | \\u | \\u. | \\u.. | \\u... | \\u.... | \') \'  { mapCharToken }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \% \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+                       ;
@@ -216,19 +217,30 @@ isTypeExport = toRegex "\\`export[ \t]+type"
 -- Int: jsx depth
 -- Int: start code stack
 -- SourceTarget: current source target we're in
-data AlexUserState = AlexUserState Int (String, Int) Int [Int] SourceTarget deriving(Eq, Show)
+-- Bool: for code formatter
+data AlexUserState = AlexUserState Int (String, Int) Int [Int] SourceTarget Bool deriving(Eq, Show)
 
 alexInitUserState :: AlexUserState
-alexInitUserState = AlexUserState 0 ("", 0) 0 [] TargetAll
+alexInitUserState = AlexUserState 0 ("", 0) 0 [] TargetAll False
+
+enableFormatterMode :: Alex ()
+enableFormatterMode = do
+  (AlexUserState n strState jsxDepth codeStack sourceTarget _) <- getState
+  setState $ AlexUserState n strState jsxDepth codeStack sourceTarget True
+
+getIsFormatter :: Alex Bool
+getIsFormatter = do
+  (AlexUserState _ _ _ _ _ formatter) <- getState
+  return formatter
 
 setCurrentSourceTarget :: SourceTarget -> Alex ()
 setCurrentSourceTarget sourceTarget = do
-  (AlexUserState n strState jsxDepth codeStack _) <- getState
-  setState $ AlexUserState n strState jsxDepth codeStack sourceTarget
+  (AlexUserState n strState jsxDepth codeStack _ formatter) <- getState
+  setState $ AlexUserState n strState jsxDepth codeStack sourceTarget formatter
 
 getCurrentSourceTarget :: Alex SourceTarget
 getCurrentSourceTarget = do
-  (AlexUserState _ _ _ _ sourceTarget) <- getState
+  (AlexUserState _ _ _ _ sourceTarget _) <- getState
   return sourceTarget
 
 setStartCode :: Int -> Alex ()
@@ -238,24 +250,24 @@ setStartCode code = do
 
 pushStartCode :: Int -> Alex ()
 pushStartCode code = do
-  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
+  (AlexUserState n strState jsxDepth codeStack sourceTarget formatter) <- getState
   setStartCode code
-  setState $ AlexUserState n strState jsxDepth (codeStack ++ [code]) sourceTarget
+  setState $ AlexUserState n strState jsxDepth (codeStack ++ [code]) sourceTarget formatter
 
 popStartCode :: Alex ()
 popStartCode = do
-  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
+  (AlexUserState n strState jsxDepth codeStack sourceTarget formatter) <- getState
   if not (null codeStack) then do
     let popped  = init codeStack
         newCode = if not (null popped) then last popped else 0
-    setState $ AlexUserState n strState jsxDepth popped sourceTarget
+    setState $ AlexUserState n strState jsxDepth popped sourceTarget formatter
     setStartCode newCode
   else
     setStartCode 0
 
 getStartCodeStack :: Alex [Int]
 getStartCodeStack = do
-  (AlexUserState _ _ _ scs _) <- getState
+  (AlexUserState _ _ _ scs _ _) <- getState
   return scs
 
 getPreviousStartCode :: Alex Int
@@ -282,20 +294,21 @@ setDefaultStartCode =
 getState :: Alex AlexUserState
 getState = Alex $ \s@AlexState{alex_ust = state} -> Right (s, state)
 
+
 setState :: AlexUserState -> Alex ()
 setState state = Alex $ \s -> Right (s{ alex_ust = state }, ())
 
 
 jsxTagOpened :: Alex ()
 jsxTagOpened = do
-  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
-  setState (AlexUserState n strState (jsxDepth + 1) codeStack sourceTarget)
+  (AlexUserState n strState jsxDepth codeStack sourceTarget formatter) <- getState
+  setState (AlexUserState n strState (jsxDepth + 1) codeStack sourceTarget formatter)
   pushStartCode jsxOpeningTag
 
 jsxTagClosed :: Alex ()
 jsxTagClosed = do
-  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
-  setState (AlexUserState n strState (jsxDepth - 1) codeStack sourceTarget)
+  (AlexUserState n strState jsxDepth codeStack sourceTarget formatter) <- getState
+  setState (AlexUserState n strState (jsxDepth - 1) codeStack sourceTarget formatter)
   popStartCode
   pushStartCode jsxClosingTag
 
@@ -314,44 +327,45 @@ endComment input n = do
 
 resetStringTemplate :: Alex ()
 resetStringTemplate = do
-  (AlexUserState n (_, curlyCount) jsxDepth codeStack sourceTarget) <- getState
-  setState $ AlexUserState n ("", curlyCount) jsxDepth codeStack sourceTarget
+  (AlexUserState n (_, curlyCount) jsxDepth codeStack sourceTarget formatter) <- getState
+  setState $ AlexUserState n ("", curlyCount) jsxDepth codeStack sourceTarget formatter
 
 resetCurlyCount :: Alex ()
 resetCurlyCount = do
-  (AlexUserState n (strBuffer, _) jsxDepth codeStack sourceTarget) <- getState
-  setState $ AlexUserState n (strBuffer, 0) jsxDepth codeStack sourceTarget
+  (AlexUserState n (strBuffer, _) jsxDepth codeStack sourceTarget formatter) <- getState
+  setState $ AlexUserState n (strBuffer, 0) jsxDepth codeStack sourceTarget formatter
 
 updateCurlyCount :: Int -> Alex ()
 updateCurlyCount n = do
-  (AlexUserState cd (strBuffer, _) jsxDepth codeStack sourceTarget) <- getState
-  setState $ AlexUserState n (strBuffer, n) jsxDepth codeStack sourceTarget
+  (AlexUserState cd (strBuffer, _) jsxDepth codeStack sourceTarget formatter) <- getState
+  setState $ AlexUserState n (strBuffer, n) jsxDepth codeStack sourceTarget formatter
 
 appendStringToTemplate :: String -> Alex ()
 appendStringToTemplate extra = do
-  (AlexUserState n (strBuffer, curlyCount) jsxDepth codeStack sourceTarget) <- getState
-  setState $ AlexUserState n (strBuffer <> extra, curlyCount) jsxDepth codeStack sourceTarget
+  (AlexUserState n (strBuffer, curlyCount) jsxDepth codeStack sourceTarget formatter) <- getState
+  setState $ AlexUserState n (strBuffer <> extra, curlyCount) jsxDepth codeStack sourceTarget formatter
 
 beginStringTemplateMadlib :: AlexInput -> Int -> Alex Token
-beginStringTemplateMadlib i@(posn, prevChar, pending, input) len = do
+beginStringTemplateMadlib i@(AlexPn a l c, prevChar, pending, input) len = do
   sourceTarget                           <- getCurrentSourceTarget
-  (AlexUserState _ (strBuffer, _) _ _ _) <- getState
+  (AlexUserState _ (strBuffer, _) _ _ _ _) <- getState
   pushStartCode stringTemplateMadlib
   resetStringTemplate
   resetCurlyCount
-  return $ Token (makeArea posn (take len input)) sourceTarget (TokenStr strBuffer)
+  interpretedBuffer <- processHexaEscapes (AlexPn (a - length strBuffer) l (c - length strBuffer)) strBuffer
+  return $ Token (makeArea (AlexPn a l c) (take len input)) sourceTarget (TokenStr interpretedBuffer)
 
 stringTemplateMadlibLeftCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibLeftCurly i@(posn, prevChar, pending, input) len = do
   sourceTarget                       <- getCurrentSourceTarget
-  (AlexUserState _ (_, count) _ _ _) <- getState
+  (AlexUserState _ (_, count) _ _ _ _) <- getState
   updateCurlyCount $ count + 1
   return $ Token (makeArea posn (take len input)) sourceTarget TokenLeftCurly
 
 stringTemplateMadlibRightCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibRightCurly i@(posn, prevChar, pending, input) len = do
   sourceTarget                       <- getCurrentSourceTarget
-  (AlexUserState _ (_, count) _ _ _) <- getState
+  (AlexUserState _ (_, count) _ _ _ _) <- getState
   if count == 0 then do
     popStartCode
     begin stringTemplate i len
@@ -366,12 +380,13 @@ beginStringTemplate i@(posn, prevChar, pending, input) len = do
   return $ Token (makeArea posn (take len input)) sourceTarget TokenTemplateStringStart
 
 endStringTemplate :: AlexInput -> Int -> Alex Token
-endStringTemplate i@(posn, prevChar, pending, input) len = do
+endStringTemplate i@(AlexPn a l c, prevChar, pending, input) len = do
   sourceTarget                           <- getCurrentSourceTarget
-  (AlexUserState _ (strBuffer, _) _ _ _) <- getState
+  (AlexUserState _ (strBuffer, _) _ _ _ _) <- getState
   resetStringTemplate
   popStartCode
-  return $ (Token (makeArea posn (take len input)) sourceTarget (TokenTemplateStringEnd strBuffer))
+  interpretedBuffer <- processHexaEscapes (AlexPn (a - length strBuffer) l (c - length strBuffer)) strBuffer
+  return $ (Token (makeArea (AlexPn a l c) (take len input)) sourceTarget (TokenTemplateStringEnd interpretedBuffer))
 
 escapedStringTemplateContent :: AlexInput -> Int -> Alex Token
 escapedStringTemplateContent i@(posn, prevChar, pending, input) len = do
@@ -502,20 +517,92 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
   return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
+charParser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
+
 mapCharToken :: AlexInput -> Int -> Alex Token
 mapCharToken inputData@(posn, prevChar, pending, input) len = do
-  let charData   = take len input
-      parser     = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
-      parsed     = fst $ last $ parser charData
-      charData'  = parsed !! 1 -- 1 because we check after the first '
-      token      = TokenChar charData'
+  let src = take len input
+  charData <- processHexaEscapes posn src
+  let parsed = fst $ last $ charParser charData
+      -- 1 because we need the character between ' and '
+      charData' = parsed !! 1
+      token = TokenChar charData'
 
   if length parsed == 3 then do
     sourceTarget <- getCurrentSourceTarget
-    return $ Token (makeArea posn (take len input)) sourceTarget token
+    return $ Token (makeArea posn src) sourceTarget token
   else do
-    let Area (Loc a l c) _ = makeArea posn (take len input)
+    let Area (Loc a l c) _ = makeArea posn src
     alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show token))
+
+
+interpretChars :: [Char] -> [Char]
+interpretChars chars =
+  let parsed  = charParser chars
+      parsed' = fst $ last $ parsed
+  in  parsed'
+
+
+isHexaDigit :: Char -> Bool
+isHexaDigit c = elem c ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F']
+
+
+processHexaEscapes :: AlexPosn -> String -> Alex String
+processHexaEscapes (AlexPn a l c) input = do
+  isFormatter <- getIsFormatter
+  if isFormatter then
+    return input
+  else case input of
+    '\\':'u':a1:b1:c1:d1:more -> do
+      next <- processHexaEscapes (AlexPn (a + 6) l (c + 6)) more
+
+      when (any (not . isHexaDigit) [a1, b1, c1, d1]) $ do
+        let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+        let offset = if d1 == '"' || d1 == '\'' then 5 else 6
+        alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + offset))
+
+      case interpretChars ['\\', 'x', a1, b1, c1, d1] of
+        [] -> do
+          -- TODO: the range is not correctly interpreted yet, we possibly need to
+          -- update the error type and the parsing of it in AST.hs
+          let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+          alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 6))
+
+        chars ->
+          return $ chars ++ next
+
+    '\\':'u':rest -> do
+      let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+      alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 1 + length rest))
+
+    '\\':'x':a1:b1:more -> do
+      next <- processHexaEscapes (AlexPn (a + 4) l (c + 4)) more
+
+      when (any (not . isHexaDigit) [a1, b1]) $ do
+        let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+        let offset = if b1 == '"' || b1 == '\'' then 3 else 4
+        alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + offset))
+
+      case interpretChars ['\\', 'x', a1, b1] of
+        [] -> do
+          -- TODO: the range is not correctly interpreted yet, we possibly need to
+          -- update the error type and the parsing of it in AST.hs
+          let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+          alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 4))
+
+        chars ->
+          return $ chars ++ next
+
+    '\\':'x':rest -> do
+      let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+      alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 1 + length rest))
+
+    a1:more -> do
+      next <- processHexaEscapes (AlexPn (a + 1) l (c + 1)) more
+      return $ a1 : next
+
+    last ->
+      return last
 
 
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
@@ -525,6 +612,10 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
   sourceTarget <- getCurrentSourceTarget
 
   token <- case tokenizer (take len input) of
+    TokenStr str -> do
+      escaped <- processHexaEscapes posn str
+      return $ TokenStr escaped
+
     TokenLeftCurly ->
       if sc == instanceHeader then do
         let next        = BLU.fromString $ ((tail . (take 70)) input)

@@ -131,36 +131,44 @@ buildAST options path code = case parse code of
 
   Left e -> do
     let split = lines e
-        line  = (readMaybe $ head split) :: Maybe Int
-        col   = (readMaybe $ split !! 1) :: Maybe Int
-        text  = if length split < 2 then
-                  "Syntax error"
-                else
-                  unlines (tail . tail $ split)
+    if head split == "BadEscape" then do
+      let Just l1 = (readMaybe $ split !! 1) :: Maybe Int
+          Just c1 = (readMaybe $ split !! 2) :: Maybe Int
+          Just l2 = (readMaybe $ split !! 3) :: Maybe Int
+          Just c2 = (readMaybe $ split !! 4) :: Maybe Int
 
-    case (line, col) of
-      (Just line', Just col') ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
+      return $ Left $ CompilationError (GrammarError path "Bad escape sequence") (Context path (Area (Loc 0 l1 c1) (Loc 0 l2 c2)))
+    else do
+      let line = (readMaybe $ head split) :: Maybe Int
+          col = (readMaybe $ split !! 1) :: Maybe Int
+          text = if length split < 2 then
+                "Syntax error"
+              else
+                unlines (tail . tail $ split)
 
-      (Just line', Nothing) ->
-        return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
+      case (line, col) of
+        (Just line', Just col') ->
+          return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
 
-      _ -> do
-        -- then we try to parse this: "lexical error at line 2, column 11"
-        let split' = words e
-        let line = (readMaybe $ init $ split' !! 4) :: Maybe Int
-            col  = (readMaybe $ split' !! 6) :: Maybe Int
-            text = "Syntax error"
+        (Just line', Nothing) ->
+          return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
 
-        case (line, col) of
-          (Just line', Just col') ->
-            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
+        _ -> do
+          -- then we try to parse this: "lexical error at line 2, column 11"
+          let split' = words e
+          let line = (readMaybe $ init $ split' !! 4) :: Maybe Int
+              col  = (readMaybe $ split' !! 6) :: Maybe Int
+              text = "Syntax error"
 
-          (Just line', Nothing) ->
-            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
+          case (line, col) of
+            (Just line', Just col') ->
+              return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' col') (Loc 0 line' (col' + 1))))
 
-          _ ->
-            return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 1 1)))
+            (Just line', Nothing) ->
+              return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line' 0) (Loc 0 (line' + 1) 0)))
+
+            _ ->
+              return $ Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 1 1) (Loc 1 1 1)))
 
 
 setPath :: AST -> FilePath -> AST
