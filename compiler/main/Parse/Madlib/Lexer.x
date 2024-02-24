@@ -161,6 +161,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                            { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"                 { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \\x | \\x. | \\x.. | \\u | \\u. | \\u.. | \\u... | \\u.... | \') \'  { mapCharToken }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \'\'                                                                                                       { mapCharToken }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \% \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+                       ;
@@ -520,8 +521,9 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
 charParser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
 
 mapCharToken :: AlexInput -> Int -> Alex Token
-mapCharToken inputData@(posn, prevChar, pending, input) len = do
+mapCharToken inputData@(posn@((AlexPn _ l1 c1)), prevChar, pending, input) len = do
   let src = take len input
+  when (src == "''") (alexError (printf "EmptyChar\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 2)))
   charData <- processHexaEscapes posn src
   let parsed = fst $ last $ charParser charData
       -- 1 because we need the character between ' and '
