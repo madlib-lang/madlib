@@ -4,6 +4,7 @@
 #include "maybe.hpp"
 #include "record.hpp"
 #include "network.hpp"
+#include <string.h>
 
 
 #ifdef __cplusplus
