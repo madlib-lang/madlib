@@ -137,7 +137,14 @@ buildAST options path code = case parse code of
           Just l2 = (readMaybe $ split !! 3) :: Maybe Int
           Just c2 = (readMaybe $ split !! 4) :: Maybe Int
 
-      return $ Left $ CompilationError (GrammarError path "Bad escape sequence") (Context path (Area (Loc 0 l1 c1) (Loc 0 l2 c2)))
+      return $ Left $ CompilationError BadEscapeSequence (Context path (Area (Loc 0 l1 c1) (Loc 0 l2 c2)))
+    else if head split == "EmptyChar" then do
+      let Just l1 = (readMaybe $ split !! 1) :: Maybe Int
+          Just c1 = (readMaybe $ split !! 2) :: Maybe Int
+          Just l2 = (readMaybe $ split !! 3) :: Maybe Int
+          Just c2 = (readMaybe $ split !! 4) :: Maybe Int
+
+      return $ Left $ CompilationError EmptyChar (Context path (Area (Loc 0 l1 c1) (Loc 0 l2 c2)))
     else do
       let line = (readMaybe $ head split) :: Maybe Int
           col = (readMaybe $ split !! 1) :: Maybe Int

@@ -16,6 +16,8 @@ data TypeError
   | UnboundVariableFromNamespace String String
   | UnboundType String
   | UnificationError Type Type
+  | BadEscapeSequence
+  | EmptyChar
   -- Pred: The instance we add
   -- Pred: The wrong predicate
   -- Pred: The predicate from the interface declaration

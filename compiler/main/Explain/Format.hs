@@ -614,6 +614,14 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         <> foundStr
         <> colorWhen color Red (kindToStr actualKind)
 
+  BadEscapeSequence ->
+    "This escape sequence is not valid\n\n"
+    <> "Hint: Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD"
+
+  EmptyChar ->
+    "Empty char\n\n"
+    <> "Note: Characters can't be empty"
+
   NoMain ->
     "You forgot to define a 'main' function in your main module\n\n"
     <> "Hint: Add a main method"
@@ -1578,6 +1586,48 @@ createErrorDiagnostic color context typeError = case typeError of
         Diagnose.Err
           Nothing
           "Grammar error"
+          []
+          []
+
+  BadEscapeSequence ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Bad escape sequence"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "This escape sequence is not valid"
+            )
+          ]
+          [
+            Diagnose.Hint "Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD"
+          ]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Bad escape sequence"
+          []
+          []
+
+  EmptyChar ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Empty Char"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "This character is empty"
+            )
+          ]
+          [
+            Diagnose.Note "Characters can't be empty"
+          ]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Empty Char"
           []
           []
 
