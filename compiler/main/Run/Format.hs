@@ -18,7 +18,7 @@ import           Error.Error
 import           Format.Format
 
 import           Text.Show.Pretty
-import           Parse.Madlib.Grammar (parse)
+import           Parse.Madlib.Grammar (parseForFormatter)
 import           Data.Either.Combinators (mapLeft)
 import           Run.Options
 import           Run.Target
@@ -59,7 +59,7 @@ parseASTsToFormat  (fp : fps)   = do
                               , optDebug = False
                               , optOptimizationLevel = O1
                               }
-        ast <- case parse code of
+        ast <- case parseForFormatter code of
           Right a ->
             computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a fp)
 
@@ -97,7 +97,7 @@ parseCodeToFormat code = do
                         , optDebug = False
                         , optOptimizationLevel = O1
                         }
-  ast <- case parse code of
+  ast <- case parseForFormatter code of
         Right a ->
           computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a "./Module.mad")
 

@@ -734,7 +734,6 @@ sanitizeImportPath path =
 
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
--- lexerWrap f = alexMonadScan >>= (\t -> trace (ppShow t) (f t))
 
 
 parseError :: Token -> Alex a
@@ -744,4 +743,9 @@ parseError (Token (Area (Loc a l c) _) _ cls) =
 
 parse :: String -> Either String Src.AST
 parse s = runAlex s parseMadlib
+
+parseForFormatter :: String -> Either String Src.AST
+parseForFormatter s = runAlex s $ do
+  enableFormatterMode
+  parseMadlib
 }
