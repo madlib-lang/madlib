@@ -456,11 +456,6 @@ void afterThread(uv_work_t *req, int status) {
   if (!hasFinished) {
     __applyPAP__(badCallback, 1, result);
   }
-  // if (isBad || !hasFinished) {
-  //   __applyPAP__(badCallback, 1, result);
-  // } else {
-  //   __applyPAP__(goodCallback, 1, result);
-  // }
 }
 
 

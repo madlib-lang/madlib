@@ -797,7 +797,7 @@ tryDefaults env ps = case ps of
         let tvs  = getTV <$> vars
             tvs' = filter (`M.notMember` nextSubst) tvs
             s    = M.fromList $ zip tvs' (tUnit <$ tvs')
-        return (nextSubst `compose` s, nextPS)
+        return (s `compose` nextSubst, nextPS)
 
     IsIn "Show" [t] _ -> do
       (nextSubst, nextPS) <- tryDefaults env next
@@ -812,7 +812,7 @@ tryDefaults env ps = case ps of
         let tvs  = getTV <$> vars
             tvs' = filter (`M.notMember` nextSubst) tvs
             s    = M.fromList $ zip tvs' (tUnit <$ tvs')
-        return (nextSubst `compose` s, nextPS)
+        return (s `compose` nextSubst, nextPS)
 
     _ -> do
       maybeFound <- findInst env p
@@ -826,7 +826,8 @@ tryDefaults env ps = case ps of
           return (nextSubst, nextPS)
 
         Nothing -> do
-          (nextSubst, nextPS) <- tryDefaults env next
+          parentPreds <- getParentPredsOnly env p
+          (nextSubst, nextPS) <- tryDefaults env (parentPreds ++ next)
           return (nextSubst, p : nextPS)
 
   [] ->
