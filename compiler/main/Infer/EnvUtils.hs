@@ -42,9 +42,9 @@ lookupVar env name = do
     Just (ImportInfo path NamespaceImport _) ->
       let afterNamespace = dropWhile (/= '.') name
       in  if not (null afterNamespace) then
-            Rock.fetch $ Query.ForeignScheme path (tail afterNamespace)
+            Rock.fetch $ Query.ForeignFunctionScheme path (tail afterNamespace)
           else
-            Rock.fetch $ Query.ForeignScheme path ""
+            Rock.fetch $ Query.ForeignFunctionScheme path ""
 
     _ ->
       return $ M.lookup name (envVars env) <|> M.lookup name (envMethods env)

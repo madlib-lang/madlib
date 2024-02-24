@@ -249,6 +249,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return (Map.lookup name (SlvEnv.envVars slvEnv <> SlvEnv.envMethods slvEnv), (mempty, mempty))
 
+  ForeignFunctionScheme modulePath name -> nonInput $ do
+    (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv modulePath
+    return (Map.lookup name (SlvEnv.envVars slvEnv), (mempty, mempty))
+
   ForeignExp modulePath name -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     return $ findExpByName name (Slv.aexps slvAst)
