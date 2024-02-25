@@ -946,35 +946,34 @@ rollupNotFoundMessage = unlines
 -- TODO: rework this
 runBundle :: FilePath -> Target -> IO (Either String (String, String))
 runBundle entrypointCompiledPath target = do
-  -- putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
-  -- rollupPath        <- try $ getEnv "ROLLUP_PATH"
-  -- rollupPathChecked <- case (rollupPath :: Either IOError String) of
-  --   Left _ -> do
-  --     r <-
-  --       try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
-  --     case r of
-  --       Left  err -> do
-  --         putStrLn $ ppShow err
-  --         return $ Left rollupNotFoundMessage
-  --       Right _ -> return $ Right "rollup"
-  --   Right p -> do
-  --     r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
-  --     case r of
-  --       Left err -> do
-  --         putStrLn $ ppShow err
-  --         r <-
-  --           try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
-  --             (Either SomeException (ExitCode, String, String))
-  --         case r of
-  --           Left  err -> do
-  --             putStrLn $ ppShow err
-  --             return $ Left rollupNotFoundMessage
-  --           Right _ -> return $ Right "rollup"
-  --       Right _ -> return $ Right p
+  putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
+  esbuildPath        <- try $ getEnv "ESBUILD_PATH"
+  esbuildPathChecked <- case (esbuildPath :: Either IOError String) of
+    Left _ -> do
+      r <-
+        try (readProcessWithExitCode "esbuild" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+      case r of
+        Left  err -> do
+          putStrLn $ ppShow err
+          return $ Left rollupNotFoundMessage
+        Right _ -> return $ Right "esbuild"
+    Right p -> do
+      r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+      case r of
+        Left err -> do
+          putStrLn $ ppShow err
+          r <-
+            try (readProcessWithExitCode "esbuild" ["--version"] "") :: IO
+              (Either SomeException (ExitCode, String, String))
+          case r of
+            Left  err -> do
+              putStrLn $ ppShow err
+              return $ Left rollupNotFoundMessage
+            Right _ -> return $ Right "esbuild"
+        Right _ -> return $ Right p
 
-  -- esbuild build/src/client/Main.mjs --platform=node --bundle --outfile=out.js
   let platform = if target == TNode then "node" else "browser"
-  case Right "esbuild" of
+  case esbuildPathChecked of
     Right esbuild -> do
       r <-
         try
