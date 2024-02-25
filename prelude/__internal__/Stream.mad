@@ -33,9 +33,9 @@ clearTimeout = extern "__clearTimeout__"
 
 #endif
 
-type Stream e a = Stream(Integer -> (Integer -> Message e a -> {}) -> {})
+export type Stream e a = Stream(Integer -> (Integer -> Message e a -> {}) -> {})
 
-type Message e a = Data(a) | Talkback(Integer -> {}) | Error(e) | NoMessage
+export type Message e a = Data(a) | Talkback(Integer -> {}) | Error(e) | NoMessage
 
 
 interval :: Integer -> Stream e Integer
