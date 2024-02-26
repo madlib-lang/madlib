@@ -170,15 +170,21 @@ clearWindowResizeHandler :: HandlerId -> {}
 export clearWindowResizeHandler = extern "madlib__stdio__clearWindowResizeHandler"
 
 
-
-// cl
-
 #elseif js
+
+#-
+{Node}
+import prelude_terminal_readline from "readline"
+{/Node}
+-#
+
+#- let readLineInterface = null -#
 
 enableTTYRawMode :: {} -> {}
 export enableTTYRawMode = () => #- {
   if (process.stdin.isTTY) {
-    prelude_readline.emitKeypressEvents(process.stdin)
+    readLineInterface = prelude_terminal_readline.createInterface({ input: process.stdin })
+    prelude_terminal_readline.emitKeypressEvents(process.stdin, readLineInterface)
     process.stdin.setRawMode(true)
   }
 } -#
@@ -188,6 +194,11 @@ disableTTYRawMode :: {} -> {}
 export disableTTYRawMode = () => #- {
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(false)
+
+    if (readLineInterface) {
+      readLineInterface.close()
+      readLineInterface = null
+    }
   }
 } -#
 
@@ -204,7 +215,9 @@ export onKeyPressed = (cb) => #- {
 
 
 clearKeyPressedHandler :: HandlerId -> {}
-export clearKeyPressedHandler = (id) => #- { process.stdin.off("keypress", id) } -#
+export clearKeyPressedHandler = (id) => #- {
+  process.stdin.off("keypress", id)
+} -#
 
 
 getWindowSize :: {} -> #[Integer, Integer]

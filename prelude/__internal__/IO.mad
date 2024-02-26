@@ -1,6 +1,14 @@
 import type { Wish } from "Wish"
-import { Wish } from "Wish"
 import type { Error } from "__IOError__"
+
+import { equals, when } from "Function"
+import { mapWithIndex } from "List"
+import List from "List"
+import { cShow, pShow } from "Show"
+import { isEmpty, join, split } from "String"
+import String from "String"
+import Terminal from "Terminal"
+import { Wish } from "Wish"
 import Error from "__IOError__"
 import {
   AddressAlreadyInUse,
@@ -9,11 +17,7 @@ import {
   UnknownError,
 } from "__IOError__"
 
-import { mapWithIndex } from "List"
-import { equals, when } from "Function"
-import { split, join, isEmpty } from "String"
-import { pShow, cShow } from "Show"
-import Terminal from "Terminal"
+
 
 export type Error
 export AddressAlreadyInUse
@@ -25,12 +29,9 @@ prettyCase :: (String -> String) -> String -> String
 prettyCase = (color, str) => pipe(
   (x) => isEmpty(x) ? x : "",
   split(" "),
-  mapWithIndex((x, i) => when(
-    (_) => equals(i, 0),
-    color
-  )(x)),
+  mapWithIndex((x, i) => when((_) => equals(i, 0), color)(x)),
   join(" "),
-  (x) => x ++ "\n\t"
+  (x) => x ++ "\n\t",
 )(str)
 
 
@@ -43,10 +44,7 @@ prettyCase = (color, str) => pipe(
  * colortrace(text.green, "label", [1, 2, 3])
  */
 colortrace :: Show a => (String -> String) -> String -> a -> a
-export colortrace = (fn, v, a) => trace(
-  prettyCase(fn, v),
-  a
-)
+export colortrace = (fn, v, a) => trace(prettyCase(fn, v), a)
 
 
 export red = Terminal.text.red
@@ -116,7 +114,8 @@ export err = (e) => #- {
  * @since 0.11.0
  */
 getLine :: Wish Error String
-export getLine = Wish((bad, good) => #- {
+export getLine = Wish(
+  (bad, good) => #- {
   {Node}
     const rl = prelude_readline.createInterface({
       input: process.stdin,
@@ -136,7 +135,8 @@ export getLine = Wish((bad, good) => #- {
   return () => {
     rl.close()
   }
-} -#)
+} -#,
+)
 
 
 /**
@@ -145,7 +145,8 @@ export getLine = Wish((bad, good) => #- {
  * @since 0.11.0
  */
 get :: Wish Error String
-export get = Wish((bad, good) => #- {
+export get = Wish(
+  (bad, good) => #- {
   {Node}
     let canceled = false;
     const lines = [];
@@ -176,7 +177,8 @@ export get = Wish((bad, good) => #- {
     canceled = true;
     rl.close()
   }
-} -#)
+} -#,
+)
 
 #elseif llvm
 
@@ -196,21 +198,23 @@ getLineFFI = extern "madlib__stdio__getLine"
  * @since 0.11.0
  */
 getLine :: Wish Error String
-export getLine = Wish((bad, good) => {
-  done = false
-  id = getLineFFI(
-    (libuvError, line) => {
-      done = true
-      libuvError != 0
-        ? bad(Error.fromLibuvError(libuvError))
-        : good(line)
-    }
-  )
+export getLine = Wish(
+  (bad, good) => {
+    done = false
+    id = getLineFFI(
+      (libuvError, line) => {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(line)
+      },
+    )
 
-  return () => {
-    if (!done) { cancelGet(id) }
-  }
-})
+    return () => {
+      if (!done) {
+        cancelGet(id)
+      }
+    }
+  },
+)
 
 
 getFFI :: (Integer -> String -> {}) -> Handle
@@ -223,21 +227,23 @@ getFFI = extern "madlib__stdio__get"
  * @since 0.11.0
  */
 get :: Wish Error String
-export get = Wish((bad, good) => {
-  done = false
-  id = getFFI(
-    (libuvError, line) => {
-      done = true
-      libuvError != 0
-        ? bad(Error.fromLibuvError(libuvError))
-        : good(line)
-    }
-  )
+export get = Wish(
+  (bad, good) => {
+    done = false
+    id = getFFI(
+      (libuvError, line) => {
+        done = true
+        libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(line)
+      },
+    )
 
-  return () => {
-    if (!done) { cancelGet(id) }
-  }
-})
+    return () => {
+      if (!done) {
+        cancelGet(id)
+      }
+    }
+  },
+)
 
 
 /**
@@ -283,7 +289,10 @@ export err = extern "madlib__stdio__err"
  * log({ x: 7, y: 13 })
  */
 log :: Show a => a -> {}
-export log = pipe(show, putLine)
+export log = pipe(
+  show,
+  putLine,
+)
 
 
 /**
@@ -294,7 +303,10 @@ export log = pipe(show, putLine)
  * pLog({ x: 7, y: 13 })
  */
 pLog :: Show a => a -> {}
-export pLog = pipe(pShow, putLine)
+export pLog = pipe(
+  pShow,
+  putLine,
+)
 
 
 /**
@@ -305,7 +317,10 @@ export pLog = pipe(pShow, putLine)
  * cLog({ x: 7, y: 13 })
  */
 cLog :: Show a => a -> {}
-export cLog = pipe(cShow, putLine)
+export cLog = pipe(
+  cShow,
+  putLine,
+)
 
 
 /**
@@ -400,3 +415,18 @@ export cTrace = (v, a) => {
   putLine(`${v} ${cShow(a)}`)
   return a
 }
+
+
+spaces = (n) => String.repeat(' ', n)
+spacesForCode = (c) => spaces(3 - String.length(c))
+
+export printColorPalette = () => List.forEach(
+  (i) => {
+    code = show(i)
+    put(`\x1b[38;5;${code}m ${code}${spacesForCode(code)}\x1b[0m`)
+    if (i > 0 && (i + 1) % 16 == 0) {
+      putLine("")
+    }
+  },
+  List.range(0, 256),
+)
