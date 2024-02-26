@@ -32,12 +32,40 @@ derive Comparable Value
 maybeMinus :: Parser (List Char)
 maybeMinus = map(of, Parse.char('-')) <|> pure([])
 
+// -------- Byte ------------------------------------------
+
+BYTE_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
+
+_byte = do {
+  char1 <- Parse.oneOf(BYTE_CHARS)
+  char2 <- Parse.oneOf(BYTE_CHARS)
+
+  return of(Byte(String.fromList([char1, char2])))
+}
+
+byte :: Parser Value
+byte = Parse.token(_byte)
+
+
 // -------- Integer ---------------------------------------
 
 integer :: Parser Value
 integer = do {
   minus <- maybeMinus
   digits <- Parse.some(Parse.digit)
+
+  return pipe(
+    String.fromList,
+    Integer,
+    of,
+  )([...minus, ...digits])
+}
+
+
+integerOrByte :: Parser Value
+integerOrByte = do {
+  minus <- maybeMinus
+  digits <- Parse.some(Parse.oneOf(BYTE_CHARS))
 
   return pipe(
     String.fromList,
@@ -151,7 +179,7 @@ constructor = do {
   nary = do {
     name <- alphaNumericalName
     _ <- Parse.symbol("(")
-    args <- Parse.maybeSepBy(value, Parse.symbol(","))
+    args <- Parse.sepBy(value, Parse.symbol(","))
     _ <- Parse.symbol(")")
 
     return of(Constructor(name, args))
@@ -164,21 +192,6 @@ constructor = do {
 
   return nary <|> nullary
 }
-
-
-// -------- Byte ------------------------------------------
-
-BYTE_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']
-
-_byte = do {
-  char1 <- Parse.oneOf(BYTE_CHARS)
-  char2 <- Parse.oneOf(BYTE_CHARS)
-
-  return of(Byte(String.fromList([char1, char2])))
-}
-
-byte :: Parser Value
-byte = Parse.token(_byte)
 
 
 // -------- ByteArray -------------------------------------
@@ -284,14 +297,15 @@ value = Parse.choice([
   char,
   string,
   float,
+  integerOrByte,
   integer,
+  byte,
   tuple,
   list,
   dictionary,
   record,
   byteArray,
   constructor,
-  byte,
 ])
 
 
@@ -319,7 +333,9 @@ valueToDoc = (colored, v) => where(v) {
     colored ? PP.textWithLength(String.length(s), Terminal.text.brightCyan(s)) : PP.text(s)
 
   Constructor(n, args) =>
-    if (List.isEmpty(args)) { PP.text(n) } else {
+    if (List.isEmpty(args)) {
+      PP.text(n)
+    } else {
       PP.group(
         PP.hcat([
           PP.text(n),
@@ -340,7 +356,9 @@ valueToDoc = (colored, v) => where(v) {
   ByteArray(bytes) =>
     do {
       groupBytes :: List Value -> List PP.Doc -> List PP.Doc
-      groupBytes = (bs, result) => if (List.isEmpty(bs)) { result } else do {
+      groupBytes = (bs, result) => if (List.isEmpty(bs)) {
+        result
+      } else do {
         currentGroup = pipe(
           List.take(8),
           map(valueToDoc(colored)),
