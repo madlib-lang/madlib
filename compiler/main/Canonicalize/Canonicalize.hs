@@ -31,6 +31,12 @@ import           Error.Warning
 import           Error.Context
 import           Text.Regex.TDFA ((=~))
 import           Error.Error
+import qualified Text.ParserCombinators.ReadP    as ReadP
+import           Data.Char                       as Char
+
+
+charParser :: ReadS String
+charParser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
 
 
 class Canonicalizable a b where
@@ -89,8 +95,9 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.LStr  x ->
       return $ Can.Canonical area (Can.LStr x)
 
-    Src.LChar  x ->
-      return $ Can.Canonical area (Can.LChar x)
+    Src.LChar char -> do
+      let char' = head $ fst $ last $ charParser char
+      return $ Can.Canonical area (Can.LChar char')
 
     Src.LBool x ->
       return $ Can.Canonical area (Can.LBool x)
@@ -597,13 +604,15 @@ instance Canonicalizable Src.Pattern Can.Pattern where
       pushNameAccess nameToPush
       return $ Can.Canonical area (Can.PCon name [])
 
-    Src.PNum    num  -> return $ Can.Canonical area (Can.PNum num)
+    Src.PNum num -> return $ Can.Canonical area (Can.PNum num)
 
-    Src.PStr    str  -> return $ Can.Canonical area (Can.PStr str)
+    Src.PStr str -> return $ Can.Canonical area (Can.PStr str)
 
-    Src.PChar    str  -> return $ Can.Canonical area (Can.PChar str)
+    Src.PChar char -> do
+      let char' = head $ fst $ last $ charParser char
+      return $ Can.Canonical area (Can.PChar char')
 
-    Src.PBool   boo  -> return $ Can.Canonical area (Can.PBool boo)
+    Src.PBool boo -> return $ Can.Canonical area (Can.PBool boo)
 
     Src.PRecord pats -> do
       pats' <- mapM (canonicalize env target) (extractPatternFields pats)
