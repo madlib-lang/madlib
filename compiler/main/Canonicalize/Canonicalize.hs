@@ -15,17 +15,18 @@ import qualified Canonicalize.Env              as Env
 import           Canonicalize.Typing
 import qualified Data.Map                      as Map
 import qualified Data.List                     as List
+import qualified Data.Set                      as Set
 import           AST.Canonical
 import           Explain.Location
 import           Control.Monad.Except
-import qualified Data.Maybe as Maybe
+import qualified Data.Maybe                    as Maybe
 import           Text.Show.Pretty
-import qualified Canonicalize.EnvUtils as EnvUtils
+import qualified Canonicalize.EnvUtils         as EnvUtils
 import qualified Rock
-import qualified Driver.Query as Query
-import qualified Infer.Type as Ty
-import qualified Text.Show.Pretty as PP
-import qualified Data.Set as Set
+import qualified Driver.Query                  as Query
+import qualified Infer.Type                    as Ty
+import qualified Text.Show.Pretty              as PP
+import qualified Data.Set                      as Set
 import           Error.Warning
 import           Error.Context
 import           Text.Regex.TDFA ((=~))
@@ -217,8 +218,15 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.Record fields -> do
       fields' <- mapM (canonicalize env target) fields
+
+      let fieldNames = Maybe.mapMaybe Can.getFieldName fields'
+      let uniqFieldNames = Set.toList $ Set.fromList fieldNames
+      let fieldDiff = fieldNames List.\\ uniqFieldNames
+      unless (null fieldDiff) $
+        throwError $ CompilationError (RecordDupplicateFields fieldDiff) (Context (Env.envCurrentPath env) area)
+
+
       unless (Can.hasSpread fields') $ do
-        let fieldNames = Maybe.mapMaybe Can.getFieldName fields'
         pushRecordToDerive fieldNames
       return $ Can.Canonical area (Can.Record fields')
 

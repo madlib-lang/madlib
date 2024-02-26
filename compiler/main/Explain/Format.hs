@@ -918,6 +918,11 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "Type error\n\n" <> t <> "\n\n"
     <> "Hint: Verify that you don't have a typo."
 
+  RecordDupplicateFields fs ->
+    "Record dupplicate fields\n\n"
+    <> "The following fields appear more than once in the record constructor: " <> (concatMap ("\n - " ++) fs) <> "\n\n"
+    <> "Hint: Define each field only once."
+
   FatalError ->
     "Fatal error"
 
@@ -2091,6 +2096,27 @@ createErrorDiagnostic color context typeError = case typeError of
           "Type already defined"
           []
           [Diagnose.Hint "Verify that you don't have a typo."]
+
+  RecordDupplicateFields fs ->
+    let fs' = concatMap ("\n - " ++) fs
+    in  case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Record dupplicate fields"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $
+                "The following fields appear more than once in the record constructor:" <> fs'
+            )
+          ]
+          [Diagnose.Hint "Define each field only once."]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Record dupplicate fields"
+          []
+          [Diagnose.Hint "Define each field only once."]
 
   WrongSpreadType t ->
     Diagnose.Err
