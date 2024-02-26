@@ -66,7 +66,7 @@ data TypeError
   | MutatingFunction String
   | MethodNameAlreadyDefined
   | NotAConstructor String
-  | RecordDupplicateFields [String]
+  | RecordDuplicateFields [String]
   | TestNotValid Type
   deriving (Show, Eq, Ord)
 
