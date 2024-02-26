@@ -130,16 +130,26 @@ void allocBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
   *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC_UNCOLLECTABLE(suggestedSize), suggestedSize);
 }
 
+static int64_t madlib__stdio__ttyMode = 0;
+
+
+int64_t madlib__stdio__getTTYMode() {
+  return madlib__stdio__ttyMode;
+}
+
 
 void madlib__stdio__enableTTYRawMode() {
   uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
   uv_tty_init(getLoop(), stdIn, STDIN, 1);
 
   uv_tty_set_mode(stdIn, UV_TTY_MODE_RAW);
+  madlib__stdio__ttyMode = 1;
 }
+
 
 void madlib__stdio__disableTTYRawMode() {
   uv_tty_reset_mode();
+  madlib__stdio__ttyMode = 0;
 }
 
 void onStdinKeyPress(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
@@ -152,17 +162,11 @@ void onStdinKeyPress(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
     onError(stdinData, nread);
   } else if (nread > 0) {
     int bytesToUse = 0;
-    bool foundLineReturn = false;
-    for (int i = 0; i < nread && !foundLineReturn; i++) {
-      int64_t *boxedError = (int64_t *)0;
-      void *cb = stdinData->callback;
-
-      char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (nread + 1));
-      memcpy(result, buffer->base, nread * sizeof(char));
-      result[nread] = '\0';
-
-      __applyPAP__(cb, 1, result);
-    }
+    char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (nread + 1));
+    memcpy(result, buffer->base, nread * sizeof(char));
+    result[nread] = '\0';
+    void *cb = stdinData->callback;
+    __applyPAP__(cb, 1, result);
   }
 
   if (buffer->base) {
@@ -170,7 +174,7 @@ void onStdinKeyPress(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
   }
 }
 
-StdinData_t * madlib__stdio__onKeyPress(PAP_t *callback) {
+uv_tty_t *madlib__stdio__onKeyPressed(PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
 
@@ -185,8 +189,55 @@ StdinData_t * madlib__stdio__onKeyPress(PAP_t *callback) {
   uv_tty_init(getLoop(), stdIn, STDIN, 1);
   uv_read_start((uv_stream_t*)stdIn, allocBuffer, onStdinKeyPress);
 
-  return data;
+  return stdIn;
 }
+
+
+void madlib__stdio__clearKeyPressHandler(uv_tty_t *handle) {
+  if (!uv_is_closing((uv_handle_t *) handle)) {
+    uv_close((uv_handle_t *) handle, NULL);
+  }
+}
+
+
+void onWindowResized(uv_signal_t *signalHandle, int signum) {
+  __applyPAP__(signalHandle->data, 1, NULL);
+}
+
+
+uv_signal_t *madlib__stdio__onWindowResized(PAP_t *callback) {
+  // we allocate request objects and the buffer
+  uv_signal_t *signalHandle = (uv_signal_t *)GC_MALLOC(sizeof(uv_signal_t));
+  uv_signal_init(getLoop(), signalHandle);
+  signalHandle->data = (void *) callback;
+
+  uv_signal_start(signalHandle, onWindowResized, SIGWINCH);
+
+  return signalHandle;
+}
+
+
+void madlib__stdio__clearWindowResizeHandler(uv_signal_t *handle) {
+  if (!uv_is_closing((uv_handle_t *) handle)) {
+    uv_close((uv_handle_t *) handle, NULL);
+  }
+}
+
+
+madlib__list__Node_t *madlib__stdio__getWindowSize() {
+  madlib__list__Node_t *result = madlib__list__empty();
+
+  uv_tty_t *stdIn = (uv_tty_t *)GC_MALLOC(sizeof(uv_tty_t));
+  uv_tty_init(getLoop(), stdIn, STDIN, 1);
+
+  int cols, rows = 0;
+  uv_tty_get_winsize(stdIn, &cols, &rows);
+
+  result = madlib__list__internal__push((void *) rows, result);
+  result = madlib__list__internal__push((void *) cols, result);
+  return result;
+}
+
 
 StdinData_t *madlib__stdio__getLine(PAP_t *callback) {
   // we allocate request objects and the buffer

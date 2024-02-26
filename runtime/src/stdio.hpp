@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <uv.h>
 
+#include "list.hpp"
 #include "event-loop.hpp"
 #include "apply-pap.hpp"
 
@@ -28,7 +29,14 @@ StdinData_t *madlib__stdio__get(PAP_t *callback);
 
 void madlib__stdio__setTTYRawMode();
 void madlib__stdio__disableTTYRawMode();
-StdinData_t * madlib__stdio__onKeyPress(PAP_t *callback);
+int64_t madlib__stdio__getTTYMode();
+
+void madlib__stdio__clearKeyPressHandler(uv_tty_t *handle);
+uv_tty_t *madlib__stdio__onKeyPressed(PAP_t *callback);
+
+uv_signal_t *madlib__stdio__onWindowResized(PAP_t *callback);
+void madlib__stdio__clearWindowResizeHandler(uv_signal_t *handle);
+madlib__list__Node_t *madlib__stdio__getWindowSize();
 
 void madlib__stdio__cancelGet(StdinData_t *handle);
 

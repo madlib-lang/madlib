@@ -109,27 +109,6 @@ export err = (e) => #- {
   {/Browser}
 } -#
 
-enableTTYRawMode :: {} -> {}
-export enableTTYRawMode = () => #- {
-  if (process.stdin.isTTY) {
-    prelude_readline.emitKeypressEvents(process.stdin)
-    process.stdin.setRawMode(true)
-  }
-} -#
-
-disableTTYRawMode :: {} -> {}
-export disableTTYRawMode = () => #- {
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(false)
-  }
-} -#
-
-onKeyPress :: (String -> {}) -> {}
-export onKeyPress = (cb) => #- {
-  process.stdin.on("keypress", (chunk, key) => {
-    cb(key.sequence)
-  })
-} -#
 
 /**
  * A Wish reading one line from stdin
@@ -209,16 +188,6 @@ cancelGet = extern "madlib__stdio__cancelGet"
 
 getLineFFI :: (Integer -> String -> {}) -> Handle
 getLineFFI = extern "madlib__stdio__getLine"
-
-
-enableTTYRawMode :: {} -> {}
-export enableTTYRawMode = extern "madlib__stdio__enableTTYRawMode"
-
-disableTTYRawMode :: {} -> {}
-export disableTTYRawMode = extern "madlib__stdio__disableTTYRawMode"
-
-onKeyPress :: (String -> {}) -> {}
-export onKeyPress = extern "madlib__stdio__onKeyPress"
 
 
 /**
