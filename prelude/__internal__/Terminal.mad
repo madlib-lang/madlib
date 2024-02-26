@@ -1,5 +1,8 @@
 import String from "String"
 
+type HandlerId = HandlerId
+export type HandlerId
+
 END_COLOR = "\x1b[0m"
 
 colorize :: String -> String -> String
@@ -114,3 +117,127 @@ export light = {
   cyan: ansiColor([ansi.FGBrightCyan, ansi.BGWhite]),
   white: ansiColor([ansi.FGBrightWhite, ansi.BGWhite]),
 }
+
+type TTYMode = NormalMode | RawMode
+
+#iftarget llvm
+
+enableTTYRawMode :: {} -> {}
+export enableTTYRawMode = extern "madlib__stdio__enableTTYRawMode"
+
+
+disableTTYRawMode :: {} -> {}
+export disableTTYRawMode = extern "madlib__stdio__disableTTYRawMode"
+
+
+onKeyPressed :: (String -> {}) -> HandlerId
+export onKeyPressed = extern "madlib__stdio__onKeyPressed"
+
+
+clearKeyPressedHandler :: HandlerId -> {}
+export clearKeyPressedHandler = extern "madlib__stdio__clearKeyPressHandler"
+
+
+getWindowSizeFFI :: {} -> List Integer
+getWindowSizeFFI = extern "madlib__stdio__getWindowSize"
+
+getWindowSize :: {} -> #[Integer, Integer]
+export getWindowSize = () => where(getWindowSizeFFI()) {
+  [c, r] =>
+    #[c, r]
+
+  _ =>
+    #[0, 0]
+}
+
+getTTYModeFFI :: {} -> Integer
+getTTYModeFFI = extern "madlib__stdio__getTTYMode"
+
+getTTYMode :: {} -> TTYMode
+export getTTYMode = () => getTTYModeFFI() == 0 ? NormalMode : RawMode
+
+
+onWindowResizedFFI :: ({} -> {}) -> HandlerId
+onWindowResizedFFI = extern "madlib__stdio__onWindowResized"
+
+onWindowResized :: (#[Integer, Integer] -> {}) -> HandlerId
+export onWindowResized = (cb) => onWindowResizedFFI(() => {
+  cb(getWindowSize())
+})
+
+
+clearWindowResizeHandler :: HandlerId -> {}
+export clearWindowResizeHandler = extern "madlib__stdio__clearWindowResizeHandler"
+
+
+
+// cl
+
+#elseif js
+
+enableTTYRawMode :: {} -> {}
+export enableTTYRawMode = () => #- {
+  if (process.stdin.isTTY) {
+    prelude_readline.emitKeypressEvents(process.stdin)
+    process.stdin.setRawMode(true)
+  }
+} -#
+
+
+disableTTYRawMode :: {} -> {}
+export disableTTYRawMode = () => #- {
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false)
+  }
+} -#
+
+
+onKeyPressed :: (String -> {}) -> HandlerId
+export onKeyPressed = (cb) => #- {
+  function keyPressHandle(_, key) {
+    cb(key.sequence);
+  }
+  process.stdin.on("keypress", keyPressHandle)
+
+  return keyPressHandle;
+} -#
+
+
+clearKeyPressedHandler :: HandlerId -> {}
+export clearKeyPressedHandler = (id) => #- { process.stdin.off("keypress", id) } -#
+
+
+getWindowSize :: {} -> #[Integer, Integer]
+export getWindowSize = () => #[
+  #- process.stdout.columns -#,
+  #- process.stdout.rows -#,
+]
+
+
+getTTYMode :: {} -> TTYMode
+export getTTYMode = () => #- {
+  if (process.stdin.isRaw) {
+    return { __constructor: "RawMode", __args: [] }
+  }
+  return { __constructor: "NormalMode", __args: [] }
+} -#
+
+
+_onWindowResized :: ({} -> #[Integer, Integer]) -> (#[Integer, Integer] -> {}) -> HandlerId
+export _onWindowResized = (_getWindowSize, cb) => #- {
+  function windowResizeHandle() {
+    cb(_getWindowSize())
+  }
+  process.on('SIGWINCH', windowResizeHandle)
+
+  return windowResizeHandle
+} -#
+
+onWindowResized :: (#[Integer, Integer] -> {}) -> HandlerId
+export onWindowResized = _onWindowResized(getWindowSize)
+
+
+clearWindowResizeHandler :: HandlerId -> {}
+export clearWindowResizeHandler = (id) => #- { process.off('SIGWINCH', id) } -#
+
+#endif
