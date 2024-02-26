@@ -733,37 +733,40 @@ formatParams isSingle paramsDoc =
     <> Pretty.rparen
 
 
-renderChar :: Char -> String
-renderChar c = case c of
-  '\a' ->
-    "'\\a'"
+-- renderChar :: Char -> String
+-- renderChar c = case c of
+--   '\a' ->
+--     "'\\a'"
 
-  '\b' ->
-    "'\\b'"
+--   '\b' ->
+--     "'\\b'"
 
-  '\f' ->
-    "'\\f'"
+--   '\f' ->
+--     "'\\f'"
 
-  '\n' ->
-    "'\\n'"
+--   '\n' ->
+--     "'\\n'"
 
-  '\r' ->
-    "'\\r'"
+--   '\r' ->
+--     "'\\r'"
 
-  '\t' ->
-    "'\\t'"
+--   '\t' ->
+--     "'\\t'"
 
-  '\v' ->
-    "'\\v'"
+--   '\v' ->
+--     "'\\v'"
 
-  '\\' ->
-    "'\\\\'"
+--   '\\' ->
+--     "'\\\\'"
 
-  '\'' ->
-    "'\\''"
+--   '\'' ->
+--     "'\\''"
 
-  c ->
-    ['\'', c, '\'']
+--   c ->
+--     ['\'', c, '\'']
+
+renderChar :: String -> String
+renderChar c = "'" ++ c ++ "'"
 
 
 escapeBackticks :: String -> String

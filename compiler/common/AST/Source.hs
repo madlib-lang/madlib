@@ -115,7 +115,7 @@ data Pattern_
   | PNum String
   | PFloat String
   | PStr String
-  | PChar Char
+  | PChar String
   | PBool String
   | PAny
   | PCon (Source Name) [Pattern]
@@ -151,7 +151,7 @@ data Exp_
   = LNum String
   | LFloat String
   | LStr String
-  | LChar Char
+  | LChar String
   | LBool String
   | LUnit
   | TemplateString [Exp]

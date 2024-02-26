@@ -30,23 +30,24 @@ where
 
 import           Control.Monad.State
 import           System.Exit
-import qualified Data.Text.Lazy     as T
-import           Data.Char          as Char
+import qualified Data.Text.Lazy                  as T
+import           Data.Char                       as Char
+import           Data.List                       as List
 import           Explain.Location
 import           AST.Source
 import           Text.Regex.TDFA
-import qualified Data.ByteString.Lazy as BS
-import qualified Data.ByteString.Lazy.UTF8 as BLU
+import qualified Data.ByteString.Lazy            as BS
+import qualified Data.ByteString.Lazy.UTF8       as BLU
 import           Text.Printf
 
 import           Text.Show.Pretty
 import           Debug.Trace
 
-import qualified Text.ParserCombinators.ReadP as ReadP
-import qualified Data.Text                    as Text
-import qualified Data.Text.Encoding           as TextEncoding
-import qualified Data.ByteString as ByteString
-import qualified Data.ByteString.Char8 as Char8
+import qualified Text.ParserCombinators.ReadP    as ReadP
+import qualified Data.Text                       as Text
+import qualified Data.Text.Encoding              as TextEncoding
+import qualified Data.ByteString                 as ByteString
+import qualified Data.ByteString.Char8           as Char8
 }
 
 %wrapper "monadUserState"
@@ -528,11 +529,14 @@ mapCharToken inputData@(posn@((AlexPn _ l1 c1)), prevChar, pending, input) len =
   let parsed = fst $ last $ charParser charData
       -- 1 because we need the character between ' and '
       charData' = parsed !! 1
-      token = TokenChar charData'
+      token = TokenChar (init $ tail src)
 
   if length parsed == 3 then do
     sourceTarget <- getCurrentSourceTarget
     return $ Token (makeArea posn src) sourceTarget token
+    -- if "\\x" `List.isPrefixOf` src || "\\u" `List.isPrefixOf` src then
+    -- else 
+    --   return $ Token (makeArea posn src) sourceTarget token
   else do
     let Area (Loc a l c) _ = makeArea posn src
     alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show token))
@@ -725,7 +729,7 @@ data TokenClass
  | TokenNumber String
  | TokenFloat String
  | TokenStr String
- | TokenChar Char
+ | TokenChar String
  | TokenName String
  | TokenConstraintName String
  | TokenJSBlock String
@@ -807,7 +811,7 @@ data TokenClass
  deriving (Eq, Show)
 
 
-charData :: Token -> Char
+charData :: Token -> String
 charData (Token _ _ (TokenChar x)) = x
 
 
