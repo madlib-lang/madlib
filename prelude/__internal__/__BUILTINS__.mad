@@ -440,7 +440,7 @@ instance Show ByteArray {
     let s = ''
     let h = '0123456789ABCDEF'
     byteArray.forEach((v, index) => {
-      if ((index + 1) % 9 === 0) { s += ' ' }
+      if (index % 8 === 0 && index !== 0) { s += ' ' }
       s += h[v >> 4] + h[v & 15]
     })
     return `ByteArray(${s})`
