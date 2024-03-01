@@ -179,7 +179,7 @@ constructor = do {
   nary = do {
     name <- alphaNumericalName
     _ <- Parse.symbol("(")
-    args <- Parse.sepBy(value, Parse.symbol(","))
+    args <- Parse.maybeSepBy(value, Parse.symbol(","))
     _ <- Parse.symbol(")")
 
     return of(Constructor(name, args))
@@ -200,7 +200,7 @@ byteArray :: Parser Value
 byteArray = do {
   name <- Parse.string("ByteArray")
   _ <- Parse.symbol("(")
-  args <- Parse.many(byte)
+  args <- Parse.many(Parse.token(byte))
   _ <- Parse.symbol(")")
 
   return of(ByteArray(args))
@@ -296,6 +296,8 @@ value = Parse.choice([
   boolean,
   char,
   string,
+  byteArray,
+  constructor,
   float,
   integerOrByte,
   integer,
@@ -304,8 +306,6 @@ value = Parse.choice([
   list,
   dictionary,
   record,
-  byteArray,
-  constructor,
 ])
 
 
@@ -474,8 +474,8 @@ printMadlibValue :: Integer -> Boolean -> String -> String
 printMadlibValue = (width, colored, madlibValue) => pipe(
   Parse.runParser(value),
   where {
-    Left(_) =>
-      "Unknown"
+    Left(r) =>
+      "Unknown" ++ show(r)
 
     Right(parsed) =>
       pipe(
