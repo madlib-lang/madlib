@@ -160,11 +160,10 @@ export writeBytes = (path, source) => Stream(
                     done = true
                     cancelBufferedWrite(handle)
                     sink(2, NoMessage)
-                  } else do {
+                  } else if (!List.isEmpty(chunksToWrite)) {
+                    schedule(writeChunks)
+                  } else {
                     runTalkback(talkback, 1)
-                    if (!List.isEmpty(chunksToWrite)) {
-                      schedule(writeChunks)
-                    }
                   }
                 },
                 pipe(
