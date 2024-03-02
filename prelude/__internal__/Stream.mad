@@ -736,11 +736,9 @@ export concatMap = (project, source) => Stream(
       innerSink = (t, d) => {
         if (t == 0) do {
           innerTalkback = d
-          sink(0, d)
         }
         if (t == 1) do {
           sink(1, d)
-          runTalkback(innerTalkback, 1)
         }
         if (t == 2) do {
           innerTalkback = NoMessage
@@ -811,7 +809,6 @@ export concatMap = (project, source) => Stream(
                   _ =>
                     {}
                 }
-                runTalkback(sourceTalkback, 1)
               }
               if (t == 2) {
                 where(d) {
@@ -1092,8 +1089,6 @@ export concat = (streams) => Stream(
                     if (first) do {
                       first = false
                       sink(0, Talkback(talkback))
-                    } else {
-                      talkback(1)
                     }
                   }
                   if (t == 1) {
