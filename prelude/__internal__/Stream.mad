@@ -52,11 +52,12 @@ export interval = (period) => Stream(
       go = () => {
         timerId = setTimeout(
           () => {
-            sink(1, Data(i))
+            c = i
             i = i + 1
             if (running) {
               go()
             }
+            sink(1, Data(c))
           },
           period,
         )

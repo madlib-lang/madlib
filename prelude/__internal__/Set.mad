@@ -91,7 +91,7 @@ insertHelp = (value, s) => where(s) {
 
 
 balance :: NodeColor -> a -> Set a -> Set a -> Set a
-export balance = (color, v, left, right) => where(right) {
+balance = (color, v, left, right) => where(right) {
   SetRBNode(SetRBRed, rV, rLeft, rRight) =>
     where(left) {
       SetRBNode(SetRBRed, lV, lLeft, lRight) =>
@@ -198,17 +198,17 @@ export diff = (a, b) => reduceLeft((v, s) => remove(v, s), a, b)
 
 includes :: Comparable a => a -> Set a -> Boolean
 export includes = (v, s) => where(s) {
+  SetRBNode(_, _v, left, right) =>
+    if (v > _v) {
+      includes(v, right)
+    } else if (v < _v) {
+      includes(v, left)
+    } else {
+      true
+    }
+
   SetRBEmpty =>
     false
-
-  SetRBNode(_, _v, left, right) =>
-    if (v == _v) {
-      true
-    } else if (v > _v) {
-      includes(v, right)
-    } else {
-      includes(v, left)
-    }
 }
 
 

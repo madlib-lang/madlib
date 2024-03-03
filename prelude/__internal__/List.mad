@@ -755,7 +755,6 @@ export includes = (x, list) => where(list) {
 
   [a, ...xs] =>
     a == x || includes(x, xs)
-    // a == x ? true : includes(x, xs)
 }
 
 
