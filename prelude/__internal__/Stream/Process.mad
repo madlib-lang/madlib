@@ -1,0 +1,60 @@
+import type { CommandOptions, FFICommandOptions } from "Process"
+import type { Stream } from "Stream"
+
+import Dictionary from "Dictionary"
+import List from "List"
+import Process from "Process"
+import { Data, Error, NoMessage, Stream, Talkback } from "Stream"
+
+
+
+type Handle = Handle(Handle)
+
+cancelExec :: Handle -> {}
+cancelExec = extern "madlib__process__cancelBufferedExec"
+
+execFFI :: String
+  -> List String
+  -> FFICommandOptions
+  -> (String -> String -> {})
+  -> (Integer -> {})
+  -> Handle
+execFFI = extern "madlib__process__bufferedExec"
+
+
+export alias CommandData = { stderr :: String, stdout :: String }
+
+
+exec :: String -> List String -> CommandOptions -> Stream Integer CommandData
+export exec = (command, args, options) => Stream(
+  (start, sink) => {
+    if (start == 0) do {
+      handle = execFFI(
+        command,
+        args,
+        { cwd: options.cwd, env: Dictionary.toList(Dictionary.merge(Process.Env, options.env)) },
+        (stdout, stderr) => {
+          sink(1, Data({ stdout, stderr }))
+        },
+        (statusCode) => {
+          if (statusCode > 0) {
+            sink(2, Error(statusCode))
+          } else {
+            sink(2, NoMessage)
+          }
+        },
+      )
+
+      sink(
+        0,
+        Talkback(
+          (t) => {
+            if (t == 2) do {
+              cancelExec(handle)
+            }
+          },
+        ),
+      )
+    }
+  },
+)

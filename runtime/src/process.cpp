@@ -157,7 +157,7 @@ void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
 
 
 void allocExecBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
-  *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC(suggestedSize), suggestedSize);
+  *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC(suggestedSize + 1), suggestedSize);
 }
 
 
@@ -343,6 +343,187 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
 }
 
 void madlib__process__cancelExec(ExecData_t *data) {
+  data->canceled = true;
+  if (!data || data->stopped) {
+    return;
+  }
+
+  uv_close((uv_handle_t*) data->stdoutPipe, onPipeClose);
+  uv_close((uv_handle_t*) data->stderrPipe, onPipeClose);
+  uv_close((uv_handle_t*) data->req, onChildClose);
+}
+
+
+// buffered exec
+
+void onBufferedChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
+  BufferedExecData_t *data = (BufferedExecData_t*)req->data;
+  data->stopped = true;
+
+  int64_t *boxedStatus = (int64_t*)exitCode;
+
+  uv_close((uv_handle_t*) req, onChildClose);
+  __applyPAP__(data->doneCallback, 1, boxedStatus);
+}
+
+void onBufferedExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  BufferedExecData_t *handle = (BufferedExecData_t*)stream->data;
+
+  if (nread > 0) {
+    buf->base[nread] = '\0';
+    int64_t *boxedStatus = (int64_t*)0;
+    __applyPAP__(handle->callback, 2, buf->base, "");
+  } else {
+    handle->stopped = true;
+    // TODO: handle error
+    uv_close((uv_handle_t*) stream, onPipeClose);
+  }
+}
+
+void onBufferedExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+  BufferedExecData_t *handle = (BufferedExecData_t*)stream->data;
+
+  if (nread > 0) {
+    buf->base[nread] = '\0';
+    int64_t *boxedStatus = (int64_t*)0;
+    __applyPAP__(handle->callback, 2, "", buf->base);
+  } else {
+    handle->stopped = true;
+    // TODO: handle error
+    uv_close((uv_handle_t*) stream, onPipeClose);
+  }
+}
+
+BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback, PAP_t *doneCallback) {
+  uv_process_t *childReq = (uv_process_t*)GC_MALLOC(sizeof(uv_process_t));
+  uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC(sizeof(uv_process_options_t));
+  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
+  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
+
+  BufferedExecData_t *data = (BufferedExecData_t*)GC_MALLOC(sizeof(BufferedExecData_t));
+  data->callback = callback;
+  data->doneCallback = doneCallback;
+  data->req = childReq;
+  data->options = options;
+  data->stdoutSize = 0;
+  data->stderrSize = 0;
+  data->stdoutOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
+  (data->stdoutOutput)[0] = '\0';
+  data->stderrOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
+  (data->stderrOutput)[0] = '\0';
+  data->stdoutPipe = (uv_stream_t *)stdoutPipe;
+  data->stderrPipe = (uv_stream_t *)stderrPipe;
+  data->canceled = false;
+  data->started = false;
+  data->stopped = false;
+
+  childReq->data = data;
+  stdoutPipe->data = data;
+  stderrPipe->data = data;
+
+
+  char **args;
+
+  int64_t argc = madlib__list__length(argList);
+
+  #ifndef __MINGW32__
+    glob_t globBuffer;
+    globBuffer.gl_offs = 1;
+    if (argc > 0) {
+      for (int i = 0; i < argc; i++) {
+        if (i == 0) {
+          glob((const char*)argList->value, GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK, NULL, &globBuffer);
+        } else {
+          glob((const char*)argList->value, GLOB_DOOFFS | GLOB_NOMAGIC | GLOB_NOCHECK | GLOB_APPEND, NULL, &globBuffer);
+        }
+
+        argList = argList->next;
+      }
+      globBuffer.gl_pathv[0] = command;
+      args = globBuffer.gl_pathv;
+    } else {
+      args = (char**)GC_MALLOC(sizeof(char*));
+      args[0] = command;
+    }
+  #else
+    args = (char**)GC_MALLOC(sizeof(char*) * (argc + 1));
+    args[0] = command;
+
+    for (int i = 0; i < argc; i++) {
+      args[i + 1] = (char*) argList->value;
+      argList = argList->next;
+    }
+  #endif // __MINGW32__
+
+  uv_pipe_init(getLoop(), stdoutPipe, 0);
+  uv_pipe_init(getLoop(), stderrPipe, 0);
+
+  options->stdio_count = 3;
+  uv_stdio_container_t child_stdio[3];
+  child_stdio[0].flags = UV_IGNORE;
+  child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+  child_stdio[1].data.stream = (uv_stream_t *)stdoutPipe;
+  child_stdio[2].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+  child_stdio[2].data.stream = (uv_stream_t *)stderrPipe;
+  options->stdio = child_stdio;
+
+  madlib__list__Node_t *envItems = (madlib__list__Node_t *) madlib__record__internal__selectField((char*)"env", commandOptions);
+  int itemCount = madlib__list__length(envItems);
+  char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
+  int index = 0;
+
+  while (envItems->next != NULL) {
+    char *key = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->first;
+    size_t keyLength = strlen(key);
+    char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
+    size_t valueLength = strlen(value);
+
+    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength + valueLength + 2);
+    memcpy(env[index], key, keyLength);
+    env[index][keyLength] = '=';
+    memcpy(env[index] + keyLength + 1, value, valueLength);
+    env[index][keyLength + 1 + valueLength] = '\0';
+
+    envItems = envItems->next;
+    index += 1;
+  }
+  env[itemCount] = 0; // must be null terminated from libuv docs
+
+  options->exit_cb = onBufferedChildExit;
+  options->file = command;
+  options->args = args;
+  options->env = itemCount == 0 ? NULL : env;
+  options->flags = 0;
+  options->cwd = (const char*) madlib__record__internal__selectField((char*)"cwd", commandOptions);
+
+  int spawnResult = uv_spawn(getLoop(), childReq, options);
+
+  #ifndef __MINGW32__
+    if (argc > 0) {
+      globfree(&globBuffer);
+    }
+  #endif // __MINGW32__
+
+  if (spawnResult) {
+    int64_t *boxedStatus = (int64_t*)1;
+
+    size_t stdoutLength = strlen(data->stdoutOutput);
+    size_t stderrLength = strlen(data->stderrOutput);
+    data->stopped = true;
+
+    __applyPAP__(doneCallback, 1, boxedStatus);
+
+    return NULL;
+  } else {
+    data->started = true;
+    int rout = uv_read_start((uv_stream_t *)stdoutPipe, allocExecBuffer, onBufferedExecStdoutRead);
+    int rerr = uv_read_start((uv_stream_t *)stderrPipe, allocExecBuffer, onBufferedExecStderrRead);
+
+    return data;
+  }
+}
+
+void madlib__process__cancelBufferedExec(BufferedExecData_t *data) {
   data->canceled = true;
   if (!data || data->stopped) {
     return;
