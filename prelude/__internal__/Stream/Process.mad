@@ -4,9 +4,15 @@ import type { Stream } from "Stream"
 import Dictionary from "Dictionary"
 import List from "List"
 import Process from "Process"
-import { Data, Error, NoMessage, Stream, Talkback } from "Stream"
+import { Error, NoMessage, Stream, Talkback } from "Stream"
 
 
+
+export alias CommandData = { stderr :: String, stdout :: String }
+
+#iftarget llvm
+
+import { Data } from "Stream"
 
 type Handle = Handle(Handle)
 
@@ -20,9 +26,6 @@ execFFI :: String
   -> (Integer -> {})
   -> Handle
 execFFI = extern "madlib__process__bufferedExec"
-
-
-export alias CommandData = { stderr :: String, stdout :: String }
 
 
 exec :: String -> List String -> CommandOptions -> Stream Integer CommandData
@@ -58,3 +61,77 @@ export exec = (command, args, options) => Stream(
     }
   },
 )
+
+#elseif js
+
+#- import { spawn as prelude_stream_process_spawn } from "child_process" -#
+
+
+exec :: String -> List String -> CommandOptions -> Stream Integer CommandData
+export exec = (command, args, options) => _exec(
+  command,
+  args,
+  { cwd: options.cwd, env: Dictionary.toList(Dictionary.merge(Process.Env, options.env)) },
+)
+
+_exec :: String -> List String -> FFICommandOptions -> Stream Integer CommandData
+_exec = (command, args, options) => Stream(
+  (start, sink) => {
+    if (start == 0) do {
+        #-
+        const env = {};
+        const envItems = __listToJSArray__(options.env);
+        envItems.forEach(([key, value]) => { env[key] = value; })
+
+        const proc = prelude_stream_process_spawn(
+          command,
+          __listToJSArray__(args),
+          {
+            cwd: options.cwd,
+            env: { ...process.env, ...env },
+          }
+        )
+      
+        proc.stdout.on("data", (chunk) => {
+          sink(1)({
+            __constructor: "Data",
+            __args: [{ stderr: "", stdout: Buffer.from(chunk, 'binary').toString() }],
+          })
+        })
+
+        proc.stderr.on("data", (chunk) => {
+          sink(1)({
+            __constructor: "Data",
+            __args: [{ stderr: Buffer.from(chunk, 'binary').toString(), stdout: "" }],
+          });
+        })
+
+        proc.on('close', (code) => {
+          if (code === 0) {
+            sink(2)({ __constructor: "NoMessage", __args: [] })
+          } else {
+            sink(2)({ __constructor: "Error", __args: [code] })
+          }
+        });
+        -#
+
+      sink(
+        0,
+        Talkback(
+          (t) => {
+            if (t == 2) do {
+              #-
+              proc.stdin.pause()
+              proc.stdout.pause()
+              proc.stderr.pause()
+              proc.kill()
+              -#
+            }
+          },
+        ),
+      )
+    }
+  },
+)
+
+#endif
