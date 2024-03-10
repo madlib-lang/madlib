@@ -97,6 +97,7 @@ jobs:
         run: |
           export PATH="/c/hostedtoolcache/windows/stack/2.7.3/x64:/c/tools/ghc-8.10.7/bin:/c/Users/runneradmin/AppData/Roaming/cabal/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
           pwd
+          ls -la
           ls -l "$(stack path --dist-dir)"
           ls -l "$(stack path --dist-dir)/build/"
           ls -l "$(stack path --dist-dir)/build/madlib/"
