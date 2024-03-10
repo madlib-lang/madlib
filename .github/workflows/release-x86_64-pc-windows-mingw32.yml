@@ -99,6 +99,14 @@ jobs:
       #     export ESBUILD_PATH="/c/npm/prefix/esbuild.cmd"
       #     "$(stack path --dist-dir)/build/madlib/madlib.exe" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
 
+      - name: Path info
+        shell: msys2 {0}
+        run: |
+          pwd
+          ls -l "$(stack path --dist-dir)"
+          ls -l "$(stack path --dist-dir)/build/"
+          ls -l "$(stack path --dist-dir)/build/madlib/"
+
       - name: Build tools
         run: |
           $Env:ESBUILD_PATH = '/c/npm/prefix/esbuild.cmd'
