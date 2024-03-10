@@ -1,12 +1,13 @@
-import {} from "Monad"
-import {} from "Bifunctor"
 import {} from "Alternative"
-import { sortBy, length, forEach, range } from "List"
-import { Just, Nothing } from "Maybe"
-import Tuple from "Tuple"
-import {} from "Integer"
-import {} from "MonadRec"
+import {} from "Bifunctor"
 import { Done, Loop } from "Function"
+import {} from "Integer"
+import { forEach, length, range, sortBy } from "List"
+import { Just, Nothing } from "Maybe"
+import {} from "Monad"
+import {} from "MonadRec"
+import Tuple from "Tuple"
+
 
 
 type TimerId = __TimerId__
@@ -17,7 +18,7 @@ type TimerId = __TimerId__
  * cold and will only be run when fulfilled.
  */
 
-export type Wish e a = Wish((e -> {}) -> (a -> {}) -> ({} -> {}))
+export type Wish e a = Wish((e -> {}) -> (a -> {}) -> {} -> {})
 
 
 
@@ -35,7 +36,7 @@ setTimeout :: ({} -> {}) -> Integer -> TimerId
 setTimeout = extern "__setTimeout__"
 
 clearTimeout :: TimerId -> {}
-clearTimeout =  extern "__clearTimeout__"
+clearTimeout = extern "__clearTimeout__"
 
 #endif
 
@@ -49,78 +50,89 @@ clearTimeout =  extern "__clearTimeout__"
  * map((x) => x + 1, bad(3))  // bad(3)
  */
 instance Functor (Wish e) {
-  map = (f, m) => Wish((badCB, goodCB) => where(m) {
-    Wish(run) =>
-      run(badCB, (x) => goodCB(f(x)))
-  })
+  map = (f, m) => Wish((badCB, goodCB) => where(m) { Wish(run) => run(badCB, (x) => goodCB(f(x))) })
 }
 
 
 instance Applicative (Wish e) {
-  pure = good
+  ap = (mf, m) => Wish(
+    (badCB, goodCB) => where(#[mf, m]) {
+      #[Wish(runMF), Wish(runM)] =>
+        do {
+          cancel2 = { run: () => {} }
+          cancel1 = runM(badCB, (x) => { cancel2 = { run: runMF(badCB, (f) => goodCB(f(x))) } })
 
-  ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {
-    #[Wish(runMF), Wish(runM)] =>
-      do {
-        cancel2 = { run: () => {} }
-        cancel1 = runM(
-          badCB,
-          (x) => {
-            cancel2 = { run: runMF(badCB, (f) => goodCB(f(x))) }
+          return () => {
+            cancel1()
+            cancel2.run()
           }
-        )
-
-        return () => {
-          cancel1()
-          cancel2.run()
         }
-      }
-  })
+    },
+  )
+
+  pure = good
 }
 
 
 instance Monad (Wish e) {
-  of = pure
+  chain = (f, m) => Wish(
+    (badCB, goodCB) => {
+      return where(m) {
+        Wish(run) =>
+          do {
+            cancel = Nothing
+            r1 = run(
+              badCB,
+              (x) => {
+                r2 = where(f(x)) {
+                  Wish(_run) =>
+                    _run(badCB, goodCB)
+                }
+                cancel = Just(r2)
+              },
+            )
 
-  chain = (f, m) => Wish((badCB, goodCB) => {
-    return where(m) {
-      Wish(run) =>
-        do {
-          cancel = Nothing
-          r1 = run(
-            badCB,
-            (x) => {
-              r2 = where(f(x)) {
-                Wish(_run) =>
-                  _run(badCB, goodCB)
+            if (cancel == Nothing) do {
+              cancel = Just(r1)
+            }
+
+            return () => {
+              where(cancel) {
+                Just(c) =>
+                  c()
+
+                Nothing =>
+                  {}
               }
-              cancel = Just(r2)
-            },
-          )
-
-          if (cancel == Nothing) do { cancel = Just(r1) }
-
-          return () => {
-            where(cancel) {
-              Just(c) =>
-                c()
-
-              Nothing =>
-                {}
             }
           }
-        }
-    }
-  })
+      }
+    },
+  )
+
+  of = pure
 }
 
 
 instance Bifunctor Wish {
-  bimap = (leftF, rightF, m) => Wish((badCB, goodCB) => where(m) {
-    Wish(run) => run(pipe(leftF, badCB), pipe(rightF, goodCB))
-  })
+  bimap = (leftF, rightF, m) => Wish(
+    (badCB, goodCB) => where(m) {
+      Wish(run) =>
+        run(
+          pipe(
+            leftF,
+            badCB,
+          ),
+          pipe(
+            rightF,
+            goodCB,
+          ),
+        )
+    },
+  )
 
   mapFirst = mapRej
+
   mapSecond = map
 }
 
@@ -131,48 +143,50 @@ instance Semigroup (Wish e a) {
 
 
 instance MonadRec (Wish e) {
-  tailRecM = (f, a) => Wish((badCB, goodCB) => {
-    cancel = Nothing
+  tailRecM = (f, a) => Wish(
+    (badCB, goodCB) => {
+      cancel = Nothing
 
-    run = (v) => {
-      where(f(v)) {
-        Wish(r) =>
-          do {
-            c = r(
-              badCB,
-              (res) => {
-                cancel = Nothing
-                where(res) {
-                  Done(x) =>
-                    do {
-                      goodCB(x)
-                    }
-  
-                  Loop(x) =>
-                    do {
-                      setTimeout(() => run(x), 0)
-                    }
-                }
-              }
-            )
+      run = (v) => {
+        where(f(v)) {
+          Wish(r) =>
+            do {
+              c = r(
+                badCB,
+                (res) => {
+                  cancel = Nothing
+                  where(res) {
+                    Done(x) =>
+                      do {
+                        goodCB(x)
+                      }
 
-            cancel = Just(c)
-          }
+                    Loop(x) =>
+                      do {
+                        setTimeout(() => run(x), 0)
+                      }
+                  }
+                },
+              )
+
+              cancel = Just(c)
+            }
+        }
       }
-    }
 
-    run(a)
+      run(a)
 
-    return () => {
-      where(cancel) {
-        Just(c) =>
-          c()
+      return () => {
+        where(cancel) {
+          Just(c) =>
+            c()
 
-        Nothing =>
-          {}
+          Nothing =>
+            {}
+        }
       }
-    }
-  })
+    },
+  )
 }
 
 
@@ -185,13 +199,12 @@ instance MonadRec (Wish e) {
  * mapRej((x) => x + 1, good(3)) // good(3)
  */
 mapRej :: (e -> f) -> Wish e a -> Wish f a
-export mapRej = (f, m) =>
-  Wish((badCB, goodCB) =>
-    where(m) {
-      Wish(run) =>
-        run((x) => badCB(f(x)), goodCB)
-    }
-  )
+export mapRej = (f, m) => Wish(
+  (badCB, goodCB) => where(m) {
+    Wish(run) =>
+      run((x) => badCB(f(x)), goodCB)
+  },
+)
 
 
 /**
@@ -202,8 +215,8 @@ export mapRej = (f, m) =>
  * chainRej((x) => good(x + 1), bad(3)) // good(4)
  */
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
-export chainRej = (f, m) => Wish((badCB, goodCB) =>
-  where(m) {
+export chainRej = (f, m) => Wish(
+  (badCB, goodCB) => where(m) {
     Wish(run) =>
       do {
         cancel = Nothing
@@ -215,10 +228,14 @@ export chainRej = (f, m) => Wish((badCB, goodCB) =>
             }
             cancel = Just(r2)
           },
-          (x) => { goodCB(x) }
+          (x) => {
+            goodCB(x)
+          },
         )
 
-        if (cancel == Nothing) do { cancel = Just(r1) }
+        if (cancel == Nothing) do {
+          cancel = Just(r1)
+        }
 
         return () => {
           where(cancel) {
@@ -230,13 +247,13 @@ export chainRej = (f, m) => Wish((badCB, goodCB) =>
           }
         }
       }
-  }
+  },
 )
 
 
 bichain :: (a -> Wish c d) -> (b -> Wish c d) -> Wish a b -> Wish c d
-export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
-  where(m) {
+export bichain = (badF, goodF, m) => Wish(
+  (badCB, goodCB) => where(m) {
     Wish(run) =>
       do {
         cancel = Nothing
@@ -257,7 +274,9 @@ export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
           },
         )
 
-        if (cancel == Nothing) do { cancel = Just(r1) }
+        if (cancel == Nothing) do {
+          cancel = Just(r1)
+        }
 
         return () => {
           where(cancel) {
@@ -269,22 +288,26 @@ export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
           }
         }
       }
-  }
+  },
 )
 
 
 good :: a -> Wish e a
-export good = (a) => Wish((_, goodCB) => {
-  goodCB(a)
-  return () => {}
-})
+export good = (a) => Wish(
+  (_, goodCB) => {
+    goodCB(a)
+    return () => {}
+  },
+)
 
 
 bad :: e -> Wish e a
-export bad = (e) => Wish((badCB, _) => {
-  badCB(e)
-  return () => {}
-})
+export bad = (e) => Wish(
+  (badCB, _) => {
+    badCB(e)
+    return () => {}
+  },
+)
 
 
 withRej :: f -> Wish e a -> Wish f a
@@ -313,142 +336,156 @@ export chainManyN = (concurrent, f, wishes) => {
   }
 
   return map(
-    (wish) =>
-      Wish((badCB, goodCB) =>
-        where(wish) {
-          Wish(run) =>
-            do {
-              cancel = Nothing
-              r1 = run(
-                (err) => {
-                  runningWishes = runningWishes - 1
-                  badCB(err)
-                  next()
-                },
-                (res) => {
-                  runner = () => {
-                    runningWishes = runningWishes + 1
-                    where(f(res)) {
-                      Wish(_run) =>
-                        do {
-                          r2 = _run(
-                            (err) => {
-                              badCB(err)
-                              runningWishes = runningWishes - 1
-                              next()
-                            },
-                            (_res) => {
-                              goodCB(_res)
-                              runningWishes = runningWishes - 1
-                              next()
-                            },
-                          )
-                          cancel = Just(r2)
-                        }
+    (wish) => Wish(
+      (badCB, goodCB) => where(wish) {
+        Wish(run) =>
+          do {
+            cancel = Nothing
+            r1 = run(
+              (err) => {
+                runningWishes = runningWishes - 1
+                badCB(err)
+                next()
+              },
+              (res) => {
+                runner = () => {
+                  runningWishes = runningWishes + 1
+                  where(f(res)) {
+                    Wish(_run) =>
+                      do {
+                        r2 = _run(
+                          (err) => {
+                            badCB(err)
+                            runningWishes = runningWishes - 1
+                            next()
+                          },
+                          (_res) => {
+                            goodCB(_res)
+                            runningWishes = runningWishes - 1
+                            next()
+                          },
+                        )
+                        cancel = Just(r2)
                       }
                   }
-  
-                  if (runningWishes < concurrent) do {
-                    runner()
-                    next()
-                  } else do {
-                    runners = runners ++ [runner]
-                  }
-                },
-              )
-
-              if (cancel == Nothing) do { cancel = Just(r1) }
-
-              return () => {
-                where(cancel) {
-                  Just(c) =>
-                    c()
-
-                  Nothing =>
-                    {}
                 }
+
+                if (runningWishes < concurrent) do {
+                  runner()
+                  next()
+                } else do {
+                  runners = runners ++ [runner]
+                }
+              },
+            )
+
+            if (cancel == Nothing) do {
+              cancel = Just(r1)
+            }
+
+            return () => {
+              where(cancel) {
+                Just(c) =>
+                  c()
+
+                Nothing =>
+                  {}
               }
             }
-        }
-      ),
-      wishes,
+          }
+      },
+    ),
+    wishes,
   )
 }
 
 
 parallelN :: Integer -> List (Wish e a) -> Wish e (List a)
-export parallelN = (concurrent, wishes) => Wish((badCB, goodCB) => {
-  amountOfWishesToProcess = length(wishes)
-  ko = false
-  ok = 0
-  runningWishes = 0
-  wishesNotStarted = wishes
-  indexOfLastStartedWish = 0
+export parallelN = (concurrent, wishes) => Wish(
+  (badCB, goodCB) => {
+    amountOfWishesToProcess = length(wishes)
+    ko = false
+    ok = 0
+    runningWishes = 0
+    wishesNotStarted = wishes
+    indexOfLastStartedWish = 0
 
-  result :: List #[Integer, a]
-  result = []
+    result :: List #[Integer, a]
+    result = []
 
-  cancelationFunctions :: List #[Integer, {} -> {}]
-  cancelationFunctions = []
+    cancelationFunctions :: List #[Integer, {} -> {}]
+    cancelationFunctions = []
 
-  fork :: Integer -> List (Wish e a) -> {}
-  fork = (index, ws) => where(ws) {
-    [wish, ...nextWishes] =>
-      do {
-        wishesNotStarted = nextWishes
-        runningWishes = runningWishes + 1
-        indexOfLastStartedWish = indexOfLastStartedWish + 1
+    fork :: Integer -> List (Wish e a) -> {}
+    fork = (index, ws) => where(ws) {
+      [wish, ...nextWishes] =>
+        do {
+          wishesNotStarted = nextWishes
+          runningWishes = runningWishes + 1
+          indexOfLastStartedWish = indexOfLastStartedWish + 1
 
-        where(wish) {
-          Wish(run) =>
-            do {
-              done = false
-              cancel = run(
-                (err) =>
-                  if (!ko) do {
+          where(wish) {
+            Wish(run) =>
+              do {
+                done = false
+                cancel = run(
+                  (err) => if (!ko) do {
                     ko = true
                     forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
                     badCB(err)
                   },
-                (x) => {
-                  done = true
-                  result = [#[index, x], ...result]
-                  ok = ok + 1
-                  runningWishes = runningWishes - 1
+                  (x) => {
+                    done = true
+                    result = [#[index, x], ...result]
+                    ok = ok + 1
+                    runningWishes = runningWishes - 1
 
-                  if (ok == amountOfWishesToProcess) {
-                    pipe(
-                      sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
-                      map(Tuple.snd),
-                      goodCB
-                    )(result)
-                  } else do {
-                    setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
-                  }
-                }
-              )
+                    if (ok == amountOfWishesToProcess) {
+                      pipe(
+                        sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+                        map(Tuple.snd),
+                        goodCB,
+                      )(result)
+                    } else do {
+                      setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
+                    }
+                  },
+                )
 
-              cancelationFunctions = [#[index, () => if (!done) { cancel() }], ...cancelationFunctions]
-            }
+                cancelationFunctions = [
+                  #[
+                    index,
+                    () => if (!done) {
+                      cancel()
+                    },
+                  ],
+                  ...cancelationFunctions,
+                ]
+              }
+          }
         }
-      }
 
-    [] =>
-      amountOfWishesToProcess == 0
-        ? goodCB([])
-        : {}
-  }
+      [] =>
+        amountOfWishesToProcess == 0 ? goodCB([]) : {}
+    }
 
-  setTimeout(() => {
-    forEach((i) => {
-      fork(i, wishesNotStarted)
-    }, range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent))
-  }, 0)
+    setTimeout(
+      () => {
+        forEach(
+          (i) => {
+            fork(i, wishesNotStarted)
+          },
+          range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent),
+        )
+      },
+      0,
+    )
 
-  return () => {
-    forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
-  }
-})
+    return () => {
+      forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
+    }
+  },
+)
 
 
 parallel :: List (Wish e a) -> Wish e (List a)
@@ -456,67 +493,86 @@ export parallel = (wishes) => parallelN(-1, wishes)
 
 
 raceN :: Integer -> List (Wish e a) -> Wish {} a
-export raceN = (concurrent, wishes) => Wish((badCB, goodCB) => {
-  amountOfWishesToProcess = length(wishes)
-  runWishes = 0
-  wishesNotStarted = wishes
-  indexOfLastStartedWish = 0
-  finished = false
+export raceN = (concurrent, wishes) => Wish(
+  (badCB, goodCB) => {
+    amountOfWishesToProcess = length(wishes)
+    runWishes = 0
+    wishesNotStarted = wishes
+    indexOfLastStartedWish = 0
+    finished = false
 
-  cancelationFunctions :: List #[Integer, {} -> {}]
-  cancelationFunctions = []
+    cancelationFunctions :: List #[Integer, {} -> {}]
+    cancelationFunctions = []
 
-  fork :: Integer -> List (Wish e a) -> {}
-  fork = (index, ws) => where(ws) {
-    [wish, ...nextWishes] =>
-      do {
-        wishesNotStarted = nextWishes
-        indexOfLastStartedWish = indexOfLastStartedWish + 1
+    fork :: Integer -> List (Wish e a) -> {}
+    fork = (index, ws) => where(ws) {
+      [wish, ...nextWishes] =>
+        do {
+          wishesNotStarted = nextWishes
+          indexOfLastStartedWish = indexOfLastStartedWish + 1
 
-        where(wish) {
-          Wish(run) =>
-            do {
-              done = false
-              cancel = run(
-                () => {
-                  done = true
-                  runWishes = runWishes + 1
-                  if (length(wishesNotStarted) > 0 && !finished) do {
-                    setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
-                  } else if (runWishes == amountOfWishesToProcess) do {
+          where(wish) {
+            Wish(run) =>
+              do {
+                done = false
+                cancel = run(
+                  () => {
+                    done = true
+                    runWishes = runWishes + 1
+                    if (length(wishesNotStarted) > 0 && !finished) do {
+                      setTimeout(() => fork(indexOfLastStartedWish, wishesNotStarted), 0)
+                    } else if (runWishes == amountOfWishesToProcess) do {
+                      finished = true
+                      badCB({})
+                    }
+                  },
+                  (x) => {
+                    done = true
                     finished = true
-                    badCB({})
-                  }
-                },
-                (x) => {
-                  done = true
-                  finished = true
-                  forEach((cancelFunction) => if (Tuple.fst(cancelFunction) != index) {
-                    Tuple.snd(cancelFunction)()
-                  }, cancelationFunctions)
-                  goodCB(x)
-                }
-              )
+                    forEach(
+                      (cancelFunction) => if (Tuple.fst(cancelFunction) != index) {
+                        Tuple.snd(cancelFunction)()
+                      },
+                      cancelationFunctions,
+                    )
+                    goodCB(x)
+                  },
+                )
 
-              cancelationFunctions = [#[index, () => if (!done) { cancel() }], ...cancelationFunctions]
-            }
+                cancelationFunctions = [
+                  #[
+                    index,
+                    () => if (!done) {
+                      cancel()
+                    },
+                  ],
+                  ...cancelationFunctions,
+                ]
+              }
+          }
         }
-      }
 
-    [] =>
-      {}
-  }
+      [] =>
+        {}
+    }
 
-  setTimeout(() => {
-    forEach((i) => {
-      fork(i, wishesNotStarted)
-    }, range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent))
-  }, 0)
+    setTimeout(
+      () => {
+        forEach(
+          (i) => {
+            fork(i, wishesNotStarted)
+          },
+          range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent),
+        )
+      },
+      0,
+    )
 
-  return () => {
-    forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
-  }
-})
+    return () => {
+      forEach((cancelFunction) => Tuple.snd(cancelFunction)(), cancelationFunctions)
+    }
+  },
+)
 
 
 race :: List (Wish e a) -> Wish {} a
@@ -524,13 +580,21 @@ export race = (wishes) => raceN(-1, wishes)
 
 
 discardError :: (e -> a) -> Wish e a -> Wish {} a
-export discardError = (recover, wish) => Wish((_, goodCB) => where(wish) {
-  Wish(run) =>
-    run(pipe(recover, goodCB), goodCB)
-})
+export discardError = (recover, wish) => Wish(
+  (_, goodCB) => where(wish) {
+    Wish(run) =>
+      run(
+        pipe(
+          recover,
+          goodCB,
+        ),
+        goodCB,
+      )
+  },
+)
 
 
-fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> ({} -> {})
+fulfill :: (e -> {}) -> (a -> {}) -> Wish e a -> {} -> {}
 export fulfill = (badCB, goodCB, m) => where(m) {
   Wish(run) =>
     run(badCB, goodCB)
@@ -538,50 +602,65 @@ export fulfill = (badCB, goodCB, m) => where(m) {
 
 
 after :: Integer -> a -> Wish e a
-export after = (time, a) => Wish((_, goodCB) => {
-  id = setTimeout(() => { goodCB(a) }, time)
+export after = (time, a) => Wish(
+  (_, goodCB) => {
+    id = setTimeout(() => { goodCB(a) }, time)
 
-  return () => { clearTimeout(id) }
-})
+    return () => {
+      clearTimeout(id)
+    }
+  },
+)
 
 
 withTimeout :: Integer -> e -> Wish e a -> Wish e a
-export withTimeout = (ms, err, wish) => Wish((badCB, goodCB) => {
-  done = false
-  timeoutId = __TimerId__
+export withTimeout = (ms, err, wish) => Wish(
+  (badCB, goodCB) => {
+    done = false
+    timeoutId = __TimerId__
+    cancel = { run: () => {} }
 
-  return where(wish) {
-    Wish(run) =>
-      do {
-        cancel = run(
-          (x) => {
+    return where(wish) {
+      Wish(run) =>
+        do {
+          timeoutId = setTimeout(
+            () => {
+              if (!done) do {
+                done = true
+                cancel.run()
+                badCB(err)
+              }
+            },
+            ms,
+          )
+
+          cancel = {
+            run: run(
+              (x) => {
+                if (!done) do {
+                  done = true
+                  clearTimeout(timeoutId)
+                  badCB(x)
+                }
+              },
+              (x) => {
+                if (!done) do {
+                  done = true
+                  clearTimeout(timeoutId)
+                  goodCB(x)
+                }
+              },
+            ),
+          }
+
+          return () => {
             if (!done) do {
               clearTimeout(timeoutId)
-              badCB(x)
-            }
-          },
-          (x) => {
-            if (!done) do {
               done = true
-              clearTimeout(timeoutId)
-              goodCB(x)
+              cancel.run()
             }
           }
-        )
-
-        timeoutId = setTimeout(() => {
-          if (!done) do {
-            done = true
-            cancel()
-            badCB(err)
-          }
-        }, ms)
-
-        return () => {
-          clearTimeout(timeoutId)
-          done = true
-          cancel()
         }
-      }
-  }
-})
+    }
+  },
+)

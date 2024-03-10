@@ -275,7 +275,7 @@ void forwardTimeoutCallback(uv_timer_t *handle) {
 }
 
 void __clearTimeout__(uv_timer_t *handle) {
-  if (!uv_is_closing((uv_handle_t*) handle)) {
+  if (handle && !uv_is_closing((uv_handle_t*) handle)) {
     uv_close((uv_handle_t*) handle, onTimeoutHandleClose);
   }
 }

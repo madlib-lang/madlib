@@ -235,7 +235,9 @@ int handleTimer(CURLM *multi, long timeoutMillis, void *userp) {
   uv_timer_t *handle = (uv_timer_t *)userp;
   if (timeoutMillis < 0) {
     uv_timer_stop(handle);
-    uv_close((uv_handle_t *)handle, onTimerClose);
+    if (!uv_is_closing((uv_handle_t *)handle)) {
+      uv_close((uv_handle_t *)handle, onTimerClose);
+    }
   } else {
     if (timeoutMillis == 0) {
       timeoutMillis = 1;
@@ -301,7 +303,9 @@ int handleSocket(CURL *easy, curl_socket_t socketfd, int action, void *userp, vo
     case CURL_POLL_REMOVE:
       if (socketfd) {
         uv_poll_stop(handle);
-        uv_close((uv_handle_t*)handle, onHandleClose);
+        if (!uv_is_closing((uv_handle_t *)handle)) {
+          uv_close((uv_handle_t*)handle, onHandleClose);
+        }
         curl_multi_assign(requestData->curlHandle, socketfd, NULL);
       }
       break;
@@ -419,7 +423,7 @@ RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback
 
   RequestData_t *requestData = (RequestData_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(RequestData_t));
   requestData->curlHandle = multiHandle;
-  uv_timer_t *timerHandle = (uv_timer_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_timer_t));
+  uv_timer_t *timerHandle = (uv_timer_t *)GC_MALLOC(sizeof(uv_timer_t));
   uv_timer_init(getLoop(), timerHandle);
   timerHandle->data = requestData;
   requestData->asBytes = asBytes;
@@ -485,7 +489,6 @@ RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback
     curl_multi_cleanup(requestData->curlHandle);
     curl_easy_cleanup(handle);
     curl_url_cleanup(urlp);
-    GC_FREE(timerHandle);
     GC_FREE(requestData);
     return NULL;
   }
