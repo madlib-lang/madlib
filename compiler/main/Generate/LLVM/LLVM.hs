@@ -949,6 +949,12 @@ generateExp env symbolTable exp = case exp of
             store ptr' 0 exp'
             return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
 
+          -- Case of mutation within a tco optimized function
+          Just (Symbol (TCOParamSymbol ptr) _) -> do
+            ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+            store ptr' 0 exp'
+            return (Map.insert name (tcoParamSymbol ptr exp') symbolTable, exp', Just ptr)
+
           or ->
             error $ "found: " <> ppShow or
       else do
