@@ -206,7 +206,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       listModulePath <- Rock.fetch $ AbsolutePreludePath "List"
       testModulePath <- Rock.fetch $ AbsolutePreludePath "Test"
       let ast'' = updateTestExports wishModulePath testModulePath listModulePath ast'
-      verifyTests ast''
+      catchError (verifyTests ast'') (\err -> pushError err >> return ())
       forM_ (Slv.aexps ast'') $ \e ->
         catchError (verifyTopLevelExp path e) (\err -> pushError err >> return ())
 
