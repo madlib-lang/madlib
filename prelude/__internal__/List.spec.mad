@@ -4,7 +4,6 @@ import {} from "String"
 import { assertEquals, test } from "Test"
 
 import {
-  addIndex,
   append,
   concat,
   contains,
@@ -267,12 +266,4 @@ test(
     setMaybe(3, Nothing, ["this", "is", "really", "dumb"]),
     ["this", "is", "really", "dumb"],
   ),
-)
-
-test("addIndex(map)", () => assertEquals(addIndex(map, (x, i) => x + i, [2, 3, 4]), [2, 4, 6]))
-
-test(
-  "addIndex(filter)",
-  // () => assertEquals(addIndex(filter, (_, i) => i % 2 == 0, [2, 3, 4]), [2, 4]),
-  () => assertEquals(true, true),
 )

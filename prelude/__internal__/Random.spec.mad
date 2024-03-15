@@ -1,7 +1,7 @@
 import Float from "Float"
 import Math from "Math"
-import { Just } from "Maybe"
 import String from "String"
+import { assertEquals, test } from "Test"
 
 import {
   LCG_A,
@@ -24,13 +24,10 @@ import {
   stepN,
   unSeed,
 } from "./Random"
-import { assertEquals, test } from "./Test"
 
 
 
 ALPHABET = String.split("", "abcdefghjiklmnopqrtuvwxyz")
-// Tests are async so we don't wanna have a shared random generator here
-TEST_SEED = 1000
 
 naiveRandom = () => Float.toInteger(Math.floor(Math.random() * 10000))
 
