@@ -142,7 +142,7 @@ instance Monad Parser {
  *
  * @since 0.0.1
  * @example
- * runParser(alt(char("c"), char("a")), "a") // Right "a"
+ * runParser(alt(char('c'), char('a')), "a") // Right "a"
  */
 instance Alternative Parser {
   aempty = Parser((_, l) => #[[], l])
@@ -199,7 +199,7 @@ export anyChar = Parser(
  *
  * abcParser = pipe(
  *   map((start, c, end) => L(start, end, c)),
- *   ap($, oneOf(["a", "b", "c"])),
+ *   ap($, oneOf(['a', 'b', 'c'])),
  *   ap($, location)
  * )(location)
  *
@@ -225,9 +225,9 @@ export location = Parser((s, l) => #[[#[l, s]], l])
  *
  * @since 0.0.1
  * @example
- * runParser(oneOf(["1", "-", "?"]), "?") // Right "?"
- * runParser(oneOf(["1", "-", "?"]), "1") // Right "1"
- * runParser(oneOf(["1", "-", "?"]), "2") // Left (Loc 0 0 0)
+ * runParser(oneOf(['1', '-', '?']), "?") // Right "?"
+ * runParser(oneOf(['1', '-', '?']), "1") // Right "1"
+ * runParser(oneOf(['1', '-', '?']), "2") // Left (Loc 0 0 0)
  */
 oneOf :: List Char -> Parser Char
 export oneOf = (cs) => satisfy(List.includes($, cs))
@@ -238,9 +238,9 @@ export oneOf = (cs) => satisfy(List.includes($, cs))
  *
  * @since 0.0.1
  * @example
- * runParser(notOneOf(["1", "-", "?"]), "?") // Left (Loc 0 0 0)
- * runParser(notOneOf(["1", "-", "?"]), "1") // Left (Loc 0 0 0)
- * runParser(notOneOf(["1", "-", "?"]), "2") // Right "2"
+ * runParser(notOneOf(['1', '-', '?']), "?") // Left (Loc 0 0 0)
+ * runParser(notOneOf(['1', '-', '?']), "1") // Left (Loc 0 0 0)
+ * runParser(notOneOf(['1', '-', '?']), "2") // Right "2"
  */
 notOneOf :: List Char -> Parser Char
 export notOneOf = (cs) => satisfy(complement(List.includes($, cs)))
@@ -315,7 +315,7 @@ export some = (p) => chain((first) => map((rest) => [first, ...rest], many(p)), 
  *
  * @since 0.0.1
  * @example
- * parser = manyTill(char("a"), char("b"))
+ * parser = manyTill(char('a'), char('b'))
  * runParser(parser, "aaaaab") // Right "aaaaa"
  */
 manyTill :: Parser a -> Parser b -> Parser (List a)
@@ -357,10 +357,10 @@ export manyTill = (p, end) => Parser(
  *
  * @since 0.0.1
  * @example
- * parser1 = someTill(char("a"), char("b"))
+ * parser1 = someTill(char('a'), char('b'))
  * runParser(parser1, "aaaaab") // Right "aaaaa"
  *
- * parser2 = someTill(char("a"), char("b"))
+ * parser2 = someTill(char('a'), char('b'))
  * runParser(parser2, "b") // Left (Loc 0 0 0)
  */
 someTill :: Parser a -> Parser b -> Parser (List a)
@@ -374,7 +374,7 @@ export someTill = (p, end) => chain(
  *
  * @since 0.0.1
  * @example
- * alt(char("a"), lookAhead(anyChar))
+ * alt(char('a'), lookAhead(anyChar))
  */
 lookAhead :: Parser a -> Parser a
 export lookAhead = (p) => Parser(
@@ -454,8 +454,8 @@ export satisfy = (pred) => chain(ifElse(pred, of, always(fail)), anyChar)
  *
  * @since 0.0.1
  * @example
- * runParser(char("a"), "a") // Right "a"
- * runParser(char("a"), "b") // Left (Loc 0 0 0)
+ * runParser(char('a'), "a") // Right "a"
+ * runParser(char('a'), "b") // Left (Loc 0 0 0)
  */
 char :: Char -> Parser Char
 export char = pipe(
@@ -468,8 +468,8 @@ export char = pipe(
  *
  * @since 0.0.1
  * @example
- * runParser(notChar("a"), "a") // Left (Loc 0 0 0)
- * runParser(notChar("a"), "b") // Right "a"
+ * runParser(notChar('a'), "a") // Left (Loc 0 0 0)
+ * runParser(notChar('a'), "b") // Right "a"
  */
 notChar :: Char -> Parser Char
 export notChar = pipe(
@@ -595,11 +595,11 @@ export type Config a
 
 
 getConf :: Config a
--> {
-  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
-  oneOf :: List (Config a -> Parser a),
-  spaces :: Parser {},
-}
+  -> {
+    andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+    oneOf :: List (Config a -> Parser a),
+    spaces :: Parser {},
+  }
 getConf = (config) => where(config) {
   Config(conf) =>
     conf
@@ -607,11 +607,11 @@ getConf = (config) => where(config) {
 
 
 prattExpression :: {
-  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
-  oneOf :: List (Config a -> Parser a),
-  spaces :: Parser {},
-}
--> Parser a
+    andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+    oneOf :: List (Config a -> Parser a),
+    spaces :: Parser {},
+  }
+  -> Parser a
 export prattExpression = (config) => pipe(
   Config,
   subExpression(0),
@@ -670,10 +670,10 @@ export prefix = (precedence, operator, apply, config) => do {
 
 
 infixHelp :: #[Integer, Integer]
--> Parser a
--> (a -> a -> a -> a)
--> Config a
--> #[Integer, a -> Parser a]
+  -> Parser a
+  -> (a -> a -> a -> a)
+  -> Config a
+  -> #[Integer, a -> Parser a]
 infixHelp = (precedences, operator, apply, config) => where(precedences) {
   #[leftPrecedence, rightPrecedence] =>
     #[
