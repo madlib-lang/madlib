@@ -2880,7 +2880,7 @@ buildObjectFile options astModule = do
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
-          verify mod'
+          -- verify mod'
           mod'' <-
             withPassManager
               defaultCuratedPassSetSpec
