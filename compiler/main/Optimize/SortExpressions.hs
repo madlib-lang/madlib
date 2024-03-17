@@ -129,6 +129,10 @@ buildDependencies' localNames expName exp = case exp of
     ++ buildDependencies' localNames expName truthy
     ++ buildDependencies' localNames expName falsy
 
+  Typed _ _ _ (While cond body) ->
+    buildDependencies' localNames expName cond
+    ++ buildDependencies' localNames expName body
+
   Typed _ _ _ (Call fn args) ->
     buildDependencies' localNames expName fn
     ++ (args >>= buildDependencies' localNames expName)

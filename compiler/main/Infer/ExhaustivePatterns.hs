@@ -225,6 +225,10 @@ checkExp ast env (Slv.Typed _ area expression) =
       checkExp ast env truthy
       checkExp ast env falsy
 
+    Slv.While cond body -> do
+      checkExp ast env cond
+      checkExp ast env body
+
     Slv.NameExport _ ->
       return ()
 

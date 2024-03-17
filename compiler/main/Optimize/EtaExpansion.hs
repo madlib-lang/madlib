@@ -87,6 +87,9 @@ expand exp = case exp of
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If (expand cond) (expand truthy) (expand falsy))
 
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While (expand cond) (expand body))
+
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (expand <$> exps))
 

@@ -303,6 +303,14 @@ instance Compilable Exp where
             <> compile env config falsy
             <> ")"
 
+        While cond body ->
+          "while("
+            <> compile env config cond
+            <> ") {\n"
+            <> compile env config body
+            <> "\n"
+            <> "}"
+
         Definition params body -> compileAbs Nothing (getValue <$> params) body
          where
           compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String

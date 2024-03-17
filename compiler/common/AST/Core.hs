@@ -171,6 +171,7 @@ data Exp_
   | TupleConstructor [Exp]
   | Record [Field]
   | If Exp Exp Exp
+  | While Exp Exp
   | Do [Exp]
   | Where Exp [Is]
   | Extern (Ty.Qual Ty.Type) Name Name

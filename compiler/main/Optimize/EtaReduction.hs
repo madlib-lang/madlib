@@ -46,6 +46,9 @@ usesParam name exp = case exp of
     || usesParam name truthy
     || usesParam name falsy
 
+  Typed _ _ _ (While cond body) ->
+    usesParam name cond || usesParam name body
+
   Typed _ _ _ (Do exps) ->
     any (usesParam name) exps
 
@@ -117,6 +120,9 @@ reduce blacklist exp = case exp of
 
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If (reduce blacklist cond) (reduce blacklist truthy) (reduce blacklist falsy))
+
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While (reduce blacklist cond) (reduce blacklist body))
 
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (reduce blacklist <$> exps))

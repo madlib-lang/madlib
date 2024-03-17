@@ -243,6 +243,11 @@ instance Canonicalizable Src.Exp Can.Exp where
       falsy'  <- canonicalize env target falsy
       return $ Can.Canonical area (Can.If cond' truthy' falsy')
 
+    Src.While cond body -> do
+      cond'   <- canonicalize env target cond
+      body'  <- canonicalize env target body
+      return $ Can.Canonical area (Can.While cond' body')
+
     Src.Ternary cond truthy falsy -> do
       cond'   <- canonicalize env target cond
       truthy' <- canonicalize env target truthy

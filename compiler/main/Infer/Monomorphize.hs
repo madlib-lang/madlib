@@ -639,6 +639,11 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     falsy' <- monomorphize target env falsy
     return $ Typed (applyAndCleanQt envSubstitution qt) area (If cond' truthy' falsy')
 
+  Typed qt area (While cond body) -> do
+    cond' <- monomorphize target env cond
+    body' <- monomorphize target env body
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (While cond' body')
+
   Typed qt area (Access rec (Typed qt' area' field)) -> do
     rec' <- monomorphize target env rec
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Access rec' (Typed (applyAndCleanQt envSubstitution qt') area' field))

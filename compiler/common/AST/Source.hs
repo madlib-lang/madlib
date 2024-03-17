@@ -165,6 +165,7 @@ data Exp_
   | Access Exp Exp
   | Assignment Name Exp
   | Record [Field]
+  | While Exp Exp
   | If Exp Exp Exp
   | Ternary Exp Exp Exp
   | Where Exp [Is]

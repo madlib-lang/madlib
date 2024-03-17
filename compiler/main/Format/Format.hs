@@ -906,6 +906,31 @@ expToDoc comments exp =
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " <- " <> exp', comments'')
 
+        Source _ _ (While cond body) ->
+          let (cond', comments'')    = expToDoc comments' cond
+              (body', comments''') = expToDoc comments'' body
+              isWhileDo = case body of
+                Source _ _ (Do _) ->
+                  True
+
+                _ ->
+                  False
+          in  ( Pretty.group
+                (
+                  Pretty.pretty "while("
+                  <> Pretty.nest indentSize (Pretty.line' <> cond') <> Pretty.line'
+                )
+              <> Pretty.group
+                  (
+                    if isWhileDo then
+                      Pretty.rparen <> Pretty.space <> body'
+                    else
+                      Pretty.pretty ") {"
+                      <> Pretty.nest indentSize (Pretty.hardline <> body') <> Pretty.hardline <> Pretty.rbrace
+                  )
+              , comments'''
+              )
+
         Source _ _ (If cond truthy falsy) ->
           let (cond', comments'')    = expToDoc comments' cond
               (truthy', comments''') = expToDoc comments'' truthy

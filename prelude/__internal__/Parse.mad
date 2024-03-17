@@ -4,7 +4,7 @@ import type { Maybe } from "Maybe"
 import {} from "Alternative"
 import { apL } from "Applicative"
 import Char from "Char"
-import { maybeLoop, while } from "Control"
+import { maybeLoop } from "Control"
 import { Left, Right } from "Either"
 import { always, complement, equals, ifElse, notEquals } from "Function"
 import List from "List"
@@ -276,7 +276,7 @@ export many = (p) => Parser(
     loc = l
     acc = []
     while(
-      (_) => where(parse(p, rest, loc)) {
+      where(parse(p, rest, loc)) {
         #[[#[parsed, r]], loc_] =>
           do {
             rest = r
@@ -287,8 +287,10 @@ export many = (p) => Parser(
 
         _ =>
           false
-      },
-    )
+      }
+    ) {
+      {}
+    }
 
     return #[[#[List.reverse(acc), rest]], loc]
   },
@@ -595,11 +597,11 @@ export type Config a
 
 
 getConf :: Config a
--> {
-  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
-  oneOf :: List (Config a -> Parser a),
-  spaces :: Parser {},
-}
+  -> {
+    andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+    oneOf :: List (Config a -> Parser a),
+    spaces :: Parser {},
+  }
 getConf = (config) => where(config) {
   Config(conf) =>
     conf
@@ -607,11 +609,11 @@ getConf = (config) => where(config) {
 
 
 prattExpression :: {
-  andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
-  oneOf :: List (Config a -> Parser a),
-  spaces :: Parser {},
-}
--> Parser a
+    andThenOneOf :: List (Config a -> #[Integer, a -> Parser a]),
+    oneOf :: List (Config a -> Parser a),
+    spaces :: Parser {},
+  }
+  -> Parser a
 export prattExpression = (config) => pipe(
   Config,
   subExpression(0),
@@ -670,10 +672,10 @@ export prefix = (precedence, operator, apply, config) => do {
 
 
 infixHelp :: #[Integer, Integer]
--> Parser a
--> (a -> a -> a -> a)
--> Config a
--> #[Integer, a -> Parser a]
+  -> Parser a
+  -> (a -> a -> a -> a)
+  -> Config a
+  -> #[Integer, a -> Parser a]
 infixHelp = (precedences, operator, apply, config) => where(precedences) {
   #[leftPrecedence, rightPrecedence] =>
     #[

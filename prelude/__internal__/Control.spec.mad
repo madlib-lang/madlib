@@ -1,18 +1,7 @@
 import { assertEquals, test } from "Test"
 import { Just, Nothing } from "Maybe"
 
-import { loop, maybeLoop, while } from "./Control"
-
-
-test("while", () => {
-  x = 0
-  while(() => {
-    x = x + 1
-    return x != 5
-  })
-
-  return assertEquals(x, 5)
-})
+import { loop, maybeLoop } from "./Control"
 
 test("loop", () => {
   expected = 16

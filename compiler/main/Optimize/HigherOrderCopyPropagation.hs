@@ -177,6 +177,10 @@ findGlobalAccesses namesInScope exp = case exp of
     findGlobalAccesses namesInScope truthy <>
     findGlobalAccesses namesInScope falsy
 
+  Typed _ _ _ (While cond body) ->
+    findGlobalAccesses namesInScope cond <>
+    findGlobalAccesses namesInScope body
+
   _ ->
     Set.empty
 
@@ -254,6 +258,11 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
         truthy' = propagateBody fnName newFnName newQualType propagateMap truthy
         falsy' = propagateBody fnName newFnName newQualType propagateMap falsy
     in  Typed qt area metadata (If cond' truthy' falsy')
+
+  Typed qt area metadata (While cond body) ->
+    let cond' = propagateBody fnName newFnName newQualType propagateMap cond
+        body' = propagateBody fnName newFnName newQualType propagateMap body
+    in  Typed qt area metadata (While cond' body')
 
   Typed qt area metadata (Access rec field) ->
     let rec' = propagateBody fnName newFnName newQualType propagateMap rec
@@ -420,6 +429,11 @@ propagate path exp = case exp of
     truthy' <- propagate path truthy
     falsy' <- propagate path falsy
     return $ Typed qt area metadata (If cond' truthy' falsy')
+
+  Typed qt area metadata (While cond body) -> do
+    cond' <- propagate path cond
+    body' <- propagate path body
+    return $ Typed qt area metadata (While cond' body')
 
   Typed qt area metadata (Access rec field) -> do
     rec' <- propagate path rec
