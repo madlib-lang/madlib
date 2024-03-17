@@ -22,17 +22,12 @@ import           Infer.Substitute
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
-import Explain.Location (emptyArea, Area)
+import           Explain.Location (emptyArea, Area)
 import qualified Infer.Env as Slv
 import qualified Control.Monad as Monad
-import Run.Target (Target (TBrowser, TNode))
-import Control.Monad (when)
-import Text.Show.Pretty (ppShow)
-import System.Console.ANSI
-import GHC.IO.Handle (hFlush)
-import GHC.IO.Handle.FD (stdout)
-import System.Environment (lookupEnv)
-import Control.Applicative
+import           Run.Target (Target (TBrowser, TNode))
+import           Control.Monad (when)
+import           Control.Applicative
 
 
 genType :: Substitution -> Type -> Type
@@ -190,14 +185,6 @@ makeDefinitionType typeItIsCalledWith def =
 -- TODO: split this monster in 3 sub functions
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
 monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith' = do
-  noColor <- liftIO $ lookupEnv "NO_COLOR"
-  when (noColor == Just "" || noColor == Nothing) $ do
-    liftIO saveCursor
-    liftIO clearLine
-    liftIO $ putStr ("Monomorphizing: " ++ fnName)
-    liftIO $ hFlush stdout
-    liftIO restoreCursor
-
   let typeItIsCalledWith = genType (envSubstitution env) typeItIsCalledWith'
 
   -- first we look in the local namespace
@@ -796,14 +783,23 @@ getMonomorphicFunctionNamesAndTypes fnName state =
   in  map (\(FunctionId name _ t, MonomorphizationRequest index _ _) -> (buildMonomorphizedName name index, t)) $ Map.toList monomorphicInstances
 
 
-replaceDefinitionWithMonomorphicOnes :: Map.Map FunctionId MonomorphizationRequest -> Exp -> [Exp]
-replaceDefinitionWithMonomorphicOnes state exp =
+isTracker :: String -> Bool
+isTracker n = "__lineTracker_" `List.isInfixOf` n || "__functionTracker_" `List.isInfixOf` n || "__branchTracker_" `List.isInfixOf` n
+
+replaceDefinitionWithMonomorphicOnes :: Target -> Env -> Map.Map FunctionId MonomorphizationRequest -> Exp -> Monomorphize [Exp]
+replaceDefinitionWithMonomorphicOnes target env state exp =
   case getExpName exp of
     Just n ->
-      getMonomorphicFunctions n state
+      case getMonomorphicFunctions n state of
+        [] | isTracker n -> do
+          exp' <- monomorphize target env exp
+          return [exp']
+
+        or ->
+          return or
 
     Nothing ->
-      [exp]
+      return [exp]
 
 
 findMonomorphicMethods :: Map.Map FunctionId MonomorphizationRequest -> Instance -> [Exp]
@@ -831,12 +827,15 @@ filterMonomorphicFunctionsForModule state modulePath =
     state
 
 
-mergeResult :: AST -> IO AST
-mergeResult ast@AST{ apath = Just currentModulePath } = do
-  state <- readIORef monomorphizationState
+-- Target and Env are only needed so that we can monomorphize coverage trackers
+-- that would otherwise be eliminated so that they resolve to the right,
+-- meaning the one with the monomorphic name.
+mergeResult :: Target -> Env -> AST -> Monomorphize AST
+mergeResult target env ast@AST{ apath = Just currentModulePath } = do
+  state <- liftIO $ readIORef monomorphizationState
   let monomorphizedFunctionsForModule = filterMonomorphicFunctionsForModule state currentModulePath
   let methodExps = Set.toList $ Set.fromList $ ainstances ast >>= findMonomorphicMethods monomorphizedFunctionsForModule
-  let newExps = aexps ast >>= replaceDefinitionWithMonomorphicOnes monomorphizedFunctionsForModule
+  newExps <- concat <$> mapM (replaceDefinitionWithMonomorphicOnes target env monomorphizedFunctionsForModule) (aexps ast)
   let allExps = methodExps ++ newExps
 
   allImports <- liftIO $ readIORef monomorphizationImports
@@ -850,5 +849,5 @@ mergeResult ast@AST{ apath = Just currentModulePath } = do
           (filter (\(foreignPath, _) -> foreignPath /= currentModulePath) importedNames)
 
   return ast { aexps = allExps, aimports = generatedImports, ainstances = [], ainterfaces = [] }
-mergeResult ast =
+mergeResult _ _ ast =
   return ast
