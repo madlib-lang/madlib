@@ -148,10 +148,6 @@ resultToReport = (result) => where(result) {
 }
 
 
-// successReport :: String -> TestReport
-// successReport = (_) => TestReport("", 1, 1, 0)
-
-
 mergeReports :: TestReport -> TestReport -> TestReport
 mergeReports = (t1, t2) => TestReport(
   getMessage(t1) ++ getMessage(t2),
@@ -206,48 +202,6 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
   NotImplemented =>
     IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} not implemented`) : `${CHAR_CROSS} not implemented`
 }
-
-
-// processTestOutput :: Show a => Wish.Wish TestResult TestResult -> Wish.Wish String String
-// processTestOutput = (t) => pipe(
-//   map(where {
-//     Success(description) =>
-//       Terminal.text.brightGreen(`${CHAR_CHECK} ${description}\n`)
-
-//     _ =>
-//       ???
-//   }),
-//   Wish.mapRej(
-//     where {
-//       Failure(description, AssertionError(expected, actual)) =>
-//         IO.red(`${CHAR_CROSS} ${description}`)
-//           ++ "\n  expected:\n"
-//           ++ renderValue(Terminal.text.brightGreen, expected)
-//           ++ "\n  actual:\n"
-//           ++ renderValue(Terminal.text.brightRed, actual)
-//           ++ "\n"
-
-//       Failure(_, ErrorWithMessage(message)) =>
-//         IS_COLOR_ENABLED
-//           ? IO.red(`${CHAR_CROSS} ${message}\n`)
-//           : `${CHAR_CROSS} ${message}\n`
-
-//       Failure(_, Error(err)) =>
-//         IS_COLOR_ENABLED
-//           ? IO.red(`${CHAR_CROSS} ${show(err)}`)
-//           : `${CHAR_CROSS} ${show(err)}`
-
-//       Failure(_, NotImplemented) =>
-//         IS_COLOR_ENABLED
-//           ? IO.red(`${CHAR_CROSS} not implemented`)
-//           : `${CHAR_CROSS} not implemented`
-
-//       _ =>
-//         ???
-//     },
-//   ),
-// )(t)
-
 
 
 test :: String -> (String -> Wish.Wish AssertionError {}) -> Wish.Wish TestResult TestResult
