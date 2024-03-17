@@ -118,8 +118,13 @@ export mkSeed = pipe(
 stringToInt :: String -> Integer
 export stringToInt = pipe(
   ByteArray.fromString,
-  ByteArray.reduce((hash, byte) => hash + (byte << 6) + (byte << 16), 0),
-  Byte.toInteger,
+  ByteArray.reduce(
+    (hash, byte) => {
+      int = Byte.toInteger(byte)
+      return hash + (int << 6) + (int << 16)
+    },
+    0,
+  ),
 )
 
 mkSeedFromString :: String -> Seed

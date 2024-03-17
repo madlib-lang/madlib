@@ -96,7 +96,7 @@ export mapBytes = extern "madlib__bytearray__map"
  * @example
  * reduce(add, 0, fromList([1, 2, 3])) // 6
  */
-reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
+reduce :: (a -> Byte -> a) -> a -> ByteArray -> a
 export reduce = extern "madlib__bytearray__reduce"
 
 #elseif js
@@ -197,7 +197,7 @@ export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
  * @example
  * reduce(add, 0, fromList([1, 2, 3])) // 6
  */
-reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
+reduce :: (a -> Byte -> a) -> a -> ByteArray -> a
 export reduce = (f, initialValue, byteArray) => #- { return byteArray.reduce((a, b) => f(a)(b), initialValue) } -#
 
 
