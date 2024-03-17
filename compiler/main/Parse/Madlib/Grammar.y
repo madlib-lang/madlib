@@ -59,6 +59,7 @@ import Text.Show.Pretty
   ']'         { Token _ _ TokenRightSquaredBracket }
   '$'         { Token _ _ TokenDollar }
   'if'        { Token _ _ TokenIf }
+  'while'     { Token _ _ TokenWhile }
   'else'      { Token _ _ TokenElse }
   'interface' { Token _ _ TokenInterface }
   'instance'  { Token _ _ TokenInstance }
@@ -354,6 +355,7 @@ exp :: { Src.Exp }
   | record                                                   %shift { $1 }
   | dict                                                     %shift { $1 }
   | where                                                    %shift { $1 }
+  | while                                                    %shift { $1 }
   | do                                                       %shift { $1 }
   | tupleConstructor                                         %shift { $1 }
   | operation                                                       { $1 }
@@ -487,6 +489,10 @@ typedExp :: { Src.Exp }
 extern :: { Src.Exp }
   : name '::' constrainedTyping 'ret' name '=' 'extern' str          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.Extern $3 (strV $5) (sanitizeImportPath $ strV $8)) }
   | name '::' constrainedTyping 'ret' 'export' name '=' 'extern' str        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Extern $3 (strV $6) (sanitizeImportPath $ strV $9)))) }
+
+while :: { Src.Exp }
+  : 'while' '(' exp ')' '{' rets exp rets  '}'       %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.While $3 $7) }
+  | 'while' '(' exp ')' maybeRet exp maybeRet       %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $6)) (tokenTarget $1) (Src.While $3 $6) }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Where $3 $7) }

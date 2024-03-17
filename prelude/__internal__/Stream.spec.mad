@@ -81,13 +81,13 @@ compareEvents = (expected, actual) => where(#[expected, actual]) {
 }
 
 
-assertStreamEvents :: (Eq e, Eq a) => List (TimedEvent e a)
+assertStreamEvents :: (Eq e, Eq a, Show e, Show a) => List (TimedEvent e a)
   -> Stream e a
-  -> Wish (AssertionError (List (TimedEvent e a))) {}
+  -> Wish (AssertionError ) {}
 assertStreamEvents = (expected, stream) => pipe(
   collectEvents,
   chain(
-    (actual) => compareEvents(expected, actual) ? of({}) : bad(AssertionError(expected, actual)),
+    (actual) => compareEvents(expected, actual) ? of({}) : bad(AssertionError(show(expected), show(actual))),
   ),
 )(stream)
 

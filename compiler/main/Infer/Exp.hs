@@ -87,6 +87,7 @@ infer options env lexp = do
     Can.Export           _    -> inferExport options env lexp
     Can.NameExport       _    -> inferNameExport env lexp
     Can.If{}                  -> inferIf options env lexp
+    Can.While{}               -> inferWhile options env lexp
     Can.Extern{}              -> inferExtern env lexp
     Can.TypedHole             -> do
       t <- newTVar Star
@@ -597,9 +598,9 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
 
 inferIf :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
-  (s1, ps1, tcond  , econd  ) <- infer options env cond
+  (s1, ps1, tcond, econd) <- infer options env cond
   (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
-  (s3, ps3, tfalsy , efalsy ) <- infer options (apply (s2 `compose` s1) env) falsy
+  (s3, ps3, tfalsy, efalsy) <- infer options (apply (s2 `compose` s1) env) falsy
 
   let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
   let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
@@ -611,6 +612,25 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
   let t = apply s ttruthy
 
   return (s, ps1 ++ ps2 ++ ps3, t, Slv.Typed ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
+
+
+
+-- INFER While
+
+inferWhile :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferWhile options env (Can.Canonical area (Can.While cond body)) = do
+  (s1, ps1, tcond, econd) <- infer options env cond
+  (s2, ps2, tbody, ebody) <- infer options (apply s1 env) body
+
+  let s3 = s2 `compose` s1
+
+  s4 <- contextualUnify env cond tBool (apply s3 tcond)
+  s5 <- contextualUnify env body tUnit (apply s3 tbody)
+
+  let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
+  let t = apply s tbody
+
+  return (s, ps1 ++ ps2, t, Slv.Typed ((ps1 ++ ps2) :=> t) area (Slv.While econd ebody))
 
 
 

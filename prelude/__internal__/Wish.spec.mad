@@ -113,7 +113,7 @@ test("raceN - some failed", () => pipe(
 ]))
 
 test("tailRecM", () => do {
-  millionWish :: Integer -> Wish (AssertionError Integer) Integer
+  millionWish :: Integer -> Wish AssertionError Integer
   millionWish = (x) => {
     go = (value) =>
       value < 5000

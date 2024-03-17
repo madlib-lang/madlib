@@ -1754,6 +1754,22 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable', ret, Nothing)
 
+  Core.Typed _ _ _ (Core.While cond body) -> mdo
+    _ <- currentBlock
+    br loop
+
+    loop <- block `named` "loop"
+    (_, cond', _) <- generateExp env { isLast = False } symbolTable cond
+    condBr cond' bodyBlock afterLoop
+
+    bodyBlock <- block `named` "body"
+    generateExp env { isLast = False } symbolTable body
+    br loop
+
+    afterLoop <- block `named` "loopExit"
+    let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
+    return (symbolTable, unit, Nothing)
+
   Core.Typed _ _ _ (Core.Where exp iss) -> mdo
     (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
     branches     <- generateBranches env symbolTable exitBlock exp' iss
@@ -2864,7 +2880,7 @@ buildObjectFile options astModule = do
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
         withModuleFromAST ctx astModule $ \mod' -> do
-          -- verify mod'
+          verify mod'
           mod'' <-
             withPassManager
               defaultCuratedPassSetSpec

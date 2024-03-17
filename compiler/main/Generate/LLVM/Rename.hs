@@ -131,6 +131,11 @@ renameExp env what = case what of
         (renamedFalsy, env''')  = renameExp env'' falsy
     in  (Typed t area metadata (If renamedCond renamedTruthy renamedFalsy), env''')
 
+  Typed t area metadata (While cond body) ->
+    let (renamedCond, env')     = renameExp env cond
+        (renamedBody, env'')  = renameExp env' body
+    in  (Typed t area metadata (While renamedCond renamedBody), env'')
+
   Typed t area metadata (Do exps) ->
     let (renamedExps, env') = renameExps env exps
     in  (Typed t area metadata (Do renamedExps), env')

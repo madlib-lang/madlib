@@ -4,7 +4,7 @@ import type { Maybe } from "Maybe"
 import {} from "Alternative"
 import { apL } from "Applicative"
 import Char from "Char"
-import { maybeLoop, while } from "Control"
+import { maybeLoop } from "Control"
 import { Left, Right } from "Either"
 import { always, complement, equals, ifElse, notEquals } from "Function"
 import List from "List"
@@ -276,7 +276,7 @@ export many = (p) => Parser(
     loc = l
     acc = []
     while(
-      (_) => where(parse(p, rest, loc)) {
+      where(parse(p, rest, loc)) {
         #[[#[parsed, r]], loc_] =>
           do {
             rest = r
@@ -287,8 +287,10 @@ export many = (p) => Parser(
 
         _ =>
           false
-      },
-    )
+      }
+    ) {
+      {}
+    }
 
     return #[[#[List.reverse(acc), rest]], loc]
   },

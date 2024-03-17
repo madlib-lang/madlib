@@ -278,6 +278,11 @@ addTrackersToExp options astPath exp = case exp of
 
     return $ Canonical area (If cond' truthy'' falsy'')
 
+  Canonical area (While cond body) -> do
+    cond' <- addTrackersToExp options astPath cond
+    body' <- addTrackersToExp options astPath body
+    addLineTracker astPath $ Canonical area (While cond' body')
+
   Canonical area (Access record field) -> do
     let fieldLine = getLineFromStart (getArea field)
     addLineTrackerForLine astPath fieldLine $ Canonical area (Access record field)

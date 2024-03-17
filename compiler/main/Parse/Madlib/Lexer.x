@@ -94,6 +94,7 @@ tokens :-
   <0, stringTemplateMadlib> \#                                                                { mapToken (\_ -> TokenSharpSign) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                  { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                  { mapToken (\_ -> TokenIf) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> while                               { mapToken (\_ -> TokenWhile) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                                { mapToken (\_ -> TokenElse) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> where                               { mapToken (\_ -> TokenWhere) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> do                                  { mapToken (\_ -> TokenDo) }
@@ -737,6 +738,7 @@ data TokenClass
  | TokenDollar
  | TokenIf
  | TokenElse
+ | TokenWhile
  | TokenInterface
  | TokenInstance
  | TokenDo

@@ -42,6 +42,8 @@ toSolved (Can.Canonical area exp) = case exp of
 
   Can.If cond truthy falsy   -> Slv.Typed ([] :=> tSubst) area (Slv.If (toSolved cond) (toSolved truthy) (toSolved falsy))
 
+  Can.While cond body        -> Slv.Typed ([] :=> tSubst) area (Slv.While (toSolved cond) (toSolved body))
+
   Can.Where exp iss          -> Slv.Typed ([] :=> tSubst) area (Slv.Where (toSolved exp) (isToSolved <$> iss))
 
   Can.Export           exp   -> Slv.Typed ([] :=> tSubst) area (Slv.Export (toSolved exp))
