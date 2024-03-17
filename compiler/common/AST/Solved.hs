@@ -527,6 +527,18 @@ getImportAbsolutePath imp = case imp of
     n
 
 
+getImportPath :: Import -> FilePath
+getImportPath imp = case imp of
+  Untyped _ (NamedImport _ n _) ->
+    n
+
+  Untyped _ (DefaultImport _ n _) ->
+    n
+
+  _ ->
+    undefined
+
+
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
   Typed _ _ (ListItem e) ->
