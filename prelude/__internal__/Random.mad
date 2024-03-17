@@ -7,7 +7,7 @@ import LCG from "Random/LCG"
 
 export type Seed
 
-export alias Random a = { get :: {} -> Seed, update :: {} -> {} }
+export alias Random = { get :: {} -> Seed, update :: {} -> {} }
 
 /**
  * Create a Random instance from an LCG.Seed
@@ -15,14 +15,14 @@ export alias Random a = { get :: {} -> Seed, update :: {} -> {} }
  * @example
  * gen = generateFromSeed(LCG.mkSeed(100))
  */
-generateFromSeed :: Seed -> Random a
+generateFromSeed :: Seed -> Random
 export generateFromSeed = (initialSeed) => {
   seed = initialSeed
   get = () => seed
   // every function needs to call update or the resulting
   // values won't change between calls!
   update = () => {
-    seed = LCG.next(get())
+    seed := LCG.next(get())
   }
   return { get, update }
 }
@@ -33,7 +33,7 @@ export generateFromSeed = (initialSeed) => {
  * @example
  * generateFromSeed(LCG.mkSeed(100)) == generate(100)
  */
-generate :: Integer -> Random a
+generate :: Integer -> Random
 export generate = pipe(
   LCG.mkSeed,
   generateFromSeed,
@@ -45,7 +45,7 @@ export generate = pipe(
  * @example
  * generateFromSeed(LCG.mkSeedFromString("cool")) == generateFromString("cool")
  */
-generateFromString :: String -> Random a
+generateFromString :: String -> Random
 export generateFromString = pipe(
   LCG.mkSeedFromString,
   generateFromSeed,
@@ -58,7 +58,7 @@ export generateFromString = pipe(
  * gen = generate(100)
  * float(gen)
  */
-float :: Random a -> Float
+float :: Random -> Float
 export float = (r) => {
   x = LCG.seedToFloat(r.get())
   r.update()
@@ -72,7 +72,7 @@ export float = (r) => {
  * gen = generate(100)
  * integer(1, 100, gen)
  */
-integer :: Integer -> Integer -> Random a -> Integer
+integer :: Integer -> Integer -> Random -> Integer
 export integer = (low, high, r) => {
   x = LCG.seedToInteger(low, high, r.get())
   r.update()
@@ -86,7 +86,7 @@ export integer = (low, high, r) => {
  * gen = generate(100)
  * pick([1,2,3,4,5], gen)
  */
-pick :: List a -> Random a -> Maybe a
+pick :: List a -> Random -> Maybe a
 export pick = (xs, r) => {
   x = LCG.pickFrom(xs, r.get())
   r.update()
@@ -100,7 +100,7 @@ export pick = (xs, r) => {
  * gen = generate(100)
  * shuffle([1,2,3,4,5], gen)
  */
-shuffle :: List a -> Random a -> List a
+shuffle :: List a -> Random -> List a
 export shuffle = (xs, r) => {
   x = LCG.shuffle(xs, r.get())
   r.update()
@@ -114,7 +114,7 @@ export shuffle = (xs, r) => {
  * gen = generate(100)
  * boolean(gen)
  */
-boolean :: Random a -> Boolean
+boolean :: Random -> Boolean
 export boolean = (r) => {
   x = LCG.seedToBoolean(r.get())
   r.update()
