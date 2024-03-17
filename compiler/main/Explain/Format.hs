@@ -696,7 +696,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   DerivingAliasNotAllowed n ->
     "Deriving Alias Not Allowed\n\n"
     <> "The type '" <> n <> "' is an alias.\n\n"
-    <> "Hint: Aliases can't be derived, use the aliased type isntead\n"
+    <> "Hint: Aliases can't be derived, use the aliased type instead\n"
 
   InvalidInterfaceDerived n ->
     "Invalid Interface Derived\n\n"
@@ -1313,14 +1313,14 @@ createErrorDiagnostic color context typeError = case typeError of
             , Diagnose.This $ "The type '" <> n <> "' is an alias."
             )
           ]
-          [Diagnose.Hint "Aliases can't be derived, use the aliased type isntead"]
+          [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
 
       NoContext ->
         Diagnose.Err
           Nothing
           "Deriving Alias Not Allowed"
           []
-          [Diagnose.Hint "Aliases can't be derived, use the aliased type isntead"]
+          [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
 
   InvalidInterfaceDerived n ->
     case context of
