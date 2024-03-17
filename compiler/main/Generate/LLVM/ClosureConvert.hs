@@ -199,6 +199,11 @@ findFreeVars env exp = do
       falsyFreeVars  <- findFreeVars env falsy
       return $ condFreeVars ++ truthyFreeVars ++ falsyFreeVars
 
+    Typed _ _ _ (While cond body) -> do
+      condFreeVars   <- findFreeVars env cond
+      bodyFreeVars <- findFreeVars env body
+      return $ condFreeVars ++ bodyFreeVars
+
     Typed _ _ _ (TupleConstructor exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
@@ -319,6 +324,10 @@ findMutationsInExp params exp = case exp of
     ++ findMutationsInExp params truthy
     ++ findMutationsInExp params falsy
 
+  Typed _ _ _ (While cond body) ->
+    findMutationsInExp params cond
+    ++ findMutationsInExp params body
+
   Typed _ _ _ (Do exps) ->
     findMutationsInBody params exps
 
@@ -393,6 +402,10 @@ findAllMutationsInExp params assignments exp = case exp of
     findAllMutationsInExp params assignments cond
     ++ findAllMutationsInExp params assignments truthy
     ++ findAllMutationsInExp params assignments falsy
+
+  Typed _ _ _ (While cond body) ->
+    findAllMutationsInExp params assignments cond
+    ++ findAllMutationsInExp params assignments body
 
   Typed _ _ _ (Do exps) ->
     findAllMutationsInExps params assignments exps
@@ -639,6 +652,11 @@ instance Convertable Exp Exp where
       truthy' <- convert env { stillTopLevel = False } truthy
       falsy'  <- convert env { stillTopLevel = False } falsy
       return $ Typed qt area metadata (If cond' truthy' falsy')
+
+    While cond body -> do
+      cond'   <- convert env { stillTopLevel = False } cond
+      body' <- convert env { stillTopLevel = False } body
+      return $ Typed qt area metadata (While cond' body')
 
     Do exps -> do
       exps' <- convertBody [] env { stillTopLevel = False } exps

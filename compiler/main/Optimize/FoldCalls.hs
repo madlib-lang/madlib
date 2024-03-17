@@ -35,6 +35,11 @@ findAllAccesses exp = case exp of
         falsy' = findAllAccesses falsy
     in  cond' ++ truthy' ++ falsy'
 
+  Typed _ _ _ (While cond body) ->
+    let cond' = findAllAccesses cond
+        body' = findAllAccesses body
+    in  cond' ++ body'
+
   Typed _ _ _ (Where e iss) ->
     let e' = findAllAccesses e
         iss' = concatMap (findAllAccesses . getIsExpression) iss
@@ -82,6 +87,11 @@ findInvalidAccesses exp = case exp of
         truthy' = findInvalidAccesses truthy
         falsy' = findInvalidAccesses falsy
     in  cond' ++ truthy' ++ falsy'
+
+  Typed _ _ _ (While cond body) ->
+    let cond' = findInvalidAccesses cond
+        body' = findInvalidAccesses body
+    in  cond' ++ body'
 
   Typed _ _ _ (Where e iss) ->
     let e' = findInvalidAccesses e
@@ -146,6 +156,10 @@ findEligibleCalls exp found = case exp of
     let cond' = findEligibleCalls cond found
         truthy' = findEligibleCalls truthy cond'
     in  findEligibleCalls falsy truthy'
+
+  Typed _ _ _ (While cond body) ->
+    let cond' = findEligibleCalls cond found
+    in  findEligibleCalls body cond'
 
   Typed _ _ _ (Where e iss) ->
     let e' = findEligibleCalls e found
@@ -218,6 +232,11 @@ propagateCalls exp candidates = case exp of
         truthy' = Maybe.fromMaybe truthy $ propagateCalls truthy candidates
         falsy' = Maybe.fromMaybe falsy $ propagateCalls falsy candidates
     in  Just $ Typed qt area metadata (If cond' truthy' falsy')
+
+  Typed qt area metadata (While cond body) ->
+    let cond' = Maybe.fromMaybe cond $ propagateCalls cond candidates
+        body' = Maybe.fromMaybe body $ propagateCalls body candidates
+    in  Just $ Typed qt area metadata (While cond' body')
 
   Typed qt area metadata (Where e iss) ->
     let e' = Maybe.fromMaybe e $ propagateCalls e candidates

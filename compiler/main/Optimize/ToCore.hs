@@ -245,6 +245,11 @@ instance Processable Slv.Exp Core.Exp where
       falsy'  <- toCore enabled falsy
       return $ Core.Typed qt area [] (Core.If cond' truthy' falsy')
 
+    Slv.While cond body -> do
+      cond'   <- toCore enabled cond
+      body'  <- toCore enabled body
+      return $ Core.Typed qt area [] (Core.While cond' body')
+
     Slv.Do exps -> do
       exps' <- mapM (toCore enabled) exps
       return $ Core.Typed qt area [] (Core.Do exps')

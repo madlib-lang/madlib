@@ -54,6 +54,9 @@ replaceVarWith n replaceWith exp = case exp of
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If (replaceVarWith n replaceWith cond) (replaceVarWith n replaceWith truthy) (replaceVarWith n replaceWith falsy))
 
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While (replaceVarWith n replaceWith cond) (replaceVarWith n replaceWith body))
+
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (replaceVarWith n replaceWith <$> exps))
 
@@ -127,6 +130,9 @@ isEligible exp = case exp of
   Typed _ _ _ (If cond truthy falsy) ->
     isEligible cond || isEligible truthy || isEligible falsy
 
+  Typed _ _ _ (While cond body) ->
+    isEligible cond || isEligible body
+
   Typed _ _ _ (Do exps) ->
     all isEligible exps
 
@@ -197,6 +203,9 @@ occurencesOf name exp = case exp of
 
   Typed _ _ _ (If cond truthy falsy) ->
     occurencesOf name cond + occurencesOf name truthy + occurencesOf name falsy
+
+  Typed _ _ _ (While cond body) ->
+    occurencesOf name cond + occurencesOf name body
 
   Typed _ _ _ (Do exps) ->
     foldr ((+) . occurencesOf name) 0 exps

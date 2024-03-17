@@ -149,6 +149,7 @@ data Exp_ = LNum String
           | Access Exp Exp
           | Assignment Name Exp
           | Record [Field]
+          | While Exp Exp
           | If Exp Exp Exp
           | Do [Exp]
           | Where Exp [Is]

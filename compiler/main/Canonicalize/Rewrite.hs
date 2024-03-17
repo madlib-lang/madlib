@@ -82,6 +82,9 @@ rewrite index exp = case exp of
   Canonical area (If cond truthy falsy) ->
     Canonical area (If (rewrite index cond) (rewrite index truthy) (rewrite index falsy))
 
+  Canonical area (While cond body) ->
+    Canonical area (While (rewrite index cond) (rewrite index body))
+
   Canonical area (Access record field) ->
     Canonical area (Access (rewrite index record) field)
 

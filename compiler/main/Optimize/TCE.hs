@@ -158,6 +158,9 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If cond (markTRCCalls recursionKind fnType fnName truthy) (markTRCCalls recursionKind fnType fnName falsy))
 
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While cond (markTRCCalls recursionKind fnType fnName body))
+
   Typed qt area metadata (Where exp iss) ->
     Typed qt area metadata (Where exp (markIs recursionKind fnType fnName <$> iss))
 

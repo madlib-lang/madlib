@@ -136,6 +136,11 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     eelse' <- updateExpTypes options env push s eelse
     return $ Slv.Typed (apply s qt) a $ Slv.If econd' eif' eelse'
 
+  Slv.While econd ebody -> do
+    econd' <- updateExpTypes options env push s econd
+    ebody'   <- updateExpTypes options env push s ebody
+    return $ Slv.Typed (apply s qt) a $ Slv.While econd' ebody'
+
   Slv.TupleConstructor es -> do
     es' <- mapM (updateExpTypes options env push s) es
     return $ Slv.Typed (apply s qt) a $ Slv.TupleConstructor es'
