@@ -153,26 +153,34 @@ getParentFolder = joinPath . init . splitPath
 
 findMadlibPackage :: PathUtils -> FilePath -> FilePath -> MadlibDotJson.MadlibDotJson -> IO (Maybe FilePath)
 findMadlibPackage pathUtils pkgName dir madlibDotJson = do
-  let path = joinPath [dir, madlibModulesFolder, pkgName, madlibDotJsonFile]
+  let pkgName' = if '/' `elem` pkgName then takeWhile (/= '/') pkgName else pkgName
+  let path = joinPath [dir, madlibModulesFolder, pkgName', madlibDotJsonFile]
   found <- doesFileExist pathUtils path
   if found then
-    findMadlibPackageMainPath pathUtils path
+    findMadlibPackageMainPath pathUtils path pkgName
   else if dir == "/" || dir == "" then
     return Nothing
   else
     (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
 
 
-findMadlibPackageMainPath :: PathUtils -> FilePath -> IO (Maybe FilePath)
-findMadlibPackageMainPath pathUtils file = do
+findMadlibPackageMainPath :: PathUtils -> FilePath -> String -> IO (Maybe FilePath)
+findMadlibPackageMainPath pathUtils file pkgName = do
   json <- MadlibDotJson.load pathUtils file
   let folder = takeDirectory file
   case json of
     Left  _     ->
       return Nothing
 
-    Right json' ->
-      Just . normalisePath pathUtils <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
+    Right json' -> do
+      mainPath <- normalisePath pathUtils <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
+      if '/' `elem` pkgName then do
+        let afterPkg = dropWhile (/= '/') pkgName
+            basePath = takeDirectory mainPath
+            fullPath = joinPath [basePath, afterPkg, ".mad"]
+        return $ Just fullPath
+      else
+        return $ Just mainPath
 
 
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)
