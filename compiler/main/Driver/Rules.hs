@@ -70,8 +70,6 @@ import qualified Canonicalize.Coverage as Coverage
 import AST.Source (SourceTarget(TargetAll))
 import qualified Infer.Monomorphize as MM
 import           Infer.MonomorphizationState
-import GHC.IO.Handle (hFlush)
-import GHC.IO.Handle.FD (stdout)
 import qualified AST.Core as Core
 import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
@@ -373,10 +371,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             }
           "main"
           (Slv.getType fn)
-
-        noColor <- liftIO $ lookupEnv "NO_COLOR"
-        when (noColor == Just "" || noColor == Nothing) $ do
-          liftIO $ putStrLn ""
         liftIO $ putStrLn "Monomorphization complete."
 
       _ ->
@@ -391,7 +385,14 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   MonomorphizedAST path -> nonInput $ do
     Rock.fetch MonomorphizedProgram
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
-    merged <- liftIO $ MM.mergeResult ast
+    let localState = makeLocalMonomorphizationState ()
+    merged <- MM.mergeResult (optTarget options) MM.Env
+                { MM.envCurrentModulePath = path
+                , MM.envSubstitution = mempty
+                , MM.envLocalState = localState
+                , MM.envEntrypointPath = optEntrypoint options
+                , MM.envLocalBindingsToExclude = mempty
+                } ast
 
     return (merged, (mempty, mempty))
 

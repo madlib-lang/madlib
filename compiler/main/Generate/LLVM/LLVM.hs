@@ -99,7 +99,8 @@ import LLVM.AST.Attribute (FunctionAttribute(..))
 import qualified LLVM.AST.FunctionAttribute as FunctionAttribute
 import LLVM.Analysis (verify)
 import qualified System.IO as SystemIO
-
+import           System.Environment (getEnv)
+import GHC.IO.Exception (ExitCode)
 
 sizeof' :: Type.Type -> Constant.Constant
 sizeof' t = Constant.PtrToInt szPtr (Type.IntegerType 64)
@@ -2913,6 +2914,14 @@ buildTarget options staticLibs entrypoint = do
 
   liftIO $ IOUtils.putStrLnAndFlush "Linking.."
 
+  ldflags <- liftIO $ try $ getEnv "LDFLAGS"
+  let ldflags' = case (ldflags :: Either IOError String) of
+        Left _ ->
+          ""
+
+        Right flags ->
+          flags
+
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
@@ -2923,6 +2932,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> List.unwords staticLibs
         <> " -lruntime -lgc -lgccpp -luv -lpcre2-8"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -lssl -lcrypto -lz"
+        <> " " <> ldflags' <> " "
         <>" -o " <> executablePath
 
     DistributionSystem.Windows ->
@@ -2932,7 +2942,9 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lmman -lgc -lgccpp -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32  -o " <> executablePath
+        <> " -lruntime -lmman -lgc -lgccpp -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32"
+        <> " " <> ldflags' <> " "
+        <> " -o " <> executablePath
 
     _ ->
       liftIO $ callCommand $
@@ -2941,4 +2953,6 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> List.unwords staticLibs
-        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -Wl,--allow-multiple-definition -o " <> executablePath
+        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -Wl,--allow-multiple-definition"
+        <> " " <> ldflags' <> " "
+        <> " -o " <> executablePath
