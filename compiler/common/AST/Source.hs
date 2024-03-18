@@ -163,6 +163,7 @@ data Exp_
   | AbsWithMultilineBody [Source Name] [Exp]
   | Return Exp
   | Access Exp Exp
+  | ArrayAccess Exp Exp
   | Assignment Name Exp
   | Mutate Exp Exp
   | Record [Field]

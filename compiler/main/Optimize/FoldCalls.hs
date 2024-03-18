@@ -54,6 +54,9 @@ findAllAccesses exp = case exp of
   Typed _ _ _ (Access rec _) ->
     findAllAccesses rec
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    findAllAccesses arr ++ findAllAccesses index
+
   Typed _ _ _ (Record fields) ->
     concatMap (findAllAccesses . getFieldExp) fields
 
@@ -106,6 +109,9 @@ findInvalidAccesses exp = case exp of
 
   Typed _ _ _ (Access rec _) ->
     findInvalidAccesses rec
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    findInvalidAccesses arr ++ findInvalidAccesses index
 
   Typed _ _ _ (Record fields) ->
     concatMap (findInvalidAccesses . getFieldExp) fields
@@ -174,6 +180,10 @@ findEligibleCalls exp found = case exp of
 
   Typed _ _ _ (Access rec _) ->
     findEligibleCalls rec found
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    let arr' = findEligibleCalls arr found
+    in  findEligibleCalls index arr'
 
   Typed _ _ _ (Var n _) ->
     filter ((/= n) . fst) found
@@ -254,6 +264,11 @@ propagateCalls exp candidates = case exp of
   Typed qt area metadata (Access rec field) ->
     let rec' = Maybe.fromMaybe rec $ propagateCalls rec candidates
     in  Just $ Typed qt area metadata (Access rec' field)
+
+  Typed qt area metadata (ArrayAccess arr index) ->
+    let arr' = Maybe.fromMaybe arr $ propagateCalls arr candidates
+        index' = Maybe.fromMaybe arr $ propagateCalls index candidates
+    in  Just $ Typed qt area metadata (ArrayAccess arr' index')
 
   or ->
     Just or

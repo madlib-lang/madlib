@@ -185,6 +185,11 @@ instance Processable Slv.Exp Core.Exp where
       let field' = Core.Typed fieldQt fieldArea [] (Core.Var ('.':fieldName) isConstructor)
       return $ Core.Typed qt area [] (Core.Access rec' field')
 
+    Slv.ArrayAccess arr index -> do
+      arr' <- toCore enabled arr
+      index' <- toCore enabled index
+      return $ Core.Typed qt area [] (Core.ArrayAccess arr' index')
+
     Slv.Abs Slv.Typed{} _ -> do
       let (params, body') = collectAbsParams fullExp
           ps = preds qt

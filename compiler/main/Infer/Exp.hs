@@ -82,6 +82,7 @@ infer options env lexp = do
     Can.Where      _ _        -> inferWhere options env lexp
     Can.Record _              -> inferRecord options env lexp
     Can.Access   _ _          -> inferAccess options env lexp
+    Can.ArrayAccess   _ _     -> inferArrayAccess options env lexp
     Can.TypedExp{}            -> inferTypedExp options env lexp
     Can.ListConstructor  _    -> inferListConstructor options env lexp
     Can.TupleConstructor _    -> inferTupleConstructor options env lexp
@@ -585,6 +586,24 @@ inferAccess options env e@(Can.Canonical _ (Can.Access ns _)) =
 
     _ ->
       inferFieldAccess options env e
+
+
+
+-- INFER ACCESS
+
+inferArrayAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferArrayAccess options env (Can.Canonical area (Can.ArrayAccess arr index)) = do
+  tv <- newTVar Star
+  (s1, ps1, t1, earr) <- infer options env arr
+  (_, ps2, t2, eindex) <- infer options env index
+  s3 <- contextualUnify env arr t1 (tArrayOf tv)
+  contextualUnify env index t2 tInteger
+
+  let s = s3 `compose` s1
+  let t = apply s tv
+  let ps = ps1 ++ ps2
+
+  return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.ArrayAccess earr eindex))
 
 
 

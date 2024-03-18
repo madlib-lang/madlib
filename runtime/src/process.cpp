@@ -87,6 +87,11 @@ void madlib__process__internal__typedHoleReached() {
   exit(1);
 }
 
+void madlib__process__internal__arrayOutOfBounds(int64_t index, int64_t len) {
+  fprintf(stderr, "Array out of bounds access\nYou accessed the index '%lld' but the array currently has length '%lld'.\n\n", index, len);
+  exit(1);
+}
+
 madlib__list__Node_t *madlib__process__internal__getArgs() {
   return __args__;
 }

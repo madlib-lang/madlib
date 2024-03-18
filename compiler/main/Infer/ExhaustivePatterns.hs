@@ -239,6 +239,10 @@ checkExp ast env (Slv.Typed _ area expression) =
       checkExp ast env rec
       checkExp ast env field
 
+    Slv.ArrayAccess arr index -> do
+      checkExp ast env arr
+      checkExp ast env index
+
     Slv.Extern {} ->
       return ()
 

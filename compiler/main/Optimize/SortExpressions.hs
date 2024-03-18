@@ -154,6 +154,9 @@ buildDependencies' localNames expName exp = case exp of
   Typed _ _ _ (Access rec _) ->
     buildDependencies' localNames expName rec
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    buildDependencies' localNames expName arr ++ buildDependencies' localNames expName index
+
   Typed _ _ _ (ListConstructor items) ->
     concatMap
       (\case

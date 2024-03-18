@@ -345,21 +345,11 @@ tupleTypings :: { [Src.Typing] }
   -- | tupleTypings ',' typing             %shift { $1 <> [$3] }
   -- | tupleTypings ',' compositeTyping    %shift { $1 <> [$3] }
 
-lhs :: { Src.Exp }
-  : name             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }
-  -- | name '.' name   %shift { access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3)) }
-  | lhs '.' name     { access $1 (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3)) }
-
 
 bodyExp :: { Src.Exp }
   : name '=' maybeRet exp                          %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $1) $4) }
   | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
-  -- | lhs '.' name ':=' maybeRet exp                 %shift { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $6)) (Src.getSourceTarget $1) (Src.Mutate (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) $6) }
-  -- | lhs                               %shift { $1 }
-  -- | exp '.' name                               %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
-  -- | name '.' name ':=' maybeRet exp                  { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $6)) (tokenTarget $1) (Src.Mutate (access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3))) $6) }
   | exp ':=' maybeRet exp     { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Mutate $1 $4) }
-  -- | exp ':=' maybeRet exp  %prec HIGHEST   { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Mutate $1 $4) }
   | exp                                                   { $1 }
 
 
@@ -377,6 +367,7 @@ exp :: { Src.Exp }
   | listConstructor                                          %shift { $1 }
   | extern                                                   %shift { $1 }
   | typedExp                                                 %shift { $1 }
+  | exp '[' exp ']'                                          %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenArea $4)) (Src.getSourceTarget $1) (Src.ArrayAccess $1 $3) }
   | '???'                                                    %shift { Src.Source (tokenArea $1) (tokenTarget $1) Src.TypedHole }
   | js                                                       %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.JSExp (strV $1)) }
   | '#' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $2) (Src.Var $ '#' : strV $2) }

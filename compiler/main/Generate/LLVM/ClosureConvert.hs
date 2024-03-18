@@ -213,6 +213,11 @@ findFreeVars env exp = do
       fieldVars  <- findFreeVars env field
       return $ recordVars ++ fieldVars
 
+    Typed _ _ _ (ArrayAccess arr index) -> do
+      arrVars <- findFreeVars env arr
+      indexVars  <- findFreeVars env index
+      return $ arrVars ++ indexVars
+
     Typed _ _ _ (ListConstructor exps) -> do
       vars <- mapM (findFreeVars env . getListItemExp) exps
       return $ concat vars
@@ -316,6 +321,9 @@ findMutationsInExp params exp = case exp of
   Typed _ _ _ (Access rec _) ->
     findMutationsInExp params rec
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    findMutationsInExp params arr ++ findMutationsInExp params index
+
   Typed _ _ _ (ListConstructor items) ->
     concat $ findMutationsInExp params . getListItemExp <$> items
 
@@ -394,6 +402,9 @@ findAllMutationsInExp params assignments exp = case exp of
 
   Typed _ _ _ (Access rec _) ->
     findAllMutationsInExp params assignments rec
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    findAllMutationsInExp params assignments arr ++ findAllMutationsInExp params assignments index
 
   Typed _ _ _ (ListConstructor items) ->
     concat $ findAllMutationsInExp params assignments . getListItemExp <$> items
@@ -564,6 +575,11 @@ instance Convertable Exp Exp where
       rec'   <- convert env { stillTopLevel = False } rec
       field' <- convert env { stillTopLevel = False } field
       return $ Typed qt area metadata (Access rec' field')
+
+    ArrayAccess arr index -> do
+      arr'   <- convert env { stillTopLevel = False } arr
+      index' <- convert env { stillTopLevel = False } index
+      return $ Typed qt area metadata (ArrayAccess arr' index')
 
     Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) abs@(Typed _ _ _ Definition{}))) -> do
       fvs <- findFreeVars (addGlobalFreeVar name env) fullExp

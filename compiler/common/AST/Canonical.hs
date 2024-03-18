@@ -147,6 +147,7 @@ data Exp_ = LNum String
           | App Exp Exp Bool
           | Abs (Canonical Name) [Exp]
           | Access Exp Exp
+          | ArrayAccess Exp Exp
           | Assignment Name Exp
           | Mutate Exp Exp
           | Record [Field]

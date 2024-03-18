@@ -137,6 +137,9 @@ findGlobalAccesses namesInScope exp = case exp of
   Typed _ _ _ (Access rec _) ->
     findGlobalAccesses namesInScope rec
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    findGlobalAccesses namesInScope arr <> findGlobalAccesses namesInScope index
+
   Typed _ _ _ (Export e) ->
     findGlobalAccesses namesInScope e
 
@@ -279,6 +282,11 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
     let rec' = propagateBody fnName newFnName newQualType propagateMap rec
         field' = propagateBody fnName newFnName newQualType propagateMap field
     in  Typed qt area metadata (Access rec' field')
+
+  Typed qt area metadata (ArrayAccess arr index) ->
+    let arr' = propagateBody fnName newFnName newQualType propagateMap arr
+        index' = propagateBody fnName newFnName newQualType propagateMap index
+    in  Typed qt area metadata (ArrayAccess arr' index')
 
   Typed qt area metadata (ListConstructor items) ->
     let items' = map (mapListItem $ propagateBody fnName newFnName newQualType propagateMap) items
@@ -450,6 +458,11 @@ propagate path exp = case exp of
     rec' <- propagate path rec
     field' <- propagate path field
     return $ Typed qt area metadata (Access rec' field')
+
+  Typed qt area metadata (ArrayAccess arr index) -> do
+    arr' <- propagate path arr
+    index' <- propagate path index
+    return $ Typed qt area metadata (ArrayAccess arr' index')
 
   Typed qt area metadata (Where e iss) -> do
     e' <- propagate path e

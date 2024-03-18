@@ -32,6 +32,9 @@ usesParam name exp = case exp of
   Typed _ _ _ (Access rec _) ->
     usesParam name rec
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    usesParam name arr || usesParam name index
+
   Typed _ _ _ (ListConstructor items) ->
     any (usesParam name) (getListItemExp <$> items)
 

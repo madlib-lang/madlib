@@ -359,6 +359,9 @@ containsRecursion direct fnType fnName exp = case exp of
   Typed _ _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnType fnName rec || containsRecursion direct fnType fnName accessor)
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    not direct && (containsRecursion direct fnType fnName arr || containsRecursion direct fnType fnName index)
+
   Typed _ _ _ (Definition _ exps) ->
     not direct && any (containsRecursion direct fnType fnName) exps
 
