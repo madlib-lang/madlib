@@ -164,6 +164,7 @@ data Exp_
   | Return Exp
   | Access Exp Exp
   | Assignment Name Exp
+  | Mutate Exp Exp
   | Record [Field]
   | While Exp Exp
   | If Exp Exp Exp

@@ -917,7 +917,67 @@ generateExp env symbolTable exp = case exp of
   -- Core.Typed _ _ _ (Core.Export e) -> do
   --   generateExp env { isLast = False } symbolTable e
 
-  Core.Typed _ area metadata (Core.Assignment name e) -> do
+    -- Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
+    -- (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
+    -- value <- case recordType of
+    --   IT.TRecord fields _ _ -> do
+    --     recordOperand' <- safeBitcast recordOperand (Type.ptr $ Type.StructureType False [Type.i32, boxType])
+    --     let fieldType = Type.StructureType False [stringType, boxType]
+    --     let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
+    --     fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
+    --     fieldsOperand'  <- load fieldsOperand 0 -- i8*
+    --     fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
+    --     field           <- gep fieldsOperand'' [i32ConstOp index]
+    --     field'          <- load field 0
+    --     value           <- gep field' [i32ConstOp 0, i32ConstOp 1]
+    --     load value 0
+
+    --   _ -> do
+    --     nameOperand <- buildStr env area fieldName
+    --     callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (recordOperand, [])]
+
+    -- value' <- unbox env symbolTable qt value
+    -- return (symbolTable, value', Just value)
+  Core.Typed _ _ metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.Access r@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _)))) e) -> do
+    if Core.isReferenceStore metadata then do
+        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+        (_, r', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable r
+
+        case recordType of
+          IT.TRecord fields _ _ -> do
+            recordOperand' <- safeBitcast r' (Type.ptr $ Type.StructureType False [Type.i32, boxType])
+            let fieldType = Type.StructureType False [stringType, boxType]
+            let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
+            fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
+            fieldsOperand'  <- load fieldsOperand 0 -- i8*
+            fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
+            field           <- gep fieldsOperand'' [i32ConstOp index]
+            field'          <- load field 0
+            valuePtr        <- gep field' [i32ConstOp 0, i32ConstOp 1]
+            store valuePtr 0 exp'
+            let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
+            return (symbolTable, unit, Nothing)
+            -- load value 0
+
+        -- case Map.lookup name symbolTable of
+        --   Just (Symbol (LocalVariableSymbol ptr) _) -> do
+        --     ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+        --     store ptr' 0 exp'
+        --     return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
+
+        --   -- Case of mutation within a tco optimized function
+        --   Just (Symbol (TCOParamSymbol ptr) _) -> do
+        --     ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+        --     store ptr' 0 exp'
+        --     return (Map.insert name (tcoParamSymbol ptr exp') symbolTable, exp', Just ptr)
+
+          or ->
+            error $ "found: " <> ppShow or
+      else do
+        error $ "bad LHS: " <> ppShow lhs
+
+
+  Core.Typed _ area metadata (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) e) -> do
     if isTopLevel env then do
       (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
       let t = typeOf exp'
@@ -2348,7 +2408,7 @@ generateFunction env symbolTable metadata (ps IT.:=> t) area functionName corePa
 
 generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
-  Core.Typed _ area _ (Core.Assignment functionName (Core.Typed qt _ metadata (Core.Definition params body))) -> do
+  Core.Typed _ area _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed qt _ metadata (Core.Definition params body))) -> do
     generateFunction env symbolTable metadata qt area functionName params body
 
   Core.Typed _ _ _ (Core.Extern (ps IT.:=> t) name originalName) -> do
@@ -2373,7 +2433,7 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
   -- Core.Typed _ _ _ (Core.Export e) ->
   --   addTopLevelFnToSymbolTable env symbolTable e
 
-  Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))) ->
+  Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed _ _ _ (Core.Definition params _))) ->
     let arity  = List.length params
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
@@ -2385,7 +2445,7 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name _) ->
+  Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
     if IT.isFunctionType t then
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))

@@ -201,7 +201,7 @@ export read = (path) => Wish(
     id = readFFI(
       path,
       (libuvError, fileContent) => do {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(fileContent)
       },
     )
@@ -230,7 +230,7 @@ export readBytes = (path) => Wish(
     id = readBytesFFI(
       path,
       (libuvError, fileContent) => {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(fileContent)
       },
     )
@@ -263,7 +263,7 @@ export write = (path, content) => Wish(
       path,
       content,
       (libuvError, _) => {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
       },
     )
@@ -296,7 +296,7 @@ export writeBytes = (path, content) => Wish(
       path,
       content,
       (libuvError, _) => {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good({})
       },
     )

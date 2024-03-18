@@ -219,7 +219,7 @@ export exec = (command, args, options) => Wish((bad, good) => {
     args,
     { cwd: options.cwd, env: Dictionary.toList(Dictionary.merge(Env, options.env)) },
     (exitCode, stdout, stderr) => {
-      done = true
+      done := true
       exitCode != 0
         ? bad(makeCommandResult(exitCode, stdout, stderr))
         : good(makeCommandResult(exitCode, stdout, stderr))

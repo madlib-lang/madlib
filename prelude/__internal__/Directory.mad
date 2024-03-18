@@ -90,7 +90,7 @@ export read = (path) => Wish((bad, good) => {
   id = readFFI(
     path,
     (libuvError, result) => {
-      done = true
+      done := true
       libuvError != 0
         ? bad(Error.fromLibuvError(libuvError))
         : good(result)

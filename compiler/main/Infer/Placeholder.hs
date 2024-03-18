@@ -118,6 +118,11 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     exp' <- updateExpTypes options env push s exp
     return $ Slv.Typed (apply s qt) a $ Slv.Assignment n exp'
 
+  Slv.Mutate lhs exp -> do
+    lhs' <- updateExpTypes options env push s lhs
+    exp' <- updateExpTypes options env push s exp
+    return $ Slv.Typed (apply s qt) a $ Slv.Mutate lhs' exp'
+
   Slv.ListConstructor li -> do
     li' <- mapM (updateListItem s) li
     return $ Slv.Typed (apply s qt) a $ Slv.ListConstructor li'

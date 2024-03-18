@@ -173,6 +173,12 @@ instance Canonicalizable Src.Exp Can.Exp where
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Assignment name exp')
 
+    Src.Mutate lhs exp -> do
+      exp' <- canonicalize env target exp
+      lhs' <- canonicalize env target lhs
+      validateLhs env lhs' lhs'
+      return $ Can.Canonical area (Can.Mutate lhs' exp')
+
     Src.Export exp -> do
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Export exp')
@@ -369,6 +375,18 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.TypedHole ->
       return $ Can.Canonical area Can.TypedHole
+
+
+validateLhs :: Env.Env -> Can.Exp -> Can.Exp -> CanonicalM ()
+validateLhs env initialExp exp = case exp of
+  Can.Canonical _ (Can.Var _) ->
+    return ()
+
+  Can.Canonical _ (Can.Access rec _) ->
+    validateLhs env initialExp rec
+
+  _ ->
+    throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) (Can.getArea initialExp))
 
 
 processAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp

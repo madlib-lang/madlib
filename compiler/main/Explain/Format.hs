@@ -923,6 +923,19 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The following fields appear more than once in the record constructor: " <> (concatMap ("\n - " ++) fs) <> "\n\n"
     <> "Hint: Define each field only once."
 
+  InvalidLhs ->
+    "Invalid left hand side\n\n"
+    <> "It is not a valid left hand side expression."
+
+  BadMutation ->
+    "Bad mutation\n\n"
+    <> "You are trying to change a value with the assignment operator.\n\n"
+    <> "Hint: use the mutation operator ':='"
+
+  MutatingNotInScope name ->
+    "Not in scope\n\n"
+    <> "You are trying to mutate the value of '" <> name <> "' but it is not in scope.\n\n"
+
   FatalError ->
     "Fatal error"
 
@@ -2074,6 +2087,63 @@ createErrorDiagnostic color context typeError = case typeError of
           "Interface already defined"
           []
           [Diagnose.Hint "Verify that you don't have a typo."]
+
+  InvalidLhs ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Invalid left hand side"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "It is not a valid left hand side expression."
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Invalid left hand side"
+          []
+          []
+
+  BadMutation ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Bad mutation"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "You are trying to change a value with the assignment operator."
+            )
+          ]
+          [Diagnose.Hint "Use the mutation operator ':='"]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Bad mutation"
+          []
+          [Diagnose.Hint "Use the mutation operator ':='"]
+
+  MutatingNotInScope name ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Not in scope"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "You are trying to mutate the value of '" <> name <> "' but it is not in scope."
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Not in scope"
+          []
+          []
 
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType

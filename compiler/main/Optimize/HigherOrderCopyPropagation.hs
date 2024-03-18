@@ -89,9 +89,16 @@ findExpByName moduleWhereItsUsed expName = do
 
 findGlobalAccessesInBody :: Set.Set String -> [Exp] -> Set.Set String
 findGlobalAccessesInBody namesInScope body = case body of
-  assignment@(Typed _ _ _ (Assignment n _)) : next ->
-    findGlobalAccesses namesInScope assignment <>
-    findGlobalAccessesInBody (namesInScope <> Set.singleton n) next
+  assignment@(Typed _ _ _ (Assignment lhs _)) : next ->
+    case lhs of
+      Typed _ _ _ (Var n _) ->
+        findGlobalAccesses namesInScope assignment <>
+        findGlobalAccessesInBody (namesInScope <> Set.singleton n) next
+
+      _ ->
+        findGlobalAccesses namesInScope assignment <>
+        findGlobalAccessesInBody namesInScope next
+
 
   or : next ->
     findGlobalAccesses namesInScope or <>
@@ -103,8 +110,12 @@ findGlobalAccessesInBody namesInScope body = case body of
 
 findGlobalAccesses :: Set.Set String -> Exp -> Set.Set String
 findGlobalAccesses namesInScope exp = case exp of
-  Typed _ _ _ (Assignment n e) ->
-    findGlobalAccesses (namesInScope <> Set.singleton n) e
+  Typed _ _ _ (Assignment lhs e) ->
+    case lhs of
+      Typed _ _ _ (Var n _) ->
+        findGlobalAccesses (namesInScope <> Set.singleton n) e
+      _ ->
+        findGlobalAccesses namesInScope e
 
   Typed _ _ _ (Definition params body) ->
     let namesInScope' = namesInScope <> Set.fromList (map getValue params)
@@ -288,7 +299,7 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
 
 propagateDefinition :: FilePath -> String -> Qual Type -> [(Bool, Exp)] -> Exp -> Propagate (Maybe Exp)
 propagateDefinition path newName newQualType args exp = case exp of
-  Typed _ area metadata (Assignment fnName (Typed _ area' metadata' (Definition params body))) | length params == length args -> do
+  Typed _ area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var fnName isCtor)) (Typed _ area' metadata' (Definition params body))) | length params == length args -> do
       let propagateMap = Map.fromList $ concat $
             zipWith
               (\(isRemoved, arg) param -> do
@@ -302,7 +313,7 @@ propagateDefinition path newName newQualType args exp = case exp of
       let body' = map (propagateBody fnName newName newQualType propagateMap) body
       let params' = map snd $ filter (\((throwAway, _), _) -> not throwAway) (zip args params)
 
-      return $ Just $ Typed newQualType area metadata (Assignment newName (Typed newQualType area' metadata' (Definition params' body')))
+      return $ Just $ Typed newQualType area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var newName isCtor)) (Typed newQualType area' metadata' (Definition params' body')))
 
   Typed _ area metadata (Export e) -> do
     e' <- propagateDefinition path newName newQualType args e

@@ -54,7 +54,6 @@ data TypeError
   | ASTHasNoPath
   | Error
   | ImportCycle [FilePath]
-  | OverloadedMutation String [Pred]
   | NoMain
   | MainInvalidTyping
   | NotADefinition
@@ -62,6 +61,10 @@ data TypeError
   | ConstructorAccessNoConstructorFound String
   | ConstructorAccessTooManyConstructors String Int
   | MutationRestriction
+  | OverloadedMutation String [Pred]
+  | BadMutation
+  | MutatingNotInScope String
+  | InvalidLhs
   | TypeAnnotationNameMismatch String String
   | MutatingFunction String
   | MethodNameAlreadyDefined

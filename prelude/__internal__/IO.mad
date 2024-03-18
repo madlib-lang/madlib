@@ -203,7 +203,7 @@ export getLine = Wish(
     done = false
     id = getLineFFI(
       (libuvError, line) => {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(line)
       },
     )
@@ -232,7 +232,7 @@ export get = Wish(
     done = false
     id = getFFI(
       (libuvError, line) => {
-        done = true
+        done := true
         libuvError != 0 ? bad(Error.fromLibuvError(libuvError)) : good(line)
       },
     )

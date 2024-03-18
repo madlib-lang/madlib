@@ -279,9 +279,9 @@ export many = (p) => Parser(
       where(parse(p, rest, loc)) {
         #[[#[parsed, r]], loc_] =>
           do {
-            rest = r
-            loc = loc_
-            acc = [parsed, ...acc]
+            rest := r
+            loc := loc_
+            acc := [parsed, ...acc]
             return true
           }
 

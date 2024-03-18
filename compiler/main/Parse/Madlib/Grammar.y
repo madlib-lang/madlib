@@ -34,6 +34,7 @@ import Text.Show.Pretty
   'ret'       { Token _ _ TokenReturn }
   '#'         { Token _ _ TokenSharpSign }
   '='         { Token _ _ TokenEq }
+  ':='        { Token _ _ TokenMutateEq }
   '+'         { Token _ _ TokenPlus }
   '++'        { Token _ _ TokenDoublePlus }
   '-'         { Token _ _ TokenDash }
@@ -108,7 +109,9 @@ import Text.Show.Pretty
   '#endif'    { Token _ _ TokenMacroEndIf }
 
 %nonassoc LOWEST
-%left ':' '->' '|' where is 'else' '='
+-- %nonassoc ':='
+-- %left ':' '->' '|' where is 'else' '='
+%left ':' '->' '|' where is 'else' '=' ':='
 %left '?' 'if'
 %left '<|>'
 %left '|>'
@@ -342,10 +345,21 @@ tupleTypings :: { [Src.Typing] }
   -- | tupleTypings ',' typing             %shift { $1 <> [$3] }
   -- | tupleTypings ',' compositeTyping    %shift { $1 <> [$3] }
 
+lhs :: { Src.Exp }
+  : name             { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }
+  -- | name '.' name   %shift { access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3)) }
+  | lhs '.' name     { access $1 (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3)) }
+
 
 bodyExp :: { Src.Exp }
   : name '=' maybeRet exp                          %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $1) $4) }
   | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
+  -- | lhs '.' name ':=' maybeRet exp                 %shift { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $6)) (Src.getSourceTarget $1) (Src.Mutate (access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3))) $6) }
+  -- | lhs                               %shift { $1 }
+  -- | exp '.' name                               %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
+  -- | name '.' name ':=' maybeRet exp                  { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $6)) (tokenTarget $1) (Src.Mutate (access (Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1)) (Src.Source (tokenArea $3) (tokenTarget $3) (Src.Var $ "." <> strV $3))) $6) }
+  | exp ':=' maybeRet exp     { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Mutate $1 $4) }
+  -- | exp ':=' maybeRet exp  %prec HIGHEST   { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Mutate $1 $4) }
   | exp                                                   { $1 }
 
 
@@ -367,13 +381,13 @@ exp :: { Src.Exp }
   | js                                                       %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.JSExp (strV $1)) }
   | '#' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $2) (Src.Var $ '#' : strV $2) }
   | name                                                     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var $ strV $1) }
-  | '.' name                                                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.Var $ '.':strV $2) }
+  | '.' name                                                        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' maybeRet args ')' '(' argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.App (buildPipe (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) $4) $7) }
   | 'pipe' '(' maybeRet args ')'                             %shift { buildPipe (mergeAreas (tokenArea $1) (tokenArea $5)) (tokenTarget $1) $4 }
   | app                                                      %shift { $1 }
   | absOrParenthesizedName                                   %shift { $1 }
   | '(' exp ')'                                              %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Parenthesized (tokenArea $1) $2 (tokenArea $3)) }
-  | exp '.' name                                             %shift { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
+  | exp '.' name                                                    { access $1 (Src.Source (tokenArea $3) (Src.getSourceTarget $1) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source (mergeAreas (tokenArea $1) (tokenArea $17)) (tokenTarget $1) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet
@@ -480,6 +494,7 @@ app :: { Src.Exp }
 multiExpBody :: { [Src.Exp] }
   : 'return' exp              { [Src.Source (mergeAreas (tokenArea $1) (Src.getArea $2)) (tokenTarget $1) (Src.Return $2)] }
   | {- empty -}               { [Src.Source emptyArea Src.TargetAll Src.LUnit] }
+  -- | lhs ':=' maybeRet exp rets multiExpBody    %shift { (Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.getSourceTarget $1) (Src.Mutate $1 $4)) : $6 }
   | bodyExp rets multiExpBody { $1 : $3 }
 
 typedExp :: { Src.Exp }

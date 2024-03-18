@@ -162,7 +162,7 @@ data Exp_
   | Definition [Core Name] [Exp]
   | Call Exp [Exp]
   | Access Exp Exp
-  | Assignment Name Exp
+  | Assignment Exp Exp
   | Export Exp
   | NameExport Name
   | Var Name Bool
@@ -220,10 +220,10 @@ updateQualType qt core = case core of
 getExpName :: Exp -> Maybe String
 getExpName Untyped{}         = Nothing
 getExpName (Typed _ _ _ exp) = case exp of
-  Assignment name _ ->
+  Assignment (Typed _ _ _ (Var name _)) _ ->
     return name
 
-  Export (Typed _ _ _ (Assignment name _)) ->
+  Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) _)) ->
     return name
 
   Extern _ name _ ->

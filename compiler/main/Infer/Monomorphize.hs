@@ -584,6 +584,11 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     e' <- monomorphize target env e
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Assignment n e')
 
+  Typed qt area (Mutate lhs e) -> do
+    lhs' <- monomorphize target env lhs
+    e' <- monomorphize target env e
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (Mutate lhs' e')
+
   -- Look for simple function names as args, record field, list item etc
   Typed _ _ (Var _ _) -> do
     monomorphizeApp target env exp

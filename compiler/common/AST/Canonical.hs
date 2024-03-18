@@ -148,6 +148,7 @@ data Exp_ = LNum String
           | Abs (Canonical Name) [Exp]
           | Access Exp Exp
           | Assignment Name Exp
+          | Mutate Exp Exp
           | Record [Field]
           | While Exp Exp
           | If Exp Exp Exp
