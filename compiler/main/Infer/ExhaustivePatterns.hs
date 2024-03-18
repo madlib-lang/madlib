@@ -204,6 +204,9 @@ checkExp ast env (Slv.Typed _ area expression) =
     Slv.Assignment _ exp ->
       checkExp ast env exp
 
+    Slv.Mutate _ exp ->
+      checkExp ast env exp
+
     Slv.TypedExp exp _ _ ->
       checkExp ast env exp
 

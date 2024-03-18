@@ -77,6 +77,7 @@ infer options env lexp = do
     Can.Abs _ _               -> inferAbs options env lexp
     Can.App{}                 -> inferApp options env lexp
     Can.Assignment _ _        -> inferAssignment options env lexp
+    Can.Mutate _ _            -> inferMutate options env lexp
     Can.Do _                  -> inferDo options env lexp
     Can.Where      _ _        -> inferWhere options env lexp
     Can.Record _              -> inferRecord options env lexp
@@ -370,13 +371,45 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
   let s  = s1 `compose` s2
   let t2 = apply s t1
 
-  let mutationPs =
-        if name `Set.member` envNamesInScope env && envInBody env then
-          [makeMutationPred (apply s t2) area]
-        else
-          []
+  mutationPs <-
+    if name `Set.member` envNamesInScope env && envInBody env then do
+      pushError $ CompilationError BadMutation (Context (envCurrentPath env) area)
+      return []
+    else
+      return []
 
   return (s, currentPreds ++ ps1 ++ mutationPs, apply s t2, applyAssignmentSolve e name e1 (apply s $ (currentPreds ++ ps1) :=> t2))
+
+
+
+-- INFER MUTATE
+
+inferMutate :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
+  (s1, ps1, t1, e1) <- infer options env lhs
+  (s2, ps2, t2, e2) <- infer options (apply s1 env) exp
+  s3                <- catchError (contextualUnify env e t1 t2) (const $ return M.empty)
+  --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
+  let s  = s1 `compose` s2 `compose` s3
+  let t3 = apply s t2
+
+  mutationPs <-
+    case Can.getExpName lhs of
+      Just name ->
+        if name `Set.member` envNamesInScope env && envInBody env then
+          return [makeMutationPred (apply s t3) area]
+        else
+          throwError $ CompilationError (MutatingNotInScope name) (Context (envCurrentPath env) area)
+
+      _ ->
+        return []
+
+  return
+    ( s
+    , ps1 ++ ps2 ++ mutationPs
+    , apply s t3
+    , Slv.Typed (apply s $ (ps1 ++ ps2 ++ mutationPs) :=> t3) area (Slv.Mutate e1 e2)
+    )
 
 
 

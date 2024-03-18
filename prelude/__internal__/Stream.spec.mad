@@ -27,28 +27,28 @@ collectEvents = (stream) => {
       Stream.subscribe(
         (e) => {
           millis = currentTimestamp()
-          events = List.append(
+          events := List.append(
             { event: Error(e), millisSincePreviousEvent: millis - previousMillis },
             events,
           )
-          previousMillis = millis
+          previousMillis := millis
           good(events)
         },
         (a) => {
           millis = currentTimestamp()
-          events = List.append(
+          events := List.append(
             { event: Event(a), millisSincePreviousEvent: millis - previousMillis },
             events,
           )
-          previousMillis = millis
+          previousMillis := millis
         },
         () => {
           millis = currentTimestamp()
-          events = List.append(
+          events := List.append(
             { event: Done, millisSincePreviousEvent: millis - previousMillis },
             events,
           )
-          previousMillis = millis
+          previousMillis := millis
           good(events)
         },
         stream,

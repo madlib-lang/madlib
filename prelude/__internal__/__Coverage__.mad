@@ -38,7 +38,7 @@ makeHitCounter = (initial) => {
 
   increment :: {} -> {}
   increment = () => {
-    value = value + 1
+    value := value + 1
   }
 
   return { increment, read }
@@ -446,7 +446,7 @@ processSuitePath = (suitePath) => {
         map(FilePath.dropTrailingPathSeparator)
       )(cwdParts)
       drop = justPart == justCwdPart
-      partIndex = partIndex + 1
+      partIndex := partIndex + 1
       return drop
     }),
     FilePath.joinPath
@@ -499,7 +499,7 @@ makeCoverageReporter = () => {
   lineTracker :: String -> Integer -> HitCounter
   lineTracker = (astPath, line) => {
     hitCounter = makeHitCounter(0)
-    coverageData = where(Dictionary.get(astPath, coverageData)) {
+    coverageData := where(Dictionary.get(astPath, coverageData)) {
       Just(data) =>
         Dictionary.insert(
           astPath,
@@ -532,7 +532,7 @@ makeCoverageReporter = () => {
   functionTracker :: String -> Integer -> String -> HitCounter
   functionTracker = (astPath, line, functionName) => {
     hitCounter = makeHitCounter(0)
-    coverageData = where(Dictionary.get(astPath, coverageData)) {
+    coverageData := where(Dictionary.get(astPath, coverageData)) {
       Just(data) =>
         Dictionary.insert(
           astPath,
@@ -565,7 +565,7 @@ makeCoverageReporter = () => {
   branchTracker :: String -> Integer -> Integer -> Integer -> HitCounter
   branchTracker = (astPath, line, blockNumber, branchNumber) => {
     hitCounter = makeHitCounter(0)
-    coverageData = where(Dictionary.get(astPath, coverageData)) {
+    coverageData := where(Dictionary.get(astPath, coverageData)) {
       Just(data) =>
         Dictionary.insert(
           astPath,

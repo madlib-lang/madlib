@@ -119,7 +119,7 @@ findInvalidAccesses exp = case exp of
 
 findEligibleCalls :: Exp -> [(String, Exp)] -> [(String, Exp)]
 findEligibleCalls exp found = case exp of
-  Typed (_ :=> t) _ _ (Assignment n call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
+  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
     if any ((== fnName) . fst) found then
       -- if we have already found the function it'll most likely be inlined and we can
       -- skip it for the current pass
@@ -128,7 +128,7 @@ findEligibleCalls exp found = case exp of
     else
       (n, call) : found
 
-  Typed (_ :=> t) _ _ (Assignment n call@(Typed _ _ metadata (Var fnName _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
+  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ metadata (Var fnName _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
     if any ((== fnName) . fst) found then
       -- if we have already found the function it'll most likely be inlined and we can
       -- skip it for the current pass
@@ -212,12 +212,12 @@ propagateCalls exp candidates = case exp of
         args' = Maybe.mapMaybe (`propagateCalls` candidates) args
     in  Just $ Typed qt area metadata (Call fn' args')
 
-  Typed qt area metadata (Assignment n e) ->
+  Typed qt area metadata (Assignment lhs@(Typed _ _ _ (Var n _)) e) ->
     if any ((== n) . fst) candidates then
       -- if that assignment is one of the ones we want to eliminate we remove it
       Nothing
     else
-      Just $ Typed qt area metadata (Assignment n (Maybe.fromMaybe e $ propagateCalls e candidates))
+      Just $ Typed qt area metadata (Assignment lhs (Maybe.fromMaybe e $ propagateCalls e candidates))
 
   Typed qt area metadata (Definition params body) ->
     let body' = Maybe.mapMaybe (`propagateCalls` candidates) body

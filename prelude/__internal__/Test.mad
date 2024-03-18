@@ -82,7 +82,7 @@ makeResultCollector = () => {
   getResults = () => results
 
   setResults = (newResults) => {
-    results = newResults
+    results := newResults
   }
 
   return { getResults, setResults }
@@ -242,7 +242,7 @@ prepareSuitePath = (colorful, suitePath) => {
           map(FilePath.dropTrailingPathSeparator),
         )(cwdParts)
         drop = justPart == justCwdPart
-        partIndex = partIndex + 1
+        partIndex := partIndex + 1
         return drop
       },
     ),

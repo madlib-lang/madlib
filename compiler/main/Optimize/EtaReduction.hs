@@ -88,8 +88,11 @@ isInBlacklist bl fn = case fn of
 
 reduce :: [String] -> Exp -> Exp
 reduce blacklist exp = case exp of
-  Typed qt area metadata (Assignment name e) ->
-    Typed qt area metadata (Assignment name (reduce (name : blacklist) e))
+  Typed qt area metadata (Assignment lhs@(Typed _ _ _ (Var name _)) e) ->
+    Typed qt area metadata (Assignment lhs (reduce (name : blacklist) e))
+
+  Typed qt area metadata (Assignment lhs e) ->
+    Typed qt area metadata (Assignment lhs (reduce blacklist e))
 
   Typed qt area metadata (Export e) ->
     Typed qt area metadata (Export (reduce blacklist e))

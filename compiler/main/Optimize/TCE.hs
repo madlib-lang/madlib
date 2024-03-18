@@ -5,8 +5,6 @@ import qualified Data.Maybe          as Maybe
 import qualified Data.Bifunctor      as Bifunctor
 import           Infer.Type
 import           Explain.Location
-import Text.Show.Pretty
-import Debug.Trace
 
 
 newtype Env
@@ -36,8 +34,8 @@ markDefinition env exp = case exp of
   Typed qt area metadata (Export e) ->
     Typed qt area metadata (Export (markDefinition env e))
 
-  Typed qt area metadata (Assignment fnName abs) ->
-    Typed qt area metadata (Assignment fnName (markDefinition env { envCurrentName = Just fnName } abs))
+  Typed qt area metadata (Assignment lhs@(Typed _ _ _ (Var fnName _)) abs) ->
+    Typed qt area metadata (Assignment lhs (markDefinition env { envCurrentName = Just fnName } abs))
 
   Typed qt@(_ :=> fnType) area metadata (Definition params body) | Maybe.isJust (envCurrentName env) ->
     let Just fnName = envCurrentName env

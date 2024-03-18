@@ -404,7 +404,7 @@ instance Compilable Exp where
             _ ->
               "    return " <> compile env config exp <> ";\n"
           compileBody' e (exp : es) = case exp of
-            Core.Typed _ _ _ (Core.Assignment name _) ->
+            Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
               let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
               in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
 
@@ -415,7 +415,7 @@ instance Compilable Exp where
               rewritten = varsRewritten env
           in  fromMaybe safeName (M.lookup safeName rewritten)
 
-        Assignment name exp ->
+        Assignment (Typed _ _ _ (Var name _)) exp ->
           let safeName = generateSafeName name
               content = compile env { varsInScope = S.insert name (varsInScope env) } config exp
               needsModifier = notElem safeName $ varsInScope env
@@ -430,6 +430,11 @@ instance Compilable Exp where
                 <> safeName <> " = " <> content
               else
                 assignment <> methodGlobal
+
+        Assignment lhs exp ->
+          let lhs' = compile env config lhs
+              content = compile env config exp
+          in  lhs' <> " = " <> content
 
         Export e ->
           "export " <> compile env config e
@@ -508,7 +513,7 @@ instance Compilable Exp where
             compileBody' env [exp] =
               "    return " <> compile env config exp <> ";\n"
             compileBody' e (exp : es) = case exp of
-              Core.Typed _ _ _ (Core.Assignment name _) ->
+              Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
                 let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
                 in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
 
@@ -908,7 +913,7 @@ instance Compilable AST where
 compileExps :: Env -> CompilationConfig -> [Exp] -> String
 compileExps env config [exp     ] = compile env config exp <> ";\n"
 compileExps env config (exp : es) = case exp of
-  Core.Typed _ _ _ (Core.Assignment name _) ->
+  Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
     in  compile env config exp <> ";\n" <> compileExps nextEnv config es
 
@@ -936,7 +941,7 @@ buildDefaultExport as es =
     _ -> False
 
   getExportName :: Exp -> String
-  getExportName (Typed _ _ _ (Export (Typed _ _ _ (Assignment n _)))) = n
+  getExportName (Typed _ _ _ (Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _)))) = n
   getExportName (Typed _ _ _ (Export (Typed _ _ _ (Extern _ n _))))   = n
 
 

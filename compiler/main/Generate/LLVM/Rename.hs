@@ -82,12 +82,20 @@ renameExp env what = case what of
         (renamedBody, env'') = renameExps env' body
     in  (Typed t area metadata (Definition params renamedBody), env'')
 
-  Typed t area metadata (Assignment name exp) ->
+  Typed t area metadata (Assignment lhs exp) ->
     -- here we deal with an assignment in a body or Do
     -- therefore we must not rename it as it only concerns top level names.
-    let env'                = extendScope name name env
-        (renamedExp, env'') = renameExp env' exp
-    in  (Typed t area metadata (Assignment name renamedExp), env'')
+    case lhs of
+      Typed _ _ _ (Var name _) ->
+        let env'                = extendScope name name env
+            (renamedLhs, env'') = renameExp env' lhs
+            (renamedExp, env''') = renameExp env'' exp
+        in  (Typed t area metadata (Assignment renamedLhs renamedExp), env''')
+
+      _ ->
+        let (renamedLhs, env') = renameExp env lhs
+            (renamedExp, env'') = renameExp env' exp
+        in  (Typed t area metadata (Assignment renamedLhs renamedExp), env'')
 
   Typed t area metadata (Var name isConstructor) -> case break (== '.') name of
     -- A normal name
@@ -270,11 +278,11 @@ renameListItem env item = case item of
 
 renameTopLevelAssignment :: Env -> Exp -> (Exp, Env)
 renameTopLevelAssignment env assignment = case assignment of
-  Typed t area metadata (Assignment name exp) ->
+  Typed t area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var name isCtor)) exp) ->
     let hashedName          = hashName env name
         env'                = extendScope name hashedName env
         (renamedExp, env'') = renameExp env' exp
-    in  (Typed t area metadata (Assignment hashedName renamedExp), env'')
+    in  (Typed t area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var hashedName isCtor)) renamedExp), env'')
 
   _ ->
     undefined
@@ -400,12 +408,12 @@ renameImports env imports = case imports of
 populateInitialEnv :: [Exp] -> Env -> Env
 populateInitialEnv exps env = case exps of
   (exp : next) -> case exp of
-    Typed _ _ _ (Assignment name _) ->
+    Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ _ (Export (Typed _ _ _ (Assignment name _))) ->
+    Typed _ _ _ (Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) _))) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'

@@ -196,7 +196,12 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.Assignment name exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area [] (Core.Assignment name exp')
+      return $ Core.Typed qt area [] (Core.Assignment (Core.Typed qt area [] (Core.Var name False)) exp')
+
+    Slv.Mutate lhs exp -> do
+      lhs' <- toCore enabled lhs
+      exp' <- toCore enabled exp
+      return $ Core.Typed qt area [Core.ReferenceStore] (Core.Assignment lhs' exp')
 
     Slv.Export exp -> do
       exp' <- toCore enabled exp

@@ -137,6 +137,7 @@ data Exp_ = LNum String
           | Access Exp Exp
           | Abs (Solved Name) [Exp]
           | Assignment Name Exp
+          | Mutate Exp Exp
           | Export Exp
           | NameExport Name
           | TypeExport Name

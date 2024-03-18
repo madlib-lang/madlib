@@ -901,6 +901,11 @@ expToDoc comments exp =
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " = " <> exp', comments'')
 
+        Source _ _ (Mutate lhs exp) ->
+          let (lhs', comments'') = expToDoc comments' lhs
+              (exp', comments''') = expToDoc comments'' exp
+          in  (lhs' <> Pretty.pretty " := " <> exp', comments''')
+
         Source _ _ (DoAssignment name exp) ->
           let name'              = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp

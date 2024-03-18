@@ -66,11 +66,11 @@ export readBytes = (path) => Stream(
 
     readChunk = () => {
       if (!reading) do {
-        reading = true
+        reading := true
         readChunkFFI(
           handle,
           (chunk) => {
-            reading = false
+            reading := false
             pipe(
               Data,
               sink(1),
@@ -82,8 +82,8 @@ export readBytes = (path) => Stream(
             sink(2),
           ),
           () => {
-            reading = false
-            done = true
+            reading := false
+            done := true
             sink(2, NoMessage)
           },
         )
@@ -91,7 +91,7 @@ export readBytes = (path) => Stream(
     }
 
     if (start == 0) do {
-      handle = openFileForReadFFI(
+      handle := openFileForReadFFI(
         path,
         () => {
           sink(
@@ -149,15 +149,15 @@ export writeBytes = (path, source) => Stream(
         where(chunksToWrite) {
           [chunk, ...more] =>
             do {
-              writing = true
-              chunksToWrite = more
+              writing := true
+              chunksToWrite := more
               writeChunkFFI(
                 handle,
                 chunk,
                 (_) => {
-                  writing = false
+                  writing := false
                   if (List.isEmpty(chunksToWrite) && sourceDone && !done) do {
-                    done = true
+                    done := true
                     cancelBufferedWrite(handle)
                     sink(2, NoMessage)
                   } else if (!List.isEmpty(chunksToWrite)) {
@@ -187,11 +187,11 @@ export writeBytes = (path, source) => Stream(
             0,
             (t, d) => {
               if (t == 0) do {
-                talkback = d
-                handle = openFileForWriteFFI(
+                talkback := d
+                handle := openFileForWriteFFI(
                   path,
                   () => {
-                    open = true
+                    open := true
                     writeChunks()
 
                     where(d) {
@@ -214,7 +214,7 @@ export writeBytes = (path, source) => Stream(
                 where(d) {
                   Data(chunk) =>
                     do {
-                      chunksToWrite = [...chunksToWrite, chunk]
+                      chunksToWrite := [...chunksToWrite, chunk]
                       writeChunks()
                     }
 
@@ -231,9 +231,9 @@ export writeBytes = (path, source) => Stream(
 
                   _ =>
                     do {
-                      sourceDone = true
+                      sourceDone := true
                       if (List.isEmpty(chunksToWrite)) do {
-                        done = true
+                        done := true
                         cancelBufferedWrite(handle)
                         sink(2, NoMessage)
                       }
@@ -356,7 +356,7 @@ _writeBytes = (_schedule, errorCtor, noMessage, path, source) => Stream(
             0,
             (t, d) => {
               if (t == 0) do {
-                talkback = d
+                talkback := d
                 #-
                 writableStream = prelude_stream_file_fs.createWriteStream(path)
                 writableStream.on('error', () => {
@@ -373,7 +373,7 @@ _writeBytes = (_schedule, errorCtor, noMessage, path, source) => Stream(
                 where(d) {
                   Data(chunk) =>
                     do {
-                      chunksToWrite = [...chunksToWrite, chunk]
+                      chunksToWrite := [...chunksToWrite, chunk]
                       #- writeChunks() -#
                     }
 
@@ -390,9 +390,9 @@ _writeBytes = (_schedule, errorCtor, noMessage, path, source) => Stream(
 
                   _ =>
                     do {
-                      sourceDone = true
+                      sourceDone := true
                       if (List.isEmpty(chunksToWrite)) do {
-                        done = true
+                        done := true
                         #- writableStream.destroy() -#
                         sink(2, NoMessage)
                       }

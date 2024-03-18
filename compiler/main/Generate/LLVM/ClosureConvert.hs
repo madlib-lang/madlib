@@ -222,9 +222,14 @@ findFreeVars env exp = do
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
-    Typed qt area _ (Assignment n exp) -> do
+    Typed _ _ _ (Assignment lhs exp) -> do
+      lhsVars <- findFreeVars env lhs
       expVars <- findFreeVars env exp
-      return $ expVars ++ [(n, Typed qt area [] (Var n False))]
+      return $ lhsVars ++ expVars
+
+    -- Typed qt area _ (Assignment n exp) -> do
+    --   expVars <- findFreeVars env exp
+    --   return $ expVars ++ [(n, Typed qt area [] (Var n False))]
 
     Typed _ _ _ (Record fields) -> do
       fvs <- mapM findFreeVarsInField fields
@@ -250,7 +255,8 @@ findFreeVars env exp = do
 findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
 findFreeVarsInBody env exps = case exps of
   (e : es) -> case e of
-    Typed qt area _ (Assignment name exp) -> do
+    -- TODO: handle case of lhs being something else maybe?
+    Typed qt area _ (Assignment (Typed _ _ _ (Var name _)) exp) -> do
       fvs <-
         if isFunctionType (getQualified qt) then
           findFreeVars (addGlobalFreeVar name env) exp
@@ -292,7 +298,7 @@ findFreeVarsInBranch env is = case is of
 
 findMutationsInExp :: [String] -> Exp -> [String]
 findMutationsInExp params exp = case exp of
-  Typed _ _ _ (Assignment n e) | n `elem` params ->
+  Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) e) | n `elem` params ->
     n : findMutationsInExp params e
 
   Typed _ _ _ (Assignment n e) ->
@@ -362,7 +368,7 @@ findAllMutationsInExp params assignments exp = case exp of
   Typed _ _ _ (Var n False) | n `elem` assignments ->
     [n]
 
-  Typed _ _ _ (Assignment n e) | n `elem` (params ++ assignments) ->
+  Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) e) | n `elem` (params ++ assignments) ->
     let nextAssignments =
           if isDefinition e then
             []
@@ -370,7 +376,7 @@ findAllMutationsInExp params assignments exp = case exp of
             [n]
     in  n : findAllMutationsInExp params (nextAssignments ++ assignments) e
 
-  Typed _ _ _ (Assignment n e) ->
+  Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) e) ->
     let nextAssignments =
           if isDefinition e then
             []
@@ -420,7 +426,7 @@ findAllMutationsInExp params assignments exp = case exp of
 
 findAllMutationsInExps :: [String] -> [String] -> [Exp] -> [String]
 findAllMutationsInExps params assignments exps = case exps of
-  exp@(Typed _ _ _ (Assignment name _)) : next ->
+  exp@(Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) _)) : next ->
     findAllMutationsInExp params assignments exp ++ findAllMutationsInExps (name : params) assignments next
 
   exp : next ->
@@ -445,7 +451,7 @@ convertBody exclusionVars env body = case body of
     return []
 
   (exp : es) -> case exp of
-    Typed _ _ _ (Assignment name abs@(Typed _ _ _ (Definition _ _))) -> do
+    Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) abs@(Typed _ _ _ (Definition _ _))) -> do
       fvs  <- findFreeVars (addGlobalFreeVar name env) abs
       let withoutFreeVarDictsNotInScope = removeDictsNotInScope env fvs
       exp' <- convertDefinition (addVarExclusions exclusionVars env) name withoutFreeVarDictsNotInScope abs
@@ -458,7 +464,7 @@ convertBody exclusionVars env body = case body of
       next <- convertBody exclusionVars env es
       return $ exp' : next
 
-    Typed _ _ _ (Assignment name _) -> do
+    Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) _) -> do
       (e'', env') <- do
         if name `elem` mutationsInScope env && name `elem` allocatedMutations env then do
           e' <- convert env exp
@@ -491,7 +497,7 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
             Typed qt paramArea (if n `elem` mutations then ReferenceParameter : paramMetadata else paramMetadata) n
           ) <$> params
 
-    return $ Typed (ps :=> t) area [] (Assignment functionName (Typed (ps :=> t) area metadata (Definition params' body'')))
+    return $ Typed (ps :=> t) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName False)) (Typed (ps :=> t) area metadata (Definition params' body'')))
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
@@ -508,13 +514,13 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
     body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env) body
 
     let liftedType   = foldr fn t (getType . snd <$> captured)
-    let lifted'      = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
+    let lifted'      = Typed (ps :=> liftedType) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName' False)) (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
     let functionNode = Typed (ps :=> liftedType) area metadataForFunctionNode (Var functionName' False)
 
     addTopLevelExp lifted'
 
     if null captured then
-      return $ Typed (ps :=> t) area [] (Assignment functionName functionNode)
+      return $ Typed (ps :=> t) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName False)) functionNode)
     else
       let fvVarNodes = snd <$> captured
           fvVarNodes' =
@@ -525,7 +531,7 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
                   a ->
                     a
               ) <$> fvVarNodes
-      in  return $ Typed (ps :=> t) area [] (Assignment functionName (Typed (ps :=> t) area metadata (Call functionNode fvVarNodes')))
+      in  return $ Typed (ps :=> t) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName False)) (Typed (ps :=> t) area metadata (Call functionNode fvVarNodes')))
 
 
 -- When a lifted lambda is fetched from the env via Var, we apply the captured args to it
@@ -559,12 +565,12 @@ instance Convertable Exp Exp where
       field' <- convert env { stillTopLevel = False } field
       return $ Typed qt area metadata (Access rec' field')
 
-    Export (Typed _ _ _ (Assignment name abs@(Typed _ _ _ Definition{}))) -> do
+    Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) abs@(Typed _ _ _ Definition{}))) -> do
       fvs <- findFreeVars (addGlobalFreeVar name env) fullExp
       let withoutFreeVarDictsNotInScope = removeDictsNotInScope env fvs
       convertDefinition env name withoutFreeVarDictsNotInScope abs
 
-    Assignment name abs@(Typed _ _ _ Definition{}) -> do
+    Assignment (Typed _ _ _ (Var name _)) abs@(Typed _ _ _ Definition{}) -> do
       fvs <- findFreeVars (addGlobalFreeVar name env) fullExp
       let withoutFreeVarDictsNotInScope = removeDictsNotInScope env fvs
       convertDefinition env name withoutFreeVarDictsNotInScope abs
@@ -584,7 +590,7 @@ instance Convertable Exp Exp where
             ) ++ params
 
       let liftedType = foldr fn t (getType . snd <$> withoutFreeVarDictsNotInScope)
-      let lifted'    = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
+      let lifted'    = Typed (ps :=> liftedType) area [] (Assignment (Typed (ps :=> liftedType) area [] (Var functionName False)) (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
       addTopLevelExp lifted'
 
       let functionNode = Typed (ps :=> liftedType) area [] (Var functionName False)
