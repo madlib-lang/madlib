@@ -162,6 +162,7 @@ data Exp_
   | Definition [Core Name] [Exp]
   | Call Exp [Exp]
   | Access Exp Exp
+  | ArrayAccess Exp Exp
   | Assignment Exp Exp
   | Export Exp
   | NameExport Name

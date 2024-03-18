@@ -337,6 +337,12 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
             Slv.Mutate lhs exp ->
               findNodeAtLoc False loc lhs <|> findNodeAtLoc False loc exp
 
+            Slv.Access rec field ->
+              findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
+
+            Slv.ArrayAccess arr index ->
+              findNodeAtLoc False loc arr <|> findNodeAtLoc False loc index
+
             Slv.If cond truthy falsy ->
               findNodeAtLoc False loc cond
               <|> findNodeAtLoc False loc truthy

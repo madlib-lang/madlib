@@ -159,6 +159,11 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     field' <- updateExpTypes options env push s field
     return $ Slv.Typed (apply s qt) a $ Slv.Access rec' field'
 
+  Slv.ArrayAccess arr index -> do
+    arr'   <- updateExpTypes options env push s arr
+    index' <- updateExpTypes options env push s index
+    return $ Slv.Typed (apply s qt) a $ Slv.ArrayAccess arr' index'
+
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields
     let appliedQt = apply s qt

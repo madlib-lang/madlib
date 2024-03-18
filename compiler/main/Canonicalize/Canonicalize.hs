@@ -152,6 +152,11 @@ instance Canonicalizable Src.Exp Can.Exp where
       field' <- canonicalize env target field
       return $ Can.Canonical area (Can.Access rec' field')
 
+    Src.ArrayAccess arr field -> do
+      arr'   <- canonicalize env target arr
+      field' <- canonicalize env target field
+      return $ Can.Canonical area (Can.ArrayAccess arr' field')
+
     Src.AbsWithMultilineBody params body ->
       processAbs env target area params body
 

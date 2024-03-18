@@ -48,6 +48,9 @@ replaceVarWith n replaceWith exp = case exp of
   Typed qt area metadata (Access rec field) ->
     Typed qt area metadata (Access (replaceVarWith n replaceWith rec) (replaceVarWith n replaceWith field))
 
+  Typed qt area metadata (ArrayAccess arr index) ->
+    Typed qt area metadata (ArrayAccess (replaceVarWith n replaceWith arr) (replaceVarWith n replaceWith index))
+
   Typed qt area metadata (Record fields) ->
     Typed qt area metadata (Record (mapRecordField (replaceVarWith n replaceWith) <$> fields))
 
@@ -112,6 +115,9 @@ isEligible exp = case exp of
 
   Typed _ _ _ (Access rec field) ->
     isEligible rec || isEligible field
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    isEligible arr || isEligible index
 
   Typed _ _ _ (Record fields) ->
     all
@@ -201,6 +207,9 @@ occurencesOf name exp = case exp of
   Typed _ _ _ (Access rec field) ->
     occurencesOf name rec + occurencesOf name field
 
+  Typed _ _ _ (ArrayAccess arr index) ->
+    occurencesOf name arr + occurencesOf name index
+
   Typed _ _ _ (If cond truthy falsy) ->
     occurencesOf name cond + occurencesOf name truthy + occurencesOf name falsy
 
@@ -287,6 +296,9 @@ reduce exp = case exp of
 
   Typed qt area metadata (Access rec field) ->
     Typed qt area metadata (Access (reduce rec) (reduce field))
+
+  Typed qt area metadata (ArrayAccess arr index) ->
+    Typed qt area metadata (ArrayAccess (reduce arr) (reduce index))
 
   Typed qt area metadata (Record fields) ->
     Typed qt area metadata (Record (mapRecordField reduce <$> fields))

@@ -653,6 +653,11 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
     rec' <- monomorphize target env rec
     return $ Typed (applyAndCleanQt envSubstitution qt) area (Access rec' (Typed (applyAndCleanQt envSubstitution qt') area' field))
 
+  Typed qt area (ArrayAccess arr index) -> do
+    arr' <- monomorphize target env arr
+    index' <- monomorphize target env index
+    return $ Typed (applyAndCleanQt envSubstitution qt) area (ArrayAccess arr' index')
+
   Typed qt area e ->
     return $ Typed (applyAndCleanQt envSubstitution qt) area e
 

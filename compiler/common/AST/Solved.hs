@@ -135,6 +135,7 @@ data Exp_ = LNum String
           | JSExp String
           | App Exp Exp Bool
           | Access Exp Exp
+          | ArrayAccess Exp Exp
           | Abs (Solved Name) [Exp]
           | Assignment Name Exp
           | Mutate Exp Exp
