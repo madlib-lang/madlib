@@ -959,6 +959,40 @@ generateExp env symbolTable exp = case exp of
       else do
         error $ "bad LHS: " <> ppShow lhs
 
+  Core.Typed _ area metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.ArrayAccess arr index)) e) -> do
+    if Core.isReferenceStore metadata then mdo
+      (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
+      (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
+      (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+      let arrayType = Type.ptr $ Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
+      arrOperand' <- safeBitcast arrOperand arrayType
+
+      len <- gep arrOperand' [i32ConstOp 0, i32ConstOp 0]
+      len' <- load len 0
+
+      outOfBound <- icmp IntegerPredicate.SGE indexOperand len'
+      condBr outOfBound outOfBoundBlock allGoodBlock
+
+      outOfBoundBlock <- block `named` "outOfBoundBlock"
+      callWithMetadata (makeDILocation env area) arrayOutOfBounds [(indexOperand, []), (len', [])]
+      br exitBlock
+
+      allGoodBlock <- block `named` "allGoodBlock"
+      items <- gep arrOperand' [i32ConstOp 0, i32ConstOp 2]
+      items' <- load items 0
+      item <- gep items' [indexOperand]
+      br exitBlock
+
+      exitBlock <- block `named` "exitBlock"
+      valuePtr <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr i8), outOfBoundBlock)]
+
+      store valuePtr 0 exp'
+      let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
+      return (symbolTable, unit, Nothing)
+
+    else do
+      error $ "bad LHS: " <> ppShow lhs
+
 
   Core.Typed _ area metadata (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) e) -> do
     if isTopLevel env then do
@@ -1757,12 +1791,13 @@ generateExp env symbolTable exp = case exp of
 
   -- typedef struct madlib__array__Array {
   --   int64_t length;
+  --   int64_t capacity;
   --   void **items;
   -- } madlib__array__Array_t;
   Core.Typed qt area _ (Core.ArrayAccess arr index) -> mdo
     (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
     (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
-    let arrayType = Type.ptr $ Type.StructureType False [i64, Type.ptr $ Type.ptr i8]
+    let arrayType = Type.ptr $ Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
     arrOperand' <- safeBitcast arrOperand arrayType
 
     len <- gep arrOperand' [i32ConstOp 0, i32ConstOp 0]
@@ -1773,24 +1808,20 @@ generateExp env symbolTable exp = case exp of
 
     outOfBoundBlock <- block `named` "outOfBoundBlock"
     callWithMetadata (makeDILocation env area) arrayOutOfBounds [(indexOperand, []), (len', [])]
-    _items <- gep arrOperand' [i32ConstOp 0, i32ConstOp 1]
-    _items' <- load _items 0
-    _items'' <- load _items' 0
-    _item <- gep _items'' [indexOperand]
     br exitBlock
 
     allGoodBlock <- block `named` "allGoodBlock"
-    items <- gep arrOperand' [i32ConstOp 0, i32ConstOp 1]
+    items <- gep arrOperand' [i32ConstOp 0, i32ConstOp 2]
     items' <- load items 0
-    items'' <- load items' 0
-    item <- gep items'' [indexOperand]
+    item <- gep items' [indexOperand]
     br exitBlock
 
     exitBlock <- block `named` "exitBlock"
-    ret <- phi [(item, allGoodBlock), (_item, outOfBoundBlock)]
-    ret' <- unbox env symbolTable qt ret
+    ret <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr i8), outOfBoundBlock)]
+    ret' <- load ret 0
+    ret'' <- unbox env symbolTable qt ret'
 
-    return (symbolTable, ret', Just ret)
+    return (symbolTable, ret'', Just ret')
 
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record

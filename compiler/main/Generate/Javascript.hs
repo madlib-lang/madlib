@@ -455,25 +455,27 @@ instance Compilable Exp where
         Access record (Typed _ _ _ (Var name _)) ->
           compile env config record <> name
 
+        -- TODO: we need to emit the throw again somehow
         ArrayAccess arr index ->
           let arr' = compile env config arr
               index' = compile env config index
-          in "(" 
-                <> index'
-                <> " >= "
-                <> arr'
-                <> ".length ? "
-                <> "(function() { throw \"Array out of bounds access\\nYou accessed the index '"
-                <> index' 
-                <> "' but the array currently has length '\" + "
-                <> arr'
-                <> ".length"
-                <> " + \"'.\\n\\n\" })() : "
-                <> arr'
-                <> "["
-                <> index'
-                <> "]"
-                <> ")"
+          in  arr' <> "[" <> index' <> "]"
+          -- in "(function() {"
+          --       <> index'
+          --       <> " >= "
+          --       <> arr'
+          --       <> ".length ? "
+          --       <> "(function() { throw \"Array out of bounds access\\nYou accessed the index '"
+          --       <> index' 
+          --       <> "' but the array currently has length '\" + "
+          --       <> arr'
+          --       <> ".length"
+          --       <> " + \"'.\\n\\n\" })() : "
+          --       <> arr'
+          --       <> "["
+          --       <> index'
+          --       <> "]"
+          --       <> "})())"
 
         JSExp           content -> content
 

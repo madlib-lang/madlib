@@ -390,6 +390,9 @@ validateLhs env initialExp exp = case exp of
   Can.Canonical _ (Can.Access rec _) ->
     validateLhs env initialExp rec
 
+  Can.Canonical _ (ArrayAccess arr _) ->
+    validateLhs env initialExp arr
+
   _ ->
     throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) (Can.getArea initialExp))
 

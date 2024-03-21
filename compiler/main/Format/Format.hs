@@ -1065,6 +1065,22 @@ expToDoc comments exp =
               , comments''
               )
 
+        Source area _ (ArrayAccess arr index) ->
+          let (arr', comments')       = expToDoc comments arr
+              (index', comments'')       = expToDoc comments' index
+              (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
+          in  ( Pretty.group
+                  (
+                    arr' <> Pretty.pretty "["
+                    <> Pretty.line'
+                    <> index'
+                    <> commentsDoc
+                  )
+                <> Pretty.line'
+                <> Pretty.pretty "]"
+              , comments'''
+              )
+
         Source area _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
               (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
