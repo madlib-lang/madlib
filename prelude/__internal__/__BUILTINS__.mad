@@ -102,11 +102,12 @@ export balanceDict = (color, k, v, left, right) => where(right) {
 
 #iftarget llvm
 
-arrayToList :: Array a -> List a
-arrayToList = extern "madlib__array__toList"
+eqArrayFFI :: (a -> a -> Boolean) -> Array a -> Array a -> Boolean
+eqArrayFFI = extern "madlib__array__internal__eq"
+
 
 instance Eq a => Eq (Array a) {
-  __EQ__ = (a, b) => arrayToList(a) == arrayToList(b)
+  __EQ__ = (a, b) => eqArrayFFI((_a, _b) => _a == _b, a, b)
 }
 
 eqByteArray :: ByteArray -> ByteArray -> Boolean
@@ -458,31 +459,21 @@ instance Show ByteArray {
 
 #endif
 
-#iftarget js
-
-arrayToList :: Array a -> List a
-export arrayToList = (array) => #- {
-  let list = {}
-  let start = list
-
-  array.forEach(item => {
-    list = list.n = { v: item, n: null }
-  })
-
-  return start.n
-} -#
-
 instance Show a => Show (Array a) {
-  show = (array) => `Array(${show(arrayToList(array))})`
+  show = (array) => {
+    items = ""
+    index = 0
+    length = arrayLength(array)
+
+    while(index < length) do {
+      item = show(array[index])
+      items := index == 0 ? item : `${items}, ${item}`
+      index := index + 1
+    }
+
+    return `Array(${items})`
+  }
 }
-
-#elseif llvm
-
-instance Show a => Show (Array a) {
-  show = (array) => `Array(${show(arrayToList(array))})`
-}
-
-#endif
 
 instance (Show a, Show b) => Show #[a, b] {
   show = (tuple) => where(tuple) {
@@ -755,8 +746,38 @@ instance Comparable a => Comparable (List a) {
 }
 
 
+#iftarget llvm
+
+arrayLength :: Array a -> Integer
+arrayLength = extern "madlib__array__length"
+
+#elseif js
+
+arrayLength :: Array a -> Integer
+arrayLength = (arr) => #- arr.length -#
+
+#endif
+
 instance Comparable a => Comparable (Array a) {
-  compare = (a, b) => compare(arrayToList(a), arrayToList(b))
+  compare = (a, b) => {
+    result = EQ
+    index = 0
+    lengthA = arrayLength(a)
+    lengthB = arrayLength(b)
+
+    while(index < lengthA && index < lengthB && result == EQ) do {
+      result := compare(a[index], b[index])
+      index := index + 1
+    }
+
+    if (index == lengthA && index < lengthB) do {
+      result := LT
+    } else if (index == lengthB && index < lengthA) do {
+      result := GT
+    }
+
+    return result
+  }
 }
 
 #iftarget llvm
