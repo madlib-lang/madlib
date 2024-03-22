@@ -32,9 +32,9 @@ extern "C"
 
   madlib__array__Array_t *madlib__array__concatWithMutation(madlib__array__Array_t *a, madlib__array__Array_t *b);
 
-  madlib__array__Array_t *madlib__array__pushBackWithMutation(madlib__array__Array_t *a, void *item);
+  madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__array__Array_t *a);
 
-  madlib__array__Array_t *madlib__array__removeWithMutation(madlib__array__Array_t *a, int64_t index);
+  madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib__array__Array_t *a);
 
   madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity);
 

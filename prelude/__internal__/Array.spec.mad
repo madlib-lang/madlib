@@ -1,45 +1,105 @@
+import Array from "Array"
 import { assertEquals, test } from "Test"
 
-import Array from "Array"
 
-test("map", (_) =>
-  assertEquals(
-    map((x) => x * 2, Array.fromList([1, 2, 3])),
-    Array.fromList([2, 4, 6])
-  )
+
+test(
+  "map",
+  () => assertEquals(map((x) => x * 2, Array.fromList([1, 2, 3])), Array.fromList([2, 4, 6])),
 )
 
-test("map - empty array", (_) =>
-  assertEquals(
-    map((x) => x * 2, Array.fromList([])),
-    Array.fromList([])
-  )
+test(
+  "map - empty array",
+  () => assertEquals(map((x) => x * 2, Array.fromList([])), Array.fromList([])),
 )
 
-test("reduce", (_) =>
-  assertEquals(
-    Array.reduce((sum, a) => sum + a, 0, Array.fromList([1, 2, 3])),
-    6
-  )
+test(
+  "reduce",
+  () => assertEquals(Array.reduce((sum, a) => sum + a, 0, Array.fromList([1, 2, 3])), 6),
 )
 
-test("concat", (_) =>
-  assertEquals(
+test(
+  "concat",
+  () => assertEquals(
     Array.concat(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),
-    Array.fromList([1, 2, 3, 4, 5, 6])
-  )
+    Array.fromList([1, 2, 3, 4, 5, 6]),
+  ),
 )
 
-test("length", (_) =>
-  assertEquals(
-    Array.length(Array.fromList([1, 2, 3, 4, 5, 6])),
-    6
-  )
+test(
+  "mutPush",
+  () => assertEquals(Array.mutPush(4, Array.fromList([1, 2, 3])), Array.fromList([1, 2, 3, 4])),
 )
 
-test("toList", (_) =>
-  assertEquals(
-    Array.toList(Array.fromList([1, 2, 3, 4, 5, 6])),
-    [1, 2, 3, 4, 5, 6]
-  )
+test(
+  "mutConcat",
+  () => assertEquals(
+    Array.mutConcat(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),
+    Array.fromList([1, 2, 3, 4, 5, 6]),
+  ),
+)
+
+test(
+  "mutRemove",
+  () => assertEquals(Array.mutRemove(1, Array.fromList([1, 2, 3])), Array.fromList([1, 3])),
+)
+
+test(
+  "filter",
+  () => assertEquals(
+    Array.filter((x) => x % 2 == 0, Array.fromList([1, 2, 3, 4])),
+    Array.fromList([2, 4]),
+  ),
+)
+
+test(
+  "filter",
+  () => assertEquals(
+    Array.filter((x) => x % 2 == 0, Array.fromList([1, 2, 3, 4])),
+    Array.fromList([2, 4]),
+  ),
+)
+
+test(
+  "forEach",
+  () => {
+    actual = 0
+    Array.forEach((i) => { actual := i }, Array.fromList([1, 2, 3, 4, 5, 6]))
+    return assertEquals(actual, 6)
+  },
+)
+
+test(
+  "slice",
+  () => assertEquals(
+    Array.slice(1, 3, Array.fromList([1, 2, 3, 4, 5, 6])),
+    Array.fromList([2, 3, 4]),
+  ),
+)
+
+test(
+  "slice",
+  () => assertEquals(
+    Array.slice(0, -2, Array.fromList([1, 2, 3, 4, 5, 6])),
+    Array.fromList([1, 2, 3, 4]),
+  ),
+)
+
+test(
+  "slice",
+  () => assertEquals(
+    Array.slice(0, -2, Array.fromList([1, 2, 3, 4, 5, 6])),
+    Array.fromList([1, 2, 3, 4]),
+  ),
+)
+
+test("range", () => assertEquals(Array.range(3, 7), Array.fromList([3, 4, 5, 6])))
+
+test("range - same start and end", () => assertEquals(Array.range(3, 3), Array.fromList([])))
+
+test("range - start > end", () => assertEquals(Array.range(3, 2), Array.fromList([])))
+
+test(
+  "toList",
+  () => assertEquals(Array.toList(Array.fromList([1, 2, 3, 4, 5, 6])), [1, 2, 3, 4, 5, 6]),
 )
