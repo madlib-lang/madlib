@@ -27,6 +27,7 @@ bool madlib__array__internal__eq(PAP_t *eqFn, madlib__array__Array_t *arr1, madl
   return result;
 }
 
+
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   int64_t itemCount = madlib__list__length(list);
 
@@ -43,6 +44,7 @@ madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   return result;
 }
 
+
 madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
   int64_t itemCount = madlib__array__length(arr);
   madlib__list__Node_t *result = madlib__list__empty();
@@ -53,6 +55,7 @@ madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
 
   return result;
 }
+
 
 madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib__array__Array_t *b) {
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
@@ -65,6 +68,7 @@ madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib_
 
   return result;
 }
+
 
 madlib__array__Array_t *madlib__array__concatWithMutation(madlib__array__Array_t *a, madlib__array__Array_t *b) {
   void **resultItems = a->items;
@@ -83,6 +87,7 @@ madlib__array__Array_t *madlib__array__concatWithMutation(madlib__array__Array_t
   return a;
 }
 
+
 madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__array__Array_t *a) {
   void **resultItems = a->items;
   int64_t nextLength = a->length + 1;
@@ -100,6 +105,7 @@ madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__
   return a;
 }
 
+
 madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib__array__Array_t *a) {
   // TODO: verify that we don't need memmove here
   if (index > a->length - 1) {
@@ -110,6 +116,7 @@ madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib_
   a->length = a->length - 1;
   return a;
 }
+
 
 madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity) {
   if (capacity <= 0) {
@@ -123,6 +130,7 @@ madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity) {
   return result;
 }
 
+
 madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr) {
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
   result->length = arr->length;
@@ -135,6 +143,7 @@ madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr
 
   return result;
 }
+
 
 void *madlib__array__reduce(PAP_t *f, void *initialValue, madlib__array__Array_t *arr) {
   for (int i = 0; i < arr->length; i++) {
