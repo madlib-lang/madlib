@@ -355,6 +355,14 @@ isExtern exp = case exp of
     False
 
 
+isListSpread :: ListItem -> Bool
+isListSpread li = case li of
+  Typed _ _ _ (ListSpread _) ->
+    True
+
+  _ ->
+    False
+
 isSpreadField :: Field -> Bool
 isSpreadField field = case field of
   Typed _ _ _ (FieldSpread _) ->

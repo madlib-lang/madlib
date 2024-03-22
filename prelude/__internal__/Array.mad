@@ -1,4 +1,9 @@
+import type { Maybe } from "Maybe"
+
+import { Just, Nothing } from "Maybe"
 import {} from "Monad"
+
+
 
 /**
  * Array serves a similar purpose as List but is composed of one memory block.
@@ -9,6 +14,9 @@ import {} from "Monad"
 // TODO: add filter, ap, chain
 
 #iftarget llvm
+
+init :: Integer -> Array a
+export init = extern "madlib__array__initWithCapacity"
 
 /**
  * Creates an array from a List
@@ -69,6 +77,17 @@ concat :: Array a -> Array a -> Array a
 export concat = extern "madlib__array__concat"
 
 
+mutConcat :: Array a -> Array a -> Array a
+export mutConcat = extern "madlib__array__concatWithMutation"
+
+
+mutPush :: a -> Array a -> Array a
+export mutPush = extern "madlib__array__pushBackWithMutation"
+
+
+mutRemove :: Integer -> Array a -> Array a
+export mutRemove = extern "madlib__array__removeWithMutation"
+
 /**
  * Maps over an array, applying the given function to each element.
  *
@@ -81,6 +100,10 @@ instance Functor Array {
 }
 
 #elseif js
+
+init :: Integer -> Array a
+export init = () => #- [] -#
+
 
 /**
  * Creates an array from a list
@@ -153,6 +176,37 @@ concat :: Array a -> Array a -> Array a
 export concat = (array1, array2) => #- array1.concat(array2) -#
 
 
+mutConcat :: Array a -> Array a -> Array a
+export mutConcat = (a, b) => #- {
+  a.push(...b)
+  return a
+} -#
+
+
+mutPush :: a -> Array a -> Array a
+export mutPush = (item, array) => #- {
+  array.push(item)
+  return array
+} -#
+
+
+mutRemove :: Integer -> Array a -> Array a
+export mutRemove = (index, arr) => {
+  _index = index
+  arrayLength = length(arr)
+
+  while(_index < arrayLength) do {
+    arr[_index
+    ] := arr[_index + 1
+    ]
+    _index := _index + 1
+  }
+
+  #- arr.length = arrayLength - 1 -#
+
+  return arr
+}
+
 /**
  * Maps over an array, applying the given function to each element.
  *
@@ -165,3 +219,98 @@ instance Functor Array {
 }
 
 #endif
+
+empty :: Array a
+export empty = init(1)
+
+
+/**
+ * Return a Maybe of an item at a given index, Nothing if the index is out of
+ * the bounds of the array.
+ * @since 0.23.0
+ * @example
+ * at(1, fromList([1, 2, 3])) // Just(2)
+ * at(3, fromList([1, 2, 3])) // Nothing
+ */
+at :: Integer -> Array a -> Maybe a
+export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) : Nothing
+
+
+/**
+ * Iterate over an array, selecting only values which are matched by predicate function.
+ *
+ * @since 0.23.0
+ * @example
+ * filter((a) => a % 2 == 0, fromList([1, 2, 3, 4, 5, 6])) // fromList([2, 4, 6])
+ */
+filter :: (a -> Boolean) -> Array a -> Array a
+export filter = (predicate, arr) => {
+  len = length(arr)
+  result = init(len)
+  i = 0
+
+  while(i < len) do {
+    if (predicate(arr[i])) do {
+      mutPush(arr[i], result)
+    }
+
+    i := i + 1
+  }
+
+  return result
+}
+
+
+forEach :: (a -> {}) -> Array a -> {}
+export forEach = (f, arr) => {
+  len = length(arr)
+  i = 0
+
+  while(i < len) do {
+    f(arr[i])
+    i := i + 1
+  }
+}
+
+
+/**
+ * Cut a contiguous segment from an Array, from start index to end index.
+ * @since 0.23.0
+ */
+slice :: Integer -> Integer -> Array a -> Array a
+export slice = (start, end, arr) => {
+  len = length(arr)
+  realStart = start < 0 ? start + len : start
+  realEnd = end == 0 ? len - 1 : end < 0 ? end + len - 1 : end
+  result = init((realStart - realEnd) * 2)
+
+  while(realStart <= realEnd) do {
+    mutPush(arr[realStart], result)
+    realStart := realStart + 1
+  }
+
+  return result
+}
+
+
+/**
+ * Return an array of integers within the given range. The start
+ * parameter is inclusive and the end parameter is exclusive.
+ *
+ * @since 0.23.0
+ * @example
+ * range(3, 3) // fromList([])
+ * range(3, 5) // fromList([3, 4])
+ */
+range :: Integer -> Integer -> Array Integer
+export range = (start, end) => {
+  result = init((end - start) * 2)
+  i = start
+
+  while(i < end) do {
+    mutPush(i, result)
+    i := i + 1
+  }
+
+  return result
+}

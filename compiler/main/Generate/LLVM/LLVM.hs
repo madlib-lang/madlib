@@ -167,7 +167,7 @@ typedHoleReached =
 
 arrayOutOfBounds :: Operand
 arrayOutOfBounds =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__arrayOutOfBounds"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i64, Type.i64] False) (AST.mkName "madlib__process__internal__arrayOutOfBounds"))
 
 initEventLoop :: Operand
 initEventLoop =
@@ -257,6 +257,12 @@ doubleConstOp i = C.double i
 storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
 storeItem basePtr _ (item, index) = do
   ptr <- gep basePtr [i32ConstOp 0, i32ConstOp index]
+  store ptr 0 item
+  return ()
+
+storeArrayItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
+storeArrayItem basePtr _ (item, index) = do
+  ptr <- gep basePtr [i32ConstOp index]
   store ptr 0 item
   return ()
 
@@ -961,6 +967,7 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ area metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.ArrayAccess arr index)) e) -> do
     if Core.isReferenceStore metadata then mdo
+      currentBlock
       (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
       (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
       (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
@@ -984,7 +991,7 @@ generateExp env symbolTable exp = case exp of
       br exitBlock
 
       exitBlock <- block `named` "exitBlock"
-      valuePtr <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr i8), outOfBoundBlock)]
+      valuePtr <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr $ Type.ptr i8), outOfBoundBlock)]
 
       store valuePtr 0 exp'
       let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
@@ -1042,6 +1049,23 @@ generateExp env symbolTable exp = case exp of
           declareVariable env area False name ptr
           storeWithMetadata (makeDILocation env area) ptr 0 exp'
         return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
+
+  Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])
+    | "fromList" `List.isInfixOf` fnName && IT.getConstructorCon t == IT.tArrayCon && List.all (not . Core.isListSpread) items -> do
+      let items' = List.map getListItemExp items
+      items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
+      let items''' = List.map (\(_, i, _) -> i) items''
+      items'''' <- mapM box items'''
+      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items * 2))), [])]
+      itemsArray' <- safeBitcast itemsArray (Type.ptr $ Type.ptr i8)
+      let arrayType = Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
+      arr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr' <- safeBitcast arr (Type.ptr arrayType)
+
+      Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items'''' [0..])
+      Monad.foldM_ (storeItem arr') () [(i64ConstOp (fromIntegral $ List.length items), 0), (i64ConstOp (fromIntegral $ List.length items * 2), 1), (itemsArray', 2)]
+
+      return (symbolTable, arr', Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
@@ -1817,7 +1841,7 @@ generateExp env symbolTable exp = case exp of
     br exitBlock
 
     exitBlock <- block `named` "exitBlock"
-    ret <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr i8), outOfBoundBlock)]
+    ret <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr $ Type.ptr i8), outOfBoundBlock)]
     ret' <- load ret 0
     ret'' <- unbox env symbolTable qt ret'
 
@@ -2842,7 +2866,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
   extern (AST.mkName "__applyPAP2__")                                [boxType, boxType, boxType] boxType
   extern (AST.mkName "__applyPAP1__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__process__internal__typedHoleReached")  [] Type.void
-  extern (AST.mkName "madlib__process__internal__arrayOutOfBounds")  [] Type.void
+  extern (AST.mkName "madlib__process__internal__arrayOutOfBounds")  [Type.i64, Type.i64] Type.void
 
   -- nofree nosync nounwind readnone speculatable willreturn
   declareWithAttributes [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline] (AST.mkName "llvm.dbg.declare")                             [Type.MetadataType, Type.MetadataType, Type.MetadataType] Type.void

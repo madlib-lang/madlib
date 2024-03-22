@@ -124,6 +124,10 @@ tArray :: Type
 tArray = tArrayOf (TVar (TV 0 Star))
 
 
+tArrayCon :: Type
+tArrayCon = TCon (TC "Array" (Kfun Star Star)) "prelude"
+
+
 tByteArray :: Type
 tByteArray = TCon (TC "ByteArray" Star) "prelude"
 

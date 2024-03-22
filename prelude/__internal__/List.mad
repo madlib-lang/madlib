@@ -547,12 +547,13 @@ export length = (list) => {
  */
 slice :: Integer -> Integer -> List a -> List a
 export slice = (start, end, list) => {
+  len = length(list)
   helper = (start_, end_, list_) => where(list_) {
     [] =>
       []
 
     [a, ...xs] =>
-      if (start_ == 0 && end_ > 0) {
+      if (start_ == 0 && end_ >= 0) {
         [a, ...helper(0, end_ - 1, xs)]
       } else if (start_ > 0) {
         helper(start_ - 1, end_ - 1, xs)
@@ -561,9 +562,9 @@ export slice = (start, end, list) => {
       }
   }
 
-  realStart = start < 0 ? start + length(list) : start
+  realStart = start < 0 ? start + len : start
 
-  realEnd = end == 0 ? length(list) : end < 0 ? end + length(list) : end
+  realEnd = end == 0 ? len - 1 : end < 0 ? end + len - 1 : end
 
   return helper(realStart, realEnd, list)
 }
@@ -820,7 +821,7 @@ export dropLast = (n, list) => slice(0, -n, list)
  * take(2, [1, 2, 3, 4, 5, 6]) // [1, 2]
  */
 take :: Integer -> List a -> List a
-export take = (n, list) => slice(0, n, list)
+export take = (n, list) => slice(0, n - 1, list)
 
 
 /**

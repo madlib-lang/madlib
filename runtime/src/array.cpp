@@ -72,24 +72,24 @@ madlib__array__Array_t *madlib__array__concatWithMutation(madlib__array__Array_t
 
   if (a->capacity < nextLength) {
     resultItems = (void **)GC_MALLOC(nextLength * 2 * sizeof(void *));
-    memcpy(resultItems, a->items, a->length);
+    memcpy(resultItems, a->items, a->length * sizeof(void *));
     a->items = resultItems;
     a->capacity = nextLength * 2;
   }
 
-  memcpy(resultItems + a->length, b->items, b->length);
+  memcpy(resultItems + a->length, b->items, b->length * sizeof(void *));
   a->length = nextLength;
 
   return a;
 }
 
-madlib__array__Array_t *madlib__array__pushBackWithMutation(madlib__array__Array_t *a, void *item) {
+madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__array__Array_t *a) {
   void **resultItems = a->items;
   int64_t nextLength = a->length + 1;
 
   if (a->capacity < nextLength) {
     resultItems = (void **)GC_MALLOC(nextLength * 2 * sizeof(void *));
-    memcpy(resultItems, a->items, a->length);
+    memcpy(resultItems, a->items, a->length * sizeof(void *));
     a->items = resultItems;
     a->capacity = nextLength * 2;
   }
@@ -100,13 +100,22 @@ madlib__array__Array_t *madlib__array__pushBackWithMutation(madlib__array__Array
   return a;
 }
 
-madlib__array__Array_t *madlib__array__removeWithMutation(madlib__array__Array_t *a, int64_t index) {
+madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib__array__Array_t *a) {
   // TODO: verify that we don't need memmove here
-  memcpy(a->items + index, a->items + index + 1, a->length - index - 1);
+  if (index > a->length - 1) {
+    return a;
+  }
+
+  memcpy(a->items + index, a->items + index + 1, (a->length - index - 1) * sizeof(void *));
+  a->length = a->length - 1;
   return a;
 }
 
 madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity) {
+  if (capacity <= 0) {
+    capacity = 1;
+  }
+
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
   result->items = (void **)GC_MALLOC(capacity * sizeof(void *));
   result->capacity = capacity;

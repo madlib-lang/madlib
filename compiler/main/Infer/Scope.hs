@@ -363,12 +363,44 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
       return $ condAccesses <> truthyAccesses <> falsyAccesses
 
+    (Typed _ _ (While cond exp)) -> do
+      condAccesses <- collect env
+                              topLevelAssignments
+                              currentTopLevelAssignment
+                              foundNames
+                              nameToFind
+                              globalScope
+                              localScope
+                              cond
+      expAccesses <- collect env
+                                topLevelAssignments
+                                currentTopLevelAssignment
+                                foundNames
+                                nameToFind
+                                globalScope
+                                localScope
+                                exp
+      return $ condAccesses <> expAccesses
+
     (Typed _ area (Assignment name exp)) -> do
       when
         (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area))
 
       collect env topLevelAssignments currentTopLevelAssignment foundNames (Just name) globalScope localScope exp
+
+    (Typed _ area (Mutate (Typed _ _ (Var name _)) exp)) -> do
+      when
+        (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
+        (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area))
+
+      collect env topLevelAssignments currentTopLevelAssignment foundNames (Just name) globalScope localScope exp
+
+    (Typed _ _ (Mutate lhs exp)) -> do
+      lhsAccess <- collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope lhs
+      expAccess <- collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
+      return $ lhsAccess <> expAccess
+
 
     (Typed _ _ (TypedExp exp _ _)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
@@ -490,6 +522,14 @@ verifyMutations env scope exp = case exp of
     let nextScope = M.insert n (isAbs e) scope
     verifyMutations env nextScope e
 
+  Typed _ area (Mutate (Typed _ _ (Var n _)) e) -> do
+    let inScope = M.lookup n scope
+    when ((isAbs e && isJust inScope) || inScope == Just True) $
+      throwError (CompilationError (MutatingFunction n) (Context (envCurrentPath env) area))
+
+    let nextScope = M.insert n (isAbs e) scope
+    verifyMutations env nextScope e
+
   Typed _ _ (App f e _) -> do
     verifyMutations env scope f
     verifyMutations env scope e
@@ -499,6 +539,9 @@ verifyMutations env scope exp = case exp of
 
   Typed _ _ (Do es) ->
     verifyMutationsInBody env scope es
+
+  Typed _ _ (While _ e) ->
+    verifyMutations env scope e
 
   Typed _ _ (Access rec field) -> do
     verifyMutations env scope rec
@@ -533,6 +576,7 @@ verifyMutations env scope exp = case exp of
 
   _ ->
     return ()
+
 
 verifyMutationsInBody :: Env -> M.Map String Bool -> [Exp] -> Infer ()
 verifyMutationsInBody env scope exps = case exps of
