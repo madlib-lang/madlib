@@ -967,10 +967,10 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ area metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.ArrayAccess arr index)) e) -> do
     if Core.isReferenceStore metadata then mdo
-      currentBlock
       (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
       (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
       (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+      exp'' <- box exp'
       let arrayType = Type.ptr $ Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
       arrOperand' <- safeBitcast arrOperand arrayType
 
@@ -993,7 +993,7 @@ generateExp env symbolTable exp = case exp of
       exitBlock <- block `named` "exitBlock"
       valuePtr <- phi [(item, allGoodBlock), (Operand.ConstantOperand $ Constant.Null (Type.ptr $ Type.ptr i8), outOfBoundBlock)]
 
-      store valuePtr 0 exp'
+      store valuePtr 0 exp''
       let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
       return (symbolTable, unit, Nothing)
 

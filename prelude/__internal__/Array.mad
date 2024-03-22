@@ -282,7 +282,7 @@ export slice = (start, end, arr) => {
   len = length(arr)
   realStart = start < 0 ? start + len : start
   realEnd = end == 0 ? len - 1 : end < 0 ? end + len - 1 : end
-  result = init((realStart - realEnd) * 2)
+  result = init(realStart - realEnd)
 
   while(realStart <= realEnd) do {
     mutPush(arr[realStart], result)
@@ -304,7 +304,7 @@ export slice = (start, end, arr) => {
  */
 range :: Integer -> Integer -> Array Integer
 export range = (start, end) => {
-  result = init((end - start) * 2)
+  result = init(end - start)
   i = start
 
   while(i < end) do {
