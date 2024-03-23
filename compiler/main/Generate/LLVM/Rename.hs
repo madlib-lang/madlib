@@ -77,6 +77,11 @@ renameExp env what = case what of
         (renamedField, env'')  = renameExp env' field
     in  (Typed t area metadata (Access renamedRecord renamedField), env'')
 
+  Typed t area metadata (ArrayAccess arr index) ->
+    let (renamedArr, env') = renameExp env arr
+        (renamedIndex, env'')  = renameExp env' index
+    in  (Typed t area metadata (ArrayAccess renamedArr renamedIndex), env'')
+
   Typed t area metadata (Definition params body) ->
     let env'                 = foldr (\param env -> extendScope param param env) env (getValue <$> params)
         (renamedBody, env'') = renameExps env' body

@@ -1056,7 +1056,7 @@ generateExp env symbolTable exp = case exp of
       items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
       items'''' <- mapM box items'''
-      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items * 2))), [])]
+      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr $ Type.ptr i8)
       let arrayType = Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
       arr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
