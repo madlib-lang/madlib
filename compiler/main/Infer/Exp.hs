@@ -389,7 +389,8 @@ inferMutate :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, S
 inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
   (s1, ps1, t1, e1) <- infer options env lhs
   (s2, ps2, t2, e2) <- infer options (apply s1 env) exp
-  s3                <- catchError (contextualUnify env e t1 t2) (const $ return M.empty)
+  s3                <- contextualUnify env e t1 t2
+  -- s3                <- catchError (contextualUnify env e t1 t2) (const $ return M.empty)
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
   let s  = s1 `compose` s2 `compose` s3
   let t3 = apply s t2

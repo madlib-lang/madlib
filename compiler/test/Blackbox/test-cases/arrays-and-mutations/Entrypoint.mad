@@ -1,0 +1,19 @@
+import Array from "Array"
+import IO from "IO"
+
+
+
+deepArray = () => {
+  record = {
+    users: Array.fromList([{ name: "John", friends: Array.fromList([{ name: "Carla" }]) }]),
+  }
+  record.users[0].friends[0].name := "Paul"
+  IO.log(record)
+  record.users[0].friends[0] := { name: "Mike" }
+  IO.log(record)
+}
+
+
+main = () => {
+  deepArray()
+}

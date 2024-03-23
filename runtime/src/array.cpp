@@ -145,14 +145,6 @@ madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr
 }
 
 
-void *madlib__array__reduce(PAP_t *f, void *initialValue, madlib__array__Array_t *arr) {
-  for (int i = 0; i < arr->length; i++) {
-    initialValue = __applyPAP__(f, 2, initialValue, arr->items[i]);
-  }
-
-  return initialValue;
-}
-
 #ifdef __cplusplus
 }
 #endif

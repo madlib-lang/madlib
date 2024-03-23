@@ -40,8 +40,6 @@ extern "C"
 
   madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr);
 
-  void *madlib__array__reduce(PAP_t *f, void *initialValue, madlib__array__Array_t *arr);
-
 #ifdef __cplusplus
 }
 #endif

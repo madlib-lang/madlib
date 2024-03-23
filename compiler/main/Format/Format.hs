@@ -1074,9 +1074,9 @@ expToDoc comments exp =
                     arr' <> Pretty.pretty "["
                     <> Pretty.line'
                     <> index'
+                    <> Pretty.line'
                     <> commentsDoc
                   )
-                <> Pretty.line'
                 <> Pretty.pretty "]"
               , comments'''
               )
