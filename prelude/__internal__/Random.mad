@@ -405,13 +405,14 @@ export alias Random = {
   shuffle :: List a -> List a,
 }
 
-generate :: Integer -> Random
-export generate = (i) => {
-  seed = mkSeed(i)
+generateFromSeed :: Seed -> Random
+export generateFromSeed = (initialSeed) => {
+  seed = initialSeed
+  get = () => seed
   // every function needs to call reseed or the resulting
   // values won't change between calls!
   reseed = () => {
-    seed = next(seed)
+    seed = next(get())
   }
   float = () => {
     x = toFloat(seed)
@@ -440,40 +441,16 @@ export generate = (i) => {
   }
   return { boolean, float, integer, pick, shuffle }
 }
+
+
+generate :: Integer -> Random
+export generate = pipe(
+  mkSeed,
+  generateFromSeed,
+)
 
 generateFromString :: String -> Random
-export generateFromString = (s) => {
-  seed = mkSeedFromString(s)
-  // every function needs to call reseed or the resulting
-  // values won't change between calls!
-  reseed = () => {
-    seed = next(seed)
-  }
-  float = () => {
-    x = toFloat(seed)
-    reseed()
-    return x
-  }
-  integer = (low, high) => {
-    x = toInt(low, high, seed)
-    reseed()
-    return x
-  }
-  pick = (xs) => {
-    x = seededPick(xs, seed)
-    reseed()
-    return x
-  }
-  shuffle = (xs) => {
-    x = seededShuffle(xs, seed)
-    reseed()
-    return x
-  }
-
-  boolean = () => {
-    x = toBool(seed)
-    reseed()
-    return x
-  }
-  return { boolean, float, integer, pick, shuffle }
-}
+export generateFromString = pipe(
+  mkSeedFromString,
+  generateFromSeed,
+)
