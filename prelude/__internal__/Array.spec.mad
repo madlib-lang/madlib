@@ -19,6 +19,14 @@ test(
 )
 
 test(
+  "reduce - record",
+  () => assertEquals(
+    Array.reduce((sum, a) => ({ x: sum.x + a }), { x: 0 }, Array.fromList([1, 2, 3])),
+    { x: 6 },
+  ),
+)
+
+test(
   "concat",
   () => assertEquals(
     Array.concat(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),

@@ -56,17 +56,6 @@ mapFFI = extern "madlib__array__map"
 
 
 /**
- * Reduces an array to a value, given a reducer function, an initial value, and an array.
- *
- * @since 0.11.0
- * @example
- * reduce(add, 0, fromList([1, 2, 3])) // 6
- */
-reduce :: (a -> b -> a) -> a -> Array b -> a
-export reduce = extern "madlib__array__reduce"
-
-
-/**
  * Concatenates two arrays
  *
  * @since 0.11.0
@@ -155,17 +144,6 @@ export length = (array) => #- { return  array.length } -#
 
 
 /**
- * Reduces an array to a value, given a reducer function, an initial value, and an array.
- *
- * @since 0.11.0
- * @example
- * reduce(add, 0, fromList([1, 2, 3])) // 6
- */
-reduce :: (a -> b -> a) -> a -> Array b -> a
-export reduce = (f, start, array) => #- array.reduce((a, b) => f(a)(b), start) -#
-
-
-/**
  * Concatenates two arrays
  *
  * @since 0.11.0
@@ -196,9 +174,7 @@ export mutRemove = (index, arr) => {
   arrayLength = length(arr)
 
   while(_index < arrayLength) do {
-    arr[_index
-    ] := arr[_index + 1
-    ]
+    arr[_index] := arr[_index + 1]
     _index := _index + 1
   }
 
@@ -258,6 +234,28 @@ export filter = (predicate, arr) => {
   }
 
   return result
+}
+
+
+
+/**
+ * Reduces an array to a value, given a reducer function, an initial value, and an array.
+ *
+ * @since 0.11.0
+ * @example
+ * reduce(add, 0, fromList([1, 2, 3])) // 6
+ */
+reduce :: (a -> b -> a) -> a -> Array b -> a
+export reduce = (f, initial, arr) => {
+  i = 0
+  l = length(arr)
+  res = initial
+
+  while(i < l) do {
+    res := f(res, arr[i])
+    i := i + 1
+  }
+  return res
 }
 
 
