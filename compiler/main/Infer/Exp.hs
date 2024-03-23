@@ -598,9 +598,9 @@ inferArrayAccess options env (Can.Canonical area (Can.ArrayAccess arr index)) = 
   (s1, ps1, t1, earr) <- infer options env arr
   (_, ps2, t2, eindex) <- infer options env index
   s3 <- contextualUnify env arr t1 (tArrayOf tv)
-  contextualUnify env index t2 tInteger
+  s4 <- contextualUnify env index t2 tInteger
 
-  let s = s3 `compose` s1
+  let s = s4 `compose` s3 `compose` s1
   let t = apply s tv
   let ps = ps1 ++ ps2
 
