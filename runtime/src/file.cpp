@@ -68,6 +68,7 @@ void onRead(uv_fs_t *req) {
           (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
       arr->bytes = (unsigned char *)((ReadData_t *)req->data)->fileContent;
       arr->length = ((ReadData_t *)req->data)->currentSize;
+      arr->capacity = ((ReadData_t *)req->data)->currentSize;
 
       __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, (void *)arr);
     } else {
@@ -240,6 +241,7 @@ void onBufferedRead(uv_fs_t *req) {
           (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
       arr->bytes = (unsigned char *) GC_MALLOC(req->result);
       arr->length = req->result;
+      arr->capacity = req->result;
 
     memcpy(arr->bytes, ((BufferedReadData_t *)req->data)->uvBuffer.base, req->result);
     __applyPAP__(((BufferedReadData_t *)req->data)->dataCallback, 1, arr);

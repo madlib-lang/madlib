@@ -931,6 +931,7 @@ generateExp env symbolTable exp = case exp of
     if Core.isReferenceStore metadata then do
         (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         (_, r', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable r
+        exp'' <- box exp'
 
         case recordType of
           IT.TRecord fields _ _ -> do
@@ -943,22 +944,9 @@ generateExp env symbolTable exp = case exp of
             field           <- gep fieldsOperand'' [i32ConstOp index]
             field'          <- load field 0
             valuePtr        <- gep field' [i32ConstOp 0, i32ConstOp 1]
-            store valuePtr 0 exp'
+            store valuePtr 0 exp''
             let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
             return (symbolTable, unit, Nothing)
-            -- load value 0
-
-        -- case Map.lookup name symbolTable of
-        --   Just (Symbol (LocalVariableSymbol ptr) _) -> do
-        --     ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
-        --     store ptr' 0 exp'
-        --     return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
-
-        --   -- Case of mutation within a tco optimized function
-        --   Just (Symbol (TCOParamSymbol ptr) _) -> do
-        --     ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
-        --     store ptr' 0 exp'
-        --     return (Map.insert name (tcoParamSymbol ptr exp') symbolTable, exp', Just ptr)
 
           or ->
             error $ "found: " <> ppShow or
@@ -1063,9 +1051,27 @@ generateExp env symbolTable exp = case exp of
       arr' <- safeBitcast arr (Type.ptr arrayType)
 
       Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items'''' [0..])
-      Monad.foldM_ (storeItem arr') () [(i64ConstOp (fromIntegral $ List.length items), 0), (i64ConstOp (fromIntegral $ List.length items * 2), 1), (itemsArray', 2)]
+      Monad.foldM_ (storeItem arr') () [(i64ConstOp (fromIntegral $ List.length items), 0), (i64ConstOp (fromIntegral $ List.length items), 1), (itemsArray', 2)]
 
-      return (symbolTable, arr', Nothing)
+      arr'' <- box arr'
+      return (symbolTable, arr'', Nothing)
+
+  Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])
+    | "fromList" `List.isInfixOf` fnName && t == IT.tByteArray && List.all (not . Core.isListSpread) items -> do
+      let items' = List.map getListItemExp items
+      items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
+      let items''' = List.map (\(_, i, _) -> i) items''
+      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
+      itemsArray' <- safeBitcast itemsArray (Type.ptr i8)
+      let arrayType = Type.StructureType False [i64, i64, Type.ptr i8]
+      arr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr' <- safeBitcast arr (Type.ptr arrayType)
+
+      Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items''' [0..])
+      Monad.foldM_ (storeItem arr') () [(i64ConstOp (fromIntegral $ List.length items), 0), (i64ConstOp (fromIntegral $ List.length items), 1), (itemsArray', 2)]
+
+      arr'' <- box arr'
+      return (symbolTable, arr'', Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand

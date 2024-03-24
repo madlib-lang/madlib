@@ -66,16 +66,16 @@ concat :: Array a -> Array a -> Array a
 export concat = extern "madlib__array__concat"
 
 
-mutConcat :: Array a -> Array a -> Array a
-export mutConcat = extern "madlib__array__concatWithMutation"
+weld :: Array a -> Array a -> Array a
+export weld = extern "madlib__array__concatWithMutation"
 
 
-mutPush :: a -> Array a -> Array a
-export mutPush = extern "madlib__array__pushBackWithMutation"
+push :: a -> Array a -> Array a
+export push = extern "madlib__array__pushBackWithMutation"
 
 
-mutRemove :: Integer -> Array a -> Array a
-export mutRemove = extern "madlib__array__removeWithMutation"
+remove :: Integer -> Array a -> Array a
+export remove = extern "madlib__array__removeWithMutation"
 
 /**
  * Maps over an array, applying the given function to each element.
@@ -154,22 +154,22 @@ concat :: Array a -> Array a -> Array a
 export concat = (array1, array2) => #- array1.concat(array2) -#
 
 
-mutConcat :: Array a -> Array a -> Array a
-export mutConcat = (a, b) => #- {
+weld :: Array a -> Array a -> Array a
+export weld = (a, b) => #- {
   a.push(...b)
   return a
 } -#
 
 
-mutPush :: a -> Array a -> Array a
-export mutPush = (item, array) => #- {
+push :: a -> Array a -> Array a
+export push = (item, array) => #- {
   array.push(item)
   return array
 } -#
 
 
-mutRemove :: Integer -> Array a -> Array a
-export mutRemove = (index, arr) => {
+remove :: Integer -> Array a -> Array a
+export remove = (index, arr) => {
   _index = index
   arrayLength = length(arr)
 
@@ -201,6 +201,18 @@ export empty = init(1)
 
 
 /**
+ * Return an item at a given index, it crashes if the index is out of
+ * the bounds of the array.
+ * @since 0.23.0
+ * @example
+ * at(1, fromList([1, 2, 3])) // 2
+ * at(3, fromList([1, 2, 3])) // crash, it exits with error
+ */
+unsafeAt :: Integer -> Array a -> a
+export unsafeAt = (index, arr) => arr[index]
+
+
+/**
  * Return a Maybe of an item at a given index, Nothing if the index is out of
  * the bounds of the array.
  * @since 0.23.0
@@ -210,6 +222,13 @@ export empty = init(1)
  */
 at :: Integer -> Array a -> Maybe a
 export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) : Nothing
+
+
+set :: Integer -> a -> Array a -> Array a
+export set = (index, a, arr) => {
+  arr[index] := a
+  return arr
+}
 
 
 /**
@@ -227,7 +246,7 @@ export filter = (predicate, arr) => {
 
   while(i < len) do {
     if (predicate(arr[i])) do {
-      mutPush(arr[i], result)
+      push(arr[i], result)
     }
 
     i := i + 1
@@ -283,7 +302,7 @@ export slice = (start, end, arr) => {
   result = init(realStart - realEnd)
 
   while(realStart <= realEnd) do {
-    mutPush(arr[realStart], result)
+    push(arr[realStart], result)
     realStart := realStart + 1
   }
 
@@ -306,7 +325,7 @@ export range = (start, end) => {
   i = start
 
   while(i < end) do {
-    mutPush(i, result)
+    push(i, result)
     i := i + 1
   }
 

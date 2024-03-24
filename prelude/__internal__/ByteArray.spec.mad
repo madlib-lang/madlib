@@ -1,90 +1,137 @@
-import { assertEquals, test } from "Test"
 import ByteArray from "ByteArray"
+import { Just } from "Maybe"
+import { assertEquals, test } from "Test"
 
 
 
 test(
+  "init",
+  () => {
+    actual = pipe(
+      ByteArray.init,
+      ByteArray.weld(ByteArray.fromList([1, 2, 3])),
+    )(10)
+    expected = ByteArray.fromList([1, 2, 3])
+    return assertEquals(actual, expected)
+  },
+)
+
+
+test(
+  "unsafeAt",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.unsafeAt(1),
+    )([1, 2, 3]),
+    2,
+  ),
+)
+
+
+test(
+  "at",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.at(1),
+    )([1, 2, 3]),
+    Just(2),
+  ),
+)
+
+
+test(
   "mapBytes",
-  (_) => assertEquals(
-    ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([1, 2, 3,])),
-    ByteArray.fromList([2, 4, 6,])
-  )
+  () => assertEquals(
+    ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([1, 2, 3])),
+    ByteArray.fromList([2, 4, 6]),
+  ),
 )
 
 
 test(
   "mapBytes - empty ByteAray",
-  (_) => assertEquals(
+  () => assertEquals(
     ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([])),
-    ByteArray.fromList([])
-  )
+    ByteArray.fromList([]),
+  ),
 )
 
 
 test(
   "reduce",
-  (_) => assertEquals(ByteArray.reduce((sum, a) => sum + a, 0, ByteArray.fromList([1, 2, 3,])), 6)
+  () => assertEquals(ByteArray.reduce((sum, a) => sum + a, 0, ByteArray.fromList([1, 2, 3])), 6),
 )
 
 
 test(
   "concat",
-  (_) => assertEquals(
-    ByteArray.concat(ByteArray.fromList([1, 2, 3,]), ByteArray.fromList([4, 5, 6,])),
-    ByteArray.fromList([1, 2, 3, 4, 5, 6,])
-  )
+  () => assertEquals(
+    ByteArray.concat(ByteArray.fromList([1, 2, 3]), ByteArray.fromList([4, 5, 6])),
+    ByteArray.fromList([1, 2, 3, 4, 5, 6]),
+  ),
+)
+
+
+test(
+  "weld",
+  () => assertEquals(
+    ByteArray.weld(ByteArray.fromList([1, 2, 3]), ByteArray.fromList([4, 5, 6])),
+    ByteArray.fromList([1, 2, 3, 4, 5, 6]),
+  ),
 )
 
 
 test(
   "length",
-  (_) => assertEquals(
+  () => assertEquals(
     pipe(
       ByteArray.fromList,
-      ByteArray.length
-    )([1, 2, 3, 4, 5, 6,]),
-    6
-  )
+      ByteArray.length,
+    )([1, 2, 3, 4, 5, 6]),
+    6,
+  ),
 )
 
 
 test(
   "toList",
-  (_) => assertEquals(
+  () => assertEquals(
     pipe(
       ByteArray.fromList,
-      ByteArray.toList
-    )([1, 2, 3, 4, 5, 6,]),
-    [1, 2, 3, 4, 5, 6,]
-  )
+      ByteArray.toList,
+    )([1, 2, 3, 4, 5, 6]),
+    [1, 2, 3, 4, 5, 6],
+  ),
 )
 
 
 test(
   "fromString",
-  (_) => assertEquals(ByteArray.fromString("ABC"), ByteArray.fromList([65, 66, 67,]))
+  () => assertEquals(ByteArray.fromString("ABC"), ByteArray.fromList([65, 66, 67])),
 )
 
 
 test(
   "toString",
-  (_) => assertEquals(
+  () => assertEquals(
     pipe(
       ByteArray.fromList,
-      ByteArray.toString
-    )([65, 66, 67,]),
-    "ABC"
-  )
+      ByteArray.toString,
+    )([65, 66, 67]),
+    "ABC",
+  ),
 )
 
 
 test(
   "toString - unicode",
-  (_) => assertEquals(
+  () => assertEquals(
     pipe(
       ByteArray.fromList,
-      ByteArray.toString
-    )([226, 130, 172,]),
-    "€"
-  )
+      ByteArray.toString,
+    )([226, 130, 172]),
+    "€",
+  ),
 )

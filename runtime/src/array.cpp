@@ -32,9 +32,9 @@ madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   int64_t itemCount = madlib__list__length(list);
 
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
-  result->items = (void **)GC_MALLOC(itemCount * 2 * sizeof(void *));
+  result->items = (void **)GC_MALLOC(itemCount * sizeof(void *));
   result->length = itemCount;
-  result->capacity = itemCount * 2;
+  result->capacity = itemCount;
 
   for (int i = 0; i < itemCount; i++) {
     result->items[i] = list->value;

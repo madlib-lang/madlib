@@ -163,6 +163,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
       boxedBody = GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
       ((madlib__bytearray__ByteArray_t*)boxedBody)->bytes = (unsigned char*) requestData->body;
       ((madlib__bytearray__ByteArray_t*)boxedBody)->length = requestData->responseSize;
+      ((madlib__bytearray__ByteArray_t*)boxedBody)->capacity = requestData->responseSize;
     } else {
       boxedBody = requestData->body;
     }
