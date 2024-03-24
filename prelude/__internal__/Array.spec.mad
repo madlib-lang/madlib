@@ -3,6 +3,8 @@ import { assertEquals, test } from "Test"
 
 
 
+test("empty", () => assertEquals(Array.empty(), Array.fromList([])))
+
 test(
   "map",
   () => assertEquals(map((x) => x * 2, Array.fromList([1, 2, 3])), Array.fromList([2, 4, 6])),
@@ -77,7 +79,10 @@ test(
   },
 )
 
-test("set", () => assertEquals(Array.set(1, 33, Array.fromList([1, 2, 3])), Array.fromList([1, 33, 3])))
+test(
+  "unsafeSet",
+  () => assertEquals(Array.unsafeSet(1, 33, Array.fromList([1, 2, 3])), Array.fromList([1, 33, 3])),
+)
 
 test(
   "slice",

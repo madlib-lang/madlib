@@ -3,6 +3,7 @@ import { Just } from "Maybe"
 import { assertEquals, test } from "Test"
 
 
+test("empty", () => assertEquals(ByteArray.empty(), ByteArray.fromList([])))
 
 test(
   "init",
