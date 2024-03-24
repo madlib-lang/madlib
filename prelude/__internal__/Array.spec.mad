@@ -35,21 +35,21 @@ test(
 )
 
 test(
-  "mutPush",
-  () => assertEquals(Array.mutPush(4, Array.fromList([1, 2, 3])), Array.fromList([1, 2, 3, 4])),
+  "push",
+  () => assertEquals(Array.push(4, Array.fromList([1, 2, 3])), Array.fromList([1, 2, 3, 4])),
 )
 
 test(
-  "mutConcat",
+  "weld",
   () => assertEquals(
-    Array.mutConcat(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),
+    Array.weld(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),
     Array.fromList([1, 2, 3, 4, 5, 6]),
   ),
 )
 
 test(
-  "mutRemove",
-  () => assertEquals(Array.mutRemove(1, Array.fromList([1, 2, 3])), Array.fromList([1, 3])),
+  "remove",
+  () => assertEquals(Array.remove(1, Array.fromList([1, 2, 3])), Array.fromList([1, 3])),
 )
 
 test(
@@ -76,6 +76,8 @@ test(
     return assertEquals(actual, 6)
   },
 )
+
+test("set", () => assertEquals(Array.set(1, 33, Array.fromList([1, 2, 3])), Array.fromList([1, 33, 3])))
 
 test(
   "slice",

@@ -1,3 +1,9 @@
+import type { Maybe } from "Maybe"
+
+import { Just, Nothing } from "Maybe"
+
+
+
 /**
  * ByteArray is a specialized array type that only contains bytes. It has a
  * fast path to convert to and from string which makes it practical when
@@ -8,9 +14,25 @@
  *
  */
 
- // TODO: Add filter, ap and chain
+// TODO: Add filter, ap and chain
 
 #iftarget llvm
+
+init :: Integer -> ByteArray
+export init = extern "madlib__bytearray__initWithCapacity"
+
+
+/**
+ * Return the byte at a given index, it crashes if the index is out of
+ * the bounds of the array.
+ * @since 0.23.0
+ * @example
+ * at(1, fromList([1, 2, 3])) // 2
+ * at(3, fromList([1, 2, 3])) // crash, it exits with error
+ */
+unsafeAt :: Integer -> ByteArray -> Byte
+export unsafeAt = extern "madlib__bytearray__unsafeAt"
+
 
 /**
  * Creates a byte array from a list of bytes.
@@ -79,6 +101,18 @@ export concat = extern "madlib__bytearray__concat"
 
 
 /**
+ * Concatenates two byte arrays with mutation, the second ByteArray
+ * is added to the end of the first one.
+ *
+ * @since 0.23.0
+ * @example
+ * concat(fromString("123"), fromString("456")) // fromString("123456")
+ */
+weld :: ByteArray -> ByteArray -> ByteArray
+export weld = extern "madlib__bytearray__concatWithMutation"
+
+
+/**
  * Maps the bytes of a byte array, applying the given function to each byte.
  *
  * @since 0.11.0
@@ -100,6 +134,27 @@ reduce :: (a -> Byte -> a) -> a -> ByteArray -> a
 export reduce = extern "madlib__bytearray__reduce"
 
 #elseif js
+
+init :: Integer -> ByteArray
+export init = () => #- new Uint8Array() -#
+
+
+/**
+ * Return the byte at a given index, it crashes if the index is out of
+ * the bounds of the array.
+ * @since 0.23.0
+ * @example
+ * at(1, fromList([1, 2, 3])) // 2
+ * at(3, fromList([1, 2, 3])) // crash, it exits with error
+ */
+unsafeAt :: Integer -> ByteArray -> Byte
+export unsafeAt = (index, byteArray) => #- {
+  if (index >= byteArray.length) {
+    throw `Array out of bounds access\\nYou accessed the index '${index}' but the array currently has length '${byteArray.length}'`
+  }
+  return byteArray[index]
+} -#
+
 
 /**
  * Converts a byte array to a string
@@ -180,6 +235,22 @@ export concat = (byteArray1, byteArray2) => #- {
 
 
 /**
+ * Concatenates two byte arrays
+ *
+ * @since 0.11.0
+ * @example
+ * concat(fromString("123"), fromString("456")) // fromString("123456")
+ */
+weld :: ByteArray -> ByteArray -> ByteArray
+export weld = (byteArray1, byteArray2) => #- {
+  const result = new Uint8Array(byteArray1.length + byteArray2.length);
+  result.set(byteArray1);
+  result.set(byteArray2, byteArray1.length);
+  return result;
+} -#
+
+
+/**
  * Maps the bytes of a byte array, applying the given function to each byte.
  *
  * @since 0.11.0
@@ -198,7 +269,11 @@ export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
  * reduce(add, 0, fromList([1, 2, 3])) // 6
  */
 reduce :: (a -> Byte -> a) -> a -> ByteArray -> a
-export reduce = (f, initialValue, byteArray) => #- { return byteArray.reduce((a, b) => f(a)(b), initialValue) } -#
+export reduce = (
+  f,
+  initialValue,
+  byteArray
+) => #- { return byteArray.reduce((a, b) => f(a)(b), initialValue) } -#
 
 
 /**
@@ -223,3 +298,7 @@ export length = (byteArray) => #- { return byteArray.length } -#
  */
 empty :: ByteArray
 export empty = fromList([])
+
+
+at :: Integer -> ByteArray -> Maybe Byte
+export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
