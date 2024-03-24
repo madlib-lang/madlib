@@ -296,8 +296,8 @@ export length = (byteArray) => #- { return byteArray.length } -#
  * @example
  * empty == empty // true
  */
-empty :: ByteArray
-export empty = fromList([])
+empty :: {} -> ByteArray
+export empty = () => fromList([])
 
 
 at :: Integer -> ByteArray -> Maybe Byte

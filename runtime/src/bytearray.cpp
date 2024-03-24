@@ -32,6 +32,19 @@ unsigned char madlib__bytearray__unsafeAt(int64_t index, madlib__bytearray__Byte
   return array->bytes[index];
 }
 
+
+madlib__bytearray__ByteArray_t *madlib__bytearray__unsafeSet(int64_t index, unsigned char byte, madlib__bytearray__ByteArray_t *array) {
+  if (index >= array->length) {
+    fprintf(stderr, "Array out of bounds access\nYou accessed the index '%lld' but the array currently has length '%lld'.\n", index, array->length);
+    exit(1);
+  }
+
+  array->bytes[index] = byte;
+
+  return array;
+}
+
+
 bool madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madlib__bytearray__ByteArray_t *arr2) {
   bool result = false;
 

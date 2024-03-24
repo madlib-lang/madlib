@@ -196,8 +196,8 @@ instance Functor Array {
 
 #endif
 
-empty :: Array a
-export empty = init(1)
+empty :: {} -> Array a
+export empty = () => fromList([])
 
 
 /**
@@ -212,6 +212,13 @@ unsafeAt :: Integer -> Array a -> a
 export unsafeAt = (index, arr) => arr[index]
 
 
+unsafeSet :: Integer -> a -> Array a -> Array a
+export unsafeSet = (index, a, arr) => {
+  arr[index] := a
+  return arr
+}
+
+
 /**
  * Return a Maybe of an item at a given index, Nothing if the index is out of
  * the bounds of the array.
@@ -222,13 +229,6 @@ export unsafeAt = (index, arr) => arr[index]
  */
 at :: Integer -> Array a -> Maybe a
 export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) : Nothing
-
-
-set :: Integer -> a -> Array a -> Array a
-export set = (index, a, arr) => {
-  arr[index] := a
-  return arr
-}
 
 
 /**
