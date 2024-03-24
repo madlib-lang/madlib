@@ -675,7 +675,7 @@ typingToDoc canBreak comments typing = case typing of
 
 templateStringExpsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
-  (e@(Source area target (LStr s)) : more) ->
+  (Source area target (LStr s) : more) ->
     let (e', comments')     = expToDoc comments (Source area target (LStr $ escapeBackticks s))
         (more', comments'') = templateStringExpsToDoc comments' more
     in  ((Pretty.nesting $ \x -> Pretty.nest (-x) $ e') <> more', comments'')
@@ -1052,8 +1052,8 @@ expToDoc comments exp =
               )
 
         Source area _ (TupleConstructor items) ->
-          let (items', comments')       = argsToDoc comments items
-              (commentsDoc, comments'') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'
+          let (items', comments'')     = argsToDoc comments' items
+              (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
           in  ( Pretty.group
                   (
                     Pretty.pretty "#["
@@ -1062,7 +1062,7 @@ expToDoc comments exp =
                     <> commentsDoc
                   )
                 <> Pretty.pretty "]"
-              , comments''
+              , comments'''
               )
 
         Source area _ (ArrayAccess arr index) ->
