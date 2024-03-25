@@ -1,4 +1,5 @@
 import Float from "Float"
+import List from "List"
 import Math from "Math"
 import String from "String"
 import { assertEquals, test } from "Test"
@@ -97,5 +98,20 @@ test(
     _ <- assertEquals(boolean(r1), boolean(r2))
     _ <- assertEquals(boolean(r1), boolean(r2))
     return assertEquals(boolean(r1), boolean(r2))
+  },
+)
+
+test(
+  "A generator can be reused across multiple types",
+  () => do {
+    num = naiveRandom()
+    r1 = generate(num)
+    r2 = generate(num)
+    multiType = (rand) => {
+      numbers = shuffle(List.range(0, 10), rand)
+      strings = shuffle(ALPHABET, rand)
+      return #[numbers, strings]
+    }
+    return assertEquals(multiType(r1), multiType(r2))
   },
 )

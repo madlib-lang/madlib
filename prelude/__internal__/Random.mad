@@ -1,12 +1,13 @@
 import type { Maybe } from "Maybe"
 import type { Seed } from "LCG"
+
 import LCG from "LCG"
 
 
 
 export type Seed
 
-alias Random = { get :: {} -> Seed, update :: {} -> {} }
+alias Random a = { get :: {} -> Seed, update :: {} -> {} }
 
 /**
  * Create a Random instance from an LCG.Seed
@@ -14,7 +15,7 @@ alias Random = { get :: {} -> Seed, update :: {} -> {} }
  * @example
  * gen = generateFromSeed(LCG.mkSeed(100))
  */
-generateFromSeed :: Seed -> Random
+generateFromSeed :: Seed -> Random a
 export generateFromSeed = (initialSeed) => {
   seed = initialSeed
   get = () => seed
@@ -32,7 +33,7 @@ export generateFromSeed = (initialSeed) => {
  * @example
  * generateFromSeed(LCG.mkSeed(100)) == generate(100)
  */
-generate :: Integer -> Random
+generate :: Integer -> Random a
 export generate = pipe(
   LCG.mkSeed,
   generateFromSeed,
@@ -44,7 +45,7 @@ export generate = pipe(
  * @example
  * generateFromSeed(LCG.mkSeedFromString("cool")) == generateFromString("cool")
  */
-generateFromString :: String -> Random
+generateFromString :: String -> Random a
 export generateFromString = pipe(
   LCG.mkSeedFromString,
   generateFromSeed,
@@ -57,7 +58,7 @@ export generateFromString = pipe(
  * gen = generate(100)
  * float(gen)
  */
-float :: Random -> Float
+float :: Random a -> Float
 export float = (r) => {
   x = LCG.seedToFloat(r.get())
   r.update()
@@ -71,7 +72,7 @@ export float = (r) => {
  * gen = generate(100)
  * integer(1, 100, gen)
  */
-integer :: Integer -> Integer -> Random -> Integer
+integer :: Integer -> Integer -> Random a -> Integer
 export integer = (low, high, r) => {
   x = LCG.seedToInteger(low, high, r.get())
   r.update()
@@ -85,7 +86,7 @@ export integer = (low, high, r) => {
  * gen = generate(100)
  * pick([1,2,3,4,5], gen)
  */
-pick :: List a -> Random -> Maybe a
+pick :: List a -> Random a -> Maybe a
 export pick = (xs, r) => {
   x = LCG.pickFrom(xs, r.get())
   r.update()
@@ -99,7 +100,7 @@ export pick = (xs, r) => {
  * gen = generate(100)
  * shuffle([1,2,3,4,5], gen)
  */
-shuffle :: List a -> Random -> List a
+shuffle :: List a -> Random a -> List a
 export shuffle = (xs, r) => {
   x = LCG.shuffle(xs, r.get())
   r.update()
@@ -113,7 +114,7 @@ export shuffle = (xs, r) => {
  * gen = generate(100)
  * boolean(gen)
  */
-boolean :: Random -> Boolean
+boolean :: Random a -> Boolean
 export boolean = (r) => {
   x = LCG.seedToBoolean(r.get())
   r.update()
