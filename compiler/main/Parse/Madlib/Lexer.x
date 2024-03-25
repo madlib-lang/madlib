@@ -103,7 +103,6 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> pipe                                { mapToken (\_ -> TokenPipeKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\?\?\?                        { mapToken (\_ -> TokenTypedHole) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> return                              { mapToken (\_ -> TokenReturnKeyword) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> is                                  { mapToken (\_ -> TokenIs) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=$tail?             { mapToken (\_ -> TokenEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> :\=$tail?            { mapToken (\_ -> TokenMutateEq) }
   -- <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                   { mapToken (\s -> TokenNumber s) }
@@ -181,7 +180,7 @@ tokens :-
   <jsxText> $jsxTextPopOut                                                                              { jsxTextPopOut }
 {
 blackList :: Regex
-blackList = toRegex "\\`[\ \t \n]*(where|if|else|is|type|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
+blackList = toRegex "\\`[\ \t \n]*(where|if|else|type|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
 
 
 whiteList :: Regex
@@ -744,7 +743,6 @@ data TokenClass
  | TokenInstance
  | TokenDo
  | TokenWhere
- | TokenIs
  | TokenReturnKeyword
  | TokenEq
  | TokenMutateEq
