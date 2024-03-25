@@ -1,0 +1,87 @@
+import Float from "Float"
+import Math from "Math"
+import String from "String"
+import { assertEquals, test } from "Test"
+
+import {
+  LCG_A,
+  LCG_C,
+  LCG_M,
+  SEED_MAX,
+  SEED_MIN,
+  Seed,
+  apply,
+  intGradient,
+  iterateBinary,
+  mkSeed,
+  mkSeedFromString,
+  modClamp,
+  next,
+  perturbation,
+  shuffle,
+  stepN,
+  unSeed,
+} from "./LCG"
+
+
+
+ALPHABET = String.split("", "abcdefghjiklmnopqrtuvwxyz")
+
+
+test("mkSeed will clamp values over the max", () => assertEquals(mkSeed(SEED_MAX + 1), Seed(2)))
+
+test(
+  "mkSeed will clamp values under the min",
+  () => assertEquals(mkSeed(SEED_MIN - 1), Seed(2147483646)),
+)
+test(
+  "unSeed",
+  () => {
+    x = 100
+    return assertEquals(x, unSeed(Seed(x)))
+  },
+)
+test("apply", () => assertEquals(Seed(100), apply((x) => x * 2, Seed(50))))
+test(
+  "step",
+  () => {
+    a = mkSeed(100)
+    b = next(a)
+    return assertEquals(unSeed(b), 4827100)
+  },
+)
+
+
+test(
+  "stepN",
+  () => pipe(
+    stepN(5),
+    assertEquals($, Seed(1708473988)),
+  )(mkSeed(100)),
+)
+
+
+test("perturbation", () => assertEquals(perturbation(LCG_C, LCG_A, 23, LCG_M), 23))
+test("perturbation zeroes", () => assertEquals(perturbation(0, 0, 0, 1), 0))
+test("perturbation ones", () => assertEquals(perturbation(1, 2, 3, 2), 1))
+
+threeClamped = modClamp($, $, 3)
+test("modClamp - under", () => assertEquals(threeClamped(7, 21), 24))
+test("modClamp - over", () => assertEquals(threeClamped(1, 1000), 3))
+
+test("intGradient", () => assertEquals(500, intGradient(0, 1000, 0.5)))
+
+test(
+  "iterateBinary",
+  () => {
+    seed = mkSeedFromString("iterateBinary")
+    shuffled = pipe(
+      iterateBinary(2, shuffle, ALPHABET),
+      map(String.join("")),
+    )(seed)
+    return assertEquals(
+      shuffled,
+      ["kmjbgzxorpvuqtadlfhynwcei", "vqpmxicafdrylhkbuzoetwjgn", "rlwqcnjkzbfeuovmydaghipxt"],
+    )
+  },
+)

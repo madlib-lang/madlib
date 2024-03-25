@@ -1,0 +1,410 @@
+import type { Maybe } from "Maybe"
+
+import Byte from "Byte"
+import ByteArray from "ByteArray"
+import Float from "Float"
+import Integer from "Integer"
+import { floor } from "Math"
+import Tuple from "Tuple"
+
+import List from "./List"
+
+
+
+// This code partially based upon: https://github.com/purescript/purescript-lcg/blob/master/src/LCG/LCG.purs
+// which has a BSD-3 License - https://github.com/purescript/purescript-lcg/blob/master/LICENSE
+
+// A seed for the linear congruential generator. We omit a `Semiring`
+// instance because there is no `zero` value, as 0 is not an acceptable
+// seed for the generator.
+export type Seed = Seed(Integer)
+
+
+/**
+ * A SeededTuple is used to encapsulate a value relative to a seed
+ * @since 0.22.0
+ */
+export alias SeededTuple a = #[Seed, a]
+
+
+/**
+ * The *modulus*: a magic constant for the linear congruential generator.
+ * It is equal to 2^31 - 1, a Mersenne prime. It is useful for this value to
+ * be prime, because then the requirement of the initial seed being coprime
+ * to the modulus is satisfied when the seed is between 1 and LCG_M - 1.
+ * @since 0.22.0
+ */
+LCG_M :: Integer
+export LCG_M = 2147483647
+
+/**
+ * The minimum permissible Seed value
+ * @since 0.22.0
+ */
+SEED_MIN :: Integer
+export SEED_MIN = 1
+
+/**
+ * The maximum permissible Seed value
+ * @since 0.22.0
+ */
+SEED_MAX :: Integer
+export SEED_MAX = LCG_M - 1
+
+/**
+ * The *multiplier*: a magic constant for the linear congruential generator
+ * @since 0.22.0
+ */
+LCG_A :: Integer
+export LCG_A = 48271
+
+/**
+ * The *increment*: a magic constant for the linear congruential generator
+ * @since 0.22.0
+ */
+LCG_C :: Integer
+export LCG_C = 0
+
+/**
+ * This is the core logic for the "perturb" function
+ * It is fundamentally applying (b * n + a) % d
+ * @since 0.22.0
+ */
+perturbation :: Integer -> Integer -> Integer -> Integer -> Integer
+export perturbation = (n, b, a, d) => Float.toInteger(
+    Integer.toFloat(b) * Integer.toFloat(n) + Integer.toFloat(a),
+  )
+    % d
+
+
+/**
+ * Clamp a number between two boundaries, modularly
+ * @since 0.22.0
+ * @example
+ * modClamp(5, 10, 100)
+ */
+modClamp :: Integer -> Integer -> Integer -> Integer
+export modClamp = (min, max, x) => {
+  y = x % (max - min)
+  return y < min ? y + max : y
+}
+
+/**
+ * Get a value between two boundaries, low and high.
+ * Here the floating value is being used as a multiplier and this function is pure.
+ * But upstream this function is used within a PRNG and the supplied floating value changes
+ * on each generation.
+ * @since 0.22.0
+ * @example
+ * intGradient(1, 100, 0.5)
+ */
+intGradient :: Integer -> Integer -> Float -> Integer
+export intGradient = (low, high, f) => pipe(
+  floor,
+  Float.toInteger,
+)((Integer.toFloat(high) - Integer.toFloat(low) + 1.0) * f + Integer.toFloat(low))
+
+/**
+ * Make a Seed from an integer
+ * @since 0.22.0
+ * @example
+ * mkSeed(100) == Seed(100)
+ */
+mkSeed :: Integer -> Seed
+export mkSeed = pipe(
+  modClamp(SEED_MIN, SEED_MAX),
+  Seed,
+)
+
+stringToInt :: String -> Integer
+export stringToInt = pipe(
+  ByteArray.fromString,
+  ByteArray.reduce((hash, byte) => hash + (byte << 6) + (byte << 16), 0),
+  Byte.toInteger,
+)
+
+mkSeedFromString :: String -> Seed
+export mkSeedFromString = pipe(
+  stringToInt,
+  mkSeed,
+)
+
+/**
+ * Pull the internal value from a Seed
+ * @since 0.22.0
+ * @example
+ * unSeed(mkSeed(100)) == 100
+ */
+unSeed :: Seed -> Integer
+export unSeed = where {
+  Seed(x) =>
+    x
+}
+
+/**
+ * Transform a seed
+ * @since 0.22.0
+ * @example
+ * apply((x) => x * 2, mkSeed(100)) == Seed(200)
+ */
+apply :: (Integer -> Integer) -> Seed -> Seed
+export apply = (fn, seed) => pipe(
+  unSeed,
+  fn,
+  Seed,
+)(seed)
+
+/**
+ * Perturb a seed value to produce another internal generator value
+ * @since 0.22.0
+ * @example
+ * perturb(LCG_C, mkSeed(100))
+ */
+perturb :: Integer -> Seed -> Seed
+export perturb = (d, seed) => apply(perturbation($, LCG_A, d, LCG_M))(seed)
+
+
+/**
+ * Move the internal seed value forward by one perturbation
+ * @since 0.22.0
+ * @example
+ * next(mkSeed(100))
+ */
+next :: Seed -> Seed
+export next = perturb(LCG_C)
+
+/**
+ * Accumulate a value over several iterations of a function
+ * @since 0.22.0
+ * @example
+ * pipe(
+ *   mkSeed,
+ *   accumulate(10, toBool)
+ * )(100)
+ */
+accumulate :: (a -> a) -> Integer -> a -> a
+export accumulate = (fn, steps, initial) => pipe(
+  List.range(0),
+  List.reduce((agg, _) => fn(agg), initial),
+)(steps)
+
+/**
+ * Move the internal seed forward by x perturbations
+ * @since 0.22.0
+ * @example
+ * stepN(10, mkSeed(100))
+ */
+stepN :: Integer -> Seed -> Seed
+export stepN = accumulate(next)
+
+
+/**
+ * Simple wrapper function to create a SeededTuple
+ * @since 0.22.0
+ * @example
+ * seedPair(mkSeed(100), "hey there")
+ */
+seedPair :: Seed -> a -> SeededTuple a
+export seedPair = (seed, a) => #[seed, a]
+
+/**
+ * Apply a transformation function to a given seed and capture it in a pair
+ * @since 0.22.0
+ * @example
+ * mapWithProof(toBool, mkSeed(100))
+ */
+mapWithProof :: (Seed -> a) -> Seed -> SeededTuple a
+export mapWithProof = (fn, seed) => pipe(
+  fn,
+  seedPair(next(seed)),
+)(seed)
+
+/**
+ * Convert a list of SeededTuples into just a list
+ * @since 0.22.0
+ * @example
+ * pipe(
+ *   mkSeed,
+ *   mapWithProof(10, toBool),
+ *   dropProof
+ * )(100)
+ */
+dropProof :: List (SeededTuple a) -> List a
+export dropProof = map(Tuple.snd)
+
+/**
+ * Apply applyedStep multiple times in a row
+ * @since 0.22.0
+ * @example
+ * iterateWithProof(10, toBool, mkSeed(100))
+ */
+iterateWithProof :: Integer -> (Seed -> a) -> Seed -> List (SeededTuple a)
+export iterateWithProof = (steps, fn, seed) => pipe(
+  List.range(0),
+  List.reduce(
+    (agg, _) => pipe(
+      mapWithProof(fn),
+      where {
+        #[newSeed, x] =>
+          ({ prev: newSeed, stack: [...agg.stack, #[newSeed, x]] })
+      },
+    )(agg.prev),
+    { stack: [], prev: seed },
+  ),
+  .stack,
+)(steps + 1)
+
+iterateBinaryWithProof :: Integer -> (a -> Seed -> a) -> a -> Seed -> List (SeededTuple a)
+export iterateBinaryWithProof = (steps, fn, active, seed) => pipe(
+  List.range(0),
+  List.reduce(
+    (agg, _) => pipe(
+      mapWithProof(fn(agg.active)),
+      where {
+        #[newSeed, x] =>
+          ({ seed: newSeed, stack: [...agg.stack, #[newSeed, x]], active: x })
+      },
+    )(agg.seed),
+    { stack: [], seed, active },
+  ),
+  .stack,
+)(steps + 1)
+
+
+/**
+ * Apply a transformation function to a seed multiple times and return the result
+ * @since 0.22.0
+ * @example
+ * pipe(
+ *   mkSeed,
+ *   iterate(10, toFloat)
+ * )(100)
+ */
+iterate :: Integer -> (Seed -> b) -> Seed -> List b
+export iterate = (steps, fn, seed) => pipe(
+  pipe(
+    iterateWithProof(steps, fn),
+    dropProof,
+  ),
+)(seed)
+
+/**
+ * Apply a binary transformation function to a seed multiple times and return the result
+ * @since 0.22.0
+ * @example
+ * pipe(
+ *   mkSeed,
+ *   iterateBinary(10, shuffle, String.split("", "madlib"))
+ * )(100)
+ */
+export iterateBinary = (steps, fn, active, seed) => pipe(
+  iterateBinaryWithProof(steps, fn, active),
+  dropProof,
+)(seed)
+
+// CONVERTERS
+
+/**
+ * Generate a floating value from a seed
+ * @since 0.22.0
+ * @example
+ * toFloat(mkSeed(100))
+ */
+seedToFloat :: Seed -> Float
+export seedToFloat = pipe(
+  next,
+  unSeed,
+  (x) => (x / LCG_M),
+)
+
+/**
+ * Generate a random integer between two integer bounds, relative to a seed
+ * @since 0.22.0
+ * @example
+ * seedToInteger(0, 100, mkSeed(10))
+ */
+seedToInteger :: Integer -> Integer -> Seed -> Integer
+export seedToInteger = (low, high, seed) => pipe(
+  seedToFloat,
+  intGradient(low, high),
+)(seed)
+
+/**
+ * Generate a random boolean relative to a seed
+ * @since 0.22.0
+ * @example
+ * toBool(mkSeed(10))
+ */
+seedToBoolean :: Seed -> Boolean
+export seedToBoolean = pipe(
+  seedToFloat,
+  (f) => f > 0.5,
+)
+
+/**
+ * Pick a value from a list relative to a seed
+ * @since 0.22.0
+ * @example
+ * pickFrom([0,1,2,3,4,5], mkSeed(10))
+ */
+pickFrom :: List a -> Seed -> Maybe a
+export pickFrom = (list, seed) => pipe(
+  List.nth(seedToInteger(0, List.length(list) - 1, seed)),
+)(list)
+
+
+/**
+ * Swap the value of two indices in a list, relative to a seed
+ * @since 0.22.0
+ * @example
+ * swap([0,1,2,3,4,5], mkSeed(10))
+ */
+swap :: List a -> Seed -> { current :: Seed, stack :: List a }
+swap = (list, prev) => {
+  bounded = seedToInteger(0, List.length(list) - 1)
+  x = bounded(prev)
+  current = next(prev)
+  y = bounded(current)
+  fromStack = List.nth($, list)
+  nthX = fromStack(x)
+  nthY = fromStack(y)
+  return {
+    stack: pipe(
+      List.setMaybe(y, nthX),
+      List.setMaybe(x, nthY),
+    )(list),
+    current,
+  }
+}
+
+/**
+ * Walk an array, swapping two indices for each iteration, relative to a seed
+ * @since 0.22.0
+ * @example
+ * swapWalk(["ka", "dabra", "abra"], mkSeed(10))
+ */
+swapWalk :: List a -> Seed -> { current :: Seed, stack :: List a }
+swapWalk = (list, seed) => pipe(
+  List.reduce((agg, _) => swap(agg.stack, agg.current), { stack: list, current: seed }),
+)(list)
+
+/**
+ * Shuffle an array multiple times, relative to a seed
+ * @since 0.22.0
+ * @example
+ * shuffle(["ka", "dabra", "abra"], mkSeed(10))
+ */
+shuffle :: List a -> Seed -> List a
+export shuffle = (list, seed) => pipe(
+  swapWalk(list),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  (s) => swapWalk(s.stack, s.current),
+  .stack,
+)(seed)
