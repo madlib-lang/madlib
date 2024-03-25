@@ -203,6 +203,7 @@ export empty = () => fromList([])
 /**
  * Return an item at a given index, it crashes if the index is out of
  * the bounds of the array.
+ *
  * @since 0.23.0
  * @example
  * at(1, fromList([1, 2, 3])) // 2
@@ -212,6 +213,18 @@ unsafeAt :: Integer -> Array a -> a
 export unsafeAt = (index, arr) => arr[index]
 
 
+/**
+ * Sets a value at a given index, it crashes if the index is out of
+ * the bounds of the array.
+ * NB: the input array is mutated in place
+ *
+ * @since 0.23.0
+ * @example
+ * pipe(
+ *   Array.fromList,
+ *   Array.set(1, 33),
+ * )([1, 2, 3]) // Array.fromList([1, 33, 3])
+ */
 unsafeSet :: Integer -> a -> Array a -> Array a
 export unsafeSet = (index, a, arr) => {
   arr[index] := a
@@ -232,6 +245,28 @@ export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) 
 
 
 /**
+ * Sets a value at a given index. The array is unchanged if the index is out of
+ * the bounds of the array.
+ * NB: the input array is mutated in place
+ * @since 0.23.0
+ * @example
+ * pipe(
+ *   Array.fromList,
+ *   Array.set(1, 33),
+ * )([1, 2, 3]) // Array.fromList([1, 33, 3])
+ */
+set :: Integer -> a -> Array a -> Array a
+export set = (index, v, arr) => {
+  if (index < length(arr)) do {
+    arr[index] := v
+  }
+
+  return arr
+}
+
+
+
+/**
  * Iterate over an array, selecting only values which are matched by predicate function.
  *
  * @since 0.23.0
@@ -245,8 +280,9 @@ export filter = (predicate, arr) => {
   i = 0
 
   while(i < len) do {
-    if (predicate(arr[i])) do {
-      push(arr[i], result)
+    item = arr[i]
+    if (predicate(item)) do {
+      push(item, result)
     }
 
     i := i + 1
@@ -278,6 +314,12 @@ export reduce = (f, initial, arr) => {
 }
 
 
+/**
+ * Calls the given function sequentially with each given item of the array
+ *
+ * @since 0.23.0
+ * @example
+ */
 forEach :: (a -> {}) -> Array a -> {}
 export forEach = (f, arr) => {
   len = length(arr)

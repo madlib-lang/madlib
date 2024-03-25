@@ -38,6 +38,8 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concat(madlib__bytearray__Byt
 
 madlib__bytearray__ByteArray_t *madlib__bytearray__concatWithMutation(madlib__bytearray__ByteArray_t *a, madlib__bytearray__ByteArray_t *b);
 
+madlib__bytearray__ByteArray_t *madlib__bytearray__pushBackWithMutation(unsigned char byte, madlib__bytearray__ByteArray_t *a);
+
 madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearray__ByteArray_t *arr);
 
 void *madlib__bytearray__reduce(PAP_t *f, void *initialValue, madlib__bytearray__ByteArray_t *arr);
