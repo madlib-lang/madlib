@@ -21,7 +21,7 @@ export type Seed = Seed(Integer)
 
 /**
  * A SeededTuple is used to encapsulate a value relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  */
 export alias SeededTuple a = #[Seed, a]
 
@@ -31,35 +31,35 @@ export alias SeededTuple a = #[Seed, a]
  * It is equal to 2^31 - 1, a Mersenne prime. It is useful for this value to
  * be prime, because then the requirement of the initial seed being coprime
  * to the modulus is satisfied when the seed is between 1 and LCG_M - 1.
- * @since 0.22.0
+ * @since 0.23.0
  */
 LCG_M :: Integer
 export LCG_M = 2147483647
 
 /**
  * The minimum permissible Seed value
- * @since 0.22.0
+ * @since 0.23.0
  */
 SEED_MIN :: Integer
 export SEED_MIN = 1
 
 /**
  * The maximum permissible Seed value
- * @since 0.22.0
+ * @since 0.23.0
  */
 SEED_MAX :: Integer
 export SEED_MAX = LCG_M - 1
 
 /**
  * The *multiplier*: a magic constant for the linear congruential generator
- * @since 0.22.0
+ * @since 0.23.0
  */
 LCG_A :: Integer
 export LCG_A = 48271
 
 /**
  * The *increment*: a magic constant for the linear congruential generator
- * @since 0.22.0
+ * @since 0.23.0
  */
 LCG_C :: Integer
 export LCG_C = 0
@@ -67,7 +67,7 @@ export LCG_C = 0
 /**
  * This is the core logic for the "perturb" function
  * It is fundamentally applying (b * n + a) % d
- * @since 0.22.0
+ * @since 0.23.0
  */
 perturbation :: Integer -> Integer -> Integer -> Integer -> Integer
 export perturbation = (n, b, a, d) => Float.toInteger(
@@ -78,7 +78,7 @@ export perturbation = (n, b, a, d) => Float.toInteger(
 
 /**
  * Clamp a number between two boundaries, modularly
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * modClamp(5, 10, 100)
  */
@@ -93,7 +93,7 @@ export modClamp = (min, max, x) => {
  * Here the floating value is being used as a multiplier and this function is pure.
  * But upstream this function is used within a PRNG and the supplied floating value changes
  * on each generation.
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * intGradient(1, 100, 0.5)
  */
@@ -105,7 +105,7 @@ export intGradient = (low, high, f) => pipe(
 
 /**
  * Make a Seed from an integer
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * mkSeed(100) == Seed(100)
  */
@@ -130,7 +130,7 @@ export mkSeedFromString = pipe(
 
 /**
  * Pull the internal value from a Seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * unSeed(mkSeed(100)) == 100
  */
@@ -142,7 +142,7 @@ export unSeed = where {
 
 /**
  * Transform a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * apply((x) => x * 2, mkSeed(100)) == Seed(200)
  */
@@ -155,7 +155,7 @@ export apply = (fn, seed) => pipe(
 
 /**
  * Perturb a seed value to produce another internal generator value
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * perturb(LCG_C, mkSeed(100))
  */
@@ -165,7 +165,7 @@ export perturb = (d, seed) => apply(perturbation($, LCG_A, d, LCG_M))(seed)
 
 /**
  * Move the internal seed value forward by one perturbation
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * next(mkSeed(100))
  */
@@ -174,7 +174,7 @@ export next = perturb(LCG_C)
 
 /**
  * Accumulate a value over several iterations of a function
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * pipe(
  *   mkSeed,
@@ -189,7 +189,7 @@ export accumulate = (fn, steps, initial) => pipe(
 
 /**
  * Move the internal seed forward by x perturbations
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * stepN(10, mkSeed(100))
  */
@@ -199,7 +199,7 @@ export stepN = accumulate(next)
 
 /**
  * Simple wrapper function to create a SeededTuple
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * seedPair(mkSeed(100), "hey there")
  */
@@ -208,7 +208,7 @@ export seedPair = (seed, a) => #[seed, a]
 
 /**
  * Apply a transformation function to a given seed and capture it in a pair
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * mapWithProof(toBool, mkSeed(100))
  */
@@ -220,7 +220,7 @@ export mapWithProof = (fn, seed) => pipe(
 
 /**
  * Convert a list of SeededTuples into just a list
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * pipe(
  *   mkSeed,
@@ -233,7 +233,7 @@ export dropProof = map(Tuple.snd)
 
 /**
  * Apply applyedStep multiple times in a row
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * iterateWithProof(10, toBool, mkSeed(100))
  */
@@ -272,7 +272,7 @@ export iterateBinaryWithProof = (steps, fn, active, seed) => pipe(
 
 /**
  * Apply a transformation function to a seed multiple times and return the result
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * pipe(
  *   mkSeed,
@@ -289,7 +289,7 @@ export iterate = (steps, fn, seed) => pipe(
 
 /**
  * Apply a binary transformation function to a seed multiple times and return the result
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * pipe(
  *   mkSeed,
@@ -305,7 +305,7 @@ export iterateBinary = (steps, fn, active, seed) => pipe(
 
 /**
  * Generate a floating value from a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * toFloat(mkSeed(100))
  */
@@ -318,7 +318,7 @@ export seedToFloat = pipe(
 
 /**
  * Generate a random integer between two integer bounds, relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * seedToInteger(0, 100, mkSeed(10))
  */
@@ -330,7 +330,7 @@ export seedToInteger = (low, high, seed) => pipe(
 
 /**
  * Generate a random boolean relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * toBool(mkSeed(10))
  */
@@ -342,7 +342,7 @@ export seedToBoolean = pipe(
 
 /**
  * Pick a value from a list relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * pickFrom([0,1,2,3,4,5], mkSeed(10))
  */
@@ -354,7 +354,7 @@ export pickFrom = (list, seed) => pipe(
 
 /**
  * Swap the value of two indices in a list, relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * swap([0,1,2,3,4,5], mkSeed(10))
  */
@@ -378,7 +378,7 @@ swap = (list, prev) => {
 
 /**
  * Walk an array, swapping two indices for each iteration, relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * swapWalk(["ka", "dabra", "abra"], mkSeed(10))
  */
@@ -389,7 +389,7 @@ swapWalk = (list, seed) => pipe(
 
 /**
  * Shuffle an array multiple times, relative to a seed
- * @since 0.22.0
+ * @since 0.23.0
  * @example
  * shuffle(["ka", "dabra", "abra"], mkSeed(10))
  */
