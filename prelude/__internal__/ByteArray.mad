@@ -34,6 +34,10 @@ unsafeAt :: Integer -> ByteArray -> Byte
 export unsafeAt = extern "madlib__bytearray__unsafeAt"
 
 
+unsafeSet :: Integer -> Byte -> ByteArray -> ByteArray
+export unsafeSet = extern "madlib__bytearray__unsafeSet"
+
+
 /**
  * Creates a byte array from a list of bytes.
  *
@@ -112,6 +116,10 @@ weld :: ByteArray -> ByteArray -> ByteArray
 export weld = extern "madlib__bytearray__concatWithMutation"
 
 
+push :: Byte -> ByteArray -> ByteArray
+export push = extern "madlib__bytearray__pushBackWithMutation"
+
+
 /**
  * Maps the bytes of a byte array, applying the given function to each byte.
  *
@@ -121,6 +129,32 @@ export weld = extern "madlib__bytearray__concatWithMutation"
  */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = extern "madlib__bytearray__map"
+
+
+/**
+ * Iterate over an array, selecting only values which are matched by predicate function.
+ *
+ * @since 0.23.0
+ * @example
+ * filter((a) => a % 2 == 0, fromList([1, 2, 3, 4, 5, 6])) // fromList([2, 4, 6])
+ */
+filter :: (Byte -> Boolean) -> ByteArray -> ByteArray
+export filter = (predicate, arr) => {
+  len = length(arr)
+  result = init(len)
+  i = 0
+
+  while(i < len) do {
+    item = unsafeAt(i, arr)
+    if (predicate(item)) do {
+      push(item, result)
+    }
+
+    i := i + 1
+  }
+
+  return result
+}
 
 
 /**
@@ -142,6 +176,7 @@ export init = () => #- new Uint8Array() -#
 /**
  * Return the byte at a given index, it crashes if the index is out of
  * the bounds of the array.
+ *
  * @since 0.23.0
  * @example
  * at(1, fromList([1, 2, 3])) // 2
@@ -155,6 +190,16 @@ export unsafeAt = (index, byteArray) => #- {
   return byteArray[index]
 } -#
 
+
+unsafeSet :: Integer -> Byte -> ByteArray -> ByteArray
+export unsafeSet = (index, byte, byteArray) => #- {
+  if (index >= byteArray.length) {
+    throw `Array out of bounds access\\nYou accessed the index '${index}' but the array currently has length '${byteArray.length}'`
+  }
+
+  byteArray[index] = byte
+  return byteArray
+} -#
 
 /**
  * Converts a byte array to a string
@@ -237,7 +282,7 @@ export concat = (byteArray1, byteArray2) => #- {
 /**
  * Concatenates two byte arrays
  *
- * @since 0.11.0
+ * @since 0.23.0
  * @example
  * concat(fromString("123"), fromString("456")) // fromString("123456")
  */
@@ -251,6 +296,21 @@ export weld = (byteArray1, byteArray2) => #- {
 
 
 /**
+ * Concatenates two byte arrays
+ *
+ * @since 0.23.0
+ * @example
+ * concat(fromString("123"), fromString("456")) // fromString("123456")
+ */
+push :: Byte -> ByteArray -> ByteArray
+export push = (byte, byteArray) => #- {
+  const result = new Uint8Array(byteArray.length + 1);
+  result.set([...byteArray, byte]);
+  return result;
+} -#
+
+
+/**
  * Maps the bytes of a byte array, applying the given function to each byte.
  *
  * @since 0.11.0
@@ -259,6 +319,10 @@ export weld = (byteArray1, byteArray2) => #- {
  */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
+
+
+filter :: (Byte -> Boolean) -> ByteArray -> ByteArray
+export filter = (predicate, byteArray) => #- byteArray.filter(predicate) -#
 
 
 /**
@@ -302,3 +366,9 @@ export empty = () => fromList([])
 
 at :: Integer -> ByteArray -> Maybe Byte
 export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
+
+
+set :: Integer -> Byte -> ByteArray -> ByteArray
+export set = (index, arr, byteArray) => index < length(byteArray)
+  ? unsafeSet(index, arr, byteArray)
+  : byteArray

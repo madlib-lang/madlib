@@ -3,6 +3,7 @@ import { Just } from "Maybe"
 import { assertEquals, test } from "Test"
 
 
+
 test("empty", () => assertEquals(ByteArray.empty(), ByteArray.fromList([])))
 
 test(
@@ -26,6 +27,30 @@ test(
       ByteArray.unsafeAt(1),
     )([1, 2, 3]),
     2,
+  ),
+)
+
+
+test(
+  "unsafeSet",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.unsafeSet(1, 33),
+    )([1, 2, 3]),
+    ByteArray.fromList([1, 33, 3]),
+  ),
+)
+
+
+test(
+  "set",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.set(1, 33),
+    )([1, 2, 3]),
+    ByteArray.fromList([1, 33, 3]),
   ),
 )
 
@@ -56,6 +81,24 @@ test(
   () => assertEquals(
     ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([])),
     ByteArray.fromList([]),
+  ),
+)
+
+
+test(
+  "filter",
+  () => assertEquals(
+    ByteArray.filter((x) => x % 2 == 0, ByteArray.fromList([1, 2, 3, 4, 5, 6])),
+    ByteArray.fromList([2, 4, 6]),
+  ),
+)
+
+
+test(
+  "push",
+  () => assertEquals(
+    ByteArray.push(7, ByteArray.fromList([1, 2, 3, 4, 5, 6])),
+    ByteArray.fromList([1, 2, 3, 4, 5, 6, 7]),
   ),
 )
 

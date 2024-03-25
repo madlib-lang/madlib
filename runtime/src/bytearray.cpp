@@ -196,6 +196,24 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concatWithMutation(madlib__by
 }
 
 
+madlib__bytearray__ByteArray_t *madlib__bytearray__pushBackWithMutation(unsigned char byte, madlib__bytearray__ByteArray_t *a) {
+  unsigned char *resultBytes = a->bytes;
+  int64_t nextLength = a->length + 1;
+
+  if (a->capacity < nextLength) {
+    resultBytes = (unsigned char*) GC_MALLOC(nextLength * 2 * sizeof(unsigned char));
+    memcpy(resultBytes, a->bytes, a->length * sizeof(unsigned char));
+    a->bytes = resultBytes;
+    a->capacity = nextLength * 2;
+  }
+
+  resultBytes[a->length] = byte;
+  a->length = nextLength;
+
+  return a;
+}
+
+
 madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearray__ByteArray_t *arr) {
   madlib__bytearray__ByteArray_t *result =
       (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
