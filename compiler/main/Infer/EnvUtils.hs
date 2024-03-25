@@ -156,7 +156,7 @@ initialEnv = do
                         , (">="           , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                         , ("<="           , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
 
-                        , ("%"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
+                        , ("%"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
                         , ("|>"           , Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                         , ("$"            , Forall [Star] $ [] :=> TGen 0)
                         ]
