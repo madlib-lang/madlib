@@ -66,7 +66,6 @@ import Text.Show.Pretty
   'instance'  { Token _ _ TokenInstance }
   'do'        { Token _ _ TokenDo }
   'where'     { Token _ _ TokenWhere }
-  'is'        { Token _ _ TokenIs }
   'return'    { Token _ _ TokenReturnKeyword }
   '=='        { Token _ _ TokenDoubleEq }
   '!='        { Token _ _ TokenExclamationMarkEq }
@@ -111,7 +110,7 @@ import Text.Show.Pretty
 %nonassoc LOWEST
 -- %nonassoc ':='
 -- %left ':' '->' '|' where is 'else' '='
-%left ':' '->' '|' where is 'else' '=' ':='
+%left ':' '->' '|' where 'else' '=' ':='
 %left '?' 'if'
 %left '<|>'
 %left '|>'
@@ -121,7 +120,7 @@ import Text.Show.Pretty
 %left '+' '-'
 %left '*' '/' '%'
 %left ','
-%nonassoc '(' ')' '#[' '=>' '::' where is 'ret' '{' '}' '[' ']'
+%nonassoc '(' ')' '#[' '=>' '::' where 'ret' '{' '}' '[' ']'
 %right '!'
 %nonassoc HIGHEST
 %left NEG
