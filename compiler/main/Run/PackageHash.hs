@@ -73,13 +73,16 @@ filesToExclude = [ "madlib_modules"
 dotMadlibIgnore :: FilePath
 dotMadlibIgnore = ".madlibignore"
 
-loadIgnoredPathsFromDotMadlibIgnore :: FilePath -> IO [FilePath]
-loadIgnoredPathsFromDotMadlibIgnore packageFolder = do
-  let dotMadlibIgnorePath = joinPath [packageFolder, dotMadlibIgnore]
-  fileExists   <- Dir.doesFileExist dotMadlibIgnorePath
+dotGitIgnore :: FilePath
+dotGitIgnore = ".gitignore"
+
+loadIgnoredPathsFromDotIgnoreFile :: FilePath -> FilePath -> IO [FilePath]
+loadIgnoredPathsFromDotIgnoreFile dotIgnoreFileName packageFolder = do
+  let dotIgnoreFilePath = joinPath [packageFolder, dotIgnoreFileName]
+  fileExists   <- Dir.doesFileExist dotIgnoreFilePath
   if fileExists then do
-    dotMadlibIgnoreContent <- Prelude.readFile dotMadlibIgnorePath
-    let entries = filter (not . ("#" `List.isPrefixOf`)) $ lines dotMadlibIgnoreContent
+    dotIgnoreFileContent <- Prelude.readFile dotIgnoreFilePath
+    let entries = filter (not . ("#" `List.isPrefixOf`)) $ lines dotIgnoreFileContent
     return entries
   else
     return []
@@ -89,17 +92,15 @@ getPackageContent packageFolder = do
   folderExists <- Dir.doesDirectoryExist packageFolder
 
   if folderExists then do
-    filesToExcludeFromDotMadlibIgnore <- loadIgnoredPathsFromDotMadlibIgnore packageFolder
-    let filesToExcludeFromDotMadlibIgnore' =
-          (\case
-            '/':rest -> rest
-            path -> "**/" <> path
-          ) <$> filesToExcludeFromDotMadlibIgnore
-    let patterns = compile <$> (filesToExclude <> filesToExcludeFromDotMadlibIgnore')
-    excludedFiles <- concat <$> globDir patterns packageFolder
+    filesToExcludeFromDotMadlibIgnore <- loadIgnoredPathsFromDotIgnoreFile dotMadlibIgnore packageFolder
+    filesToExcludeFromDotGitIgnore <- loadIgnoredPathsFromDotIgnoreFile dotGitIgnore packageFolder
+    let filesToExcludeFromIgnoreFiles = if List.null filesToExcludeFromDotMadlibIgnore then filesToExcludeFromDotGitIgnore else filesToExcludeFromDotMadlibIgnore
+    let patterns = compile <$> (filesToExclude <> filesToExcludeFromIgnoreFiles)
+    excludedPaths <- concat <$> globDir patterns packageFolder
+    excludedPaths' <- mapM Dir.canonicalizePath excludedPaths
 
     entries          <- List.sort <$> listDirectory packageFolder
-    processedEntries <- mapM (getFileOrDirContent excludedFiles . joinPath . ([packageFolder] <>) . return) entries
+    processedEntries <- mapM (getFileOrDirContent excludedPaths' . joinPath . ([packageFolder] <>) . return) entries
     return $ BL.concat processedEntries
   else
     return BL.empty
