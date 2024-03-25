@@ -397,7 +397,7 @@ export seededShuffle = (list, seed) => pipe(
   .stack,
 )(seed)
 
-export alias Random = {
+export alias Random a = {
   boolean :: {} -> Boolean,
   float :: {} -> Float,
   integer :: Integer -> Integer -> Integer,
@@ -405,7 +405,7 @@ export alias Random = {
   shuffle :: List a -> List a,
 }
 
-generateFromSeed :: Seed -> Random
+generateFromSeed :: Seed -> Random a
 export generateFromSeed = (initialSeed) => {
   seed = initialSeed
   get = () => seed
@@ -443,13 +443,13 @@ export generateFromSeed = (initialSeed) => {
 }
 
 
-generate :: Integer -> Random
+generate :: Integer -> Random a
 export generate = pipe(
   mkSeed,
   generateFromSeed,
 )
 
-generateFromString :: String -> Random
+generateFromString :: String -> Random a
 export generateFromString = pipe(
   mkSeedFromString,
   generateFromSeed,
