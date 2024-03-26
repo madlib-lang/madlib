@@ -89,6 +89,21 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.LNum  x ->
       return $ Can.Canonical area (Can.LNum x)
 
+    Src.LByte  x -> do
+      -- when ((read x :: Int) > 255) $
+      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      return $ Can.Canonical area (Can.LByte x)
+
+    Src.LShort  x -> do
+      -- when ((read x :: Int) > 255) $
+      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      return $ Can.Canonical area (Can.LShort x)
+
+    Src.LInt  x -> do
+      -- when ((read x :: Int) > 255) $
+      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      return $ Can.Canonical area (Can.LInt x)
+
     Src.LFloat x ->
       return $ Can.Canonical area (Can.LFloat x)
 

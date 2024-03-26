@@ -137,6 +137,9 @@ data ListItem_
 
 type Exp = Canonical Exp_
 data Exp_ = LNum String
+          | LByte String
+          | LShort String
+          | LInt String
           | LFloat String
           | LStr String
           | LChar Char

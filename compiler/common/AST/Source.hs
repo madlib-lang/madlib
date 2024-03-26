@@ -149,6 +149,9 @@ data DictItem_
 type Exp = Source Exp_
 data Exp_
   = LNum String
+  | LByte String
+  | LShort String
+  | LInt String
   | LFloat String
   | LStr String
   | LChar String

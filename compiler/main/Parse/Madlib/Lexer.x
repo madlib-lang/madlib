@@ -107,9 +107,15 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> :\=$tail?            { mapToken (\_ -> TokenMutateEq) }
   -- <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                   { mapToken (\s -> TokenNumber s) }
   -- <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                            { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal\_b                         { mapToken (\s -> TokenByte s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal\_s                         { mapToken (\s -> TokenShort s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal\_i                         { mapToken (\s -> TokenInt s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal                            { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @floating                           { mapToken (\s -> TokenFloat s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*                      { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*\_b                   { mapToken (\s -> TokenByte s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*\_s                   { mapToken (\s -> TokenShort s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*\_i                   { mapToken (\s -> TokenInt s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "true"                              { mapToken (\_ -> (TokenBool "true")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "false"                             { mapToken (\_ -> (TokenBool "false")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*"=="                          { mapToken (\_ -> TokenDoubleEq) }
@@ -141,7 +147,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\>\>\>        { mapToken (\_ -> TokenTripleRightChevron) }
   <0> \;                                                                                      { mapToken (\_ -> TokenSemiColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> [\n]                { mapToken (\_ -> TokenReturn) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { decideTokenName }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader>      [$alpha \_] [$alpha $digit \_ \']* { decideTokenName }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+                                      { mapToken (\_ -> TokenPlus) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+\+                                    { mapToken (\_ -> TokenDoublePlus) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-[\t\ \n]+                                   { mapToken (\_ -> TokenDash) }
@@ -727,6 +733,9 @@ data Token = Token Area SourceTarget TokenClass deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
+ | TokenByte String
+ | TokenShort String
+ | TokenInt String
  | TokenNumber String
  | TokenFloat String
  | TokenStr String
@@ -825,6 +834,15 @@ strV (Token _ _ (TokenTemplateStringEnd x)) =
   x
 
 strV (Token _ _ (TokenNumber x)) =
+  x
+
+strV (Token _ _ (TokenByte x)) =
+  x
+
+strV (Token _ _ (TokenShort x)) =
+  x
+
+strV (Token _ _ (TokenInt x)) =
   x
 
 strV (Token _ _ (TokenFloat x)) =
