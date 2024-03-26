@@ -442,9 +442,27 @@ export set = (index, arr, byteArray) => index < length(byteArray)
   : byteArray
 
 
+/**
+ * Cut a contiguous segment from an Array, from start index to end index.
+ * @since 0.23.0
+ */
+slice :: Integer -> Integer -> ByteArray -> ByteArray
+export slice = (start, end, arr) => {
+  len = length(arr)
+  realStart = start < 0 ? start + len : start
+  realEnd = end == 0 ? len - 1 : end < 0 ? end + len - 1 : end
+  result = init(realStart - realEnd)
+
+  while(realStart <= realEnd) do {
+    result := push(unsafeAt(realStart, arr), result)
+    realStart := realStart + 1
+  }
+
+  return result
+}
+
 // TODO: make a showBytes or something with this
 // #iftarget js
-
 // instance Show ByteArray {
 //   show = (byteArray) => #- {
 //     let s = ''
@@ -456,14 +474,10 @@ export set = (index, arr, byteArray) => index < length(byteArray)
 //     return `ByteArray(${s})`
 //   } -#
 // }
-
 // #elseif llvm
-
 // showByteArray :: ByteArray -> String
 // showByteArray = extern "madlib__bytearray__internal__show"
-
 // instance Show ByteArray {
 //   show = showByteArray
 // }
-
 // #endif
