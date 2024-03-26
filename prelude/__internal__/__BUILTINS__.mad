@@ -434,30 +434,39 @@ instance (Show a, Show b) => Show (Dictionary a b) {
   }
 }
 
-#iftarget js
 
-instance Show ByteArray {
-  show = (byteArray) => #- {
-    let s = ''
-    let h = '0123456789ABCDEF'
-    byteArray.forEach((v, index) => {
-      if (index % 8 === 0 && index !== 0) { s += ' ' }
-      s += h[v >> 4] + h[v & 15]
-    })
-    return `ByteArray(${s})`
-  } -#
-}
+#iftarget llvm
 
-#elseif llvm
+byteArrayUnsafeAt :: Integer -> ByteArray -> Byte
+export byteArrayUnsafeAt = extern "madlib__bytearray__unsafeAt"
 
-showByteArray :: ByteArray -> String
-showByteArray = extern "madlib__bytearray__internal__show"
+#elseif js
 
-instance Show ByteArray {
-  show = showByteArray
-}
+byteArrayUnsafeAt :: Integer -> ByteArray -> Byte
+export byteArrayUnsafeAt = (index, byteArray) => #- {
+  if (index >= byteArray.length) {
+    throw `Array out of bounds access\\nYou accessed the index '${index}' but the array currently has length '${byteArray.length}'`
+  }
+  return byteArray[index]
+} -#
 
 #endif
+
+instance Show ByteArray {
+  show = (byteArray) => {
+    items = ""
+    index = 0
+    length = byteArrayLength(byteArray)
+
+    while(index < length) do {
+      item = show(byteArrayUnsafeAt(index, byteArray))
+      items := index == 0 ? item : `${items}, ${item}`
+      index := index + 1
+    }
+
+    return `ByteArray(${items})`
+  }
+}
 
 instance Show a => Show (Array a) {
   show = (array) => {
@@ -751,10 +760,16 @@ instance Comparable a => Comparable (List a) {
 arrayLength :: Array a -> Integer
 arrayLength = extern "madlib__array__length"
 
+byteArrayLength :: ByteArray -> Integer
+byteArrayLength = extern "madlib__bytearray__length"
+
 #elseif js
 
 arrayLength :: Array a -> Integer
 arrayLength = (arr) => #- arr.length -#
+
+byteArrayLength :: ByteArray -> Integer
+byteArrayLength = (byteArray) => #- byteArray.length -#
 
 #endif
 

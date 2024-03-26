@@ -14,10 +14,15 @@ import { Just, Nothing } from "Maybe"
  *
  */
 
-// TODO: Add filter, ap and chain
+// TODO: Add ap and chain
 
 #iftarget llvm
 
+/**
+ * Initializes a ByteArray with the given capacity.
+ *
+ * @since 0.23.0
+ */
 init :: Integer -> ByteArray
 export init = extern "madlib__bytearray__initWithCapacity"
 
@@ -34,6 +39,18 @@ unsafeAt :: Integer -> ByteArray -> Byte
 export unsafeAt = extern "madlib__bytearray__unsafeAt"
 
 
+/**
+ * Sets a byte at a given index, it crashes if the index is out of
+ * the bounds of the array.
+ * NB: the input byte array is mutated in place
+ *
+ * @since 0.23.0
+ * @example
+ * pipe(
+ *   fromList,
+ *   set(1, 33),
+ * )([1, 2, 3]) // fromList([1, 33, 3])
+ */
 unsafeSet :: Integer -> Byte -> ByteArray -> ByteArray
 export unsafeSet = extern "madlib__bytearray__unsafeSet"
 
@@ -116,6 +133,14 @@ weld :: ByteArray -> ByteArray -> ByteArray
 export weld = extern "madlib__bytearray__concatWithMutation"
 
 
+/**
+ * Push a byte at the end of a ByteArray.
+ * NB: it mutates the array.
+ * 
+ * @since 0.23.0
+ * @example
+ * push(3, fromList([1, 2])) // fromList([1, 2, 3])
+ */
 push :: Byte -> ByteArray -> ByteArray
 export push = extern "madlib__bytearray__pushBackWithMutation"
 
@@ -132,7 +157,7 @@ export mapBytes = extern "madlib__bytearray__map"
 
 
 /**
- * Iterate over an array, selecting only values which are matched by predicate function.
+ * Iterate over a byte array, selecting only bytes which are matched by predicate function.
  *
  * @since 0.23.0
  * @example
@@ -169,6 +194,11 @@ export reduce = extern "madlib__bytearray__reduce"
 
 #elseif js
 
+/**
+ * Initializes a ByteArray with the given capacity.
+ *
+ * @since 0.23.0
+ */
 init :: Integer -> ByteArray
 export init = () => #- new Uint8Array() -#
 
@@ -191,6 +221,18 @@ export unsafeAt = (index, byteArray) => #- {
 } -#
 
 
+/**
+ * Sets a byte at a given index, it crashes if the index is out of
+ * the bounds of the byte array.
+ * NB: the input byte array is mutated in place.
+ *
+ * @since 0.23.0
+ * @example
+ * pipe(
+ *   fromList,
+ *   set(1, 33),
+ * )([1, 2, 3]) // fromList([1, 33, 3])
+ */
 unsafeSet :: Integer -> Byte -> ByteArray -> ByteArray
 export unsafeSet = (index, byte, byteArray) => #- {
   if (index >= byteArray.length) {
@@ -321,6 +363,13 @@ mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
 
 
+/**
+ * Iterate over a byte array, selecting only bytes which are matched by predicate function.
+ *
+ * @since 0.23.0
+ * @example
+ * filter((a) => a % 2 == 0, fromList([1, 2, 3, 4, 5, 6])) // fromList([2, 4, 6])
+ */
 filter :: (Byte -> Boolean) -> ByteArray -> ByteArray
 export filter = (predicate, byteArray) => #- byteArray.filter(predicate) -#
 
@@ -364,11 +413,57 @@ empty :: {} -> ByteArray
 export empty = () => fromList([])
 
 
+/**
+ * Return a Maybe of a byte at a given index, Nothing if the index is out of
+ * the bounds of the array.
+ * @since 0.23.0
+ * @example
+ * at(1, fromList([1, 2, 3])) // Just(2)
+ * at(3, fromList([1, 2, 3])) // Nothing
+ */
 at :: Integer -> ByteArray -> Maybe Byte
 export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
 
 
+/**
+ * Sets a byte at a given index. The byte array is unchanged if the index is out of
+ * the bounds of the byte array.
+ * NB: the input byte array is mutated in place
+ * @since 0.23.0
+ * @example
+ * pipe(
+ *   Array.fromList,
+ *   Array.set(1, 33),
+ * )([1, 2, 3]) // Array.fromList([1, 33, 3])
+ */
 set :: Integer -> Byte -> ByteArray -> ByteArray
 export set = (index, arr, byteArray) => index < length(byteArray)
   ? unsafeSet(index, arr, byteArray)
   : byteArray
+
+
+// TODO: make a showBytes or something with this
+// #iftarget js
+
+// instance Show ByteArray {
+//   show = (byteArray) => #- {
+//     let s = ''
+//     let h = '0123456789ABCDEF'
+//     byteArray.forEach((v, index) => {
+//       if (index % 8 === 0 && index !== 0) { s += ' ' }
+//       s += h[v >> 4] + h[v & 15]
+//     })
+//     return `ByteArray(${s})`
+//   } -#
+// }
+
+// #elseif llvm
+
+// showByteArray :: ByteArray -> String
+// showByteArray = extern "madlib__bytearray__internal__show"
+
+// instance Show ByteArray {
+//   show = showByteArray
+// }
+
+// #endif
