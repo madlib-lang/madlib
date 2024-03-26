@@ -18,7 +18,7 @@ generateFromSeed :: Seed -> Random a
 export generateFromSeed = (initialSeed) => {
   seed = initialSeed
   get = () => seed
-  // every function needs to call reseed or the resulting
+  // every function needs to call update or the resulting
   // values won't change between calls!
   update = () => {
     seed = LCG.next(get())
