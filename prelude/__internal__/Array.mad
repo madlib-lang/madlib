@@ -221,9 +221,9 @@ export unsafeAt = (index, arr) => arr[index]
  * @since 0.23.0
  * @example
  * pipe(
- *   Array.fromList,
- *   Array.set(1, 33),
- * )([1, 2, 3]) // Array.fromList([1, 33, 3])
+ *   fromList,
+ *   set(1, 33),
+ * )([1, 2, 3]) // fromList([1, 33, 3])
  */
 unsafeSet :: Integer -> a -> Array a -> Array a
 export unsafeSet = (index, a, arr) => {
