@@ -22,6 +22,9 @@ import Text.Show.Pretty
 %lexer { lexerWrap } { Token _ _ TokenEOF }
 
 %token
+  byte        { Token _ _ (TokenByte _) }
+  short       { Token _ _ (TokenShort _) }
+  int         { Token _ _ (TokenInt _) }
   number      { Token _ _ (TokenNumber _) }
   float       { Token _ _ (TokenFloat _) }
   str         { Token _ _ (TokenStr _) }
@@ -666,6 +669,9 @@ tupleItems :: { [Src.Exp] }
 
 literal :: { Src.Exp }
   : number  %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LNum $ strV $1) }
+  | byte    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LByte $ init $ init (strV $1)) }
+  | short   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LShort $ init $ init (strV $1)) }
+  | int     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LInt $ init $ init (strV $1)) }
   | float   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LFloat $ strV $1) }
   | str     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LStr $ strV $1) }
   | char    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LChar $ charData $1) }

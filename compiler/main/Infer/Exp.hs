@@ -66,6 +66,9 @@ infer options env lexp = do
       let ps = [IsIn "Number" [t] Nothing]
       return (M.empty, ps, t, applyLitSolve lexp (ps :=> t))
 
+    Can.LByte _               -> return (M.empty, [], tByte, applyLitSolve lexp ([] :=> tByte))
+    Can.LShort _              -> return (M.empty, [], tShort, applyLitSolve lexp ([] :=> tShort))
+    Can.LInt _                -> return (M.empty, [], tInteger, applyLitSolve lexp ([] :=> tInteger))
     Can.LFloat _              -> return (M.empty, [], tFloat, applyLitSolve lexp ([] :=> tFloat))
     Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp ([] :=> tStr))
     Can.LChar  _              -> return (M.empty, [], tChar, applyLitSolve lexp ([] :=> tChar))
@@ -103,6 +106,9 @@ infer options env lexp = do
 applyLitSolve :: Can.Exp -> Qual Type -> Slv.Exp
 applyLitSolve (Can.Canonical area exp) qt = case exp of
   Can.LNum  v  -> Slv.Typed qt area $ Slv.LNum v
+  Can.LByte  v -> Slv.Typed qt area $ Slv.LNum v
+  Can.LShort v -> Slv.Typed qt area $ Slv.LNum v
+  Can.LInt  v  -> Slv.Typed qt area $ Slv.LNum v
   Can.LFloat v -> Slv.Typed qt area $ Slv.LFloat v
   Can.LStr  v  -> Slv.Typed qt area $ Slv.LStr v
   Can.LChar  v -> Slv.Typed qt area $ Slv.LChar v
