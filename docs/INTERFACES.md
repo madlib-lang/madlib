@@ -1,26 +1,29 @@
-Interfaces are a tool to extend generic possibilities.
+Interfaces are a tool to solve problems generically.
 
-Let's take a concrete example; how can we implement an inspect function for a tuple (without interfaces)?
+Let's take a concrete example; how can we implement an introspection function for a tuple (without interfaces)?
 The function should take a binary tuple as input, and return its String representation:
 
 ```madlib
-inspectList :: #[a, b] -> String
-inspectList = (tuple) => where(tuple) {
+showList :: #[a, b] -> String
+showList = (tuple) => where(tuple) {
   #[a, b] =>
-    `#[${inspectA(a)}, ${inspectB(b)}]`
+    `#[${showA(a)}, ${showB(b)}]`
 }
 ```
 
 
-How could we define inspectors for individual values? (e.g. `inspectA` and `inspectB`)
-The issue is that these aren't definite types and could be any type. Currently Madlib does not provide any sort of runtime reflection like Java, however, interfaces can avail us here!
-Let's see how to define the interface for our inspect problem:
+How could define introspection for individual values (`showA` and `showB`)?
+
+The issue is that these aren't definite types and could be any type. Currently Madlib does not provide any sort of runtime reflection, however, interfaces can avail us here!
+
+Let's see how to define the interface for our introspection problem:
+
 ```madlib
 interface Show a {
   show :: a -> String
 }
 ```
-So with this definition, we're saying "if Show is implemented for a type `a`, we can call the method `inspect` with values of that type and get back a string."
+So with this definition, we're saying "if `Show` is implemented for a type `a`, we can call the method `show` with values of that type and get back a string."
 
 Now we can use constraints within type annotations, to frame that a type variable implements a given interface.
 
@@ -41,5 +44,5 @@ instance (Show a, Show b) => Show #[a, b] {
 }
 ```
 
-Now we need not care about how `inspect` will be constrained for the types contained in the tuple. The `inspect` method will be dispatched to the right implementation, based on the concrete types the method is called with &mdash; So, `inspect(#[1, true])` would respectively call the method from `Show Integer` and `Show Boolean`.
+Now we need not care about how `show` will be constrained for the types contained in the tuple. The `show` method will be dispatched to the right implementation, based on the concrete types the method is called with &mdash; So, `show(#[1, true])` would respectively call the method from `Show Integer` and `Show Boolean`.
 
