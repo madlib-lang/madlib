@@ -20,7 +20,7 @@ interface Show a {
   show :: a -> String
 }
 ```
-So with this definition, we're saying "if Inspect is implemented for a type `a`, we can call the method `inspect` with values of that type and get back a string."
+So with this definition, we're saying "if Show is implemented for a type `a`, we can call the method `inspect` with values of that type and get back a string."
 
 Now we can use constraints within type annotations, to frame that a type variable implements a given interface.
 
@@ -30,7 +30,7 @@ Comparable a => a -> a -> Boolean
 ```
 The type annotation above tells us that the function must be called with values of a type that implement the interface Comparable, otherwise we'll get a compilation error telling us that an `[instance] for Comparable was not found` for this type.
 
-Coming back to our initial problem, we'd like to implement Inspect for the type `#[a, b]`. To do this, we can also constrain types in the beginning of an instance declaration:
+Coming back to our initial problem, we'd like to implement Show for the type `#[a, b]`. To do this, we can also constrain types in the beginning of an instance declaration:
 
 ```madlib
 instance (Show a, Show b) => Show #[a, b] {
@@ -41,5 +41,5 @@ instance (Show a, Show b) => Show #[a, b] {
 }
 ```
 
-Now we need not care about how `inspect` will be constrained for the types contained in the tuple. The `inspect` method will be dispatched to the right implementation, based on the concrete types the method is called with &mdash; So, `inspect(#[1, true])` would respectively call the method from `Inspect Integer` and `Inspect Boolean`.
+Now we need not care about how `inspect` will be constrained for the types contained in the tuple. The `inspect` method will be dispatched to the right implementation, based on the concrete types the method is called with &mdash; So, `inspect(#[1, true])` would respectively call the method from `Show Integer` and `Show Boolean`.
 
