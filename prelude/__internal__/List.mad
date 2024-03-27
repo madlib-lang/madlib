@@ -1068,3 +1068,19 @@ export all = (predicate, list) => where(list) {
   [x, ...xs] =>
     predicate(x) && all(predicate, xs)
 }
+
+/**
+ * Cut a given array at the specificed index and return a tuple of #[beforeIndex, afterIndex] slices
+ * @since 0.23.1
+ * @example
+ * cut(5, range(1, 11)) // #[ [1,2,3,4,5], [6,7,8,9,10]]
+ */
+cut :: Integer -> List a -> Maybe #[List a, List a]
+export cut = (a, xs) => {
+  len = length(xs)
+  return if (a <= len) {
+    Just(#[slice(0, a - 1, xs), slice(a, len, xs)])
+  } else {
+    Nothing
+  }
+}
