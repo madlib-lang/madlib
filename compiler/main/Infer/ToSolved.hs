@@ -13,6 +13,9 @@ tSubst = TVar (TV (-1) Star)
 toSolved :: Can.Exp -> Slv.Exp
 toSolved (Can.Canonical area exp) = case exp of
   Can.LNum  v          -> Slv.Typed ([] :=> tNumber) area (Slv.LNum v)
+  Can.LByte  v         -> Slv.Typed ([] :=> tByte) area (Slv.LNum v)
+  Can.LShort  v        -> Slv.Typed ([] :=> tShort) area (Slv.LNum v)
+  Can.LInt  v          -> Slv.Typed ([] :=> tInteger) area (Slv.LNum v)
   Can.LFloat v         -> Slv.Typed ([] :=> tFloat) area (Slv.LFloat v)
   Can.LStr  v          -> Slv.Typed ([] :=> tStr) area (Slv.LStr v)
   Can.LChar v          -> Slv.Typed ([] :=> tChar) area (Slv.LChar v)
