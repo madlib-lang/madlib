@@ -168,25 +168,3 @@ export either = (predA, predB, x) => predA(x) || predB(x)
  */
 both :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
 export both = (predA, predB, x) => predA(x) && predB(x)
-
-#iftarget js
-
-#-
-const nativeMemoize = (fn, map = new Map()) => arg => {
-  let fromCache = map.get(arg)
-
-  if (!fromCache) {
-      const value = fn(arg)
-      fromCache = typeof value === 'function' ? nativeMemoize(value, new Map()) : value
-
-      map.set(arg, fromCache)
-  }
-
-  return fromCache
-}
--#
-
-memoize :: (a -> b) -> a -> b
-export memoize = #- nativeMemoize -#
-
-#endif
