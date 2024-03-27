@@ -942,7 +942,7 @@ export startsWith = (subset, list) => where(#[subset, list]) {
  * contains([2, 8, 5], [1, 2, 3, 4, 5, 6]) // false
  */
 contains :: Eq a => List a -> List a -> Boolean
-export contains = (needle, haystack) => Function.any(startsWith(needle), tails(haystack))
+export contains = (needle, haystack) => any(startsWith(needle), tails(haystack))
 
 
 dropLength :: List a -> List b -> List b
