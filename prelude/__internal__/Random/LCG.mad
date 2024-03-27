@@ -1,6 +1,5 @@
 import type { Maybe } from "Maybe"
 
-import Byte from "Byte"
 import ByteArray from "ByteArray"
 import Float from "Float"
 import Integer from "Integer"
@@ -118,8 +117,7 @@ export mkSeed = pipe(
 stringToInt :: String -> Integer
 export stringToInt = pipe(
   ByteArray.fromString,
-  ByteArray.reduce((hash, byte) => hash + (byte << 6) + (byte << 16), 0),
-  Byte.toInteger,
+  ByteArray.reduce((hash, byte) => hash + (Integer.fromByte(byte) << 6) + (Integer.fromByte(byte) << 16), 0),
 )
 
 mkSeedFromString :: String -> Seed
