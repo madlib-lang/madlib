@@ -602,11 +602,11 @@ inferArrayAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Ty
 inferArrayAccess options env (Can.Canonical area (Can.ArrayAccess arr index)) = do
   tv <- newTVar Star
   (s1, ps1, t1, earr) <- infer options env arr
-  (_, ps2, t2, eindex) <- infer options env index
+  (s2, ps2, t2, eindex) <- infer options env index
   s3 <- contextualUnify env arr t1 (tArrayOf tv)
   s4 <- contextualUnify env index t2 tInteger
 
-  let s = s4 `compose` s3 `compose` s1
+  let s = s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s tv
   let ps = ps1 ++ ps2
 
