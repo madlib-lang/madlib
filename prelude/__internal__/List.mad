@@ -1078,7 +1078,7 @@ export all = (predicate, list) => where(list) {
 cut :: Integer -> List a -> Maybe #[List a, List a]
 export cut = (a, xs) => {
   len = length(xs)
-  return if (a <= len) {
+  return if (a <= len && a > -1) {
     Just(#[slice(0, a - 1, xs), slice(a, len, xs)])
   } else {
     Nothing
