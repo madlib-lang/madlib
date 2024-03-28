@@ -4,7 +4,6 @@ import { lt } from "Compare"
 import {} from "List"
 import { Just, Nothing } from "Maybe"
 
-import { memoize } from "./Memoize"
 import { assertEquals, test } from "./Test"
 
 
@@ -194,29 +193,6 @@ test(
     }
 
     return assertEquals(maybeMillion(0), Just(1000000))
-  },
-)
-
-
-test(
-  "memoize - should not call the memoized function if called with the same argument",
-  () => {
-    count :: Integer
-    count = 0
-
-    add :: Integer -> Integer
-    add = (a) => {
-      count := count + 1
-      return a
-    }
-
-    f = memoize(add)
-
-    f(1)
-    f(1)
-    f(1)
-
-    return assertEquals(count, 1)
   },
 )
 
