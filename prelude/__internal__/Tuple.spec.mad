@@ -1,10 +1,8 @@
 import { assertEquals, test } from "Test"
 
-import { fst, mapFst, mapSnd, snd } from "./Tuple"
+import { fst, snd } from "./Tuple"
 
 
 
 test("fst", () => assertEquals(fst(#["a", 200]), "a"))
 test("snd", () => assertEquals(snd(#["a", 200]), 200))
-test("mapFst", () => assertEquals(mapFst((x) => x / 2, #[200, "a"]), #[100, "a"]))
-test("mapSnd", () => assertEquals(mapSnd((x) => x / 2, #["a", 200]), #["a", 100]))
