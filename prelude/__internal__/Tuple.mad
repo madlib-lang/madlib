@@ -1,21 +1,45 @@
+/**
+ * Get the first value of a binary tuple
+ * @since 0.23.1
+ * @example
+ * fst(#["a", "b"]) // "a"
+ */
 fst :: #[a, b] -> a
 export fst = (tuple) => where(tuple) {
   #[a, _] =>
     a
 }
 
+/**
+ * Get the second value of a binary tuple
+ * @since 0.23.1
+ * @example
+ * snd(#["a", "b"]) // "b"
+ */
 snd :: #[a, b] -> b
 export snd = (tuple) => where(tuple) {
   #[_, b] =>
     b
 }
 
+/**
+ * Transform the first value of a binary tuple
+ * @since 0.23.1
+ * @example
+ * mapFst(Math.times(2), #[3, 4]) // #[6, 4]
+ */
 mapFst :: (a -> b) -> #[a, c] -> #[b, c]
 export mapFst = (fn, tuple) => where(tuple) {
   #[a, b] =>
     #[fn(a), b]
 }
 
+/**
+ * Transform the second value of a binary tuple
+ * @since 0.23.1
+ * @example
+ * mapFst(Math.times(2), #[3, 4]) // #[3, 8]
+ */
 mapSnd :: (b -> c) -> #[a, b] -> #[a, c]
 export mapSnd = (fn, tuple) => where(tuple) {
   #[a, b] =>

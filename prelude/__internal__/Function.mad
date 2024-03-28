@@ -111,7 +111,8 @@ export when = (predicate, truthy, value) => ifElse(predicate, truthy, always(val
  * otherwise return the initial value.
  * @since 0.23.1
  * @example
- * unless(equals(5), (x) => x * 10, 5) // 
+ * unless(equals(5), (x) => x * 10, 5) // 5
+ * unless(equals(5), (x) => x * 10, 4) // 40
  */
 unless :: (a -> Boolean) -> (a -> a) -> a -> a
 export unless = (predicate, falsy, value) => ifElse(predicate, always(value), falsy, value)
@@ -141,7 +142,6 @@ export noop = (_) => ({})
  */
 flip :: (a -> b -> c) -> b -> a -> c
 export flip = (f) => ((b, a) => f(a, b))
-
 
 /**
  * Functional "or", given two predicates and a value, return true if either predicate is true.
