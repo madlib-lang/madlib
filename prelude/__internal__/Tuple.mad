@@ -4,9 +4,20 @@ export fst = (tuple) => where(tuple) {
     a
 }
 
-
 snd :: #[a, b] -> b
 export snd = (tuple) => where(tuple) {
   #[_, b] =>
     b
+}
+
+mapFst :: (a -> b) -> #[a, c] -> #[b, c]
+export mapFst = (fn, tuple) => where(tuple) {
+  #[a, b] =>
+    #[fn(a), b]
+}
+
+mapSnd :: (b -> c) -> #[a, b] -> #[a, c]
+export mapSnd = (fn, tuple) => where(tuple) {
+  #[a, b] =>
+    #[a, fn(b)]
 }
