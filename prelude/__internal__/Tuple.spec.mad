@@ -1,0 +1,8 @@
+import { assertEquals, test } from "Test"
+
+import { fst, snd } from "./Tuple"
+
+
+
+test("fst", () => assertEquals(fst(#["a", 200]), "a"))
+test("snd", () => assertEquals(snd(#["a", 200]), 200))

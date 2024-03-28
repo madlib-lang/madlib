@@ -4,9 +4,12 @@ import {} from "String"
 import { assertEquals, test } from "Test"
 
 import {
+  all,
+  any,
   append,
   concat,
   contains,
+  cut,
   drop,
   dropLast,
   dropWhile,
@@ -272,3 +275,16 @@ test(
 test("slice", () => assertEquals(slice(1, 3, [1, 2, 3, 4, 5, 6]), [2, 3, 4]))
 
 test("slice - negative end", () => assertEquals(slice(0, -2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
+
+
+test("any - true", () => assertEquals(any((x) => x > 4, [1, 3, 5]), true))
+
+test("any - false", () => assertEquals(any((x) => x > 4, [1, 3, 2]), false))
+
+test("all - true", () => assertEquals(all((x) => x > 4, [5, 8, 10]), true))
+
+test("all - false", () => assertEquals(all((x) => x > 4, [1, 2, 10]), false))
+
+test("cut", () => assertEquals(cut(5, range(1, 11)), Just(#[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])))
+test("cut - negative index", () => assertEquals(cut(-1, range(1, 11)), Nothing))
+test("cut - invalid index", () => assertEquals(cut(16, range(1, 11)), Nothing))

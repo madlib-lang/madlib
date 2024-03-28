@@ -942,7 +942,7 @@ export startsWith = (subset, list) => where(#[subset, list]) {
  * contains([2, 8, 5], [1, 2, 3, 4, 5, 6]) // false
  */
 contains :: Eq a => List a -> List a -> Boolean
-export contains = (needle, haystack) => Function.any(startsWith(needle), tails(haystack))
+export contains = (needle, haystack) => any(startsWith(needle), tails(haystack))
 
 
 dropLength :: List a -> List b -> List b
@@ -1031,4 +1031,56 @@ export upsertWith = (pred, updater, list) => where(list) {
 
   [] =>
     [updater(Nothing)]
+}
+
+/**
+ * Given a predicate and a list of values it returns true if the predicate returns
+ * true for any of the values in the list.
+ *
+ * @since 0.23.1
+ * @example
+ * any((x) => x > 10, [1, 2, 3]) // false
+ * any((x) => x < 10, [1, 2, 3]) // true
+ */
+any :: (a -> Boolean) -> List a -> Boolean
+export any = (pred, list) => where(list) {
+  [] =>
+    false
+
+  [x, ...xs] =>
+    pred(x) || any(pred, xs)
+}
+
+/**
+ * Given a predicate and a list of values it returns true if the predicate returns
+ * true for all values in the list.
+ *
+ * @since 0.23.1
+ * @example
+ * all((x) => x > 2, [1, 2, 3]) // false
+ * all((x) => x < 4, [1, 2, 3]) // true
+ */
+all :: (a -> Boolean) -> List a -> Boolean
+export all = (predicate, list) => where(list) {
+  [] =>
+    true
+
+  [x, ...xs] =>
+    predicate(x) && all(predicate, xs)
+}
+
+/**
+ * Cut a given array at the specific index and return a tuple of #[beforeIndex, afterIndex] slices
+ * @since 0.23.1
+ * @example
+ * cut(5, range(1, 11)) // #[ [1,2,3,4,5], [6,7,8,9,10]]
+ */
+cut :: Integer -> List a -> Maybe #[List a, List a]
+export cut = (a, xs) => {
+  len = length(xs)
+  return if (a <= len && a > -1) {
+    Just(#[slice(0, a - 1, xs), slice(a, len, xs)])
+  } else {
+    Nothing
+  }
 }
