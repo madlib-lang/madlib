@@ -246,7 +246,7 @@ postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer 
 postProcessBody options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
-      let fs = ftv (apply accSubst env) `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
+      let fs = ftv (apply accSubst env'') `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
       (ps''', substFromDefaulting) <- do
@@ -963,45 +963,10 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       tv <- newTVar Star
       return (env, tv)
 
-  -- (s1, ps1, t1, _) <- infer options env' exp
-
-  -- let envWithVarsExcluded = env'
-  --       { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env' }
-  --     ps' = apply s1 ps1
-  --     t'  = apply s1 tv
-  --     fs  = ftv (apply s1 envWithVarsExcluded)
-  -- (_, rs, _) <- catchError
-  --   (split False envWithVarsExcluded fs (ftv t') ps')
-  --   (\case
-  --     (CompilationError e NoContext) -> do
-  --       throwError $ CompilationError e (Context (envCurrentPath env) area)
-
-  --     (CompilationError e c) -> do
-  --       throwError $ CompilationError e c
-  --   )
-
-  -- -- We need to update the env again in case the inference of the function resulted in overloading so that
-  -- -- we can have the predicates to generate the correct placeholders when fetching the var from the env
-  -- -- NB: mostly relevant for recursive definitions
-  -- env''' <- case Can.getExpName exp of
-  --   Just n ->
-  --     return $ extendVars env' (n, Forall [] $ rs :=> t1)
-
-  --   Nothing ->
-  --     return env'
-
-  -- Once we have gattered clues we update the env types and infer it again
-  -- to handle recursion errors. We probably need to improve that solution at
-  -- some point!
-  -- (s2, ps, t, e) <- infer options (apply s1 env''' { envNamesInScope = M.keysSet (envVars env) }) exp
   (s, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
-  -- let s = s1 `compose` s2
-
-  -- let env'' = apply s env'''
   let env'' = apply s env'
 
   s' <- contextualUnify env'' exp (apply s tv) t
-  -- let s'' = s `compose` s1 `compose` s'
   let s'' = s `compose` s' `compose` s
       envWithVarsExcluded = env''
         { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
@@ -1010,7 +975,6 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       t'  = apply s'' tv
       vs  =
         if isLet then
-          -- ftv t'
           ftvForLetGen t'
         else
           ftv t'
@@ -1027,34 +991,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
         throwError $ CompilationError e c
     )
 
-  -- (ds', rs', sDefaults) <-
-  --   if
-  --     not isLet
-  --     && not (Slv.isExtern e)
-  --     && not (null (ds ++ rs))
-  --     && not (Can.isNamedAbs exp)
-  --     && not (Can.isTopLevelAssignment exp)
-  --     && not (isFunctionType t')
-  --     -- TODO: we need to update that and only default preds for values that aren't behind a function
-  --     -- So the record might still have direct values that should be defaulted ( like mempty )
-  --     && not (isRecordType t')
-  --   then do
-  --     (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
-  --         -- TODO: tryDefaults should handle such a case so that we only call it once.
-  --         -- What happens is that defaulting may solve some types ( like Number a -> Integer )
-  --         -- and then it could resolve instances like Show where before we still had a type var
-  --         -- but after the first pass we have Integer instead.
-  --     (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
-  --     CM.unless (null rs'') $ throwError $ CompilationError
-  --       (AmbiguousType (TV "-" Star, rs'))
-  --       (Context (envCurrentPath env) area)
-  --     return ([], [], sDef' `compose` sDef)
-  --   else do
-  --     return (ds, rs, mempty)
-  let (ds', rs', sDefaults) = (ds, rs, mempty)
-
-  let rs'' = dedupePreds rs'
-  let sFinal = sSplit `compose` sDefaults `compose` s''
+  let rs' = dedupePreds rs
+  let sFinal = sSplit `compose` s''
 
   let mutPS =
         List.filter
@@ -1066,22 +1004,22 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   let sc =
         if isLet && not (Slv.isNamedAbs e) then
-          apply sFinal $ quantify [] ((rs'' ++ mutPS) :=> t')
+          apply sFinal $ quantify [] ((rs' ++ mutPS) :=> t')
         else
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          apply sFinal $ quantify gs (apply sDefaults $ (rs'' ++ mutPS) :=> t')
+          apply sFinal $ quantify gs ((rs' ++ mutPS) :=> t')
 
   when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds' ++ mutPS, rs''), extendVars env (n, sc), updateQualType e (apply sFinal $ rs'' :=> t'))
+      return (sFinal, (ds ++ mutPS, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds' ++ mutPS, rs''), env, updateQualType e (apply sFinal $ rs'' :=> t'))
+      return (sFinal, (ds ++ mutPS, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
 
 
 inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
