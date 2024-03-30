@@ -83,15 +83,19 @@ if (l === null && r === null) {
   return true;
 }
   if (typeof l === `object`) {
-    if (l.n && l.v) {
-      let result = true;
-      while (l !== null && result) {
-        result = __eq__(l.v, r.v);
-        l = l.n;
-        r = r.n;
-      }
-      return result && r === null;
+if (l.n && l.v) {
+  let result = true;
+  while (l !== null && result) {
+    if (r === null) {
+      result = false
+      break
     }
+    result = __eq__(l.v, r.v)
+    l = l.n
+    r = r.n
+  }
+  return result && r === null;
+}
 
   if (l.__constructor === `SetRBNode` || l.__constructor === `SetRBEmpty`) {
     return __eq__Set(l, r)
