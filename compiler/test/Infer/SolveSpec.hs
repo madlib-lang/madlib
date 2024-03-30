@@ -1631,3 +1631,18 @@ spec = do
       let code   = unlines ["export definedAfter", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when exporting a name not defined yet" actual
+
+
+
+    it "should infer most general type for inner lambdas" $ do
+      let code   = unlines
+            [ "export repeatWith = (f, count) => {"
+            , "  helper = (index) => index >= count ? [] : [f(index), ...helper(index + 1)]"
+            , ""
+            , "  return helper(0)"
+            , "}"
+            , ""
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer most general type for inner lambdas" actual
