@@ -1677,8 +1677,9 @@
                                                                        "(,)"
                                                                        (Kfun Star (Kfun Star Star)))
                                                                     "prelude")
-                                                                 (TVar (TV 7 Star)))
-                                                              (TVar (TV 8 Star)))
+                                                                 (TCon
+                                                                    (TC "Integer" Star) "prelude"))
+                                                              (TCon (TC "Integer" Star) "prelude"))
                                                          (Area (Loc 89 5 13) (Loc 96 5 20))
                                                          (PTuple
                                                             [ Typed

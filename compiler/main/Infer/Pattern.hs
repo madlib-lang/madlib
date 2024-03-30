@@ -138,10 +138,10 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
     (ps' :=> t) <- instantiate sc
     s           <- contextualUnify env p t (foldr fn tv ts)
+    let s' = s `compose` s `compose` s
 
-    let t = apply s tv
-
-    return (Slv.Typed ([] :=> t) area (Slv.PCon n pats'), ps <> ps', M.map (apply s) vars, t)
+    let t = apply s' tv
+    return (Slv.Typed ([] :=> t) area (Slv.PCon n (map (updateTypes s') pats')), ps <> ps', M.map (apply s') vars, t)
 
   _ -> undefined
 
@@ -150,3 +150,28 @@ verifyConstructor :: Env -> Area -> String -> Infer ()
 verifyConstructor env area name = do
   unless (isConstructor env name) $ do
     throwError $ CompilationError (NotAConstructor name) (Context (envCurrentPath env) area)
+
+
+
+updateTypes :: Substitution -> Slv.Pattern -> Slv.Pattern
+updateTypes s pat = case pat of
+  Slv.Typed t area (Slv.PCon n pats) ->
+    Slv.Typed (apply s t) area (Slv.PCon n (updateTypes s <$> pats))
+
+  Slv.Typed t area (Slv.PRecord fields) ->
+    Slv.Typed (apply s t) area (Slv.PRecord (updateTypes s <$> fields))
+
+  Slv.Typed t area (Slv.PList items) ->
+    Slv.Typed (apply s t) area (Slv.PList (updateTypes s <$> items))
+
+  Slv.Typed t area (Slv.PTuple items) ->
+    Slv.Typed (apply s t) area (Slv.PTuple (updateTypes s <$> items))
+
+  Slv.Typed t area (Slv.PSpread pat) ->
+    Slv.Typed (apply s t) area (Slv.PSpread (updateTypes s pat))
+
+  Slv.Typed t area p ->
+    Slv.Typed (apply s t) area p
+
+  or ->
+    or
