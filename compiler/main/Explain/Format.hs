@@ -785,6 +785,22 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "Grammar error\n\n"
     <> "Unexpected character"
 
+  ByteOutOfBounds x ->
+    "Byte out of bounds\n\n"
+    <> "The literal '" <> x <> "_b' is too big, the maximum value for bytes is 255"
+
+  ShortOutOfBounds x ->
+    "Short out of bounds\n\n"
+    <> "The literal '" <> x <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1)
+
+  IntOutOfBounds x ->
+    "Integer out of bounds\n\n"
+    <> "The literal '" <> x <> "_i' is too big, the maximum value for integers is "<> show (2^63 - 1)
+
+  NegatedByte ->
+    "Negated byte\n\n"
+    <> "Bytes can't be negated"
+
   UnknownType t ->
     "Unknown type\n\n"
     <> "The type '" <> t <> "' was not found\n\n"
@@ -1315,6 +1331,82 @@ createErrorDiagnostic color context typeError = case typeError of
           "Unbound Type"
           []
           [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
+
+  ByteOutOfBounds n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Byte out of bounds"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The literal '" <> n <> "_b' is too big, the maximum value for bytes is 255"
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Byte out of bounds"
+          []
+          []
+
+  ShortOutOfBounds n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Short out of bounds"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The literal '" <> n <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1) <>"."
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Short out of bounds"
+          []
+          []
+
+  IntOutOfBounds n ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Integer out of bounds"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The literal '" <> n <> "_s' is too big, the maximum value for integers is "<> show (2^63 - 1) <>"."
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Integer out of bounds"
+          []
+          []
+
+  NegatedByte ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Negated byte"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This "Bytes can't be negated"
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Negated byte"
+          []
+          []
 
   DerivingAliasNotAllowed n ->
     case context of

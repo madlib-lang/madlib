@@ -90,18 +90,18 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.LNum x)
 
     Src.LByte  x -> do
-      -- when ((read x :: Int) > 255) $
-      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      when ((read x :: Int) > 2^8 - 1) $
+        throwError $ CompilationError (ByteOutOfBounds x) (Context (Env.envCurrentPath env) area)
       return $ Can.Canonical area (Can.LByte x)
 
     Src.LShort  x -> do
-      -- when ((read x :: Int) > 255) $
-      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      when ((read x :: Int) > 2^31 - 1) $
+        throwError $ CompilationError (ShortOutOfBounds x) (Context (Env.envCurrentPath env) area)
       return $ Can.Canonical area (Can.LShort x)
 
     Src.LInt  x -> do
-      -- when ((read x :: Int) > 255) $
-      --   throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) area)
+      when ((read x :: Integer) > 2^63 - 1) $
+        throwError $ CompilationError (IntOutOfBounds x) (Context (Env.envCurrentPath env) area)
       return $ Can.Canonical area (Can.LInt x)
 
     Src.LFloat x ->
@@ -141,6 +141,9 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.App fn args ->
       buildApp env target area fn args
+
+    Src.UnOp (Src.Source area _ (Src.Var "unary-minus")) (Src.Source _ _ (Src.LByte _)) ->
+      throwError $ CompilationError NegatedByte (Context (Env.envCurrentPath env) area)
 
     Src.UnOp op arg ->
       buildApp env target area op [arg]

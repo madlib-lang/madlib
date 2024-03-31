@@ -1138,6 +1138,15 @@ expToDoc comments exp =
         Source _ _ (LNum n) ->
           (Pretty.pretty n, comments')
 
+        Source _ _ (LByte n) ->
+          (Pretty.pretty n <> Pretty.pretty "_b", comments')
+
+        Source _ _ (LShort n) ->
+          (Pretty.pretty n <> Pretty.pretty "_s", comments')
+
+        Source _ _ (LInt n) ->
+          (Pretty.pretty n <> Pretty.pretty "_i", comments')
+
         Source _ _ (LFloat n) ->
           (Pretty.pretty n, comments')
 

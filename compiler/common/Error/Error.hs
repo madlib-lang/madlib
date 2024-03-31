@@ -71,6 +71,10 @@ data TypeError
   | NotAConstructor String
   | RecordDuplicateFields [String]
   | TestNotValid Type
+  | ByteOutOfBounds String
+  | ShortOutOfBounds String
+  | IntOutOfBounds String
+  | NegatedByte
   deriving (Show, Eq, Ord)
 
 
