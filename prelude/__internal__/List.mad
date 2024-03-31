@@ -115,8 +115,10 @@ export repeat = (a, count) => count <= 0 ? [] : [a, ...repeat(a, count - 1)]
  * @example
  * repeatWith((i) => show(i), 3) // ["0", "1", "2"]
  */
-repeatWith :: (Integer -> a) -> Integer -> List a
+
+repeatWith :: (Comparable n, Number n) => (n -> a) -> n -> List a
 export repeatWith = (f, count) => {
+  helper :: (Comparable n, Number n) => n -> a
   helper = (index) => index >= count ? [] : [f(index), ...helper(index + 1)]
 
   return helper(0)
@@ -124,15 +126,15 @@ export repeatWith = (f, count) => {
 
 
 /**
- * Return a list of integers within the given range. The start
+ * Return a list of numbers within the given range. The start
  * parameter is inclusive and the end parameter is exclusive.
  *
  * @since 0.12.0
  * @example
  * range(3, 3) // []
- * range(3, 5) // [3, 4]
+ * range(3_s, 6_s) // [3_s, 4_s, 5_s]
  */
-range :: Integer -> Integer -> List Integer
+range :: (Comparable n, Number n) => n -> n -> List n
 export range = (start, end) => repeatWith((i) => i + start, end - start)
 
 

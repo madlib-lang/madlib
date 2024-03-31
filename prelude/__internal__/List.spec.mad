@@ -220,6 +220,9 @@ test("takeWhile", () => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6])
 test("reverse", () => assertEquals(reverse([1, 2, 3]), [3, 2, 1]))
 
 test("range", () => assertEquals(range(3, 7), [3, 4, 5, 6]))
+test("range - short", () => assertEquals(range(3_s, 7_s), [3_s, 4_s, 5_s, 6_s]))
+test("range - float", () => assertEquals(range(3.0, 7.0), [3.0, 4.0, 5.0, 6.0]))
+test("range - byte", () => assertEquals(range(3_b, 7_b), [3_b, 4_b, 5_b, 6_b]))
 
 test("range - same start and end", () => assertEquals(range(3, 3), []))
 
