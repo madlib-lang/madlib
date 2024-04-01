@@ -76,7 +76,6 @@ tokens :-
   <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                       { beginComment }
   <comment>   [.\n]                                                                           ;
   <comment>   \*\/                                                                            { endComment }
-  -- <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*                                           ; -- Comments
   <0, jsxOpeningTag, jsxAutoClosed> @head\/\/[^\n]*[\n]?                                      ; -- Comments
 
   <0> derive                                                                                  { mapToken (\_ -> TokenDerive) }
@@ -215,7 +214,7 @@ unitTypeRegex :: Regex
 unitTypeRegex = toRegex "\\`}"
 
 isTokenExport :: Regex
-isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*)*[ \n\t]*="
+isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+([ \n]*\\/\\/[^\n]*\n)*[ \n\t]*="
 
 isTypeExport :: Regex
 isTypeExport = toRegex "\\`export[ \t]+type"
