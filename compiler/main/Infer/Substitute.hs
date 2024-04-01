@@ -77,7 +77,7 @@ instance Substitutable Type where
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
   apply s (TRecord fields Nothing optionalFields) =
-    TRecord (apply s <$> fields) Nothing (apply s <$> optionalFields)
+    TRecord (apply s <$> fields <> optionalFields) Nothing (apply s <$> optionalFields)
 
   apply _ t = t
 

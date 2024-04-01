@@ -56,11 +56,9 @@ instance Unify Type where
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
           commonFields = M.intersection fields fields'
-      -- newBase <- newTVar Star
-      -- s1 <- unify (TRecord mempty (Just tBase)) (TRecord fieldsDiff (Just newBase))
       s1 <- unify tBase (TRecord fieldsDiff Nothing commonFields)
 
-      unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
+      unless (M.null (M.difference (fields <> optionalFields) (fields' <> optionalFields'))) $ throwError (CompilationError (UnificationError r l) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -71,11 +69,9 @@ instance Unify Type where
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
           commonFields = M.intersection fields' fields
-      -- newBase <- newTVar Star
-      -- s1 <- unify (TRecord mempty (Just tBase')) (TRecord fieldsDiff (Just newBase))
       s1 <- unify tBase' (TRecord fieldsDiff Nothing commonFields)
 
-      unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
+      unless (M.null (M.difference (fields' <> optionalFields') (fields <> optionalFields))) $ throwError (CompilationError (UnificationError r l) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -84,8 +80,8 @@ instance Unify Type where
       return $ s1 `compose` s2
 
     _ -> do
-      let extraFields  = M.difference fields (fields' <> optionalFields')
-          extraFields' = M.difference fields' (fields <> optionalFields)
+      let extraFields  = M.difference (fields <> optionalFields) (fields' <> optionalFields')
+          extraFields' = M.difference (fields' <> optionalFields') (fields <> optionalFields)
       if extraFields' /= mempty || extraFields /= mempty then
         throwError $ CompilationError (UnificationError r l) NoContext
       else do

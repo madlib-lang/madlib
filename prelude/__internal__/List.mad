@@ -613,6 +613,7 @@ export uniqueBy = (f) => reduce(
   [],
 )
 
+
 descending :: (a -> a -> Comparison) -> a -> List a -> List a -> List (List a)
 descending = (compareFn, a, as, xs) => where(xs) {
   [b, ...bs] =>
