@@ -2436,8 +2436,26 @@ generateFunction env symbolTable metadata (ps IT.:=> t) area functionName corePa
       loop <- block `named` "loop"
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
-      let paramsWithNames       = Map.fromList $ List.zip (Core.getValue <$> coreParams) (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
-          symbolTableWithParams = symbolTable <> paramsWithNames
+      -- let paramsWithNames       = Map.fromList $ List.zip (Core.getValue <$> coreParams) (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
+      -- let symbolTableWithParams = symbolTable <> paramsWithNames
+
+      paramsWithNames <- mapM
+        (\(Typed paramQt paramArea metadata paramName, allocatedParam, param) ->
+            if Core.isReferenceParameter metadata then do
+              param' <- safeBitcast param (Type.ptr boxType)
+              loaded <- load param' 0
+              unboxed <- unbox env' symbolTable paramQt loaded
+              return (paramName, localVarSymbol param unboxed, unboxed)
+            else do
+              unboxed <- unbox env' symbolTable paramQt param
+              Monad.when (envIsDebugBuild env) $ do
+                ptr <- alloca (typeOf unboxed) Nothing 0
+                declareVariable env paramArea False paramName ptr
+                storeWithMetadata (makeDILocation env paramArea) ptr 0 unboxed
+              return (paramName, tcoParamSymbol allocatedParam unboxed, unboxed)
+        )
+        (List.zip3 coreParams allocatedParams params)
+      let symbolTableWithParams = symbolTable <> Map.fromList (List.map (\(a, b, _) -> (a, b)) paramsWithNames)
 
 
       -- Generate body
