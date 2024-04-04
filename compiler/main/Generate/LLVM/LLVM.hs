@@ -2436,9 +2436,6 @@ generateFunction env symbolTable metadata (ps IT.:=> t) area functionName corePa
       loop <- block `named` "loop"
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
-      -- let paramsWithNames       = Map.fromList $ List.zip (Core.getValue <$> coreParams) (uncurry tcoParamSymbol <$> List.zip allocatedParams unboxedParams)
-      -- let symbolTableWithParams = symbolTable <> paramsWithNames
-
       paramsWithNames <- mapM
         (\(Typed paramQt paramArea metadata paramName, allocatedParam, param) ->
             if Core.isReferenceParameter metadata then do
