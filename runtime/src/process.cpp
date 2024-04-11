@@ -47,7 +47,6 @@ static char **ARGV = NULL;
 
 void __main__init__(int argc, char **argv) {
   GC_set_dont_precollect(1);
-  GC_allow_register_threads();
 
   // TODO: make min alloc and initial heap size available as compilation options
   size_t minAlloc = 50 * 1024 * 1024; // 50MB
@@ -67,6 +66,7 @@ void __main__init__(int argc, char **argv) {
   };
   GC_set_stackbottom(NULL, &stackBase);
 
+  GC_allow_register_threads();
   madlib__stack__init(stackBottom, __main__start__);
 }
 

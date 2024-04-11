@@ -15,8 +15,8 @@ char *madlib__number__internal__showByte(unsigned char i);
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s);
 
 // Float
-double unboxDouble(double *x);
-double *boxDouble(double x);
+double unboxDouble(void *x);
+void *boxDouble(double x);
 
 char *madlib__number__internal__showFloat(double d);
 

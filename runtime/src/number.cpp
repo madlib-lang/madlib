@@ -47,14 +47,14 @@ char *madlib__number__internal__showFloat(double d) {
 }
 
 
-double unboxDouble(double *x) {
+double unboxDouble(void *x) {
   return *(double*)&x;
 }
 
 
-double *boxDouble(double x) {
+void *boxDouble(double x) {
   double **w = (double**) &x;
-  return *w;
+  return (void*) *w;
 }
 
 

@@ -209,6 +209,10 @@ selectField :: Operand
 selectField =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [stringType, recordType] False) (AST.mkName "madlib__record__internal__selectField"))
 
+boxDouble :: Operand
+boxDouble =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.double] False) (AST.mkName "boxDouble"))
+
 madlistHasMinLength :: Operand
 madlistHasMinLength =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "madlib__list__internal__hasMinLength"))
@@ -551,13 +555,14 @@ box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
-    ptr <- alloca Type.double Nothing 0
-    boxWrap <- alloca (Type.ptr boxType) Nothing 0
-    store ptr 0 what
-    ptr' <- bitcast ptr (Type.ptr boxType)
-    store boxWrap 0 ptr'
-    loaded <- load boxWrap 0
-    load loaded 0
+    call boxDouble [(what, [])]
+    -- ptr <- alloca Type.double Nothing 0
+    -- boxWrap <- alloca (Type.ptr boxType) Nothing 0
+    -- store ptr 0 what
+    -- ptr' <- bitcast ptr (Type.ptr boxType)
+    -- store boxWrap 0 ptr'
+    -- loaded <- load boxWrap 0
+    -- load loaded 0
 
   -- Integer
   Type.IntegerType 64 -> do
@@ -2893,6 +2898,7 @@ generateLLVMModule env isMain currentModulePaths initialSymbolTable ast@Core.AST
   declareWithAttributes [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline] (AST.mkName "llvm.dbg.declare")                             [Type.MetadataType, Type.MetadataType, Type.MetadataType] Type.void
 
   -- extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
+  extern (AST.mkName "boxDouble")                                    [Type.double] boxType
   extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
