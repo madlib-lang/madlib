@@ -1,8 +1,8 @@
-import String from "String"
 import {} from "Char"
-import { filter, first, last, drop, dropLast } from "List"
-import { fromMaybe, Nothing, Just } from "Maybe"
 import { complement, equals, identity, ifElse } from "Function"
+import { drop, dropLast, filter, first, last } from "List"
+import { Just, Nothing, fromMaybe } from "Maybe"
+import String from "String"
 
 
 
@@ -20,7 +20,7 @@ dropTrailingPathSeparator :: FilePath -> FilePath
 export dropTrailingPathSeparator = ifElse(
   (path) => path != "/" && String.lastChar(path) == Just('/'),
   String.dropLast(1),
-  identity
+  identity,
 )
 
 
@@ -33,8 +33,11 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
 
   Just(char) =>
     foundSlash
-      ? mappend([buffer], performSplitPath(String.pushChar(char, ""), false, String.drop(1, path)))
-      : performSplitPath(buffer ++ String.pushChar(char, ""), false, String.drop(1, path))
+      ? mappend(
+        [buffer],
+        performSplitPath(String.prependChar(char, ""), false, String.drop(1, path)),
+      )
+      : performSplitPath(buffer ++ String.prependChar(char, ""), false, String.drop(1, path))
 }
 
 
@@ -60,10 +63,21 @@ joinPath :: List FilePath -> FilePath
 export joinPath = pipe(
   filter(complement(String.isEmpty)),
   ifElse(
-    pipe(first, equals(Just("/"))),
-    pipe(drop(1), map(dropTrailingPathSeparator), String.join("/"), mappend("/")),
-    pipe(map(dropTrailingPathSeparator), String.join("/"))
-  )
+    pipe(
+      first,
+      equals(Just("/")),
+    ),
+    pipe(
+      drop(1),
+      map(dropTrailingPathSeparator),
+      String.join("/"),
+      mappend("/"),
+    ),
+    pipe(
+      map(dropTrailingPathSeparator),
+      String.join("/"),
+    ),
+  ),
 )
 
 
@@ -80,18 +94,24 @@ export canonicalizePath = pipe(
   map(
     pipe(
       ifElse(
-        pipe(String.take(2), equals("./")),
+        pipe(
+          String.take(2),
+          equals("./"),
+        ),
         String.drop(2),
-        identity
+        identity,
       ),
       ifElse(
-        pipe(String.lastChar, equals(Just('/'))),
+        pipe(
+          String.lastChar,
+          equals(Just('/')),
+        ),
         String.replace("([^/]+)/*", "$1/"),
-        identity
-      )
-    )
+        identity,
+      ),
+    ),
   ),
-  joinPath
+  joinPath,
 )
 
 
@@ -107,7 +127,7 @@ dropPathSegments :: Integer -> FilePath -> FilePath
 export dropPathSegments = (howMany) => pipe(
   splitPath,
   drop(howMany),
-  joinPath
+  joinPath,
 )
 
 
@@ -122,7 +142,7 @@ parentPath :: FilePath -> FilePath
 export parentPath = pipe(
   splitPath,
   dropLast(1),
-  joinPath
+  joinPath,
 )
 
 
@@ -143,9 +163,7 @@ export isRootPathOf = (root, path) => {
   pathStart = dropTrailingPathSeparator(fromMaybe("", first(pathParts)))
 
   return rootStart == pathStart || rootStart == ""
-    ? rootStart == ""
-      ? true
-      : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
+    ? rootStart == "" ? true : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
     : false
 }
 
@@ -164,13 +182,11 @@ export takeFileName = pipe(
   last,
   where {
     Just(part) =>
-      String.lastChar(part) == Just('/')
-        ? ""
-        : part
+      String.lastChar(part) == Just('/') ? "" : part
 
     Nothing =>
       ""
-  }
+  },
 )
 
 
@@ -188,5 +204,5 @@ export takeExtension = pipe(
   String.split("."),
   last,
   map(ifElse(String.isEmpty, identity, mappend("."))),
-  fromMaybe("")
+  fromMaybe(""),
 )

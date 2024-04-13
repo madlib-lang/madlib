@@ -1,9 +1,14 @@
 import type { Maybe } from "Maybe"
+
 import List from "List"
+
+
 
 #iftarget js
 
 import { Just, Nothing } from "Maybe"
+
+
 
 #endif
 
@@ -114,7 +119,7 @@ export split = extern "madlib__string__split"
 join :: String -> List String -> String
 export join = (a, xs) => pipe(
   List.intersperse(a),
-  List.reduce(mappend, "")
+  List.reduce(mappend, ""),
 )(xs)
 
 /**
@@ -235,7 +240,7 @@ filterChars :: (Char -> Boolean) -> String -> String
 export filterChars = (predicate, s) => pipe(
   toList,
   List.filter(predicate),
-  fromList
+  fromList,
 )(s)
 
 /**
@@ -245,7 +250,7 @@ export filterChars = (predicate, s) => pipe(
 reduceChars :: (a -> Char -> a) -> a -> String -> a
 export reduceChars = (f, initial, s) => pipe(
   toList,
-  List.reduce(f, initial)
+  List.reduce(f, initial),
 )(s)
 
 
@@ -298,7 +303,7 @@ dropWhile :: (Char -> Boolean) -> String -> String
 export dropWhile = (predicate, s) => pipe(
   toList,
   List.dropWhile(predicate),
-  fromList
+  fromList,
 )(s)
 
 /**
@@ -323,7 +328,7 @@ takeWhile :: (Char -> Boolean) -> String -> String
 export takeWhile = (predicate, s) => pipe(
   toList,
   List.takeWhile(predicate),
-  fromList
+  fromList,
 )(s)
 
 
@@ -439,7 +444,7 @@ export length = extern "madlib__string__length"
 repeat :: Char -> Integer -> String
 export repeat = (c, n) => pipe(
   List.repeat(c),
-  fromList
+  fromList,
 )(n)
 
 
@@ -457,9 +462,11 @@ export match = (regex, input) => #- input.match(regex) !== null -#
  * @since 0.18.7
  */
 replace :: String -> String -> String -> String
-export replace = (regex, replacing, input) => (#-
+export replace = (regex, replacing, input) => (
+  #-
   input.replace(new RegExp(regex, "g"), replacing)
--#)
+-#
+)
 
 #elseif llvm
 
@@ -486,8 +493,8 @@ export replace = extern "madlib__string__replace"
  * Pushes a char at the beginning of a String
  * @since 0.12.0
  */
-pushChar :: Char -> String -> String
-export pushChar = (c, s) => #- { return c + s } -#
+prependChar :: Char -> String -> String
+export prependChar = (c, s) => #- { return c + s } -#
 
 /**
  * Appends a char at the end of a String
@@ -502,8 +509,8 @@ export appendChar = (c, s) => #- { return s + c } -#
  * pushes a char at the beginning of a String
  * @since 0.12.0
  */
-pushChar :: Char -> String -> String
-export pushChar = extern "madlib__string__pushChar"
+prependChar :: Char -> String -> String
+export prependChar = extern "madlib__string__prependChar"
 
 /**
  * appends a char at the end of a String
@@ -526,7 +533,7 @@ reverse :: String -> String
 export reverse = (s) => pipe(
   toList,
   List.reverse,
-  fromList
+  fromList,
 )(s)
 
 
@@ -540,7 +547,7 @@ export reverse = (s) => pipe(
 includes :: Char -> String -> Boolean
 export includes = (c, s) => pipe(
   toList,
-  List.includes(c)
+  List.includes(c),
 )(s)
 
 
@@ -555,7 +562,7 @@ export includes = (c, s) => pipe(
 startsWith :: String -> String -> Boolean
 export startsWith = (subset, s) => pipe(
   toList,
-  List.startsWith(toList(subset))
+  List.startsWith(toList(subset)),
 )(s)
 
 
@@ -570,7 +577,7 @@ export startsWith = (subset, s) => pipe(
 contains :: String -> String -> Boolean
 export contains = (subset, s) => pipe(
   toList,
-  List.contains(toList(subset))
+  List.contains(toList(subset)),
 )(s)
 
 
@@ -585,5 +592,5 @@ export contains = (subset, s) => pipe(
 endsWith :: String -> String -> Boolean
 export endsWith = (subset, s) => pipe(
   toList,
-  List.endsWith(toList(subset))
+  List.endsWith(toList(subset)),
 )(s)

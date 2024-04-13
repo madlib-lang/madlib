@@ -30,17 +30,26 @@ export fromShort = extern "madlib__number__shortToChar"
  * isDigit('3') // true
  */
 isDigit :: Char -> Boolean
-export isDigit = (s) =>
-  s == '0' ||
-  s == '1' ||
-  s == '2' ||
-  s == '3' ||
-  s == '4' ||
-  s == '5' ||
-  s == '6' ||
-  s == '7' ||
-  s == '8' ||
-  s == '9'
+export isDigit = (s) => s
+    == '0'
+    || s
+    == '1'
+    || s
+    == '2'
+    || s
+    == '3'
+    || s
+    == '4'
+    || s
+    == '5'
+    || s
+    == '6'
+    || s
+    == '7'
+    || s
+    == '8'
+    || s
+    == '9'
 
 
 /**
@@ -54,8 +63,8 @@ export isDigit = (s) =>
  */
 isLetter :: Char -> Boolean
 export isLetter = (c) => pipe(
-  String.pushChar($, ""),
-  String.match("[a-zA-Z]+")
+  String.prependChar($, ""),
+  String.match("[a-zA-Z]+"),
 )(c)
 
 
