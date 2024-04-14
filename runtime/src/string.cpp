@@ -323,7 +323,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   return result;
 }
 
-char *madlib__string__pushChar(int32_t c, char* s) {
+char *madlib__string__prependChar(int32_t c, char* s) {
   char *encoded = utf8EncodeChar(c);
   size_t encodedLength = strlen(encoded);
   size_t stringLength = strlen(s);

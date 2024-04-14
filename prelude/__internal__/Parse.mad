@@ -510,7 +510,7 @@ string :: String -> Parser String
 export string = (s) => where(String.firstChar(s)) {
   Just(c) =>
     pipe(
-      map((a, b) => String.pushChar(a, b)),
+      map((a, b) => String.prependChar(a, b)),
       ap($, string(String.drop(1, s))),
     )(char(c))
 

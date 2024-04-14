@@ -1,9 +1,10 @@
 import {} from "Char"
-import { EQ, LT, GT, eq } from "Compare"
+import { EQ, GT, LT, eq } from "Compare"
 import { Just } from "Maybe"
 import { assertEquals, test } from "Test"
 
 import String from "./String"
+
 
 
 test("compare String - GT", () => assertEquals(compare("John", "James"), GT))
@@ -126,7 +127,7 @@ test("repeat", () => assertEquals(String.repeat('a', 10), "aaaaaaaaaa"))
 test("toUpper", () => assertEquals(String.toUpper("atwzö2êéè‡‹©Ïƒ¬"), "ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"))
 test("toLower", () => assertEquals(String.toLower("ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"), "atwzö2êéè‡‹©ïƒ¬"))
 
-test("pushChar", () => assertEquals(String.pushChar('a', "bc"), "abc"))
+test("prependChar", () => assertEquals(String.prependChar('a', "bc"), "abc"))
 test("appendChar", () => assertEquals(String.appendChar('c', "ab"), "abc"))
 
 test("reverse", () => assertEquals(String.reverse("abc"), "cba"))
