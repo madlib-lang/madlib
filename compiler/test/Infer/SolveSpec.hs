@@ -1632,8 +1632,6 @@ spec = do
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when exporting a name not defined yet" actual
 
-
-
     it "should infer most general type for inner lambdas" $ do
       let code   = unlines
             [ "export repeatWith = (f, count) => {"
@@ -1646,3 +1644,77 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer most general type for inner lambdas" actual
+
+    it "should correctly find types in complex record expressions" $ do
+      let code = unlines
+            [ "reduce :: (a -> b -> a) -> a -> List b -> a"
+            , "reduce = ???"
+            , ""
+            , "alias StepState = { bets :: List Integer, players :: List Integer }"
+            , ""
+            , "judgeByWeight :: a -> StepState -> List a -> Integer"
+            , "judgeByWeight = ???"
+            , ""
+            , "export runBets = (state) => {"
+            , "  // players = state.players"
+            , "  return reduce("
+            , "    (stepState, player) => {"
+            , "      return pipe("
+            , "        .bets,"
+            , "        judgeByWeight(player, stepState),"
+            , "        (bet) => ({ ...stepState, bets: [...stepState.bets, bet], players: stepState.players }),"
+            , "      )(stepState)"
+            , "    },"
+            , "    { ...state, players: [] },"
+            , "    state.players,"
+            , "  )"
+            , "}"
+            , ""
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should correctly find types in complex record expressions" actual
+
+    it "should not alter initial record type when extending a record with new fields" $ do
+      let code = unlines
+            [ "getBackpointsFrom :: { x :: Float, y :: Float } -> Array { x :: Float, y :: Float } -> Array { x :: Float, y :: Float }"
+            , "getBackpointsFrom = ???"
+            , ""
+            , "fromList :: List a -> Array a"
+            , "fromList = ???"
+            , ""
+            , "toList :: Array a -> List a"
+            , "toList = ???"
+            , ""
+            , "weld :: Array a -> Array a -> Array a"
+            , "weld = ???"
+            , ""
+            , "chain :: (a -> List b) -> List a -> List b"
+            , "chain = ???"
+            , ""
+            , "drawShadows = (shader, lightPosition) => {"
+            , "  casterPoints = fromList(["
+            , "    { x: 300, y: 200 },"
+            , "    { x: 350, y: 200 },"
+            , "    { x: 350, y: 250 },"
+            , "    { x: 300, y: 250 },"
+            , "  ])"
+            , ""
+            , "  backPoints :: Array { x :: Float, y :: Float }"
+            , "  backPoints = getBackpointsFrom(lightPosition, casterPoints)"
+            , "  first = ["
+            , "    { ...backPoints[0], z: 1 },"
+            , "    { ...backPoints[0], z: 0 },"
+            , "  ]"
+            , "  points = pipe("
+            , "    toList,"
+            , "    chain((p) => [{ x: p.x, y: p.y, z: 1 }, { x: p.x, y: p.y, z: 0 }]),"
+            , "    fromList,"
+            , "    weld($, fromList(first))"
+            , "  )(backPoints)"
+            , "}"
+            , ""
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should not alter initial record type when extending a record with new fields" actual

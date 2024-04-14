@@ -547,7 +547,8 @@ inferRecord options env exp = do
     Just tBase -> do
       baseVar <- newTVar Star
       s <- contextualUnify env exp (apply subst tBase) (TRecord mempty (Just baseVar) mempty)
-      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
+      -- return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
+      return (TRecord (M.fromList fieldTypes') (Just tBase) mempty, s)
 
     Nothing ->
       return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
