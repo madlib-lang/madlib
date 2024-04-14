@@ -315,7 +315,7 @@ instance Compilable Exp where
          where
           compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String
           compileAbs _ params body =
-            let params' = intercalate " => " params
+            let params' = intercalate " => " (generateSafeName <$> params)
             in  "("
                 <> params'
                 <> " => "
