@@ -65,6 +65,12 @@ export pow = (a, b) => #- { return Math.pow(a, b) } -#
 random :: a -> Float
 export random = #- Math.random -#
 
+atan :: Float -> Float
+export atan = (x) => #- { return Math.atan(x) } -#
+
+atan2 :: Float -> Float -> Float
+export atan2 = (x, y) => #- { return Math.atan2(x, y) } -#
+
 #elseif llvm
 
 sqrt :: Float -> Float
@@ -84,6 +90,12 @@ export pow = extern "madlib__math__pow"
 
 random :: a -> Float
 export random = extern "madlib__math__random"
+
+atan :: Float -> Float
+export atan = extern "madlib__math__atan"
+
+atan2 :: Float -> Float -> Float
+export atan2 = extern "madlib__math__atan2"
 
 #endif
 
