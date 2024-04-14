@@ -70,7 +70,7 @@ $digit    = 0-9                             -- digits
 @decimal  = $digit($digit)*                 -- decimal
 @negative = \-
 @signed = @negative ?
-@floating = @decimal \. @decimal | @decimal -- floating point
+@floating = @decimal \. @decimal (_f)? | @decimal (_f)? -- floating point
 
 tokens :-
   <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                       { beginComment }
