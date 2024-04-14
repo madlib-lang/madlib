@@ -28,3 +28,9 @@ test("square", () => assertEquals(Math.square(4), 16))
 
 test("min", () => assertEquals(Math.min(4, -1.5), -1.5))
 test("max", () => assertEquals(Math.max(-17, -1.5), -1.5))
+
+#iftarget llvm
+test("atan", () => assertEquals(Math.atan(2.0), 1.10714871779409063102))
+#elseif js
+test("atan", () => assertEquals(Math.atan(2.0), 1.1071487177940904))
+#endif

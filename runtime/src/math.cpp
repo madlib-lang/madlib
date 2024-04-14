@@ -45,6 +45,14 @@ double madlib__math__random() {
   return madlib__math__random__cpp();
 }
 
+double madlib__math__atan(double a) {
+  return atan(a);
+}
+
+double madlib__math__atan2(double a, double b) {
+  return atan2(a, b);
+}
+
 
 #ifdef __cplusplus
 }

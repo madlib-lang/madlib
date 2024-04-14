@@ -18,6 +18,9 @@ double madlib__math__pow(double a, double b);
 
 double madlib__math__random();
 
+double madlib__math__atan(double a);
+double madlib__math__atan2(double a, double b);
+
 #ifdef __cplusplus
 }
 #endif
