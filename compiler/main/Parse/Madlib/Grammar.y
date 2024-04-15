@@ -673,7 +673,7 @@ literal :: { Src.Exp }
   | byte    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LByte $ init $ init (strV $1)) }
   | short   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LShort $ init $ init (strV $1)) }
   | int     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LInt $ init $ init (strV $1)) }
-  | float   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LFloat $ if "_f" `List.isSuffixOf` (strV $1) then init (init (strV $1)) else strV $1) }
+  | float   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LFloat $ strV $1) }
   | str     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LStr $ strV $1) }
   | char    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LChar $ charData $1) }
   | true    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LBool $ strV $1) }

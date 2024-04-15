@@ -5,10 +5,10 @@ import String from "String"
 #iftarget js
 
 toShort :: Char -> Short
-export toShort = (c) => #- c.charCodeAt(0) -#
+export toShort = (c) => #- c.codePointAt(0) -#
 
 fromShort :: Short -> Char
-export fromShort = (s) => #- String.fromCharCode(s) -#
+export fromShort = (s) => #- String.fromCodePoint(s) -#
 
 #elseif llvm
 

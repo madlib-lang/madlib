@@ -178,7 +178,7 @@ instance Compilable Exp where
           "`" <> escapeStringLiteral v <> "`"
 
         Literal (LChar v) ->
-          "String.fromCharCode(" <> (show . fromEnum) v <> ")"
+          "String.fromCodePoint(" <> (show . fromEnum) v <> ")"
 
         Literal (LBool v) ->
           v
@@ -611,7 +611,7 @@ instance Compilable Exp where
               scope <> " === " <> n
 
             PChar n ->
-              scope <> " === " <> "String.fromCharCode(" <> (show . fromEnum) n <> ")"
+              scope <> " === " <> "String.fromCodePoint(" <> (show . fromEnum) n <> ")"
 
             PBool n ->
               scope <> " === " <> n
