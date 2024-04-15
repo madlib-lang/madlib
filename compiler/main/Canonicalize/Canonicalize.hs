@@ -105,10 +105,21 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.LInt x)
 
     Src.LFloat x ->
-      return $ Can.Canonical area (Can.LFloat x)
+      if "_f" `List.isSuffixOf` x then
+        return $ Can.Canonical area (Can.LFloat (init $ init x))
+      else
+        return $ Can.Canonical area (Can.LFloat x)
 
     Src.LStr  x ->
       return $ Can.Canonical area (Can.LStr x)
+
+    Src.LChar ('\\':'u':'{':chars) -> do
+      let char' = head $ fst $ last $ charParser ("\\" ++ show (read ('0':'x':init chars) :: Int))
+      return $ Can.Canonical area (Can.LChar char')
+
+    Src.LChar ('\\':'u':chars) -> do
+      let char' = head $ fst $ last $ charParser ("\\x" ++ chars)
+      return $ Can.Canonical area (Can.LChar char')
 
     Src.LChar char -> do
       let char' = head $ fst $ last $ charParser char

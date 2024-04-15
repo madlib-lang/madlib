@@ -167,8 +167,8 @@ tokens :-
   <0, stringTemplateMadlib> $head*\<\=                                                                  { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                            { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"                 { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \\x | \\x. | \\x.. | \\u | \\u. | \\u.. | \\u... | \\u.... | \') \'  { mapCharToken }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \'\'                                                                                                       { mapCharToken }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \' ($printable # [\'\\] | " " | \\. | \\x | \\x.{1,2} | \\u\{.{1,6}\} | \\u | \\u.{1,4} | \') \'        { mapCharToken }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \'\'                                                                                                    { mapCharToken }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \% \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+                       ;
@@ -530,22 +530,23 @@ charParser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
 mapCharToken :: AlexInput -> Int -> Alex Token
 mapCharToken inputData@(posn@((AlexPn _ l1 c1)), prevChar, pending, input) len = do
   let src = take len input
-  when (src == "''") (alexError (printf "EmptyChar\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 2)))
-  charData <- processHexaEscapes posn src
-  let parsed = fst $ last $ charParser charData
-      -- 1 because we need the character between ' and '
-      charData' = parsed !! 1
-      token = TokenChar (init $ tail src)
-
-  if length parsed == 3 then do
-    sourceTarget <- getCurrentSourceTarget
-    return $ Token (makeArea posn src) sourceTarget token
-    -- if "\\x" `List.isPrefixOf` src || "\\u" `List.isPrefixOf` src then
-    -- else 
-    --   return $ Token (makeArea posn src) sourceTarget token
+  isFormatter <- getIsFormatter
+  sourceTarget <- getCurrentSourceTarget
+  if isFormatter then
+    return $ Token (makeArea posn src) sourceTarget (TokenChar (init $ tail src))
   else do
-    let Area (Loc a l c) _ = makeArea posn src
-    alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show token))
+    when (src == "''") (alexError (printf "EmptyChar\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + 2)))
+    charData <- processHexaEscapes posn src
+    let parsed = fst $ last $ charParser charData
+        -- 1 because we need the character between ' and '
+        charData' = parsed !! 1
+        token = TokenChar (init $ tail src)
+
+    if length parsed == 3 then do
+      return $ Token (makeArea posn src) sourceTarget token
+    else do
+      let Area (Loc a l c) _ = makeArea posn src
+      alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show token))
 
 
 interpretChars :: [Char] -> [Char]
@@ -565,6 +566,23 @@ processHexaEscapes (AlexPn a l c) input = do
   if isFormatter then
     return input
   else case input of
+    '\\':'u':'{':more -> do
+      let hexa = takeWhile (/= '}') more
+      let hexaLength = length hexa
+      if hexaLength < 1 || hexaLength > 6 then do
+        let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+        alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + hexaLength + 4))
+      else case interpretChars ("\\" ++ show (read ('0':'x':hexa) :: Int)) of
+        [] -> do
+          -- TODO: the range is not correctly interpreted yet, we possibly need to
+          -- update the error type and the parsing of it in AST.hs
+          let Area (Loc _ l1 c1) _ = makeArea (AlexPn a l c) ""
+          alexError (printf "BadEscape\n%d\n%d\n%d\n%d" l1 c1 l1 (c1 + hexaLength + 4))
+
+        chars -> do
+          next <- processHexaEscapes (AlexPn (a + 6) l (c + 6)) (tail $ dropWhile (/= '}') more)
+          return $ chars ++ next
+
     '\\':'u':a1:b1:c1:d1:more -> do
       next <- processHexaEscapes (AlexPn (a + 6) l (c + 6)) more
 

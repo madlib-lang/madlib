@@ -616,7 +616,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   BadEscapeSequence ->
     "This escape sequence is not valid\n\n"
-    <> "Hint: Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD"
+    <> "Hint: Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD or \\u{ABCDEF} up to 10FFFF"
 
   EmptyChar ->
     "Empty char\n\n"
@@ -1710,7 +1710,7 @@ createErrorDiagnostic color context typeError = case typeError of
             )
           ]
           [
-            Diagnose.Hint "Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD"
+            Diagnose.Hint "Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD or \\u{ABCDEF} up to 10FFFF"
           ]
 
       NoContext ->

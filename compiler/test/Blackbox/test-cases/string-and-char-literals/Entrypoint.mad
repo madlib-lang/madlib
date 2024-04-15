@@ -1,0 +1,9 @@
+import IO from "IO"
+
+main = () => {
+  IO.putLine(`\u{1f210}`)
+  IO.putLine("\u{1f210}")
+  IO.trace("char", '\u{1f210}')
+
+  IO.trace("max", '\u{10ffff}')
+}
