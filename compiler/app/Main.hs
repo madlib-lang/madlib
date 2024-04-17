@@ -55,8 +55,8 @@ run cmd = do
     Repl target ->
       Repl.start target
 
-    Run target path args ->
-      runRun target path args
+    Run target path args watchMode ->
+      runRun target path args watchMode
 
     Format path code fix width ->
       runFormatter width fix path code

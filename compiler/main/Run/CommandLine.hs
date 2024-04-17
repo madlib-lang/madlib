@@ -48,6 +48,7 @@ data Command
       { runTarget :: Target
       , runInput :: FilePath
       , runArgs :: [String]
+      , runWatch :: Bool
       }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
@@ -242,7 +243,7 @@ parseRunArguments = many
   )
 
 parseRun :: Parser Command
-parseRun = Run <$> parseLimitedTarget <*> parseRunInput <*> parseRunArguments
+parseRun = Run <$> parseLimitedTarget <*> parseRunInput <*> parseRunArguments <*> parseWatch
 
 
 parseFolder :: Parser FilePath
