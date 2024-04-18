@@ -17,7 +17,7 @@ import {
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import {} from "Integer"
-import {} from "Float"
+import Float from "Float"
 import Parse from "Parse"
 import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
 import String from "String"
@@ -51,29 +51,46 @@ jsonString = do {
 
 
 jsonInteger :: Parse.Parser Value
-jsonInteger = pipe(
-  some,
-  chain(
-    pipe(
-      String.fromList,
-      scan,
-      where {
-        Just(i) =>
-          of(JsonInteger(i))
+jsonInteger = do {
+  negSignChar <- map(Just, char('-')) <|> of(Nothing)
+  digitChars <- Parse.some(digit)
 
-        Nothing =>
-          Parse.fail
-      }
-    )
-  )
-)(digit)
+  allChars = where(negSignChar) {
+    Just(s) =>
+      [s, ...digitChars]
+
+    _ =>
+      digitChars
+  }
+
+  return pipe(
+    String.fromList,
+    scan,
+    where {
+      Just(i) =>
+        of(JsonInteger(i))
+
+      Nothing =>
+        Parse.fail
+    },
+  )(allChars)
+}
 
 
 jsonFloat :: Parse.Parser Value
 jsonFloat = do {
+  negSignChar <- map(Just, char('-')) <|> of(Nothing)
   beforeDot <- some(digit)
   dot <- char('.')
   afterDot <- some(digit)
+
+  start = where(negSignChar) {
+    Just(s) =>
+      [s, ...beforeDot]
+
+    _ =>
+      beforeDot
+  }
 
   return pipe(
     List.concat($, afterDot),
@@ -86,7 +103,7 @@ jsonFloat = do {
       Nothing =>
         Parse.fail
     }
-  )(List.append(dot, beforeDot))
+  )(List.append(dot, start))
 }
 
 
@@ -336,6 +353,9 @@ export float = Parser(
   (input) => where(input) {
     JsonFloat(f) =>
       Right(f)
+
+    JsonInteger(i) =>
+      Right(Float.fromInteger(i))
 
     _ =>
       Left("Error parsing float")
