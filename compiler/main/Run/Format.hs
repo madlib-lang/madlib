@@ -99,7 +99,8 @@ parseCodeToFormat code = do
                         }
   ast <- case parseForFormatter code of
         Right a ->
-          computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a "./Module.mad")
+          return $ Right a
+          -- computeAbsoluteImportPathsForAST (optPathUtils options) False (optRootPath options) (setPath a "./Module.mad")
 
         Left _ ->
           return $ Left $ CompilationError Error NoContext

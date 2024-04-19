@@ -4,7 +4,9 @@ import type { Maybe } from "Maybe"
 
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
+import Float from "Float"
 import { always } from "Function"
+import {} from "Integer"
 import {
   JsonArray,
   JsonBoolean,
@@ -12,12 +14,10 @@ import {
   JsonInteger,
   JsonNull,
   JsonObject,
-  JsonString
+  JsonString,
 } from "Json/Value"
 import List from "List"
 import { Just, Nothing } from "Maybe"
-import {} from "Integer"
-import Float from "Float"
 import Parse from "Parse"
 import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
 import String from "String"
@@ -45,7 +45,7 @@ jsonString = do {
   return pipe(
     String.fromList,
     JsonString,
-    of
+    of,
   )(cs)
 }
 
@@ -102,7 +102,7 @@ jsonFloat = do {
 
       Nothing =>
         Parse.fail
-    }
+    },
   )(List.append(dot, start))
 }
 
@@ -110,15 +110,15 @@ jsonFloat = do {
 jsonNull :: Parse.Parser Value
 jsonNull = pipe(
   symbol,
-  map((_) => JsonNull)
+  map((_) => JsonNull),
 )("null")
 
 
 jsonBoolean :: Parse.Parser Value
 jsonBoolean = pipe(
   choice,
-  map((b) => b == "true" ? JsonBoolean(true) : JsonBoolean(false))
-)([symbol("true"), symbol("false"),])
+  map((b) => b == "true" ? JsonBoolean(true) : JsonBoolean(false)),
+)([symbol("true"), symbol("false")])
 
 
 jsonArray :: Parse.Parser Value
@@ -159,7 +159,7 @@ jsonValue :: Parse.Parser Value
 export jsonValue = do {
   _ <- alt(spaces, pure([]))
 
-  return choice([jsonFloat, jsonInteger, jsonNull, jsonBoolean, jsonString, jsonArray, jsonObject,])
+  return choice([jsonFloat, jsonInteger, jsonNull, jsonBoolean, jsonString, jsonArray, jsonObject])
 }
 
 
@@ -202,7 +202,7 @@ export parse = (parser, input) => pipe(
         Parser(parserFn) =>
           parserFn(parsed)
       }
-  }
+  },
 )(input)
 
 
@@ -248,7 +248,7 @@ instance Functor Parser {
     (input) => where(parser) {
       Parser(parserFn) =>
         map(f, parserFn(input))
-    }
+    },
   )
 }
 
@@ -268,7 +268,7 @@ instance Applicative Parser {
           Parser(parserFn) =>
             ap(f(input), parserFn(input))
         }
-    }
+    },
   )
 
   pure = succeed
@@ -296,10 +296,25 @@ instance Monad Parser {
           Left(e) =>
             Left(e)
         }
-    }
+    },
   )
 
   of = succeed
+}
+
+
+instance Alternative Parser {
+  aempty = fail("Error")
+
+  alt = (ma, mb) => Parser(
+    (input) => where(getParserFn(ma, input)) {
+      Right(a) =>
+        Right(a)
+
+      _ =>
+        getParserFn(mb, input)
+    },
+  )
 }
 
 
@@ -318,7 +333,7 @@ export string = Parser(
 
     _ =>
       Left("Error parsing string")
-  }
+  },
 )
 
 
@@ -337,7 +352,7 @@ export integer = Parser(
 
     _ =>
       Left("Error parsing integer")
-  }
+  },
 )
 
 
@@ -359,7 +374,7 @@ export float = Parser(
 
     _ =>
       Left("Error parsing float")
-  }
+  },
 )
 
 
@@ -380,7 +395,7 @@ export boolean = Parser(
 
     _ =>
       Left("Error parsing boolean")
-  }
+  },
 )
 
 
@@ -404,7 +419,7 @@ export list = (parser) => Parser(
 
     _ =>
       Left("Error parsing list")
-  }
+  },
 )
 
 
@@ -416,7 +431,7 @@ export dict = (parser) => Parser(
 
     _ =>
       Left("Error parsing dict")
-  }
+  },
 )
 
 
@@ -428,7 +443,7 @@ export maybe = (parser) => Parser(
 
     Left(_) =>
       Right(Nothing)
-  }
+  },
 )
 
 
@@ -437,7 +452,7 @@ export lazy = (wrapped) => Parser(
   (input) => where(wrapped({})) {
     Parser(parserFn) =>
       parserFn(input)
-  }
+  },
 )
 
 
@@ -453,12 +468,12 @@ export field = (fieldName, parser) => Parser(
 
           Nothing =>
             Left(`Error parsing fieldname '${fieldName}'`)
-        }
+        },
       )(d)
 
     _ =>
       Left(`Error parsing fieldname '${fieldName}'`)
-  }
+  },
 )
 
 
@@ -476,16 +491,16 @@ export path = (pathParts, parser) => Parser(
 
               Nothing =>
                 Left(`Error parsing fieldname '${fieldName}'`)
-            }
+            },
           )(d)
 
         _ =>
           Left(`Error parsing path: '${show(pathParts)}' - value: '${show(val)}'`)
       },
-      Right(input)
+      Right(input),
     ),
-    chain(getParserFn(parser))
-  )(pathParts)
+    chain(getParserFn(parser)),
+  )(pathParts),
 )
 
 
@@ -504,7 +519,7 @@ export chain2 = (fn, parserA, parserB) => Parser(
 
     #[_, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
@@ -513,7 +528,7 @@ export chain3 = (fn, parserA, parserB, parserC) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
     getParserFn(parserB, input),
-    getParserFn(parserC, input)
+    getParserFn(parserC, input),
   ]) {
     #[Right(a), Right(b), Right(c)] =>
       getParserFn(fn(a, b, c), input)
@@ -526,7 +541,7 @@ export chain3 = (fn, parserA, parserB, parserC) => Parser(
 
     #[_, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
@@ -536,7 +551,7 @@ export chain4 = (fn, parserA, parserB, parserC, parserD) => Parser(
     getParserFn(parserA, input),
     getParserFn(parserB, input),
     getParserFn(parserC, input),
-    getParserFn(parserD, input)
+    getParserFn(parserD, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d)] =>
       getParserFn(fn(a, b, c, d), input)
@@ -552,24 +567,24 @@ export chain4 = (fn, parserA, parserB, parserC, parserD) => Parser(
 
     #[_, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 chain5 :: (a -> b -> c -> d -> e -> Parser f)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
 export chain5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
     getParserFn(parserB, input),
     getParserFn(parserC, input),
     getParserFn(parserD, input),
-    getParserFn(parserE, input)
+    getParserFn(parserE, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e)] =>
       getParserFn(fn(a, b, c, d, e), input)
@@ -588,18 +603,18 @@ export chain5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
 
     #[_, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 chain6 :: (a -> b -> c -> d -> e -> f -> Parser g)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
 export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
@@ -607,7 +622,7 @@ export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pa
     getParserFn(parserC, input),
     getParserFn(parserD, input),
     getParserFn(parserE, input),
-    getParserFn(parserF, input)
+    getParserFn(parserF, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)] =>
       getParserFn(fn(a, b, c, d, e, f), input)
@@ -629,19 +644,19 @@ export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pa
 
     #[_, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 chain7 :: (a -> b -> c -> d -> e -> f -> g -> Parser h)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
--> Parser h
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
+  -> Parser h
 export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
@@ -650,7 +665,7 @@ export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parse
     getParserFn(parserD, input),
     getParserFn(parserE, input),
     getParserFn(parserF, input),
-    getParserFn(parserG, input)
+    getParserFn(parserG, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)] =>
       getParserFn(fn(a, b, c, d, e, f, g), input)
@@ -675,20 +690,20 @@ export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parse
 
     #[_, _, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 chain8 :: (a -> b -> c -> d -> e -> f -> g -> h -> Parser i)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
--> Parser h
--> Parser i
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
+  -> Parser h
+  -> Parser i
 export chain8 = (
   fn,
   parserA,
@@ -708,7 +723,7 @@ export chain8 = (
     getParserFn(parserE, input),
     getParserFn(parserF, input),
     getParserFn(parserG, input),
-    getParserFn(parserH, input)
+    getParserFn(parserH, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)] =>
       getParserFn(fn(a, b, c, d, e, f, g, h), input)
@@ -736,7 +751,7 @@ export chain8 = (
 
     #[_, _, _, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
@@ -755,7 +770,7 @@ export map2 = (fn, parserA, parserB) => Parser(
 
     #[_, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
@@ -764,7 +779,7 @@ export map3 = (fn, parserA, parserB, parserC) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
     getParserFn(parserB, input),
-    getParserFn(parserC, input)
+    getParserFn(parserC, input),
   ]) {
     #[Right(a), Right(b), Right(c)] =>
       Right(fn(a, b, c))
@@ -777,7 +792,7 @@ export map3 = (fn, parserA, parserB, parserC) => Parser(
 
     #[_, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
@@ -787,7 +802,7 @@ export map4 = (fn, parserA, parserB, parserC, parserD) => Parser(
     getParserFn(parserA, input),
     getParserFn(parserB, input),
     getParserFn(parserC, input),
-    getParserFn(parserD, input)
+    getParserFn(parserD, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d)] =>
       Right(fn(a, b, c, d))
@@ -803,24 +818,24 @@ export map4 = (fn, parserA, parserB, parserC, parserD) => Parser(
 
     #[_, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 map5 :: (a -> b -> c -> d -> e -> f)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
 export map5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
     getParserFn(parserB, input),
     getParserFn(parserC, input),
     getParserFn(parserD, input),
-    getParserFn(parserE, input)
+    getParserFn(parserE, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e)] =>
       Right(fn(a, b, c, d, e))
@@ -839,18 +854,18 @@ export map5 = (fn, parserA, parserB, parserC, parserD, parserE) => Parser(
 
     #[_, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 map6 :: (a -> b -> c -> d -> e -> f -> g)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
 export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
@@ -858,7 +873,7 @@ export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pars
     getParserFn(parserC, input),
     getParserFn(parserD, input),
     getParserFn(parserE, input),
-    getParserFn(parserF, input)
+    getParserFn(parserF, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)] =>
       Right(fn(a, b, c, d, e, f))
@@ -880,19 +895,19 @@ export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF) => Pars
 
     #[_, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 
 map7 :: (a -> b -> c -> d -> e -> f -> g -> h)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
--> Parser h
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
+  -> Parser h
 export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG) => Parser(
   (input) => where(#[
     getParserFn(parserA, input),
@@ -901,7 +916,7 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
     getParserFn(parserD, input),
     getParserFn(parserE, input),
     getParserFn(parserF, input),
-    getParserFn(parserG, input)
+    getParserFn(parserG, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)] =>
       Right(fn(a, b, c, d, e, f, g))
@@ -926,19 +941,19 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
 
     #[_, _, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
 
 map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i)
--> Parser a
--> Parser b
--> Parser c
--> Parser d
--> Parser e
--> Parser f
--> Parser g
--> Parser h
--> Parser i
+  -> Parser a
+  -> Parser b
+  -> Parser c
+  -> Parser d
+  -> Parser e
+  -> Parser f
+  -> Parser g
+  -> Parser h
+  -> Parser i
 export map8 = (
   fn,
   parserA,
@@ -958,7 +973,7 @@ export map8 = (
     getParserFn(parserE, input),
     getParserFn(parserF, input),
     getParserFn(parserG, input),
-    getParserFn(parserH, input)
+    getParserFn(parserH, input),
   ]) {
     #[Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)] =>
       Right(fn(a, b, c, d, e, f, g, h))
@@ -986,5 +1001,5 @@ export map8 = (
 
     #[_, _, _, _, _, _, _, Left(e)] =>
       Left(e)
-  }
+  },
 )
