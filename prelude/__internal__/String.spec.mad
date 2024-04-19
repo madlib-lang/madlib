@@ -153,3 +153,19 @@ test("contains - false", () => assertEquals(String.contains("aü", "abüc"), fal
 test("endsWith - true", () => assertEquals(String.endsWith("c", "abüc"), true))
 test("endsWith - utf8", () => assertEquals(String.endsWith("üc", "abüc"), true))
 test("endsWith - false", () => assertEquals(String.endsWith("bü", "abüc"), false))
+
+test(
+  "padStart",
+  () => do {
+    _ <- assertEquals(String.padStart('-', 3, ">"), "-->")
+    return assertEquals(String.padStart('-', 3, "cool"), "cool")
+  },
+)
+
+test(
+  "padEnd",
+  () => do {
+    _ <- assertEquals(String.padEnd('-', 3, "<"), "<--")
+    return assertEquals(String.padEnd('-', 3, "cool"), "cool")
+  },
+)

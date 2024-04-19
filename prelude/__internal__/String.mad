@@ -447,6 +447,42 @@ export repeat = (c, n) => pipe(
   fromList,
 )(n)
 
+/**
+ * Pad the beginning of a string with a character up to a specific limit
+ * @since 0.23.8
+ * @example
+ * padStart('-', 3, ">") // "-->"
+ * padStart('-', 3, "cool") // "cool"
+ */
+padStart :: Char -> Integer -> String -> String
+export padStart = (pre, count, str) => {
+  len = length(str)
+  return if (len > count) {
+    str
+  } else do {
+    prefix = repeat(pre, count - len)
+    return prefix ++ str
+  }
+}
+
+/**
+ * Pad the end of a string with a character up to a specific limit
+ * @since 0.23.8
+ * @example
+ * padEnd('-', 3, "<") // "<--"
+ * padEnd('-', 3, "cool") // "cool"
+ */
+padEnd :: Char -> Integer -> String -> String
+export padEnd = (post, count, str) => {
+  len = length(str)
+  return if (len > count) {
+    str
+  } else do {
+    suffix = repeat(post, count - len)
+    return str ++ suffix
+  }
+}
+
 
 #iftarget js
 
