@@ -140,6 +140,9 @@ instance Canonicalizable Src.Exp Can.Exp where
             Src.Source _ _ (Src.LStr "") ->
               Nothing
 
+            Src.Source area srcTarget (Src.LStr s) ->
+              Just $ Src.Source area srcTarget (Src.LStr ("\"" <> s <> "\""))
+
             _ ->
               Just exp
 

@@ -1156,6 +1156,8 @@ expToDoc comments exp =
         Source _ _ (LStr s) ->
           if "\n" `isSuffixOf` s then
             (Pretty.pretty (init s) <> Pretty.hardline, comments')
+          else if "\n" `isPrefixOf` s then
+            (Pretty.hardline <> Pretty.pretty (tail s), comments')
           else
             (Pretty.pretty s, comments')
 
