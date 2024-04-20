@@ -945,10 +945,10 @@ generateExp env symbolTable exp = case exp of
             let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
             fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
             fieldsOperand'  <- load fieldsOperand 0 -- i8*
-            fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
+            fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr fieldType)
             field           <- gep fieldsOperand'' [i32ConstOp index]
-            field'          <- load field 0
-            valuePtr        <- gep field' [i32ConstOp 0, i32ConstOp 1]
+            -- field'          <- load field 0
+            valuePtr        <- gep field [i32ConstOp 0, i32ConstOp 1]
             store valuePtr 0 exp''
             let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
             return (symbolTable, unit, Nothing)
@@ -1815,6 +1815,7 @@ generateExp env symbolTable exp = case exp of
           field  <- generateExp env { isLast = False } symbolTable value
           fields <- retrieveArgs [Core.getMetadata value] [field]
 
+          -- TODO: use alloca instead
           fieldPtr    <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
           fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
 
@@ -1867,10 +1868,9 @@ generateExp env symbolTable exp = case exp of
         let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
         fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
         fieldsOperand'  <- load fieldsOperand 0 -- i8*
-        fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr (Type.ptr fieldType))
+        fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr fieldType)
         field           <- gep fieldsOperand'' [i32ConstOp index]
-        field'          <- load field 0
-        value           <- gep field' [i32ConstOp 0, i32ConstOp 1]
+        value           <- gep field [i32ConstOp 0, i32ConstOp 1]
         load value 0
 
       _ -> do

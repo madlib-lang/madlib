@@ -30,45 +30,46 @@ madlib__list__Node_t *madlib__network__readNetworkInterfaces() {
 
     while (i--) {
         madlib__record__Record_t *networkInterface = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
-        madlib__record__Field_t *ipv4Field = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        ipv4Field->name = (char *) "ipv4";
-        madlib__record__Field_t *ipv4MaskField = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        ipv4MaskField->name = (char *) "ipv4Mask";
-        madlib__record__Field_t *ipv6Field = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        ipv6Field->name = (char *) "ipv6";
-        madlib__record__Field_t *ipv6MaskField = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        ipv6MaskField->name = (char *) "ipv6Mask";
-        madlib__record__Field_t *isInternalField = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        isInternalField->name = (char *) "isInternal";
-        madlib__record__Field_t *nameField = (madlib__record__Field_t *) GC_MALLOC(sizeof(madlib__record__Field_t));
-        nameField->name = (char *) "name";
-
         networkInterface->fieldCount = 6;
-        networkInterface->fields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 6);
-        networkInterface->fields[0] = ipv4Field;
-        networkInterface->fields[1] = ipv4MaskField;
-        networkInterface->fields[2] = ipv6Field;
-        networkInterface->fields[3] = ipv6MaskField;
-        networkInterface->fields[4] = isInternalField;
-        networkInterface->fields[5] = nameField;
-        
-        uv_interface_address_t interface_a = info[i];
+        networkInterface->fields = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t) * 6);
 
-        nameField->value = copyString(interface_a.name);
-        isInternalField->value = (void*) interface_a.is_internal;
+        uv_interface_address_t interface_a = info[i];
 
         madlib__maybe__Maybe_t *ipv4Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv4Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        ipv4Field->value = ipv4Maybe;
+        networkInterface->fields[0] = {
+            .name = "ipv4",
+            .value = ipv4Maybe,
+        };
+
         madlib__maybe__Maybe_t *ipv4MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv4MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        ipv4MaskField->value = ipv4MaskMaybe;
+        networkInterface->fields[1] = {
+            .name = "ipv4Mask",
+            .value = ipv4MaskMaybe,
+        };
+
         madlib__maybe__Maybe_t *ipv6Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv6Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        ipv6Field->value = ipv6Maybe;
+        networkInterface->fields[2] = {
+            .name = "ipv6",
+            .value = ipv6Maybe,
+        };
+
         madlib__maybe__Maybe_t *ipv6MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv6MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        ipv6MaskField->value = ipv6MaskMaybe;
+        networkInterface->fields[3] = {
+            .name = "ipv6Mask",
+            .value = ipv6MaskMaybe,
+        };
+        networkInterface->fields[4] = {
+            .name = "isInternal",
+            .value = (void*) interface_a.is_internal,
+        };
+        networkInterface->fields[5] = {
+            .name = "name",
+            .value = copyString(interface_a.name),
+        };
 
         if (interface_a.address.address4.sin_family == AF_INET) {
             uv_ip4_name(&interface_a.address.address4, buf, sizeof(buf));

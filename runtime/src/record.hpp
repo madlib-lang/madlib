@@ -15,7 +15,7 @@ typedef struct madlib__record__Field {
 
 typedef struct madlib__record__Record {
   int32_t fieldCount;
-  madlib__record__Field_t **fields;
+  madlib__record__Field_t *fields;
 } madlib__record__Record_t;
 
 madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCount, madlib__record__Record_t *base, ...);

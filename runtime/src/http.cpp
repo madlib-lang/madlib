@@ -118,23 +118,26 @@ const char *methodToString(madlib__http__Method_t *method) {
 
 
 madlib__record__Record_t *buildResponse(void *boxedBody, madlib__list__Node_t *boxedHeaders, int64_t *boxedStatus) {
-  madlib__record__Field_t *bodyField = (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t));
-  madlib__record__Field_t *headerField = (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t));
-  madlib__record__Field_t *statusField = (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t));
+  madlib__record__Record_t *response = (madlib__record__Record_t *) GC_MALLOC(sizeof(madlib__record__Record_t));
+  response->fieldCount = 3;
+  response->fields = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t) * 3);
 
-  bodyField->name = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 5);
-  strcpy(bodyField->name, "body");
-  bodyField->value = boxedBody;
+  response->fields[0] = {
+    .name = "body",
+    .value = boxedBody,
+  };
 
-  headerField->name = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 8);
-  strcpy(headerField->name, "headers");
-  headerField->value = boxedHeaders;
+  response->fields[1] = {
+    .name = "headers",
+    .value = boxedHeaders,
+  };
 
-  statusField->name = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 7);
-  strcpy(statusField->name, "status");
-  statusField->value = boxedStatus;
+  response->fields[2] = {
+    .name = "status",
+    .value = boxedStatus,
+  };
 
-  return madlib__record__internal__buildRecord(3, NULL, bodyField, headerField, statusField);
+  return response;
 }
 
 void callCallback(RequestData_t *requestData, CURLcode curlCode) {
@@ -409,6 +412,7 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
   char *url = (char *)madlib__record__internal__selectField((char *)"url", request);
 
+  // TODO: rewrite these without selectField
   madlib__http__Method_t *boxedMethod =
       (madlib__http__Method_t *)madlib__record__internal__selectField((char *)"method", request);
   const char *methodString = methodToString(boxedMethod);

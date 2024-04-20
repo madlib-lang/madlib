@@ -100,15 +100,14 @@ runModule target input args watchMode = do
           , optParseOnly = False
           }
 
-  let args' = map (("\"" <>) . (<> "\"")) args
   let runner = \_ ->
         if target == TNode then do
           (_, _, _, handle) <-
-            createProcess (proc "node" (jsOutputPath : args'))
+            createProcess (proc "node" (jsOutputPath : args))
           return handle
         else do
           (_, _, _, handle) <-
-            createProcess (proc llvmOutputPath args')
+            createProcess (proc llvmOutputPath args)
           return handle
 
   state <- Driver.initialState
