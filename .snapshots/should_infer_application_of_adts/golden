@@ -72,7 +72,7 @@
                                         (Typed
                                            ([] :=> TCon (TC "String" Star) "prelude")
                                            (Area (Loc 73 3 21) (Loc 83 3 31))
-                                           (LStr "\"response\""))
+                                           (LStr "response"))
                                         True)))
                            , Typed
                                ([] :=> TCon (TC "Result" Star) "Module.mad")
@@ -1089,7 +1089,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\"Success(\"")
+                                                           (LStr "Success(")
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
@@ -1148,7 +1148,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\")\"")
+                                                           (LStr ")")
                                                        ])))
                                           , Typed
                                               ([] :=>
@@ -1168,7 +1168,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Error\"")))
+                                                    (LStr "Error")))
                                           , Typed
                                               ([] :=>
                                                  TApp
@@ -1187,7 +1187,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Unknown\"")))
+                                                    (LStr "Unknown")))
                                           ])
                                    ])))
                       , Forall

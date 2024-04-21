@@ -168,12 +168,6 @@ instance Compilable Exp where
         Literal (LFloat v) ->
           v
 
-        Literal (LStr (leading : v)) | leading == '"' || leading == '\'' ->
-          if null v then
-            "``"
-          else
-            "`" <> init (escapeStringLiteral v) <> "`"
-
         Literal (LStr v) ->
           "`" <> escapeStringLiteral v <> "`"
 
@@ -608,7 +602,7 @@ instance Compilable Exp where
               scope <> " === " <> n
 
             PStr  n ->
-              scope <> " === " <> n
+              scope <> " === " <> "\"" <> n <> "\""
 
             PChar n ->
               scope <> " === " <> "String.fromCodePoint(" <> (show . fromEnum) n <> ")"

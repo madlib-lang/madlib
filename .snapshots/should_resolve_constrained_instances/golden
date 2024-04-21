@@ -317,7 +317,7 @@
                              (Typed
                                 ([] :=> TCon (TC "String" Star) "prelude")
                                 (Area (Loc 82 6 12) (Loc 84 6 14))
-                                (LStr "\"\"")))
+                                (LStr "")))
                       , Forall [] ([] :=> TCon (TC "String" Star) "prelude")
                       )
                     )
@@ -364,11 +364,11 @@
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 223 16 24) (Loc 229 16 30))
-                                             (LStr "\"True\""))
+                                             (LStr "True"))
                                           (Typed
                                              ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 232 16 33) (Loc 239 16 40))
-                                             (LStr "\"False\"")))
+                                             (LStr "False")))
                                    ])))
                       , Forall
                           []
@@ -758,7 +758,7 @@
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
                                                                    (Loc 410 24 32) (Loc 414 24 36))
-                                                                (LStr "\"#[\""))
+                                                                (LStr "#["))
                                                              False))
                                                        (Typed
                                                           ([ IsIn
@@ -1127,7 +1127,7 @@
                                                                             (Area
                                                                                (Loc 432 24 54)
                                                                                (Loc 436 24 58))
-                                                                            (LStr "\", \""))
+                                                                            (LStr ", "))
                                                                          False))
                                                                    (Typed
                                                                       ([ IsIn
@@ -1436,7 +1436,7 @@
                                                                             (Area
                                                                                (Loc 454 24 76)
                                                                                (Loc 457 24 79))
-                                                                            (LStr "\"]\""))
+                                                                            (LStr "]"))
                                                                          True))
                                                                    True))
                                                              True))

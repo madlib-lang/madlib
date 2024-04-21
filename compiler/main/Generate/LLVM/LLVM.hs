@@ -1621,14 +1621,6 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Literal Core.LUnit) -> do
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
 
-  Core.Typed _ area _ (Core.Literal (Core.LStr (leading : s))) | leading == '"' || leading == '\'' -> do
-    addr <-
-      if List.null s then
-        buildStr env area []
-      else
-        buildStr env area (List.init s)
-    return (symbolTable, addr, Nothing)
-
   Core.Typed _ area _ (Core.Literal (Core.LStr s)) -> do
     addr <- buildStr env area s
     return (symbolTable, addr, Nothing)
@@ -2122,7 +2114,7 @@ generateBranchTest env symbolTable pat value = case pat of
     icmp IntegerPredicate.EQ (Operand.ConstantOperand $ Constant.Int 1 0) value
 
   Core.Typed _ area _ (Core.PStr s) -> do
-    s' <- buildStr env area (List.init . List.tail $ s)
+    s' <- buildStr env area s--(List.init . List.tail $ s)
     callWithMetadata (makeDILocation env area) areStringsEqual [(s', []), (value, [])]
 
   Core.Typed _ _ _ (Core.PChar c) -> do

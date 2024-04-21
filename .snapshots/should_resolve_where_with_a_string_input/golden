@@ -26,7 +26,7 @@
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 10 1 11) (Loc 14 1 15))
-                        (LStr "\"42\""))
+                        (LStr "42"))
                      [ Typed
                          ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                             TApp
@@ -39,7 +39,7 @@
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 20 2 3) (Loc 23 2 6))
-                               (PStr "\"1\""))
+                               (PStr "1"))
                             (Typed
                                ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                                   TVar (TV 5 Star))
@@ -57,7 +57,7 @@
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 31 3 3) (Loc 34 3 6))
-                               (PStr "\"3\""))
+                               (PStr "3"))
                             (Typed
                                ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                                   TVar (TV 5 Star))
@@ -75,7 +75,7 @@
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 42 4 3) (Loc 46 4 7))
-                               (PStr "\"33\""))
+                               (PStr "33"))
                             (Typed
                                ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                                   TVar (TV 5 Star))
@@ -93,7 +93,7 @@
                             (Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
                                (Area (Loc 55 5 3) (Loc 59 5 7))
-                               (PStr "\"42\""))
+                               (PStr "42"))
                             (Typed
                                ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                                   TVar (TV 5 Star))
