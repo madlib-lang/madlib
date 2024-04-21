@@ -45,7 +45,7 @@
                                               (Typed
                                                  ([] :=> TCon (TC "String" Star) "prelude")
                                                  (Area (Loc 66 4 16) (Loc 72 4 22))
-                                                 (LStr "\"John\""))
+                                                 (LStr "John"))
                                               False))
                                         (Typed
                                            ([] :=> TVar (TV 0 Star))
@@ -1316,7 +1316,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\"LoggedIn(\"")
+                                                           (LStr "LoggedIn(")
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
@@ -1365,7 +1365,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\", \"")
+                                                           (LStr ", ")
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
@@ -1424,7 +1424,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\")\"")
+                                                           (LStr ")")
                                                        ])))
                                           , Typed
                                               ([] :=>
@@ -1453,7 +1453,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Unknown\"")))
+                                                    (LStr "Unknown")))
                                           ])
                                    ])))
                       , Forall

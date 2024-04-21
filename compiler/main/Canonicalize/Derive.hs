@@ -182,13 +182,13 @@ showFields :: [String] -> Exp
 showFields fieldNames =
   let fields =
         (\fieldName ->
-            let fieldNameStr = ec $ LStr ("\""<> fieldName <> ": \"")
+            let fieldNameStr = ec $ LStr (fieldName <> ": ")
                 fieldValue   = ec $ Access (ec $ Var "__$a__") (ec $ Var ('.':fieldName))
                 showedFieldValue = ec $ App (ec $ Var "show") fieldValue True
             in  ec $ App (ec $ App (ec $ Var "mappend") fieldNameStr False) showedFieldValue True
         ) <$> fieldNames
-      commaSeparated = List.intersperse (ec $ LStr "\", \"") fields
-  in  ec $ TemplateString ([ec $ LStr "\"{ \""] ++ commaSeparated ++ [ec $ LStr "\" }\""])
+      commaSeparated = List.intersperse (ec $ LStr ", ") fields
+  in  ec $ TemplateString ([ec $ LStr "{ "] ++ commaSeparated ++ [ec $ LStr " }"])
 
 
 buildConstructorIsForShow :: Constructor -> Is
@@ -197,12 +197,12 @@ buildConstructorIsForShow ctor = case ctor of
     let vars = generateCtorParamPatternNames 'a' typings
         showed =
           if null typings then
-            ec $ LStr ("\"" <> name <> "\"")
+            ec $ LStr name
           else
-            let constructorNameLStr = ec $ LStr ("\"" <> name <> "(\"")
-                closingParenthesis  = ec $ LStr "\")\""
+            let constructorNameLStr = ec $ LStr (name <> "(")
+                closingParenthesis  = ec $ LStr ")"
                 showedValues     = (\var -> ec $ App (ec $ Var "show") (ec $ Var var) True) <$> vars
-                commaSeparated      = List.intersperse (ec $ LStr "\", \"") showedValues
+                commaSeparated      = List.intersperse (ec $ LStr ", ") showedValues
             in  ec $ TemplateString ([constructorNameLStr] ++ commaSeparated ++ [closingParenthesis])
     in
       ec $ Is (ec $ PCon name (ec . PVar <$> vars)) showed
@@ -231,7 +231,7 @@ deriveShowInstance astPath toDerive = case toDerive of
                       (buildConstructorIsForShow <$> adtconstructors)
                         ++  [
                               -- if no previous pattern matches then the two values are not equal
-                              ec $ Is (ec PAny) (ec $ LStr "\"Unknown\"")
+                              ec $ Is (ec PAny) (ec $ LStr "Unknown")
                             ]
                     )
                 ]))

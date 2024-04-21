@@ -695,7 +695,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
 
 
 sanitizeStr :: String -> String
-sanitizeStr s = s
+sanitizeStr s = tail $ init s
 
 escapeBacktick :: Char -> String
 escapeBacktick c = case c of

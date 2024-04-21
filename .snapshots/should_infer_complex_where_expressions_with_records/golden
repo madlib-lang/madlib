@@ -513,7 +513,7 @@
                                                    ] :=>
                                                      TCon (TC "String" Star) "prelude")
                                                   (Area (Loc 550 32 29) (Loc 562 32 41))
-                                                  (LStr "\"moduleName\""))
+                                                  (LStr "moduleName"))
                                                False))
                                          (Typed
                                             ([ IsIn
@@ -7120,7 +7120,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"LT\"")))
+                                                    (LStr "LT")))
                                           , Typed
                                               ([] :=>
                                                  TApp
@@ -7140,7 +7140,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"EQ\"")))
+                                                    (LStr "EQ")))
                                           , Typed
                                               ([] :=>
                                                  TApp
@@ -7160,7 +7160,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"GT\"")))
+                                                    (LStr "GT")))
                                           , Typed
                                               ([] :=>
                                                  TApp
@@ -7180,7 +7180,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Unknown\"")))
+                                                    (LStr "Unknown")))
                                           ])
                                    ])))
                       , Forall
@@ -7338,7 +7338,7 @@
                              (Typed
                                 ([] :=> TCon (TC "String" Star) "prelude")
                                 (Area (Loc 120 11 12) (Loc 122 11 14))
-                                (LStr "\"\"")))
+                                (LStr "")))
                       , Forall [] ([] :=> TCon (TC "String" Star) "prelude")
                       )
                     )

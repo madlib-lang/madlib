@@ -24,11 +24,11 @@
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 15 1 16) (Loc 27 1 28))
-                        (LStr "\"it is true\""))
+                        (LStr "it is true"))
                      (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 37 1 38) (Loc 50 1 51))
-                        (LStr "\"it is false\"")))))
+                        (LStr "it is false")))))
         , Typed
             ([] :=>
                TApp
@@ -77,7 +77,7 @@
                                   [ Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 81 4 13) (Loc 83 4 15))
-                                      (LStr "\"probably \"")
+                                      (LStr "probably ")
                                   , Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 83 4 15) (Loc 84 4 16))
@@ -85,7 +85,7 @@
                                   , Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 86 4 18) (Loc 87 4 19))
-                                      (LStr "\"!\"")
+                                      (LStr "!")
                                   ])
                            , Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
@@ -94,7 +94,7 @@
                                   [ Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 100 5 13) (Loc 102 5 15))
-                                      (LStr "\"3 + 7 is \"")
+                                      (LStr "3 + 7 is ")
                                   , Typed
                                       ([ IsIn
                                            "Comparable"
@@ -384,11 +384,11 @@
                                          (Typed
                                             ([] :=> TCon (TC "String" Star) "prelude")
                                             (Area (Loc 119 5 32) (Loc 133 5 46))
-                                            (LStr "\"more than 10\""))
+                                            (LStr "more than 10"))
                                          (Typed
                                             ([] :=> TCon (TC "String" Star) "prelude")
                                             (Area (Loc 143 5 56) (Loc 157 5 70))
-                                            (LStr "\"less than 10\"")))
+                                            (LStr "less than 10")))
                                   ])
                            , Typed
                                ([] :=> TCon (TC "{}" Star) "prelude")

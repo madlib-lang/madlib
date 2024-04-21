@@ -743,11 +743,7 @@ access src field =
 
 
 sanitizeImportPath :: String -> String
-sanitizeImportPath path =
-  if length path > 1 then
-    init $ tail path
-  else
-    path
+sanitizeImportPath path = path
 
 
 lexerWrap :: (Token -> Alex a) -> Alex a

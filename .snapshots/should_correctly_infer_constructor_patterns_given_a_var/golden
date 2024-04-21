@@ -1030,7 +1030,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\"Just(\"")
+                                                           (LStr "Just(")
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
@@ -1079,7 +1079,7 @@
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "\")\"")
+                                                           (LStr ")")
                                                        ])))
                                           , Typed
                                               ([] :=>
@@ -1108,7 +1108,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Nothing\"")))
+                                                    (LStr "Nothing")))
                                           , Typed
                                               ([] :=>
                                                  TApp
@@ -1136,7 +1136,7 @@
                                                  (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (LStr "\"Unknown\"")))
+                                                    (LStr "Unknown")))
                                           ])
                                    ])))
                       , Forall
