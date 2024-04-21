@@ -675,10 +675,10 @@ typingToDoc canBreak comments typing = case typing of
 
 templateStringExpsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
-  (Source area target (LStr s) : more) | not ("\"" `isPrefixOf` s) && not ("\"" `isSuffixOf` s) ->
-    let (e', comments')     = expToDoc comments (Source area target (LStr $ escapeBackticks s))
-        (more', comments'') = templateStringExpsToDoc comments' more
-    in  (Pretty.nesting (\x -> Pretty.nest (-x) e') <> more', comments'')
+  (Source _ _ (LStr s) : more) ->
+    let e' = Pretty.hcat $ Pretty.punctuate Pretty.hardline (map Pretty.pretty $ lines s)
+        (more', comments') = templateStringExpsToDoc comments more
+    in  (Pretty.nesting (\x -> Pretty.nest (-x) e') <> more', comments')
 
   (e : more) ->
     let (e', comments')     = expToDoc comments e
@@ -1154,12 +1154,8 @@ expToDoc comments exp =
           (Pretty.pretty $ renderChar c, comments')
 
         Source _ _ (LStr s) ->
-          if "\n" `isSuffixOf` s then
-            (Pretty.pretty (init s) <> Pretty.hardline, comments')
-          else if "\n" `isPrefixOf` s then
-            (Pretty.hardline <> Pretty.pretty (tail s), comments')
-          else
-            (Pretty.pretty s, comments')
+          let s' = "\"" <> s <> "\""
+          in (Pretty.pretty s', comments')
 
         Source _ _ (LBool b) ->
           (Pretty.pretty b, comments')
