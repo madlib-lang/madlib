@@ -790,9 +790,6 @@ export includes = (x, list) => where(list) {
   [a, ...xs] =>
     a == x || includes(x, xs)
 }
-// a == x ? true : includes(x, xs)
-
-
 
 /**
  * Drops n items from the given list.
@@ -1087,3 +1084,24 @@ export cut = (a, xs) => {
     Nothing
   }
 }
+/**
+ * Finds the set (i.e. no duplicates) of all elements in the first list not contained in the second list. 
+ * @example
+ * difference([1,2,3,4], [7,6,5,4,3]) // [1,2]
+ * difference([7,6,5,4,3], [1,2,3,4]) // [7,6,5]
+ */
+difference :: Eq a => List a -> List a -> List a
+export difference = (z, a) => reduce((stack, c) => includes(c, a) ? stack : [...stack, c], [], z)
+
+/**
+ * Finds the set (i.e. no duplicates) of all elements contained in the first or second list, but not both.
+ * @example
+ * symmetricDifference([1,2,3,4], [7,6,5,4,3]) // [1,2,7,6,5]
+ * symmetricDifference([7,6,5,4,3], [1,2,3,4]) // [7,6,5,1,2]
+ */
+symmetricDifference :: Eq a => List a -> List a -> List a
+export symmetricDifference = (z, a) => reduce(
+  (stack, c) => includes(c, a) && includes(c, z) ? stack : [...stack, c],
+  [],
+  concat(z, a),
+)

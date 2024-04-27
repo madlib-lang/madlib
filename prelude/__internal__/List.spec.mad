@@ -10,6 +10,7 @@ import {
   concat,
   contains,
   cut,
+  difference,
   drop,
   dropLast,
   dropWhile,
@@ -38,6 +39,7 @@ import {
   sort,
   sortDesc,
   startsWith,
+  symmetricDifference,
   tail,
   tails,
   take,
@@ -291,3 +293,15 @@ test("all - false", () => assertEquals(all((x) => x > 4, [1, 2, 10]), false))
 test("cut", () => assertEquals(cut(5, range(1, 11)), Just(#[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])))
 test("cut - negative index", () => assertEquals(cut(-1, range(1, 11)), Nothing))
 test("cut - invalid index", () => assertEquals(cut(16, range(1, 11)), Nothing))
+
+test("difference", () => assertEquals(difference([1, 2, 3, 4], [7, 6, 5, 4, 3]), [1, 2]))
+test("difference - swap", () => assertEquals(difference([7, 6, 5, 4, 3], [1, 2, 3, 4]), [7, 6, 5]))
+
+test(
+  "symmetricDifference",
+  () => assertEquals(symmetricDifference([1, 2, 3, 4], [7, 6, 5, 4, 3]), [1, 2, 7, 6, 5]),
+)
+test(
+  "symmetricDifference",
+  () => assertEquals(symmetricDifference([7, 6, 5, 4, 3], [1, 2, 3, 4]), [7, 6, 5, 1, 2]),
+)
