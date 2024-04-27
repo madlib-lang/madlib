@@ -155,6 +155,19 @@ export flip = (f) => ((b, a) => f(a, b))
 either :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
 export either = (predA, predB, x) => predA(x) || predB(x)
 
+
+/**
+ * Functional "nor", given two predicates and a value, return true if neither predicate is true.
+ *
+ * @since 0.23.13
+ * @example
+ *
+ * neither(equals("A"), equals("B"))("B") // false
+ * neither(equals("A"), equals("B"))("C") // true
+ */
+neither :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export neither = (predA, predB, x) => not(either(predA, predB, x))
+
 /**
  * Functional "and", given two predicates and a value, return true if both predicates are true.
  *
@@ -168,3 +181,48 @@ export either = (predA, predB, x) => predA(x) || predB(x)
  */
 both :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
 export both = (predA, predB, x) => predA(x) && predB(x)
+
+
+/**
+ * Functional "nand", given two predicates and a value, return true if either predicates are true, but not both.
+ *
+ * @since 0.23.13
+ * @example
+ *
+ * import {lt} from "Compare"
+ * // as `lt` applies arguments backwards, 70 is greater than both 50 and 60
+ * notBoth(lt(50), lt(60))(70) // false
+ * notBoth(lt(50), lt(60))(55) // true
+ */
+notBoth :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export notBoth = (predA, predB, x) => not(both(predA, predB, x))
+
+/**
+ * Functional "xor", given two predicates and a value, return true if either predicate is true, but not both, nor neither.
+ *
+ * @since 0.23.13
+ * @example
+ *
+ * import {lt} from "Compare"
+ * // as `lt` applies arguments backwards, 70 is greater than both 50 and 60
+ * xEither(lt(50), lt(60))(70) // false
+ * xEither(lt(50), lt(60))(40) // false
+ * xEither(lt(50), lt(60))(55) // true
+ */
+xEither :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export xEither = (predA, predB, x) => predA(x) != predB(x)
+
+/**
+ * Functional "xnor", given two predicates and a value, return false if either predicate is false, but not both, nor neither.
+ *
+ * @since 0.13.0
+ * @example
+ *
+ * import {lt} from "Compare"
+ * // as `lt` applies arguments backwards, 70 is greater than both 50 and 60
+ * xEither(lt(50), lt(60))(70) // true 
+ * xEither(lt(50), lt(60))(40) // true 
+ * xEither(lt(50), lt(60))(55) // false 
+ */
+xNeither :: (a -> Boolean) -> (a -> Boolean) -> a -> Boolean
+export xNeither = (predA, predB, x) => not(xEither(predA, predB, x))
