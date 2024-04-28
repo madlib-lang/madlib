@@ -5,8 +5,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Madlib version
-      description: What version of Madlib are you running? -- `madlib -v`
+      label: What version of Madlib are you running?
+      description: `madlib -v`
       placeholder: Use `madlib -v` to indicate the version number
     validations:
       required: true
@@ -22,29 +22,26 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: Context
+      label: What were you trying to do?
       description: |
-        What were you trying to do?
         Tip: You can attach images by clicking this area to highlight it and then dragging files in.
   - type: textarea
     id: expectation
     attributes:
-      label: Expectation
-      description: What did you expect to happen?
+      label: What did you expect to happen?
     validations:
       required: true
   - type: textarea
     id: behavior
     attributes:
-      label: Behavior
-      description: What actually happened?
+      label: What actually happened?
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Log output
-      description: Relevant log output. This will be automatically formatted into code, so no need for backticks.
+      label: Logs
+      description: This will be automatically formatted into code, so no need for backticks.
       render: shell
   - type: dropdown
     id: target
@@ -58,6 +55,5 @@ body:
         - Browser
   - type: textarea
     attributes:
-      label: Environment
-      description: Please list any relevant details about your environment
+      label: Environment details
       placeholder: Operating System / node -v / clang -v
