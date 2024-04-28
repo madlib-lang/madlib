@@ -1,30 +1,44 @@
 ---
 name: Error Report
-about: Create a report to help us improve ______
+about: Report an error case for Madlib
 title: ''
-labels: ''
+labels: needs triage 💭, bug 🦟
 assignees: ''
-
 ---
 
-## Symptoms:
+<!--
+Note: Please search here: https://github.com/madlib-lang/madlib/issues to see if an issue already exists for the bug you encountered.
+-->
 
-1. What did you expect to happen?
-2. What actually happened?
+### Context
 
-## Reproduction instructions
+<!-- What were you trying to do? -->
 
-*Please fill in missing / incorrect details!*
+### Expectation
 
-1. `stack build`
-2. `stack run -- madlib-exe -i src -o dist -c madlib.json`
-3. See error:
-```
-Error: blah
-```
+<!-- What did you expect to happen? -->
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+### Behavior
 
-**Additional context**
-Add any other context about the problem here.
+<!-- What actually happened? -->
+
+### Target
+
+Some issues are only present in some build targets, please use the `--target` flag to validate what targets this issue affects. Which targets are affected of the following:
+
+1. Node
+1. LLVM
+1. Browser
+
+### Environment
+
+<!-- Please fill out all steps -->
+
+1. Operating System
+1. Node Version
+1. How is Madlib installed on your system?
+
+### Additional details
+
+If needed, please add any additional context, including screenshots to help explain your problem.
+

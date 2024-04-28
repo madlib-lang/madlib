@@ -1,0 +1,64 @@
+name: Issue with Madlib
+description: File an issue
+title: ''
+labels: ["needs triage 💭"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Madlib version
+      description: What version of Madlib are you running? -- `madlib -v`
+      placeholder: Use `madlib -v` to indicate the version number
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation
+      description: How is Madlib installed on your system?
+      options:
+        - Installed via `npm`
+        - Compiled locally
+        - Other
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: |
+        What were you trying to do?
+        Tip: You can attach images by clicking this area to highlight it and then dragging files in.
+  - type: textarea
+    id: expectation
+    attributes:
+      label: Expectation
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: dropdown
+    id: target
+    attributes:
+      label: Code Targets
+      description: Some issues are only present in some build targets. Please use the the `--target` flag to validate which targets are affected.
+      multiple: true
+      options:
+        - Node
+        - LLVM
+        - Browser
+  - type: textarea
+    attributes:
+      label: Environment
+      description: Please list any relevant details about your environment
+      placeholder: Operating System / node -v / clang -v
