@@ -6,15 +6,13 @@ body:
     id: version
     attributes:
       label: What version of Madlib are you running?
-      description: `madlib -v`
       placeholder: Use `madlib -v` to indicate the version number
     validations:
       required: true
   - type: dropdown
     id: installation
     attributes:
-      label: Installation
-      description: How is Madlib installed on your system?
+      label: How is Madlib installed on your system?
       options:
         - Installed via `npm`
         - Compiled locally

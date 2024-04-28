@@ -1,4 +1,11 @@
-on: [push]
+on:
+  # Run only on a merge against master
+  pull_request:
+    branches:
+      - master
+  # Request an explicit run
+  workflow_dispatch:
+
 name: build
 jobs:
   test:
