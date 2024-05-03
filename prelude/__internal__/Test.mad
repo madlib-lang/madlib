@@ -26,21 +26,18 @@ IS_COLOR_ENABLED = do {
   return noColor == Just("") || noColor == Nothing
 }
 
+prefix :: List String -> String -> String
+prefix = (colors, pref) => IS_COLOR_ENABLED ? Terminal.ansiColor(colors, ` ${pref} `) : pref ++ " "
+
 
 PREFIX_RUNS :: String
-PREFIX_RUNS = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], " RUNS ")
-  : "RUNS "
+PREFIX_RUNS = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "RUNS")
 
 PREFIX_PASS :: String
-PREFIX_PASS = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], " PASS ")
-  : "PASS "
+PREFIX_PASS = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], "PASS")
 
 PREFIX_FAIL :: String
-PREFIX_FAIL = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], " FAIL ")
-  : "FAIL "
+PREFIX_FAIL = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], "FAIL")
 
 // CHAR_CHECK :: String
 // CHAR_CHECK = "✓"
@@ -53,7 +50,6 @@ EMPTY_REPORT = TestReport("", 0, 0, 0)
 
 CWD :: String
 CWD = Process.getCurrentWorkingDirectory()
-
 
 // Result collector
 
