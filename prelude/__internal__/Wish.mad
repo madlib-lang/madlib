@@ -664,3 +664,55 @@ export withTimeout = (ms, err, wish) => Wish(
     }
   },
 )
+
+substitute :: Integer -> a -> Wish e a -> Wish e a
+export substitute = (ms, sub, wish) => Wish(
+  (badCB, goodCB) => {
+    done = false
+    timeoutId = __TimerId__
+    cancel = { run: () => {} }
+
+    return where(wish) {
+      Wish(run) =>
+        do {
+          timeoutId := setTimeout(
+            () => {
+              if (!done) do {
+                done := true
+                cancel.run()
+                goodCB(sub)
+              }
+            },
+            ms,
+          )
+          kill = () => {
+            done := true
+            clearTimeout(timeoutId)
+          }
+          cancel := {
+            run: run(
+              (x) => {
+                if (!done) do {
+                  kill()
+                  badCB(x)
+                }
+              },
+              (x) => {
+                if (!done) do {
+                  kill()
+                  goodCB(x)
+                }
+              },
+            ),
+          }
+
+          return () => {
+            if (!done) do {
+              kill()
+              cancel.run()
+            }
+          }
+        }
+    }
+  },
+)
