@@ -20,24 +20,20 @@ moveCursorUpCode :: Integer -> String
 moveCursorUpCode = (lines) => `\x1b[${show(lines)}A`
 
 
-IS_COLOR_ENABLED :: Boolean
-IS_COLOR_ENABLED = do {
-  noColor = Process.getEnv("NO_COLOR")
-  return noColor == Just("") || noColor == Nothing
-}
-
-prefix :: List String -> String -> String
-prefix = (colors, pref) => IS_COLOR_ENABLED ? Terminal.ansiColor(colors, ` ${pref} `) : pref ++ " "
+colorConstant :: List String -> String -> String
+colorConstant = (colors, pref) => Terminal.IS_COLOR_ENABLED
+  ? Terminal.ansiColor(colors, ` ${pref} `)
+  : pref ++ " "
 
 
 PREFIX_RUNS :: String
-PREFIX_RUNS = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "RUNS")
+PREFIX_RUNS = colorConstant([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "RUNS")
 
 PREFIX_PASS :: String
-PREFIX_PASS = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], "PASS")
+PREFIX_PASS = colorConstant([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], "PASS")
 
 PREFIX_FAIL :: String
-PREFIX_FAIL = prefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], "FAIL")
+PREFIX_FAIL = colorConstant([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], "FAIL")
 
 // CHAR_CHECK :: String
 // CHAR_CHECK = "✓"
@@ -175,7 +171,7 @@ indent = (amount, x) => pipe(
 renderValue :: (String -> String) -> String -> String
 renderValue = (colorize, value) => pipe(
   indent(4),
-  (s) => IS_COLOR_ENABLED ? colorize(s) : s,
+  colorize,
 )(value)
 
 
@@ -190,13 +186,13 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
       ++ "\n"
 
   ErrorWithMessage(message) =>
-    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${message}\n`) : `${CHAR_CROSS} ${message}\n`
+    IO.red(`${CHAR_CROSS} ${message}\n`)
 
   Error(err) =>
-    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${show(err)}`) : `${CHAR_CROSS} ${show(err)}`
+    IO.red(`${CHAR_CROSS} ${show(err)}`)
 
   NotImplemented =>
-    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} not implemented`) : `${CHAR_CROSS} not implemented`
+    IO.red(`${CHAR_CROSS} not implemented`)
 }
 
 
@@ -220,8 +216,8 @@ generateReportSuiteEndMessage = pipe(
 )
 
 
-prepareSuitePath :: Boolean -> String -> String
-prepareSuitePath = (colorful, suitePath) => {
+prepareSuitePath :: String -> String
+prepareSuitePath = (suitePath) => {
   cwdParts = FilePath.splitPath(CWD)
   partIndex = 0
 
@@ -247,7 +243,6 @@ prepareSuitePath = (colorful, suitePath) => {
         List.init,
         FilePath.joinPath,
         mappend($, "/"),
-        when(always(colorful && IS_COLOR_ENABLED), IO.grey),
       )(parts)
       fileName = pipe(
         List.last,
@@ -266,50 +261,45 @@ spaces = (amount) => pipe(
   String.fromList,
 )(amount)
 
+showResultForSuite :: #[String, SuiteResult] -> #[String, String]
+showResultForSuite = where {
+  #[suitePath, SuiteResult(total, success, failed)] =>
+    do {
+      counts = `${show(success + failed)}/${show(total)}`
+      preparedSuitePath = prepareSuitePath(suitePath)
+      coloredCounts = failed > 0
+        ? Terminal.text.brightRed(counts)
+        : Terminal.text.brightGreen(counts)
+      prefix = total == success + failed ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS : PREFIX_RUNS
+
+      return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
+    }
+}
+
+getLongestString :: Integer -> String -> Integer
+getLongestString = (biggest, input) => Math.max(biggest, String.length(input))
+
+adjustSpacesForSuites :: List #[String, String] -> {}
+adjustSpacesForSuites = (prepared) => {
+  firsts = map(Tuple.fst, prepared)
+  longest = List.reduce(getLongestString, 0, firsts)
+
+  map(
+    where {
+      #[start, counts] =>
+        IO.putLine(`${start}${spaces(longest - String.length(start))} [${counts}]`)
+    },
+    prepared,
+  )
+}
 
 printSuiteResults :: Dictionary String SuiteResult -> {}
 printSuiteResults = (results) => {
   pipe(
     Dictionary.toList,
-    map(
-      where {
-        #[suitePath, SuiteResult(total, success, failed)] =>
-          do {
-            counts = `${show(success + failed)}/${show(total)}`
-            preparedSuitePath = prepareSuitePath(true, suitePath)
-            coloredCounts = if (IS_COLOR_ENABLED) {
-              failed > 0 ? Terminal.text.brightRed(counts) : Terminal.text.brightGreen(counts)
-            } else {
-              counts
-            }
-            prefix = total == success + failed
-              ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS
-              : PREFIX_RUNS
-
-            return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
-          }
-      },
-    ),
-    (
-      (prepared) => {
-        firsts = map(Tuple.fst, prepared)
-        longest = List.reduce(
-          (biggest, input) => Math.max(biggest, String.length(input)),
-          0,
-          firsts,
-        )
-
-        map(
-          where {
-            #[start, counts] =>
-              IO.putLine(`${start}${spaces(longest - String.length(start))} [${counts}]`)
-          },
-          prepared,
-        )
-      }
-    ),
+    map(showResultForSuite),
+    adjustSpacesForSuites,
   )(results)
-
   IO.putLine("")
 }
 
@@ -327,7 +317,7 @@ failSuite = (suitePath) => {
     collector.setResults,
   )(collector.getResults())
 
-  if (IS_COLOR_ENABLED) do {
+  if (Terminal.IS_COLOR_ENABLED) do {
     IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
     printSuiteResults(collector.getResults())
   }
@@ -349,7 +339,7 @@ updateSuiteResult = (suitePath, result) => {
     collector.setResults,
   )(collector.getResults())
 
-  if (IS_COLOR_ENABLED) do {
+  if (Terminal.IS_COLOR_ENABLED) do {
     IO.put(moveCursorUpCode(Dictionary.length(collector.getResults()) + 1))
     printSuiteResults(collector.getResults())
   }
@@ -457,7 +447,7 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.fulfill(
     () => ({}),
     (report) => {
-      if (!IS_COLOR_ENABLED) {
+      if (!Terminal.IS_COLOR_ENABLED) {
         printSuiteResults(collector.getResults())
       }
       IO.put(getMessage(report))
