@@ -63,12 +63,11 @@ isSuccess = (res) => where(res) {
     false
 }
 
-makeResultCollector :: {}
-  -> {
-    getResults :: {} -> Dictionary String SuiteResult,
-    setResults :: Dictionary String SuiteResult -> {},
-  }
-makeResultCollector = () => {
+collector :: {
+  getResults :: {} -> Dictionary String SuiteResult,
+  setResults :: Dictionary String SuiteResult -> {},
+}
+collector = do {
   results = {{}}
 
   getResults = () => results
@@ -79,12 +78,6 @@ makeResultCollector = () => {
 
   return { getResults, setResults }
 }
-
-collector :: {
-  getResults :: {} -> Dictionary String SuiteResult,
-  setResults :: Dictionary String SuiteResult -> {},
-}
-collector = makeResultCollector()
 
 
 // Test API
