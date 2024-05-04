@@ -1,0 +1,123 @@
+import type { Flag } from "./RegExp"
+
+import Fn from "Function"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import String from "String"
+import { assertEquals, test } from "Test"
+
+import {
+  FlagCaseInsensitive,
+  FlagGlobal,
+  FlagHasIndices,
+  FlagInvalid,
+  FlagMultiline,
+  FlagNewline,
+  FlagSticky,
+  FlagUnicode,
+  FlagUnicodeSets,
+  InvalidPattern,
+  RegExp,
+  _charToFlag,
+  _flagToChar,
+  _isValidFlag,
+  create,
+  getRaw,
+  match,
+  replace,
+  unsafeReplace,
+} from "./RegExp"
+
+
+
+ALL_FLAGS = ['d', 'g', 'i', 'm', 'n', 'u', 'v', 'y', '‽']
+
+test(
+  "_flagToChar",
+  () => assertEquals(
+    map(
+      _flagToChar,
+      [
+        FlagHasIndices,
+        FlagGlobal,
+        FlagCaseInsensitive,
+        FlagMultiline,
+        FlagNewline,
+        FlagUnicode,
+        FlagUnicodeSets,
+        FlagSticky,
+        FlagInvalid,
+      ],
+    ),
+    ALL_FLAGS,
+  ),
+)
+
+
+test(
+  "_charToFlag",
+  () => assertEquals(
+    map(_charToFlag, ALL_FLAGS),
+    [
+      FlagHasIndices,
+      FlagGlobal,
+      FlagCaseInsensitive,
+      FlagMultiline,
+      FlagNewline,
+      FlagUnicode,
+      FlagUnicodeSets,
+      FlagSticky,
+      FlagInvalid,
+    ],
+  ),
+)
+
+test(
+  "_isValidFlag",
+  () => do {
+    _ <- assertEquals(List.all(_isValidFlag, List.init(ALL_FLAGS)), true)
+    return assertEquals(_isValidFlag('k'), false)
+  },
+)
+
+test(
+  "create",
+  () => do {
+    _ <- assertEquals(create("hey", "g"), RegExp("hey", [FlagGlobal]))
+    return assertEquals(create("hey", "x"), InvalidPattern)
+  },
+)
+
+test(
+  "match",
+  () => do {
+    _ <- assertEquals(match(create("hey", "gm"), `   hey there `), true)
+    return assertEquals(match(InvalidPattern, "uhhh"), false)
+  },
+)
+
+test(
+  "replace",
+  () => do {
+    _ <- assertEquals(replace(create("hey", "gm"), "bye", `   hey there `), Just("   bye there "))
+    return assertEquals(replace(InvalidPattern, "bye", `   hey there `), Nothing)
+  },
+)
+
+test(
+  "unsafeReplace",
+  () => do {
+    input = `
+    yo yo yo hey nice\n`
+    _ <- assertEquals(unsafeReplace(create("hey", "gm"), "bye", input), `\n    yo yo yo bye nice\n`)
+    return assertEquals(unsafeReplace(InvalidPattern, "bye", input), input)
+  },
+)
+
+test(
+  "getRaw",
+  () => do {
+    _ <- assertEquals(getRaw(create("cool", "g")), "cool")
+    return assertEquals(getRaw(InvalidPattern), "")
+  },
+)

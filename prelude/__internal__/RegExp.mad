@@ -1,0 +1,146 @@
+import type { Maybe } from "Maybe"
+
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import String from "String"
+
+
+
+export type Flag
+  = FlagHasIndices
+  | FlagGlobal
+  | FlagCaseInsensitive
+  | FlagMultiline
+  | FlagNewline
+  | FlagUnicode
+  | FlagUnicodeSets
+  | FlagSticky
+  | FlagInvalid
+
+_flagToChar :: Flag -> Char
+export _flagToChar = where {
+  FlagHasIndices =>
+    'd'
+
+  FlagGlobal =>
+    'g'
+
+  FlagCaseInsensitive =>
+    'i'
+
+  FlagMultiline =>
+    'm'
+
+  FlagNewline =>
+    'n'
+
+  FlagUnicode =>
+    'u'
+
+  FlagUnicodeSets =>
+    'v'
+
+  FlagSticky =>
+    'y'
+
+  FlagInvalid =>
+    '‽'
+}
+
+export type Pattern = RegExp(String, List Flag) | InvalidPattern
+
+_charToFlag :: Char -> Flag
+export _charToFlag = (c) => if (c == 'd') {
+  FlagHasIndices
+} else if (c == 'g') {
+  FlagGlobal
+} else if (c == 'i') {
+  FlagCaseInsensitive
+} else if (c == 'm') {
+  FlagMultiline
+} else if (c == 'n') {
+  FlagNewline
+} else if (c == 'u') {
+  FlagUnicode
+} else if (c == 'v') {
+  FlagUnicodeSets
+} else if (c == 'y') {
+  FlagSticky
+} else {
+  FlagInvalid
+}
+
+_isValidFlag :: Char -> Boolean
+export _isValidFlag = (c) => _charToFlag(c) != FlagInvalid
+
+_validateFlags :: String -> Boolean
+export _validateFlags = pipe(
+  String.toList,
+  List.reduce((valid, char) => valid && _isValidFlag(char), true),
+)
+
+_convertFlagString :: String -> List Flag
+export _convertFlagString = pipe(
+  String.toList,
+  map(_charToFlag),
+)
+
+_convertFlagList :: List Flag -> String
+_convertFlagList = pipe(
+  map(_flagToChar),
+  String.fromList,
+)
+
+create :: String -> String -> Pattern
+export create = (pat, flags) => if (_validateFlags(flags)) {
+  RegExp(pat, _convertFlagString(flags))
+} else {
+  InvalidPattern
+}
+
+getRaw :: Pattern -> String
+export getRaw = where {
+  RegExp(x, _) =>
+    x
+
+  InvalidPattern =>
+    ""
+}
+
+// #iftarget js
+
+match :: Pattern -> String -> Boolean
+export match = (pat, input) => where(pat) {
+  InvalidPattern =>
+    false
+
+  RegExp(rg, flagList) =>
+    do {
+      flags = _convertFlagList(flagList)
+      return #- input.match(new RegExp(rg, flags)) !== null -#
+    }
+}
+
+unsafeReplace :: Pattern -> String -> String -> String
+export unsafeReplace = (pat, replacement, haystack) => where(pat) {
+  InvalidPattern =>
+    haystack
+
+  RegExp(rg, flagList) =>
+    do {
+      flags = _convertFlagList(flagList)
+      return #- haystack.replace(new RegExp(rg, flags), replacement) -#
+    }
+}
+
+replace :: Pattern -> String -> String -> Maybe String
+export replace = (p, r, h) => where(p) {
+  InvalidPattern =>
+    Nothing
+
+  _ =>
+    Just(unsafeReplace(p, r, h))
+}
+
+// #endif
+// !TODO -- add match + replace to llvm 
