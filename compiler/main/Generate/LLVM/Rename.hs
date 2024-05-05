@@ -9,10 +9,11 @@ import qualified Data.Bifunctor                as Bifunctor
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
+import           Infer.Type
 import           AST.Core
-import Utils.Hash (generateHashFromPath, addHashToName)
-import Debug.Trace
-import Text.Show.Pretty (ppShow)
+import           Utils.Hash (generateHashFromPath, addHashToName)
+import           Debug.Trace
+import           Text.Show.Pretty (ppShow)
 
 
 
@@ -101,6 +102,12 @@ renameExp env what = case what of
         let (renamedLhs, env') = renameExp env lhs
             (renamedExp, env'') = renameExp env' exp
         in  (Typed t area metadata (Assignment renamedLhs renamedExp), env'')
+
+  Typed qt@(_ :=> t) area metadata (Var name True) ->
+    let returnType = getReturnType t
+        tcon = getConstructorCon returnType
+        hash = generateHashFromPath (getTConPath tcon)
+    in  (Typed qt area metadata (Var (addHashToName hash name) True), env)
 
   Typed t area metadata (Var name isConstructor) -> case break (== '.') name of
     -- A normal name
@@ -196,18 +203,22 @@ renamePatterns env patterns = case patterns of
 
 renamePattern :: Env -> Pattern -> (Pattern, Env)
 renamePattern env pat = case pat of
-  Typed t area metadata (PCon name args) -> case break (== '.') name of
+  Typed qt@(_ :=> t) area metadata (PCon name args) -> case break (== '.') name of
+    -- TODO: check we don't need this anymore and remove it
     (namespace, '.' : n) ->
       let moduleHash          = Maybe.fromMaybe namespace $ Map.lookup namespace (defaultImportHashes env)
           (renamedArgs, env') = renamePatterns env args
           renamed             = addHashToName moduleHash n
           env''               = addDefaultImportNameUsage namespace n env'
-      in  (Typed t area metadata (PCon renamed renamedArgs), env'')
+      in  (Typed qt area metadata (PCon renamed renamedArgs), env'')
 
     _ ->
-      let renamed             = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
+      let returnType          = getReturnType t
+          tcon                = getConstructorCon returnType
+          hash                = generateHashFromPath (getTConPath tcon)
+          renamed             = addHashToName hash name
           (renamedArgs, env') = renamePatterns env args
-      in  (Typed t area metadata (PCon renamed renamedArgs), env')
+      in  (Typed qt area metadata (PCon renamed renamedArgs), env')
 
   Typed t area metadata (PRecord fields) ->
     let fieldsAsList = Map.toList fields
