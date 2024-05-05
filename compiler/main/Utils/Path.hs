@@ -9,7 +9,7 @@ import           System.FilePath                ( dropFileName
                                                 , joinPath
                                                 , splitFileName
                                                 , normalise
-                                                , takeExtension, pathSeparator, hasExtension
+                                                , takeExtension, pathSeparator, hasExtension, addExtension
                                                 )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           Data.List                      ( isInfixOf
@@ -175,9 +175,9 @@ findMadlibPackageMainPath pathUtils file pkgName = do
     Right json' -> do
       mainPath <- normalisePath pathUtils <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
       if '/' `elem` pkgName then do
-        let afterPkg = dropWhile (/= '/') pkgName
+        let afterPkg = tail $ dropTrailingPathSeparator $ dropWhile (/= '/') pkgName
             basePath = takeDirectory mainPath
-            fullPath = joinPath [basePath, afterPkg, ".mad"]
+            fullPath = joinPath [basePath, addExtension afterPkg ".mad"]
         return $ Just fullPath
       else
         return $ Just mainPath
