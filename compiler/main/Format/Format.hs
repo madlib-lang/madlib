@@ -313,7 +313,7 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.pretty $ renderChar c
 
   PStr s ->
-    Pretty.pretty s
+    Pretty.pretty $ "\"" <> s <> "\""
 
   PBool b ->
     Pretty.pretty b
