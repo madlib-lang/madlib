@@ -25,14 +25,14 @@ import Infer.Unify
 
 
 type InScope = S.Set String
-type Accesses = S.Set (String, Exp)
+type Accesses = [(String, Exp)]
 
 -- Map of all names a given top level expression needs to run.
 -- Say we have:
 -- fn = (x) => x + var1 + var2
 -- We'd have a dependency entry for fn like this:
 -- M.fromList [("fn", S.fromList ["var1", "var2"])]
-type Dependencies = M.Map String (S.Set (String, Exp))
+type Dependencies = M.Map String [(String, Exp)]
 
 
 findAssignmentByName :: String -> [Exp] -> Maybe Exp
@@ -92,9 +92,9 @@ checkExps env ast globals topLevelAssignments globalScope dependencies (e : es) 
 
   let shouldBeTypedOrAbove =
         if isMethod env e then
-          S.empty
+          []
         else
-          S.filter
+          List.filter
             (\(name, exp) ->
               let isTyped = maybe False isTypedExp (findAssignmentByName name (aexps ast))
               in  name `notElem` globalScope' && not isTyped && not (isTypeOrNameExport exp)
@@ -107,7 +107,7 @@ checkExps env ast globals topLevelAssignments globalScope dependencies (e : es) 
   checkExps env ast globals topLevelAssignments globalScope' dependencies' es
 
 
-generateShouldBeTypedOrAboveErrors :: Env -> S.Set (String, Exp) -> Infer ()
+generateShouldBeTypedOrAboveErrors :: Env -> [(String, Exp)] -> Infer ()
 generateShouldBeTypedOrAboveErrors env = foldM_
   (\_ (name, exp) -> pushError
     $ CompilationError (ShouldBeTypedOrAbove name) (Context (envCurrentPath env) (getArea exp))
@@ -191,7 +191,7 @@ verifyScope' _ _ _ _ _ _ _ _ =
   return ()
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
-removeAccessFromDeps access = M.map (S.filter (/= access))
+removeAccessFromDeps access = M.map (List.filter (/= access))
 
 extendScope :: InScope -> Exp -> InScope
 extendScope inScope exp = case getExpName exp of
@@ -245,13 +245,13 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       globalNamesAccessed <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
-      return $ foldr S.union S.empty globalNamesAccessed
+      return $ foldr List.union [] globalNamesAccessed
 
     (Typed _ area (Var "_" _)) ->
       throwError $ CompilationError IllegalSkipAccess (Context (envCurrentPath env) area)
 
     (Typed _ _ (Var ('.' : _) _)) ->
-      return S.empty
+      return []
 
     (Typed _ area (Var name _))      -> do
       case nameToFind of
@@ -259,7 +259,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
           (n == name && notElem n foundNames && not (isMethod env solvedExp))
           (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area))
         Nothing -> return ()
-      if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
+      if name `S.member` localScope then return [] else return [(name, solvedExp)]
 
     (Typed _ _ (App fn arg _)) -> do
       fnGlobalNamesAccessed <- collect env
@@ -284,7 +284,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       collectFromBody foundNames nameToFind globalScope localScope body
       where
         collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
-        collectFromBody _          _   _           _          []       = return S.empty
+        collectFromBody _          _   _           _          []       = return []
         collectFromBody foundNames ntf globalScope localScope (e : es) = do
           let localScope' = extendScope localScope e
           access <- collect env
@@ -316,7 +316,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
       where
         collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
-        collectFromBody _          _   _           _          []       = return S.empty
+        collectFromBody _          _   _           _          []       = return []
         collectFromBody foundNames ntf globalScope localScope (e : es) = do
           let localScope' = extendScope localScope e
           accesses <- collect env
@@ -331,9 +331,8 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                 Just n  -> n : foundNames
                 Nothing -> foundNames
           next <- collectFromBody nextFound ntf globalScope localScope' es
-          -- return S.empty
-          let accesses' = S.map (\(a, _) -> (a, solvedExp)) accesses
-          return $ accesses' <> next
+          let accesses' = fmap (\(a, _) -> (a, solvedExp)) accesses
+          return (accesses' <> next)
 
     (Typed _ _ (If cond truthy falsy)) -> do
       condAccesses <- collect env
@@ -423,14 +422,14 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       issAccesses <- mapM
         (collectFromIs env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         iss
-      let issAccesses' = foldr S.union S.empty issAccesses
+      let issAccesses' = foldr List.union [] issAccesses
       return $ expAccess <> issAccesses'
 
     (Typed _ _ (TupleConstructor exps)) -> do
       accesses <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
-      return $ foldr S.union S.empty accesses
+      return $ foldr List.union [] accesses
 
     (Typed _ _ (ListConstructor items)) -> do
       listItemAccesses <- mapM
@@ -443,36 +442,36 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                              localScope
         )
         items
-      return $ foldr S.union S.empty listItemAccesses
+      return $ foldr List.union [] listItemAccesses
 
     (Typed _ _ (Record fields)) -> do
       fieldAccesses <- mapM
         (collectFromField env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope
         )
         fields
-      return $ foldr S.union S.empty fieldAccesses
+      return $ foldr List.union [] fieldAccesses
 
     (Typed _ _ (NameExport name)) ->
       if name `S.member` globalScope then
-        return S.empty
+        return []
       else
-        return $ S.singleton (name, solvedExp)
+        return [(name, solvedExp)]
 
     (Untyped _ (TypeExport name)) ->
       if name `S.member` globalScope then
-        return S.empty
+        return []
       else
-        return $ S.singleton (name, solvedExp)
+        return [(name, solvedExp)]
 
     (Typed _ area (Extern _ _ name)) -> do
       when
         (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area))
 
-      return S.empty
+      return []
 
     _ ->
-      return S.empty
+      return []
 
 
 collectFromField
