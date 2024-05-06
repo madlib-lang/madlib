@@ -170,7 +170,7 @@ spec = do
       snapshotTest "should infer assignments" actual
 
     it "should infer minus operator" $ do
-      let code   = "substract = (b, c) => (b - c)"
+      let code   = "subtract = (b, c) => (b - c)"
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer minus operator" actual
 
