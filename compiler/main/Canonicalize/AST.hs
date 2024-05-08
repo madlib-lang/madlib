@@ -277,9 +277,56 @@ buildImportInfos env Src.AST { Src.aimports } =
   in  env { envImportInfo = info }
 
 
+checkImportCollision :: FilePath -> [String] -> Src.Import -> CanonicalM [String]
+checkImportCollision modulePath foundNames imp = case imp of
+  Src.Source _ _ Src.TypeImport{} ->
+    return foundNames
+
+  Src.Source _ _ (Src.NamedImport names _ _) ->
+    foldM
+      (\processed (Src.Source area _ n) ->
+        if n `elem` processed then
+          throwError $ CompilationError (ImportCollision n) (Context modulePath area)
+        else
+          return $ n : processed
+      )
+      foundNames
+      names
+
+  Src.Source _ _ (Src.DefaultImport (Src.Source area _ n) _ _) ->
+    if n `elem` foundNames then
+      throwError $ CompilationError (ImportCollision n) (Context modulePath area)
+    else
+      return $ n : foundNames
+
+
+checkTypeImportCollision :: FilePath -> [String] -> Src.Import -> CanonicalM [String]
+checkTypeImportCollision modulePath foundNames imp = case imp of
+  Src.Source _ _ (Src.TypeImport names _ _) ->
+    foldM
+      (\processed (Src.Source area _ n) ->
+        if n `elem` processed then
+          throwError $ CompilationError (ImportCollision n) (Context modulePath area)
+        else
+          return $ n : processed
+      )
+      foundNames
+      names
+
+  Src.Source _ _ (Src.NamedImport names _ _) ->
+    return foundNames
+
+  Src.Source _ _ (Src.DefaultImport (Src.Source _ _ n) _ _) ->
+    return foundNames
+
+
+
 canonicalizeAST :: FilePath -> Options -> Env -> Src.AST -> CanonicalM (Can.AST, Env, [InstanceToDerive])
 canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
   mapM_ (validateImport astPath) aimports
+
+  foldM_ (checkImportCollision astPath) [] aimports
+  importedTypeNames <- foldM (checkTypeImportCollision astPath) [] aimports
 
   let env'  = buildImportInfos env sourceAst
   let env'' = env'
@@ -293,7 +340,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   resetNameAccesses
   resetJS
 
-  (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls sourceAst
+  (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath importedTypeNames $ Src.atypedecls sourceAst
   imports               <- mapM (canonicalize env''' (optTarget options)) $ Src.aimports sourceAst
   exps                  <- mapM (canonicalize env''' (optTarget options)) $ Src.aexps sourceAst
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst

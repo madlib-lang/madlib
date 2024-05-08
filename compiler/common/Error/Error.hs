@@ -18,6 +18,8 @@ data TypeError
   | UnificationError Type Type
   | BadEscapeSequence
   | EmptyChar
+  | TypeAlreadyDefined String
+  | ImportCollision String
   -- Pred: The instance we add
   -- Pred: The wrong predicate
   -- Pred: The predicate from the interface declaration

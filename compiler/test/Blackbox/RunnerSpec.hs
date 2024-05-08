@@ -153,6 +153,9 @@ spec = do
         , "compiler/test/Blackbox/test-cases/number-inference-error"
         , "compiler/test/Blackbox/test-cases/while"
         , "compiler/test/Blackbox/test-cases/arrays-and-mutations"
+        , "compiler/test/Blackbox/test-cases/type-import-collision"
+        , "compiler/test/Blackbox/test-cases/import-collision"
+        , "compiler/test/Blackbox/test-cases/redefined-type"
         ]
 
   forM_ cases $ \casePath -> do

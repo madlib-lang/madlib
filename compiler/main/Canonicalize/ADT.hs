@@ -24,8 +24,8 @@ import Explain.Location
 import Data.Hashable (hash)
 
 
-canonicalizeTypeDecls :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
-canonicalizeTypeDecls env astPath tds = do
+canonicalizeTypeDecls :: Env -> FilePath -> [String] -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
+canonicalizeTypeDecls env astPath typeNamesInScope tds = do
   env' <- foldM (addTypeToEnv astPath) env tds
   let tds' =
         sortBy
@@ -41,35 +41,39 @@ canonicalizeTypeDecls env astPath tds = do
           )
           tds
 
-  (env'', tds'', toRetry) <- canonicalizeTypeDecls' True env' astPath tds'
+  (env'', tds'', toRetry) <- canonicalizeTypeDecls' True typeNamesInScope env' astPath tds'
   if null toRetry then
     return (env'', tds'')
   else do
-    (env''', tds''', _) <- canonicalizeTypeDecls' False env'' astPath toRetry
+    (env''', tds''', _) <- canonicalizeTypeDecls' False typeNamesInScope env'' astPath toRetry
     return (env''', tds'' <> tds''')
 
 
 -- Last value in the tuple is the failed types that should be retried, mainly for forward use of type aliases
 -- if after a first pass that value isn't empty, we just retry all failed ones
-canonicalizeTypeDecls' :: Bool -> Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl], [Src.TypeDecl])
-canonicalizeTypeDecls' _ env _       []         = return (env, [], [])
-canonicalizeTypeDecls' firstPass env astPath [typeDecl] = do
-  if firstPass then
-    catchError
-      (do
-        (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
-        return (env', [tds'], [])
-      )
-      (\_ ->
-        return (env, [], [typeDecl])
-      )
-  else do
-    (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
-    return (env', [tds'], [])
-canonicalizeTypeDecls' firstPass env astPath (typeDecl : tds) = do
-  (env' , tds', toRetry') <- canonicalizeTypeDecls' firstPass env astPath [typeDecl]
-  (env'', tds'', toRetry'') <- canonicalizeTypeDecls' firstPass env' astPath tds
-  return (env'', tds' <> tds'', toRetry' <> toRetry'')
+canonicalizeTypeDecls' :: Bool -> [String] -> Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl], [Src.TypeDecl])
+canonicalizeTypeDecls' firstPass typeNamesInScope env astPath typeDecls = case typeDecls of
+  [] ->
+    return (env, [], [])
+
+  typeDecl : next -> do
+    when (Src.getTypeDeclName typeDecl `elem` typeNamesInScope) $ do
+      throwError $ CompilationError (TypeAlreadyDefined $ Src.getTypeDeclName typeDecl) (Context astPath (Src.getArea typeDecl))
+    (env', tds', toRetry') <-
+      if firstPass then
+        catchError
+          (do
+            (env', tds') <- canonicalizeTypeDecl env astPath typeNamesInScope typeDecl
+            return (env', [tds'], [])
+          )
+          (\_ ->
+            return (env, [], [typeDecl])
+          )
+      else do
+        (env', td') <- canonicalizeTypeDecl env astPath typeNamesInScope typeDecl
+        return (env', [td'], [])
+    (env'', tds'', toRetry'') <- canonicalizeTypeDecls' firstPass (Src.getTypeDeclName typeDecl : typeNamesInScope) env' astPath next
+    return (env'', tds' <> tds'', toRetry' <> toRetry'')
 
 
 verifyTypeVars :: Area -> FilePath -> Name -> [Name] -> CanonicalM ()
@@ -107,8 +111,8 @@ addTypeToEnv astPath env (Src.Source area _ typeDecl) = case typeDecl of
     return env
 
 
-canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl of
+canonicalizeTypeDecl :: Env -> FilePath -> [String] -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
+canonicalizeTypeDecl env astPath typeNamesInScope td@(Src.Source area _ typeDecl) = case typeDecl of
   adt@Src.ADT{} ->
     if isLower . head $ Src.adtname adt then
       throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area)

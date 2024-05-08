@@ -814,6 +814,15 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "assignments share the scope and using a local name that is\n"
     <> "defined in the global scope of a module is not allowed."
 
+  TypeAlreadyDefined name ->
+    "Type already defined\n\n"
+    <> "The type '" <> name <> "' is already defined\n\n"
+    <> "Hint: Change the name of the type.\n"
+
+  ImportCollision name ->
+    "Import collision\n\n"
+    <> "The imported name '" <> name <> "' is already used\n\n"
+
   NameAlreadyExported name ->
     "Already exported\n\n"
     <> "Export already defined. You are trying to export the\n"
@@ -1788,6 +1797,44 @@ createErrorDiagnostic color context typeError = case typeError of
               <> "assignments share the scope and using a local name that is\n"
               <> "defined in the global scope of a module is not allowed."
           ]
+
+  ImportCollision name ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Import collision"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The imported name '" <> name <> "' is already used"
+            )
+          ]
+          []
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Import collision"
+          []
+          []
+
+  TypeAlreadyDefined name ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Type already defined"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "The type '" <> name <> "' is already defined"
+            )
+          ]
+          [Diagnose.Hint "Change the name of the type"]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Type already defined"
+          []
+          [Diagnose.Hint "Change the name of the type"]
 
   NameAlreadyExported name ->
     case context of
