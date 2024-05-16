@@ -45,6 +45,18 @@ double madlib__math__random() {
   return madlib__math__random__cpp();
 }
 
+double madlib__math__sin(double a) {
+  return sin(a);
+}
+
+double madlib__math__cos(double a) {
+  return cos(a);
+}
+
+double madlib__math__tan(double a) {
+  return tan(a);
+}
+
 double madlib__math__atan(double a) {
   return atan(a);
 }

@@ -65,6 +65,15 @@ export pow = (a, b) => #- { return Math.pow(a, b) } -#
 random :: a -> Float
 export random = #- Math.random -#
 
+sin :: Float -> Float
+export sin = (x) => #- { return Math.sin(x) } -#
+
+cos :: Float -> Float
+export cos = (x) => #- { return Math.cos(x) } -#
+
+tan :: Float -> Float
+export tan = (x) => #- { return Math.tan(x) } -#
+
 atan :: Float -> Float
 export atan = (x) => #- { return Math.atan(x) } -#
 
@@ -90,6 +99,15 @@ export pow = extern "madlib__math__pow"
 
 random :: a -> Float
 export random = extern "madlib__math__random"
+
+sin :: Float -> Float
+export sin = extern "madlib__math__sin"
+
+cos :: Float -> Float
+export cos = extern "madlib__math__cos"
+
+tan :: Float -> Float
+export tan = extern "madlib__math__tan"
 
 atan :: Float -> Float
 export atan = extern "madlib__math__atan"
