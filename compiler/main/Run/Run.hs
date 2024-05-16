@@ -48,10 +48,10 @@ import           System.Console.ANSI
 import GHC.IO (unsafePerformIO)
 
 
-runRun :: Target -> FilePath -> [String] -> Bool -> IO ()
-runRun target input args watchMode = do
+runRun :: Target -> FilePath -> [String] -> Bool -> FilePath -> IO ()
+runRun target input args watchMode exePath = do
   if ".mad" `isSuffixOf` input then do
-    runModule target input args watchMode
+    runModule target input args watchMode exePath
   else do
     let packagePath              = joinPath ["madlib_modules", input]
     let packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
@@ -61,19 +61,18 @@ runRun target input args watchMode = do
 
       Right MadlibDotJson.MadlibDotJson { MadlibDotJson.bin = Just bin } -> do
         let exePath = joinPath [packagePath, bin]
-        runModule target exePath args watchMode
+        runModule target exePath args watchMode exePath
 
 runFolder :: FilePath
 runFolder = "build/"
 
 
-runModule :: Target -> FilePath -> [String] -> Bool -> IO ()
-runModule target input args watchMode = do
+runModule :: Target -> FilePath -> [String] -> Bool -> FilePath -> IO ()
+runModule target input args watchMode exePath = do
   canEntrypoint    <- canonicalizePath input
-  canCurrentFolder <- canonicalizePath "./"
   rootPath <- canonicalizePath "./"
 
-  let llvmOutputPath = runFolder <> "run"
+  let llvmOutputPath = exePath
   let jsOutputPath = joinPath [runFolder, dropFileName input, (takeBaseName . takeFileName $ input) <> ".mjs"]
 
   canonicalOutputPath <-

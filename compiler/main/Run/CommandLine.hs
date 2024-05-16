@@ -49,6 +49,7 @@ data Command
       , runInput :: FilePath
       , runArgs :: [String]
       , runWatch :: Bool
+      , exePath :: FilePath
       }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   | LanguageServer
@@ -83,6 +84,10 @@ parseInput = strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "Wh
 parseOutput :: Parser FilePath
 parseOutput = strOption
   (long "output" <> short 'o' <> metavar "OUTPUT" <> help "What path to compile to" <> showDefault <> value "./build/")
+
+parseExePath :: Parser FilePath
+parseExePath = strOption
+  (long "exe-path" <> metavar "EXECUTABLE PATH" <> help "What path the exe file should be compiled to, works only for llvm target" <> showDefault <> value "./build/run")
 
 parseVerbose :: Parser Bool
 parseVerbose = switch (long "verbose" <> short 'v' <> help "Verbose output" <> showDefault)
@@ -243,7 +248,7 @@ parseRunArguments = many
   )
 
 parseRun :: Parser Command
-parseRun = Run <$> parseLimitedTarget <*> parseRunInput <*> parseRunArguments <*> parseWatch
+parseRun = Run <$> parseLimitedTarget <*> parseRunInput <*> parseRunArguments <*> parseWatch <*> parseExePath
 
 
 parseFolder :: Parser FilePath
