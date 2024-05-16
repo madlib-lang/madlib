@@ -1,6 +1,3 @@
-#ifndef GC_THREADS
-  #define GC_THREADS
-#endif
 #include "uv.h"
 #include "process.hpp"
 #include <sys/mman.h>
@@ -46,6 +43,7 @@ static char **ARGV = NULL;
 
 
 void __main__init__(int argc, char **argv) {
+  // GC_use_threads_discovery();
   GC_set_dont_precollect(1);
 
   // TODO: make min alloc and initial heap size available as compilation options

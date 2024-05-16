@@ -1,5 +1,8 @@
 #ifndef PROCESS_H
 #define PROCESS_H
+#ifndef GC_THREADS
+  #define GC_THREADS
+#endif
 
 #include <gc.h>
 #include <uv.h>
