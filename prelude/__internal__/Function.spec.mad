@@ -21,11 +21,15 @@ import {
   flip,
   identity,
   ifElse,
+  neither,
   not,
+  notBoth,
   notEquals,
   tailRec,
   unless,
   when,
+  xEither,
+  xNeither,
 } from "./Function"
 
 
@@ -43,11 +47,15 @@ import {
   flip,
   identity,
   ifElse,
+  neither,
   not,
+  notBoth,
   notEquals,
   tailRec,
   unless,
   when,
+  xEither,
+  xNeither,
 } from "./Function"
 
 
@@ -199,3 +207,40 @@ test(
 test("unless - true", () => assertEquals(unless(equals(5), (x) => x * 2, 5), 5))
 
 test("unless - false", () => assertEquals(unless(equals(5), (x) => x * 2, 10), 20))
+
+test(
+  "notBoth",
+  () => do {
+    _ <- assertEquals(notBoth(lt(50), lt(60))(70), false)
+    return assertEquals(notBoth(lt(50), lt(60))(55), true)
+  },
+)
+
+test(
+  "neither",
+  () => do {
+    notAB = neither(equals("A"), equals("B"))
+    _ <- assertEquals(notAB("A"), false)
+    _ <- assertEquals(notAB("B"), false)
+    return assertEquals(notAB("C"), true)
+  },
+)
+
+test(
+  "xEither",
+  () => do {
+    sclusy = xEither(lt(50), lt(60))
+    _ <- assertEquals(sclusy(70), false)
+    _ <- assertEquals(sclusy(30), false)
+    return assertEquals(sclusy(55), true)
+  },
+)
+
+test(
+  "xNeither",
+  () => do {
+    _ <- assertEquals(xNeither(lt(50), lt(60))(70), true)
+    _ <- assertEquals(xNeither(lt(50), lt(60))(30), true)
+    return assertEquals(xNeither(lt(50), lt(60))(55), false)
+  },
+)
