@@ -319,7 +319,13 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
         else
           arg
 
-  s3 <- contextualUnify env expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
+  s3 <- catchError
+    (contextualUnify env expForContext (apply s2 t1) (apply s1 t2 `fn` tv))
+    (\err -> do
+      pushError err
+      unify (getReturnType t1) tv
+    )
+
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
 
