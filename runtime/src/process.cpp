@@ -15,7 +15,9 @@
 #endif
 
 #ifdef __MINGW32__
-extern int putenv(char *);
+int putenv(char *) {
+  return 0;
+}
 #endif
 
 #ifdef __cplusplus
