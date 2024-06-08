@@ -52,9 +52,9 @@ make -f Makefile.direct CFLAGS_EXTRA="-O3 -DTHREAD_LOCAL_ALLOC -DGC_USE_LD_WRAP 
 # make -f Makefile.direct CFLAGS_EXTRA="-O3 -DTHREAD_LOCAL_ALLOC -DGC_DISCOVER_TASK_THREADS -DDEBUG_THREADS -DGC_ASSERTIONS -DDONT_ADD_BYTE_AT_END -DFIND_LEAK -DGC_DEBUG -DGC_DUMP_REGULARLY -DKEEP_BACK_PTRS -DALL_INTERIOR_POINTERS -DGC_PRINT_VERBOSE_STATS -DPRINT_BLACK_LIST -DGC_THREADS -DLARGE_CONFIG -DGC_DISABLE_INCREMENTAL" c++
 # make -f Makefile.direct CFLAGS_EXTRA="-O3 -DTHREAD_LOCAL_ALLOC -DGC_DISCOVER_TASK_THREADS -DDEBUG_THREADS -DGC_ASSERTIONS -DDONT_ADD_BYTE_AT_END -DFIND_LEAK -DGC_DEBUG -DGC_DUMP_REGULARLY -DKEEP_BACK_PTRS -DALL_INTERIOR_POINTERS -DGC_PRINT_VERBOSE_STATS -DPRINT_BLACK_LIST -DGC_THREADS -DLARGE_CONFIG -DGC_DISABLE_INCREMENTAL"
 cd ../..
-cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
-cp "libgc/bdwgc-${LIBGC_VERSION}/gccpp.a" ../runtime/lib/libgccpp.a
-cp -R "libgc/bdwgc-${LIBGC_VERSION}/include" ../runtime/
+cp "bdwgc-disable-unknown-thread-abort/gc.a" ../runtime/lib/libgc.a
+cp "bdwgc-disable-unknown-thread-abort/gccpp.a" ../runtime/lib/libgccpp.a
+cp -R "bdwgc-disable-unknown-thread-abort/include" ../runtime/
 
 
 
