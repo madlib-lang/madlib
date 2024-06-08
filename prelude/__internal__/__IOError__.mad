@@ -3,6 +3,7 @@ export type Error
   | ArgumentListToLong
   | PermissionDenied
   | UnknownError
+  | GeneralError(String)
 
 fromLibuvError :: Integer -> Error
 export fromLibuvError = where {
