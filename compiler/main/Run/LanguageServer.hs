@@ -69,18 +69,19 @@ handlers :: State -> Handlers (LspM ())
 handlers state = mconcat
   [ notificationHandler SInitialized $ \_not ->
       sendNotification SWindowLogMessage (LogMessageParams MtInfo "Madlib server initialized")
-  , requestHandler STextDocumentHover $ \req responder -> do
-      let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos@(Position line col) _workDone) = req
-      maybeHoverInfo <- getHoverInformation state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
-      case maybeHoverInfo of
-        Just info -> do
-          let ms    = HoverContents $ MarkupContent MkMarkdown (T.pack info)
-              range = Range pos pos
-              rsp   = Hover ms (Just range)
-          responder (Right $ Just rsp)
+  , requestHandler STextDocumentHover $ \req responder ->
+      recordAndPrintDuration "hover" $ do
+        let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos@(Position line col) _workDone) = req
+        maybeHoverInfo <- getHoverInformation state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
+        case maybeHoverInfo of
+          Just info -> do
+            let ms    = HoverContents $ MarkupContent MkMarkdown (T.pack info)
+                range = Range pos pos
+                rsp   = Hover ms (Just range)
+            responder (Right $ Just rsp)
 
-        Nothing ->
-          return ()
+          Nothing ->
+            return ()
   , requestHandler STextDocumentDefinition $ \(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
       recordAndPrintDuration "definition" $ do
         links <- getDefinitionLinks state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
@@ -973,10 +974,10 @@ runLanguageServer = do
 
 hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)
 hoverInfoTask loc path = do
-  hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
-  if hasCycle then
-    return Nothing
-  else do
+  -- hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
+  -- if hasCycle then
+  --   return Nothing
+  -- else do
     srcAst        <- Rock.fetch $ Query.ParsedAST path
     (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
     mapM (nodeToHoverInfo path) (findNodeInAst loc srcAst typedAst)
@@ -1023,10 +1024,10 @@ findNameInNode node = case node of
 
 definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
 definitionLocationTask loc path = do
-  hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
-  if hasCycle then
-    return Nothing
-  else do
+  -- hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
+  -- if hasCycle then
+  --   return Nothing
+  -- else do
     (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
     (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
     srcAst         <- Rock.fetch $ Query.ParsedAST path
