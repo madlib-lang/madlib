@@ -191,6 +191,7 @@ contextualUnifyAccess env exp t1 t2 = catchError
       addContext env exp e
   )
 
+
 contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)

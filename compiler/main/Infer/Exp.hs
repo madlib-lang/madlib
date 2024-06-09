@@ -57,8 +57,8 @@ makeMutationPred :: Type -> Area -> Pred
 makeMutationPred t area = IsIn mutationInterface [t] (Just area)
 
 
-infer :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-infer options env lexp = do
+infer :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+infer discardError options env lexp = do
   let (Can.Canonical area exp) = lexp
   case exp of
     Can.LNum  _               -> do
@@ -74,25 +74,25 @@ infer options env lexp = do
     Can.LChar  _              -> return (M.empty, [], tChar, applyLitSolve lexp ([] :=> tChar))
     Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp ([] :=> tBool))
     Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp ([] :=> tUnit))
-    Can.TemplateString _      -> inferTemplateString options env lexp
+    Can.TemplateString _      -> inferTemplateString discardError options env lexp
 
-    Can.Var            _      -> inferVar options env lexp
-    Can.Abs _ _               -> inferAbs options env lexp
-    Can.App{}                 -> inferApp options env lexp
-    Can.Assignment _ _        -> inferAssignment options env lexp
-    Can.Mutate _ _            -> inferMutate options env lexp
-    Can.Do _                  -> inferDo options env lexp
-    Can.Where      _ _        -> inferWhere options env lexp
-    Can.Record _              -> inferRecord options env lexp
-    Can.Access   _ _          -> inferAccess options env lexp
-    Can.ArrayAccess   _ _     -> inferArrayAccess options env lexp
-    Can.TypedExp{}            -> inferTypedExp options env lexp
-    Can.ListConstructor  _    -> inferListConstructor options env lexp
-    Can.TupleConstructor _    -> inferTupleConstructor options env lexp
-    Can.Export           _    -> inferExport options env lexp
+    Can.Var            _      -> inferVar discardError options env lexp
+    Can.Abs _ _               -> inferAbs discardError options env lexp
+    Can.App{}                 -> inferApp discardError options env lexp
+    Can.Assignment _ _        -> inferAssignment discardError options env lexp
+    Can.Mutate _ _            -> inferMutate discardError options env lexp
+    Can.Do _                  -> inferDo discardError options env lexp
+    Can.Where      _ _        -> inferWhere discardError options env lexp
+    Can.Record _              -> inferRecord discardError options env lexp
+    Can.Access   _ _          -> inferAccess discardError options env lexp
+    Can.ArrayAccess   _ _     -> inferArrayAccess discardError options env lexp
+    Can.TypedExp{}            -> inferTypedExp discardError options env lexp
+    Can.ListConstructor  _    -> inferListConstructor discardError options env lexp
+    Can.TupleConstructor _    -> inferTupleConstructor discardError options env lexp
+    Can.Export           _    -> inferExport discardError options env lexp
     Can.NameExport       _    -> inferNameExport env lexp
-    Can.If{}                  -> inferIf options env lexp
-    Can.While{}               -> inferWhile options env lexp
+    Can.If{}                  -> inferIf discardError options env lexp
+    Can.While{}               -> inferWhile discardError options env lexp
     Can.Extern{}              -> inferExtern env lexp
     Can.TypedHole             -> do
       t <- newTVar Star
@@ -166,8 +166,8 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 
 -- INFER VAR
 
-inferVar :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferVar _ env exp@(Can.Canonical area (Can.Var n)) = case n of
+inferVar :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferVar discardError _ env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) mempty `fn` TGen 0)
     (ps :=> t) <- instantiate s
@@ -215,12 +215,12 @@ extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
 
-inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
+inferAbs :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferAbs discardError options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
-  (s, ps, t, es) <- inferBody options env' { envInBody = True } body
-  (s', es')      <- postProcessBody options env' s (tv `fn` t) es
+  (s, ps, t, es) <- inferBody discardError options env' { envInBody = True } body
+  (s', es')      <- postProcessBody discardError options env' s (tv `fn` t) es
 
   let t'        = apply s' (tv `fn` t)
       paramType = apply s' tv
@@ -228,22 +228,22 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
   return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
 
 
-inferBody :: Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody options env [e] = do
-  (s, ps, t, e') <- infer options env e
+inferBody :: Bool -> Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
+inferBody discardError options env [e] = do
+  (s, ps, t, e') <- infer discardError options env e
   return (s, ps, t, [e'])
 
-inferBody options env (e : es) = do
-  (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
-  (sb, ps', tb, eb) <- inferBody options (apply s env') es
+inferBody discardError options env (e : es) = do
+  (s, (returnPreds, _), env', e') <- inferImplicitlyTyped discardError options True env e
+  (sb, ps', tb, eb) <- inferBody discardError options (apply s env') es
   let finalS = s `compose` (sb `compose` s)
 
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
 
 -- TODO: find out and comment why we need this
-postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
-postProcessBody options env s expType es = do
+postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
+postProcessBody discardError options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
       let fs = ftv (apply accSubst env'') `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
@@ -307,11 +307,11 @@ postProcessBody options env s expType es = do
 
 -- INFER APP
 
-inferApp :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
+inferApp :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
   tv                  <- newTVar Star
-  (s1, ps1, t1, eabs) <- infer options env abs
-  (s2, ps2, t2, earg) <- infer options (apply s1 env) arg
+  (s1, ps1, t1, eabs) <- infer discardError options env abs
+  (s2, ps2, t2, earg) <- infer discardError options (apply s1 env) arg
 
   let expForContext =
         if getLineFromStart argArea < getLineFromStart absArea then
@@ -322,8 +322,10 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   s3 <- catchError
     (contextualUnify env expForContext (apply s2 t1) (apply s1 t2 `fn` tv))
     (\err -> do
-      pushError err
-      unify (getReturnType t1) tv
+      if discardError then do
+        unify (getReturnType t1) tv
+      else
+        throwError err
     )
 
   let t = apply s3 tv
@@ -337,16 +339,23 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
 
 -- INFER TEMPLATE STRINGS
 
-inferTemplateString :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) = do
-  inferred <- mapM (infer options env) exps
+inferTemplateString :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferTemplateString discardError options env (Can.Canonical area (Can.TemplateString exps)) = do
+  inferred <- mapM (infer discardError options env) exps
 
   let elemSubsts = (\(s, _, _, _) -> s) <$> inferred
   let elemTypes  = (\(_, _, t, _) -> t) <$> inferred
   let elemExps   = (\(_, _, _, es) -> es) <$> inferred
   let elemPS     = (\(_, ps, _, _) -> ps) <$> inferred
 
-  ss <- mapM (\(exp, t) -> contextualUnify env exp t tStr) (zip exps elemTypes)
+  ss <- catchError
+    (mapM (\(exp, t) -> contextualUnify env exp t tStr) (zip exps elemTypes))
+    (\err -> do
+      if discardError then do
+        return mempty
+      else
+        throwError err
+    )
 
   let fullSubst = foldl' compose M.empty (elemSubsts <> ss)
 
@@ -363,8 +372,8 @@ inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) =
 
 -- INFER ASSIGNMENT
 
-inferAssignment :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = do
+inferAssignment :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferAssignment discardError options env e@(Can.Canonical area (Can.Assignment name exp)) = do
   when (name `Set.member` envNamespacesInScope env) $ do
     pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area)
 
@@ -378,7 +387,7 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
 
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
-  (s1, ps1, t1, e1) <- infer options env' exp
+  (s1, ps1, t1, e1) <- infer discardError options env' exp
   s2                <- catchError (contextualUnify env' e currentType t1) (const $ return M.empty)
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
   let s  = s1 `compose` s2
@@ -397,13 +406,19 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
 
 -- INFER MUTATE
 
-inferMutate :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
-  (s1, ps1, t1, e1) <- infer options env lhs
-  (s2, ps2, t2, e2) <- infer options (apply s1 env) exp
-  s3                <- contextualUnify env e t1 t2
-  -- s3                <- catchError (contextualUnify env e t1 t2) (const $ return M.empty)
-  --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
+inferMutate :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
+  (s1, ps1, t1, e1) <- infer discardError options env lhs
+  (s2, ps2, t2, e2) <- infer discardError options (apply s1 env) exp
+  s3 <- catchError
+    (contextualUnify env e t1 t2)
+    (\err -> do
+      if discardError then do
+        return mempty
+      else
+        throwError err
+    )
+
   let s  = s1 `compose` s2 `compose` s3
   let t3 = apply s t2
 
@@ -429,17 +444,17 @@ inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
 
 -- INFER EXPORT
 
-inferExport :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferExport options env (Can.Canonical area (Can.Export exp)) = do
-  (s, ps, t, e) <- infer options env exp
+inferExport :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferExport discardError options env (Can.Canonical area (Can.Export exp)) = do
+  (s, ps, t, e) <- infer discardError options env exp
   return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.Export e))
 
 
 
 -- INFER LISTCONSTRUCTOR
 
-inferListConstructor :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructor elems)) = case elems of
+inferListConstructor :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferListConstructor discardError options env listExp@(Can.Canonical area (Can.ListConstructor elems)) = case elems of
   [] -> do
     tv <- newTVar Star
     let t = tListOf tv
@@ -450,13 +465,22 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
 
     (s', ps, t', es) <- foldlM
       (\(s, pss, t, lis) elem -> do
-        (s', ps', t'', li) <- inferListItem options (apply s env) (fromMaybe tv t) elem
+        (s', ps', t'', li) <- inferListItem discardError options (apply s env) (fromMaybe tv t) elem
         (s'', tr) <- case t of
           Nothing ->
             return (mempty, t'')
 
-          Just t''' ->
-            (, pickJSXChild t''' t'') <$> contextualUnify env elem (apply s' t''') t''
+          Just t''' -> do
+            s'''' <-
+              catchError
+                (contextualUnify env elem (apply s' t''') t'')
+                (\err -> do
+                  if discardError then do
+                    return mempty
+                  else
+                    throwError err
+                )
+            return (s'''', pickJSXChild t''' t'')
 
         let s''' = s'' `compose` s' `compose` s
         return (s''', pss ++ ps', Just $ apply s''' tr, lis ++ [li])
@@ -466,7 +490,14 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
 
     let (Just t'') = t'
 
-    s'' <- contextualUnify env listExp tv t''
+    s'' <- catchError
+      (contextualUnify env listExp tv t'')
+      (\err -> do
+        if discardError then do
+          return mempty
+        else
+          throwError err
+      )
     let s''' = s'' `compose` s'
 
     let t = tListOf (apply s''' tv)
@@ -474,16 +505,23 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
     return (s''', ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
 
 
-inferListItem :: Options -> Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
-inferListItem options env _ (Can.Canonical area li) = case li of
+inferListItem :: Bool -> Options -> Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+inferListItem discardError options env _ (Can.Canonical area li) = case li of
   Can.ListItem exp -> do
-    (s1, ps, t, e) <- infer options env exp
+    (s1, ps, t, e) <- infer discardError options env exp
     return (s1, ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
-    (s1, ps, t, e) <- infer options env exp
+    (s1, ps, t, e) <- infer discardError options env exp
     tv <- newTVar Star
-    s2 <- contextualUnify env exp (tListOf tv) t
+    s2 <- catchError
+      (contextualUnify env exp (tListOf tv) t)
+      (\err -> do
+        if discardError then do
+          return mempty
+        else
+          throwError err
+      )
 
     let s = s1 `compose` s2
 
@@ -502,12 +540,12 @@ pickJSXChild t1 t2 = case (t1, t2) of
 
 -- INFER TUPLE CONSTRUCTOR
 
-inferTupleConstructor :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferTupleConstructor options env (Can.Canonical area (Can.TupleConstructor elems)) = do
+inferTupleConstructor :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferTupleConstructor discardError options env (Can.Canonical area (Can.TupleConstructor elems)) = do
   inferredElems <-
     foldM
       (\(s, ps, ts, es) e -> do
-          (s', ps', t', e') <- infer options (apply s env) e
+          (s', ps', t', e') <- infer discardError options (apply s env) e
           return (s' `compose` s, ps ++ ps', ts ++ [t'], es ++ [e'])
       ) (M.empty, [], [], []) elems
 
@@ -525,13 +563,13 @@ inferTupleConstructor options env (Can.Canonical area (Can.TupleConstructor elem
 
 -- INFER RECORD
 
-inferRecord :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferRecord options env exp = do
+inferRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferRecord discardError options env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
   (subst, inferredFields) <- foldM (
         \(fieldSubst, result) field -> do
-          (s, ps, ts, e) <- inferRecordField options (apply fieldSubst env) field
+          (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
           let nextSubst = s `compose` fieldSubst
           return (nextSubst, result ++ [(ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e)])
       ) (mempty, []) fields
@@ -565,14 +603,14 @@ inferRecord options env exp = do
   return (finalSubst, allPS, apply finalSubst recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
 
 
-inferRecordField :: Options -> Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
-inferRecordField options env (Can.Canonical area field) = case field of
+inferRecordField :: Bool -> Options -> Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
+inferRecordField discardError options env (Can.Canonical area field) = case field of
   Can.Field (name, exp) -> do
-    (s, ps, t, e) <- infer options env exp
+    (s, ps, t, e) <- infer discardError options env exp
     return (s, ps, [(name, t)], Slv.Typed (ps :=> t) area $ Slv.Field (name, e))
 
   Can.FieldSpread exp -> do
-    (s, ps, t, e) <- infer options env exp
+    (s, ps, t, e) <- infer discardError options env exp
     case t of
       TRecord{} ->
         return (s, ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
@@ -589,27 +627,27 @@ inferRecordField options env (Can.Canonical area field) = case field of
 
 -- INFER ACCESS
 
-inferAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAccess options env e@(Can.Canonical _ (Can.Access ns _)) =
+inferAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferAccess discardError options env e@(Can.Canonical _ (Can.Access ns _)) =
   case ns of
     Can.Canonical _ (Can.Var ns') ->
       if ns' `Set.member` envNamespacesInScope env then
-        inferNamespaceAccess options env e
+        inferNamespaceAccess discardError options env e
       else
-        inferFieldAccess options env e
+        inferFieldAccess discardError options env e
 
     _ ->
-      inferFieldAccess options env e
+      inferFieldAccess discardError options env e
 
 
 
 -- INFER ACCESS
 
-inferArrayAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferArrayAccess options env (Can.Canonical area (Can.ArrayAccess arr index)) = do
+inferArrayAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferArrayAccess discardError options env (Can.Canonical area (Can.ArrayAccess arr index)) = do
   tv <- newTVar Star
-  (s1, ps1, t1, earr) <- infer options env arr
-  (s2, ps2, t2, eindex) <- infer options env index
+  (s1, ps1, t1, earr) <- infer discardError options env arr
+  (s2, ps2, t2, eindex) <- infer discardError options env index
   s3 <- contextualUnify env arr t1 (tArrayOf tv)
   s4 <- contextualUnify env index t2 tInteger
 
@@ -623,8 +661,8 @@ inferArrayAccess options env (Can.Canonical area (Can.ArrayAccess arr index)) = 
 
 -- INFER NAMESPACE ACCESS
 
-inferNamespaceAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
+inferNamespaceAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferNamespaceAccess discardError _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
   = do
     sc <-
       catchError
@@ -636,20 +674,27 @@ inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (C
     let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field) (isConstructor env (ns <> field))
 
     return (M.empty, ps', t, e)
-inferNamespaceAccess _ _ _ = throwError $ CompilationError FatalError NoContext
+inferNamespaceAccess _ _ _ _ = throwError $ CompilationError FatalError NoContext
 
 
 
 -- INFER FIELD ACCESS
 
-inferFieldAccess :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs))
+inferFieldAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferFieldAccess discardError options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs))
   = do
     tv                  <- newTVar Star
-    (s1, _  , t1, eabs) <- infer options env abs
-    (s2, ps2, t2, earg) <- infer options env rec
+    (s1, _  , t1, eabs) <- infer discardError options env abs
+    (s2, ps2, t2, earg) <- infer discardError options env rec
 
-    s3                  <- contextualUnifyAccess env fa t1 (t2 `fn` tv)
+    s3 <- catchError
+      (contextualUnifyAccess env fa t1 (t2 `fn` tv))
+      (\err -> do
+        if discardError then do
+          return $ gentleUnify t1 (t2 `fn` tv)
+        else
+          throwError err
+      )
 
     let s      = s3 `compose` s2 `compose` s1
     let t      = apply s tv
@@ -662,11 +707,11 @@ inferFieldAccess options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonic
 
 -- INFER IF
 
-inferIf :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
-  (s1, ps1, tcond, econd) <- infer options env cond
-  (s2, ps2, ttruthy, etruthy) <- infer options (apply s1 env) truthy
-  (s3, ps3, tfalsy, efalsy) <- infer options (apply (s2 `compose` s1) env) falsy
+inferIf :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy)) = do
+  (s1, ps1, tcond, econd) <- infer discardError options env cond
+  (s2, ps2, ttruthy, etruthy) <- infer discardError options (apply s1 env) truthy
+  (s3, ps3, tfalsy, efalsy) <- infer discardError options (apply (s2 `compose` s1) env) falsy
 
   let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
   let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
@@ -683,10 +728,10 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
 
 -- INFER While
 
-inferWhile :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferWhile options env (Can.Canonical area (Can.While cond body)) = do
-  (s1, ps1, tcond, econd) <- infer options env cond
-  (s2, ps2, tbody, ebody) <- infer options (apply s1 env) body
+inferWhile :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferWhile discardError options env (Can.Canonical area (Can.While cond body)) = do
+  (s1, ps1, tcond, econd) <- infer discardError options env cond
+  (s2, ps2, tbody, ebody) <- infer discardError options (apply s1 env) body
 
   let s3 = s2 `compose` s1
 
@@ -702,10 +747,10 @@ inferWhile options env (Can.Canonical area (Can.While cond body)) = do
 
 -- INFER DO
 
-inferDo :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferDo options env (Can.Canonical area (Can.Do exps)) = do
-  (s, ps, t, exps') <- inferBody options env exps
-  (s', exps'')      <- postProcessBody options env s t exps'
+inferDo :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferDo discardError options env (Can.Canonical area (Can.Do exps)) = do
+  (s, ps, t, exps') <- inferBody discardError options env exps
+  (s', exps'')      <- postProcessBody discardError options env s t exps'
 
   return (s', apply s' ps, apply s' t, Slv.Typed (apply s' $ ps :=> t) area (Slv.Do exps''))
 
@@ -713,13 +758,13 @@ inferDo options env (Can.Canonical area (Can.Do exps)) = do
 
 -- INFER WHERE
 
-inferWhere :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferWhere options env (Can.Canonical area (Can.Where exp iss)) = do
-  (s, ps, t, e)          <- infer options env exp
+inferWhere :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = do
+  (s, ps, t, e)          <- infer discardError options env exp
   tv                     <- newTVar Star
   (pss, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch options (apply currSubst env) (apply currSubst tv) t is
+      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) t is
       return (res <> [r], subst `compose` currSubst)
     )
     ([], s)
@@ -736,11 +781,11 @@ inferWhere options env (Can.Canonical area (Can.Where exp iss)) = do
   return (s'', ps ++ ps', apply s'' tv, wher)
 
 
-inferBranch :: Options -> Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
-inferBranch options env tv t (Can.Canonical area (Can.Is pat exp)) = do
+inferBranch :: Bool -> Options -> Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
+inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
   s                    <- contextualUnify env exp t t'
-  (s', ps', t'', e')   <- infer options (apply s $ mergeVars env vars) exp
+  (s', ps', t'', e')   <- infer discardError options (apply s $ mergeVars env vars) exp
   s''                  <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
@@ -784,11 +829,11 @@ updatePatternTypes s vars pat = case pat of
 
 -- INFER TYPEDEXP
 
-inferTypedExp :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferTypedExp options env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
+inferTypedExp :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferTypedExp discardError options env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   (_ :=> t)        <- instantiate sc
 
-  (s1, ps1, t1, e1) <- infer options env exp
+  (s1, ps1, t1, e1) <- infer discardError options env exp
   s2                <- contextualUnify env e t t1
 
   return (s1 `compose` s2, apply s2 ps1, apply s2 t1, Slv.Typed (apply s2 $ ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
@@ -953,8 +998,8 @@ ftvForLetGen t = case t of
 
 
 
-inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
-inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
+inferImplicitlyTyped :: Bool -> Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
+inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) = do
   (env', tv) <- case Can.getExpName exp of
     Just n -> case M.lookup n (envVars env) of
       Just sc -> do
@@ -970,7 +1015,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       tv <- newTVar Star
       return (env, tv)
 
-  (s, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   let env'' = apply s env'
 
   s' <- contextualUnify env'' exp (apply s tv) t
@@ -1029,8 +1074,8 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       return (sFinal, (ds ++ mutPS, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
 
 
-inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
-inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
+inferExplicitlyTyped :: Bool -> Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
+inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   qt@(qs :=> t') <- instantiate sc
 
   env' <- case Can.getExpName exp of
@@ -1041,7 +1086,7 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
         Nothing ->
           return env
 
-  (s, ps, t, e) <- infer options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
@@ -1102,14 +1147,20 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
     return (substDefaultResolution `compose` s', qs'' ++ mutPS, env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
-inferExplicitlyTyped _ _ _ _ = undefined
+inferExplicitlyTyped _ _ _ _ _ = undefined
 
 
 inferExps :: Options -> Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)
 inferExps _ env []       = return ([], env)
 
 inferExps options env (e : es) = do
-  (e' , env'   ) <- catchError (inferExp options env e) (recordError env e)
+  (e' , env'   ) <-
+    catchError
+      (inferExp False options env e)
+      (\err -> do
+        pushError err
+        catchError (inferExp True options env e) (\_ -> return (Just $ toSolved e, env))
+      )
   (es', nextEnv) <- inferExps options env' es
 
   case e' of
@@ -1120,16 +1171,16 @@ inferExps options env (e : es) = do
       return (es', nextEnv)
 
 
-inferExp :: Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
-inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
+inferExp :: Bool -> Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
+inferExp _ _ env (Can.Canonical _ (Can.TypeExport _)) =
   return (Nothing, env)
-inferExp options env e = do
+inferExp discardError options env e = do
   (s, _, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ Can.TypedExp{} ->
-      inferExplicitlyTyped options False env e
+      inferExplicitlyTyped discardError options False env e
 
     _ -> do
-      (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
+      (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped discardError options False env e
       return (s, placeholderPreds, env'', e')
 
 

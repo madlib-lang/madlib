@@ -51,6 +51,8 @@ import           Control.Concurrent                   (threadDelay, forkIO, Thre
 import qualified Control.FoldDebounce                 as Debounce
 import           System.FSNotify
 import           Data.Time.Clock
+import qualified AST.Source as Src
+import Data.Maybe (isJust)
 
 
 
