@@ -157,7 +157,7 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   let sc          = quantify (ftv qt') qt'
 
-  (s, ps, t, e) <- infer options env m
+  (s, ps, t, e) <- infer False options env m
   (qs :=> t')   <- instantiate sc
   s'            <- (`compose` s) <$> unify t' t
 

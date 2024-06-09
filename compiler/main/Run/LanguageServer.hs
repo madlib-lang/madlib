@@ -8,10 +8,12 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# HLINT ignore "Use list comprehension" #-}
+{-# LANGUAGE TupleSections #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
 import Language.LSP.Types
+import Language.LSP.Types.Capabilities
 import Control.Monad.IO.Class
 import qualified Data.Text as T
 import Control.Monad.Base
@@ -19,7 +21,6 @@ import qualified Rock
 import Driver.Rules
 import qualified Driver.Query as Query
 import Text.Show.Pretty (ppShow)
-import LLVM.Internal.FFI.Type (x86FP80TypeInContext)
 import qualified Driver
 import Error.Error
 import qualified Data.Map as Map
@@ -36,7 +37,7 @@ import           Data.IORef
 import qualified AST.Solved as Slv
 import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping', renderSchemesWithDiff)
 import           Control.Applicative ((<|>))
-import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified, Scheme (Forall))
+import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified, Scheme (Forall), getParamTypes)
 import qualified Error.Warning as Warning
 import           Error.Warning (CompilationWarning(CompilationWarning))
 import qualified Error.Error as Error
@@ -62,11 +63,16 @@ import qualified Canonicalize.Env as CanEnv
 import qualified Canonicalize.Interface as Can
 import System.FilePath (takeFileName, dropExtension)
 import Run.OptimizationLevel
+import Data.Maybe (isJust)
+import GHC.Base (when)
+import Language.LSP.VFS (virtualFileText)
+import qualified Infer.Env as SlvEnv
+import Data.Char (isAlphaNum, isDigit)
 
 
 
-handlers :: State -> Handlers (LspM ())
-handlers state = mconcat
+handlers :: State -> State -> Handlers (LspM ())
+handlers state autocompletionState = mconcat
   [ notificationHandler SInitialized $ \_not ->
       sendNotification SWindowLogMessage (LogMessageParams MtInfo "Madlib server initialized")
   , requestHandler STextDocumentHover $ \req responder ->
@@ -94,22 +100,72 @@ handlers state = mconcat
 
           locs ->
             responder $ Right (InR $ InL $ List locs)
-  -- , requestHandler STextDocumentCompletion $ \(RequestMessage _ _ _ completionParams) responder -> do
-  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow completionParams)
+  , requestHandler STextDocumentCompletion $ \(RequestMessage _ _ _ (CompletionParams (TextDocumentIdentifier uri) (Position line col) _ _ _)) responder -> do
+      recordAndPrintDuration "completion" $ do
+        file <- getVirtualFile (toNormalizedUri uri)
+        let fileContent = T.unpack . virtualFileText <$> file
+        case fileContent of
+          Just content -> do
+            let foundLine = take (col + 1) $ lines content !! line
+            
+            suggestions <- getAutocompletionSuggestions autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
+            -- https://hackage.haskell.org/package/lsp-types-2.3.0.0/docs/Language-LSP-Protocol-Types.html#t:CompletionItem
+            let completionItems = map (\(s, kind) -> CompletionItem (T.pack s) (Just kind) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) suggestions
+            responder $ Right $ InR (CompletionList True (List completionItems))
+            sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow (computeAutocompletionKind (reverse foundLine)))
+
+          Nothing ->
+            return ()
 
   -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
   -- , requestHandler STextDocumentImplementation $ \_ responder -> do
   --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo "tdi"
   , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
-      recordAndPrintDuration "file open" $ generateDiagnostics False state uri mempty
+      recordAndPrintDuration "file open" $ generateDiagnostics False state autocompletionState uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
-      recordAndPrintDuration "file save" $ generateDiagnostics False state uri mempty
+      recordAndPrintDuration "file save" $ generateDiagnostics False state autocompletionState uri mempty
   , notificationHandler STextDocumentDidChange $ \(NotificationMessage _ _ (DidChangeTextDocumentParams (VersionedTextDocumentIdentifier uri _) (List changes))) -> do
       recordAndPrintDuration "file change" $ do
         let (TextDocumentContentChangeEvent _ _ docContent) = last changes
-        generateDiagnostics True state uri (Map.singleton (uriToPath uri) (T.unpack docContent))
+        generateDiagnostics True state autocompletionState uri (Map.singleton (uriToPath uri) (T.unpack docContent))
   ]
+
+
+data AutocompletionKind
+  = AutocompletingName String
+  | AutocompletingRecordAccess String String
+  | AutocompletingDeepRecordAccess [String]
+  deriving(Eq, Show)
+
+
+computeAutocompletionKind :: String -> AutocompletionKind
+computeAutocompletionKind reversedCurrentLine =
+  let consumeChars chars = case chars of
+        c : cs | isAlphaNum c ->
+          c : consumeChars cs
+
+        _ ->
+          []
+      readName chars =
+        let _name = reverse $ consumeChars chars
+            _rest = drop (length _name) chars
+        in  (dropWhile isDigit _name, _rest)
+      (name, rest) = readName reversedCurrentLine
+  in  case rest of
+        '.' : afterDot ->
+          let (recordName, rest') = readName afterDot
+          in  case rest' of
+                -- '.' : afterDot' ->
+                --   let (recordName', rest'') = readName afterDot'
+                --   in  AutocompletingDeepRecordAccess [recordName', recordName, name]
+
+                _ ->
+                  AutocompletingRecordAccess recordName name
+
+        _ ->
+          AutocompletingName name
+
 
 
 buildOptions :: Target -> LspM () Options.Options
@@ -151,6 +207,14 @@ isInRange (Loc _ l c) (Area (Loc _ lstart cstart) (Loc _ lend cend)) =
   (l >= lstart && l <= lend)
   && (not (l == lstart && c < cstart) && not (l == lend && c > cend))
 
+
+isLocAfter :: Loc -> Area -> Bool
+isLocAfter (Loc _ l _) (Area _ (Loc _ lend _)) =
+  l > lend
+
+isLocAfterStart :: Loc -> Area -> Bool
+isLocAfterStart (Loc _ l _) (Area (Loc _ lstart _) _) =
+  l > lstart
 
 
 prettyQt :: Bool -> Qual Type -> String
@@ -339,7 +403,8 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
               findNodeAtLoc False loc lhs <|> findNodeAtLoc False loc exp
 
             Slv.Access rec field ->
-              findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
+              Nothing
+              -- findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
 
             Slv.ArrayAccess arr index ->
               findNodeAtLoc False loc arr <|> findNodeAtLoc False loc index
@@ -680,6 +745,15 @@ nodeToHoverInfo modulePath node = do
     <> "*"
 
 
+getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, CompletionItemKind)]
+getAutocompletionSuggestions autocompletionState loc path moduleContent = do
+  llvmOptions <- buildOptions TLLVM
+  (llvmResult, _, _) <- liftIO $ runTask autocompletionState llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
+  jsOptions <- buildOptions TNode
+  (jsResult, _, _) <- liftIO $ runTask autocompletionState jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
+  return $ Set.toList $ Set.fromList $ llvmResult ++ jsResult
+
+
 getDefinitionLinks :: State -> Loc -> FilePath -> LspM () [Location]
 getDefinitionLinks state loc path = do
   jsOptions        <- buildOptions TNode
@@ -727,7 +801,14 @@ uriToPath uri =
         unpacked
 
 
-runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () ([CompilationWarning], [CompilationError])
+typeCheckFileTask :: FilePath -> Rock.Task Query.Query Bool
+typeCheckFileTask path = do
+  parsedAst <- Rock.fetch $ Query.ParsedAST path
+  Rock.fetch $ Query.SolvedASTWithEnv path
+  return $ isJust (Src.apath parsedAst)
+
+
+runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () (Bool, [CompilationWarning], [CompilationError])
 runTypeCheck invalidatePath state target path fileUpdates = do
   let changedFiles =
         if invalidatePath then
@@ -743,8 +824,8 @@ runTypeCheck invalidatePath state target path fileUpdates = do
         Driver.Don'tPrune
         changedFiles
         fileUpdates
-        (Driver.typeCheckFileTask path)
-        :: IO (Either (Cyclic Query.Query) ((), [CompilationWarning], [CompilationError]))
+        (typeCheckFileTask path)
+        :: IO (Either (Cyclic Query.Query) (Bool, [CompilationWarning], [CompilationError]))
 
     case result of
       Left _ -> do
@@ -756,10 +837,10 @@ runTypeCheck invalidatePath state target path fileUpdates = do
           fileUpdates
           (Driver.detectCyleTask path)
 
-        return (warnings, errors)
+        return (False, warnings, errors)
 
-      Right (_, warnings, errors) ->
-        return (warnings, errors)
+      Right (couldParse, warnings, errors) ->
+        return (couldParse, warnings, errors)
 
 
 sendDiagnosticsForWarningsAndErrors :: [CompilationWarning] -> [CompilationError] -> LspM () ()
@@ -795,13 +876,19 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
     publishDiagnostics 100 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
 
 
-generateDiagnostics :: Bool -> State -> Uri -> Map.Map FilePath String -> LspM () ()
-generateDiagnostics invalidatePath state uri fileUpdates = do
+generateDiagnostics :: Bool -> State -> State -> Uri -> Map.Map FilePath String -> LspM () ()
+generateDiagnostics invalidatePath state autocompletionState uri fileUpdates = do
   let path = uriToPath uri
-  (jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
-  (llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
+  (couldParseJs, jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
+  (couldParseLlvm, llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
   let allWarnings = jsWarnings `List.union` llvmWarnings
   let allErrors   = jsErrors `List.union` llvmErrors
+
+  when (null jsErrors) $ do
+    liftIO $ copyStateTo (_jsDriverState state) (_jsDriverState autocompletionState)
+
+  when (null llvmErrors) $ do
+    liftIO $ copyStateTo (_llvmDriverState state) (_llvmDriverState autocompletionState)
 
   sendDiagnosticsForWarningsAndErrors allWarnings allErrors
 
@@ -955,17 +1042,41 @@ textDocumentSyncOptions =
     (Just $ InL True) -- _save
 
 
+copyStateTo :: Driver.State err -> Driver.State err -> IO ()
+copyStateTo from to = do
+  _startedVar <- readIORef (Driver._startedVar from)
+  _hashesVar <- readIORef (Driver._hashesVar from)
+  _reverseDependenciesVar <- readIORef (Driver._reverseDependenciesVar from)
+  _tracesVar <- readIORef (Driver._tracesVar from)
+  _errorsVar <- readIORef (Driver._errorsVar from)
+  _warningsVar <- readIORef (Driver._warningsVar from)
+
+  atomicWriteIORef (Driver._startedVar to) _startedVar
+  atomicWriteIORef (Driver._hashesVar to) _hashesVar
+  atomicWriteIORef (Driver._reverseDependenciesVar to) _reverseDependenciesVar
+  atomicWriteIORef (Driver._tracesVar to) _tracesVar
+  atomicWriteIORef (Driver._errorsVar to) _errorsVar
+  atomicWriteIORef (Driver._warningsVar to) _warningsVar
+
+  return ()
+
+
 runLanguageServer :: IO ()
 runLanguageServer = do
   jsDriverState <- Driver.initialState
   llvmDriverState <- Driver.initialState
   openFiles <- newIORef mempty
   let state = State jsDriverState llvmDriverState openFiles mempty
+
+  autocompletionJsDriverState <- Driver.initialState
+  autocompletionLlvmDriverState <- Driver.initialState
+  autocompletionOpenFiles <- newIORef mempty
+  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty
   runServer $ ServerDefinition
     { defaultConfig = ()
     , onConfigurationChange = const $ pure $ Right ()
     , doInitialize = \env _req -> pure $ Right env
-    , staticHandlers = handlers state
+    , staticHandlers = handlers state autocompletionState
     , interpretHandler = \env -> Iso (runLspT env) liftIO
     , options = defaultOptions { textDocumentSync = Just textDocumentSyncOptions }
     }
@@ -1020,6 +1131,92 @@ findNameInNode node = case node of
 
   _ ->
     Nothing
+
+
+findTopLevelExp :: Loc -> [Slv.Exp] -> Maybe Slv.Exp
+findTopLevelExp loc exps = case exps of
+  e@(Slv.Typed _ area _) : next ->
+    if isInRange loc area then
+      Just e
+    else
+      findTopLevelExp loc next
+
+  [] ->
+    Nothing
+
+
+getLocalNames :: Loc -> Slv.Exp -> [(String, Type)]
+getLocalNames loc exp = case exp of
+  Slv.Typed _ area (Slv.Assignment _ e) | not (isLocAfter loc area) ->
+    getLocalNames loc e
+
+  Slv.Typed (_ :=> t) _ (Slv.Assignment n e) ->
+    (n, t) : getLocalNames loc e
+
+  Slv.Typed _ area (Slv.Abs _ body) | not (isLocAfterStart loc area) ->
+    body >>= getLocalNames loc
+
+  Slv.Typed (_ :=> t) _ (Slv.Abs param body) ->
+    (Slv.getValue param, getParamTypes t !! 0) : (body >>= getLocalNames loc)
+
+  Slv.Typed _ _ (Slv.Export e) ->
+    getLocalNames loc e
+
+  Slv.Typed _ _ (Slv.TypedExp e _ _) ->
+    getLocalNames loc e
+
+  _ ->
+    []
+
+
+completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query [(String, CompletionItemKind)]
+completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
+  (typedAst, env)  <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
+
+  let foundLine = take col $ lines moduleContent !! (line - 1)
+  let autocompletionKind = computeAutocompletionKind (reverse foundLine)
+
+  let topLevelExp = findTopLevelExp loc (Slv.aexps typedAst)
+  let localNames = Maybe.fromMaybe [] $ (getLocalNames loc) <$> topLevelExp
+  let namesInEnv = Map.keys $ SlvEnv.envVars env
+  let methodsInEnv = Map.keys $ SlvEnv.envMethods env
+  case autocompletionKind of
+    AutocompletingName _ ->
+      return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
+
+    AutocompletingRecordAccess recordName fieldName -> do
+      let updatedLoc = Loc 0 line (col - length fieldName - 1)
+      -- case findNodeAtLoc updatedLoc topLevelExp of
+      case findNodeInExps updatedLoc (Slv.aexps typedAst ++ Slv.getAllMethods typedAst) of
+        Just (ExpNode _ (Slv.Typed (_ :=> TRecord fields _ extraFields) _ _)) ->
+          return $ map (, CiField) $ Map.keys $ fields <> extraFields
+
+        f ->
+          case List.find (\(n, _) -> n == recordName) localNames of
+            Just (_, TRecord fields _ extraFields) ->
+              return $ map (, CiField) $ Map.keys $ fields <> extraFields
+
+            _ ->
+              return $ (show f, CiConstant) : (map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv)
+
+    AutocompletingDeepRecordAccess items ->
+      case items of
+        recordName : fieldName : _ ->
+          case List.find (\(n, _) -> n == recordName) localNames of
+            Just (_, TRecord fields _ extraFields) ->
+              case Map.lookup fieldName (fields <> extraFields) of
+                Just (TRecord fields' _ extraFields') ->
+                  return $ map (, CiField) $ Map.keys $ fields' <> extraFields'
+
+                Nothing ->
+                  return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
+
+            _ ->
+              return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
+
+        _ ->
+          return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
+
 
 
 definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
