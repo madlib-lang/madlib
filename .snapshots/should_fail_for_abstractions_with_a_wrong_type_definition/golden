@@ -9,47 +9,145 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV (-1) Star))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "String" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "Integer" Star) "prelude"))
+                    (TCon (TC "Boolean" Star) "prelude")))
             (Area (Loc 0 1 1) (Loc 58 2 24))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV (-1) Star))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "String" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "Integer" Star) "prelude"))
+                          (TCon (TC "Boolean" Star) "prelude")))
                   (Area (Loc 35 2 1) (Loc 58 2 24))
                   (Assignment
                      "fn"
                      (Typed
-                        ([] :=> TVar (TV (-1) Star))
+                        ([ IsIn
+                             "Eq"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                                (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 40 2 6) (Loc 58 2 24))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV (-1) Star)) (Area (Loc 41 2 7) (Loc 42 2 8)) "a")
+                              ([ IsIn
+                                   "Eq"
+                                   [ TCon (TC "String" Star) "prelude" ]
+                                   (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                               ] :=>
+                                 TCon (TC "String" Star) "prelude")
+                              (Area (Loc 41 2 7) (Loc 42 2 8))
+                              "a")
                            [ Typed
-                               ([] :=> TVar (TV (-1) Star))
+                               ([ IsIn
+                                    "Eq"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                ] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "String" Star) "prelude"))
+                                    (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 40 2 6) (Loc 58 2 24))
                                (Abs
                                   (Typed
-                                     ([] :=> TVar (TV (-1) Star))
+                                     ([ IsIn
+                                          "Eq"
+                                          [ TCon (TC "String" Star) "prelude" ]
+                                          (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                      ] :=>
+                                        TCon (TC "String" Star) "prelude")
                                      (Area (Loc 44 2 10) (Loc 45 2 11))
                                      "b")
                                   [ Typed
-                                      ([] :=> TVar (TV (-1) Star))
+                                      ([ IsIn
+                                           "Eq"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                       ] :=>
+                                         TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 51 2 17) (Loc 57 2 23))
                                       (App
                                          (Typed
-                                            ([] :=> TVar (TV (-1) Star))
+                                            ([ IsIn
+                                                 "Eq"
+                                                 [ TCon (TC "String" Star) "prelude" ]
+                                                 (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                             ] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TCon (TC "String" Star) "prelude"))
+                                                 (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 51 2 17) (Loc 57 2 23))
                                             (App
                                                (Typed
-                                                  ([] :=> TVar (TV (-1) Star))
+                                                  ([ IsIn
+                                                       "Eq"
+                                                       [ TCon (TC "String" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TCon (TC "String" Star) "prelude"))
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star)))
+                                                                "prelude")
+                                                             (TCon (TC "String" Star) "prelude"))
+                                                          (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 53 2 19) (Loc 55 2 21))
                                                   (Var "==" False))
                                                (Typed
-                                                  ([] :=> TVar (TV (-1) Star))
+                                                  ([ IsIn
+                                                       "Eq"
+                                                       [ TCon (TC "String" Star) "prelude" ]
+                                                       (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                                   ] :=>
+                                                     TCon (TC "String" Star) "prelude")
                                                   (Area (Loc 51 2 17) (Loc 52 2 18))
                                                   (Var "a" False))
                                                False))
                                          (Typed
-                                            ([] :=> TVar (TV (-1) Star))
+                                            ([ IsIn
+                                                 "Eq"
+                                                 [ TCon (TC "String" Star) "prelude" ]
+                                                 (Just (Area (Loc 53 2 19) (Loc 55 2 21)))
+                                             ] :=>
+                                               TCon (TC "String" Star) "prelude")
                                             (Area (Loc 56 2 22) (Loc 57 2 23))
                                             (Var "b" False))
                                          True)
