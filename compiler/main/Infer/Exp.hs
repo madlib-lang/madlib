@@ -715,9 +715,8 @@ inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy))
 
   let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
   let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
-  s4                          <- catchError (contextualUnify env falsy tfalsy' ttruthy') flipUnificationError
-  -- s4                          <- catchError (contextualUnify env falsy ttruthy tfalsy) flipUnificationError
-  s5                          <- contextualUnify env cond tBool (apply s4 tcond)
+  s4 <- catchError (contextualUnify env falsy tfalsy' ttruthy') flipUnificationError
+  s5 <- contextualUnify env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
@@ -1018,7 +1017,14 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
   (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   let env'' = apply s env'
 
-  s' <- contextualUnify env'' exp (apply s tv) t
+  s' <- catchError
+    (contextualUnify env'' exp (apply s tv) t)
+    (\err -> do
+      if discardError then do
+        return $ gentleUnify (apply s tv) t
+      else
+        throwError err
+    )
   let s'' = s `compose` s' `compose` s
       envWithVarsExcluded = env''
         { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
@@ -1063,7 +1069,7 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
           -- scheme
           apply sFinal $ quantify gs ((rs' ++ mutPS) :=> t')
 
-  when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
+  when (not isLet && not discardError && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   case Can.getExpName exp of
@@ -1088,7 +1094,15 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
 
   (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
-  s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
+  -- s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
+  s'' <- catchError
+    (contextualUnify env canExp t' (apply (s `compose` s) t))
+    (\err -> do
+      if discardError then do
+        return $ gentleUnify t' (apply (s `compose` s) t)
+      else
+        throwError (limitContextArea 2 err)
+    )
   let s' = s `compose` s'' `compose` s''
 
   let envWithVarsExcluded =
@@ -1124,7 +1138,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
           )
           ps
 
-  when (not isLet && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
+  when (not isLet && not discardError && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   let qs'' = dedupePreds qs'

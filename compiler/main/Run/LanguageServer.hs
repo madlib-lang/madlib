@@ -67,7 +67,7 @@ import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
 import qualified Infer.Env as SlvEnv
-import Data.Char (isAlphaNum, isDigit)
+import Data.Char (isAlphaNum, isDigit, isUpper)
 
 
 
@@ -109,8 +109,8 @@ handlers state autocompletionState = mconcat
             let foundLine = take (col + 1) $ lines content !! line
             
             suggestions <- getAutocompletionSuggestions autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
-            -- https://hackage.haskell.org/package/lsp-types-2.3.0.0/docs/Language-LSP-Protocol-Types.html#t:CompletionItem
-            let completionItems = map (\(s, kind) -> CompletionItem (T.pack s) (Just kind) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) suggestions
+            -- https://github.com/haskell/lsp/blob/76b86d54040cfa6c8306433a29404fa6402a5f69/lsp-types/src/Language/LSP/Types/Completion.hs
+            let completionItems = map (\(s, typing, kind) -> CompletionItem (T.pack s) (Just kind) Nothing (Just $ T.pack typing) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) suggestions
             responder $ Right $ InR (CompletionList True (List completionItems))
             sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow (computeAutocompletionKind (reverse foundLine)))
 
@@ -135,7 +135,7 @@ handlers state autocompletionState = mconcat
 data AutocompletionKind
   = AutocompletingName String
   | AutocompletingRecordAccess String String
-  | AutocompletingDeepRecordAccess [String]
+  | AutocompletingNamespaceAccess String
   deriving(Eq, Show)
 
 
@@ -156,9 +156,9 @@ computeAutocompletionKind reversedCurrentLine =
         '.' : afterDot ->
           let (recordName, rest') = readName afterDot
           in  case rest' of
-                -- '.' : afterDot' ->
-                --   let (recordName', rest'') = readName afterDot'
-                --   in  AutocompletingDeepRecordAccess [recordName', recordName, name]
+                _ | not (null recordName) && isUpper (head recordName) ->
+                  AutocompletingNamespaceAccess recordName
+
 
                 _ ->
                   AutocompletingRecordAccess recordName name
@@ -222,6 +222,11 @@ prettyQt topLevel qt@(_ :=> t)
   | qt == failedQt = "_"
   | topLevel       = let (r, _) = renderSchemesWithDiff False (Forall [] qt) (Forall [] qt) in r
   | otherwise      = let (r, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t)) in r
+
+
+prettyScheme :: Scheme -> String
+prettyScheme sc =
+  let (r, _) = renderSchemesWithDiff False sc sc in r
 
 
 data Node
@@ -403,8 +408,8 @@ findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
               findNodeAtLoc False loc lhs <|> findNodeAtLoc False loc exp
 
             Slv.Access rec field ->
-              Nothing
-              -- findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
+              -- Nothing
+              findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
 
             Slv.ArrayAccess arr index ->
               findNodeAtLoc False loc arr <|> findNodeAtLoc False loc index
@@ -745,7 +750,7 @@ nodeToHoverInfo modulePath node = do
     <> "*"
 
 
-getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, CompletionItemKind)]
+getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
 getAutocompletionSuggestions autocompletionState loc path moduleContent = do
   llvmOptions <- buildOptions TLLVM
   (llvmResult, _, _) <- liftIO $ runTask autocompletionState llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
@@ -1169,7 +1174,7 @@ getLocalNames loc exp = case exp of
     []
 
 
-completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query [(String, CompletionItemKind)]
+completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query [(String, String, CompletionItemKind)]
 completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
   (typedAst, env)  <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
 
@@ -1177,46 +1182,43 @@ completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
   let autocompletionKind = computeAutocompletionKind (reverse foundLine)
 
   let topLevelExp = findTopLevelExp loc (Slv.aexps typedAst)
-  let localNames = Maybe.fromMaybe [] $ (getLocalNames loc) <$> topLevelExp
-  let namesInEnv = Map.keys $ SlvEnv.envVars env
-  let methodsInEnv = Map.keys $ SlvEnv.envMethods env
+  let localNames = map (\(n, t) -> (n, Forall [] ([] :=> t))) $ Maybe.fromMaybe [] $ (getLocalNames loc) <$> topLevelExp
+  let namesInEnv = Map.toList $ SlvEnv.envVars env
+  let methodsInEnv = Map.toList $ SlvEnv.envMethods env
   case autocompletionKind of
+    AutocompletingNamespaceAccess namespace ->
+      return
+        $ map (\(n, qt) -> (if '.' `List.elem` n then List.tail $ dropWhile (/= '.') n else n, prettyScheme qt, CiFunction))
+        $ filter (List.isPrefixOf namespace . fst) namesInEnv
+
     AutocompletingName _ ->
-      return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
+      return
+        $ map (\(n, qt) -> (n, prettyScheme qt, CiFunction))
+        $ localNames ++ namesInEnv ++ methodsInEnv
 
     AutocompletingRecordAccess recordName fieldName -> do
       let updatedLoc = Loc 0 line (col - length fieldName - 1)
-      -- case findNodeAtLoc updatedLoc topLevelExp of
       case findNodeInExps updatedLoc (Slv.aexps typedAst ++ Slv.getAllMethods typedAst) of
         Just (ExpNode _ (Slv.Typed (_ :=> TRecord fields _ extraFields) _ _)) ->
-          return $ map (, CiField) $ Map.keys $ fields <> extraFields
+          return
+            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
+            $ Map.toList $ fields <> extraFields
+
+        Just (NameNode _ (Slv.Typed (_ :=> TApp _ (TRecord fields _ extraFields)) _ _)) ->
+          return
+            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
+            $ Map.toList $ fields <> extraFields
 
         f ->
           case List.find (\(n, _) -> n == recordName) localNames of
-            Just (_, TRecord fields _ extraFields) ->
-              return $ map (, CiField) $ Map.keys $ fields <> extraFields
+            Just (_, Forall _ (_ :=> TRecord fields _ extraFields)) ->
+              return
+                $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
+                $ Map.toList
+                $ fields <> extraFields
 
             _ ->
-              return $ (show f, CiConstant) : (map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv)
-
-    AutocompletingDeepRecordAccess items ->
-      case items of
-        recordName : fieldName : _ ->
-          case List.find (\(n, _) -> n == recordName) localNames of
-            Just (_, TRecord fields _ extraFields) ->
-              case Map.lookup fieldName (fields <> extraFields) of
-                Just (TRecord fields' _ extraFields') ->
-                  return $ map (, CiField) $ Map.keys $ fields' <> extraFields'
-
-                Nothing ->
-                  return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
-
-            _ ->
-              return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
-
-        _ ->
-          return $ map (, CiFunction) $ map fst localNames ++ namesInEnv ++ methodsInEnv
-
+              return $ (show f, "", CiConstant) : (map (\(n, qt) -> (n, prettyScheme qt, CiField)) $ localNames ++ namesInEnv ++ methodsInEnv)
 
 
 definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
