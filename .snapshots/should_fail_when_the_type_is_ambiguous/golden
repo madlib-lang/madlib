@@ -9,32 +9,72 @@
         ]
     , aexps =
         [ Typed
-            ([] :=> TVar (TV (-1) Star))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
             (Area (Loc 113 9 1) (Loc 141 11 2))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV (-1) Star))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
                   (Area (Loc 113 9 1) (Loc 141 11 2))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV (-1) Star))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
                         (Area (Loc 120 9 8) (Loc 141 11 2))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV (-1) Star))
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 140 11 1) (Loc 140 11 1))
                               "_")
                            [ Typed
-                               ([] :=> TVar (TV (-1) Star))
+                               ([ IsIn
+                                    "Read"
+                                    [ TVar (TV 2 Star) ]
+                                    (Just (Area (Loc 130 10 3) (Loc 134 10 7)))
+                                ] :=>
+                                  TVar (TV 2 Star))
                                (Area (Loc 130 10 3) (Loc 139 10 12))
                                (App
                                   (Typed
-                                     ([] :=> TVar (TV (-1) Star))
+                                     ([ IsIn "Read" [ TVar (TV 2 Star) ] Nothing ] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TCon (TC "String" Star) "prelude"))
+                                          (TVar (TV 2 Star)))
                                      (Area (Loc 130 10 3) (Loc 134 10 7))
                                      (Var "read" False))
                                   (Typed
-                                     ([] :=> TCon (TC "String" Star) "prelude")
+                                     ([ IsIn
+                                          "Read"
+                                          [ TVar (TV 2 Star) ]
+                                          (Just (Area (Loc 130 10 3) (Loc 134 10 7)))
+                                      ] :=>
+                                        TCon (TC "String" Star) "prelude")
                                      (Area (Loc 135 10 8) (Loc 138 10 11))
                                      (LStr "3"))
                                   True)
