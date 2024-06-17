@@ -106,7 +106,7 @@ handlers state autocompletionState = mconcat
         let fileContent = T.unpack . virtualFileText <$> file
         case fileContent of
           Just content -> do
-            let foundLine = take (col + 1) $ lines content !! line
+            let foundLine = take col $ lines content !! line
             
             suggestions <- getAutocompletionSuggestions autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
             -- https://github.com/haskell/lsp/blob/76b86d54040cfa6c8306433a29404fa6402a5f69/lsp-types/src/Language/LSP/Types/Completion.hs
@@ -1178,7 +1178,7 @@ completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query 
 completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
   (typedAst, env)  <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
 
-  let foundLine = take col $ lines moduleContent !! (line - 1)
+  let foundLine = take (col - 1) $ lines moduleContent !! (line - 1)
   let autocompletionKind = computeAutocompletionKind (reverse foundLine)
 
   let topLevelExp = findTopLevelExp loc (Slv.aexps typedAst)
