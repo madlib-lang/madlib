@@ -1,26 +1,40 @@
-Interfaces are a tool to extend genericity possibilities. Let's take a concrete example to illustrate it. Let's see how we could implement an show function for a tuple without interfaces. The function should take a 2-tuple as input, and return its String representation:
+Interfaces are a tool to solve problems generically.
+
+Let's take a concrete example; how can we implement an introspection function for a tuple (without interfaces)?
+The function should take a binary tuple as input, and return its String representation:
+
 ```madlib
-inspectList :: #[a, b] -> String
-inspectList = (tuple) => where(tuple) {
+showList :: #[a, b] -> String
+showList = (tuple) => where(tuple) {
   #[a, b] =>
-    `#[${inspectA(a)}, ${inspectB(b)}]`
+    `#[${showA(a)}, ${showB(b)}]`
 }
 ```
-Now, what we would like to do, is to define inspectA and inspectB. The issue is that these aren't defined types and could be any type. Unfortunately Madlib does not provide any sort of reflection like Java that would allow us to figure out at runtime how the value is structured. Luckily, interfaces come to the rescue! Let's see how to define the interface for our show problem:
+
+
+How could define introspection for individual values (`showA` and `showB`)?
+
+The issue is that these aren't definite types and could be any type. Currently Madlib does not provide any sort of runtime reflection, however, interfaces can avail us here!
+
+Let's see how to define the interface for our introspection problem:
+
 ```madlib
 interface Show a {
   show :: a -> String
 }
 ```
-So with this we say, that if Show is implemented for a type `a`, we can call the method show with values of that type, that take that type and return a string.
+So with this definition, we're saying "if `Show` is implemented for a type `a`, we can call the method `show` with values of that type and get back a string."
 
-Now we can use constraints within type annotations, to force a type variable to be a type that implements an interface. The fat arrow is used for that purpose:
+Now we can use constraints within type annotations, to frame that a type variable implements a given interface.
+
+The fat arrow is used to syntactically represent this constraint:
 ```madlib
 Comparable a => a -> a -> Boolean
 ```
-Here the type annotation tells us that the function must be called with values of a type that implement the interface Comparable or else we'd get a compilation error telling us that an instance for Comparable was not found for that type.
+The type annotation above tells us that the function must be called with values of a type that implement the interface Comparable, otherwise we'll get a compilation error telling us that an `[instance] for Comparable was not found` for this type.
 
-Now back to our initial problem, so we'd like to implement Show for the type `#[a, b]`. To do this, we can also constrain types in the head of an instance declaration:
+Coming back to our initial problem, we'd like to implement Show for the type `#[a, b]`. To do this, we can also constrain types in the beginning of an instance declaration:
+
 ```madlib
 instance (Show a, Show b) => Show #[a, b] {
   show = (tuple) => where(tuple) {
@@ -29,6 +43,6 @@ instance (Show a, Show b) => Show #[a, b] {
     }
 }
 ```
-Now we can finally do it, and we need not care about how show will be done for the types contained in the tuple. The show method will be dispatched to the right implementation, based on the concrete types the method is called with. So:
-show(#[1, true]) would respectively call the method from `Show Integer` and `Show Boolean`.
+
+Now we need not care about how `show` will be constrained for the types contained in the tuple. The `show` method will be dispatched to the right implementation, based on the concrete types the method is called with &mdash; So, `show(#[1, true])` would respectively call the method from `Show Integer` and `Show Boolean`.
 
