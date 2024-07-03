@@ -1,0 +1,13 @@
+import { assertEquals, test } from "Test"
+
+import { stripAnsi, text } from "./Terminal"
+
+
+
+test(
+  "stripAnsi",
+  () => do {
+    _ <- assertEquals(stripAnsi(text.red("colorful")), "colorful")
+    return assertEquals(stripAnsi("noChange"), "noChange")
+  },
+)
