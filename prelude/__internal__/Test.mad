@@ -26,47 +26,38 @@ IS_COLOR_ENABLED = do {
   return noColor == Just("") || noColor == Nothing
 }
 
+colorfulPrefix :: List String -> String -> String
+colorfulPrefix = (colors, v) => IS_COLOR_ENABLED ? Terminal.ansiColor(colors, " " ++ v) : v
 
-PREFIX_RUNS :: String
-PREFIX_RUNS = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], " RUNS ")
-  : "RUNS "
+PREFIX_RUNS = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "RUNS ")
 
-PREFIX_PASS :: String
-PREFIX_PASS = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], " PASS ")
-  : "PASS "
+PREFIX_PASS = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], "PASS ")
 
-PREFIX_FAIL :: String
-PREFIX_FAIL = IS_COLOR_ENABLED
-  ? Terminal.ansiColor([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], " FAIL ")
-  : "FAIL "
+PREFIX_FAIL = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], "FAIL ")
+
+PREFIX_SKIP = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "SKIP ")
 
 // CHAR_CHECK :: String
 // CHAR_CHECK = "✓"
 
-CHAR_CROSS :: String
 CHAR_CROSS = "×"
 
-CHAR_INCOMPLETE :: String
 CHAR_INCOMPLETE = "⧜"
 
-EMPTY_REPORT :: TestReport
 EMPTY_REPORT = TestReport("", 0, 0, 0, 0)
 
-CWD :: String
 CWD = Process.getCurrentWorkingDirectory()
 
 
 // Result collector
 
-// SuiteResult(total, succeeded, failed)
-type SuiteResult = SuiteResult(Integer, Integer, Integer)
+// SuiteResult(total, succeeded, failed, skipped)
+type SuiteResult = SuiteResult(Integer, Integer, Integer, Integer)
 
 type TestResult = Success(String) | Failure(String, String) | Skipped(String)
 
 isSuccess :: TestResult -> Boolean
-isSuccess = (res) => where(res) {
+isSuccess = where {
   Success(_) =>
     true
 
@@ -74,11 +65,21 @@ isSuccess = (res) => where(res) {
     false
 }
 
-makeResultCollector :: {}
-  -> {
-    getResults :: {} -> Dictionary String SuiteResult,
-    setResults :: Dictionary String SuiteResult -> {},
-  }
+isSkipped :: TestResult -> Boolean
+isSkipped = where {
+  Skipped(_) =>
+    true
+
+  _ =>
+    false
+}
+
+alias ResultCollection = {
+  getResults :: {} -> Dictionary String SuiteResult,
+  setResults :: Dictionary String SuiteResult -> {},
+}
+
+makeResultCollector :: {} -> ResultCollection
 makeResultCollector = () => {
   results = {{}}
 
@@ -91,10 +92,7 @@ makeResultCollector = () => {
   return { getResults, setResults }
 }
 
-collector :: {
-  getResults :: {} -> Dictionary String SuiteResult,
-  setResults :: Dictionary String SuiteResult -> {},
-}
+collector :: ResultCollection
 collector = makeResultCollector()
 
 
@@ -107,13 +105,13 @@ export type AssertionError
   | NotImplemented
 
 
-/**
+/*
  * TestReport
- * accumulated report - String
- * total tests - Integer
- * successful runs - Integer
- * failed runs- Integer
- * skipped - Integer
+ * message - String
+ * total - Integer
+ * successCount - Integer
+ * failureCount - Integer
+ * skippedCount - Integer
  */
 type TestReport = TestReport(String, Integer, Integer, Integer, Integer)
 
@@ -124,20 +122,17 @@ getMessage = where {
     str
 }
 
-
 getTotal :: TestReport -> Integer
 getTotal = where {
   TestReport(_, total, _, _, _) =>
     total
 }
 
-
 getSuccessCount :: TestReport -> Integer
 getSuccessCount = where {
   TestReport(_, _, success, _, _) =>
     success
 }
-
 
 getFailureCount :: TestReport -> Integer
 getFailureCount = where {
@@ -152,7 +147,7 @@ getSkippedCount = where {
 }
 
 resultToReport :: TestResult -> TestReport
-resultToReport = (result) => where(result) {
+resultToReport = where {
   Failure(_, message) =>
     TestReport(message, 1, 0, 1, 0)
 
@@ -163,7 +158,6 @@ resultToReport = (result) => where(result) {
     TestReport("", 1, 0, 0, 1)
 }
 
-
 mergeReports :: TestReport -> TestReport -> TestReport
 mergeReports = (t1, t2) => TestReport(
   getMessage(t1) ++ getMessage(t2),
@@ -173,12 +167,10 @@ mergeReports = (t1, t2) => TestReport(
   getSkippedCount(t1) + getSkippedCount(t2),
 )
 
-
 assertEquals :: (Show a, Eq a) => a -> a -> Wish.Wish AssertionError {}
 export assertEquals = (actual, expected) => actual == expected
   ? of({})
   : Wish.bad(AssertionError(pShow(expected), pShow(actual)))
-
 
 indent :: Integer -> String -> String
 indent = (amount, x) => pipe(
@@ -192,13 +184,11 @@ indent = (amount, x) => pipe(
   String.unlines,
 )(x)
 
-
 renderValue :: (String -> String) -> String -> String
 renderValue = (colorize, value) => pipe(
   indent(4),
   (s) => IS_COLOR_ENABLED ? colorize(s) : s,
 )(value)
-
 
 renderAssertionError :: String -> AssertionError -> String
 renderAssertionError = (description, assertionError) => where(assertionError) {
@@ -247,13 +237,25 @@ export skip = (description, testFunction) => pipe(
   ),
 )(description)
 
-
 generateReportSuiteEndMessage :: List (Wish.Wish e a) -> String
 generateReportSuiteEndMessage = pipe(
   List.length,
   ifElse(equals(0), always("No test found\n\n"), always("")),
 )
 
+getSuitePath :: Boolean -> List String -> String
+getSuitePath = (colorful, parts) => pipe(
+  List.init,
+  FilePath.joinPath,
+  mappend($, "/"),
+  when(always(colorful && IS_COLOR_ENABLED), IO.grey),
+)(parts)
+
+getSuiteName :: List String -> String
+getSuiteName = pipe(
+  List.last,
+  fromMaybe(""),
+)
 
 prepareSuitePath :: Boolean -> String -> String
 prepareSuitePath = (colorful, suitePath) => {
@@ -277,20 +279,7 @@ prepareSuitePath = (colorful, suitePath) => {
         return drop
       },
     ),
-    (parts) => {
-      path = pipe(
-        List.init,
-        FilePath.joinPath,
-        mappend($, "/"),
-        when(always(colorful && IS_COLOR_ENABLED), IO.grey),
-      )(parts)
-      fileName = pipe(
-        List.last,
-        fromMaybe(""),
-      )(parts)
-
-      return path ++ fileName
-    },
+    (parts) => getSuitePath(colorful, parts) ++ getSuiteName(parts),
   )(suitePath)
 }
 
@@ -308,17 +297,19 @@ printSuiteResults = (results) => {
     Dictionary.toList,
     map(
       where {
-        #[suitePath, SuiteResult(total, success, failed)] =>
+        #[suitePath, SuiteResult(total, success, failed, skipped)] =>
           do {
-            counts = `${show(success + failed)}/${show(total)}`
+            counts = `${show(success + failed + skipped)}/${show(total)}`
             preparedSuitePath = prepareSuitePath(true, suitePath)
             coloredCounts = if (IS_COLOR_ENABLED) {
-              failed > 0 ? Terminal.text.brightRed(counts) : Terminal.text.brightGreen(counts)
+              failed > 0
+                ? skipped > 0 ? Terminal.text.brightYellow(counts) : Terminal.text.brightRed(counts)
+                : Terminal.text.brightGreen(counts)
             } else {
               counts
             }
-            prefix = total == success + failed
-              ? failed > 0 ? PREFIX_FAIL : PREFIX_PASS
+            prefix = total == success + failed + skipped
+              ? skipped > 0 ? PREFIX_SKIP : failed > 0 ? PREFIX_FAIL : PREFIX_PASS
               : PREFIX_RUNS
 
             return #[`${prefix} ${preparedSuitePath}`, coloredCounts]
@@ -354,8 +345,8 @@ failSuite = (suitePath) => {
   pipe(
     Dictionary.update(
       where {
-        SuiteResult(total, success, failed) =>
-          SuiteResult(total, success, total - success)
+        SuiteResult(total, success, failed, skipped) =>
+          SuiteResult(total, success, total - success, skipped)
       },
       suitePath,
     ),
@@ -374,10 +365,12 @@ updateSuiteResult = (suitePath, result) => {
   pipe(
     Dictionary.update(
       where {
-        SuiteResult(total, success, failed) =>
+        SuiteResult(total, success, failed, skipped) =>
           isSuccess(result)
-            ? SuiteResult(total, success + 1, failed)
-            : SuiteResult(total, success, failed + 1)
+            ? SuiteResult(total, success + 1, failed, skipped)
+            : isSkipped(result)
+              ? SuiteResult(total, success, failed, skipped + 1)
+              : SuiteResult(total, success, failed + 1, skipped)
       },
       suitePath,
     ),
@@ -398,77 +391,72 @@ runTestSuite :: (Show e, Show f) => String
   -> ({} -> Wish f b)
   -> List (Wish TestResult TestResult)
   -> Wish {} TestReport
-runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
-  (tests) => {
-    pipe(
-      Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0)),
-      collector.setResults,
-    )(collector.getResults())
+runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => {
+  updateReport = pipe(
+    updateSuiteResult(suitePath),
+    resultToReport,
+    of,
+  )
+  return pipe(
+    (tests) => {
+      pipe(
+        Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0, 0)),
+        collector.setResults,
+      )(collector.getResults())
 
-    return tests
-  },
-  map(
-    Wish.bichain(
-      pipe(
-        updateSuiteResult(suitePath),
-        resultToReport,
-        of,
-      ),
-      pipe(
-        updateSuiteResult(suitePath),
-        resultToReport,
-        of,
+      return tests
+    },
+    map(Wish.bichain(updateReport, updateReport)),
+    Wish.parallel,
+    (testsWish) => Monad.andDo(
+      testsWish,
+      Wish.mapRej(
+        (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:\n${show(err)}`),
+        beforeAll(),
       ),
     ),
-  ),
-  Wish.parallel,
-  (testsWish) => Monad.andDo(
-    testsWish,
-    Wish.mapRej(
-      (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:\n${show(err)}`),
-      beforeAll(),
+    (testsWish) => do {
+      result <- testsWish
+      _ <- Wish.mapRej(
+        (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:\n${show(err)}`),
+        afterAll(),
+      )
+      return of(result)
+    },
+    map(
+      pipe(
+        List.reduce(mergeReports, EMPTY_REPORT),
+        where {
+          TestReport(msg, total, success, failed, skipped) =>
+            (total == 0 || failed > 0)
+              ? TestReport(
+                `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
+                total,
+                success,
+                failed,
+                skipped,
+              )
+              : TestReport("", total, success, failed, skipped)
+        },
+      ),
     ),
-  ),
-  (testsWish) => do {
-    result <- testsWish
-    _ <- Wish.mapRej(
-      (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:\n${show(err)}`),
-      afterAll(),
-    )
-    return of(result)
-  },
-  map(
-    pipe(
-      List.reduce(mergeReports, EMPTY_REPORT),
-      where {
-        TestReport(msg, total, success, failed, skipped) =>
-          (total == 0 || failed > 0)
-            ? TestReport(
-              `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
-              total,
-              success,
-              failed,
-              skipped,
-            )
-            : TestReport("", total, success, failed, skipped)
+    Wish.chainRej(
+      (err) => {
+        failSuite(suitePath)
+        total = List.length(testsInSuite)
+        return of(
+          TestReport(
+            `${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`,
+            total,
+            0,
+            total,
+            total,
+          ),
+        )
       },
     ),
-  ),
-  Wish.chainRej(
-    (err) => {
-      failSuite(suitePath)
-      return of(
-        TestReport(
-          `${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`,
-          List.length(testsInSuite),
-          0,
-          List.length(testsInSuite),
-          List.length(testsInSuite),
-        ),
-      )
-    },
-  ),
-)(testsInSuite)
+  )(testsInSuite)
+}
 
 
 
@@ -499,9 +487,21 @@ export runAllTestSuites = (testSuites) => pipe(
       }
       IO.put(getMessage(report))
       IO.putLine(
-        `Test suites: ${show(List.length(testSuites))}  tests: ${show(getTotal(report))}  passed: ${
-          show(getSuccessCount(report))
-        }  failed: ${show(getFailureCount(report))}`,
+        String.join(
+          "  ",
+          [
+            `Test suites:`,
+            show(List.length(testSuites)),
+            `tests:`,
+            show(getTotal(report)),
+            `passed:`,
+            show(getSuccessCount(report)),
+            `failed:`,
+            show(getFailureCount(report)),
+            `skipped:`,
+            show(getSkippedCount(report)),
+          ],
+        ),
       )
       if (getFailureCount(report) > 0) {
         Process.exit(1)
