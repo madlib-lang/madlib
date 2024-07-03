@@ -48,8 +48,11 @@ PREFIX_FAIL = IS_COLOR_ENABLED
 CHAR_CROSS :: String
 CHAR_CROSS = "×"
 
+CHAR_INCOMPLETE :: String
+CHAR_INCOMPLETE = "⧜"
+
 EMPTY_REPORT :: TestReport
-EMPTY_REPORT = TestReport("", 0, 0, 0)
+EMPTY_REPORT = TestReport("", 0, 0, 0, 0)
 
 CWD :: String
 CWD = Process.getCurrentWorkingDirectory()
@@ -60,7 +63,7 @@ CWD = Process.getCurrentWorkingDirectory()
 // SuiteResult(total, succeeded, failed)
 type SuiteResult = SuiteResult(Integer, Integer, Integer)
 
-type TestResult = Success(String) | Failure(String, String)
+type TestResult = Success(String) | Failure(String, String) | Skipped(String)
 
 isSuccess :: TestResult -> Boolean
 isSuccess = (res) => where(res) {
@@ -104,47 +107,60 @@ export type AssertionError
   | NotImplemented
 
 
-// Contains the accumulated String to be displayed,
-// the amount of tests run, the amount of successful tests,
-// and the amount of failed tests
-type TestReport = TestReport(String, Integer, Integer, Integer)
+/**
+ * TestReport
+ * accumulated report - String
+ * total tests - Integer
+ * successful runs - Integer
+ * failed runs- Integer
+ * skipped - Integer
+ */
+type TestReport = TestReport(String, Integer, Integer, Integer, Integer)
 
 
 getMessage :: TestReport -> String
 getMessage = where {
-  TestReport(str, _, _, _) =>
+  TestReport(str, _, _, _, _) =>
     str
 }
 
 
 getTotal :: TestReport -> Integer
 getTotal = where {
-  TestReport(_, total, _, _) =>
+  TestReport(_, total, _, _, _) =>
     total
 }
 
 
 getSuccessCount :: TestReport -> Integer
 getSuccessCount = where {
-  TestReport(_, _, success, _) =>
+  TestReport(_, _, success, _, _) =>
     success
 }
 
 
 getFailureCount :: TestReport -> Integer
 getFailureCount = where {
-  TestReport(_, _, _, failed) =>
+  TestReport(_, _, _, failed, _) =>
     failed
 }
 
+getSkippedCount :: TestReport -> Integer
+getSkippedCount = where {
+  TestReport(_, _, _, _, skipped) =>
+    skipped
+}
 
 resultToReport :: TestResult -> TestReport
 resultToReport = (result) => where(result) {
   Failure(_, message) =>
-    TestReport(message, 1, 0, 1)
+    TestReport(message, 1, 0, 1, 0)
 
   Success(_) =>
-    TestReport("", 1, 1, 0)
+    TestReport("", 1, 1, 0, 0)
+
+  Skipped(_) =>
+    TestReport("", 1, 0, 0, 1)
 }
 
 
@@ -154,6 +170,7 @@ mergeReports = (t1, t2) => TestReport(
   getTotal(t1) + getTotal(t2),
   getSuccessCount(t1) + getSuccessCount(t2),
   getFailureCount(t1) + getFailureCount(t2),
+  getSkippedCount(t1) + getSkippedCount(t2),
 )
 
 
@@ -200,9 +217,10 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
     IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${show(err)}`) : `${CHAR_CROSS} ${show(err)}`
 
   NotImplemented =>
-    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} not implemented`) : `${CHAR_CROSS} not implemented`
+    IS_COLOR_ENABLED
+      ? IO.yellow(`${CHAR_INCOMPLETE} "${description}" not implemented`)
+      : `${CHAR_INCOMPLETE} "${description}" not implemented`
 }
-
 
 test :: String -> (String -> Wish.Wish AssertionError {}) -> Wish.Wish TestResult TestResult
 export test = (description, testFunction) => pipe(
@@ -213,6 +231,19 @@ export test = (description, testFunction) => pipe(
       Failure(description),
     ),
     always(Success(description)),
+  ),
+)(description)
+
+skip :: String -> (String -> Wish.Wish AssertionError {}) -> Wish.Wish TestResult TestResult
+export skip = (description, testFunction) => pipe(
+  testFunction,
+  bimap(
+    pipe(
+      always(NotImplemented),
+      renderAssertionError(description),
+      Skipped,
+    ),
+    always(Skipped(description)),
   ),
 )(description)
 
@@ -410,15 +441,16 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
     pipe(
       List.reduce(mergeReports, EMPTY_REPORT),
       where {
-        TestReport(msg, total, success, failed) =>
+        TestReport(msg, total, success, failed, skipped) =>
           (total == 0 || failed > 0)
             ? TestReport(
               `${suitePath}\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,
               total,
               success,
               failed,
+              skipped,
             )
-            : TestReport("", total, success, failed)
+            : TestReport("", total, success, failed, skipped)
       },
     ),
   ),
@@ -430,6 +462,7 @@ runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe(
           `${suitePath}\n${err}\n${generateReportSuiteEndMessage(testsInSuite)}`,
           List.length(testsInSuite),
           0,
+          List.length(testsInSuite),
           List.length(testsInSuite),
         ),
       )
