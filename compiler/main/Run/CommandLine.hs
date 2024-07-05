@@ -39,6 +39,7 @@ data Command
       , testWatch :: Bool
       , testCoverage :: Bool
       , testOptimizationLevel :: OptimizationLevel
+      , testVerbose :: Bool
       }
   | Install
   | New { newFolder :: FilePath }
@@ -232,7 +233,7 @@ parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseVerbose
 
 
 parseRunInput :: Parser FilePath

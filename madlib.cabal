@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -123,6 +123,8 @@ library
       VersionLock.VersionLock
   other-modules:
       Paths_madlib
+  autogen-modules:
+      Paths_madlib
   hs-source-dirs:
       compiler/main
   ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -213,6 +215,8 @@ library common
       Parse.DocString.DocString
   other-modules:
       Paths_madlib
+  autogen-modules:
+      Paths_madlib
   hs-source-dirs:
       compiler/common
   ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -281,6 +285,8 @@ executable madlib
   main-is: Main.hs
   other-modules:
       Paths_madlib
+  autogen-modules:
+      Paths_madlib
   hs-source-dirs:
       compiler/app
   ghc-options: -threaded -funbox-strict-fields -O3 -optc-O3 -fsimpl-tick-factor=500 -rtsopts -fexcess-precision -optc-ffast-math -funfolding-use-threshold=16 -Wunused-binds -Wunused-local-binds -Wunused-matches -Wunused-pattern-binds -Wunused-top-binds -Wunused-type-patterns
@@ -343,9 +349,9 @@ executable madlib
     , transformers-base ==0.4.6
     , unordered-containers ==0.2.16.0
     , utf8-string
+  default-language: Haskell2010
   if flag(static)
     ld-options: -static
-  default-language: Haskell2010
 
 test-suite madlib-test
   type: exitcode-stdio-1.0
@@ -357,6 +363,8 @@ test-suite madlib-test
       Infer.SolveSpec
       TestUtils
       Utils.PathSpec
+      Paths_madlib
+  autogen-modules:
       Paths_madlib
   hs-source-dirs:
       compiler/test
