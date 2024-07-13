@@ -52,9 +52,8 @@ CWD = Process.getCurrentWorkingDirectory()
 // Result collector
 
 // SuiteResult(total, succeeded, failed, skipped)
-type SuiteResult = SuiteResult(Integer, Integer, Integer, Integer)
-
-type TestResult = Success(String) | Failure(String, String) | Skipped(String)
+export type SuiteResult = SuiteResult(Integer, Integer, Integer, Integer)
+export type TestResult = Success(String) | Failure(String, String) | Skipped(String)
 
 isSuccess :: TestResult -> Boolean
 isSuccess = where {
@@ -507,3 +506,55 @@ export runAllTestSuites = (testSuites) => pipe(
     },
   ),
 )(testSuites)
+
+import { mapWithKey, toList, values } from "Dictionary"
+import List from "List"
+import Term from "Terminal"
+import { assertEquals, test } from "Test"
+import { parallel } from "Wish"
+
+
+
+printReport = (name, i) => `${name}\n  ↳ ${
+  pipe(
+    show,
+    Term.ansiColor([Term.ansi.FormatBold, Term.ansi.FGBrightYellow]),
+  )(i)
+}`
+
+// createTest :: String -> (a -> b) -> a -> b -> Wish TestResult TestResult
+createTest = (name, fn, i, o) => test(printReport(name, i), () => assertEquals(fn(i), o))
+
+export receipt = (fn, name, listInOut) => pipe(
+  map(where { #[i, o] => createTest(name, fn, i, o) }),
+)(listInOut)
+
+report :: (a -> Wish TestResult TestResult)
+  -> String
+  -> Dictionary a (Wish TestResult TestResult)
+  -> List (Wish TestResult TestResult)
+export report = (fn, name, testDict) => pipe(
+  mapWithKey(createTest(name, fn)),
+  values,
+)(testDict)
+
+caseN2 :: (a -> b -> c) -> #[a, b] -> c
+export caseN2 = (fn, pair) => where(pair) {
+  #[a, b] =>
+    fn(a, b)
+}
+caseN3 :: (a -> b -> c -> d) -> #[a, b, c] -> d
+export caseN3 = (fn, t3) => where(t3) {
+  #[a, b, c] =>
+    fn(a, b, c)
+}
+caseN4 :: (a -> b -> c -> d -> e) -> #[a, b, c, d] -> e
+export caseN4 = (fn, t4) => where(t4) {
+  #[a, b, c, d] =>
+    fn(a, b, c, d)
+}
+caseN5 :: (a -> b -> c -> d -> e -> f) -> #[a, b, c, d, e] -> f
+export caseN5 = (fn, t5) => where(t5) {
+  #[a, b, c, d, e] =>
+    fn(a, b, c, d, e)
+}
