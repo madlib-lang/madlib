@@ -247,7 +247,11 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
     IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${message}\n`) : `${CHAR_CROSS} ${message}\n`
 
   Error(err) =>
-    IS_COLOR_ENABLED ? IO.red(`${CHAR_CROSS} ${show(err)}`) : `${CHAR_CROSS} ${show(err)}`
+    (
+      IS_COLOR_ENABLED
+        ? IO.red(`${CHAR_CROSS} ${description} - ${show(err)}\n`)
+        : `${CHAR_CROSS} ${description} - ${show(err)}\n`
+    )
 
   NotImplemented =>
     IS_COLOR_ENABLED
