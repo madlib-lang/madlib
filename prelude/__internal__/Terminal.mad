@@ -57,6 +57,7 @@ export ansi = {
   FormatInvert: "7",
 }
 
+ansify = (parts) => `\x1b[${String.join(";", parts)}m`
 
 /**
  * Adds ansi escape codes to a string given a list of styles.
@@ -66,7 +67,16 @@ export ansi = {
  * ansiColor([ansi.FormatBold, ansi.FGBrightRed], "will be red and bold")
  */
 ansiColor :: List String -> String -> String
-export ansiColor = (parts, str) => colorize(`\x1b[${String.join(";", parts)}m`, str)
+export ansiColor = (parts, str) => colorize(ansify(parts), str)
+
+/**
+ * Set an ansi color conditionally
+ * @since 0.24.1
+ * @example
+ * ansiCond(successPattern, failurePattern, condition, string)
+ */
+ansiCond :: List String -> List String -> Boolean -> String -> String
+export ansiCond = (ok, no, check, str) => ansiColor(check ? ok : no, str)
 
 export text = {
   black: ansiColor([ansi.FGBlack]),

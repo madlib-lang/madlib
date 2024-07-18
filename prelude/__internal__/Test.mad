@@ -10,7 +10,7 @@ import {} from "Number"
 import Process from "Process"
 import { pShow } from "Show"
 import String from "String"
-import Terminal from "Terminal"
+import Term from "Terminal"
 import Tuple from "Tuple"
 import Wish from "Wish"
 
@@ -19,7 +19,6 @@ import Wish from "Wish"
 moveCursorUpCode :: Integer -> String
 moveCursorUpCode = (lines) => `\x1b[${show(lines)}A`
 
-
 IS_COLOR_ENABLED :: Boolean
 IS_COLOR_ENABLED = do {
   noColor = Process.getEnv("NO_COLOR")
@@ -27,15 +26,15 @@ IS_COLOR_ENABLED = do {
 }
 
 colorfulPrefix :: List String -> String -> String
-colorfulPrefix = (colors, v) => IS_COLOR_ENABLED ? Terminal.ansiColor(colors, " " ++ v) : v
+colorfulPrefix = (colors, v) => IS_COLOR_ENABLED ? Term.ansiColor(colors, " " ++ v) : v
 
-PREFIX_RUNS = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "RUNS ")
+PREFIX_RUNS = colorfulPrefix([Term.ansi.FGBlack, Term.ansi.BGBrightYellow], "RUNS ")
 
-PREFIX_PASS = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightGreen], "PASS ")
+PREFIX_PASS = colorfulPrefix([Term.ansi.FGBlack, Term.ansi.BGBrightGreen], "PASS ")
 
-PREFIX_FAIL = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightRed], "FAIL ")
+PREFIX_FAIL = colorfulPrefix([Term.ansi.FGBlack, Term.ansi.BGBrightRed], "FAIL ")
 
-PREFIX_SKIP = colorfulPrefix([Terminal.ansi.FGBlack, Terminal.ansi.BGBrightYellow], "SKIP ")
+PREFIX_SKIP = colorfulPrefix([Term.ansi.FGBlack, Term.ansi.BGBrightYellow], "SKIP ")
 
 // CHAR_CHECK :: String
 // CHAR_CHECK = "✓"
@@ -112,7 +111,52 @@ export type AssertionError
  * failureCount - Integer
  * skippedCount - Integer
  */
-type TestReport = TestReport(String, Integer, Integer, Integer, Integer)
+export type TestReport = TestReport(String, Integer, Integer, Integer, Integer)
+
+
+printReport = (name, i) => `${name}\n  ↳ ${
+  pipe(
+    show,
+    Term.ansiColor([Term.ansi.FormatBold, Term.ansi.FGBrightYellow]),
+  )(i)
+}`
+
+// createTest :: String -> (a -> b) -> a -> b -> Wish TestResult TestResult
+createTest = (name, fn, i, o) => test(printReport(name, i), () => assertEquals(fn(i), o))
+
+export report = (fn, name, listInOut) => pipe(
+  map(where { #[i, o] => createTest(name, fn, i, o) }),
+)(listInOut)
+
+reportBook :: Show a => (a -> Wish TestResult TestResult)
+  -> String
+  -> Dictionary a (Wish TestResult TestResult)
+  -> List (Wish TestResult TestResult)
+export reportBook = (fn, name, testDict) => pipe(
+  Dictionary.mapWithKey(createTest(name, fn)),
+  Dictionary.values,
+)(testDict)
+
+caseN2 :: (a -> b -> c) -> #[a, b] -> c
+export caseN2 = (fn, pair) => where(pair) {
+  #[a, b] =>
+    fn(a, b)
+}
+caseN3 :: (a -> b -> c -> d) -> #[a, b, c] -> d
+export caseN3 = (fn, t3) => where(t3) {
+  #[a, b, c] =>
+    fn(a, b, c)
+}
+caseN4 :: (a -> b -> c -> d -> e) -> #[a, b, c, d] -> e
+export caseN4 = (fn, t4) => where(t4) {
+  #[a, b, c, d] =>
+    fn(a, b, c, d)
+}
+caseN5 :: (a -> b -> c -> d -> e -> f) -> #[a, b, c, d, e] -> f
+export caseN5 = (fn, t5) => where(t5) {
+  #[a, b, c, d, e] =>
+    fn(a, b, c, d, e)
+}
 
 
 getMessage :: TestReport -> String
@@ -194,9 +238,9 @@ renderAssertionError = (description, assertionError) => where(assertionError) {
   AssertionError(expected, actual) =>
     IO.red(`${CHAR_CROSS} ${description}`)
       ++ "\n  expected:\n"
-      ++ renderValue(Terminal.text.brightGreen, expected)
+      ++ renderValue(Term.text.brightGreen, expected)
       ++ "\n  actual:\n"
-      ++ renderValue(Terminal.text.brightRed, actual)
+      ++ renderValue(Term.text.brightRed, actual)
       ++ "\n"
 
   ErrorWithMessage(message) =>
@@ -300,8 +344,8 @@ printSuiteResults = (results) => {
             preparedSuitePath = prepareSuitePath(true, suitePath)
             coloredCounts = if (IS_COLOR_ENABLED) {
               failed > 0
-                ? skipped > 0 ? Terminal.text.brightYellow(counts) : Terminal.text.brightRed(counts)
-                : Terminal.text.brightGreen(counts)
+                ? skipped > 0 ? Term.text.brightYellow(counts) : Term.text.brightRed(counts)
+                : Term.text.brightGreen(counts)
             } else {
               counts
             }
@@ -478,11 +522,11 @@ export runAllTestSuites = (testSuites) => pipe(
   map(List.reduce(mergeReports, EMPTY_REPORT)),
   Wish.fulfill(
     () => ({}),
-    (report) => {
+    (data) => {
       if (!IS_COLOR_ENABLED) {
         printSuiteResults(collector.getResults())
       }
-      IO.put(getMessage(report))
+      IO.put(getMessage(data))
       IO.putLine(
         String.join(
           "  ",
@@ -490,71 +534,19 @@ export runAllTestSuites = (testSuites) => pipe(
             `Test suites:`,
             show(List.length(testSuites)),
             `tests:`,
-            show(getTotal(report)),
+            show(getTotal(data)),
             `passed:`,
-            show(getSuccessCount(report)),
+            show(getSuccessCount(data)),
             `failed:`,
-            show(getFailureCount(report)),
+            show(getFailureCount(data)),
             `skipped:`,
-            show(getSkippedCount(report)),
+            show(getSkippedCount(data)),
           ],
         ),
       )
-      if (getFailureCount(report) > 0) {
+      if (getFailureCount(data) > 0) {
         Process.exit(1)
       }
     },
   ),
 )(testSuites)
-
-import { mapWithKey, toList, values } from "Dictionary"
-import List from "List"
-import Term from "Terminal"
-import { assertEquals, test } from "Test"
-import { parallel } from "Wish"
-
-
-
-printReport = (name, i) => `${name}\n  ↳ ${
-  pipe(
-    show,
-    Term.ansiColor([Term.ansi.FormatBold, Term.ansi.FGBrightYellow]),
-  )(i)
-}`
-
-// createTest :: String -> (a -> b) -> a -> b -> Wish TestResult TestResult
-createTest = (name, fn, i, o) => test(printReport(name, i), () => assertEquals(fn(i), o))
-
-export receipt = (fn, name, listInOut) => pipe(
-  map(where { #[i, o] => createTest(name, fn, i, o) }),
-)(listInOut)
-
-report :: (a -> Wish TestResult TestResult)
-  -> String
-  -> Dictionary a (Wish TestResult TestResult)
-  -> List (Wish TestResult TestResult)
-export report = (fn, name, testDict) => pipe(
-  mapWithKey(createTest(name, fn)),
-  values,
-)(testDict)
-
-caseN2 :: (a -> b -> c) -> #[a, b] -> c
-export caseN2 = (fn, pair) => where(pair) {
-  #[a, b] =>
-    fn(a, b)
-}
-caseN3 :: (a -> b -> c -> d) -> #[a, b, c] -> d
-export caseN3 = (fn, t3) => where(t3) {
-  #[a, b, c] =>
-    fn(a, b, c)
-}
-caseN4 :: (a -> b -> c -> d -> e) -> #[a, b, c, d] -> e
-export caseN4 = (fn, t4) => where(t4) {
-  #[a, b, c, d] =>
-    fn(a, b, c, d)
-}
-caseN5 :: (a -> b -> c -> d -> e -> f) -> #[a, b, c, d, e] -> f
-export caseN5 = (fn, t5) => where(t5) {
-  #[a, b, c, d, e] =>
-    fn(a, b, c, d, e)
-}
