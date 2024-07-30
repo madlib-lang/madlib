@@ -128,14 +128,18 @@ export report = (fn, name, listInOut) => pipe(
   map(where { #[i, o] => createTest(name, fn, i, o) }),
 )(listInOut)
 
-reportBook :: Show a => (a -> Wish TestResult TestResult)
-  -> String
-  -> Dictionary a (Wish TestResult TestResult)
-  -> List (Wish TestResult TestResult)
-export reportBook = (fn, name, testDict) => pipe(
-  Dictionary.mapWithKey(createTest(name, fn)),
-  Dictionary.values,
-)(testDict)
+templateChainTest = (name, fn, i, o) => test(
+  printReport(name, i),
+  () => pipe(
+    fn,
+    chain(assertEquals(o)),
+  )(i),
+)
+
+
+export asyncReport = (fn, name, listInOut) => pipe(
+  map(where { #[i, o] => templateChainTest(name, fn, i, o) }),
+)(listInOut)
 
 caseN2 :: (a -> b -> c) -> #[a, b] -> c
 export caseN2 = (fn, pair) => where(pair) {
