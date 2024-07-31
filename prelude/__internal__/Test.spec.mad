@@ -1,0 +1,10 @@
+import { caseN2, caseN3, report } from "./Test"
+
+
+
+fn :: Integer -> Integer -> Integer -> Integer
+fn = (a, b, c) => (a + b) * c
+
+report(fn(100, 0), "tertiary, partially applied", [#[1, 100]])
+report(caseN2(fn(100)), "caseN2, partially applied x 1", [#[#[0, 1], 100]])
+report(caseN3(fn), "caseN3, no partial application", [#[#[100, 0, 1], 100]])

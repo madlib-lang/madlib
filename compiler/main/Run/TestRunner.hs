@@ -54,8 +54,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> IO ()
-runTests entrypoint target debug watchMode coverage optLevel = do
+runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Bool -> IO ()
+runTests entrypoint target debug watchMode coverage optLevel verbose = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
