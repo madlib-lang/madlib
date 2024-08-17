@@ -716,7 +716,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   NoInstanceFound cls ts ->
     "Instance not found\n\n"
     <> "No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n\n"
-    <> "Hint: Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
+    <> "Hint: Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined\n"
     <> "Note: Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
 
   AmbiguousType (TV _ _, IsIn cls _ _ : _) ->

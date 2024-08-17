@@ -1,18 +1,19 @@
-import File from "File"
-import { UnknownError } from "__IOError__"
-import { fulfill, mapRej } from "Wish"
 import Dictionary from "Dictionary"
-import List from "List"
-import String from "String"
+import File from "File"
 import FilePath from "FilePath"
-import Math from "Math"
-import { fromMaybe, Just, Nothing } from "Maybe"
-import Integer from "Integer"
 import { always, when } from "Function"
+import IO from "IO"
+import Integer from "Integer"
+import List from "List"
+import Math from "Math"
+import { Just, Nothing, fromMaybe } from "Maybe"
 // needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
-import IO from "IO"
+import String from "String"
 import Terminal from "Terminal"
+import { fulfill, mapRej } from "Wish"
+import { UnknownError } from "__IOError__"
+
 
 
 COVERAGE_TEXT :: String
@@ -54,9 +55,9 @@ type CoverableBranch = CoverableBranch(Integer, Integer, Integer)
 derive Comparable CoverableBranch
 
 alias CoverageData = {
-  coverableLines :: Dictionary CoverableLine HitCounter,
-  coverableFunctions :: Dictionary CoverableFunction HitCounter,
   coverableBranches :: Dictionary CoverableBranch HitCounter,
+  coverableFunctions :: Dictionary CoverableFunction HitCounter,
+  coverableLines :: Dictionary CoverableLine HitCounter,
 }
 
 
@@ -92,18 +93,18 @@ type LcovLine
 
 
 alias LcovSection = {
-  tn :: LcovLine,
-  sf :: LcovLine,
-  fns :: List LcovLine,
+  brdas :: List LcovLine,
+  brf :: LcovLine,
+  brh :: LcovLine,
+  das :: List LcovLine,
   fndas :: List LcovLine,
   fnf :: LcovLine,
   fnh :: LcovLine,
-  das :: List LcovLine,
+  fns :: List LcovLine,
   lf :: LcovLine,
   lh :: LcovLine,
-  brf :: LcovLine,
-  brh :: LcovLine,
-  brdas :: List LcovLine,
+  sf :: LcovLine,
+  tn :: LcovLine,
 }
 
 alias LcovInfo = List LcovSection
@@ -125,7 +126,7 @@ emptySection = {
 }
 
 stringifyLine :: LcovLine -> String
-stringifyLine = (line) => where(line){
+stringifyLine = (line) => where(line) {
   TN(arg) =>
     "TN:" ++ arg ++ "\n"
 
@@ -164,23 +165,26 @@ stringifyLine = (line) => where(line){
 }
 
 stringifySection :: LcovSection -> String
-stringifySection = (section) =>
-  stringifyLine(section.tn)
-  ++ stringifyLine(section.sf)
-  ++ List.reduceLeft((fns, line) => fns ++ stringifyLine(line), "", section.fns)
-  ++ List.reduceLeft((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
-  ++ stringifyLine(section.fnf)
-  ++ stringifyLine(section.fnh)
-  ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
-  ++ stringifyLine(section.lf)
-  ++ stringifyLine(section.lh)
-  ++ stringifyLine(section.brf)
-  ++ stringifyLine(section.brh)
-  ++ List.reduceLeft((brdas, line) => brdas ++ stringifyLine(line), "", section.brdas)
-  ++ "end_of_record\n"
+stringifySection = (section) => stringifyLine(section.tn)
+    ++ stringifyLine(section.sf)
+    ++ List.reduceLeft((fns, line) => fns ++ stringifyLine(line), "", section.fns)
+    ++ List.reduceLeft((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
+    ++ stringifyLine(section.fnf)
+    ++ stringifyLine(section.fnh)
+    ++ List.reduceLeft((das, line) => das ++ stringifyLine(line), "", section.das)
+    ++ stringifyLine(section.lf)
+    ++ stringifyLine(section.lh)
+    ++ stringifyLine(section.brf)
+    ++ stringifyLine(section.brh)
+    ++ List.reduceLeft((brdas, line) => brdas ++ stringifyLine(line), "", section.brdas)
+    ++ "end_of_record\n"
 
 stringify :: LcovInfo -> String
-export stringify = (lcov) => List.reduceLeft((r, section) => r ++ stringifySection(section), "", lcov)
+export stringify = (lcov) => List.reduceLeft(
+  (r, section) => r ++ stringifySection(section),
+  "",
+  lcov,
+)
 
 
 processModuleResult :: String -> CoverageData -> LcovSection
@@ -193,39 +197,41 @@ processModuleResult = (modulePath, coverageData) => {
     ...emptySection,
     sf: SF(modulePath),
     lf: LF(List.length(lineResults)),
-    lh: LH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults))),
+    lh: LH(
+      List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults)),
+    ),
     das: map(
       where {
         #[CoverableLine(line), hitCounter] =>
           DA(line, hitCounter.read())
       },
-      lineResults
+      lineResults,
     ),
     fnf: FNF(List.length(functionResults)),
-    fnh: FNH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults))),
-    fns: map(
-      where {
-        #[CoverableFunction(line, name), _] =>
-          FN(line, name)
-      },
-      functionResults
+    fnh: FNH(
+      List.length(
+        List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults),
+      ),
     ),
+    fns: map(where { #[CoverableFunction(line, name), _] => FN(line, name) }, functionResults),
     fndas: map(
       where {
         #[CoverableFunction(_, name), hitCounter] =>
           FNDA(hitCounter.read(), name)
       },
-      functionResults
+      functionResults,
     ),
     brdas: map(
       where {
         #[CoverableBranch(line, blockIndex, branchIndex), hitCounter] =>
           BRDA(line, blockIndex, branchIndex, hitCounter.read())
       },
-      branchResults
+      branchResults,
     ),
     brf: BRF(List.length(branchResults)),
-    brh: BRH(List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults))),
+    brh: BRH(
+      List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults)),
+    ),
   }
 }
 
@@ -235,7 +241,7 @@ dropTestMainData = List.filter(
   where {
     #[modulePath, _] =>
       String.takeLast(16, modulePath) != "__TestMain__.mad"
-  }
+  },
 )
 
 
@@ -255,7 +261,7 @@ keepTwoDecimals = (input) => pipe(
 
     [] =>
       ""
-  }
+  },
 )(input)
 
 
@@ -268,13 +274,19 @@ buildModuleResult = (modulePath, coverageData) => {
   branchResults = Dictionary.toList(coverageData.coverableBranches)
 
   linesFound = List.length(lineResults)
-  linesHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults))
+  linesHit = List.length(
+    List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, lineResults),
+  )
 
   functionsFound = List.length(functionResults)
-  functionsHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults))
+  functionsHit = List.length(
+    List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, functionResults),
+  )
 
   branchesFound = List.length(branchResults)
-  branchesHit = List.length(List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults))
+  branchesHit = List.length(
+    List.filter(where { #[_, hitCounter] => hitCounter.read() > 0 }, branchResults),
+  )
 
   lineCov = linesFound == 0 ? 100 : linesHit / linesFound * 100
   functionCov = functionsFound == 0 ? 100 : functionsHit / functionsFound * 100
@@ -290,12 +302,7 @@ buildAllResults = (coverageData) => {
   moduleResults = pipe(
     Dictionary.toList,
     dropTestMainData,
-    map(
-      where {
-        #[modulePath, data] =>
-          buildModuleResult(modulePath, data)
-      }
-    )
+    map(where { #[modulePath, data] => buildModuleResult(modulePath, data) }),
   )(coverageData)
 
   moduleCount = Integer.toFloat(List.length(moduleResults))
@@ -306,12 +313,12 @@ buildAllResults = (coverageData) => {
         #[ModuleResult(n, l, f, b, t), ModuleResult(m, ml, mf, mb, mt)] =>
           ModuleResult(n, l + ml, f + mf, b + mb, t + mt)
       },
-      ModuleResult("Total", 0, 0, 0, 0)
+      ModuleResult("Total", 0, 0, 0, 0),
     ),
     where {
       ModuleResult(n, l, f, b, t) =>
         ModuleResult(n, l / moduleCount, f / moduleCount, b / moduleCount, t / moduleCount)
-    }
+    },
   )(moduleResults)
 
   return [...moduleResults, totalRow]
@@ -327,27 +334,35 @@ printRows = (rows) => {
           if (index == 0) {
             `${module}  ${line}  ${fn}  ${branch}  ${total}`
           } else if (index < List.length(rows) - 1) {
-            `${renderModulePath(module)}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
+            `${renderModulePath(module)}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${
+              renderPercentage(branch)
+            }  ${renderPercentage(total)}`
           } else {
-            `${module}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${renderPercentage(branch)}  ${renderPercentage(total)}`
+            `${module}  ${renderPercentage(line)}  ${renderPercentage(fn)}  ${
+              renderPercentage(branch)
+            }  ${renderPercentage(total)}`
           }
 
         _ =>
           ""
-      }
+      },
     ),
     where {
       [header, ...moduleRows] =>
         [
           header,
-          pipe(String.length, String.repeat('-'), when(always(IS_COLOR_ENABLED), IO.grey))(header),
-          ...moduleRows
+          pipe(
+            String.length,
+            String.repeat('-'),
+            when(always(IS_COLOR_ENABLED), IO.grey),
+          )(header),
+          ...moduleRows,
         ]
 
       _ =>
         [""]
     },
-    String.join("\n")
+    String.join("\n"),
   )(rows)
 
   IO.putLine("\nCoverage")
@@ -357,75 +372,81 @@ printRows = (rows) => {
 }
 
 formatRows :: List (List String) -> List (List String)
-formatRows = (rows) =>
-  if (List.isEmpty(rows)) {
-    []
-  } else {
-    do {
-      columnCount = pipe(List.nth(0), fromMaybe([]), List.length)(rows)
-      colMaxWidths = pipe(
-        map(
-          (columnIndex) =>
-            List.reduce(
-              (maxWidth, colContent) => pipe(
-                List.nth(columnIndex),
-                fromMaybe(""),
-                String.length,
-                Math.max(maxWidth)
-              )(colContent),
-              0,
-              rows
-            )
-        )
-      )(List.range(0, columnCount))
+formatRows = (rows) => if (List.isEmpty(rows)) {
+  []
+} else do {
+  columnCount = pipe(
+    List.nth(0),
+    fromMaybe([]),
+    List.length,
+  )(rows)
+  colMaxWidths = pipe(
+    map(
+      (columnIndex) => List.reduce(
+        (maxWidth, colContent) => pipe(
+          List.nth(columnIndex),
+          fromMaybe(""),
+          String.length,
+          Math.max(maxWidth),
+        )(colContent),
+        0,
+        rows,
+      ),
+    ),
+  )(List.range(0, columnCount))
 
-      return map(
-        List.mapWithIndex((colContent, colIndex) => pipe(
-          List.nth($, colMaxWidths),
-          fromMaybe(0),
-          Math.substract($, String.length(colContent)),
-          List.repeat(' '),
-          String.fromList,
-          (spaces) => colIndex == 0 ? colContent ++ spaces : spaces ++ colContent
-        )(colIndex))
-      )(rows)
-    }
-  }
+  return map(
+    List.mapWithIndex(
+      (colContent, colIndex) => pipe(
+        List.nth($, colMaxWidths),
+        fromMaybe(0),
+        Math.subtract($, String.length(colContent)),
+        List.repeat(' '),
+        String.fromList,
+        (spaces) => colIndex == 0 ? colContent ++ spaces : spaces ++ colContent,
+      )(colIndex),
+    ),
+  )(rows)
+}
 
 
 renderPercentage :: String -> String
-renderPercentage = (input) =>
-  if (IS_COLOR_ENABLED) {
-    where(scan(String.dropLast(1, input))) {
-      Just(num) =>
-        if (num > 90) {
-          Terminal.text.brightGreen(input)
-        } else if (num > 75) {
-          Terminal.text.brightYellow(input)
-        } else {
-          Terminal.text.brightRed(input)
-        }
+renderPercentage = (input) => if (IS_COLOR_ENABLED) {
+  where(scan(String.dropLast(1, input))) {
+    Just(num) =>
+      if (num > 90) {
+        Terminal.text.brightGreen(input)
+      } else if (num > 75) {
+        Terminal.text.brightYellow(input)
+      } else {
+        Terminal.text.brightRed(input)
+      }
 
-      Nothing =>
-        IO.red(input)
-    }
-  } else {
-    input
+    Nothing =>
+      IO.red(input)
   }
+} else {
+  input
+}
 
 
 renderModulePath :: String -> String
 renderModulePath = (modulePath) => pipe(
   FilePath.splitPath,
   (parts) => {
-    path = pipe(List.init, FilePath.joinPath, mappend($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
+    path = pipe(
+      List.init,
+      FilePath.joinPath,
+      mappend($, "/"),
+      when(always(IS_COLOR_ENABLED), IO.grey),
+    )(parts)
     fileName = pipe(
       List.last,
-      fromMaybe("")
+      fromMaybe(""),
     )(parts)
 
     return path ++ fileName
-  }
+  },
 )(modulePath)
 
 
@@ -436,20 +457,22 @@ processSuitePath = (suitePath) => {
 
   return pipe(
     FilePath.splitPath,
-    List.dropWhile((part) => {
-      justPart = pipe(
-        FilePath.dropTrailingPathSeparator,
-        Just
-      )(part)
-      justCwdPart = pipe(
-        List.nth(partIndex),
-        map(FilePath.dropTrailingPathSeparator)
-      )(cwdParts)
-      drop = justPart == justCwdPart
-      partIndex := partIndex + 1
-      return drop
-    }),
-    FilePath.joinPath
+    List.dropWhile(
+      (part) => {
+        justPart = pipe(
+          FilePath.dropTrailingPathSeparator,
+          Just,
+        )(part)
+        justCwdPart = pipe(
+          List.nth(partIndex),
+          map(FilePath.dropTrailingPathSeparator),
+        )(cwdParts)
+        drop = justPart == justCwdPart
+        partIndex := partIndex + 1
+        return drop
+      },
+    ),
+    FilePath.joinPath,
   )(suitePath)
 }
 
@@ -467,11 +490,11 @@ displayCoverageResults = (coverageData) => pipe(
           `${keepTwoDecimals(show(branch))}%`,
           `${keepTwoDecimals(show(total))}%`,
         ]
-    }
+    },
   ),
   (rs) => [["Module", "Lines", "Functions", "Branches", "Total"], ...rs],
   formatRows,
-  printRows
+  printRows,
 )(coverageData)
 
 
@@ -479,13 +502,8 @@ generateLcov :: Dictionary String CoverageData -> String
 generateLcov = (coverageData) => pipe(
   Dictionary.toList,
   dropTestMainData,
-  map(
-    where {
-      #[modulePath, data] =>
-        processModuleResult(modulePath, data)
-    }
-  ),
-  stringify
+  map(where { #[modulePath, data] => processModuleResult(modulePath, data) }),
+  stringify,
 )(coverageData)
 
 
@@ -505,15 +523,11 @@ makeCoverageReporter = () => {
           astPath,
           {
             ...data,
-            coverableLines: Dictionary.insert(
-              CoverableLine(line),
-              hitCounter,
-              data.coverableLines
-            ),
+            coverableLines: Dictionary.insert(CoverableLine(line), hitCounter, data.coverableLines),
           },
-          coverageData
+          coverageData,
         )
-        
+
       Nothing =>
         Dictionary.insert(
           astPath,
@@ -522,7 +536,7 @@ makeCoverageReporter = () => {
             coverableFunctions: {{}},
             coverableBranches: {{}},
           },
-          coverageData
+          coverageData,
         )
     }
 
@@ -541,10 +555,10 @@ makeCoverageReporter = () => {
             coverableFunctions: Dictionary.insert(
               CoverableFunction(line, functionName),
               hitCounter,
-              data.coverableFunctions
+              data.coverableFunctions,
             ),
           },
-          coverageData
+          coverageData,
         )
 
       Nothing =>
@@ -555,7 +569,7 @@ makeCoverageReporter = () => {
             coverableLines: {{}},
             coverableBranches: {{}},
           },
-          coverageData
+          coverageData,
         )
     }
 
@@ -574,10 +588,10 @@ makeCoverageReporter = () => {
             coverableBranches: Dictionary.insert(
               CoverableBranch(line, blockNumber, branchNumber),
               hitCounter,
-              data.coverableBranches
+              data.coverableBranches,
             ),
           },
-          coverageData
+          coverageData,
         )
 
       Nothing =>
@@ -588,7 +602,7 @@ makeCoverageReporter = () => {
             coverableLines: {{}},
             coverableFunctions: {{}},
           },
-          coverageData
+          coverageData,
         )
     }
 
@@ -602,11 +616,11 @@ makeCoverageReporter = () => {
       (lcovStr) => do {
         _ <- mapRej(
           () => UnknownError,
-          Process.exec("mkdir", ["-p", ".coverage"], Process.DEFAULT_COMMAND_OPTIONS)
+          Process.exec("mkdir", ["-p", ".coverage"], Process.DEFAULT_COMMAND_OPTIONS),
         )
         return File.write(".coverage/lcov.info", lcovStr)
       },
-      fulfill(() => {}, () => {})
+      fulfill(() => {}, () => {}),
     )(coverageData)
 
     if (Process.getEnv(COVERAGE_TEXT) == Just("ON")) {
