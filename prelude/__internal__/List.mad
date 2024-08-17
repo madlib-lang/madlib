@@ -1105,3 +1105,33 @@ export symmetricDifference = (z, a) => reduce(
   [],
   concat(z, a),
 )
+
+/**
+ * Drop all instances of a given value from a list
+ * @since 0.24.2
+ * @example
+ * dropEq("a", ["b", "a", "n", "a", "n", "a"]) // ["b", "n", "n"]
+ */
+dropEq :: Eq a => a -> List a -> List a
+export dropEq = (needle, haystack) => where(haystack) {
+  [a, ...z] =>
+    a == needle ? dropEq(needle, z) : [a, ...dropEq(needle, z)]
+
+  _ =>
+    []
+}
+
+/**
+ * Drop all instances of multiple given values from a list
+ * @since 0.24.2
+ * @example
+ * dropEq([0, 2, 4, 6, 8], range(0, 10)) // [1, 3, 5, 7, 9]
+ */
+without :: Eq a => List a -> List a -> List a
+export without = (needles, haystack) => where(haystack) {
+  [a, ...z] =>
+    includes(a, needles) ? without(needles, z) : [a, ...without(needles, z)]
+
+  _ =>
+    []
+}

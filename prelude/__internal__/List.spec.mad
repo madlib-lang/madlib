@@ -12,6 +12,7 @@ import {
   cut,
   difference,
   drop,
+  dropEq,
   dropLast,
   dropWhile,
   endsWith,
@@ -46,6 +47,7 @@ import {
   takeLast,
   takeWhile,
   uniqueBy,
+  without,
 } from "./List"
 
 
@@ -305,3 +307,10 @@ test(
   "symmetricDifference",
   () => assertEquals(symmetricDifference([7, 6, 5, 4, 3], [1, 2, 3, 4]), [7, 6, 5, 1, 2]),
 )
+
+test(
+  "dropEq",
+  () => assertEquals(dropEq("a", ["b", "a", "n", "a", "n", "a", "s"]), ["b", "n", "n", "s"]),
+)
+
+test("without", () => assertEquals(without([0, 2, 4, 6, 8], range(0, 10)), [1, 3, 5, 7, 9]))
