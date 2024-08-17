@@ -1,5 +1,7 @@
 import String from "String"
 
+
+
 type HandlerId = HandlerId
 export type HandlerId
 
@@ -24,7 +26,6 @@ export ansi = {
   FGMagenta: "35",
   FGCyan: "36",
   FGWhite: "37",
-
   FGBrightBlack: "90",
   FGBrightRed: "91",
   FGBrightGreen: "92",
@@ -33,7 +34,6 @@ export ansi = {
   FGBrightMagenta: "95",
   FGBrightCyan: "96",
   FGBrightWhite: "97",
-
   BGBlack: "40",
   BGRed: "41",
   BGGreen: "42",
@@ -42,7 +42,6 @@ export ansi = {
   BGMagenta: "45",
   BGCyan: "46",
   BGWhite: "47",
-
   BGBrightBlack: "100",
   BGBrightRed: "101",
   BGBrightGreen: "102",
@@ -51,15 +50,14 @@ export ansi = {
   BGBrightMagenta: "105",
   BGBrightCyan: "106",
   BGBrightWhite: "107",
-
   FormatUnderline: "4",
   FormatNoUnderline: "24",
   FormatBold: "1",
   FormatNoBold: "21",
-
   FormatInvert: "7",
 }
 
+ansify = (parts) => `\x1b[${String.join(";", parts)}m`
 
 /**
  * Adds ansi escape codes to a string given a list of styles.
@@ -69,10 +67,16 @@ export ansi = {
  * ansiColor([ansi.FormatBold, ansi.FGBrightRed], "will be red and bold")
  */
 ansiColor :: List String -> String -> String
-export ansiColor = (parts, str) => colorize(
-  `\x1b[${String.join(";", parts)}m`,
-  str
-)
+export ansiColor = (parts, str) => colorize(ansify(parts), str)
+
+/**
+ * Set an ansi color conditionally
+ * @since 0.24.1
+ * @example
+ * ansiCond(successPattern, failurePattern, condition, string)
+ */
+ansiCond :: List String -> List String -> Boolean -> String -> String
+export ansiCond = (ok, no, check, str) => ansiColor(check ? ok : no, str)
 
 export text = {
   black: ansiColor([ansi.FGBlack]),
@@ -161,9 +165,7 @@ onWindowResizedFFI :: ({} -> {}) -> HandlerId
 onWindowResizedFFI = extern "madlib__stdio__onWindowResized"
 
 onWindowResized :: (#[Integer, Integer] -> {}) -> HandlerId
-export onWindowResized = (cb) => onWindowResizedFFI(() => {
-  cb(getWindowSize())
-})
+export onWindowResized = (cb) => onWindowResizedFFI(() => { cb(getWindowSize()) })
 
 
 clearWindowResizeHandler :: HandlerId -> {}
@@ -221,10 +223,7 @@ export clearKeyPressedHandler = (id) => #- {
 
 
 getWindowSize :: {} -> #[Integer, Integer]
-export getWindowSize = () => #[
-  #- process.stdout.columns -#,
-  #- process.stdout.rows -#,
-]
+export getWindowSize = () => #[#- process.stdout.columns -#, #- process.stdout.rows -#]
 
 
 getTTYMode :: {} -> TTYMode
