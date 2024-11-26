@@ -11,8 +11,8 @@ export add = (a, b) => (a + b)
  *
  * @since 0.0.5
  */
-substract :: Number a => a -> a -> a
-export substract = (a, b) => (a - b)
+subtract :: Number a => a -> a -> a
+export subtract = (a, b) => (a - b)
 
 /**
  * Return the product of two numbers
@@ -132,10 +132,7 @@ export square = (n) => n * n
  * @since 0.12.0
  */
 min :: Comparable a => a -> a -> a
-export min = (a, b) =>
-  a > b
-    ? b
-    : a
+export min = (a, b) => a > b ? b : a
 
 
 /**
@@ -143,10 +140,7 @@ export min = (a, b) =>
  * @since 0.12.0
  */
 max :: Comparable a => a -> a -> a
-export max = (a, b) =>
-  a > b
-    ? a
-    : b
+export max = (a, b) => a > b ? a : b
 
 
 abs :: (Number a, Comparable a) => a -> a

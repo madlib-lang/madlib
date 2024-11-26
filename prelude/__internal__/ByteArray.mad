@@ -150,7 +150,7 @@ export push = extern "madlib__bytearray__pushBackWithMutation"
  *
  * @since 0.11.0
  * @example
- * mapBytes(substract(10), fromString("pqr"))
+ * mapBytes(subtract(10), fromString("pqr"))
  */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = extern "madlib__bytearray__map"
@@ -357,7 +357,7 @@ export push = (byte, byteArray) => #- {
  *
  * @since 0.11.0
  * @example
- * mapBytes(substract(10), fromString("pqr"))
+ * mapBytes(subtract(10), fromString("pqr"))
  */
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = (f, byteArray) => #- { return byteArray.map(f) } -#
