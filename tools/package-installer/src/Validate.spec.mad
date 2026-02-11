@@ -14,6 +14,7 @@ import {
   OutOfRangeVersion,
   MadlibDotJsonCouldNotBeLoaded
 } from "./Validate"
+import type { Validate } from "./Validate"
 
 
 
@@ -114,6 +115,7 @@ test("map - NotValid", (_) => {
 })
 
 test("map - ValidationError not recoverable", (_) => {
+  expected :: Validate Integer
   expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
 
   actual = map((x) => x + 1, expected)

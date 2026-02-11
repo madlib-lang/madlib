@@ -294,7 +294,6 @@ postProcessBody discardError options env s expType es = do
             return (unsolvedPs'' ++ solvedPs, subst)
           else
             return (unsolvedPs'' ++ solvedPs, subst)
-          return (unsolvedPs'' ++ solvedPs, subst)
         else
           return (ps'', mempty)
 

@@ -76,6 +76,8 @@ addInstanceMethod env _ p@(IsIn cls _ _) (methodName, methodScheme) = do
     Just (Instance qp methods) -> do
       let methods'    = M.insert methodName methodScheme methods
       return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
+    Nothing ->
+      return env
 
 setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
 setInstanceMethods env p@(IsIn cls _ _) methods = do
