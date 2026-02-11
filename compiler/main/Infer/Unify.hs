@@ -23,8 +23,9 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  | tv `elem` concat (ftv <$> fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
+  -- Occurs check must consider the entire record (required, base, optional).
+  | tv `elem` ftv t = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | otherwise       = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -42,10 +43,13 @@ instance Unify Type where
   unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-          fieldsForLeft  = M.difference fields fields'
-          fieldsForRight = M.difference fields' fields
+      -- Work with all fields (required + optional) to avoid dropping optional info.
+      let allFields        = fields <> optionalFields
+          allFields'       = fields' <> optionalFields'
+          fieldsToCheck    = M.intersection allFields allFields'
+          fieldsToCheck'   = M.intersection allFields' allFields
+          fieldsForLeft    = M.difference allFields allFields'
+          fieldsForRight   = M.difference allFields' allFields
 
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'

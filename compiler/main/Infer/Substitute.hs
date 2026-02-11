@@ -77,7 +77,9 @@ instance Substitutable Type where
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
   apply s (TRecord fields Nothing optionalFields) =
-    TRecord (apply s <$> (fields <> optionalFields)) Nothing (apply s <$> optionalFields)
+    -- Preserve the distinction between required and optional fields; do not
+    -- duplicate optional fields into the required map or we lose openness.
+    TRecord (apply s <$> fields) Nothing (apply s <$> optionalFields)
 
   apply _ t = t
 

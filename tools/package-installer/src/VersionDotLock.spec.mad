@@ -56,7 +56,7 @@ DEFAULT_CONFIG = {
   readDir: always(good([])),
   exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
   exists: always(good(true)),
-  getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty })),
+  getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty() })),
 }
 
 

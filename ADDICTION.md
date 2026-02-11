@@ -1,3 +1,0 @@
-# ADDICTION
-This project started as a small two-man side project during COVID. I'm the kind of person who's curious about most things and loves to learn and discover new things. At the beginning of the confinement many good things happened in my life. I had the luxury to move in with my now ex-girlfriend, the mother of my son. We were having a great time, working from home on most days, enjoying small things, walking around, going have a bigger walk in the forest every other weekend. I got back to baking my own bread, for which I ordered a firebrick and learned proper technique from reading articles and watching videos online. All was for the best.
-Then came September 2020. 
