@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -33,14 +32,12 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
 import           Infer.Scheme                   ( quantify )
-import           Infer.Pattern
+import           Infer.Pattern (inferPattern, updatePatternTypes)
 import           Infer.Pred
 import           Infer.Placeholder
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
 import qualified Control.Monad                 as CM
-import           Debug.Trace
-import           Text.Show.Pretty
 import           AST.Solved (getType)
 import qualified Data.Set as Set
 import           Run.Options
@@ -167,7 +164,7 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 -- INFER VAR
 
 inferVar :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferVar discardError _ env exp@(Can.Canonical area (Can.Var n)) = case n of
+inferVar _ _ env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) mempty `fn` TGen 0)
     (ps :=> t) <- instantiate s
@@ -250,7 +247,7 @@ postProcessBody discardError options env s expType es = do
       let ps'' = apply accSubst ps'
 
       (ps''', substFromDefaulting) <- do
-        prep <- forM ps'' $ \p -> do
+        prep <- CM.forM ps'' $ \p -> do
           isResolved <- entail env [] p
           if isResolved then
             return $ Just p
@@ -267,7 +264,7 @@ postProcessBody discardError options env s expType es = do
           let subst = sDef' `compose` sDef
 
           if unsolvedPs'' /= [] then do
-            forM_ unsolvedPs'' $ \p -> do
+            CM.forM_ unsolvedPs'' $ \p -> do
               catchError
                 (byInst env (apply subst p))
                 (\case
@@ -377,7 +374,7 @@ inferAssignment discardError options env e@(Can.Canonical area (Can.Assignment n
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer discardError options env' exp
-  s2                <- catchError (contextualUnify env' e currentType t1) (const $ return M.empty)
+  s2                <- catchError (contextualUnify Strict env' e currentType t1) (const $ return M.empty)
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
   let s  = s1 `compose` s2
   let t2 = apply s t1
@@ -400,7 +397,7 @@ inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp))
   (s1, ps1, t1, e1) <- infer discardError options env lhs
   (s2, ps2, t2, e2) <- infer discardError options (apply s1 env) exp
   s3 <- catchError
-    (contextualUnify env e t1 t2)
+    (contextualUnify Strict env e t1 t2)
     (\err -> do
       if discardError then do
         return mempty
@@ -632,7 +629,7 @@ inferArrayAccess discardError options env (Can.Canonical area (Can.ArrayAccess a
 -- INFER NAMESPACE ACCESS
 
 inferNamespaceAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferNamespaceAccess discardError _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
+inferNamespaceAccess _ _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
   = do
     sc <-
       catchError
@@ -766,33 +763,6 @@ inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) 
       $ Slv.Is (updatePatternTypes subst (apply s <$> vars) pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
-updatePatternTypes :: Substitution -> Vars -> Slv.Pattern -> Slv.Pattern
-updatePatternTypes s vars pat = case pat of
-  Slv.Typed t area (Slv.PCon n pats) ->
-    Slv.Typed (apply s t) area (Slv.PCon n (updatePatternTypes s vars <$> pats))
-
-  Slv.Typed t area (Slv.PRecord fields) ->
-    Slv.Typed (apply s t) area (Slv.PRecord (updatePatternTypes s vars <$> fields))
-
-  Slv.Typed t area (Slv.PList items) ->
-    Slv.Typed (apply s t) area (Slv.PList (updatePatternTypes s vars <$> items))
-
-  Slv.Typed t area (Slv.PTuple items) ->
-    Slv.Typed (apply s t) area (Slv.PTuple (updatePatternTypes s vars <$> items))
-
-  Slv.Typed t area (Slv.PSpread pat) ->
-    Slv.Typed (apply s t) area (Slv.PSpread (updatePatternTypes s vars pat))
-
-  Slv.Typed t area (Slv.PVar n) ->
-    case M.lookup n vars of
-      Just (Forall _ qt) ->
-        Slv.Typed (apply s qt) area (Slv.PVar n)
-
-      Nothing ->
-        Slv.Typed (apply s t) area (Slv.PVar n)
-
-  Slv.Typed t area p ->
-    Slv.Typed (apply s t) area p
 
 
 -- INFER TYPEDEXP
@@ -966,6 +936,37 @@ ftvForLetGen t = case t of
   _ ->
     []
 
+-- Shared generalization logic: compute free/generic vars, split predicates, handle mutations
+generalize :: Bool -> Bool -> Env -> Area -> Substitution -> Env -> Type -> [Pred] -> Type -> Infer ([Pred], [Pred], Substitution, [Pred])
+generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
+  let fs = ftv (apply sFinal envWithVarsExcluded)
+
+  (ds, rs, sSplit) <- catchError
+    (split (not isLet) envWithVarsExcluded fs (ftv t') ps')
+    (\case
+      _ | discardError ->
+        return (ps', [], mempty)
+
+      (CompilationError e NoContext) -> do
+        throwError $ CompilationError e (Context (envCurrentPath env) area)
+
+      (CompilationError e c) -> do
+        throwError $ CompilationError e c
+    )
+
+  let rs' = dedupePreds rs
+  let sFinal' = sSplit `compose` sFinal
+
+  let mutPS =
+        List.filter
+          (\(IsIn cls ts _) ->
+            let freeTVs = ftv (apply sFinal ts) `intersect` ftv (apply sFinal t)
+            in  cls == mutationInterface && not (null freeTVs)
+          )
+          ps'
+
+  return (ds, rs', sFinal', mutPS)
+
 
 
 inferImplicitlyTyped :: Bool -> Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
@@ -995,39 +996,13 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
 
       ps' = apply s'' ps
       t'  = apply s'' tv
-      vs  =
-        if isLet then
-          ftvForLetGen t'
-        else
-          ftv t'
-      fs  = ftv (apply s'' envWithVarsExcluded)
-      gs  = vs \\ fs
 
-  (ds, rs, sSplit) <- catchError
-    (split (not isLet) envWithVarsExcluded fs (ftv t') ps')
-    (\case
-      _ | discardError ->
-        return (ps', [], mempty)
+  (ds, rs', sFinal, mutPS) <- generalize isLet discardError env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
 
-      (CompilationError e NoContext) -> do
-        throwError $ CompilationError e (Context (envCurrentPath env) area)
-
-      (CompilationError e c) -> do
-        throwError $ CompilationError e c
-    )
-
-  let rs' = dedupePreds rs
-  let sFinal = sSplit `compose` s''
-
-  let mutPS =
-        List.filter
-          (\(IsIn cls ts _) ->
-            let freeTVs = ftv (apply s' ts) `intersect` ftv (apply s' t)
-            in  cls == mutationInterface && not (null freeTVs)
-          )
-          ps
-
-  let sc =
+  let vs = if isLet then ftvForLetGen t' else ftv t'
+      fs = ftv (apply sFinal envWithVarsExcluded)
+      gs = vs \\ fs
+      sc =
         if isLet && not (Slv.isNamedAbs e) then
           apply sFinal $ quantify [] ((rs' ++ mutPS) :=> t')
         else
@@ -1076,36 +1051,16 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
       qs'  = apply s' qs
       t''  = apply s' t
       t''' = mergeRecords (apply s' t') t''
-      fs   = ftv (apply s' envWithVarsExcluded)
-      gs   = ftv (apply s' t') \\ fs
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
-  (ds, rs, substDefaultResolution) <- catchError
-    (split True env' fs gs ps')
-    (\case
-      _ | discardError ->
-        return (ps', [], mempty)
-
-      (CompilationError e NoContext) ->
-        throwError $ CompilationError e (Context (envCurrentPath env) area)
-
-      (CompilationError e c) ->
-        throwError $ CompilationError e c
-    )
-
-  let mutPS =
-        List.filter
-          (\(IsIn cls ts _) ->
-            let freeTVs = ftv (apply s' ts) `intersect` ftv (apply s t)
-            in  cls == mutationInterface && not (null freeTVs)
-          )
-          ps
+  (ds, rs, substDefaultResolution, mutPS) <- generalize False discardError env area s' envWithVarsExcluded (apply s' t') ps' t
 
   when (not isLet && not discardError && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   let qs'' = dedupePreds qs'
-
-  let scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
+      fs = ftv (apply s' envWithVarsExcluded)
+      gs = ftv (apply s' t') \\ fs
+      scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   if sc /= scCheck then
     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
   else if not (null rs) then
@@ -1123,7 +1078,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
 
     return (substDefaultResolution `compose` s', qs'' ++ mutPS, env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
-inferExplicitlyTyped _ _ _ _ _ = undefined
+inferExplicitlyTyped _ _ _ _ _ = error "inferExplicitlyTyped: unreachable case"
 
 
 inferExps :: Options -> Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)

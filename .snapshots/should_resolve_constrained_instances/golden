@@ -607,41 +607,11 @@
                                                     (Area (Loc 399 24 21) (Loc 406 24 28))
                                                     (PTuple
                                                        [ Typed
-                                                           ([ IsIn
-                                                                "Inspect"
-                                                                [ TVar (TV 20 Star) ]
-                                                                (Just
-                                                                   (Area
-                                                                      (Loc 418 24 40)
-                                                                      (Loc 425 24 47)))
-                                                            , IsIn
-                                                                "Inspect"
-                                                                [ TVar (TV 20 Star) ]
-                                                                (Just
-                                                                   (Area
-                                                                      (Loc 418 24 40)
-                                                                      (Loc 425 24 47)))
-                                                            ] :=>
-                                                              TVar (TV 20 Star))
+                                                           ([] :=> TVar (TV 20 Star))
                                                            (Area (Loc 401 24 23) (Loc 402 24 24))
                                                            (PVar "a")
                                                        , Typed
-                                                           ([ IsIn
-                                                                "Inspect"
-                                                                [ TVar (TV 21 Star) ]
-                                                                (Just
-                                                                   (Area
-                                                                      (Loc 440 24 62)
-                                                                      (Loc 447 24 69)))
-                                                            , IsIn
-                                                                "Inspect"
-                                                                [ TVar (TV 21 Star) ]
-                                                                (Just
-                                                                   (Area
-                                                                      (Loc 440 24 62)
-                                                                      (Loc 447 24 69)))
-                                                            ] :=>
-                                                              TVar (TV 21 Star))
+                                                           ([] :=> TVar (TV 21 Star))
                                                            (Area (Loc 404 24 26) (Loc 405 24 27))
                                                            (PVar "b")
                                                        ]))

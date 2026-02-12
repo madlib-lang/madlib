@@ -152,7 +152,7 @@ test("ap - NotValid", (_) => {
   return assertEquals(actual, expected)
 })
 
-test("ap - ValidationError not recoverable", (_) => {
+test("ap - ValidationError not recoverable", () => {
   expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
 
   actual = ap(pure((x) => x + 1), expected)

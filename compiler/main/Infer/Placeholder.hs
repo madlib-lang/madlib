@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE LambdaCase #-}
 module Infer.Placeholder where
 
@@ -11,6 +10,7 @@ import           Infer.Infer
 import           Infer.Pred
 import           Infer.Unify
 import           Infer.Substitute
+import           Infer.Pattern (applyToPattern)
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
@@ -20,7 +20,6 @@ import           Error.Context
 import           Infer.Instantiate
 import           Run.Options
 import           Error.Warning
-import Text.Show.Pretty (ppShow)
 
 
 {-
@@ -193,30 +192,7 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     updatePattern :: Substitution -> [Pred] -> Slv.Pattern -> Slv.Pattern
     updatePattern s preds pat@(Slv.Typed (_ :=> t) _ _) =
       let ps = selectPredsForType preds t
-      in  case pat of
-        Slv.Typed (ps' :=> t') area (Slv.PCon n pats) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PCon n (updatePattern s preds <$> pats))
-
-        Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PRecord (updatePattern s preds <$> fields))
-
-        Slv.Typed (ps' :=> t') area (Slv.PList items) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PList (updatePattern s preds <$> items))
-
-        Slv.Typed (ps' :=> t') area (Slv.PTuple items) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PTuple (updatePattern s preds <$> items))
-
-        Slv.Typed (ps' :=> t') area (Slv.PSpread pat) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PSpread (updatePattern s preds pat))
-
-        Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PVar n)
-
-        Slv.Typed (ps' :=> t') area (Slv.PNum n) ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PNum n)
-
-        Slv.Typed (ps' :=> t') area p ->
-          Slv.Typed (apply s ((ps ++ ps') :=> t')) area p
+      in  applyToPattern s Nothing (Just ps) pat
 
 
     updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem

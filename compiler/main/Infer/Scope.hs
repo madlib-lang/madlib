@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Scope where
 
 import           Infer.Env
@@ -18,8 +17,6 @@ import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
 import           Explain.Location
-import           Debug.Trace
-import           Text.Show.Pretty               ( ppShow )
 import qualified Data.List as List
 import Infer.Unify
 

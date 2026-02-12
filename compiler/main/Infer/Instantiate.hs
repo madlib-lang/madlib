@@ -8,8 +8,6 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.State
 import           Infer.Infer
-import Debug.Trace
-import Text.Show.Pretty
 
 
 letters :: [Char]

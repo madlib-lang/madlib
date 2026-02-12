@@ -76,7 +76,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     (pats, ps, vars, t) <- foldlM
       (\(pats, ps, vars, t) pat -> do
         (pat', ps', vars', t') <- inferPListItem env t pat
-        s                      <- contextualUnify env pat t t'
+        s                      <- contextualUnify Strict env pat t t'
         return (pats ++ [pat'], ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], [], mempty, tv)
@@ -137,13 +137,13 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     verifyConstructor env area n
 
     (ps' :=> t) <- instantiate sc
-    s           <- contextualUnify env p t (foldr fn tv ts)
+    s           <- contextualUnify Strict env p t (foldr fn tv ts)
     let s' = s `compose` s `compose` s
 
     let t = apply s' tv
     return (Slv.Typed ([] :=> t) area (Slv.PCon n (map (updateTypes s') pats')), ps <> ps', M.map (apply s') vars, t)
 
-  _ -> undefined
+  _ -> error "inferPattern: unreachable pattern case"
 
 
 verifyConstructor :: Env -> Area -> String -> Infer ()
@@ -153,25 +153,60 @@ verifyConstructor env area name = do
 
 
 
+-- Unified pattern update function that handles substitution, optional vars, and optional preds
+applyToPattern :: Substitution -> Maybe Vars -> Maybe [Pred] -> Slv.Pattern -> Slv.Pattern
+applyToPattern s maybeVars maybePreds pat = case pat of
+  Slv.Typed (ps' :=> t') area (Slv.PCon n pats) ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PCon n (applyToPattern s maybeVars maybePreds <$> pats))
+
+  Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PRecord (applyToPattern s maybeVars maybePreds <$> fields))
+
+  Slv.Typed (ps' :=> t') area (Slv.PList items) ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PList (applyToPattern s maybeVars maybePreds <$> items))
+
+  Slv.Typed (ps' :=> t') area (Slv.PTuple items) ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PTuple (applyToPattern s maybeVars maybePreds <$> items))
+
+  Slv.Typed (ps' :=> t') area (Slv.PSpread pat') ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PSpread (applyToPattern s maybeVars maybePreds pat'))
+
+  Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
+    let ps = maybe [] id maybePreds
+        qt' = case maybeVars of
+                Just vars -> case M.lookup n vars of
+                  Just (Forall _ varQt) -> apply s ((ps ++ ps') :=> unqualify (apply s varQt))
+                  Nothing -> apply s ((ps ++ ps') :=> t')
+                Nothing -> apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PVar n)
+
+  Slv.Typed (ps' :=> t') area (Slv.PNum n) ->
+    let ps = maybe [] id maybePreds
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area (Slv.PNum n)
+
+  Slv.Typed qt area p ->
+    let ps = maybe [] id maybePreds
+        (ps' :=> t') = qt
+        qt' = apply s ((ps ++ ps') :=> t')
+    in  Slv.Typed qt' area p
+
+  pat' ->
+    pat'
+
+-- Convenience wrappers for backward compatibility
 updateTypes :: Substitution -> Slv.Pattern -> Slv.Pattern
-updateTypes s pat = case pat of
-  Slv.Typed t area (Slv.PCon n pats) ->
-    Slv.Typed (apply s t) area (Slv.PCon n (updateTypes s <$> pats))
+updateTypes s = applyToPattern s Nothing Nothing
 
-  Slv.Typed t area (Slv.PRecord fields) ->
-    Slv.Typed (apply s t) area (Slv.PRecord (updateTypes s <$> fields))
-
-  Slv.Typed t area (Slv.PList items) ->
-    Slv.Typed (apply s t) area (Slv.PList (updateTypes s <$> items))
-
-  Slv.Typed t area (Slv.PTuple items) ->
-    Slv.Typed (apply s t) area (Slv.PTuple (updateTypes s <$> items))
-
-  Slv.Typed t area (Slv.PSpread pat) ->
-    Slv.Typed (apply s t) area (Slv.PSpread (updateTypes s pat))
-
-  Slv.Typed t area p ->
-    Slv.Typed (apply s t) area p
-
-  or ->
-    or
+updatePatternTypes :: Substitution -> Vars -> Slv.Pattern -> Slv.Pattern
+updatePatternTypes s vars = applyToPattern s (Just vars) Nothing

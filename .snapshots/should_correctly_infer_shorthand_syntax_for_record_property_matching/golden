@@ -107,31 +107,13 @@
                                          (fromList
                                             [ ( "x"
                                               , Typed
-                                                  ([ IsIn
-                                                       "Number"
-                                                       [ TVar (TV 6 Star) ]
-                                                       (Just (Area (Loc 45 3 19) (Loc 46 3 20)))
-                                                   , IsIn
-                                                       "Number"
-                                                       [ TVar (TV 6 Star) ]
-                                                       (Just (Area (Loc 45 3 19) (Loc 46 3 20)))
-                                                   ] :=>
-                                                     TVar (TV 6 Star))
+                                                  ([] :=> TVar (TV 6 Star))
                                                   (Area (Loc 33 3 7) (Loc 34 3 8))
                                                   (PVar "x")
                                               )
                                             , ( "y"
                                               , Typed
-                                                  ([ IsIn
-                                                       "Number"
-                                                       [ TVar (TV 6 Star) ]
-                                                       (Just (Area (Loc 45 3 19) (Loc 46 3 20)))
-                                                   , IsIn
-                                                       "Number"
-                                                       [ TVar (TV 6 Star) ]
-                                                       (Just (Area (Loc 45 3 19) (Loc 46 3 20)))
-                                                   ] :=>
-                                                     TVar (TV 6 Star))
+                                                  ([] :=> TVar (TV 6 Star))
                                                   (Area (Loc 36 3 10) (Loc 37 3 11))
                                                   (PVar "y")
                                               )

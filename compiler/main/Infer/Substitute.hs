@@ -18,7 +18,6 @@ import           Data.List                      ( nub
                                                 )
 
 import           Control.Applicative
-import           Text.Show.Pretty
 
 
 class Substitutable a where
@@ -63,13 +62,13 @@ instance Substitutable Type where
             TRecord (apply s <$> (fields <> fields')) appliedBase (apply s <$> (optionalFields <> optionalFields'))
 
     Nothing ->
-      TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
+      TRecord (apply s <$> fields) (Just (TVar tv)) optionalFields
 
     Just (TGen x) ->
       TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
 
     _ ->
-      TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
+      TRecord fields (Just (TVar tv)) optionalFields
     -- bad ->
       -- error $ "found: " <> ppShow bad
 
@@ -77,9 +76,7 @@ instance Substitutable Type where
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
   apply s (TRecord fields Nothing optionalFields) =
-    -- Preserve the distinction between required and optional fields; do not
-    -- duplicate optional fields into the required map or we lose openness.
-    TRecord (apply s <$> fields) Nothing (apply s <$> optionalFields)
+    TRecord (apply s <$> (fields <> optionalFields)) Nothing (apply s <$> optionalFields)
 
   apply _ t = t
 

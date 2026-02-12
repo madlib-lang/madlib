@@ -8,7 +8,6 @@ import           Error.Error
 import           Error.Context
 import           Data.Maybe
 import qualified Data.List                      as List
-import           Text.Show.Pretty (ppShow)
 import           Infer.Type
 
 

@@ -23,9 +23,8 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  -- Occurs check must consider the entire record (required, base, optional).
-  | tv `elem` ftv t = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise       = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
+  | tv `elem` concat (ftv <$> fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -43,13 +42,10 @@ instance Unify Type where
   unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
-      -- Work with all fields (required + optional) to avoid dropping optional info.
-      let allFields        = fields <> optionalFields
-          allFields'       = fields' <> optionalFields'
-          fieldsToCheck    = M.intersection allFields allFields'
-          fieldsToCheck'   = M.intersection allFields' allFields
-          fieldsForLeft    = M.difference allFields allFields'
-          fieldsForRight   = M.difference allFields' allFields
+      let fieldsToCheck  = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+          fieldsForLeft  = M.difference fields fields'
+          fieldsForRight = M.difference fields' fields
 
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'
@@ -176,52 +172,14 @@ instance Match t => Match [t] where
     foldM merge nullSubst ss
 
 
-contextualUnifyAccess :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnifyAccess env exp t1 t2 = catchError
+data UnifyStrategy = Strict | Discard | AccessStyle
+  deriving (Eq)
+
+contextualUnify :: UnifyStrategy -> Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnify strategy env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    (CompilationError (UnificationError _ _) ctx) -> do
-      let t2' = getParamTypeOrSame t2
-          t1' = getParamTypeOrSame t1
-          hasNotChanged = t2' == t2 || t1' == t1
-          t2'' = if hasNotChanged then t2 else t2'
-          t1'' = if hasNotChanged then t1 else t1'
-
-      (t2''', t1''')   <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
-      (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
-      addContext env exp (CompilationError (UnificationError t2'''' t1'''') ctx)
-
-    e ->
-      addContext env exp e
-  )
-
-
-contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnify env exp t1 t2 = catchError
-  (unify t1 t2)
-  (\case
-    (CompilationError (UnificationError _ _) ctx) -> do
-      let t2' = getParamTypeOrSame t2
-          t1' = getParamTypeOrSame t1
-          hasNotChanged = t2' == t2 || t1' == t1
-          t2'' = if hasNotChanged then t2 else t2'
-          t1'' = if hasNotChanged then t1 else t1'
-      (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
-      (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
-      addContext env exp (CompilationError (UnificationError t2'''' t1'''') ctx)
-
-    e ->
-      addContext env exp e
-  )
-
-
--- A version of contextualUnify that either throws or not, which is used when an error
--- was reported to still keep the most general type for the language server
-contextualUnify' :: Env -> Bool -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnify' env discardError exp t1 t2 = catchError
-  (unify t1 t2)
-  (\case
-    _ | discardError ->
+    _ | strategy == Discard ->
       return $ gentleUnify t1 t2
 
     (CompilationError (UnificationError _ _) ctx) -> do
@@ -238,6 +196,13 @@ contextualUnify' env discardError exp t1 t2 = catchError
       addContext env exp e
   )
 
+-- Convenience wrappers for backward compatibility
+contextualUnifyAccess :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnifyAccess = contextualUnify AccessStyle
+
+contextualUnify' :: Env -> Bool -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnify' env discardError = contextualUnify (if discardError then Discard else Strict) env
+
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution
 contextualUnifyElems _ []        = return M.empty
@@ -246,7 +211,7 @@ contextualUnifyElems env (h : r) = contextualUnifyElems' env h r
 contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Type)] -> Infer Substitution
 contextualUnifyElems' _   _      []              = return M.empty
 contextualUnifyElems' env (e, t) ((e', t') : xs) = do
-  s1 <- catchError (contextualUnify env e' t' t) flipUnificationError
+  s1 <- catchError (contextualUnify Strict env e' t' t) flipUnificationError
   s2 <- contextualUnifyElems' (apply s1 env) (e, apply s1 t) xs
   return $ compose s1 s2
 

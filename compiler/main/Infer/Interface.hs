@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Interface where
 
 import qualified AST.Canonical                 as Can
@@ -23,8 +22,6 @@ import           Data.List
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
-import Debug.Trace
-import Text.Show.Pretty
 import Run.Options
 import Explain.Location
 

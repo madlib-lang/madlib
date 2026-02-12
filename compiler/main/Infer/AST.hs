@@ -3,7 +3,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
 module Infer.AST where
@@ -30,8 +29,6 @@ import qualified Data.Set                                   as S
 import           Infer.Unify
 import           Infer.Instantiate
 import           Infer.Scope
-import           Debug.Trace
-import           Text.Show.Pretty
 import qualified Data.Set                                   as Set
 import           Infer.Pred
 import           Infer.Scheme

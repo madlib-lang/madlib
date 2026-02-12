@@ -5,7 +5,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.ExhaustivePatterns where
 
 
@@ -29,7 +28,6 @@ import           Explain.Location
 import           Infer.Type
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
-import           Text.Show.Pretty (ppShow)
 import           Error.Warning
 import           Error.Context
 import qualified Data.Set as Set
