@@ -122,14 +122,17 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     -- If there's a rest pattern, bind it to a record type that excludes matched fields
     (restVars, restPreds) <- case restName of
       Just restVarName -> do
-        -- Rest type: empty fields map with the same base row variable
+        -- Rest type: use the base row variable directly as the type
+        -- The baseRowVar represents all fields not explicitly matched.
         -- When the pattern unifies with a concrete record, baseRowVar will be unified
-        -- to contain only the unmatched fields (the difference between the concrete
-        -- record and the matched fields). The rest type will then correctly contain
-        -- only those unmatched fields.
-        let restType = TRecord mempty (Just baseRowVar) mempty
+        -- to a record containing only the unmatched fields.
+        -- We create the rest type as just the row variable itself, which will be
+        -- substituted with the unmatched fields after unification.
         when (M.member restVarName vars) $
           throwError $ CompilationError (NameAlreadyDefined restVarName) (Context (envCurrentPath env) area)
+        -- The rest type is the row variable itself - it will be substituted with
+        -- a record containing only unmatched fields
+        let restType = baseRowVar
         let restVar = M.singleton restVarName (toScheme restType)
         return (restVar, [])
       Nothing ->
@@ -175,6 +178,47 @@ verifyConstructor env area name = do
     throwError $ CompilationError (NotAConstructor name) (Context (envCurrentPath env) area)
 
 
+-- | Extract a map from rest variable names to the set of field names explicitly
+-- matched in the same PRecord pattern. This is used after unification to subtract
+-- matched fields from the rest variable's substituted type, because the substitution
+-- machinery merges optional fields (matched) into main fields, losing the distinction.
+getRestVarMatchedFields :: Can.Pattern -> M.Map Can.Name (S.Set Can.Name)
+getRestVarMatchedFields (Can.Canonical _ pat) = case pat of
+  Can.PRecord fields (Just restName) ->
+    M.singleton restName (S.fromList $ M.keys fields) <> foldMap getRestVarMatchedFields (M.elems fields)
+  Can.PRecord fields Nothing ->
+    foldMap getRestVarMatchedFields (M.elems fields)
+  Can.PTuple pats -> foldMap getRestVarMatchedFields pats
+  Can.PList pats -> foldMap getRestVarMatchedFields pats
+  Can.PCon _ pats -> foldMap getRestVarMatchedFields pats
+  Can.PSpread subPat -> getRestVarMatchedFields subPat
+  _ -> M.empty
+
+
+-- | Fix rest variable types in the vars map after unification.
+-- During unification, row variables get substituted with records that include
+-- ALL fields (because optional fields are merged into main fields by compose/apply).
+-- For rest pattern variables, we need to subtract the explicitly matched fields
+-- to get only the "remaining" fields.
+fixRestVarTypes :: Substitution -> Can.Pattern -> Vars -> Vars
+fixRestVarTypes s pat vars =
+  let restMatchedFields = getRestVarMatchedFields pat
+  in  if M.null restMatchedFields
+      then vars
+      else M.mapWithKey (\name scheme -> case M.lookup name restMatchedFields of
+        Just fieldsToRemove -> case scheme of
+          Forall ks (ps :=> restTVar) ->
+            let substitutedType = apply s restTVar
+                -- Remove matched fields from the substituted type
+                fixedType = case substitutedType of
+                  TRecord allFields base optFields ->
+                    TRecord (M.withoutKeys allFields fieldsToRemove) base optFields
+                  _ -> substitutedType
+            in Forall ks (ps :=> fixedType)
+        Nothing -> scheme
+      ) vars
+
+
 
 -- Unified pattern update function that handles substitution, optional vars, and optional preds
 applyToPattern :: Substitution -> Maybe Vars -> Maybe [Pred] -> Slv.Pattern -> Slv.Pattern
@@ -208,7 +252,9 @@ applyToPattern s maybeVars maybePreds pat = case pat of
     let ps = maybe [] id maybePreds
         qt' = case maybeVars of
                 Just vars -> case M.lookup n vars of
-                  Just (Forall _ varQt) -> apply s ((ps ++ ps') :=> unqualify (apply s varQt))
+                  Just (Forall _ varQt) -> 
+                    let substitutedType = unqualify (apply s varQt)
+                    in apply s ((ps ++ ps') :=> substitutedType)
                   Nothing -> apply s ((ps ++ ps') :=> t')
                 Nothing -> apply s ((ps ++ ps') :=> t')
     in  Slv.Typed qt' area (Slv.PVar n)

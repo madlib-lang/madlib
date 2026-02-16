@@ -32,7 +32,7 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
 import           Infer.Scheme                   ( quantify )
-import           Infer.Pattern (inferPattern, updatePatternTypes)
+import           Infer.Pattern (inferPattern, updatePatternTypes, fixRestVarTypes)
 import           Infer.Pred
 import           Infer.Placeholder
 import           Infer.ToSolved
@@ -765,7 +765,14 @@ inferBranch :: Bool -> Options -> Env -> Type -> Type -> Can.Is -> Infer (Substi
 inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
   s <- contextualUnify' env discardError exp t t'
-  (s', ps', t'', e') <- infer discardError options (apply s $ mergeVars env vars) exp
+
+  -- Fix rest variable types: after unification, row variables get substituted with
+  -- records that include ALL fields (because optional fields merge into main fields
+  -- during compose). For rest pattern variables like `...g`, we subtract the explicitly
+  -- matched fields to get only the "remaining" fields.
+  let vars' = fixRestVarTypes s pat vars
+
+  (s', ps', t'', e') <- infer discardError options (apply s $ mergeVars env vars') exp
   s'' <- contextualUnify' env discardError exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
@@ -775,7 +782,7 @@ inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) 
     ( subst
     , allPreds
     , Slv.Typed (allPreds :=> apply subst (t' `fn` tv)) area
-      $ Slv.Is (updatePatternTypes subst (apply s <$> vars) pat') (updateQualType e' (ps' :=> apply subst t''))
+      $ Slv.Is (updatePatternTypes subst (apply s <$> vars') pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
 
