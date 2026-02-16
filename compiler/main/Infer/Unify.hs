@@ -65,8 +65,7 @@ instance Unify Type where
 
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
-          commonFields = M.intersection fields fields'
-      s1 <- unify tBase (TRecord fieldsDiff Nothing commonFields)
+      s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
 
       unless (M.null (M.difference (fields <> optionalFields) (fields' <> optionalFields'))) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -80,8 +79,7 @@ instance Unify Type where
 
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
-          commonFields = M.intersection fields' fields
-      s1 <- unify tBase' (TRecord fieldsDiff Nothing commonFields)
+      s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
 
       unless (M.null (M.difference (fields' <> optionalFields') (fields <> optionalFields))) $ throwError (CompilationError (UnificationError r l) NoContext)
 
