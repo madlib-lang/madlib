@@ -393,67 +393,12 @@
                                                                   (PCon
                                                                      "LoggedIn"
                                                                      [ Typed
-                                                                         ([ IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          ] :=>
-                                                                            TVar (TV 8 Star))
+                                                                         ([] :=> TVar (TV 8 Star))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "a0")
                                                                      , Typed
-                                                                         ([ IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          ] :=>
+                                                                         ([] :=>
                                                                             TCon
                                                                               (TC "Integer" Star)
                                                                               "prelude")
@@ -474,67 +419,12 @@
                                                                   (PCon
                                                                      "LoggedIn"
                                                                      [ Typed
-                                                                         ([ IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TVar (TV 8 Star) ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          ] :=>
-                                                                            TVar (TV 8 Star))
+                                                                         ([] :=> TVar (TV 8 Star))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "b0")
                                                                      , Typed
-                                                                         ([ IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          , IsIn
-                                                                              "Eq"
-                                                                              [ TCon
-                                                                                  (TC
-                                                                                     "Integer" Star)
-                                                                                  "prelude"
-                                                                              ]
-                                                                              (Just
-                                                                                 (Area
-                                                                                    (Loc 0 0 0)
-                                                                                    (Loc 0 0 0)))
-                                                                          ] :=>
+                                                                         ([] :=>
                                                                             TCon
                                                                               (TC "Integer" Star)
                                                                               "prelude")
@@ -1267,34 +1157,11 @@
                                                     (PCon
                                                        "LoggedIn"
                                                        [ Typed
-                                                           ([ IsIn
-                                                                "Show"
-                                                                [ TVar (TV 27 Star) ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            , IsIn
-                                                                "Show"
-                                                                [ TVar (TV 27 Star) ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            ] :=>
-                                                              TVar (TV 27 Star))
+                                                           ([] :=> TVar (TV 27 Star))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        , Typed
-                                                           ([ IsIn
-                                                                "Show"
-                                                                [ TCon (TC "Integer" Star) "prelude"
-                                                                ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            , IsIn
-                                                                "Show"
-                                                                [ TCon (TC "Integer" Star) "prelude"
-                                                                ]
-                                                                (Just
-                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                                            ] :=>
+                                                           ([] :=>
                                                               TCon (TC "Integer" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a1")

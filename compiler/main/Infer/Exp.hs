@@ -846,64 +846,89 @@ split mustCheck env fs gs ps = do
 
 
 tryDefaults :: Env -> [Pred] -> Infer (Substitution, [Pred])
-tryDefaults env ps = case ps of
-  (p : next) -> case p of
-    IsIn "Number" [TVar tv] _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
-      let s = M.singleton tv tInteger
-      return (s `compose` nextSubst, nextPS)
+tryDefaults env ps = tryDefaults' env ps ps
+  where
+    -- Helper that takes the original predicate list to check against
+    tryDefaults' :: Env -> [Pred] -> [Pred] -> Infer (Substitution, [Pred])
+    tryDefaults' env originalPs remainingPs = case remainingPs of
+      (p : next) -> case p of
+        IsIn "Number" [TVar tv] _ -> do
+          (nextSubst, nextPS) <- tryDefaults' env originalPs next
+          let s = M.singleton tv tInteger
+          return (s `compose` nextSubst, nextPS)
 
-    IsIn "Bits" [TVar tv] _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
-      let s = M.singleton tv tInteger
-      return (s `compose` nextSubst, nextPS)
+        IsIn "Bits" [TVar tv] _ -> do
+          (nextSubst, nextPS) <- tryDefaults' env originalPs next
+          let s = M.singleton tv tInteger
+          return (s `compose` nextSubst, nextPS)
 
-    IsIn "Eq" [t] _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
+        IsIn interface [t] _ | interface == "Eq" || interface == "Show" -> do
+          (nextSubst, nextPS) <- tryDefaults' env originalPs next
+          
+          -- Get vars from type AFTER substitution to see what's left
+          let substitutedVars = getTypeVarsInType (apply nextSubst t)
+          
+          if null substitutedVars || isTVar t then
+            return (nextSubst, nextPS)
+          else do
+            let tvs = getTV <$> substitutedVars
+            
+            -- Check ORIGINAL predicate list (all predicates) for Number/Bits constraints
+            let hasNumberOrBitsConstraint tv = any
+                  (\pred -> case pred of
+                    IsIn "Number" [TVar tv'] _ -> tv == tv'
+                    IsIn "Bits" [TVar tv'] _ -> tv == tv'
+                    _ -> False
+                  )
+                  originalPs
+            
+            -- Also check if already substituted to Integer
+            let isAlreadyInteger tv = case M.lookup tv nextSubst of
+                  Just ty | ty == tInteger -> True
+                  _ -> False
 
-      let vars = getTypeVarsInType t
-      if null vars || isTVar t then
-        return (nextSubst, nextPS)
-      else do
-        let tvs  = getTV <$> vars
-            tvs' = filter (`M.notMember` nextSubst) tvs
-            s    = M.fromList $ zip tvs' (tUnit <$ tvs')
-        return (s `compose` nextSubst, nextPS)
+            let tvs' = filter (\tv -> not (M.member tv nextSubst) && (hasNumberOrBitsConstraint tv || isAlreadyInteger tv)) tvs
 
-    IsIn "Show" [t] _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
+            let tvsWithoutNumberOrBits = filter (\tv -> 
+                    not (M.member tv nextSubst) && 
+                    not (hasNumberOrBitsConstraint tv) &&
+                    not (isAlreadyInteger tv)
+                  ) tvs
+            
+            -- Don't default variables in complex types to Unit - they might get Number constraints
+            -- through instance resolution. Only default simple type variables.
+            let isSimpleTypeVar = isTVar t
+            let shouldDefaultToUnit tv = isSimpleTypeVar && not (hasNumberOrBitsConstraint tv) && not (isAlreadyInteger tv)
+            
+            sList <- mapM (\tv ->
+                -- If it has Number/Bits in original, default to Integer
+                if hasNumberOrBitsConstraint tv || isAlreadyInteger tv
+                  then return (Just (tv, tInteger))
+                  else if shouldDefaultToUnit tv
+                  then return (Just (tv, tUnit))
+                  else
+                    -- Don't create a substitution - leave it ambiguous for now
+                    return Nothing
+              ) (tvs' ++ tvsWithoutNumberOrBits)
+            let s = M.fromList $ catMaybes sList
+            
+            return (s `compose` nextSubst, nextPS)
 
-      let vars = getTypeVarsInType t
+        _ -> do
+          maybeFound <- findInst env p
+          case maybeFound of
+            Just (Instance (instancePreds :=> pred) _) -> do
+              s                   <- unify pred p
+              (nextSubst, nextPS) <- tryDefaults' env originalPs (next ++ apply s instancePreds)
+              return (nextSubst, nextPS)
 
-      -- if it's a tvar we don't want to force it to {}
-      -- because it should actually never be called
-      if null vars || isTVar t then
-        return (nextSubst, nextPS)
-      else do
-        let tvs  = getTV <$> vars
-            tvs' = filter (`M.notMember` nextSubst) tvs
-            s    = M.fromList $ zip tvs' (tUnit <$ tvs')
-        return (s `compose` nextSubst, nextPS)
+            Nothing -> do
+              parentPreds <- getParentPredsOnly env p
+              (nextSubst, nextPS) <- tryDefaults' env originalPs (parentPreds ++ next)
+              return (nextSubst, p : nextPS)
 
-    _ -> do
-      maybeFound <- findInst env p
-      case maybeFound of
-        Just (Instance (instancePreds :=> pred) _) -> do
-          -- if the instance found has predicates eg. (Show a, Show b) => Show #[a, b]
-          -- we unify the found pred with the one we try to resolve to get a mapping of
-          -- the actual instantiated types and add this to the list of predicates to resolve.
-          s                   <- unify pred p
-          (nextSubst, nextPS) <- tryDefaults env (next ++ apply s instancePreds)
-          return (nextSubst, nextPS)
-
-        Nothing -> do
-          parentPreds <- getParentPredsOnly env p
-          (nextSubst, nextPS) <- tryDefaults env (parentPreds ++ next)
-          return (nextSubst, p : nextPS)
-
-  [] ->
-    return (M.empty, [])
-
+      [] ->
+        return (M.empty, [])
 
 
 dedupePreds :: [Pred] -> [Pred]

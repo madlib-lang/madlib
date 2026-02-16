@@ -284,46 +284,7 @@
                                                                         (PCon
                                                                            "Just"
                                                                            [ Typed
-                                                                               ([ IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                ] :=>
+                                                                               ([] :=>
                                                                                   TVar (TV 7 Star))
                                                                                (Area
                                                                                   (Loc 0 0 0)
@@ -344,46 +305,7 @@
                                                                         (PCon
                                                                            "Just"
                                                                            [ Typed
-                                                                               ([ IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TVar
-                                                                                        (TV 7 Star)
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                ] :=>
+                                                                               ([] :=>
                                                                                   TVar (TV 7 Star))
                                                                                (Area
                                                                                   (Loc 0 0 0)
@@ -963,22 +885,7 @@
                                                           (PCon
                                                              "Just"
                                                              [ Typed
-                                                                 ([ IsIn
-                                                                      "Show"
-                                                                      [ TVar (TV 24 Star) ]
-                                                                      (Just
-                                                                         (Area
-                                                                            (Loc 0 0 0)
-                                                                            (Loc 0 0 0)))
-                                                                  , IsIn
-                                                                      "Show"
-                                                                      [ TVar (TV 24 Star) ]
-                                                                      (Just
-                                                                         (Area
-                                                                            (Loc 0 0 0)
-                                                                            (Loc 0 0 0)))
-                                                                  ] :=>
-                                                                    TVar (TV 24 Star))
+                                                                 ([] :=> TVar (TV 24 Star))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (PVar "a0")
                                                              ]))
@@ -1508,79 +1415,7 @@
                                                                         (PCon
                                                                            "MyType"
                                                                            [ Typed
-                                                                               ([ IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                ] :=>
+                                                                               ([] :=>
                                                                                   TApp
                                                                                     (TCon
                                                                                        (TC
@@ -1609,79 +1444,7 @@
                                                                         (PCon
                                                                            "MyType"
                                                                            [ Typed
-                                                                               ([ IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                , IsIn
-                                                                                    "Eq"
-                                                                                    [ TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "Maybe"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))
-                                                                                           "./ModuleA.mad")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
-                                                                                    ]
-                                                                                    (Just
-                                                                                       (Area
-                                                                                          (Loc
-                                                                                             0 0 0)
-                                                                                          (Loc
-                                                                                             0
-                                                                                             0
-                                                                                             0)))
-                                                                                ] :=>
+                                                                               ([] :=>
                                                                                   TApp
                                                                                     (TCon
                                                                                        (TC
@@ -2274,39 +2037,7 @@
                                                           (PCon
                                                              "MyType"
                                                              [ Typed
-                                                                 ([ IsIn
-                                                                      "Show"
-                                                                      [ TApp
-                                                                          (TCon
-                                                                             (TC
-                                                                                "Maybe"
-                                                                                (Kfun Star Star))
-                                                                             "./ModuleA.mad")
-                                                                          (TCon
-                                                                             (TC "String" Star)
-                                                                             "prelude")
-                                                                      ]
-                                                                      (Just
-                                                                         (Area
-                                                                            (Loc 0 0 0)
-                                                                            (Loc 0 0 0)))
-                                                                  , IsIn
-                                                                      "Show"
-                                                                      [ TApp
-                                                                          (TCon
-                                                                             (TC
-                                                                                "Maybe"
-                                                                                (Kfun Star Star))
-                                                                             "./ModuleA.mad")
-                                                                          (TCon
-                                                                             (TC "String" Star)
-                                                                             "prelude")
-                                                                      ]
-                                                                      (Just
-                                                                         (Area
-                                                                            (Loc 0 0 0)
-                                                                            (Loc 0 0 0)))
-                                                                  ] :=>
+                                                                 ([] :=>
                                                                     TApp
                                                                       (TCon
                                                                          (TC

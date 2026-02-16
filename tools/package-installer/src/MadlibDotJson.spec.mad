@@ -58,7 +58,7 @@ test("load     - success", (_) => {
     exec: (_, _, _) => good({ exitCode: 0, stdout: "OK", stderr: "" }),
     getBytes: always(
       good({
-        body: ByteArray.empty,
+        body: ByteArray.empty(),
         headers: [],
         status: OK
       })
