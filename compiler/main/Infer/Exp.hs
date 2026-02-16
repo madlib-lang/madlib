@@ -557,18 +557,21 @@ inferRecord discardError options env exp = do
 
     Just tBase -> do
       -- The spread is a type variable or other type - unify it with a record type
-      -- that has our fields and a row variable for extension
+      -- that has a row variable for extension (but NOT the explicit fields, since
+      -- those are being added by this record literal, not required to exist in the spread)
       baseVar <- newTVar Star
-      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
+      let recordWithBase = TRecord mempty (Just baseVar) mempty
       s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
       -- After unification, tBase should be resolved to a record type
-      -- Return the unified type with the row variable preserved
+      -- The result type should have both the spread's fields AND the explicit fields
       let unifiedBase = apply s tBase
       case unifiedBase of
         TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
+          -- Merge the spread's fields with our explicit fields (explicit fields take precedence)
+          let mergedFields = M.fromList fieldTypes' `M.union` unifiedFields
+          in return (TRecord mergedFields unifiedBase' unifiedOptionalFields, s)
         _ ->
-          -- Fallback: use the record we created with the row variable
+          -- Fallback: use just the explicit fields with the row variable
           return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
 
     Nothing ->
@@ -824,14 +827,29 @@ updateRecordUpdatePreds :: [Pred] -> [Pred]
 updateRecordUpdatePreds ps = updateRecordUpdatePreds' ps ps
 
 -- Preds for record with a base should be resolved by the base directly
+-- We also emit a closed record pred (without base) so that explicit fields
+-- are checked against user-defined type class instances.
+-- Empty records (no fields, no base) are filtered out as they don't need instances.
 updateRecordUpdatePreds' :: [Pred] -> [Pred] -> [Pred]
 updateRecordUpdatePreds' allPreds ps = case ps of
-  IsIn cls [tRec@(TRecord _ (Just base@(TVar _)) _)] maybeArea : next
+  IsIn _ [TRecord fields Nothing optionalFields] _ : next
+    | M.null fields && M.null optionalFields ->
+      -- Empty record - filter out the predicate as it doesn't need instances
+      updateRecordUpdatePreds next
+
+  IsIn cls [tRec@(TRecord fields (Just base@(TVar _)) optionalFields)] maybeArea : next
     | not (hasPredForType "Number" tRec allPreds)
     && not (hasPredForType "Bits" tRec allPreds)
     && not (hasPredForType "Number" base allPreds)
     && not (hasPredForType "Bits" base allPreds) ->
-      IsIn cls [base] maybeArea : updateRecordUpdatePreds next
+      if M.null fields && M.null optionalFields then
+        -- No explicit fields - just emit the base pred
+        IsIn cls [base] maybeArea : updateRecordUpdatePreds next
+      else
+        -- Emit both: base pred (for base fields) and closed record pred (for explicit fields)
+        IsIn cls [base] maybeArea
+          : IsIn cls [TRecord fields Nothing optionalFields] maybeArea
+          : updateRecordUpdatePreds next
 
   or : next ->
     or : updateRecordUpdatePreds next

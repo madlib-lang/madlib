@@ -52,10 +52,7 @@
                            [ Typed
                                ([ IsIn
                                     "Number"
-                                    [ TRecord
-                                        (fromList [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
-                                        (Just (TVar (TV 4 Star)))
-                                        (fromList [])
+                                    [ TRecord (fromList []) (Just (TVar (TV 4 Star))) (fromList [])
                                     ]
                                     Nothing
                                 ] :=>
@@ -69,38 +66,26 @@
                                       ([ IsIn
                                            "Number"
                                            [ TRecord
-                                               (fromList
-                                                  [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
-                                               (Just (TVar (TV 4 Star)))
-                                               (fromList [])
+                                               (fromList []) (Just (TVar (TV 4 Star))) (fromList [])
                                            ]
                                            Nothing
                                        ] :=>
                                          TRecord
-                                           (fromList
-                                              [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
-                                           (Just (TVar (TV 4 Star)))
-                                           (fromList []))
+                                           (fromList []) (Just (TVar (TV 4 Star))) (fromList []))
                                       (Area (Loc 17 1 18) (Loc 21 1 22))
                                       (FieldSpread
                                          (Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TRecord
-                                                     (fromList
-                                                        [ ( "x"
-                                                          , TCon (TC "Integer" Star) "prelude"
-                                                          )
-                                                        ])
+                                                     (fromList [])
                                                      (Just (TVar (TV 4 Star)))
                                                      (fromList [])
                                                  ]
                                                  Nothing
                                              ] :=>
                                                TRecord
-                                                 (fromList
-                                                    [ ( "x" , TCon (TC "Integer" Star) "prelude" )
-                                                    ])
+                                                 (fromList [])
                                                  (Just (TVar (TV 4 Star)))
                                                  (fromList []))
                                             (Area (Loc 20 1 21) (Loc 21 1 22))
@@ -772,11 +757,7 @@
          ( TV (-1) Star
          , [ IsIn
                "Number"
-               [ TRecord
-                   (fromList [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
-                   (Just (TVar (TV 4 Star)))
-                   (fromList [])
-               ]
+               [ TRecord (fromList []) (Just (TVar (TV 4 Star))) (fromList []) ]
                Nothing
            ]
          ))

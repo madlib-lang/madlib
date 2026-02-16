@@ -341,9 +341,7 @@
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList [ ( "p" , TVar (TV 19 Star) ) ])
-                                          (Just (TVar (TV 22 Star)))
-                                          (fromList [])))
+                                          (fromList []) (Just (TVar (TV 22 Star))) (fromList [])))
                                     (TRecord
                                        (fromList [ ( "p" , TVar (TV 19 Star) ) ])
                                        (Just (TVar (TV 22 Star)))
@@ -358,7 +356,7 @@
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [ ( "p" , TVar (TV 19 Star) ) ])
+                                                (fromList [])
                                                 (Just (TVar (TV 22 Star)))
                                                 (fromList [])))
                                           (TRecord
@@ -370,7 +368,7 @@
                                         (Typed
                                            ([ IsIn "Number" [ TVar (TV 19 Star) ] Nothing ] :=>
                                               TRecord
-                                                (fromList [ ( "p" , TVar (TV 19 Star) ) ])
+                                                (fromList [])
                                                 (Just (TVar (TV 22 Star)))
                                                 (fromList []))
                                            (Area (Loc 224 19 10) (Loc 225 19 11))
@@ -386,7 +384,7 @@
                                                [ Typed
                                                    ([] :=>
                                                       TRecord
-                                                        (fromList [ ( "p" , TVar (TV 19 Star) ) ])
+                                                        (fromList [])
                                                         (Just (TVar (TV 22 Star)))
                                                         (fromList []))
                                                    (Area (Loc 233 19 19) (Loc 237 19 23))
@@ -394,8 +392,7 @@
                                                       (Typed
                                                          ([] :=>
                                                             TRecord
-                                                              (fromList
-                                                                 [ ( "p" , TVar (TV 19 Star) ) ])
+                                                              (fromList [])
                                                               (Just (TVar (TV 22 Star)))
                                                               (fromList []))
                                                          (Area (Loc 236 19 22) (Loc 237 19 23))
@@ -425,9 +422,7 @@
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList [ ( "p" , TVar (TV 25 Star) ) ])
-                                          (Just (TVar (TV 28 Star)))
-                                          (fromList [])))
+                                          (fromList []) (Just (TVar (TV 28 Star))) (fromList [])))
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -446,7 +441,7 @@
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [ ( "p" , TVar (TV 25 Star) ) ])
+                                                (fromList [])
                                                 (Just (TVar (TV 28 Star)))
                                                 (fromList [])))
                                           (TApp
@@ -464,7 +459,7 @@
                                         (Typed
                                            ([] :=>
                                               TRecord
-                                                (fromList [ ( "p" , TVar (TV 25 Star) ) ])
+                                                (fromList [])
                                                 (Just (TVar (TV 28 Star)))
                                                 (fromList []))
                                            (Area (Loc 259 21 10) (Loc 260 21 11))
@@ -498,8 +493,7 @@
                                                       [ Typed
                                                           ([] :=>
                                                              TRecord
-                                                               (fromList
-                                                                  [ ( "p" , TVar (TV 25 Star) ) ])
+                                                               (fromList [])
                                                                (Just (TVar (TV 28 Star)))
                                                                (fromList []))
                                                           (Area (Loc 271 21 22) (Loc 275 21 26))
@@ -507,11 +501,7 @@
                                                              (Typed
                                                                 ([] :=>
                                                                    TRecord
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 25 Star)
-                                                                          )
-                                                                        ])
+                                                                     (fromList [])
                                                                      (Just (TVar (TV 28 Star)))
                                                                      (fromList []))
                                                                 (Area
@@ -1066,10 +1056,7 @@
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                           (TRecord
-                                             (fromList
-                                                [ ( "b" , TCon (TC "Char" Star) "prelude" )
-                                                , ( "c" , TVar (TV 51 Star) )
-                                                ])
+                                             (fromList [])
                                              (Just (TVar (TV 61 Star)))
                                              (fromList [])))
                                        (TRecord
@@ -1103,10 +1090,7 @@
                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                    "prelude")
                                                 (TRecord
-                                                   (fromList
-                                                      [ ( "b" , TCon (TC "Char" Star) "prelude" )
-                                                      , ( "c" , TVar (TV 51 Star) )
-                                                      ])
+                                                   (fromList [])
                                                    (Just (TVar (TV 61 Star)))
                                                    (fromList [])))
                                              (TRecord
@@ -1144,12 +1128,7 @@
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TRecord
-                                                       (fromList
-                                                          [ ( "b"
-                                                            , TCon (TC "Char" Star) "prelude"
-                                                            )
-                                                          , ( "c" , TVar (TV 51 Star) )
-                                                          ])
+                                                       (fromList [])
                                                        (Just (TVar (TV 61 Star)))
                                                        (fromList [])))
                                                  (TRecord
@@ -1169,12 +1148,7 @@
                                                    , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                                    ] :=>
                                                      TRecord
-                                                       (fromList
-                                                          [ ( "b"
-                                                            , TCon (TC "Char" Star) "prelude"
-                                                            )
-                                                          , ( "c" , TVar (TV 51 Star) )
-                                                          ])
+                                                       (fromList [])
                                                        (Just (TVar (TV 61 Star)))
                                                        (fromList []))
                                                   (Area (Loc 404 27 13) (Loc 405 27 14))
@@ -1201,13 +1175,7 @@
                                                       [ Typed
                                                           ([] :=>
                                                              TRecord
-                                                               (fromList
-                                                                  [ ( "b"
-                                                                    , TCon
-                                                                        (TC "Char" Star) "prelude"
-                                                                    )
-                                                                  , ( "c" , TVar (TV 51 Star) )
-                                                                  ])
+                                                               (fromList [])
                                                                (Just (TVar (TV 61 Star)))
                                                                (fromList []))
                                                           (Area (Loc 417 28 5) (Loc 421 28 9))
@@ -1215,16 +1183,7 @@
                                                              (Typed
                                                                 ([] :=>
                                                                    TRecord
-                                                                     (fromList
-                                                                        [ ( "b"
-                                                                          , TCon
-                                                                              (TC "Char" Star)
-                                                                              "prelude"
-                                                                          )
-                                                                        , ( "c"
-                                                                          , TVar (TV 51 Star)
-                                                                          )
-                                                                        ])
+                                                                     (fromList [])
                                                                      (Just (TVar (TV 61 Star)))
                                                                      (fromList []))
                                                                 (Area (Loc 420 28 8) (Loc 421 28 9))
