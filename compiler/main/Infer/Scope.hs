@@ -501,7 +501,10 @@ buildPatternScope :: Pattern -> S.Set String
 buildPatternScope (Typed _ _ pat) = case pat of
   PVar name             -> S.singleton name
   PCon _ pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
-  PRecord fieldPatterns -> foldr S.union S.empty $ buildPatternScope <$> M.elems fieldPatterns
+  PRecord fieldPatterns restName -> 
+    let fieldScope = foldr S.union S.empty $ buildPatternScope <$> M.elems fieldPatterns
+        restScope = maybe S.empty S.singleton restName
+    in S.union fieldScope restScope
   PList   pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PTuple  pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PSpread pat           -> buildPatternScope pat

@@ -619,8 +619,9 @@ instance Compilable Exp where
                     then " && " <> args
                     else ""
 
-            PRecord m ->
-              intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
+            PRecord m restName ->
+              let fieldChecks = intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
+              in fieldChecks
 
             PSpread pat ->
               compilePattern scope pat
@@ -644,11 +645,12 @@ instance Compilable Exp where
           buildVars :: String -> Pattern -> String
           buildVars _ Untyped{} = undefined
           buildVars v (Typed _ _ _ pat) = case pat of
-            PRecord fields ->
-              "    let { "
-                <> intercalate
-                     ", "
-                     (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
+            PRecord fields restName ->
+              let fieldVars = filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields
+                  restVar = maybe [] (\name -> ["..." <> generateSafeName name]) restName
+                  allVars = fieldVars <> restVar
+              in "    let { "
+                <> intercalate ", " allVars
                 <> " } = "
                 <> v
                 <> ";\n"
@@ -680,12 +682,12 @@ instance Compilable Exp where
               else
                 name <> ": " <> generateSafeName n
 
-            PRecord fields ->
-              name
+            PRecord fields restName ->
+              let fieldVars = filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields
+                  restVar = maybe [] (\n -> ["..." <> generateSafeName n]) restName
+              in name
                 <> ": { "
-                <> intercalate
-                     ", "
-                     (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
+                <> intercalate ", " (fieldVars <> restVar)
                 <> " }"
 
             PCon _ args -> if null name
@@ -752,8 +754,10 @@ instance Compilable Exp where
             PTuple pats ->
               "[" <> intercalate ", " (buildListItemVar <$> pats) <> "]"
 
-            PRecord fields ->
-              "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
+            PRecord fields restName ->
+              let fieldVars = M.elems $ M.mapWithKey buildFieldVar fields
+                  restVar = maybe [] (\name -> ["..." <> generateSafeName name]) restName
+              in "{ " <> intercalate ", " (fieldVars <> restVar) <> " }"
 
             _ ->
               ""
@@ -808,7 +812,10 @@ instance Compilable Exp where
             PCon _ args   -> let built = intercalate ", " $ buildTupleItemVar <$> args in "{ __args: [" <> built <> "]}"
             PList   pats   -> packListVars $ buildListItemVar <$> pats
             PTuple  pats   -> "[" <> intercalate ", " (buildTupleItemVar <$> pats) <> "]"
-            PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
+            PRecord fields restName -> 
+              let fieldVars = M.elems $ M.mapWithKey buildFieldVar fields
+                  restVar = maybe [] (\n -> ["..." <> generateSafeName n]) restName
+              in "{ " <> intercalate ", " (fieldVars <> restVar) <> " }"
             _              -> ""
 
           compileRecord :: String -> Name -> Pattern -> String

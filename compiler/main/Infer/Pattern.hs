@@ -102,17 +102,40 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
       _ -> inferPattern env pat
 
-  Can.PRecord pats -> do
-    fields <- mapM (inferFieldPattern env) pats
-    tv <- newTVar Star
+  Can.PRecord pats restName -> do
+    -- Infer types for matched fields
+    fields <- mapM (inferPattern env) (M.elems pats)
+    let fieldNames = M.keys pats
     let ts     = (\(_, _, _, a) -> a) <$> fields
+    let tsMap  = M.fromList $ zip fieldNames ts
     let ps     = foldr (<>) [] ((\(_, a, _, _) -> a) <$> fields)
     let vars   = foldr (<>) M.empty ((\(_, _, a, _) -> a) <$> fields)
     let pats'  = (\(a, _, _, _) -> a) <$> fields
+    let patsMap = M.fromList $ zip fieldNames pats'
 
-    let t = TRecord ts (Just tv) mempty
+    -- Create row variable for extensibility
+    baseRowVar <- newTVar Star
+    
+    -- Pattern type: record with matched fields and a row variable for remaining fields
+    let t = TRecord tsMap (Just baseRowVar) mempty
 
-    return (Slv.Typed ([] :=> t) area (Slv.PRecord pats'), ps, vars, t)
+    -- If there's a rest pattern, bind it to a record type that excludes matched fields
+    (restVars, restPreds) <- case restName of
+      Just restVarName -> do
+        -- Rest type: empty fields map with the same base row variable
+        -- When the pattern unifies with a concrete record, baseRowVar will be unified
+        -- to contain only the unmatched fields (the difference between the concrete
+        -- record and the matched fields). The rest type will then correctly contain
+        -- only those unmatched fields.
+        let restType = TRecord mempty (Just baseRowVar) mempty
+        when (M.member restVarName vars) $
+          throwError $ CompilationError (NameAlreadyDefined restVarName) (Context (envCurrentPath env) area)
+        let restVar = M.singleton restVarName (toScheme restType)
+        return (restVar, [])
+      Nothing ->
+        return (M.empty, [])
+
+    return (Slv.Typed ([] :=> t) area (Slv.PRecord patsMap restName), ps ++ restPreds, vars <> restVars, t)
 
    where
     inferFieldPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
@@ -161,10 +184,10 @@ applyToPattern s maybeVars maybePreds pat = case pat of
         qt' = apply s ((ps ++ ps') :=> t')
     in  Slv.Typed qt' area (Slv.PCon n (applyToPattern s maybeVars maybePreds <$> pats))
 
-  Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
+  Slv.Typed (ps' :=> t') area (Slv.PRecord fields restName) ->
     let ps = maybe [] id maybePreds
         qt' = apply s ((ps ++ ps') :=> t')
-    in  Slv.Typed qt' area (Slv.PRecord (applyToPattern s maybeVars maybePreds <$> fields))
+    in  Slv.Typed qt' area (Slv.PRecord (applyToPattern s maybeVars maybePreds <$> fields) restName)
 
   Slv.Typed (ps' :=> t') area (Slv.PList items) ->
     let ps = maybe [] id maybePreds

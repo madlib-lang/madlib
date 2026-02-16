@@ -672,8 +672,15 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PBool boo -> return $ Can.Canonical area (Can.PBool boo)
 
     Src.PRecord pats -> do
-      pats' <- mapM (canonicalize env target) (extractPatternFields pats)
-      return $ Can.Canonical area (Can.PRecord pats')
+      let (fields, restName) = extractPatternFields pats
+      -- Validate: only one rest pattern allowed
+      when (Maybe.isJust restName && length (filter isPatternFieldRest pats) > 1) $
+        throwError $ CompilationError (RecordDuplicateRestPattern) (Context (Env.envCurrentPath env) area)
+      pats' <- mapM (canonicalize env target) fields
+      restName' <- case restName of
+        Just (Src.Source _ _ name) -> return $ Just name
+        Nothing -> return Nothing
+      return $ Can.Canonical area (Can.PRecord pats' restName')
 
     Src.PList pats -> do
       pats' <- mapM (canonicalize env target) pats
@@ -688,16 +695,26 @@ instance Canonicalizable Src.Pattern Can.Pattern where
       return $ Can.Canonical area (Can.PSpread pat')
 
 
-extractPatternFields :: [Src.PatternField] -> Map.Map Src.Name Src.Pattern
+extractPatternFields :: [Src.PatternField] -> (Map.Map Src.Name Src.Pattern, Maybe (Src.Source Src.Name))
 extractPatternFields pats = case pats of
   (Src.PatternField (Src.Source _ _ fieldName) pat : ps) ->
-    Map.insert fieldName pat (extractPatternFields ps)
+    let (fields, rest) = extractPatternFields ps
+    in (Map.insert fieldName pat fields, rest)
 
   (Src.PatternFieldShorthand (Src.Source area sourceTarget fieldName) : ps) ->
-    Map.insert fieldName (Src.Source area sourceTarget (Src.PVar fieldName)) (extractPatternFields ps)
+    let (fields, rest) = extractPatternFields ps
+    in (Map.insert fieldName (Src.Source area sourceTarget (Src.PVar fieldName)) fields, rest)
+
+  (Src.PatternFieldRest restSource : ps) ->
+    let (fields, _) = extractPatternFields ps
+    in (fields, Just restSource)
 
   [] ->
-    mempty
+    (mempty, Nothing)
+
+isPatternFieldRest :: Src.PatternField -> Bool
+isPatternFieldRest (Src.PatternFieldRest _) = True
+isPatternFieldRest _ = False
 
 
 instance Canonicalizable Src.Import Can.Import where

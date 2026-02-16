@@ -104,7 +104,7 @@ patternToSolved (Can.Canonical area pat) = case pat of
 
   Can.PBool   v       -> Slv.Typed ([] :=> tSubst) area (Slv.PBool v)
 
-  Can.PRecord fields  -> Slv.Typed ([] :=> tSubst) area (Slv.PRecord (M.map patternToSolved fields))
+  Can.PRecord fields restName  -> Slv.Typed ([] :=> tSubst) area (Slv.PRecord (M.map patternToSolved fields) restName)
 
   Can.PList   items   -> Slv.Typed ([] :=> tSubst) area (Slv.PList (patternToSolved <$> items))
 

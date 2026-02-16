@@ -115,7 +115,7 @@ data Pattern_
   | PStr String
   | PChar Char
   | PBool String
-  | PRecord (M.Map Name Pattern)
+  | PRecord (M.Map Name Pattern) (Maybe Name)
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern

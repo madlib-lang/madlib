@@ -72,6 +72,7 @@ data TypeError
   | MethodNameAlreadyDefined
   | NotAConstructor String
   | RecordDuplicateFields [String]
+  | RecordDuplicateRestPattern
   | TestNotValid Type
   | ByteOutOfBounds String
   | ShortOutOfBounds String

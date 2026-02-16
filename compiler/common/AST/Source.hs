@@ -106,6 +106,7 @@ data Is_
 data PatternField
   = PatternField (Source Name) Pattern
   | PatternFieldShorthand (Source Name)
+  | PatternFieldRest (Source Name)
   deriving(Eq, Show, Generic, Hashable)
 
 

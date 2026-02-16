@@ -183,8 +183,8 @@ renameBranches env branches = case branches of
 renameBranch :: Env -> Is -> (Is, Env)
 renameBranch env is = case is of
   Typed t area metadata (Is pat exp) ->
-    let (renamedPattern, _) = renamePattern env pat
-        (renamedExp, env'')    = renameExp env exp
+    let (renamedPattern, env') = renamePattern env pat
+        (renamedExp, env'')    = renameExp env' exp
     in  (Typed t area metadata (Is renamedPattern renamedExp), env'')
 
   _ ->
@@ -220,12 +220,18 @@ renamePattern env pat = case pat of
           (renamedArgs, env') = renamePatterns env args
       in  (Typed qt area metadata (PCon renamed renamedArgs), env')
 
-  Typed t area metadata (PRecord fields) ->
+  Typed t area metadata (PRecord fields restName) ->
     let fieldsAsList = Map.toList fields
         fieldNames = fst <$> fieldsAsList
         fieldPats = snd <$> fieldsAsList
         (renamedPats, env') = renamePatterns env fieldPats
-    in  (Typed t area metadata (PRecord (Map.fromList (zip fieldNames renamedPats))), env')
+        (restName', env'') = case restName of
+          Just n -> 
+            let hashedName = hashName env' n
+                env'' = extendScope n hashedName env'
+            in (Just hashedName, env'')
+          Nothing -> (Nothing, env')
+    in  (Typed t area metadata (PRecord (Map.fromList (zip fieldNames renamedPats)) restName'), env'')
 
   Typed t area metadata (PList items) ->
     let (renamedItems, env') = renamePatterns env items

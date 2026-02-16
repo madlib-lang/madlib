@@ -71,7 +71,7 @@ simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
   Slv.PVar _ ->
     return Anything
 
-  Slv.PRecord fields -> do
+  Slv.PRecord fields restName -> do
     fields' <- mapM (simplify ast env) fields
     let allFields = case t of
           TRecord fieldTypes _ _ ->

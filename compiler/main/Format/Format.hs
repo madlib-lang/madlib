@@ -297,6 +297,9 @@ patternFieldToDoc field = case field of
   PatternFieldShorthand (Source _ _ n) ->
     Pretty.pretty n
 
+  PatternFieldRest (Source _ _ n) ->
+    Pretty.pretty "..." <> Pretty.pretty n
+
 
 patternToDoc :: Pattern -> Pretty.Doc ann
 patternToDoc (Source _ _ pat) = case pat of

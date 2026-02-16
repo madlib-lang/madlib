@@ -745,9 +745,9 @@ monomorphizePattern target env pat = case pat of
 
       return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PCon n args')
 
-  Typed qt area (PRecord fields) -> do
+  Typed qt area (PRecord fields restName) -> do
     fields' <- mapM (monomorphizePattern target env) fields
-    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PRecord fields')
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PRecord fields' restName)
 
   Typed qt area (PList items) -> do
     items' <- mapM (monomorphizePattern target env) items
@@ -775,7 +775,7 @@ varsInPattern pat = case pat of
   Typed _ _ (PCon _ args) -> do
     foldr (<>) Set.empty (map varsInPattern args)
 
-  Typed _ _ (PRecord fields) -> do
+  Typed _ _ (PRecord fields _) -> do
     foldr (<>) Set.empty (map varsInPattern (Map.elems fields))
 
   Typed _ _ (PList items) -> do

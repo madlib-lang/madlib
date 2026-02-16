@@ -348,9 +348,9 @@ instance Processable Slv.Pattern Core.Pattern where
 
     Slv.PBool   boo  -> return $ Core.Typed qt area [] $ Core.PBool boo
 
-    Slv.PRecord pats -> do
+    Slv.PRecord pats restName -> do
       pats' <- mapM (toCore enabled) pats
-      return $ Core.Typed qt area [] $ Core.PRecord pats'
+      return $ Core.Typed qt area [] $ Core.PRecord pats' restName
 
     Slv.PList pats -> do
       pats' <- mapM (toCore enabled) pats

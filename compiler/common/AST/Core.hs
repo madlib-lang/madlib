@@ -126,7 +126,7 @@ data Pattern_
   | PStr String
   | PChar Char
   | PBool String
-  | PRecord (M.Map Name Pattern)
+  | PRecord (M.Map Name Pattern) (Maybe Name)
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
@@ -407,7 +407,7 @@ getPatternVars (Typed _ _ _ pat) = case pat of
   PCon _ pats ->
     concatMap getPatternVars pats
 
-  PRecord fields ->
+  PRecord fields _ ->
     concatMap getPatternVars $ M.elems fields
 
   PList pats ->
@@ -430,7 +430,7 @@ getPatternConstructorNames (Typed _ _ _ pat) = case pat of
   PCon n pats ->
     n : concatMap getPatternConstructorNames pats
 
-  PRecord fields ->
+  PRecord fields _ ->
     concatMap getPatternConstructorNames $ M.elems fields
 
   PList pats ->

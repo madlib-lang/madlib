@@ -147,8 +147,8 @@ updatePattern qt (Can.Canonical area pat) = case pat of
   Can.PBool   n             ->
     Slv.Typed ([] :=> tBool) area $ Slv.PBool n
 
-  Can.PRecord fieldPatterns ->
-    Slv.Typed qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
+  Can.PRecord fieldPatterns restName ->
+    Slv.Typed qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns) restName
 
   Can.PList   patterns      ->
     Slv.Typed qt area $ Slv.PList (updatePattern qt <$> patterns)

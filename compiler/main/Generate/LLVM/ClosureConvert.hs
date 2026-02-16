@@ -774,9 +774,9 @@ instance Convertable Pattern Pattern where
     PBool bool ->
       return $ Typed qt area metadata $ PBool bool
 
-    PRecord pats -> do
+    PRecord pats restName -> do
       pats' <- mapM (convert env) pats
-      return $ Typed qt area metadata $ PRecord pats'
+      return $ Typed qt area metadata $ PRecord pats' restName
 
     PList pats -> do
       pats' <- mapM (convert env) pats

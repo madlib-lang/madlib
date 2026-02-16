@@ -551,6 +551,8 @@ recordFieldPatterns :: { [Src.PatternField] }
   | name                                     { [Src.PatternFieldShorthand (Src.Source (tokenArea $1) (tokenTarget $1) (strV $1))] }
   | recordFieldPatterns ',' name ':' pattern { $1 <> [Src.PatternField (Src.Source (tokenArea $3) (tokenTarget $3) (strV $3)) $5] }
   | recordFieldPatterns ',' name             { $1 <> [Src.PatternFieldShorthand (Src.Source (tokenArea $3) (tokenTarget $3) (strV $3))] }
+  | recordFieldPatterns ',' '...' name       { $1 <> [Src.PatternFieldRest (Src.Source (tokenArea $4) (tokenTarget $4) (strV $4))] }
+  | '...' name                               { [Src.PatternFieldRest (Src.Source (tokenArea $2) (tokenTarget $2) (strV $2))] }
 
 listPattern :: { Src.Pattern }
   : '[' listItemPatterns maybeComma ']' { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.PList $2) }

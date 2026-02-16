@@ -324,7 +324,7 @@ findNodeAtLocInPattern loc input@(Slv.Typed _ area pat) =
             Slv.PTuple pats ->
               foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
 
-            Slv.PRecord pats ->
+            Slv.PRecord pats _ ->
               foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
 
             Slv.PSpread pat ->

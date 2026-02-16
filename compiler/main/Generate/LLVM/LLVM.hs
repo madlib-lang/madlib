@@ -2074,9 +2074,44 @@ generateSymbolTableForPattern env symbolTable baseExp pat = case pat of
     let patsWithIds = List.zip pats [1..]
     Monad.foldM (generateSymbolTableForIndexedData env constructor') symbolTable patsWithIds
 
-  Core.Typed _ _ _ (Core.PRecord fieldPatterns) -> do
+  Core.Typed qt _ _ (Core.PRecord fieldPatterns restName) -> do
     subPatterns <- mapM (getFieldPattern env symbolTable baseExp) $ Map.toList fieldPatterns
-    Monad.foldM (\previousTable (field, pat) -> generateSymbolTableForPattern env previousTable field pat) symbolTable subPatterns
+    symbolTable' <- Monad.foldM (\previousTable (field, pat) -> generateSymbolTableForPattern env previousTable field pat) symbolTable subPatterns
+    
+    -- Handle rest pattern: create a record with all fields except the matched ones
+    case restName of
+      Just restVarName -> do
+        let recordType = Core.getType pat
+        case recordType of
+          IT.TRecord allFields _ _ -> do
+            let matchedFieldNames = Map.keys fieldPatterns
+            let restFieldNames = List.filter (`List.notElem` matchedFieldNames) (Map.keys allFields)
+            
+            -- Build a new record with only the rest fields
+            restFields <- mapM (\fieldName -> do
+                let area = Core.getArea pat
+                nameOperand <- buildStr env area fieldName
+                fieldValue <- callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (baseExp, [])]
+                
+                let fieldType = Type.StructureType False [stringType, boxType]
+                fieldPtr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
+                fieldPtr' <- safeBitcast fieldPtr (Type.ptr fieldType)
+                Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (fieldValue, 1)]
+                return fieldPtr'
+              ) restFieldNames
+            
+            let fieldCount = i32ConstOp (fromIntegral $ List.length restFields)
+            let base = Operand.ConstantOperand (Constant.Null boxType)
+            restRecord <- callWithMetadata (makeDILocation env (Core.getArea pat)) buildRecord $ [(fieldCount, []), (base, [])] ++ ((,[]) <$> restFields)
+            return $ Map.insert restVarName (varSymbol restRecord) symbolTable'
+          
+          _ ->
+            -- If not a concrete record type, just bind to the original record
+            -- The type system ensures this is correct
+            return $ Map.insert restVarName (varSymbol baseExp) symbolTable'
+      
+      Nothing ->
+        return symbolTable'
 
   _ ->
     undefined
@@ -2234,9 +2269,10 @@ generateBranchTest env symbolTable pat value = case pat of
         _ ->
           False
 
-  Core.Typed _ _ _ (Core.PRecord fieldPatterns) -> do
+  Core.Typed _ _ _ (Core.PRecord fieldPatterns restName) -> do
     subPatterns <- mapM (getFieldPattern env symbolTable value) $ Map.toList fieldPatterns
     subTests    <- mapM (uncurry (generateBranchTest env symbolTable) . Tuple.swap) subPatterns
+    -- Rest pattern doesn't need a test - it's always present if matched fields are present
     Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
 
   Core.Typed _ _ _ (Core.PCon name pats) -> mdo
