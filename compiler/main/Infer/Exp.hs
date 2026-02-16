@@ -557,21 +557,18 @@ inferRecord discardError options env exp = do
 
     Just tBase -> do
       -- The spread is a type variable or other type - unify it with a record type
-      -- that has a row variable for extension (but NOT the explicit fields, since
-      -- those are being added by this record literal, not required to exist in the spread)
+      -- that has our fields and a row variable for extension
       baseVar <- newTVar Star
-      let recordWithBase = TRecord mempty (Just baseVar) mempty
+      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
       s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
       -- After unification, tBase should be resolved to a record type
-      -- The result type should have both the spread's fields AND the explicit fields
+      -- Return the unified type with the row variable preserved
       let unifiedBase = apply s tBase
       case unifiedBase of
         TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          -- Merge the spread's fields with our explicit fields (explicit fields take precedence)
-          let mergedFields = M.fromList fieldTypes' `M.union` unifiedFields
-          in return (TRecord mergedFields unifiedBase' unifiedOptionalFields, s)
+          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
         _ ->
-          -- Fallback: use just the explicit fields with the row variable
+          -- Fallback: use the record we created with the row variable
           return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
 
     Nothing ->
@@ -1126,7 +1123,22 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
       fs = ftv (apply s' envWithVarsExcluded)
       gs = ftv (apply s' t') \\ fs
       scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
-  if sc /= scCheck then
+  sigCheckResult <- if sc /= scCheck then
+    -- The inferred scheme differs from the declared scheme.
+    -- Before reporting an error, check if the declared type subsumes the inferred type.
+    -- This handles cases like record spreads where the inference over-constrains
+    -- the input type (e.g., { ...input, time: now() } makes input :: { time: ..., ...r }
+    -- but the declared type correctly says input :: { ...r }).
+    catchError (do
+      (ps1 :=> t1) <- instantiate sc
+      (ps2 :=> t2) <- instantiate scCheck
+      _ <- unify t1 t2
+      return True
+    ) (const $ return False)
+  else
+    return True
+
+  if not sigCheckResult then
     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
   else if not (null rs) then
     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
