@@ -341,7 +341,9 @@
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList []) (Just (TVar (TV 22 Star))) (fromList [])))
+                                          (fromList [ ( "p" , TVar (TV 19 Star) ) ])
+                                          (Just (TVar (TV 22 Star)))
+                                          (fromList [])))
                                     (TRecord
                                        (fromList [ ( "p" , TVar (TV 19 Star) ) ])
                                        (Just (TVar (TV 22 Star)))
@@ -356,7 +358,7 @@
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [])
+                                                (fromList [ ( "p" , TVar (TV 19 Star) ) ])
                                                 (Just (TVar (TV 22 Star)))
                                                 (fromList [])))
                                           (TRecord
@@ -368,7 +370,7 @@
                                         (Typed
                                            ([ IsIn "Number" [ TVar (TV 19 Star) ] Nothing ] :=>
                                               TRecord
-                                                (fromList [])
+                                                (fromList [ ( "p" , TVar (TV 19 Star) ) ])
                                                 (Just (TVar (TV 22 Star)))
                                                 (fromList []))
                                            (Area (Loc 224 19 10) (Loc 225 19 11))
@@ -384,7 +386,7 @@
                                                [ Typed
                                                    ([] :=>
                                                       TRecord
-                                                        (fromList [])
+                                                        (fromList [ ( "p" , TVar (TV 19 Star) ) ])
                                                         (Just (TVar (TV 22 Star)))
                                                         (fromList []))
                                                    (Area (Loc 233 19 19) (Loc 237 19 23))
@@ -392,7 +394,8 @@
                                                       (Typed
                                                          ([] :=>
                                                             TRecord
-                                                              (fromList [])
+                                                              (fromList
+                                                                 [ ( "p" , TVar (TV 19 Star) ) ])
                                                               (Just (TVar (TV 22 Star)))
                                                               (fromList []))
                                                          (Area (Loc 236 19 22) (Loc 237 19 23))
@@ -422,7 +425,9 @@
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TRecord
-                                          (fromList []) (Just (TVar (TV 28 Star))) (fromList [])))
+                                          (fromList [ ( "p" , TVar (TV 25 Star) ) ])
+                                          (Just (TVar (TV 28 Star)))
+                                          (fromList [])))
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -441,7 +446,7 @@
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [])
+                                                (fromList [ ( "p" , TVar (TV 25 Star) ) ])
                                                 (Just (TVar (TV 28 Star)))
                                                 (fromList [])))
                                           (TApp
@@ -459,7 +464,7 @@
                                         (Typed
                                            ([] :=>
                                               TRecord
-                                                (fromList [])
+                                                (fromList [ ( "p" , TVar (TV 25 Star) ) ])
                                                 (Just (TVar (TV 28 Star)))
                                                 (fromList []))
                                            (Area (Loc 259 21 10) (Loc 260 21 11))
@@ -493,7 +498,8 @@
                                                       [ Typed
                                                           ([] :=>
                                                              TRecord
-                                                               (fromList [])
+                                                               (fromList
+                                                                  [ ( "p" , TVar (TV 25 Star) ) ])
                                                                (Just (TVar (TV 28 Star)))
                                                                (fromList []))
                                                           (Area (Loc 271 21 22) (Loc 275 21 26))
@@ -501,7 +507,11 @@
                                                              (Typed
                                                                 ([] :=>
                                                                    TRecord
-                                                                     (fromList [])
+                                                                     (fromList
+                                                                        [ ( "p"
+                                                                          , TVar (TV 25 Star)
+                                                                          )
+                                                                        ])
                                                                      (Just (TVar (TV 28 Star)))
                                                                      (fromList []))
                                                                 (Area
@@ -1056,7 +1066,10 @@
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                           (TRecord
-                                             (fromList [])
+                                             (fromList
+                                                [ ( "b" , TCon (TC "Char" Star) "prelude" )
+                                                , ( "c" , TVar (TV 51 Star) )
+                                                ])
                                              (Just (TVar (TV 61 Star)))
                                              (fromList [])))
                                        (TRecord
@@ -1090,7 +1103,10 @@
                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                    "prelude")
                                                 (TRecord
-                                                   (fromList [])
+                                                   (fromList
+                                                      [ ( "b" , TCon (TC "Char" Star) "prelude" )
+                                                      , ( "c" , TVar (TV 51 Star) )
+                                                      ])
                                                    (Just (TVar (TV 61 Star)))
                                                    (fromList [])))
                                              (TRecord
@@ -1128,7 +1144,12 @@
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TRecord
-                                                       (fromList [])
+                                                       (fromList
+                                                          [ ( "b"
+                                                            , TCon (TC "Char" Star) "prelude"
+                                                            )
+                                                          , ( "c" , TVar (TV 51 Star) )
+                                                          ])
                                                        (Just (TVar (TV 61 Star)))
                                                        (fromList [])))
                                                  (TRecord
@@ -1148,7 +1169,12 @@
                                                    , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                                    ] :=>
                                                      TRecord
-                                                       (fromList [])
+                                                       (fromList
+                                                          [ ( "b"
+                                                            , TCon (TC "Char" Star) "prelude"
+                                                            )
+                                                          , ( "c" , TVar (TV 51 Star) )
+                                                          ])
                                                        (Just (TVar (TV 61 Star)))
                                                        (fromList []))
                                                   (Area (Loc 404 27 13) (Loc 405 27 14))
@@ -1175,7 +1201,13 @@
                                                       [ Typed
                                                           ([] :=>
                                                              TRecord
-                                                               (fromList [])
+                                                               (fromList
+                                                                  [ ( "b"
+                                                                    , TCon
+                                                                        (TC "Char" Star) "prelude"
+                                                                    )
+                                                                  , ( "c" , TVar (TV 51 Star) )
+                                                                  ])
                                                                (Just (TVar (TV 61 Star)))
                                                                (fromList []))
                                                           (Area (Loc 417 28 5) (Loc 421 28 9))
@@ -1183,7 +1215,16 @@
                                                              (Typed
                                                                 ([] :=>
                                                                    TRecord
-                                                                     (fromList [])
+                                                                     (fromList
+                                                                        [ ( "b"
+                                                                          , TCon
+                                                                              (TC "Char" Star)
+                                                                              "prelude"
+                                                                          )
+                                                                        , ( "c"
+                                                                          , TVar (TV 51 Star)
+                                                                          )
+                                                                        ])
                                                                      (Just (TVar (TV 61 Star)))
                                                                      (fromList []))
                                                                 (Area (Loc 420 28 8) (Loc 421 28 9))
@@ -1474,10 +1515,7 @@
                                         , ( "c" , TVar (TV 190 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "b" , TVar (TV 178 Star) )
-                                        , ( "c" , TVar (TV 190 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -1487,10 +1525,7 @@
                                            , ( "c" , TVar (TV 190 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "b" , TVar (TV 178 Star) )
-                                           , ( "c" , TVar (TV 190 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -1538,10 +1573,7 @@
                                               , ( "c" , TVar (TV 190 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "b" , TVar (TV 178 Star) )
-                                              , ( "c" , TVar (TV 190 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -1565,10 +1597,7 @@
                                                      , ( "c" , TVar (TV 190 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "b" , TVar (TV 178 Star) )
-                                                     , ( "c" , TVar (TV 190 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -1588,10 +1617,7 @@
                                                      , ( "c" , TVar (TV 190 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "b" , TVar (TV 178 Star) )
-                                                     , ( "c" , TVar (TV 190 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -1751,20 +1777,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "b"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "c"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             190
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1799,19 +1812,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "b"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "c"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   190
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 178 Star)))
                                                                             (Area
@@ -1842,14 +1843,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "b"
-                                                                                , TVar (TV 178 Star)
-                                                                                )
-                                                                              , ( "c"
-                                                                                , TVar (TV 190 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -1881,20 +1875,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "b"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "c"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             190
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 178 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".b" False))))
@@ -2084,19 +2065,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "b"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "c"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   190
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -2133,19 +2102,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "b"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         178
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "c"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         190
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              190
@@ -2186,20 +2143,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "b"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "c"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             190
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2234,19 +2178,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "b"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "c"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   190
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 190 Star)))
                                                                             (Area
@@ -2314,14 +2246,14 @@
                                   (TRecord
                                      (fromList [ ( "p" , TVar (TV 207 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "p" , TVar (TV 207 Star) ) ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList [ ( "p" , TVar (TV 207 Star) ) ])
                                         Nothing
-                                        (fromList [ ( "p" , TVar (TV 207 Star) ) ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -2354,7 +2286,7 @@
                                          TRecord
                                            (fromList [ ( "p" , TVar (TV 207 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "p" , TVar (TV 207 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -2371,7 +2303,7 @@
                                                (TRecord
                                                   (fromList [ ( "p" , TVar (TV 207 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "p" , TVar (TV 207 Star) ) ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -2384,7 +2316,7 @@
                                                 TRecord
                                                   (fromList [ ( "p" , TVar (TV 207 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "p" , TVar (TV 207 Star) ) ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -2534,14 +2466,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             207
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2570,13 +2495,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   207
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 207 Star)))
                                                                             (Area
@@ -2604,11 +2523,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 207 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -2634,14 +2549,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             207
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 207 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".p" False))))
@@ -2709,11 +2617,7 @@
                                         , ( "z" , TVar (TV 247 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "p" , TVar (TV 222 Star) )
-                                        , ( "y" , TVar (TV 234 Star) )
-                                        , ( "z" , TVar (TV 247 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -2724,11 +2628,7 @@
                                            , ( "z" , TVar (TV 247 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "p" , TVar (TV 222 Star) )
-                                           , ( "y" , TVar (TV 234 Star) )
-                                           , ( "z" , TVar (TV 247 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -2784,11 +2684,7 @@
                                               , ( "z" , TVar (TV 247 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "p" , TVar (TV 222 Star) )
-                                              , ( "y" , TVar (TV 234 Star) )
-                                              , ( "z" , TVar (TV 247 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -2817,11 +2713,7 @@
                                                      , ( "z" , TVar (TV 247 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "p" , TVar (TV 222 Star) )
-                                                     , ( "y" , TVar (TV 234 Star) )
-                                                     , ( "z" , TVar (TV 247 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -2846,11 +2738,7 @@
                                                      , ( "z" , TVar (TV 247 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "p" , TVar (TV 222 Star) )
-                                                     , ( "y" , TVar (TV 234 Star) )
-                                                     , ( "z" , TVar (TV 247 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -3020,26 +2908,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "y"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             234
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             247
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3080,25 +2949,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "y"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   234
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   247
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 222 Star)))
                                                                             (Area
@@ -3132,17 +2983,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 222 Star)
-                                                                                )
-                                                                              , ( "y"
-                                                                                , TVar (TV 234 Star)
-                                                                                )
-                                                                              , ( "z"
-                                                                                , TVar (TV 247 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -3180,26 +3021,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "y"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             234
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             247
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 222 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".p" False))))
@@ -3399,25 +3221,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "y"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   234
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   247
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -3460,25 +3264,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "p"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "y"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         234
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "z"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         247
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              234
@@ -3525,26 +3311,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "y"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             234
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             247
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3585,25 +3352,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "y"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   234
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   247
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 234 Star)))
                                                                             (Area
@@ -3836,25 +3585,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "p"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "y"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         234
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "z"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         247
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -3901,25 +3632,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "p"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               222
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "y"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               234
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "z"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               247
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    247
@@ -3976,25 +3689,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "y"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   234
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   247
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -4037,25 +3732,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "p"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "y"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         234
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "z"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         247
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              247
@@ -4144,10 +3821,7 @@
                                         , ( "c" , TVar (TV 269 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "b" , TVar (TV 261 Star) )
-                                        , ( "c" , TVar (TV 269 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -4201,10 +3875,7 @@
                                               , ( "c" , TVar (TV 269 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "b" , TVar (TV 261 Star) )
-                                              , ( "c" , TVar (TV 269 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -4357,14 +4028,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "b"
-                                                                          , TVar (TV 261 Star)
-                                                                          )
-                                                                        , ( "c"
-                                                                          , TVar (TV 269 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -4538,14 +4202,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "b"
-                                                                          , TVar (TV 261 Star)
-                                                                          )
-                                                                        , ( "c"
-                                                                          , TVar (TV 269 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -4569,14 +4226,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "b"
-                                                                                , TVar (TV 261 Star)
-                                                                                )
-                                                                              , ( "c"
-                                                                                , TVar (TV 269 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 269 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".c" False))))
@@ -4627,7 +4277,7 @@
                                   (TRecord
                                      (fromList [ ( "p" , TVar (TV 281 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "p" , TVar (TV 281 Star) ) ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -4661,7 +4311,7 @@
                                          TRecord
                                            (fromList [ ( "p" , TVar (TV 281 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "p" , TVar (TV 281 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -4811,11 +4461,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 281 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -4836,11 +4482,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 281 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 281 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".p" False))))
@@ -4897,11 +4539,7 @@
                                         , ( "z" , TVar (TV 308 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "p" , TVar (TV 292 Star) )
-                                        , ( "y" , TVar (TV 300 Star) )
-                                        , ( "z" , TVar (TV 308 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -4970,11 +4608,7 @@
                                               , ( "z" , TVar (TV 308 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "p" , TVar (TV 292 Star) )
-                                              , ( "y" , TVar (TV 300 Star) )
-                                              , ( "z" , TVar (TV 308 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -5130,17 +4764,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 292 Star)
-                                                                          )
-                                                                        , ( "y"
-                                                                          , TVar (TV 300 Star)
-                                                                          )
-                                                                        , ( "z"
-                                                                          , TVar (TV 308 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -5317,17 +4941,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 292 Star)
-                                                                          )
-                                                                        , ( "y"
-                                                                          , TVar (TV 300 Star)
-                                                                          )
-                                                                        , ( "z"
-                                                                          , TVar (TV 308 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -5504,17 +5118,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 292 Star)
-                                                                          )
-                                                                        , ( "y"
-                                                                          , TVar (TV 300 Star)
-                                                                          )
-                                                                        , ( "z"
-                                                                          , TVar (TV 308 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -5541,17 +5145,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 292 Star)
-                                                                                )
-                                                                              , ( "y"
-                                                                                , TVar (TV 300 Star)
-                                                                                )
-                                                                              , ( "z"
-                                                                                , TVar (TV 308 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 308 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".z" False))))
@@ -5612,10 +5206,7 @@
                                         , ( "z" , TVar (TV 85 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "p" , TVar (TV 73 Star) )
-                                        , ( "z" , TVar (TV 85 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -5625,10 +5216,7 @@
                                            , ( "z" , TVar (TV 85 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "p" , TVar (TV 73 Star) )
-                                           , ( "z" , TVar (TV 85 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -5676,10 +5264,7 @@
                                               , ( "z" , TVar (TV 85 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "p" , TVar (TV 73 Star) )
-                                              , ( "z" , TVar (TV 85 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -5703,10 +5288,7 @@
                                                      , ( "z" , TVar (TV 85 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "p" , TVar (TV 73 Star) )
-                                                     , ( "z" , TVar (TV 85 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -5726,10 +5308,7 @@
                                                      , ( "z" , TVar (TV 85 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "p" , TVar (TV 73 Star) )
-                                                     , ( "z" , TVar (TV 85 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -5889,20 +5468,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             73
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             85
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -5937,19 +5503,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   73
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   85
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 73 Star)))
                                                                             (Area
@@ -5980,14 +5534,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 73 Star)
-                                                                                )
-                                                                              , ( "z"
-                                                                                , TVar (TV 85 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -6019,20 +5566,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             73
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             85
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 73 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".p" False))))
@@ -6219,19 +5753,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   73
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   85
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -6268,19 +5790,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "p"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         73
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "z"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         85
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              85
@@ -6321,20 +5831,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             73
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "z"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             85
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -6369,19 +5866,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   73
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "z"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   85
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 85 Star)))
                                                                             (Area
@@ -6457,10 +5942,7 @@
                                         , ( "p" , TVar (TV 114 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "g" , TVar (TV 102 Star) )
-                                        , ( "p" , TVar (TV 114 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -6470,10 +5952,7 @@
                                            , ( "p" , TVar (TV 114 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "g" , TVar (TV 102 Star) )
-                                           , ( "p" , TVar (TV 114 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -6521,10 +6000,7 @@
                                               , ( "p" , TVar (TV 114 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "g" , TVar (TV 102 Star) )
-                                              , ( "p" , TVar (TV 114 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -6548,10 +6024,7 @@
                                                      , ( "p" , TVar (TV 114 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "g" , TVar (TV 102 Star) )
-                                                     , ( "p" , TVar (TV 114 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -6571,10 +6044,7 @@
                                                      , ( "p" , TVar (TV 114 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "g" , TVar (TV 102 Star) )
-                                                     , ( "p" , TVar (TV 114 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -6734,20 +6204,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "g"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -6782,19 +6239,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "g"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 102 Star)))
                                                                             (Area
@@ -6825,14 +6270,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "g"
-                                                                                , TVar (TV 102 Star)
-                                                                                )
-                                                                              , ( "p"
-                                                                                , TVar (TV 114 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -6864,20 +6302,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "g"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 102 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".g" False))))
@@ -7067,19 +6492,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "g"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -7116,19 +6529,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "g"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         102
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "p"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         114
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              114
@@ -7169,20 +6570,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "g"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "p"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -7217,19 +6605,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "g"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "p"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 114 Star)))
                                                                             (Area
@@ -7305,10 +6681,7 @@
                                         , ( "z" , TVar (TV 135 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "p" , TVar (TV 127 Star) )
-                                        , ( "z" , TVar (TV 135 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -7362,10 +6735,7 @@
                                               , ( "z" , TVar (TV 135 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "p" , TVar (TV 127 Star) )
-                                              , ( "z" , TVar (TV 135 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -7518,14 +6888,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 127 Star)
-                                                                          )
-                                                                        , ( "z"
-                                                                          , TVar (TV 135 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -7699,14 +7062,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "p"
-                                                                          , TVar (TV 127 Star)
-                                                                          )
-                                                                        , ( "z"
-                                                                          , TVar (TV 135 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -7730,14 +7086,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 127 Star)
-                                                                                )
-                                                                              , ( "z"
-                                                                                , TVar (TV 135 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 135 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".z" False))))
@@ -7796,10 +7145,7 @@
                                         , ( "p" , TVar (TV 155 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "g" , TVar (TV 147 Star) )
-                                        , ( "p" , TVar (TV 155 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -7853,10 +7199,7 @@
                                               , ( "p" , TVar (TV 155 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "g" , TVar (TV 147 Star) )
-                                              , ( "p" , TVar (TV 155 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -8009,14 +7352,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "g"
-                                                                          , TVar (TV 147 Star)
-                                                                          )
-                                                                        , ( "p"
-                                                                          , TVar (TV 155 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -8190,14 +7526,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "g"
-                                                                          , TVar (TV 147 Star)
-                                                                          )
-                                                                        , ( "p"
-                                                                          , TVar (TV 155 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -8221,14 +7550,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "g"
-                                                                                , TVar (TV 147 Star)
-                                                                                )
-                                                                              , ( "p"
-                                                                                , TVar (TV 155 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 155 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".p" False))))

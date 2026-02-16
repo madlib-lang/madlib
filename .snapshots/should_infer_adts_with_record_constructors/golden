@@ -495,14 +495,14 @@
                                   (TRecord
                                      (fromList [ ( "value" , TVar (TV 24 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "value" , TVar (TV 24 Star) ) ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList [ ( "value" , TVar (TV 24 Star) ) ])
                                         Nothing
-                                        (fromList [ ( "value" , TVar (TV 24 Star) ) ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -535,7 +535,7 @@
                                          TRecord
                                            (fromList [ ( "value" , TVar (TV 24 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "value" , TVar (TV 24 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -552,7 +552,7 @@
                                                (TRecord
                                                   (fromList [ ( "value" , TVar (TV 24 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "value" , TVar (TV 24 Star) ) ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -565,7 +565,7 @@
                                                 TRecord
                                                   (fromList [ ( "value" , TVar (TV 24 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "value" , TVar (TV 24 Star) ) ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -715,14 +715,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "value"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             24
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -751,13 +744,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "value"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   24
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 24 Star)))
                                                                             (Area
@@ -785,11 +772,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "value"
-                                                                                , TVar (TV 24 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -815,14 +798,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "value"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             24
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 24 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".value" False))))
@@ -880,14 +856,14 @@
                                   (TRecord
                                      (fromList [ ( "message" , TVar (TV 39 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "message" , TVar (TV 39 Star) ) ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList [ ( "message" , TVar (TV 39 Star) ) ])
                                         Nothing
-                                        (fromList [ ( "message" , TVar (TV 39 Star) ) ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -920,7 +896,7 @@
                                          TRecord
                                            (fromList [ ( "message" , TVar (TV 39 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "message" , TVar (TV 39 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -937,7 +913,7 @@
                                                (TRecord
                                                   (fromList [ ( "message" , TVar (TV 39 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "message" , TVar (TV 39 Star) ) ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -950,7 +926,7 @@
                                                 TRecord
                                                   (fromList [ ( "message" , TVar (TV 39 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "message" , TVar (TV 39 Star) ) ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -1100,14 +1076,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "message"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             39
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1136,13 +1105,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "message"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   39
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 39 Star)))
                                                                             (Area
@@ -1171,11 +1134,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "message"
-                                                                                , TVar (TV 39 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -1201,14 +1160,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "message"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             39
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 39 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".message" False))))
@@ -2461,7 +2413,7 @@
                                   (TRecord
                                      (fromList [ ( "value" , TVar (TV 79 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "value" , TVar (TV 79 Star) ) ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -2495,7 +2447,7 @@
                                          TRecord
                                            (fromList [ ( "value" , TVar (TV 79 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "value" , TVar (TV 79 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -2645,11 +2597,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "value"
-                                                                          , TVar (TV 79 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -2670,11 +2618,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "value"
-                                                                                , TVar (TV 79 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 79 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".value" False))))
@@ -2721,7 +2665,7 @@
                                   (TRecord
                                      (fromList [ ( "message" , TVar (TV 90 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "message" , TVar (TV 90 Star) ) ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -2755,7 +2699,7 @@
                                          TRecord
                                            (fromList [ ( "message" , TVar (TV 90 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "message" , TVar (TV 90 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -2905,11 +2849,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "message"
-                                                                          , TVar (TV 90 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -2930,11 +2870,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "message"
-                                                                                , TVar (TV 90 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 90 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".message" False))))

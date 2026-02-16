@@ -304,13 +304,7 @@
                             )
                           ])
                        Nothing
-                       (fromList
-                          [ ( "players"
-                            , TApp
-                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                (TCon (TC "Integer" Star) "prelude")
-                            )
-                          ])))
+                       (fromList [])))
                  (TRecord
                     (fromList
                        [ ( "bets"
@@ -325,18 +319,7 @@
                          )
                        ])
                     Nothing
-                    (fromList
-                       [ ( "bets"
-                         , TApp
-                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TCon (TC "Integer" Star) "prelude")
-                         )
-                       , ( "players"
-                         , TApp
-                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                             (TCon (TC "Integer" Star) "prelude")
-                         )
-                       ])))
+                    (fromList [])))
             (Area (Loc 201 9 1) (Loc 560 22 2))
             (Export
                (Typed
@@ -358,13 +341,7 @@
                                   )
                                 ])
                              Nothing
-                             (fromList
-                                [ ( "players"
-                                  , TApp
-                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                      (TCon (TC "Integer" Star) "prelude")
-                                  )
-                                ])))
+                             (fromList [])))
                        (TRecord
                           (fromList
                              [ ( "bets"
@@ -379,18 +356,7 @@
                                )
                              ])
                           Nothing
-                          (fromList
-                             [ ( "bets"
-                               , TApp
-                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TCon (TC "Integer" Star) "prelude")
-                               )
-                             , ( "players"
-                               , TApp
-                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                   (TCon (TC "Integer" Star) "prelude")
-                               )
-                             ])))
+                          (fromList [])))
                   (Area (Loc 201 9 1) (Loc 560 22 2))
                   (Assignment
                      "runBets"
@@ -413,13 +379,7 @@
                                         )
                                       ])
                                    Nothing
-                                   (fromList
-                                      [ ( "players"
-                                        , TApp
-                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                            (TCon (TC "Integer" Star) "prelude")
-                                        )
-                                      ])))
+                                   (fromList [])))
                              (TRecord
                                 (fromList
                                    [ ( "bets"
@@ -434,18 +394,7 @@
                                      )
                                    ])
                                 Nothing
-                                (fromList
-                                   [ ( "bets"
-                                     , TApp
-                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TCon (TC "Integer" Star) "prelude")
-                                     )
-                                   , ( "players"
-                                     , TApp
-                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TCon (TC "Integer" Star) "prelude")
-                                     )
-                                   ])))
+                                (fromList [])))
                         (Area (Loc 218 9 18) (Loc 560 22 2))
                         (Abs
                            (Typed
@@ -464,13 +413,7 @@
                                         )
                                       ])
                                    Nothing
-                                   (fromList
-                                      [ ( "players"
-                                        , TApp
-                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                            (TCon (TC "Integer" Star) "prelude")
-                                        )
-                                      ]))
+                                   (fromList []))
                               (Area (Loc 219 9 19) (Loc 224 9 24))
                               "state")
                            [ Typed
@@ -489,18 +432,7 @@
                                          )
                                        ])
                                     Nothing
-                                    (fromList
-                                       [ ( "bets"
-                                         , TApp
-                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                             (TCon (TC "Integer" Star) "prelude")
-                                         )
-                                       , ( "players"
-                                         , TApp
-                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                             (TCon (TC "Integer" Star) "prelude")
-                                         )
-                                       ]))
+                                    (fromList []))
                                (Area (Loc 269 11 10) (Loc 553 20 18))
                                (App
                                   (Typed
@@ -526,18 +458,7 @@
                                                   )
                                                 ])
                                              Nothing
-                                             (fromList
-                                                [ ( "bets"
-                                                  , TApp
-                                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                      (TCon (TC "Integer" Star) "prelude")
-                                                  )
-                                                , ( "players"
-                                                  , TApp
-                                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                      (TCon (TC "Integer" Star) "prelude")
-                                                  )
-                                                ])))
+                                             (fromList [])))
                                      (Area (Loc 269 11 10) (Loc 534 19 30))
                                      (App
                                         (Typed
@@ -565,22 +486,7 @@
                                                            )
                                                          ])
                                                       Nothing
-                                                      (fromList
-                                                         [ ( "bets"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude")
-                                                           )
-                                                         , ( "players"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude")
-                                                           )
-                                                         ])))
+                                                      (fromList [])))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -608,22 +514,7 @@
                                                            )
                                                          ])
                                                       Nothing
-                                                      (fromList
-                                                         [ ( "bets"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude")
-                                                           )
-                                                         , ( "players"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude")
-                                                           )
-                                                         ]))))
+                                                      (fromList []))))
                                            (Area (Loc 269 11 10) (Loc 558 21 4))
                                            (App
                                               (Typed
@@ -666,30 +557,7 @@
                                                                        )
                                                                      ])
                                                                   Nothing
-                                                                  (fromList
-                                                                     [ ( "bets"
-                                                                       , TApp
-                                                                           (TCon
-                                                                              (TC
-                                                                                 "List"
-                                                                                 (Kfun Star Star))
-                                                                              "prelude")
-                                                                           (TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude")
-                                                                       )
-                                                                     , ( "players"
-                                                                       , TApp
-                                                                           (TCon
-                                                                              (TC
-                                                                                 "List"
-                                                                                 (Kfun Star Star))
-                                                                              "prelude")
-                                                                           (TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude")
-                                                                       )
-                                                                     ])))
+                                                                  (fromList [])))
                                                             (TApp
                                                                (TApp
                                                                   (TCon
@@ -726,30 +594,7 @@
                                                                        )
                                                                      ])
                                                                   Nothing
-                                                                  (fromList
-                                                                     [ ( "bets"
-                                                                       , TApp
-                                                                           (TCon
-                                                                              (TC
-                                                                                 "List"
-                                                                                 (Kfun Star Star))
-                                                                              "prelude")
-                                                                           (TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude")
-                                                                       )
-                                                                     , ( "players"
-                                                                       , TApp
-                                                                           (TCon
-                                                                              (TC
-                                                                                 "List"
-                                                                                 (Kfun Star Star))
-                                                                              "prelude")
-                                                                           (TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude")
-                                                                       )
-                                                                     ])))))
+                                                                  (fromList [])))))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -783,30 +628,7 @@
                                                                     )
                                                                   ])
                                                                Nothing
-                                                               (fromList
-                                                                  [ ( "bets"
-                                                                    , TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "List"
-                                                                              (Kfun Star Star))
-                                                                           "prelude")
-                                                                        (TCon
-                                                                           (TC "Integer" Star)
-                                                                           "prelude")
-                                                                    )
-                                                                  , ( "players"
-                                                                    , TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "List"
-                                                                              (Kfun Star Star))
-                                                                           "prelude")
-                                                                        (TCon
-                                                                           (TC "Integer" Star)
-                                                                           "prelude")
-                                                                    )
-                                                                  ])))
+                                                               (fromList [])))
                                                          (TApp
                                                             (TApp
                                                                (TCon
@@ -847,30 +669,7 @@
                                                                     )
                                                                   ])
                                                                Nothing
-                                                               (fromList
-                                                                  [ ( "bets"
-                                                                    , TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "List"
-                                                                              (Kfun Star Star))
-                                                                           "prelude")
-                                                                        (TCon
-                                                                           (TC "Integer" Star)
-                                                                           "prelude")
-                                                                    )
-                                                                  , ( "players"
-                                                                    , TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "List"
-                                                                              (Kfun Star Star))
-                                                                           "prelude")
-                                                                        (TCon
-                                                                           (TC "Integer" Star)
-                                                                           "prelude")
-                                                                    )
-                                                                  ])))))
+                                                               (fromList [])))))
                                                  (Area (Loc 269 11 10) (Loc 275 11 16))
                                                  (Var "reduce" False))
                                               (Typed
@@ -902,26 +701,7 @@
                                                                  )
                                                                ])
                                                             Nothing
-                                                            (fromList
-                                                               [ ( "bets"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               , ( "players"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               ])))
+                                                            (fromList [])))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -952,26 +732,7 @@
                                                                  )
                                                                ])
                                                             Nothing
-                                                            (fromList
-                                                               [ ( "bets"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               , ( "players"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               ]))))
+                                                            (fromList []))))
                                                  (Area (Loc 281 12 5) (Loc 503 18 6))
                                                  (Abs
                                                     (Typed
@@ -998,26 +759,7 @@
                                                                  )
                                                                ])
                                                             Nothing
-                                                            (fromList
-                                                               [ ( "bets"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               , ( "players"
-                                                                 , TApp
-                                                                     (TCon
-                                                                        (TC "List" (Kfun Star Star))
-                                                                        "prelude")
-                                                                     (TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude")
-                                                                 )
-                                                               ]))
+                                                            (fromList []))
                                                        (Area (Loc 282 12 6) (Loc 291 12 15))
                                                        "stepState")
                                                     [ Typed
@@ -1057,30 +799,7 @@
                                                                      )
                                                                    ])
                                                                 Nothing
-                                                                (fromList
-                                                                   [ ( "bets"
-                                                                     , TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "List"
-                                                                               (Kfun Star Star))
-                                                                            "prelude")
-                                                                         (TCon
-                                                                            (TC "Integer" Star)
-                                                                            "prelude")
-                                                                     )
-                                                                   , ( "players"
-                                                                     , TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "List"
-                                                                               (Kfun Star Star))
-                                                                            "prelude")
-                                                                         (TCon
-                                                                            (TC "Integer" Star)
-                                                                            "prelude")
-                                                                     )
-                                                                   ])))
+                                                                (fromList [])))
                                                         (Area (Loc 281 12 5) (Loc 503 18 6))
                                                         (Abs
                                                            (Typed
@@ -1116,30 +835,7 @@
                                                                          )
                                                                        ])
                                                                     Nothing
-                                                                    (fromList
-                                                                       [ ( "bets"
-                                                                         , TApp
-                                                                             (TCon
-                                                                                (TC
-                                                                                   "List"
-                                                                                   (Kfun Star Star))
-                                                                                "prelude")
-                                                                             (TCon
-                                                                                (TC "Integer" Star)
-                                                                                "prelude")
-                                                                         )
-                                                                       , ( "players"
-                                                                         , TApp
-                                                                             (TCon
-                                                                                (TC
-                                                                                   "List"
-                                                                                   (Kfun Star Star))
-                                                                                "prelude")
-                                                                             (TCon
-                                                                                (TC "Integer" Star)
-                                                                                "prelude")
-                                                                         )
-                                                                       ]))
+                                                                    (fromList []))
                                                                (Area
                                                                   (Loc 319 13 14) (Loc 497 17 19))
                                                                (App
@@ -1190,23 +886,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
-                                                                                (fromList
-                                                                                   [ ( "bets"
-                                                                                     , TApp
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "List"
-                                                                                               (Kfun
-                                                                                                  Star
-                                                                                                  Star))
-                                                                                            "prelude")
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "Integer"
-                                                                                               Star)
-                                                                                            "prelude")
-                                                                                     )
-                                                                                   ])))
+                                                                                (fromList [])))
                                                                           (TRecord
                                                                              (fromList
                                                                                 [ ( "bets"
@@ -1241,38 +921,7 @@
                                                                                   )
                                                                                 ])
                                                                              Nothing
-                                                                             (fromList
-                                                                                [ ( "bets"
-                                                                                  , TApp
-                                                                                      (TCon
-                                                                                         (TC
-                                                                                            "List"
-                                                                                            (Kfun
-                                                                                               Star
-                                                                                               Star))
-                                                                                         "prelude")
-                                                                                      (TCon
-                                                                                         (TC
-                                                                                            "Integer"
-                                                                                            Star)
-                                                                                         "prelude")
-                                                                                  )
-                                                                                , ( "players"
-                                                                                  , TApp
-                                                                                      (TCon
-                                                                                         (TC
-                                                                                            "List"
-                                                                                            (Kfun
-                                                                                               Star
-                                                                                               Star))
-                                                                                         "prelude")
-                                                                                      (TCon
-                                                                                         (TC
-                                                                                            "Integer"
-                                                                                            Star)
-                                                                                         "prelude")
-                                                                                  )
-                                                                                ])))
+                                                                             (fromList [])))
                                                                      (Area
                                                                         (Loc 319 13 14)
                                                                         (Loc 486 17 8))
@@ -1313,23 +962,7 @@
                                                                                      )
                                                                                    ])
                                                                                 Nothing
-                                                                                (fromList
-                                                                                   [ ( "bets"
-                                                                                     , TApp
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "List"
-                                                                                               (Kfun
-                                                                                                  Star
-                                                                                                  Star))
-                                                                                            "prelude")
-                                                                                         (TCon
-                                                                                            (TC
-                                                                                               "Integer"
-                                                                                               Star)
-                                                                                            "prelude")
-                                                                                     )
-                                                                                   ]))
+                                                                                (fromList []))
                                                                            (Area
                                                                               (Loc 319 13 14)
                                                                               (Loc 322 13 17))
@@ -1370,38 +1003,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "bets"
-                                                                                      , TApp
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "List"
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   Star))
-                                                                                             "prelude")
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "Integer"
-                                                                                                Star)
-                                                                                             "prelude")
-                                                                                      )
-                                                                                    , ( "players"
-                                                                                      , TApp
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "List"
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   Star))
-                                                                                             "prelude")
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "Integer"
-                                                                                                Star)
-                                                                                             "prelude")
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 319 13 14)
                                                                                (Loc 477 16 96))
@@ -1459,37 +1061,7 @@
                                                                                              ])
                                                                                           Nothing
                                                                                           (fromList
-                                                                                             [ ( "bets"
-                                                                                               , TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "List"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "Integer"
-                                                                                                         Star)
-                                                                                                      "prelude")
-                                                                                               )
-                                                                                             , ( "players"
-                                                                                               , TApp
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "List"
-                                                                                                         (Kfun
-                                                                                                            Star
-                                                                                                            Star))
-                                                                                                      "prelude")
-                                                                                                   (TCon
-                                                                                                      (TC
-                                                                                                         "Integer"
-                                                                                                         Star)
-                                                                                                      "prelude")
-                                                                                               )
-                                                                                             ])))
+                                                                                             [])))
                                                                                   (Area
                                                                                      (Loc 390 16 9)
                                                                                      (Loc
@@ -1549,37 +1121,7 @@
                                                                                                  ])
                                                                                               Nothing
                                                                                               (fromList
-                                                                                                 [ ( "bets"
-                                                                                                   , TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "List"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                Star))
-                                                                                                          "prelude")
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Integer"
-                                                                                                             Star)
-                                                                                                          "prelude")
-                                                                                                   )
-                                                                                                 , ( "players"
-                                                                                                   , TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "List"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                Star))
-                                                                                                          "prelude")
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "Integer"
-                                                                                                             Star)
-                                                                                                          "prelude")
-                                                                                                   )
-                                                                                                 ]))
+                                                                                                 []))
                                                                                          (Area
                                                                                             (Loc
                                                                                                400
@@ -1627,37 +1169,7 @@
                                                                                                         ])
                                                                                                      Nothing
                                                                                                      (fromList
-                                                                                                        [ ( "bets"
-                                                                                                          , TApp
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "List"
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star))
-                                                                                                                 "prelude")
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "Integer"
-                                                                                                                    Star)
-                                                                                                                 "prelude")
-                                                                                                          )
-                                                                                                        , ( "players"
-                                                                                                          , TApp
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "List"
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star))
-                                                                                                                 "prelude")
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "Integer"
-                                                                                                                    Star)
-                                                                                                                 "prelude")
-                                                                                                          )
-                                                                                                        ]))
+                                                                                                        []))
                                                                                                 (Area
                                                                                                    (Loc
                                                                                                       402
@@ -1705,37 +1217,7 @@
                                                                                                               ])
                                                                                                            Nothing
                                                                                                            (fromList
-                                                                                                              [ ( "bets"
-                                                                                                                , TApp
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "List"
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star))
-                                                                                                                       "prelude")
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "Integer"
-                                                                                                                          Star)
-                                                                                                                       "prelude")
-                                                                                                                )
-                                                                                                              , ( "players"
-                                                                                                                , TApp
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "List"
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star))
-                                                                                                                       "prelude")
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "Integer"
-                                                                                                                          Star)
-                                                                                                                       "prelude")
-                                                                                                                )
-                                                                                                              ]))
+                                                                                                              []))
                                                                                                       (Area
                                                                                                          (Loc
                                                                                                             405
@@ -1886,37 +1368,7 @@
                                                                                                                                   ])
                                                                                                                                Nothing
                                                                                                                                (fromList
-                                                                                                                                  [ ( "bets"
-                                                                                                                                    , TApp
-                                                                                                                                        (TCon
-                                                                                                                                           (TC
-                                                                                                                                              "List"
-                                                                                                                                              (Kfun
-                                                                                                                                                 Star
-                                                                                                                                                 Star))
-                                                                                                                                           "prelude")
-                                                                                                                                        (TCon
-                                                                                                                                           (TC
-                                                                                                                                              "Integer"
-                                                                                                                                              Star)
-                                                                                                                                           "prelude")
-                                                                                                                                    )
-                                                                                                                                  , ( "players"
-                                                                                                                                    , TApp
-                                                                                                                                        (TCon
-                                                                                                                                           (TC
-                                                                                                                                              "List"
-                                                                                                                                              (Kfun
-                                                                                                                                                 Star
-                                                                                                                                                 Star))
-                                                                                                                                           "prelude")
-                                                                                                                                        (TCon
-                                                                                                                                           (TC
-                                                                                                                                              "Integer"
-                                                                                                                                              Star)
-                                                                                                                                           "prelude")
-                                                                                                                                    )
-                                                                                                                                  ]))
+                                                                                                                                  []))
                                                                                                                           (Area
                                                                                                                              (Loc
                                                                                                                                 426
@@ -1977,37 +1429,7 @@
                                                                                                                                         ])
                                                                                                                                      Nothing
                                                                                                                                      (fromList
-                                                                                                                                        [ ( "bets"
-                                                                                                                                          , TApp
-                                                                                                                                              (TCon
-                                                                                                                                                 (TC
-                                                                                                                                                    "List"
-                                                                                                                                                    (Kfun
-                                                                                                                                                       Star
-                                                                                                                                                       Star))
-                                                                                                                                                 "prelude")
-                                                                                                                                              (TCon
-                                                                                                                                                 (TC
-                                                                                                                                                    "Integer"
-                                                                                                                                                    Star)
-                                                                                                                                                 "prelude")
-                                                                                                                                          )
-                                                                                                                                        , ( "players"
-                                                                                                                                          , TApp
-                                                                                                                                              (TCon
-                                                                                                                                                 (TC
-                                                                                                                                                    "List"
-                                                                                                                                                    (Kfun
-                                                                                                                                                       Star
-                                                                                                                                                       Star))
-                                                                                                                                                 "prelude")
-                                                                                                                                              (TCon
-                                                                                                                                                 (TC
-                                                                                                                                                    "Integer"
-                                                                                                                                                    Star)
-                                                                                                                                                 "prelude")
-                                                                                                                                          )
-                                                                                                                                        ])))
+                                                                                                                                        [])))
                                                                                                                                (TApp
                                                                                                                                   (TCon
                                                                                                                                      (TC
@@ -2159,37 +1581,7 @@
                                                                                                                      ])
                                                                                                                   Nothing
                                                                                                                   (fromList
-                                                                                                                     [ ( "bets"
-                                                                                                                       , TApp
-                                                                                                                           (TCon
-                                                                                                                              (TC
-                                                                                                                                 "List"
-                                                                                                                                 (Kfun
-                                                                                                                                    Star
-                                                                                                                                    Star))
-                                                                                                                              "prelude")
-                                                                                                                           (TCon
-                                                                                                                              (TC
-                                                                                                                                 "Integer"
-                                                                                                                                 Star)
-                                                                                                                              "prelude")
-                                                                                                                       )
-                                                                                                                     , ( "players"
-                                                                                                                       , TApp
-                                                                                                                           (TCon
-                                                                                                                              (TC
-                                                                                                                                 "List"
-                                                                                                                                 (Kfun
-                                                                                                                                    Star
-                                                                                                                                    Star))
-                                                                                                                              "prelude")
-                                                                                                                           (TCon
-                                                                                                                              (TC
-                                                                                                                                 "Integer"
-                                                                                                                                 Star)
-                                                                                                                              "prelude")
-                                                                                                                       )
-                                                                                                                     ]))
+                                                                                                                     []))
                                                                                                              (Area
                                                                                                                 (Loc
                                                                                                                    457
@@ -2250,37 +1642,7 @@
                                                                                                                            ])
                                                                                                                         Nothing
                                                                                                                         (fromList
-                                                                                                                           [ ( "bets"
-                                                                                                                             , TApp
-                                                                                                                                 (TCon
-                                                                                                                                    (TC
-                                                                                                                                       "List"
-                                                                                                                                       (Kfun
-                                                                                                                                          Star
-                                                                                                                                          Star))
-                                                                                                                                    "prelude")
-                                                                                                                                 (TCon
-                                                                                                                                    (TC
-                                                                                                                                       "Integer"
-                                                                                                                                       Star)
-                                                                                                                                    "prelude")
-                                                                                                                             )
-                                                                                                                           , ( "players"
-                                                                                                                             , TApp
-                                                                                                                                 (TCon
-                                                                                                                                    (TC
-                                                                                                                                       "List"
-                                                                                                                                       (Kfun
-                                                                                                                                          Star
-                                                                                                                                          Star))
-                                                                                                                                    "prelude")
-                                                                                                                                 (TCon
-                                                                                                                                    (TC
-                                                                                                                                       "Integer"
-                                                                                                                                       Star)
-                                                                                                                                    "prelude")
-                                                                                                                             )
-                                                                                                                           ])))
+                                                                                                                           [])))
                                                                                                                   (TApp
                                                                                                                      (TCon
                                                                                                                         (TC
@@ -2613,37 +1975,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "bets"
-                                                                                                        , TApp
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "List"
-                                                                                                                  (Kfun
-                                                                                                                     Star
-                                                                                                                     Star))
-                                                                                                               "prelude")
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "Integer"
-                                                                                                                  Star)
-                                                                                                               "prelude")
-                                                                                                        )
-                                                                                                      , ( "players"
-                                                                                                        , TApp
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "List"
-                                                                                                                  (Kfun
-                                                                                                                     Star
-                                                                                                                     Star))
-                                                                                                               "prelude")
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "Integer"
-                                                                                                                  Star)
-                                                                                                               "prelude")
-                                                                                                        )
-                                                                                                      ]))
+                                                                                                      []))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     370
@@ -2730,22 +2062,7 @@
                                                                                                             ])
                                                                                                          Nothing
                                                                                                          (fromList
-                                                                                                            [ ( "bets"
-                                                                                                              , TApp
-                                                                                                                  (TCon
-                                                                                                                     (TC
-                                                                                                                        "List"
-                                                                                                                        (Kfun
-                                                                                                                           Star
-                                                                                                                           Star))
-                                                                                                                     "prelude")
-                                                                                                                  (TCon
-                                                                                                                     (TC
-                                                                                                                        "Integer"
-                                                                                                                        Star)
-                                                                                                                     "prelude")
-                                                                                                              )
-                                                                                                            ])))
+                                                                                                            [])))
                                                                                                    (TApp
                                                                                                       (TCon
                                                                                                          (TC
@@ -2808,22 +2125,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "bets"
-                                                                                                        , TApp
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "List"
-                                                                                                                  (Kfun
-                                                                                                                     Star
-                                                                                                                     Star))
-                                                                                                               "prelude")
-                                                                                                            (TCon
-                                                                                                               (TC
-                                                                                                                  "Integer"
-                                                                                                                  Star)
-                                                                                                               "prelude")
-                                                                                                        )
-                                                                                                      ]))
+                                                                                                      []))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     319
@@ -2876,38 +2178,7 @@
                                                                                )
                                                                              ])
                                                                           Nothing
-                                                                          (fromList
-                                                                             [ ( "bets"
-                                                                               , TApp
-                                                                                   (TCon
-                                                                                      (TC
-                                                                                         "List"
-                                                                                         (Kfun
-                                                                                            Star
-                                                                                            Star))
-                                                                                      "prelude")
-                                                                                   (TCon
-                                                                                      (TC
-                                                                                         "Integer"
-                                                                                         Star)
-                                                                                      "prelude")
-                                                                               )
-                                                                             , ( "players"
-                                                                               , TApp
-                                                                                   (TCon
-                                                                                      (TC
-                                                                                         "List"
-                                                                                         (Kfun
-                                                                                            Star
-                                                                                            Star))
-                                                                                      "prelude")
-                                                                                   (TCon
-                                                                                      (TC
-                                                                                         "Integer"
-                                                                                         Star)
-                                                                                      "prelude")
-                                                                               )
-                                                                             ]))
+                                                                          (fromList []))
                                                                      (Area
                                                                         (Loc 487 17 9)
                                                                         (Loc 496 17 18))
@@ -2934,14 +2205,7 @@
                                                      )
                                                    ])
                                                 Nothing
-                                                (fromList
-                                                   [ ( "players"
-                                                     , TApp
-                                                         (TCon
-                                                            (TC "List" (Kfun Star Star)) "prelude")
-                                                         (TCon (TC "Integer" Star) "prelude")
-                                                     )
-                                                   ]))
+                                                (fromList []))
                                            (Area (Loc 509 19 5) (Loc 534 19 30))
                                            (Record
                                               [ Typed
@@ -2964,15 +2228,7 @@
                                                             )
                                                           ])
                                                        Nothing
-                                                       (fromList
-                                                          [ ( "players"
-                                                            , TApp
-                                                                (TCon
-                                                                   (TC "List" (Kfun Star Star))
-                                                                   "prelude")
-                                                                (TCon (TC "Integer" Star) "prelude")
-                                                            )
-                                                          ]))
+                                                       (fromList []))
                                                   (Area (Loc 511 19 7) (Loc 519 19 15))
                                                   (FieldSpread
                                                      (Typed
@@ -3001,18 +2257,7 @@
                                                                   )
                                                                 ])
                                                              Nothing
-                                                             (fromList
-                                                                [ ( "players"
-                                                                  , TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "List" (Kfun Star Star))
-                                                                         "prelude")
-                                                                      (TCon
-                                                                         (TC "Integer" Star)
-                                                                         "prelude")
-                                                                  )
-                                                                ]))
+                                                             (fromList []))
                                                         (Area (Loc 514 19 10) (Loc 519 19 15))
                                                         (Var "state" False)))
                                               , Typed
@@ -3060,14 +2305,7 @@
                                                      )
                                                    ])
                                                 Nothing
-                                                (fromList
-                                                   [ ( "players"
-                                                     , TApp
-                                                         (TCon
-                                                            (TC "List" (Kfun Star Star)) "prelude")
-                                                         (TCon (TC "Integer" Star) "prelude")
-                                                     )
-                                                   ]))
+                                                (fromList []))
                                            (Area (Loc 540 20 5) (Loc 545 20 10))
                                            (Var "state" False))
                                         (Typed
@@ -3095,15 +2333,7 @@
                                                            )
                                                          ])
                                                       Nothing
-                                                      (fromList
-                                                         [ ( "players"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Integer" Star) "prelude")
-                                                           )
-                                                         ])))
+                                                      (fromList [])))
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TCon (TC "Integer" Star) "prelude")))
@@ -3248,10 +2478,7 @@
                                         , ( "players" , TVar (TV 69 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "bets" , TVar (TV 57 Star) )
-                                        , ( "players" , TVar (TV 69 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3261,10 +2488,7 @@
                                            , ( "players" , TVar (TV 69 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "bets" , TVar (TV 57 Star) )
-                                           , ( "players" , TVar (TV 69 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -3312,10 +2536,7 @@
                                               , ( "players" , TVar (TV 69 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "bets" , TVar (TV 57 Star) )
-                                              , ( "players" , TVar (TV 69 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -3339,10 +2560,7 @@
                                                      , ( "players" , TVar (TV 69 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "bets" , TVar (TV 57 Star) )
-                                                     , ( "players" , TVar (TV 69 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -3362,10 +2580,7 @@
                                                      , ( "players" , TVar (TV 69 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "bets" , TVar (TV 57 Star) )
-                                                     , ( "players" , TVar (TV 69 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -3525,20 +2740,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "bets"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             57
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "players"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             69
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3573,19 +2775,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "bets"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   57
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "players"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   69
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 57 Star)))
                                                                             (Area
@@ -3616,14 +2806,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "bets"
-                                                                                , TVar (TV 57 Star)
-                                                                                )
-                                                                              , ( "players"
-                                                                                , TVar (TV 69 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -3655,20 +2838,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "bets"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             57
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "players"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             69
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 57 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".bets" False))))
@@ -3855,19 +3025,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "bets"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   57
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "players"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   69
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -3904,19 +3062,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "bets"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         57
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "players"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         69
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              69
@@ -3958,20 +3104,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "bets"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             57
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "players"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             69
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -4006,19 +3139,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "bets"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   57
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "players"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   69
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 69 Star)))
                                                                             (Area
@@ -4095,10 +3216,7 @@
                                         , ( "players" , TVar (TV 90 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "bets" , TVar (TV 82 Star) )
-                                        , ( "players" , TVar (TV 90 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -4152,10 +3270,7 @@
                                               , ( "players" , TVar (TV 90 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "bets" , TVar (TV 82 Star) )
-                                              , ( "players" , TVar (TV 90 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -4308,14 +3423,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "bets"
-                                                                          , TVar (TV 82 Star)
-                                                                          )
-                                                                        , ( "players"
-                                                                          , TVar (TV 90 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -4489,14 +3597,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "bets"
-                                                                          , TVar (TV 82 Star)
-                                                                          )
-                                                                        , ( "players"
-                                                                          , TVar (TV 90 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -4520,14 +3621,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "bets"
-                                                                                , TVar (TV 82 Star)
-                                                                                )
-                                                                              , ( "players"
-                                                                                , TVar (TV 90 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 90 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".players" False))))

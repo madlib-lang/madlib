@@ -36,19 +36,39 @@ genType s t =
       tvs = ftv t'
       sWithGens = Map.fromList $ zipWith (curry (\(_, TV initial k) -> (TV initial k, tUnit))) [0..] tvs
       -- sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
-  in  cleanRecords $ apply s $ apply sWithGens t'
+  in  resolveRowVariables $ apply s $ apply sWithGens t'
 
 
-cleanRecords :: Type -> Type
-cleanRecords t = case t of
-  TRecord fields _ _ ->
-    TRecord (cleanRecords <$> fields) Nothing mempty
+-- Resolve row variables to concrete fields by merging any substituted record types
+-- and removing row variables that haven't been substituted (free variables)
+resolveRowVariables :: Type -> Type
+resolveRowVariables t = case t of
+  TRecord fields (Just base) optionalFields -> do
+    let resolvedFields = resolveRowVariables <$> fields
+        resolvedOptionalFields = resolveRowVariables <$> optionalFields
+        resolvedBase = resolveRowVariables base
+    
+    case resolvedBase of
+      -- If the base was substituted with a record, merge its fields
+      TRecord baseFields baseBase baseOptionalFields ->
+        TRecord (Map.union resolvedFields baseFields) baseBase (resolvedOptionalFields <> baseOptionalFields)
+      
+      -- If the base is still a type variable (free), remove it (no additional fields)
+      TVar _ ->
+        TRecord resolvedFields Nothing resolvedOptionalFields
+      
+      -- If the base is something else (shouldn't happen, but handle gracefully)
+      _ ->
+        TRecord resolvedFields Nothing resolvedOptionalFields
+
+  TRecord fields Nothing optionalFields ->
+    TRecord (resolveRowVariables <$> fields) Nothing (resolveRowVariables <$> optionalFields)
 
   TApp l r ->
-    TApp (cleanRecords l) (cleanRecords r)
+    TApp (resolveRowVariables l) (resolveRowVariables r)
 
-  or ->
-    or
+  _ ->
+    t
 
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String

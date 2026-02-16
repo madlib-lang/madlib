@@ -1509,11 +1509,7 @@
                                         , ( "multiplier" , TVar (TV 135 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "id" , TVar (TV 110 Star) )
-                                        , ( "itemId" , TVar (TV 122 Star) )
-                                        , ( "multiplier" , TVar (TV 135 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -1524,11 +1520,7 @@
                                            , ( "multiplier" , TVar (TV 135 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "id" , TVar (TV 110 Star) )
-                                           , ( "itemId" , TVar (TV 122 Star) )
-                                           , ( "multiplier" , TVar (TV 135 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -1584,11 +1576,7 @@
                                               , ( "multiplier" , TVar (TV 135 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "id" , TVar (TV 110 Star) )
-                                              , ( "itemId" , TVar (TV 122 Star) )
-                                              , ( "multiplier" , TVar (TV 135 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -1617,11 +1605,7 @@
                                                      , ( "multiplier" , TVar (TV 135 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "id" , TVar (TV 110 Star) )
-                                                     , ( "itemId" , TVar (TV 122 Star) )
-                                                     , ( "multiplier" , TVar (TV 135 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -1646,11 +1630,7 @@
                                                      , ( "multiplier" , TVar (TV 135 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "id" , TVar (TV 110 Star) )
-                                                     , ( "itemId" , TVar (TV 122 Star) )
-                                                     , ( "multiplier" , TVar (TV 135 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -1820,26 +1800,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             110
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "itemId"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             122
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "multiplier"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             135
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1880,25 +1841,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   110
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "itemId"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   122
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "multiplier"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   135
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 110 Star)))
                                                                             (Area
@@ -1932,17 +1875,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "id"
-                                                                                , TVar (TV 110 Star)
-                                                                                )
-                                                                              , ( "itemId"
-                                                                                , TVar (TV 122 Star)
-                                                                                )
-                                                                              , ( "multiplier"
-                                                                                , TVar (TV 135 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -1980,26 +1913,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             110
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "itemId"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             122
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "multiplier"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             135
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 110 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".id" False))))
@@ -2199,25 +2113,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   110
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "itemId"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   122
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "multiplier"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   135
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -2260,25 +2156,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         110
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "itemId"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         122
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "multiplier"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         135
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              122
@@ -2326,26 +2204,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             110
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "itemId"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             122
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "multiplier"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             135
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2386,25 +2245,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   110
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "itemId"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   122
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "multiplier"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   135
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 122 Star)))
                                                                             (Area
@@ -2637,25 +2478,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         110
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "itemId"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         122
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "multiplier"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         135
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -2702,25 +2525,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "id"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               110
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "itemId"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               122
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "multiplier"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               135
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    135
@@ -2777,25 +2582,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   110
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "itemId"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   122
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "multiplier"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   135
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -2838,25 +2625,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         110
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "itemId"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         122
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "multiplier"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         135
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              135
@@ -2955,12 +2724,7 @@
                                         , ( "id" , TVar (TV 191 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "cost" , TVar (TV 153 Star) )
-                                        , ( "description" , TVar (TV 165 Star) )
-                                        , ( "discounts" , TVar (TV 178 Star) )
-                                        , ( "id" , TVar (TV 191 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -2972,12 +2736,7 @@
                                            , ( "id" , TVar (TV 191 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "cost" , TVar (TV 153 Star) )
-                                           , ( "description" , TVar (TV 165 Star) )
-                                           , ( "discounts" , TVar (TV 178 Star) )
-                                           , ( "id" , TVar (TV 191 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -3041,12 +2800,7 @@
                                               , ( "id" , TVar (TV 191 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "cost" , TVar (TV 153 Star) )
-                                              , ( "description" , TVar (TV 165 Star) )
-                                              , ( "discounts" , TVar (TV 178 Star) )
-                                              , ( "id" , TVar (TV 191 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -3080,12 +2834,7 @@
                                                      , ( "id" , TVar (TV 191 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "cost" , TVar (TV 153 Star) )
-                                                     , ( "description" , TVar (TV 165 Star) )
-                                                     , ( "discounts" , TVar (TV 178 Star) )
-                                                     , ( "id" , TVar (TV 191 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -3115,12 +2864,7 @@
                                                      , ( "id" , TVar (TV 191 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "cost" , TVar (TV 153 Star) )
-                                                     , ( "description" , TVar (TV 165 Star) )
-                                                     , ( "discounts" , TVar (TV 178 Star) )
-                                                     , ( "id" , TVar (TV 191 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -3300,32 +3044,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cost"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             153
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "description"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             165
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "discounts"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             191
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3372,31 +3091,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cost"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   153
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "description"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   165
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "discounts"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   191
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 153 Star)))
                                                                             (Area
@@ -3433,20 +3128,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "cost"
-                                                                                , TVar (TV 153 Star)
-                                                                                )
-                                                                              , ( "description"
-                                                                                , TVar (TV 165 Star)
-                                                                                )
-                                                                              , ( "discounts"
-                                                                                , TVar (TV 178 Star)
-                                                                                )
-                                                                              , ( "id"
-                                                                                , TVar (TV 191 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -3490,32 +3172,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cost"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             153
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "description"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             165
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "discounts"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             191
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 153 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".cost" False))))
@@ -3725,31 +3382,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cost"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   153
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "description"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   165
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "discounts"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   191
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -3798,31 +3431,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cost"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         153
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "description"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         165
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "discounts"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         178
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         191
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              165
@@ -3876,32 +3485,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cost"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             153
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "description"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             165
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "discounts"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             178
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             191
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3948,31 +3532,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cost"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   153
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "description"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   165
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "discounts"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   191
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 165 Star)))
                                                                             (Area
@@ -4217,31 +3777,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cost"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         153
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "description"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         165
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "discounts"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         178
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         191
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -4294,31 +3830,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "cost"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               153
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "description"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               165
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "discounts"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               178
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "id"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               191
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    178
@@ -4381,31 +3893,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cost"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   153
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "description"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   165
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "discounts"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   178
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   191
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -4454,31 +3942,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cost"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         153
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "description"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         165
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "discounts"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         178
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         191
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              178
@@ -4758,31 +4222,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "cost"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               153
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "description"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               165
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "discounts"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               178
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "id"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               191
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ]))
+                                                                                                      []))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     0
@@ -4837,31 +4277,7 @@
                                                                                                             ])
                                                                                                          Nothing
                                                                                                          (fromList
-                                                                                                            [ ( "cost"
-                                                                                                              , TVar
-                                                                                                                  (TV
-                                                                                                                     153
-                                                                                                                     Star)
-                                                                                                              )
-                                                                                                            , ( "description"
-                                                                                                              , TVar
-                                                                                                                  (TV
-                                                                                                                     165
-                                                                                                                     Star)
-                                                                                                              )
-                                                                                                            , ( "discounts"
-                                                                                                              , TVar
-                                                                                                                  (TV
-                                                                                                                     178
-                                                                                                                     Star)
-                                                                                                              )
-                                                                                                            , ( "id"
-                                                                                                              , TVar
-                                                                                                                  (TV
-                                                                                                                     191
-                                                                                                                     Star)
-                                                                                                              )
-                                                                                                            ])))
+                                                                                                            [])))
                                                                                                    (TVar
                                                                                                       (TV
                                                                                                          191
@@ -4936,31 +4352,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cost"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         153
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "description"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         165
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "discounts"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         178
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         191
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -5013,31 +4405,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "cost"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               153
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "description"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               165
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "discounts"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               178
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "id"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               191
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    191
@@ -5143,11 +4511,7 @@
                                         , ( "money" , TVar (TV 235 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "cart" , TVar (TV 210 Star) )
-                                        , ( "id" , TVar (TV 222 Star) )
-                                        , ( "money" , TVar (TV 235 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -5158,11 +4522,7 @@
                                            , ( "money" , TVar (TV 235 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "cart" , TVar (TV 210 Star) )
-                                           , ( "id" , TVar (TV 222 Star) )
-                                           , ( "money" , TVar (TV 235 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -5218,11 +4578,7 @@
                                               , ( "money" , TVar (TV 235 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "cart" , TVar (TV 210 Star) )
-                                              , ( "id" , TVar (TV 222 Star) )
-                                              , ( "money" , TVar (TV 235 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -5251,11 +4607,7 @@
                                                      , ( "money" , TVar (TV 235 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "cart" , TVar (TV 210 Star) )
-                                                     , ( "id" , TVar (TV 222 Star) )
-                                                     , ( "money" , TVar (TV 235 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -5280,11 +4632,7 @@
                                                      , ( "money" , TVar (TV 235 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "cart" , TVar (TV 210 Star) )
-                                                     , ( "id" , TVar (TV 222 Star) )
-                                                     , ( "money" , TVar (TV 235 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -5454,26 +4802,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cart"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             210
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "money"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             235
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -5514,25 +4843,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cart"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   210
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "money"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   235
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 210 Star)))
                                                                             (Area
@@ -5566,17 +4877,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "cart"
-                                                                                , TVar (TV 210 Star)
-                                                                                )
-                                                                              , ( "id"
-                                                                                , TVar (TV 222 Star)
-                                                                                )
-                                                                              , ( "money"
-                                                                                , TVar (TV 235 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -5614,26 +4915,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cart"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             210
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "money"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             235
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 210 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".cart" False))))
@@ -5833,25 +5115,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cart"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   210
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "money"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   235
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -5894,25 +5158,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cart"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         210
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "money"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         235
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              222
@@ -5959,26 +5205,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "cart"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             210
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "id"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             222
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "money"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             235
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -6019,25 +5246,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cart"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   210
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "money"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   235
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 222 Star)))
                                                                             (Area
@@ -6270,25 +5479,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cart"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         210
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "money"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         235
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -6335,25 +5526,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "cart"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               210
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "id"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               222
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "money"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               235
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    235
@@ -6410,25 +5583,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "cart"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   210
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "id"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   222
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "money"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   235
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -6471,25 +5626,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "cart"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         210
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "id"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         222
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "money"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         235
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              235
@@ -6585,11 +5722,7 @@
                                         , ( "sales" , TVar (TV 278 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "customers" , TVar (TV 253 Star) )
-                                        , ( "inventory" , TVar (TV 265 Star) )
-                                        , ( "sales" , TVar (TV 278 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -6600,11 +5733,7 @@
                                            , ( "sales" , TVar (TV 278 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "customers" , TVar (TV 253 Star) )
-                                           , ( "inventory" , TVar (TV 265 Star) )
-                                           , ( "sales" , TVar (TV 278 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -6660,11 +5789,7 @@
                                               , ( "sales" , TVar (TV 278 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "customers" , TVar (TV 253 Star) )
-                                              , ( "inventory" , TVar (TV 265 Star) )
-                                              , ( "sales" , TVar (TV 278 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -6693,11 +5818,7 @@
                                                      , ( "sales" , TVar (TV 278 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "customers" , TVar (TV 253 Star) )
-                                                     , ( "inventory" , TVar (TV 265 Star) )
-                                                     , ( "sales" , TVar (TV 278 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -6722,11 +5843,7 @@
                                                      , ( "sales" , TVar (TV 278 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "customers" , TVar (TV 253 Star) )
-                                                     , ( "inventory" , TVar (TV 265 Star) )
-                                                     , ( "sales" , TVar (TV 278 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -6896,26 +6013,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "customers"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             253
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "inventory"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             265
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "sales"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             278
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -6956,25 +6054,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "customers"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   253
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "inventory"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   265
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "sales"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   278
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 253 Star)))
                                                                             (Area
@@ -7010,17 +6090,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "customers"
-                                                                                , TVar (TV 253 Star)
-                                                                                )
-                                                                              , ( "inventory"
-                                                                                , TVar (TV 265 Star)
-                                                                                )
-                                                                              , ( "sales"
-                                                                                , TVar (TV 278 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -7058,26 +6128,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "customers"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             253
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "inventory"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             265
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "sales"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             278
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 253 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".customers" False))))
@@ -7277,25 +6328,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "customers"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   253
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "inventory"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   265
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "sales"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   278
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -7338,25 +6371,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "customers"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         253
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "inventory"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         265
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "sales"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         278
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              265
@@ -7404,26 +6419,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "customers"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             253
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "inventory"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             265
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "sales"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             278
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -7464,25 +6460,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "customers"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   253
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "inventory"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   265
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "sales"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   278
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 265 Star)))
                                                                             (Area
@@ -7717,25 +6695,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "customers"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         253
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "inventory"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         265
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "sales"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         278
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ]))
+                                                                                                []))
                                                                                         (Area
                                                                                            (Loc
                                                                                               0 0 0)
@@ -7782,25 +6742,7 @@
                                                                                                       ])
                                                                                                    Nothing
                                                                                                    (fromList
-                                                                                                      [ ( "customers"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               253
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "inventory"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               265
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      , ( "sales"
-                                                                                                        , TVar
-                                                                                                            (TV
-                                                                                                               278
-                                                                                                               Star)
-                                                                                                        )
-                                                                                                      ])))
+                                                                                                      [])))
                                                                                              (TVar
                                                                                                 (TV
                                                                                                    278
@@ -7857,25 +6799,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "customers"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   253
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "inventory"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   265
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "sales"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   278
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -7918,25 +6842,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "customers"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         253
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "inventory"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         265
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "sales"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         278
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              278
@@ -8667,11 +7573,7 @@
                                         , ( "multiplier" , TVar (TV 329 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "id" , TVar (TV 313 Star) )
-                                        , ( "itemId" , TVar (TV 321 Star) )
-                                        , ( "multiplier" , TVar (TV 329 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -8740,11 +7642,7 @@
                                               , ( "multiplier" , TVar (TV 329 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "id" , TVar (TV 313 Star) )
-                                              , ( "itemId" , TVar (TV 321 Star) )
-                                              , ( "multiplier" , TVar (TV 329 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -8900,17 +7798,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "id"
-                                                                          , TVar (TV 313 Star)
-                                                                          )
-                                                                        , ( "itemId"
-                                                                          , TVar (TV 321 Star)
-                                                                          )
-                                                                        , ( "multiplier"
-                                                                          , TVar (TV 329 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -9087,17 +7975,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "id"
-                                                                          , TVar (TV 313 Star)
-                                                                          )
-                                                                        , ( "itemId"
-                                                                          , TVar (TV 321 Star)
-                                                                          )
-                                                                        , ( "multiplier"
-                                                                          , TVar (TV 329 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -9274,17 +8152,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "id"
-                                                                          , TVar (TV 313 Star)
-                                                                          )
-                                                                        , ( "itemId"
-                                                                          , TVar (TV 321 Star)
-                                                                          )
-                                                                        , ( "multiplier"
-                                                                          , TVar (TV 329 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -9311,17 +8179,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "id"
-                                                                                , TVar (TV 313 Star)
-                                                                                )
-                                                                              , ( "itemId"
-                                                                                , TVar (TV 321 Star)
-                                                                                )
-                                                                              , ( "multiplier"
-                                                                                , TVar (TV 329 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 329 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".multiplier" False))))
@@ -9391,12 +8249,7 @@
                                         , ( "id" , TVar (TV 366 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "cost" , TVar (TV 342 Star) )
-                                        , ( "description" , TVar (TV 350 Star) )
-                                        , ( "discounts" , TVar (TV 358 Star) )
-                                        , ( "id" , TVar (TV 366 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -9480,12 +8333,7 @@
                                               , ( "id" , TVar (TV 366 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "cost" , TVar (TV 342 Star) )
-                                              , ( "description" , TVar (TV 350 Star) )
-                                              , ( "discounts" , TVar (TV 358 Star) )
-                                              , ( "id" , TVar (TV 366 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -9644,20 +8492,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cost"
-                                                                          , TVar (TV 342 Star)
-                                                                          )
-                                                                        , ( "description"
-                                                                          , TVar (TV 350 Star)
-                                                                          )
-                                                                        , ( "discounts"
-                                                                          , TVar (TV 358 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 366 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -9837,20 +8672,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cost"
-                                                                          , TVar (TV 342 Star)
-                                                                          )
-                                                                        , ( "description"
-                                                                          , TVar (TV 350 Star)
-                                                                          )
-                                                                        , ( "discounts"
-                                                                          , TVar (TV 358 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 366 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10030,20 +8852,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cost"
-                                                                          , TVar (TV 342 Star)
-                                                                          )
-                                                                        , ( "description"
-                                                                          , TVar (TV 350 Star)
-                                                                          )
-                                                                        , ( "discounts"
-                                                                          , TVar (TV 358 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 366 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10223,20 +9032,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cost"
-                                                                          , TVar (TV 342 Star)
-                                                                          )
-                                                                        , ( "description"
-                                                                          , TVar (TV 350 Star)
-                                                                          )
-                                                                        , ( "discounts"
-                                                                          , TVar (TV 358 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 366 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10266,20 +9062,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "cost"
-                                                                                , TVar (TV 342 Star)
-                                                                                )
-                                                                              , ( "description"
-                                                                                , TVar (TV 350 Star)
-                                                                                )
-                                                                              , ( "discounts"
-                                                                                , TVar (TV 358 Star)
-                                                                                )
-                                                                              , ( "id"
-                                                                                , TVar (TV 366 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 366 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".id" False))))
@@ -10348,11 +9131,7 @@
                                         , ( "money" , TVar (TV 396 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "cart" , TVar (TV 380 Star) )
-                                        , ( "id" , TVar (TV 388 Star) )
-                                        , ( "money" , TVar (TV 396 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -10421,11 +9200,7 @@
                                               , ( "money" , TVar (TV 396 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "cart" , TVar (TV 380 Star) )
-                                              , ( "id" , TVar (TV 388 Star) )
-                                              , ( "money" , TVar (TV 396 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -10581,17 +9356,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cart"
-                                                                          , TVar (TV 380 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 388 Star)
-                                                                          )
-                                                                        , ( "money"
-                                                                          , TVar (TV 396 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10768,17 +9533,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cart"
-                                                                          , TVar (TV 380 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 388 Star)
-                                                                          )
-                                                                        , ( "money"
-                                                                          , TVar (TV 396 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10955,17 +9710,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "cart"
-                                                                          , TVar (TV 380 Star)
-                                                                          )
-                                                                        , ( "id"
-                                                                          , TVar (TV 388 Star)
-                                                                          )
-                                                                        , ( "money"
-                                                                          , TVar (TV 396 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10992,17 +9737,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "cart"
-                                                                                , TVar (TV 380 Star)
-                                                                                )
-                                                                              , ( "id"
-                                                                                , TVar (TV 388 Star)
-                                                                                )
-                                                                              , ( "money"
-                                                                                , TVar (TV 396 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 396 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".money" False))))
@@ -11069,11 +9804,7 @@
                                         , ( "sales" , TVar (TV 425 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "customers" , TVar (TV 409 Star) )
-                                        , ( "inventory" , TVar (TV 417 Star) )
-                                        , ( "sales" , TVar (TV 425 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -11142,11 +9873,7 @@
                                               , ( "sales" , TVar (TV 425 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "customers" , TVar (TV 409 Star) )
-                                              , ( "inventory" , TVar (TV 417 Star) )
-                                              , ( "sales" , TVar (TV 425 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -11302,17 +10029,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "customers"
-                                                                          , TVar (TV 409 Star)
-                                                                          )
-                                                                        , ( "inventory"
-                                                                          , TVar (TV 417 Star)
-                                                                          )
-                                                                        , ( "sales"
-                                                                          , TVar (TV 425 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -11489,17 +10206,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "customers"
-                                                                          , TVar (TV 409 Star)
-                                                                          )
-                                                                        , ( "inventory"
-                                                                          , TVar (TV 417 Star)
-                                                                          )
-                                                                        , ( "sales"
-                                                                          , TVar (TV 425 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -11676,17 +10383,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "customers"
-                                                                          , TVar (TV 409 Star)
-                                                                          )
-                                                                        , ( "inventory"
-                                                                          , TVar (TV 417 Star)
-                                                                          )
-                                                                        , ( "sales"
-                                                                          , TVar (TV 425 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -11713,17 +10410,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "customers"
-                                                                                , TVar (TV 409 Star)
-                                                                                )
-                                                                              , ( "inventory"
-                                                                                , TVar (TV 417 Star)
-                                                                                )
-                                                                              , ( "sales"
-                                                                                , TVar (TV 425 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 425 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".sales" False))))

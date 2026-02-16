@@ -1225,15 +1225,7 @@
                                                        )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "todos"
-                                                       , TApp
-                                                           (TCon
-                                                              (TC "List" (Kfun Star Star))
-                                                              "prelude")
-                                                           (TCon (TC "Todo" Star) "Module.mad")
-                                                       )
-                                                     ])))
+                                                  (fromList [])))
                                             (TRecord
                                                (fromList
                                                   [ ( "input" , TCon (TC "String" Star) "prelude" )
@@ -1245,14 +1237,7 @@
                                                     )
                                                   ])
                                                Nothing
-                                               (fromList
-                                                  [ ( "todos"
-                                                    , TApp
-                                                        (TCon
-                                                           (TC "List" (Kfun Star Star)) "prelude")
-                                                        (TCon (TC "Todo" Star) "Module.mad")
-                                                    )
-                                                  ]))))))))
+                                               (fromList []))))))))
                         (Area (Loc 816 41 14) (Loc 1082 52 2))
                         (Abs
                            (Typed
@@ -1344,15 +1329,7 @@
                                                            )
                                                          ])
                                                       Nothing
-                                                      (fromList
-                                                         [ ( "todos"
-                                                           , TApp
-                                                               (TCon
-                                                                  (TC "List" (Kfun Star Star))
-                                                                  "prelude")
-                                                               (TCon (TC "Todo" Star) "Module.mad")
-                                                           )
-                                                         ])))
+                                                      (fromList [])))
                                                 (TRecord
                                                    (fromList
                                                       [ ( "input"
@@ -1367,15 +1344,7 @@
                                                         )
                                                       ])
                                                    Nothing
-                                                   (fromList
-                                                      [ ( "todos"
-                                                        , TApp
-                                                            (TCon
-                                                               (TC "List" (Kfun Star Star))
-                                                               "prelude")
-                                                            (TCon (TC "Todo" Star) "Module.mad")
-                                                        )
-                                                      ])))))))
+                                                   (fromList [])))))))
                                (Area (Loc 816 41 14) (Loc 1082 52 2))
                                (Abs
                                   (Typed
@@ -1471,16 +1440,7 @@
                                                                )
                                                              ])
                                                           Nothing
-                                                          (fromList
-                                                             [ ( "todos"
-                                                               , TApp
-                                                                   (TCon
-                                                                      (TC "List" (Kfun Star Star))
-                                                                      "prelude")
-                                                                   (TCon
-                                                                      (TC "Todo" Star) "Module.mad")
-                                                               )
-                                                             ])))
+                                                          (fromList [])))
                                                     (TRecord
                                                        (fromList
                                                           [ ( "input"
@@ -1495,15 +1455,7 @@
                                                             )
                                                           ])
                                                        Nothing
-                                                       (fromList
-                                                          [ ( "todos"
-                                                            , TApp
-                                                                (TCon
-                                                                   (TC "List" (Kfun Star Star))
-                                                                   "prelude")
-                                                                (TCon (TC "Todo" Star) "Module.mad")
-                                                            )
-                                                          ]))))))
+                                                       (fromList []))))))
                                       (Area (Loc 816 41 14) (Loc 1082 52 2))
                                       (Abs
                                          (Typed
@@ -1602,19 +1554,7 @@
                                                                    )
                                                                  ])
                                                               Nothing
-                                                              (fromList
-                                                                 [ ( "todos"
-                                                                   , TApp
-                                                                       (TCon
-                                                                          (TC
-                                                                             "List"
-                                                                             (Kfun Star Star))
-                                                                          "prelude")
-                                                                       (TCon
-                                                                          (TC "Todo" Star)
-                                                                          "Module.mad")
-                                                                   )
-                                                                 ])))
+                                                              (fromList [])))
                                                         (TRecord
                                                            (fromList
                                                               [ ( "input"
@@ -1631,17 +1571,7 @@
                                                                 )
                                                               ])
                                                            Nothing
-                                                           (fromList
-                                                              [ ( "todos"
-                                                                , TApp
-                                                                    (TCon
-                                                                       (TC "List" (Kfun Star Star))
-                                                                       "prelude")
-                                                                    (TCon
-                                                                       (TC "Todo" Star)
-                                                                       "Module.mad")
-                                                                )
-                                                              ])))))
+                                                           (fromList [])))))
                                              (Area (Loc 834 41 32) (Loc 1082 52 2))
                                              (ListConstructor
                                                 [ Typed
@@ -1735,19 +1665,7 @@
                                                                        )
                                                                      ])
                                                                   Nothing
-                                                                  (fromList
-                                                                     [ ( "todos"
-                                                                       , TApp
-                                                                           (TCon
-                                                                              (TC
-                                                                                 "List"
-                                                                                 (Kfun Star Star))
-                                                                              "prelude")
-                                                                           (TCon
-                                                                              (TC "Todo" Star)
-                                                                              "Module.mad")
-                                                                       )
-                                                                     ])))
+                                                                  (fromList [])))
                                                             (TRecord
                                                                (fromList
                                                                   [ ( "input"
@@ -1767,19 +1685,7 @@
                                                                     )
                                                                   ])
                                                                Nothing
-                                                               (fromList
-                                                                  [ ( "todos"
-                                                                    , TApp
-                                                                        (TCon
-                                                                           (TC
-                                                                              "List"
-                                                                              (Kfun Star Star))
-                                                                           "prelude")
-                                                                        (TCon
-                                                                           (TC "Todo" Star)
-                                                                           "Module.mad")
-                                                                    )
-                                                                  ]))))
+                                                               (fromList []))))
                                                     (Area (Loc 838 42 3) (Loc 1080 51 12))
                                                     (ListItem
                                                        (Typed
@@ -1887,21 +1793,7 @@
                                                                              )
                                                                            ])
                                                                         Nothing
-                                                                        (fromList
-                                                                           [ ( "todos"
-                                                                             , TApp
-                                                                                 (TCon
-                                                                                    (TC
-                                                                                       "List"
-                                                                                       (Kfun
-                                                                                          Star
-                                                                                          Star))
-                                                                                    "prelude")
-                                                                                 (TCon
-                                                                                    (TC "Todo" Star)
-                                                                                    "Module.mad")
-                                                                             )
-                                                                           ])))
+                                                                        (fromList [])))
                                                                   (TRecord
                                                                      (fromList
                                                                         [ ( "input"
@@ -1923,20 +1815,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "todos"
-                                                                          , TApp
-                                                                              (TCon
-                                                                                 (TC
-                                                                                    "List"
-                                                                                    (Kfun
-                                                                                       Star Star))
-                                                                                 "prelude")
-                                                                              (TCon
-                                                                                 (TC "Todo" Star)
-                                                                                 "Module.mad")
-                                                                          )
-                                                                        ]))))
+                                                                     (fromList []))))
                                                           (Area (Loc 838 42 3) (Loc 1080 51 12))
                                                           (App
                                                              (Typed
@@ -1987,23 +1866,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "todos"
-                                                                                      , TApp
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "List"
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   Star))
-                                                                                             "prelude")
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "Todo"
-                                                                                                Star)
-                                                                                             "Module.mad")
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "input"
@@ -2030,23 +1893,7 @@
                                                                                    )
                                                                                  ])
                                                                               Nothing
-                                                                              (fromList
-                                                                                 [ ( "todos"
-                                                                                   , TApp
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "List"
-                                                                                             (Kfun
-                                                                                                Star
-                                                                                                Star))
-                                                                                          "prelude")
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "Todo"
-                                                                                             Star)
-                                                                                          "Module.mad")
-                                                                                   )
-                                                                                 ]))))
+                                                                              (fromList []))))
                                                                      (TApp
                                                                         (TApp
                                                                            (TCon
@@ -2159,23 +2006,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "todos"
-                                                                                      , TApp
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "List"
-                                                                                                (Kfun
-                                                                                                   Star
-                                                                                                   Star))
-                                                                                             "prelude")
-                                                                                          (TCon
-                                                                                             (TC
-                                                                                                "Todo"
-                                                                                                Star)
-                                                                                             "Module.mad")
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TRecord
                                                                               (fromList
                                                                                  [ ( "input"
@@ -2202,23 +2033,7 @@
                                                                                    )
                                                                                  ])
                                                                               Nothing
-                                                                              (fromList
-                                                                                 [ ( "todos"
-                                                                                   , TApp
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "List"
-                                                                                             (Kfun
-                                                                                                Star
-                                                                                                Star))
-                                                                                          "prelude")
-                                                                                       (TCon
-                                                                                          (TC
-                                                                                             "Todo"
-                                                                                             Star)
-                                                                                          "Module.mad")
-                                                                                   )
-                                                                                 ])))))
+                                                                              (fromList [])))))
                                                                 (Area (Loc 838 42 3) (Loc 840 42 5))
                                                                 (Var "of" False))
                                                              (Typed
@@ -2265,23 +2080,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "todos"
-                                                                                , TApp
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "List"
-                                                                                          (Kfun
-                                                                                             Star
-                                                                                             Star))
-                                                                                       "prelude")
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "Todo"
-                                                                                          Star)
-                                                                                       "Module.mad")
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TRecord
                                                                         (fromList
                                                                            [ ( "input"
@@ -2304,21 +2103,7 @@
                                                                              )
                                                                            ])
                                                                         Nothing
-                                                                        (fromList
-                                                                           [ ( "todos"
-                                                                             , TApp
-                                                                                 (TCon
-                                                                                    (TC
-                                                                                       "List"
-                                                                                       (Kfun
-                                                                                          Star
-                                                                                          Star))
-                                                                                    "prelude")
-                                                                                 (TCon
-                                                                                    (TC "Todo" Star)
-                                                                                    "Module.mad")
-                                                                             )
-                                                                           ])))
+                                                                        (fromList [])))
                                                                 (Area
                                                                    (Loc 841 42 6) (Loc 1079 51 11))
                                                                 (Abs
@@ -2357,23 +2142,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "todos"
-                                                                                , TApp
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "List"
-                                                                                          (Kfun
-                                                                                             Star
-                                                                                             Star))
-                                                                                       "prelude")
-                                                                                    (TCon
-                                                                                       (TC
-                                                                                          "Todo"
-                                                                                          Star)
-                                                                                       "Module.mad")
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area
                                                                          (Loc 842 42 7)
                                                                          (Loc 847 42 12))
@@ -2413,23 +2182,7 @@
                                                                                  )
                                                                                ])
                                                                             Nothing
-                                                                            (fromList
-                                                                               [ ( "todos"
-                                                                                 , TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "List"
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              Star))
-                                                                                        "prelude")
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "Todo"
-                                                                                           Star)
-                                                                                        "Module.mad")
-                                                                                 )
-                                                                               ]))
+                                                                            (fromList []))
                                                                        (Area
                                                                           (Loc 852 42 17)
                                                                           (Loc 1079 51 11))
@@ -2483,22 +2236,7 @@
                                                                                            ])
                                                                                         Nothing
                                                                                         (fromList
-                                                                                           [ ( "todos"
-                                                                                             , TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "List"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          Star))
-                                                                                                    "prelude")
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "Todo"
-                                                                                                       Star)
-                                                                                                    "Module.mad")
-                                                                                             )
-                                                                                           ])))
+                                                                                           [])))
                                                                                   (TRecord
                                                                                      (fromList
                                                                                         [ ( "input"
@@ -2525,23 +2263,7 @@
                                                                                           )
                                                                                         ])
                                                                                      Nothing
-                                                                                     (fromList
-                                                                                        [ ( "todos"
-                                                                                          , TApp
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "List"
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       Star))
-                                                                                                 "prelude")
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "Todo"
-                                                                                                    Star)
-                                                                                                 "Module.mad")
-                                                                                          )
-                                                                                        ])))
+                                                                                     (fromList [])))
                                                                              (Area
                                                                                 (Loc 852 42 17)
                                                                                 (Loc 1072 51 4))
@@ -2584,22 +2306,7 @@
                                                                                            ])
                                                                                         Nothing
                                                                                         (fromList
-                                                                                           [ ( "todos"
-                                                                                             , TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "List"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          Star))
-                                                                                                    "prelude")
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "Todo"
-                                                                                                       Star)
-                                                                                                    "Module.mad")
-                                                                                             )
-                                                                                           ]))
+                                                                                           []))
                                                                                    (Area
                                                                                       (Loc
                                                                                          852 42 17)
@@ -2644,22 +2351,7 @@
                                                                                             ])
                                                                                          Nothing
                                                                                          (fromList
-                                                                                            [ ( "todos"
-                                                                                              , TApp
-                                                                                                  (TCon
-                                                                                                     (TC
-                                                                                                        "List"
-                                                                                                        (Kfun
-                                                                                                           Star
-                                                                                                           Star))
-                                                                                                     "prelude")
-                                                                                                  (TCon
-                                                                                                     (TC
-                                                                                                        "Todo"
-                                                                                                        Star)
-                                                                                                     "Module.mad")
-                                                                                              )
-                                                                                            ]))
+                                                                                            []))
                                                                                     (Area
                                                                                        (Loc
                                                                                           852 42 17)
@@ -2722,22 +2414,7 @@
                                                                                                      ])
                                                                                                   Nothing
                                                                                                   (fromList
-                                                                                                     [ ( "todos"
-                                                                                                       , TApp
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "List"
-                                                                                                                 (Kfun
-                                                                                                                    Star
-                                                                                                                    Star))
-                                                                                                              "prelude")
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "Todo"
-                                                                                                                 Star)
-                                                                                                              "Module.mad")
-                                                                                                       )
-                                                                                                     ])))
+                                                                                                     [])))
                                                                                           (Area
                                                                                              (Loc
                                                                                                 983
@@ -2812,22 +2489,7 @@
                                                                                                          ])
                                                                                                       Nothing
                                                                                                       (fromList
-                                                                                                         [ ( "todos"
-                                                                                                           , TApp
-                                                                                                               (TCon
-                                                                                                                  (TC
-                                                                                                                     "List"
-                                                                                                                     (Kfun
-                                                                                                                        Star
-                                                                                                                        Star))
-                                                                                                                  "prelude")
-                                                                                                               (TCon
-                                                                                                                  (TC
-                                                                                                                     "Todo"
-                                                                                                                     Star)
-                                                                                                                  "Module.mad")
-                                                                                                           )
-                                                                                                         ]))
+                                                                                                         []))
                                                                                                  (Area
                                                                                                     (Loc
                                                                                                        997
@@ -2867,22 +2529,7 @@
                                                                                                                 ])
                                                                                                              Nothing
                                                                                                              (fromList
-                                                                                                                [ ( "todos"
-                                                                                                                  , TApp
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "List"
-                                                                                                                            (Kfun
-                                                                                                                               Star
-                                                                                                                               Star))
-                                                                                                                         "prelude")
-                                                                                                                      (TCon
-                                                                                                                         (TC
-                                                                                                                            "Todo"
-                                                                                                                            Star)
-                                                                                                                         "Module.mad")
-                                                                                                                  )
-                                                                                                                ]))
+                                                                                                                []))
                                                                                                         (Area
                                                                                                            (Loc
                                                                                                               1005
@@ -2922,22 +2569,7 @@
                                                                                                                       ])
                                                                                                                    Nothing
                                                                                                                    (fromList
-                                                                                                                      [ ( "todos"
-                                                                                                                        , TApp
-                                                                                                                            (TCon
-                                                                                                                               (TC
-                                                                                                                                  "List"
-                                                                                                                                  (Kfun
-                                                                                                                                     Star
-                                                                                                                                     Star))
-                                                                                                                               "prelude")
-                                                                                                                            (TCon
-                                                                                                                               (TC
-                                                                                                                                  "Todo"
-                                                                                                                                  Star)
-                                                                                                                               "Module.mad")
-                                                                                                                        )
-                                                                                                                      ]))
+                                                                                                                      []))
                                                                                                               (Area
                                                                                                                  (Loc
                                                                                                                     1008
@@ -3385,22 +3017,7 @@
                                                                                                                                                ])
                                                                                                                                             Nothing
                                                                                                                                             (fromList
-                                                                                                                                               [ ( "todos"
-                                                                                                                                                 , TApp
-                                                                                                                                                     (TCon
-                                                                                                                                                        (TC
-                                                                                                                                                           "List"
-                                                                                                                                                           (Kfun
-                                                                                                                                                              Star
-                                                                                                                                                              Star))
-                                                                                                                                                        "prelude")
-                                                                                                                                                     (TCon
-                                                                                                                                                        (TC
-                                                                                                                                                           "Todo"
-                                                                                                                                                           Star)
-                                                                                                                                                        "Module.mad")
-                                                                                                                                                 )
-                                                                                                                                               ]))
+                                                                                                                                               []))
                                                                                                                                        (Area
                                                                                                                                           (Loc
                                                                                                                                              1041
@@ -3453,22 +3070,7 @@
                                                                                                                                                      ])
                                                                                                                                                   Nothing
                                                                                                                                                   (fromList
-                                                                                                                                                     [ ( "todos"
-                                                                                                                                                       , TApp
-                                                                                                                                                           (TCon
-                                                                                                                                                              (TC
-                                                                                                                                                                 "List"
-                                                                                                                                                                 (Kfun
-                                                                                                                                                                    Star
-                                                                                                                                                                    Star))
-                                                                                                                                                              "prelude")
-                                                                                                                                                           (TCon
-                                                                                                                                                              (TC
-                                                                                                                                                                 "Todo"
-                                                                                                                                                                 Star)
-                                                                                                                                                              "Module.mad")
-                                                                                                                                                       )
-                                                                                                                                                     ])))
+                                                                                                                                                     [])))
                                                                                                                                             (TApp
                                                                                                                                                (TCon
                                                                                                                                                   (TC
@@ -3534,22 +3136,7 @@
                                                                                                                              ])
                                                                                                                           Nothing
                                                                                                                           (fromList
-                                                                                                                             [ ( "todos"
-                                                                                                                               , TApp
-                                                                                                                                   (TCon
-                                                                                                                                      (TC
-                                                                                                                                         "List"
-                                                                                                                                         (Kfun
-                                                                                                                                            Star
-                                                                                                                                            Star))
-                                                                                                                                      "prelude")
-                                                                                                                                   (TCon
-                                                                                                                                      (TC
-                                                                                                                                         "Todo"
-                                                                                                                                         Star)
-                                                                                                                                      "Module.mad")
-                                                                                                                               )
-                                                                                                                             ]))
+                                                                                                                             []))
                                                                                                                      (Area
                                                                                                                         (Loc
                                                                                                                            1055
@@ -4445,22 +4032,7 @@
                                                                                                                                 ])
                                                                                                                              Nothing
                                                                                                                              (fromList
-                                                                                                                                [ ( "todos"
-                                                                                                                                  , TApp
-                                                                                                                                      (TCon
-                                                                                                                                         (TC
-                                                                                                                                            "List"
-                                                                                                                                            (Kfun
-                                                                                                                                               Star
-                                                                                                                                               Star))
-                                                                                                                                         "prelude")
-                                                                                                                                      (TCon
-                                                                                                                                         (TC
-                                                                                                                                            "Todo"
-                                                                                                                                            Star)
-                                                                                                                                         "Module.mad")
-                                                                                                                                  )
-                                                                                                                                ])))
+                                                                                                                                [])))
                                                                                                                        (TApp
                                                                                                                           (TCon
                                                                                                                              (TC
@@ -4515,22 +4087,7 @@
                                                                                                                           ])
                                                                                                                        Nothing
                                                                                                                        (fromList
-                                                                                                                          [ ( "todos"
-                                                                                                                            , TApp
-                                                                                                                                (TCon
-                                                                                                                                   (TC
-                                                                                                                                      "List"
-                                                                                                                                      (Kfun
-                                                                                                                                         Star
-                                                                                                                                         Star))
-                                                                                                                                   "prelude")
-                                                                                                                                (TCon
-                                                                                                                                   (TC
-                                                                                                                                      "Todo"
-                                                                                                                                      Star)
-                                                                                                                                   "Module.mad")
-                                                                                                                            )
-                                                                                                                          ]))
+                                                                                                                          []))
                                                                                                                   (Area
                                                                                                                      (Loc
                                                                                                                         852
@@ -4586,23 +4143,7 @@
                                                                                        )
                                                                                      ])
                                                                                   Nothing
-                                                                                  (fromList
-                                                                                     [ ( "todos"
-                                                                                       , TApp
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "List"
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    Star))
-                                                                                              "prelude")
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "Todo"
-                                                                                                 Star)
-                                                                                              "Module.mad")
-                                                                                       )
-                                                                                     ]))
+                                                                                  (fromList []))
                                                                              (Area
                                                                                 (Loc 1073 51 5)
                                                                                 (Loc 1078 51 10))
@@ -4942,14 +4483,14 @@
                                   (TRecord
                                      (fromList [ ( "todos" , TVar (TV 259 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "todos" , TVar (TV 259 Star) ) ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList [ ( "todos" , TVar (TV 259 Star) ) ])
                                         Nothing
-                                        (fromList [ ( "todos" , TVar (TV 259 Star) ) ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -4982,7 +4523,7 @@
                                          TRecord
                                            (fromList [ ( "todos" , TVar (TV 259 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "todos" , TVar (TV 259 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -4999,7 +4540,7 @@
                                                (TRecord
                                                   (fromList [ ( "todos" , TVar (TV 259 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "todos" , TVar (TV 259 Star) ) ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -5012,7 +4553,7 @@
                                                 TRecord
                                                   (fromList [ ( "todos" , TVar (TV 259 Star) ) ])
                                                   Nothing
-                                                  (fromList [ ( "todos" , TVar (TV 259 Star) ) ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -5162,14 +4703,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "todos"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             259
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -5198,13 +4732,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "todos"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   259
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 259 Star)))
                                                                             (Area
@@ -5232,11 +4760,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "todos"
-                                                                                , TVar (TV 259 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -5262,14 +4786,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "todos"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             259
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 259 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".todos" False))))
@@ -5327,7 +4844,7 @@
                                   (TRecord
                                      (fromList [ ( "todos" , TVar (TV 270 Star) ) ])
                                      Nothing
-                                     (fromList [ ( "todos" , TVar (TV 270 Star) ) ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -5361,7 +4878,7 @@
                                          TRecord
                                            (fromList [ ( "todos" , TVar (TV 270 Star) ) ])
                                            Nothing
-                                           (fromList [ ( "todos" , TVar (TV 270 Star) ) ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -5511,11 +5028,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "todos"
-                                                                          , TVar (TV 270 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -5536,11 +5049,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "todos"
-                                                                                , TVar (TV 270 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 270 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".todos" False))))
@@ -5595,10 +5104,7 @@
                                         , ( "todos" , TVar (TV 114 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "input" , TVar (TV 102 Star) )
-                                        , ( "todos" , TVar (TV 114 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -5608,10 +5114,7 @@
                                            , ( "todos" , TVar (TV 114 Star) )
                                            ])
                                         Nothing
-                                        (fromList
-                                           [ ( "input" , TVar (TV 102 Star) )
-                                           , ( "todos" , TVar (TV 114 Star) )
-                                           ])))
+                                        (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -5659,10 +5162,7 @@
                                               , ( "todos" , TVar (TV 114 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "input" , TVar (TV 102 Star) )
-                                              , ( "todos" , TVar (TV 114 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -5686,10 +5186,7 @@
                                                      , ( "todos" , TVar (TV 114 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "input" , TVar (TV 102 Star) )
-                                                     , ( "todos" , TVar (TV 114 Star) )
-                                                     ])))
+                                                  (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
@@ -5709,10 +5206,7 @@
                                                      , ( "todos" , TVar (TV 114 Star) )
                                                      ])
                                                   Nothing
-                                                  (fromList
-                                                     [ ( "input" , TVar (TV 102 Star) )
-                                                     , ( "todos" , TVar (TV 114 Star) )
-                                                     ]))
+                                                  (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
@@ -5872,20 +5366,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "input"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "todos"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -5920,19 +5401,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "input"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "todos"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 102 Star)))
                                                                             (Area
@@ -5963,14 +5432,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "input"
-                                                                                , TVar (TV 102 Star)
-                                                                                )
-                                                                              , ( "todos"
-                                                                                , TVar (TV 114 Star)
-                                                                                )
-                                                                              ]))
+                                                                           (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
                                                                    (Typed
@@ -6002,20 +5464,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "input"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "todos"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])))
+                                                                                 (fromList [])))
                                                                            (TVar (TV 102 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".input" False))))
@@ -6205,19 +5654,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "input"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "todos"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ]))
+                                                                                          []))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -6254,19 +5691,7 @@
                                                                                                 ])
                                                                                              Nothing
                                                                                              (fromList
-                                                                                                [ ( "input"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         102
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                , ( "todos"
-                                                                                                  , TVar
-                                                                                                      (TV
-                                                                                                         114
-                                                                                                         Star)
-                                                                                                  )
-                                                                                                ])))
+                                                                                                [])))
                                                                                        (TVar
                                                                                           (TV
                                                                                              114
@@ -6308,20 +5733,7 @@
                                                                                       )
                                                                                     ])
                                                                                  Nothing
-                                                                                 (fromList
-                                                                                    [ ( "input"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             102
-                                                                                             Star)
-                                                                                      )
-                                                                                    , ( "todos"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             114
-                                                                                             Star)
-                                                                                      )
-                                                                                    ]))
+                                                                                 (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -6356,19 +5768,7 @@
                                                                                           ])
                                                                                        Nothing
                                                                                        (fromList
-                                                                                          [ ( "input"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   102
-                                                                                                   Star)
-                                                                                            )
-                                                                                          , ( "todos"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   114
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])))
+                                                                                          [])))
                                                                                  (TVar
                                                                                     (TV 114 Star)))
                                                                             (Area
@@ -9692,10 +9092,7 @@
                                         , ( "todos" , TVar (TV 197 Star) )
                                         ])
                                      Nothing
-                                     (fromList
-                                        [ ( "input" , TVar (TV 189 Star) )
-                                        , ( "todos" , TVar (TV 197 Star) )
-                                        ])))
+                                     (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -9749,10 +9146,7 @@
                                               , ( "todos" , TVar (TV 197 Star) )
                                               ])
                                            Nothing
-                                           (fromList
-                                              [ ( "input" , TVar (TV 189 Star) )
-                                              , ( "todos" , TVar (TV 197 Star) )
-                                              ]))
+                                           (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
@@ -9905,14 +9299,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV 189 Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV 197 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10086,14 +9473,7 @@
                                                                           )
                                                                         ])
                                                                      Nothing
-                                                                     (fromList
-                                                                        [ ( "input"
-                                                                          , TVar (TV 189 Star)
-                                                                          )
-                                                                        , ( "todos"
-                                                                          , TVar (TV 197 Star)
-                                                                          )
-                                                                        ]))
+                                                                     (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
                                                              (Typed
@@ -10117,14 +9497,7 @@
                                                                                 )
                                                                               ])
                                                                            Nothing
-                                                                           (fromList
-                                                                              [ ( "input"
-                                                                                , TVar (TV 189 Star)
-                                                                                )
-                                                                              , ( "todos"
-                                                                                , TVar (TV 197 Star)
-                                                                                )
-                                                                              ])))
+                                                                           (fromList [])))
                                                                      (TVar (TV 197 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".todos" False))))

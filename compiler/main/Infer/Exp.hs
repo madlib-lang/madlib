@@ -549,16 +549,31 @@ inferRecord discardError options env exp = do
         _       -> Nothing
 
   (recordType, extraSubst) <- case apply subst <$> base of
-    Just (TRecord fields baseBase optionalFields) ->
-      return (TRecord (M.fromList fieldTypes' <> fields) (apply subst <$> baseBase) optionalFields, mempty)
+    Just (TRecord spreadFields baseBase optionalFields) -> do
+      -- Merge the spread record's fields with our explicit fields
+      -- The spread fields take precedence if there are conflicts
+      let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
+      return (TRecord mergedFields (apply subst <$> baseBase) optionalFields, mempty)
 
     Just tBase -> do
+      -- The spread is a type variable or other type - unify it with a record type
+      -- that has our fields and a row variable for extension
       baseVar <- newTVar Star
-      s <- contextualUnify' env discardError exp (apply subst tBase) (TRecord mempty (Just baseVar) mempty)
-      -- return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
-      return (TRecord (M.fromList fieldTypes') (Just tBase) mempty, s)
+      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
+      s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
+      -- After unification, tBase should be resolved to a record type
+      -- Return the unified type with the row variable preserved
+      let unifiedBase = apply s tBase
+      case unifiedBase of
+        TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
+          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
+        _ ->
+          -- Fallback: use the record we created with the row variable
+          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
 
     Nothing ->
+      -- No spread - create a closed record (no row variable)
+      -- This allows the record to be used in contexts that don't require extensibility
       return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
 
   let allPS = concat fieldPS

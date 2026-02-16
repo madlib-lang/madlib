@@ -48,10 +48,20 @@ instance Unify Type where
           fieldsForRight = M.difference fields' fields
 
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'
-      s3 <- unify (TRecord fieldsForRight (Just newBase) mempty) tBase
-
-      return $ s1 `compose` s2 `compose` s3
+      let tBase'Applied = apply s1 tBase'
+          tBaseApplied = apply s1 tBase
+      
+      -- Check if tBase and tBase' are the same after applying s1
+      if tBaseApplied == tBase'Applied then do
+        -- They're the same, so we unify both with the same newBase
+        s2 <- unify (TRecord (M.union fieldsForLeft fieldsForRight) (Just newBase) mempty) tBaseApplied
+        return $ s2 `compose` s1
+      else do
+        -- They're different, unify separately
+        s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'Applied
+        let tBaseApplied2 = apply s2 tBaseApplied
+        s3 <- unify (TRecord fieldsForRight (Just newBase) mempty) tBaseApplied2
+        return $ s3 `compose` s2 `compose` s1
 
     (Just tBase, Nothing) -> do
       let fieldsDiff = M.difference fields' fields
@@ -62,9 +72,11 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          fieldsToCheckApplied = M.map (apply s1) fieldsToCheck
+          fieldsToCheck'Applied = M.map (apply s1) fieldsToCheck'
+      s2 <- unifyVars' s1 (M.elems fieldsToCheckApplied) (M.elems fieldsToCheck'Applied)
 
-      return $ s1 `compose` s2
+      return $ s2 `compose` s1
 
     (Nothing, Just tBase') -> do
       let fieldsDiff = M.difference fields fields'
@@ -75,9 +87,11 @@ instance Unify Type where
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-      s2 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          fieldsToCheckApplied = M.map (apply s1) fieldsToCheck
+          fieldsToCheck'Applied = M.map (apply s1) fieldsToCheck'
+      s2 <- unifyVars' s1 (M.elems fieldsToCheckApplied) (M.elems fieldsToCheck'Applied)
 
-      return $ s1 `compose` s2
+      return $ s2 `compose` s1
 
     _ -> do
       let extraFields  = M.difference (fields <> optionalFields) (fields' <> optionalFields')

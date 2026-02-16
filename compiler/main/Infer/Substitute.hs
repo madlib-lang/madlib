@@ -49,34 +49,50 @@ instance Substitutable Type where
 
   apply s (TRecord fields (Just (TVar tv)) optionalFields) = case M.lookup tv s of
     Just newBase@(TVar _) ->
+      -- Row variable substituted with another row variable - preserve it
       TRecord (apply s <$> fields) (Just newBase) (apply s <$> optionalFields)
 
     Just (TRecord fields' Nothing optionalFields') ->
+      -- Row variable substituted with a closed record - merge fields and remove row variable
       TRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
 
     Just (TRecord fields' base' optionalFields') ->
+      -- Row variable substituted with an open record - merge fields and preserve the base
       let appliedBase = apply s <$> base'
       in  if appliedBase /= base' then
+            -- Base changed after substitution, recurse to handle nested substitutions
             apply s $ TRecord (fields <> fields') appliedBase (optionalFields <> optionalFields')
           else
+            -- Base unchanged, just merge fields
             TRecord (apply s <$> (fields <> fields')) appliedBase (apply s <$> (optionalFields <> optionalFields'))
 
     Nothing ->
-      TRecord (apply s <$> fields) (Just (TVar tv)) optionalFields
+      -- Row variable not in substitution - keep it as is
+      TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
 
     Just (TGen x) ->
+      -- Row variable substituted with a generic type variable - preserve it
       TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
 
-    _ ->
-      TRecord fields (Just (TVar tv)) optionalFields
-    -- bad ->
-      -- error $ "found: " <> ppShow bad
+    Just otherType ->
+      -- Row variable substituted with a non-record type - try to apply substitution recursively
+      -- This handles cases where the substitution might resolve to a record after further application
+      let appliedOther = apply s otherType
+      in  case appliedOther of
+            TRecord fields' base' optionalFields' ->
+              -- After substitution, it became a record - merge fields
+              TRecord (apply s <$> (fields <> fields')) base' (apply s <$> (optionalFields <> optionalFields'))
+            _ ->
+              -- Still not a record - keep original row variable but apply substitution to fields
+              TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
 
   apply s (TRecord fields (Just (TRecord fields' base optionalFields')) optionalFields) =
+    -- Base is already a record - merge and recurse
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
   apply s (TRecord fields Nothing optionalFields) =
-    TRecord (apply s <$> (fields <> optionalFields)) Nothing (apply s <$> optionalFields)
+    -- No row variable - merge optional fields into main fields and apply substitution
+    TRecord (apply s <$> (fields <> optionalFields)) Nothing mempty
 
   apply _ t = t
 
