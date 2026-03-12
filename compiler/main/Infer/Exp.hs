@@ -744,7 +744,7 @@ inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = d
   tv                     <- newTVar Star
   (pss, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) t is
+      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) (apply currSubst t) is
       return (res <> [r], subst `compose` currSubst)
     )
     ([], s)
