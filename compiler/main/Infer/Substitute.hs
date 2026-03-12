@@ -146,11 +146,11 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
       let base = base1 <|> base2
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base (optionalFields1 <> optionalFields2)
 
-    (TRecord fields _ optionalFields, TVar _) ->
-      TRecord fields (Just t2) optionalFields
+    (TRecord fields base optionalFields, TVar _) ->
+      TRecord fields base optionalFields
 
-    (TVar _, TRecord fields _ optionalFields) ->
-      TRecord fields (Just t1) optionalFields
+    (TVar _, TRecord fields base optionalFields) ->
+      TRecord fields base optionalFields
 
     (TApp tl tr, TApp tl' tr') ->
       let tl'' = mergeTypes tl tl'
