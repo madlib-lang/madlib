@@ -1098,8 +1098,9 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
 
   (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
-  s'' <- catchError (contextualUnify' env discardError canExp t' (apply (s `compose` s) t)) (throwError . limitContextArea 2)
-  let s' = s `compose` s'' `compose` s''
+  let sNorm = s `compose` s -- resolve internal substitution chains
+  s'' <- catchError (contextualUnify' env discardError canExp t' (apply sNorm t)) (throwError . limitContextArea 2)
+  let s' = s'' `compose` sNorm
 
   let envWithVarsExcluded =
         env'

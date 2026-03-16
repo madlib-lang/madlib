@@ -164,7 +164,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
     (ps' :=> t) <- instantiate sc
     s           <- contextualUnify Strict env p t (foldr fn tv ts)
-    let s' = s `compose` s `compose` s
+    let s' = s
 
     let t = apply s' tv
     return (Slv.Typed ([] :=> t) area (Slv.PCon n (map (updateTypes s') pats')), ps <> ps', M.map (apply s') vars, t)

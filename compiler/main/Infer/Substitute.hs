@@ -16,7 +16,6 @@ import           Data.List                      ( nub
                                                 , union
                                                 , intersect
                                                 )
-
 import           Control.Applicative
 
 
@@ -39,10 +38,7 @@ instance Substitutable Type where
 
   apply s t@(TVar a) =
     let t' = M.findWithDefault t a s
-    in  if occursCheck a t' then
-          t
-        else
-          t'
+    in  if occursCheck a t' then t else t'
 
   apply s (t1 `TApp` t2) =
     apply s t1 `TApp` apply s t2
@@ -138,7 +134,7 @@ occursCheck tv t =
 
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
+compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of

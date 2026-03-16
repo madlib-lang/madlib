@@ -37,7 +37,7 @@ instance Unify Type where
   unify (l `TApp` r) (l' `TApp` r') = do
     s1 <- unify l l'
     s2 <- unify (apply s1 r) (apply s1 r')
-    return $ compose s1 s2
+    return $ compose s2 s1
 
   unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
@@ -125,7 +125,7 @@ instance (Unify t, Show t, Substitutable t) => Unify [t] where
   unify (x : xs) (y : ys) = do
     s1 <- unify x y
     s2 <- unify (apply s1 xs) (apply s1 ys)
-    return (s2 <> s1)
+    return (compose s2 s1)
   unify [] [] = return nullSubst
   unify _  _  = throwError $ CompilationError Error NoContext
 
@@ -152,7 +152,7 @@ unifyElems' _ []        = return M.empty
 unifyElems' t (t' : xs) = do
   s1 <- unify t' t
   s2 <- unifyElems' t xs
-  return $ compose s1 s2
+  return $ compose s2 s1
 
 
 
@@ -225,7 +225,7 @@ contextualUnifyElems' _   _      []              = return M.empty
 contextualUnifyElems' env (e, t) ((e', t') : xs) = do
   s1 <- catchError (contextualUnify Strict env e' t' t) flipUnificationError
   s2 <- contextualUnifyElems' (apply s1 env) (e, apply s1 t) xs
-  return $ compose s1 s2
+  return $ compose s2 s1
 
 flipUnificationError :: CompilationError -> Infer b
 flipUnificationError e@(CompilationError err x) = case err of
@@ -287,7 +287,7 @@ gentleUnify :: Type -> Type -> Substitution
 gentleUnify (l `TApp` r) (l' `TApp` r') =
   let s1 = gentleUnify l l'
       s2 = gentleUnify (apply s1 r) (apply s1 r')
-  in  compose s1 s2
+  in  compose s2 s1
 
 gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base') of
   (Just tBase, Just tBase') ->
