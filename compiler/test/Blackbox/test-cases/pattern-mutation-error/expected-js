@@ -1,0 +1,20 @@
+[warning]: Unused top level binding
+     ╭──▶ compiler/test/Blackbox/test-cases/pattern-mutation-error/Entrypoint.mad@4:1-4:10
+     │
+   4 │ testError = () => where(Just(42)) {
+     • ┬──────── 
+     • ╰╸ You declared a top level binding named 'testError' but it seems that
+     •    you never use it
+     •
+     │ Hint: Remove it if you don't need it.
+─────╯
+
+     ╭──▶ compiler/test/Blackbox/test-cases/pattern-mutation-error/Entrypoint.mad@6:5-6:17
+     │
+   6 │     value := 100
+     •     ┬───────────
+     •     ╰╸ 'value' is bound by pattern matching and cannot be mutated.
+     •
+     │ Hint: Introduce a local let binding first: value = <patternVar>, then use ':=' on that.
+─────╯
+

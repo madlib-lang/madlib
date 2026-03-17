@@ -729,7 +729,8 @@ monomorphizePattern target env pat = case pat of
     if "." `List.isInfixOf` n then do
       let namespace = takeWhile (/= '.') n
       let realCtorName = tail $ dropWhile (/= '.') n
-      foreignModulePath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+      firstLevelForeignPath <- findNamespaceModulePath (envCurrentModulePath env) namespace
+      foreignModulePath <- findCtorForeignModulePath firstLevelForeignPath realCtorName
       ctor <- Rock.fetch $ ForeignConstructor foreignModulePath realCtorName
       case ctor of
         Just (Untyped _ (Constructor _ _ t)) ->

@@ -139,6 +139,7 @@ mergeEnv initial env = Env { envVars                 = envVars initial <> envVar
                            , envImportInfo           = envImportInfo initial
                            , envPlaceholdersToDelete = mempty
                            , envPlaceholdersInScope  = []
+                           , envPatternBoundNames    = mempty
                            }
 
 mkTupleInstance :: String -> Int -> Instance
@@ -266,4 +267,5 @@ initialEnv = do
     , envImportInfo = mempty
     , envPlaceholdersToDelete = mempty
     , envPlaceholdersInScope = []
+    , envPatternBoundNames = mempty
     }

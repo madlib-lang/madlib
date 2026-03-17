@@ -961,6 +961,11 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "Not in scope\n\n"
     <> "You are trying to mutate the value of '" <> name <> "' but it is not in scope.\n\n"
 
+  MutatingPatternBoundVariable name ->
+    "Cannot mutate pattern-bound variable\n\n"
+    <> "'" <> name <> "' is bound by pattern matching and cannot be mutated with ':='.\n\n"
+    <> "Hint: Introduce a local let binding first: " <> name <> " = <patternVar>, then use ':=' on that."
+
   FatalError ->
     "Fatal error"
 
@@ -2281,6 +2286,25 @@ createErrorDiagnostic color context typeError = case typeError of
         Diagnose.Err
           Nothing
           "Not in scope"
+          []
+          []
+
+  MutatingPatternBoundVariable name ->
+    case context of
+      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+        Diagnose.Err
+          Nothing
+          "Cannot mutate pattern-bound variable"
+          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+            , Diagnose.This $ "'" <> name <> "' is bound by pattern matching and cannot be mutated."
+            )
+          ]
+          [Diagnose.Hint $ "Introduce a local let binding first: " <> name <> " = <patternVar>, then use ':=' on that."]
+
+      NoContext ->
+        Diagnose.Err
+          Nothing
+          "Cannot mutate pattern-bound variable"
           []
           []
 

@@ -42,10 +42,13 @@ instance Unify Type where
   unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-          fieldsForLeft  = M.difference fields fields'
-          fieldsForRight = M.difference fields' fields
+      -- Include optional fields in the field calculations
+      let allFields = fields <> optionalFields
+          allFields' = fields' <> optionalFields'
+          fieldsToCheck  = M.intersection allFields allFields'
+          fieldsToCheck' = M.intersection allFields' allFields
+          fieldsForLeft  = M.difference allFields allFields'
+          fieldsForRight = M.difference allFields' allFields
 
       s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       let tBase'Applied = apply s1 tBase'
@@ -64,7 +67,13 @@ instance Unify Type where
         return $ s3 `compose` s2 `compose` s1
 
     (Just tBase, Nothing) -> do
-      let fieldsDiff = M.difference fields' fields
+      -- Include all fields from the concrete record (both explicit and optional) that aren't in the pattern
+      -- This ensures the row variable gets all unmatched fields from the concrete record
+      -- CRITICAL: When pattern has no explicit fields, row variable should get ALL concrete fields
+      let allConcreteFields = fields' <> optionalFields'
+          fieldsDiff = if M.null fields
+                       then allConcreteFields  -- Pattern has no explicit fields, row var gets all concrete fields
+                       else M.difference allConcreteFields fields  -- Exclude only explicitly matched fields
       s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
 
       unless (M.null (M.difference (fields <> optionalFields) (fields' <> optionalFields'))) $ throwError (CompilationError (UnificationError r l) NoContext)
@@ -78,7 +87,13 @@ instance Unify Type where
       return $ s2 `compose` s1
 
     (Nothing, Just tBase') -> do
-      let fieldsDiff = M.difference fields fields'
+      -- Include all fields from the pattern (both explicit and optional) that aren't in the concrete record
+      -- CRITICAL: When concrete record has no explicit fields, row variable should get ALL pattern fields
+      let allPatternFields = fields <> optionalFields
+          allConcreteFields = fields' <> optionalFields'
+          fieldsDiff = if M.null fields'
+                       then allPatternFields  -- Concrete record has no explicit fields, row var gets all pattern fields
+                       else M.difference allPatternFields allConcreteFields  -- Exclude fields that are in concrete record
       s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
 
       unless (M.null (M.difference (fields' <> optionalFields') (fields <> optionalFields))) $ throwError (CompilationError (UnificationError r l) NoContext)

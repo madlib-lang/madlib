@@ -408,6 +408,12 @@ inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp))
   let s  = s1 `compose` s2 `compose` s3
   let t3 = apply s t2
 
+  case lhs of
+    Can.Canonical _ (Can.Var name) | not discardError && name `Set.member` envPatternBoundNames env ->
+      throwError $ CompilationError (MutatingPatternBoundVariable name) (Context (envCurrentPath env) area)
+    _ ->
+      return ()
+
   mutationPs <-
     case Can.getExpName lhs of
       Just name | not discardError ->
@@ -772,7 +778,10 @@ inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) 
   -- matched fields to get only the "remaining" fields.
   let vars' = fixRestVarTypes s pat vars
 
-  (s', ps', t'', e') <- infer discardError options (apply s $ mergeVars env vars') exp
+  let patternBoundNames = M.keysSet vars'
+  let envWithPatternVars = (apply s $ mergeVars env vars')
+        { envPatternBoundNames = envPatternBoundNames env <> patternBoundNames }
+  (s', ps', t'', e') <- infer discardError options envWithPatternVars exp
   s'' <- contextualUnify' env discardError exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''

@@ -66,6 +66,7 @@ data TypeError
   | OverloadedMutation String [Pred]
   | BadMutation
   | MutatingNotInScope String
+  | MutatingPatternBoundVariable String
   | InvalidLhs
   | TypeAnnotationNameMismatch String String
   | MutatingFunction String

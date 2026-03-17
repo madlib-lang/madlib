@@ -1,0 +1,36 @@
+import IO from "IO"
+
+// Test 1: Simple rest pattern
+extractRest = (record) => where(record) {
+  { x, y, ...rest } =>
+    rest
+}
+
+// Test 2: Nested rest pattern
+extractNested = (record) => where(record) {
+  { a, b: { c, ...nested }, ...outer } =>
+    { nested, outer }
+}
+
+// Test 3: Multiple fields with rest
+getOther = (record) => where(record) {
+  { x, y, z, ...rest } =>
+    rest
+}
+
+main = () => {
+  // Test 1
+  r1 = { x: 1, y: 2, z: 3, w: 4 }
+  rest1 = extractRest(r1)
+  IO.log(rest1)
+
+  // Test 2 - just show it works without trying to log the nested object
+  r2 = { a: 1, b: { c: 2, d: 3, e: 4 }, f: 5, g: 6 }
+  extractNested(r2)
+  IO.log("Nested rest pattern works")
+
+  // Test 3
+  r3 = { x: 10, y: 20, z: 30, a: 40, b: 50 }
+  rest3 = getOther(r3)
+  IO.log(rest3)
+}

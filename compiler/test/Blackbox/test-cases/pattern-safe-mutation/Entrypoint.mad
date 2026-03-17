@@ -1,0 +1,57 @@
+import { Just } from "Maybe"
+import IO from "IO"
+
+// Test safe mutations with pattern matching
+testSafeMutation = () => {
+  where(Just(42)) {
+    Just(x) => do {
+      // Create a local binding from pattern variable
+      y = x
+      y := 20
+      IO.log(y)
+    }
+
+    _ => {}
+  }
+}
+
+// Test with record destructuring
+testRecordDestructuring = () => {
+  person = { name: "Alice", age: 30 }
+
+  where(person) {
+    { name, age } => do {
+      // Create local bindings instead of mutating pattern vars
+      mutableName = name
+      mutableName := "Bob"
+      IO.log(mutableName)
+
+      mutableAge = age
+      mutableAge := 31
+      IO.log(mutableAge)
+    }
+  }
+}
+
+// Test nested pattern matching
+testNestedPattern = () => {
+  data = { id: 1, email: "alice@example.com" }
+
+  where(data) {
+    { id, email } => do {
+      localId = id
+      localId := 2
+      IO.log(localId)
+
+      localEmail = email
+      localEmail := "bob@example.com"
+      IO.log(localEmail)
+    }
+  }
+}
+
+main = () => {
+  testSafeMutation()
+  testRecordDestructuring()
+  testNestedPattern()
+}

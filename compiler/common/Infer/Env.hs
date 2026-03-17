@@ -53,5 +53,7 @@ data Env
     , envPlaceholdersInScope :: [Pred]
     , envPlaceholdersToDelete :: Map.Map String [Int]
     -- ^ key is the name of the binding and the list of int is the placeholder indices to remove
+    , envPatternBoundNames :: Set.Set String
+    -- ^ names bound by pattern matching, cannot be mutated with ':='
     }
     deriving(Eq, Show, Generic, Hashable)

@@ -156,6 +156,9 @@ spec = do
         , "compiler/test/Blackbox/test-cases/type-import-collision"
         , "compiler/test/Blackbox/test-cases/import-collision"
         , "compiler/test/Blackbox/test-cases/redefined-type"
+        , "compiler/test/Blackbox/test-cases/record-rest-pattern"
+        , "compiler/test/Blackbox/test-cases/pattern-safe-mutation"
+        , "compiler/test/Blackbox/test-cases/pattern-mutation-error"
         ]
 
   forM_ cases $ \casePath -> do

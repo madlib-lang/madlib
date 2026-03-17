@@ -1,0 +1,12 @@
+import { Just } from "Maybe"
+
+// This should fail to compile
+testError = () => where(Just(42)) {
+  Just(value) => do {
+    value := 100
+  }
+
+  _ => {}
+}
+
+main = () => {}
