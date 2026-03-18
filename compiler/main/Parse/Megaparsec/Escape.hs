@@ -86,20 +86,9 @@ processEscapes input = case input of
   '\\':'x':_ ->
     Left $ "BadEscape: incomplete hex escape"
 
-  -- Standard escape sequences: \n \t \r \\ \" \' \0 \a \b \f \v
-  '\\':'n':more  -> (('\n' :) <$> processEscapes more)
-  '\\':'t':more  -> (('\t' :) <$> processEscapes more)
-  '\\':'r':more  -> (('\r' :) <$> processEscapes more)
-  '\\':'\\':more -> (('\\' :) <$> processEscapes more)
-  '\\':'"':more  -> (('"'  :) <$> processEscapes more)
-  '\\':'\'':more -> (('\'' :) <$> processEscapes more)
-  '\\':'0':more  -> (('\0' :) <$> processEscapes more)
-  '\\':'a':more  -> (('\a' :) <$> processEscapes more)
-  '\\':'b':more  -> (('\b' :) <$> processEscapes more)
-  '\\':'f':more  -> (('\f' :) <$> processEscapes more)
-  '\\':'v':more  -> (('\v' :) <$> processEscapes more)
-
-  -- Regular character
+  -- All other characters (including \n, \t, \\, \" etc.) are passed through raw.
+  -- The code generator is responsible for interpreting these escapes.
+  -- This matches the behavior of the original Alex/Happy parser's processHexaEscapes.
   a1:more -> do
     next <- processEscapes more
     Right $ a1 : next

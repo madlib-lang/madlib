@@ -80,12 +80,22 @@ getFormatterMode = lift $ gets psFormatterMode
 
 
 -- | Get current location as a Loc
+-- NOTE: getSourcePos is O(n) from last checkpoint — call sparingly.
 {-# INLINE getLoc #-}
 getLoc :: Parser Loc
 getLoc = do
   offset <- getOffset
   pos <- MP.getSourcePos
   return $! Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos)
+
+
+-- | Get only the byte offset as a Loc (line=0, col=0 placeholders)
+-- O(1) alternative to getLoc for internal use where line/col not needed
+{-# INLINE getLocFast #-}
+getLocFast :: Parser Loc
+getLocFast = do
+  offset <- getOffset
+  return $! Loc offset 0 0
 
 
 -- | Run a parser and wrap its result with area information

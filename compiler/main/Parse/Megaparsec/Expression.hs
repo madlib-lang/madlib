@@ -10,7 +10,7 @@ module Parse.Megaparsec.Expression
 import           Data.Text                      ( Text )
 import qualified Data.Text                      as T
 import qualified Data.Map                       as M
-import           Data.Char                      ( isUpper, isDigit, isAsciiLower, isAsciiUpper )
+import           Data.Char                      ( isUpper, isDigit, isAsciiLower, isAsciiUpper, isHexDigit )
 import           Data.Maybe                     ( fromMaybe )
 import           Control.Monad                  ( void, when )
 
@@ -313,7 +313,7 @@ pTermWithPostfix = do
             pDot
             (nameArea, name) <- withArea pNameStr
             target <- pSourceTarget
-            return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ "." ++ name)))
+            return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           applyPostfix (f expr)
         Just '[' -> do
           f <- try $ do
@@ -329,7 +329,7 @@ pTermWithPostfix = do
             pDot
             (nameArea, name) <- withArea pNameStr
             target <- pSourceTarget
-            return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ "." ++ name)))
+            return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           case f of
             Nothing -> return expr
             Just fn -> applyPostfix (fn expr)
@@ -357,25 +357,17 @@ pTerm = do
     '\'' -> pLiteral
     _ | isDigit c -> pLiteral
       | c == 'i' -> do
-          ms <- optional (lookAhead (count 2 anySingle))
-          case ms of
-            Just ['i','f'] -> choice [pIf', pNameExpr]
-            _              -> pNameExpr
+          isIf <- option False (True <$ lookAhead (C.string "if"))
+          if isIf then choice [pIf', pNameExpr] else pNameExpr
       | c == 'w' -> do
-          ms <- optional (lookAhead (count 2 anySingle))
-          case ms of
-            Just ['w','h'] -> choice [pWhile', pWhere', pNameExpr]
-            _              -> pNameExpr
+          isWh <- option False (True <$ lookAhead (C.string "wh"))
+          if isWh then choice [pWhile', pWhere', pNameExpr] else pNameExpr
       | c == 'd' -> do
-          ms <- optional (lookAhead (count 2 anySingle))
-          case ms of
-            Just ['d','o'] -> choice [pDo', pNameExpr]
-            _              -> pNameExpr
+          isDo <- option False (True <$ lookAhead (C.string "do"))
+          if isDo then choice [pDo', pNameExpr] else pNameExpr
       | c == 'p' -> do
-          ms <- optional (lookAhead (count 2 anySingle))
-          case ms of
-            Just ['p','i'] -> choice [pPipe', pNameExpr]
-            _              -> pNameExpr
+          isPi <- option False (True <$ lookAhead (C.string "pi"))
+          if isPi then choice [pPipe', pNameExpr] else pNameExpr
       | c == 't' || c == 'f' -> choice [pLiteral, pNameExpr]
       | isAsciiLower c || c == '_' -> pNameExpr
       | isAsciiUpper c -> pNameExpr
@@ -439,46 +431,52 @@ pLiteral = do
         ]
 
 
--- | Parse all numeric literal variants, dispatching on prefix
+-- | Parse all numeric literal variants with a single-pass approach.
+-- Dispatches on '0x' prefix for hex, otherwise parses decimal digits once
+-- then checks for suffix (_b/_s/_i/_f) or decimal point — eliminating backtracking.
 pNumericLiteral :: Parser Src.Exp
-pNumericLiteral = choice
-  [ try $ do
-      (area, s) <- withArea pHexByte
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LByte (init . init $ s))
-  , try $ do
-      (area, s) <- withArea pHexShort
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LShort (init . init $ s))
-  , try $ do
-      (area, s) <- withArea pHexInt
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LInt (init . init $ s))
-  , try $ do
-      (area, s) <- withArea pHexNumber
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LNum s)
-  , try $ do
-      (area, s) <- withArea pByte
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LByte s)
-  , try $ do
-      (area, s) <- withArea pShort
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LShort s)
-  , try $ do
-      (area, s) <- withArea pInt
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LInt s)
-  , try $ do
-      (area, s) <- withArea pFloat
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LFloat s)
-  , do
-      (area, s) <- withArea pNumber
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.LNum s)
-  ]
+pNumericLiteral = do
+  (area, (target, node)) <- withArea $ do
+    t <- pSourceTarget
+    n <- lexeme parseNum
+    return (t, n)
+  return $ Src.Source area target node
+  where
+    parseNum :: Parser Src.Exp_
+    parseNum = do
+      isHex <- option False (True <$ C.string "0x")
+      if isHex then parseHex else parseDecimal
+
+    parseHex :: Parser Src.Exp_
+    parseHex = do
+      digits <- T.unpack <$> takeWhile1P (Just "hex digit") isHexDigit
+      suffix <- optional $ C.string "_b" <|> C.string "_s" <|> C.string "_i"
+      let hexStr = "0x" ++ digits
+      case suffix of
+        Just "_b" -> return $ Src.LByte hexStr
+        Just "_s" -> return $ Src.LShort hexStr
+        Just "_i" -> return $ Src.LInt hexStr
+        _         -> return $ Src.LNum hexStr
+
+    parseDecimal :: Parser Src.Exp_
+    parseDecimal = do
+      digits <- T.unpack <$> takeWhile1P (Just "digit") isDigit
+      -- Check for float suffix first (before integer suffixes)
+      mFloat <- optional $ do
+        void $ C.char '.'
+        frac <- T.unpack <$> takeWhile1P (Just "digit") isDigit
+        fsuf <- optional (C.string "_f")
+        return $ digits ++ "." ++ frac ++ maybe "" T.unpack fsuf
+      case mFloat of
+        Just floatStr -> return $ Src.LFloat floatStr
+        Nothing -> do
+          suffix <- optional $ C.string "_b" <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
+          case suffix of
+            Just "_b" -> return $ Src.LByte digits
+            Just "_s" -> return $ Src.LShort digits
+            Just "_i" -> return $ Src.LInt digits
+            Just "_f" -> return $ Src.LFloat (digits ++ "_f")
+            _         -> return $ Src.LNum digits
 
 
 -- | Parse a variable name expression

@@ -121,18 +121,9 @@ keywords =
   , "interface", "instance", "derive", "true", "false"
   ]
 
--- | Fast O(log n) keyword lookup set (String-based to avoid T.pack allocation)
-keywordSet :: Set.Set String
-keywordSet = Set.fromList (map T.unpack keywords)
-
-
--- | Check that a parsed word is not followed by an identifier character
--- and is not a keyword (for identifiers)
-notKeyword :: Text -> Parser Text
-notKeyword word =
-  if T.unpack word `Set.member` keywordSet
-  then fail $ "keyword " ++ T.unpack word ++ " cannot be used as an identifier"
-  else return word
+-- | Fast O(log n) keyword lookup set using Text directly (avoids T.unpack allocation)
+keywordSet :: Set.Set Text
+keywordSet = Set.fromList keywords
 
 
 -- | Parse a keyword (must not be followed by alphanumeric or underscore)
@@ -168,16 +159,22 @@ pPipe      = pKeyword "pipe"
 pNameStr :: Parser String
 pNameStr = lexeme $ try $ do
   c <- C.letterChar <|> C.char '_'
-  rest <- T.unpack <$> takeWhileP Nothing (\x -> isAlphaNum x || x == '_' || x == '\'')
-  let name = c : rest
-  when (name `Set.member` keywordSet) $
-    fail $ "keyword " ++ name ++ " cannot be used as an identifier"
-  return name
+  rest <- takeWhileP Nothing (\x -> isAlphaNum x || x == '_' || x == '\'')
+  let nameT = T.cons c rest
+  when (nameT `Set.member` keywordSet) $
+    fail $ "keyword " ++ T.unpack nameT ++ " cannot be used as an identifier"
+  return $! T.unpack nameT
 
 
 -- | Parse an identifier name as Text
 pName :: Parser Text
-pName = T.pack <$> pNameStr
+pName = lexeme $ try $ do
+  c <- C.letterChar <|> C.char '_'
+  rest <- takeWhileP Nothing (\x -> isAlphaNum x || x == '_' || x == '\'')
+  let nameT = T.cons c rest
+  when (nameT `Set.member` keywordSet) $
+    fail $ "keyword " ++ T.unpack nameT ++ " cannot be used as an identifier"
+  return nameT
 
 
 -- | Parse a name that starts with an uppercase letter
@@ -248,6 +245,7 @@ pInt = lexeme $ try $ do
   return digits
 
 -- | Parse a hex number literal
+-- try needed: we consume digits then notFollowedBy '_'; need to backtrack if that fails
 pHexNumber :: Parser String
 pHexNumber = lexeme $ try $ do
   void $ C.string "0x"
@@ -256,6 +254,7 @@ pHexNumber = lexeme $ try $ do
   return $ "0x" ++ digits
 
 -- | Parse a hex byte literal (0x..._b)
+-- try needed: ambiguous with pHexNumber (same prefix)
 pHexByte :: Parser String
 pHexByte = lexeme $ try $ do
   void $ C.string "0x"
@@ -357,10 +356,12 @@ pEq :: Parser ()
 pEq = void $ lexeme $ try $ C.char '=' <* notFollowedBy (oneOf ['>', '='])
 
 -- | Parse :=
+-- C.string auto-backtracks; no try needed
 pMutateEq :: Parser ()
-pMutateEq = void $ lexeme $ try $ C.string ":="
+pMutateEq = void $ lexeme $ C.string ":="
 
 -- | Parse ::
+-- try needed: "::" consumes ":" before notFollowedBy can check the next ":"
 pDoubleColon :: Parser ()
 pDoubleColon = void $ lexeme $ try $ C.string "::" <* notFollowedBy (C.char ':')
 
@@ -373,8 +374,9 @@ pComma :: Parser ()
 pComma = void $ lexeme $ C.char ','
 
 -- | Parse ... (spread operator)
+-- C.string auto-backtracks
 pSpread :: Parser ()
-pSpread = void $ lexeme $ try $ C.string "..."
+pSpread = void $ lexeme $ C.string "..."
 
 -- | Parse . (not followed by another .)
 pDot :: Parser ()
@@ -397,8 +399,9 @@ pRightCurly :: Parser ()
 pRightCurly = void $ lexeme $ C.char '}'
 
 -- | Parse {{
+-- C.string auto-backtracks
 pLeftDoubleCurly :: Parser ()
-pLeftDoubleCurly = void $ lexeme $ try $ C.string "{{"
+pLeftDoubleCurly = void $ lexeme $ C.string "{{"
 
 -- | Parse [
 pLeftSquareBracket :: Parser ()
@@ -409,22 +412,27 @@ pRightSquareBracket :: Parser ()
 pRightSquareBracket = void $ lexeme $ C.char ']'
 
 -- | Parse #[
+-- C.string auto-backtracks
 pTupleStart :: Parser ()
-pTupleStart = void $ lexeme $ try $ C.string "#["
+pTupleStart = void $ lexeme $ C.string "#["
 
 -- | Parse <-
+-- C.string auto-backtracks
 pLeftArrow :: Parser ()
-pLeftArrow = void $ lexeme $ try $ C.string "<-"
+pLeftArrow = void $ lexeme $ C.string "<-"
 
 -- | Parse ->
+-- C.string auto-backtracks
 pRightArrow :: Parser ()
-pRightArrow = void $ lexeme $ try $ C.string "->"
+pRightArrow = void $ lexeme $ C.string "->"
 
 -- | Parse =>
+-- C.string auto-backtracks
 pFatArrow :: Parser ()
-pFatArrow = void $ lexeme $ try $ C.string "=>"
+pFatArrow = void $ lexeme $ C.string "=>"
 
--- | Parse |> (pipe operator)
+-- | Parse |> (pipe operator, not followed by >)
+-- try needed: "|>" consumes before notFollowedBy check
 pPipeOp :: Parser ()
 pPipeOp = void $ lexeme $ try $ C.string "|>" <* notFollowedBy (C.char '>')
 
@@ -449,8 +457,9 @@ pQuestionMark :: Parser ()
 pQuestionMark = void $ lexeme $ try $ C.char '?' <* notFollowedBy (C.char '?')
 
 -- | Parse ???
+-- C.string auto-backtracks
 pTypedHole :: Parser ()
-pTypedHole = void $ lexeme $ try $ C.string "???"
+pTypedHole = void $ lexeme $ C.string "???"
 
 
 -- Arithmetic operators --
@@ -460,10 +469,11 @@ pPlus :: Parser ()
 pPlus = void $ lexeme $ try $ C.char '+' <* notFollowedBy (C.char '+')
 
 -- | Parse ++
+-- C.string auto-backtracks
 pDoublePlus :: Parser ()
-pDoublePlus = void $ lexeme $ try $ C.string "++"
+pDoublePlus = void $ lexeme $ C.string "++"
 
--- | Parse - as a binary operator (between expressions, with surrounding context)
+-- | Parse - as a binary operator (not followed by >)
 pDash :: Parser ()
 pDash = void $ lexeme $ try $ C.char '-' <* notFollowedBy (C.char '>')
 
@@ -487,12 +497,14 @@ pPercent = void $ lexeme $ C.char '%'
 -- Comparison operators --
 
 -- | Parse ==
+-- C.string auto-backtracks
 pDoubleEq :: Parser ()
-pDoubleEq = void $ lexeme $ try $ C.string "=="
+pDoubleEq = void $ lexeme $ C.string "=="
 
 -- | Parse !=
+-- C.string auto-backtracks
 pNotEq :: Parser ()
-pNotEq = void $ lexeme $ try $ C.string "!="
+pNotEq = void $ lexeme $ C.string "!="
 
 -- | Parse < (not followed by - or < or = or | or /)
 pLeftChevron :: Parser ()
@@ -503,23 +515,27 @@ pRightChevron :: Parser ()
 pRightChevron = void $ lexeme $ try $ C.char '>' <* notFollowedBy (oneOf ['>', '='])
 
 -- | Parse <=
+-- C.string auto-backtracks
 pLeftChevronEq :: Parser ()
-pLeftChevronEq = void $ lexeme $ try $ C.string "<="
+pLeftChevronEq = void $ lexeme $ C.string "<="
 
 -- | Parse >=
+-- C.string auto-backtracks
 pRightChevronEq :: Parser ()
-pRightChevronEq = void $ lexeme $ try $ C.string ">="
+pRightChevronEq = void $ lexeme $ C.string ">="
 
 
 -- Logical operators --
 
 -- | Parse &&
+-- C.string auto-backtracks
 pDoubleAmpersand :: Parser ()
-pDoubleAmpersand = void $ lexeme $ try $ C.string "&&"
+pDoubleAmpersand = void $ lexeme $ C.string "&&"
 
 -- | Parse ||
+-- C.string auto-backtracks
 pDoublePipe :: Parser ()
-pDoublePipe = void $ lexeme $ try $ C.string "||"
+pDoublePipe = void $ lexeme $ C.string "||"
 
 -- | Parse ! (not followed by =)
 pExclamationMark :: Parser ()
@@ -541,21 +557,25 @@ pTilde :: Parser ()
 pTilde = void $ lexeme $ C.char '~'
 
 -- | Parse <<
+-- C.string auto-backtracks
 pDoubleLeftChevron :: Parser ()
-pDoubleLeftChevron = void $ lexeme $ try $ C.string "<<"
+pDoubleLeftChevron = void $ lexeme $ C.string "<<"
 
 -- | Parse >> (not followed by >)
+-- try needed: ">>" consumes before notFollowedBy check
 pDoubleRightChevron :: Parser ()
 pDoubleRightChevron = void $ lexeme $ try $ C.string ">>" <* notFollowedBy (C.char '>')
 
 -- | Parse >>>
+-- C.string auto-backtracks
 pTripleRightChevron :: Parser ()
-pTripleRightChevron = void $ lexeme $ try $ C.string ">>>"
+pTripleRightChevron = void $ lexeme $ C.string ">>>"
 
 
 -- | Parse <|> (alternative operator)
+-- C.string auto-backtracks
 pAlternativeOp :: Parser ()
-pAlternativeOp = void $ lexeme $ try $ C.string "<|>"
+pAlternativeOp = void $ lexeme $ C.string "<|>"
 
 
 -- | Parse a newline character
