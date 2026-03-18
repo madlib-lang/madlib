@@ -63,7 +63,7 @@ instance Eq Type where
 
 instance Ord Type where
   compare (TVar a)            (TVar b)            = compare a b
-  compare (TCon tc1 fp1 _)    (TCon tc2 fp2 _)    = compare tc1 tc2 <> compare fp1 fp2
+  compare (TCon tc1 fp1 h1)   (TCon tc2 fp2 h2)   = compare tc1 tc2 <> compare h1 h2 <> compare fp1 fp2
   compare (TGen a)            (TGen b)             = compare a b
   compare (TApp l1 r1)        (TApp l2 r2)         = compare l1 l2 <> compare r1 r2
   compare (TRecord f1 b1 o1)  (TRecord f2 b2 o2)  = compare f1 f2 <> compare b1 b2 <> compare o1 o2
@@ -79,12 +79,12 @@ instance Ord Type where
       typeTag TAlias{} = 5
 
 instance Hashable Type where
-  hashWithSalt s (TVar tv)              = hashWithSalt s (0 :: Int, tv)
-  hashWithSalt s (TCon tc _ h)          = hashWithSalt s (1 :: Int, tc, h)
-  hashWithSalt s (TGen n)               = hashWithSalt s (2 :: Int, n)
-  hashWithSalt s (TApp l r)             = hashWithSalt s (3 :: Int, l, r)
-  hashWithSalt s (TRecord f b o)        = hashWithSalt s (4 :: Int, f, b, o)
-  hashWithSalt s (TAlias p n vs t)      = hashWithSalt s (5 :: Int, p, n, vs, t)
+  hashWithSalt s (TVar tv)         = s `hashWithSalt` (0 :: Int) `hashWithSalt` tv
+  hashWithSalt s (TCon tc _ h)     = s `hashWithSalt` (1 :: Int) `hashWithSalt` tc `hashWithSalt` h
+  hashWithSalt s (TGen n)          = s `hashWithSalt` (2 :: Int) `hashWithSalt` n
+  hashWithSalt s (TApp l r)        = s `hashWithSalt` (3 :: Int) `hashWithSalt` l `hashWithSalt` r
+  hashWithSalt s (TRecord f b o)   = s `hashWithSalt` (4 :: Int) `hashWithSalt` f `hashWithSalt` b `hashWithSalt` o
+  hashWithSalt s (TAlias p n vs t) = s `hashWithSalt` (5 :: Int) `hashWithSalt` p `hashWithSalt` n `hashWithSalt` vs `hashWithSalt` t
 
 
 -- | Smart constructor: builds a TCon with a precomputed FilePath hash for fast equality.

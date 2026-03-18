@@ -135,10 +135,10 @@ instance Hashable (Query a) where
       hashWithSalt salt (path, typeName, 9 :: Int)
 
     ForeignADTType modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 10 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (10 :: Int)) modulePath) typeName
 
     ForeignConstructorInfos modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 11 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (11 :: Int)) modulePath) typeName
 
     SolvedASTWithEnv path ->
       hashWithSalt salt (path, 12 :: Int)
@@ -150,13 +150,13 @@ instance Hashable (Query a) where
       hashWithSalt salt (path, name, 14 :: Int)
 
     ForeignScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 15 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (15 :: Int)) modulePath) typeName
 
     ForeignFunctionScheme modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 16 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (16 :: Int)) modulePath) typeName
 
     ForeignExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 17 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (17 :: Int)) modulePath) expName
 
     ForeignMethod modulePath methodName methodType ->
       hashWithSalt salt (modulePath, methodName, methodType, 18 :: Int)
@@ -168,13 +168,13 @@ instance Hashable (Query a) where
       hashWithSalt salt (modulePath, methodName, 20 :: Int)
 
     ForeignConstructor modulePath constructorName ->
-      hashWithSalt salt (modulePath <> "." <> constructorName, 21 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (21 :: Int)) modulePath) constructorName
 
     ForeignExportedConstructor modulePath constructorName ->
-      hashWithSalt salt (modulePath <> "." <> constructorName, 22 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (22 :: Int)) modulePath) constructorName
 
     ForeignTypeDeclaration modulePath typeName ->
-      hashWithSalt salt (modulePath <> "." <> typeName, 23 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (23 :: Int)) modulePath) typeName
 
     MonomorphizedProgram ->
       hashWithSalt salt (24 :: Int)
@@ -189,7 +189,7 @@ instance Hashable (Query a) where
       hashWithSalt salt (path, 27 :: Int)
 
     ForeignCoreExp modulePath expName ->
-      hashWithSalt salt (modulePath <> "." <> expName, 28 :: Int)
+      hashWithSalt (hashWithSalt (hashWithSalt salt (28 :: Int)) modulePath) expName
 
     BuiltObjectFile path ->
       hashWithSalt salt (path, 29 :: Int)

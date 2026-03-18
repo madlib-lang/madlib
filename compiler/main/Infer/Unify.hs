@@ -23,12 +23,12 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  | tv `S.member` foldMap ftv (M.elems fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise                                   = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
-varBind tv t | t == TVar tv         = return M.empty
-             | tv `S.member` ftv t  = throwError $ CompilationError (InfiniteType tv t) NoContext
-             | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
-             | otherwise         = return $ M.singleton tv t
+  | any (occursCheck tv) (M.elems fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | otherwise                             = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
+varBind tv t | t == TVar tv        = return M.empty
+             | occursCheck tv t    = throwError $ CompilationError (InfiniteType tv t) NoContext
+             | kind tv /= kind t   = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
+             | otherwise           = return $ M.singleton tv t
 
 class Unify t where
   unify :: t -> t -> Infer Substitution
@@ -194,7 +194,10 @@ instance Match Type where
   match t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 instance Match t => Match [t] where
-  match ts ts' = do
+  -- Fast path for the common single-element case
+  match [t] [t'] = match t t'
+  match []  []   = return nullSubst
+  match ts  ts'  = do
     ss <- zipWithM match ts ts'
     let totalKeys = sum (map M.size ss)
         merged    = M.unions ss

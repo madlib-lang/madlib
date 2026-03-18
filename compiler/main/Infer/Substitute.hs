@@ -10,10 +10,8 @@ import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
-import           Data.Foldable                  ( Foldable(foldl') )
 import           Control.Monad.Except
-import           Data.List                      ( intersect
-                                                , nub
+import           Data.List                      ( nub
                                                 , union
                                                 )
 import           Control.Applicative
@@ -33,12 +31,15 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `S.union` ftv t
 
 instance Substitutable Type where
+  apply s t | M.null s = t
+
   apply _ tc@(TCon _ _ _) =
     tc
 
   apply s t@(TVar a) =
-    let t' = M.findWithDefault t a s
-    in  if occursCheck a t' then t else t'
+    case M.lookup a s of
+      Nothing -> t
+      Just t' -> if occursCheck a t' then t else t'
 
   apply s (t1 `TApp` t2) =
     apply s t1 `TApp` apply s t2
@@ -86,9 +87,13 @@ instance Substitutable Type where
     -- Base is already a record - merge and recurse
     apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
 
-  apply s (TRecord fields Nothing optionalFields) =
-    -- No row variable - merge optional fields into main fields and apply substitution
-    TRecord (apply s <$> (fields <> optionalFields)) Nothing mempty
+  apply s (TRecord fields Nothing optionalFields)
+    | M.null optionalFields =
+      -- No row variable, no optional fields - just apply substitution to main fields
+      TRecord (apply s <$> fields) Nothing mempty
+    | otherwise =
+      -- No row variable - merge optional fields into main fields and apply substitution
+      TRecord (apply s <$> (fields <> optionalFields)) Nothing mempty
 
   apply _ t = t
 
@@ -114,22 +119,40 @@ instance Substitutable Type where
 
 
 instance Substitutable Scheme where
-  apply s (Forall ks t) = Forall ks $ apply s t
+  apply s sc@(Forall ks t)
+    | M.null s  = sc
+    | S.null (ftv t `S.intersection` M.keysSet s) = sc
+    | otherwise = Forall ks $ apply s t
   ftv (Forall _ t) = ftv t
 
 instance Substitutable a => Substitutable [a] where
-  apply = fmap . apply
+  apply s xs | M.null s  = xs
+             | otherwise = fmap (apply s) xs
   ftv   = foldMap ftv
 
 instance Substitutable Env where
-  apply s env = env { envVars = M.map (apply s) $ envVars env }
+  apply s env | M.null s  = env
+              | otherwise =
+    let ks = M.keysSet s
+        applyScheme sc@(Forall _ t)
+          | S.null (ftv t `S.intersection` ks) = sc
+          | otherwise = apply s sc
+    in  env { envVars = M.map applyScheme $ envVars env }
   ftv env = ftv $ M.elems $ envVars env
 
 
 -- protect against infinite types
+-- Direct recursive check avoids allocating an intermediate Set
 occursCheck :: TVar -> Type -> Bool
-occursCheck tv t =
-  tv `S.member` ftv t
+occursCheck tv = go
+  where
+    go (TVar a)          = tv == a
+    go TCon{}            = False
+    go TGen{}            = False
+    go (TApp l r)        = go l || go r
+    go (TRecord fields base optionalFields) =
+      any go (M.elems fields) || maybe False go base || any go (M.elems optionalFields)
+    go _                 = False
 
 
 -- Free type variables in structural traversal order (for TGen index-sensitive quantification)
@@ -160,7 +183,10 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
+compose s1 s2
+  | M.null s1 = s2
+  | M.null s2 = s1
+  | otherwise = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
@@ -184,7 +210,7 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1)
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
-  where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (M.keys s1 `intersect` M.keys s2)
+  where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (S.toList (M.keysSet s1 `S.intersection` M.keysSet s2))
 
 
 buildVarSubsts :: Type -> Substitution

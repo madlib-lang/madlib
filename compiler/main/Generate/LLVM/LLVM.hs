@@ -2643,13 +2643,12 @@ generateBody env symbolTable exps = case exps of
 
 
 generateTopLevelFunctions :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.Exp] -> m SymbolTable
-generateTopLevelFunctions env symbolTable topLevelFunctions = case topLevelFunctions of
-  (fn : fns) -> do
+generateTopLevelFunctions env symbolTable0 topLevelFunctions =
+  Monad.foldM step symbolTable0 topLevelFunctions
+ where
+  step symbolTable fn = do
     symbolTable' <- generateTopLevelFunction env symbolTable fn
-    generateTopLevelFunctions env (symbolTable <> symbolTable') fns
-
-  [] ->
-    return symbolTable
+    return $! symbolTable <> symbolTable'
 
 
 {-

@@ -172,12 +172,9 @@ isConcrete t = case t of
 
 
 isInstanceOf :: Pred -> Pred -> Infer Substitution
-isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _) = do
-  if interface == interface' then do
-    let r  = zip ts ts'
-    match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
-  else
-    throwError $ CompilationError FatalError NoContext
+isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _)
+  | interface == interface' = match ts ts'
+  | otherwise               = throwError $ CompilationError FatalError NoContext
 
 
 byInst :: Env -> Pred -> Infer [Pred]
