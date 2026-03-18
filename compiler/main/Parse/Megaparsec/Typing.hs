@@ -209,23 +209,50 @@ pCompositeTypingArg = choice
 -- | Parse an atomic (simple) typing
 -- typing = name | '{}' | '(' typings ')' | '{' recordTypingArgs '}' | '#[' tupleTypings ']'
 pAtomicTyping :: Parser Src.Typing
-pAtomicTyping = choice
-  [ -- Unit type: {} or {  } (no fields, no extension)
-    try $ do
-      (startArea, _) <- withArea (void pLeftCurly)
-      rets
+pAtomicTyping = do
+  b <- lookAhead anySingle
+  case b of
+    123 ->  -- '{'
+      try pRecordOrUnitTyping
+    35 ->   -- '#'
+      -- Tuple type: #[Type1, Type2]
+      do
+        (startArea, _) <- withArea (void pTupleStart)
+        items <- pTupleTypings
+        _ <- optional pComma
+        (endArea, _) <- withArea (void pRightSquareBracket)
+        target <- pSourceTarget
+        return $ Src.Source (mergeAreas startArea endArea) target (Src.TRTuple items)
+    40 ->   -- '('
+      -- Parenthesized typing: ( typings )
+      try $ do
+        pLeftParen
+        rets
+        t <- pTypings
+        pRightParen
+        return t
+    _ ->    -- Simple name
+      do
+        (area, name) <- withArea pNameStr
+        target <- pSourceTarget
+        return $ Src.Source area target (Src.TRSingle name)
+
+
+-- | Parse record type or unit type (all start with '{')
+pRecordOrUnitTyping :: Parser Src.Typing
+pRecordOrUnitTyping = do
+  (startArea, _) <- withArea (void pLeftCurly)
+  rets
+  b <- lookAhead anySingle
+  case b of
+    125 -> do  -- '}': unit type
       (endArea, _) <- withArea (void pRightCurly)
       target <- pSourceTarget
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TRSingle "{}")
-
-  , -- Record type with extension: { ...ext, fields }
-    try $ do
-      (startArea, _) <- withArea (void pLeftCurly)
-      rets
+    46 -> do   -- '.': spread extension { ...ext, fields }
       pSpread
       extName <- pNameStr
       target <- pSourceTarget
-      -- May have trailing fields or not
       fields <- option M.empty $ try $ do
         pComma
         rets
@@ -235,41 +262,13 @@ pAtomicTyping = choice
       (endArea, _) <- withArea (void pRightCurly)
       let ext = Src.Source (mergeAreas startArea endArea) target (Src.TRSingle extName)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TRRecord fields (Just ext))
-
-  , -- Record type: { field :: Type, ... }
-    try $ do
-      (startArea, _) <- withArea (void pLeftCurly)
-      rets
+    _ -> do    -- regular record fields
       fields <- pRecordTypingArgs
       _ <- optional pComma
       rets
       (endArea, _) <- withArea (void pRightCurly)
       target <- pSourceTarget
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TRRecord fields Nothing)
-
-  , -- Tuple type: #[Type1, Type2]
-    try $ do
-      (startArea, _) <- withArea (void pTupleStart)
-      items <- pTupleTypings
-      _ <- optional pComma
-      (endArea, _) <- withArea (void pRightSquareBracket)
-      target <- pSourceTarget
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.TRTuple items)
-
-  , -- Parenthesized typing: ( typings )
-    try $ do
-      pLeftParen
-      rets
-      t <- pTypings
-      pRightParen
-      return t
-
-  , -- Simple name
-    do
-      (area, name) <- withArea pNameStr
-      target <- pSourceTarget
-      return $ Src.Source area target (Src.TRSingle name)
-  ]
 
 
 -- | Parse record typing args: name :: typings (, name :: typings)*

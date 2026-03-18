@@ -149,136 +149,96 @@ pExprWithOps = makeExprParser pTermWithNewline operatorTable
     pTermWithNewline = pTermWithPostfix <* maybeRet
 
 
+-- | Build a BinOp node from an operator string and its area.
+{-# INLINE mkBinOp #-}
+mkBinOp :: Area -> Src.SourceTarget -> String -> Src.Exp -> Src.Exp -> Src.Exp
+mkBinOp area target opStr l r =
+  Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target
+    (Src.BinOp l (Src.Source area target (Src.Var opStr)) r)
+
 -- | Operator precedence table for makeExprParser.
+-- Uses a single dispatching InfixL per level for fast first-byte dispatch.
 -- NOTE: makeExprParser treats FIRST entry as HIGHEST precedence (opposite of docs).
 -- This order matches the Happy grammar's %left declarations (highest to lowest).
 operatorTable :: [[Operator Parser Src.Exp]]
 operatorTable =
   [ -- Highest precedence: * / %
     [ InfixL $ try $ do
-        (area, _) <- withArea pStar
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "*")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pSlash
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "/")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pPercent
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "%")) r)
+        b <- lookAhead anySingle
+        case b of
+          42 -> do (area, _) <- withArea pStar;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target "*"
+          47 -> do (area, _) <- withArea pSlash;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "/"
+          37 -> do (area, _) <- withArea pPercent; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "%"
+          _  -> empty
     ]
   , -- + ++ -
     [ InfixL $ try $ do
-        (area, _) <- withArea pPlus
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "+")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pDoublePlus
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "++")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pDash
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "-")) r)
+        b <- lookAhead anySingle
+        case b of
+          43 -> choice
+            [ do (area, _) <- withArea pDoublePlus; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "++"
+            , do (area, _) <- withArea pPlus;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "+"
+            ]
+          45 -> do (area, _) <- withArea pDash; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "-"
+          _  -> empty
     ]
   , -- == != > < >= <=
     [ InfixL $ try $ do
-        (area, _) <- withArea pDoubleEq
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "==")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pNotEq
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "!=")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pRightChevron
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var ">")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pLeftChevron
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "<")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pRightChevronEq
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var ">=")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pLeftChevronEq
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "<=")) r)
+        b <- lookAhead anySingle
+        case b of
+          61 -> do (area, _) <- withArea pDoubleEq;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "=="
+          33 -> do (area, _) <- withArea pNotEq;          target <- pSourceTarget; maybeRet; return $ mkBinOp area target "!="
+          62 -> choice
+            [ do (area, _) <- withArea pRightChevronEq;  target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">="
+            , do (area, _) <- withArea pRightChevron;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">"
+            ]
+          60 -> choice
+            [ do (area, _) <- withArea pLeftChevronEq;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<="
+            , do (area, _) <- withArea pLeftChevron;     target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<"
+            ]
+          _  -> empty
     ]
   , -- &&
     [ InfixL $ try $ do
-        (area, _) <- withArea pDoubleAmpersand
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "&&")) r)
+        b <- lookAhead anySingle
+        case b of
+          38 -> do (area, _) <- withArea pDoubleAmpersand; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&&"
+          _  -> empty
     ]
   , -- ||
     [ InfixL $ try $ do
-        (area, _) <- withArea pDoublePipe
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "||")) r)
+        b <- lookAhead anySingle
+        case b of
+          124 -> do (area, _) <- withArea pDoublePipe; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "||"
+          _   -> empty
     ]
   , -- |>
     [ InfixL $ try $ do
-        (area, _) <- withArea pPipeOp
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "|>")) r)
+        b <- lookAhead anySingle
+        case b of
+          124 -> do (area, _) <- withArea pPipeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|>"
+          _   -> empty
     ]
   , -- <|>
     [ InfixL $ try $ do
-        (area, _) <- withArea pAlternativeOp
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "<|>")) r)
+        b <- lookAhead anySingle
+        case b of
+          60 -> do (area, _) <- withArea pAlternativeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<|>"
+          _  -> empty
     ]
-  , -- Lowest precedence: bitwise operators (same level as ':' '->' '|' 'else' '=' in Happy)
+  , -- Lowest precedence: bitwise operators | & ^ << >> >>>
     [ InfixL $ try $ do
-        (area, _) <- withArea pPipeChar
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "|")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pAmpersand
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "&")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pXor
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "^")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pDoubleLeftChevron
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var "<<")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pTripleRightChevron
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var ">>>")) r)
-    , InfixL $ try $ do
-        (area, _) <- withArea pDoubleRightChevron
-        target <- pSourceTarget
-        maybeRet
-        return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.BinOp l (Src.Source area target (Src.Var ">>")) r)
+        b <- lookAhead anySingle
+        case b of
+          124 -> do (area, _) <- withArea pPipeChar;          target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|"
+          38  -> do (area, _) <- withArea pAmpersand;         target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&"
+          94  -> do (area, _) <- withArea pXor;               target <- pSourceTarget; maybeRet; return $ mkBinOp area target "^"
+          60  -> do (area, _) <- withArea pDoubleLeftChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<<"
+          62  -> choice
+            [ do (area, _) <- withArea pTripleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>>"
+            , do (area, _) <- withArea pDoubleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>"
+            ]
+          _   -> empty
     ]
   ]
 
@@ -354,7 +314,12 @@ pTerm = do
     '!' -> pPrefixExp
     '~' -> pPrefixExp
     '-' -> pPrefixExp
-    '{' -> choice [try pRecord, try pDict, pLiteral]
+    '{' -> do
+        -- Peek 2nd byte: '{{' = dict, '{' alone = record or unit literal
+        mb2 <- optional $ lookAhead (anySingle *> anySingle)
+        case mb2 of
+          Just 123 -> pDict   -- '{{': dictionary literal
+          _        -> choice [try pRecord, pLiteral]  -- record or unit {}
     '"' -> pLiteral
     '\'' -> pLiteral
     _ | isDigitB b -> pLiteral
@@ -378,23 +343,24 @@ pTerm = do
 
 -- | Parse a prefix expression: !, ~, or unary minus applied to a term
 pPrefixExp :: Parser Src.Exp
-pPrefixExp = choice
-  [ do
+pPrefixExp = do
+  b <- lookAhead anySingle
+  case b of
+    33 -> do  -- '!'
       (area, _) <- withArea pExclamationMark
       target <- pSourceTarget
       e <- pTermWithPostfix
       return $ Src.Source (mergeAreas area (Src.getArea e)) target (Src.UnOp (Src.Source area target (Src.Var "!")) e)
-  , do
+    126 -> do  -- '~'
       (area, _) <- withArea pTilde
       target <- pSourceTarget
       e <- pTermWithPostfix
       return $ Src.Source (mergeAreas area (Src.getArea e)) target (Src.UnOp (Src.Source area target (Src.Var "~")) e)
-  , do
+    _ -> do  -- '-'
       (area, _) <- withArea pDashUnary
       target <- pSourceTarget
       e <- pTermWithPostfix
       return $ Src.Source (mergeAreas area (Src.getArea e)) target (Src.UnOp (Src.Source area target (Src.Var "unary-minus")) e)
-  ]
 
 
 -- Literals --
