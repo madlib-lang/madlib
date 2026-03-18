@@ -33,7 +33,7 @@ import           Control.Applicative
 genType :: Substitution -> Type -> Type
 genType s t =
   let t' = apply s t
-      tvs = ftv t'
+      tvs = ftvList t'
       sWithGens = Map.fromList $ zipWith (curry (\(_, TV initial k) -> (TV initial k, tUnit))) [0..] tvs
       -- sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
   in  resolveRowVariables $ apply s $ apply sWithGens t'

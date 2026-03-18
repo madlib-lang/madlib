@@ -183,7 +183,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
       (lookupADT env t)
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area))
 
-    let (Forall ks (_ :=> rr)) = quantify (ftv h) ([] :=> h)
+    let (Forall ks (_ :=> rr)) = quantify (ftvList h) ([] :=> h)
 
     let kargs =
           (\case
@@ -256,7 +256,7 @@ getConstructorArgs t = case t of
   TApp l r ->
     getConstructorArgs l <> [r]
 
-  TCon _ _ ->
+  TCon _ _ _ ->
     []
 
   TAlias _ _ tvars _ ->
@@ -287,7 +287,7 @@ updateAliasVars t args = do
               r' <- update r
               return $ TApp l' r'
 
-            TCon _ _ ->
+            TCon _ _ _ ->
               return ty
 
             TRecord fs base _ -> do

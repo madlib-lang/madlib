@@ -817,16 +817,16 @@ generateTestAssignment :: Int -> Slv.Exp -> (Slv.Exp, Maybe TestAssignment)
 generateTestAssignment index exp = case exp of
   Slv.Typed qt@(_ :=>
     (TApp
-      (TCon (TC "List" (Kfun Star Star)) "prelude")
+      (TCon (TC "List" (Kfun Star Star)) "prelude" _)
       (TApp
-        (TApp (TCon (TC "Wish" _) _) (TCon (TC "TestResult" _) _))
-        (TCon (TC "TestResult" _) _))))
+        (TApp (TCon (TC "Wish" _) _ _) (TCon (TC "TestResult" _) _ _))
+        (TCon (TC "TestResult" _) _ _))))
     area
     _ ->
       let assignmentName = "__t" <> show index <> "__"
       in (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (BatchTest assignmentName))
 
-  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _) (TCon (TC "TestResult" _) _)) (TCon (TC "TestResult" _) _)) area _ ->
+  Slv.Typed qt@(_ :=> TApp (TApp (TCon (TC "Wish" _) _ _) (TCon (TC "TestResult" _) _ _)) (TCon (TC "TestResult" _) _ _)) area _ ->
     let assignmentName = "__t" <> show index <> "__"
     in  (Slv.Typed qt area (Slv.Assignment assignmentName exp), Just (SingleTest assignmentName))
 
@@ -836,15 +836,15 @@ generateTestAssignment index exp = case exp of
 
 testType :: FilePath -> FilePath -> Type
 testType wishPath testModulePath =
-  TApp (TApp (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath)
-    (TCon (TC "TestResult" (Kfun Star Star)) testModulePath))
-    (TCon (TC "TestResult" (Kfun Star Star)) testModulePath)
+  TApp (TApp (mkTCon (TC "Wish" (Kfun Star (Kfun Star Star))) wishPath)
+    (mkTCon (TC "TestResult" (Kfun Star Star)) testModulePath))
+    (mkTCon (TC "TestResult" (Kfun Star Star)) testModulePath)
 
 
 testListType :: FilePath -> FilePath -> Type
 testListType wishPath testModulePath =
   TApp
-    (TCon (TC "List" (Kfun Star Star)) "prelude")
+    (mkTCon (TC "List" (Kfun Star Star)) "prelude")
     (testType wishPath testModulePath)
 
 

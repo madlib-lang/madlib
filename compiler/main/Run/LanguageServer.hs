@@ -562,7 +562,7 @@ findNodeInInstanceHeaders loc instances =
 
 retrieveKind :: Type -> Kind
 retrieveKind t = case t of
-  TCon (TC _ k) _ ->
+  TCon (TC _ k) _ _ ->
     k
 
   TApp l _ ->

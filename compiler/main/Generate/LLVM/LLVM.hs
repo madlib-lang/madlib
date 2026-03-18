@@ -276,68 +276,68 @@ storeArrayItem basePtr _ (item, index) = do
 -- Mostly used for boxing/unboxing and therefore does just one Level
 buildLLVMType :: Env -> SymbolTable -> IT.Qual IT.Type -> Type.Type
 buildLLVMType env symbolTable (ps IT.:=> t) = case t of
-  IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Float" IT.Star) "prelude" _ ->
     Type.double
 
-  IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ ->
     Type.i8
 
-  IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Short" IT.Star) "prelude" _ ->
     Type.i32
 
-  IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Char" IT.Star) "prelude" _ ->
     Type.i32
 
-  IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ ->
     Type.i64
 
-  IT.TCon (IT.TC "String" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "String" IT.Star) "prelude" _ ->
     stringType
 
-  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ ->
     Type.i1
 
-  IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "{}" IT.Star) "prelude" _ ->
     Type.ptr Type.i1
 
   IT.TVar _ | IT.hasNumberPred ps ->
     Type.i64
 
-  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
+  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     listType
 
   IT.TRecord{} -> do
     recordType
 
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ ->
     let arity = List.length $ IT.getParamTypes t
     in  Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
 
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude" _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude" _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude" _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude" _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude" _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
   _ | IT.isTCon t ->
@@ -351,68 +351,68 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
 
 buildLLVMType' :: Rock.MonadFetch Query.Query m => IT.Qual IT.Type -> m (Type.Type, Maybe (String, Symbol))
 buildLLVMType' (ps IT.:=> t) = case t of
-  IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Float" IT.Star) "prelude" _ ->
     return (Type.double, Nothing)
 
-  IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ ->
     return (Type.i8, Nothing)
 
-  IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Short" IT.Star) "prelude" _ ->
     return (Type.i32, Nothing)
 
-  IT.TCon (IT.TC "Char" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Char" IT.Star) "prelude" _ ->
     return (Type.i32, Nothing)
 
-  IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ ->
     return (Type.i64, Nothing)
 
-  IT.TCon (IT.TC "String" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "String" IT.Star) "prelude" _ ->
     return (stringType, Nothing)
 
-  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ ->
     return (Type.i1, Nothing)
 
-  IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "{}" IT.Star) "prelude" _ ->
     return (Type.ptr Type.i1, Nothing)
 
   IT.TVar _ | IT.hasNumberPred ps ->
     return (Type.i64, Nothing)
 
-  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
+  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     return (listType, Nothing)
 
   IT.TRecord{} -> do
     return (recordType, Nothing)
 
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ -> do
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ -> do
     let arity = List.length $ IT.getParamTypes t
     return (Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False, Nothing)
 
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude" _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude" _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude" _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude" _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude" _) _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
 
-  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude" _) _) _) _) _) _) _) _) _) _) _ ->
     return (Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType], Nothing)
 
   _ | IT.isTCon t ->
@@ -441,7 +441,7 @@ buildLLVMType' (ps IT.:=> t) = case t of
 
 buildLLVMParamType :: Env -> SymbolTable -> IT.Type -> Type.Type
 buildLLVMParamType env symbolTable t = case t of
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ ->
     papType
 
   _ ->
@@ -504,44 +504,44 @@ retrieveConstructorMaxArity symbolTable t =
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand -> m Operand
 unbox env symbolTable qt@(ps IT.:=> t) what = case t of
-  IT.TCon (IT.TC "Float" _) _ -> do
+  IT.TCon (IT.TC "Float" _) _ _ -> do
     ptr <- alloca boxType Nothing 0
     store ptr 0 what
     ptr' <- bitcast ptr (Type.ptr Type.double)
     load ptr' 0
 
-  IT.TCon (IT.TC "Byte" _) _ -> do
+  IT.TCon (IT.TC "Byte" _) _ _ -> do
     ptrtoint what Type.i8
 
-  IT.TCon (IT.TC "Short" _) _ -> do
+  IT.TCon (IT.TC "Short" _) _ _ -> do
     ptrtoint what Type.i32
 
-  IT.TCon (IT.TC "Char" _) _ -> do
+  IT.TCon (IT.TC "Char" _) _ _ -> do
     ptrtoint what Type.i32
 
-  IT.TCon (IT.TC "Integer" _) _ -> do
+  IT.TCon (IT.TC "Integer" _) _ _ -> do
     ptrtoint what Type.i64
 
-  IT.TCon (IT.TC "Boolean" _) _ -> do
+  IT.TCon (IT.TC "Boolean" _) _ _ -> do
     ptrtoint what Type.i1
 
   -- boxed strings are char**
-  IT.TCon (IT.TC "String" _) _ -> do
+  IT.TCon (IT.TC "String" _) _ _ -> do
     safeBitcast what stringType
 
-  IT.TCon (IT.TC "Unit" _) _ -> do
+  IT.TCon (IT.TC "Unit" _) _ _ -> do
     safeBitcast what $ Type.ptr Type.i1
 
   -- boxed lists are i8*
   -- unboxed lists are { i8*, i8* }*
-  IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
+  IT.TApp (IT.TCon (IT.TC "List" _) _ _) _ -> do
     safeBitcast what listType
 
   IT.TRecord{} -> do
     safeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _) _) _ ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _ _) _) _ ->
     safeBitcast what papType
 
   IT.TVar _ | IT.hasNumberPred ps -> do
@@ -1155,7 +1155,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt _ metadata (Core.Call fn args) -> case fn of
     Core.Typed _ _ _ (Var "+" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- fadd leftOperand' rightOperand'
@@ -1170,7 +1170,7 @@ generateExp env symbolTable exp = case exp of
 
     Core.Typed _ _ _ (Var "-" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- fsub leftOperand' rightOperand'
@@ -1185,22 +1185,22 @@ generateExp env symbolTable exp = case exp of
 
     Core.Typed _ _ _ (Var "unary-minus" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- fmul leftOperand' (C.double (-1))
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- mul leftOperand' (i64ConstOp (-1))
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- mul leftOperand' (C.int32 (-1))
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- mul leftOperand' (C.int8 (-1))
           return (symbolTable, result, Nothing)
@@ -1210,7 +1210,7 @@ generateExp env symbolTable exp = case exp of
 
     Core.Typed _ _ _ (Var "*" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- fmul leftOperand' rightOperand'
@@ -1225,13 +1225,13 @@ generateExp env symbolTable exp = case exp of
 
     Core.Typed _ _ _ (Var "/" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fdiv leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           leftOperand''         <- sitofp leftOperand' Type.double
@@ -1239,7 +1239,7 @@ generateExp env symbolTable exp = case exp of
           result                <- fdiv leftOperand'' rightOperand''
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           leftOperand''         <- sitofp leftOperand' Type.double
@@ -1247,7 +1247,7 @@ generateExp env symbolTable exp = case exp of
           result                <- fdiv leftOperand'' rightOperand''
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           leftOperand''         <- uitofp leftOperand' Type.double
@@ -1294,225 +1294,225 @@ generateExp env symbolTable exp = case exp of
     Core.Typed _ _ _ (Var "~" False) -> do
       (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
       result <- case getType (List.head args) of
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ ->
           Instruction.xor operand' (i64ConstOp (-1))
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ ->
           Instruction.xor operand' (i32ConstOp (-1))
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ ->
           Instruction.xor operand' (i8ConstOp (-1))
       return (symbolTable, result, Nothing)
 
     Core.Typed _ area _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tShort, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "String" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- callWithMetadata (makeDILocation env area) areStringsEqual [(leftOperand', []), (rightOperand', [])]
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" _ -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
     Core.Typed _ _ _ (Var ">" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" _ -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
 
     Core.Typed _ _ _ (Var "<" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" _ -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
 
     Core.Typed _ _ _ (Var ">=" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" _ -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
     Core.Typed _ _ _ (Var "<=" False) ->
       case getType (List.head args) of
-        IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Float" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Short" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Short" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Boolean" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "Char" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "Char" IT.Star) "prelude" _ -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
-        IT.TCon (IT.TC "{}" IT.Star) "prelude" -> do
+        IT.TCon (IT.TC "{}" IT.Star) "prelude" _ -> do
           return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
     _ | Core.isPlainRecursiveCall metadata -> do
@@ -1618,16 +1618,16 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
 
   Core.Typed (_ IT.:=> t) _ _ (Core.Literal (Core.LNum n)) -> case t of
-    IT.TCon (IT.TC "Float" _) _ ->
+    IT.TCon (IT.TC "Float" _) _ _ ->
       return (symbolTable, C.double (read n), Nothing)
 
-    IT.TCon (IT.TC "Integer" _) _ ->
+    IT.TCon (IT.TC "Integer" _) _ _ ->
       return (symbolTable, C.int64 (read n), Nothing)
 
-    IT.TCon (IT.TC "Short" _) _ ->
+    IT.TCon (IT.TC "Short" _) _ _ ->
       return (symbolTable, C.int32 (read n), Nothing)
 
-    IT.TCon (IT.TC "Byte" _) _ ->
+    IT.TCon (IT.TC "Byte" _) _ _ ->
       return (symbolTable, C.int8 (read n), Nothing)
 
     _ ->
@@ -2153,16 +2153,16 @@ generateListSubPatternTest env symbolTable basePtr pats = case pats of
 generateBranchTest :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Pattern -> Operand -> m Operand
 generateBranchTest env symbolTable pat value = case pat of
   Core.Typed (_ IT.:=> t) _ _ (Core.PNum n) -> case t of
-    IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+    IT.TCon (IT.TC "Byte" IT.Star) "prelude" _ ->
       icmp IntegerPredicate.EQ (C.int8 (read n)) value
 
-    IT.TCon (IT.TC "Short" IT.Star) "prelude" ->
+    IT.TCon (IT.TC "Short" IT.Star) "prelude" _ ->
       icmp IntegerPredicate.EQ (C.int32 (read n)) value
 
-    IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+    IT.TCon (IT.TC "Integer" IT.Star) "prelude" _ ->
       icmp IntegerPredicate.EQ (C.int64 (read n)) value
 
-    IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+    IT.TCon (IT.TC "Float" IT.Star) "prelude" _ ->
       fcmp FloatingPointPredicate.OEQ (C.double (read n)) value
 
     _ ->

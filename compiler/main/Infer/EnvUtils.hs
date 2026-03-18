@@ -124,7 +124,7 @@ setNamespacesInScope env ns = env { envNamespacesInScope = ns }
 
 
 tDictionaryOf :: FilePath -> Type -> Type -> Type
-tDictionaryOf builtinsPath keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) builtinsPath) keyType)
+tDictionaryOf builtinsPath keyType = TApp (TApp (mkTCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) builtinsPath) keyType)
 
 
 mergeEnv :: Env -> Env -> Env
@@ -152,7 +152,7 @@ mkTupleInstance cls n =
 initialEnv :: Infer Env
 initialEnv = do
   builtinsModulePath <- Rock.fetch $ Query.AbsolutePreludePath "__BUILTINS__"
-  let tComparison = TCon (TC "Comparison" Star) builtinsModulePath
+  let tComparison = mkTCon (TC "Comparison" Star) builtinsModulePath
   return Env
     { envVars        = M.fromList
                         [ ("&&"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))

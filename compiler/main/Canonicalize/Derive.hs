@@ -33,7 +33,7 @@ searchTypeInConstructor id t = case t of
   TVar (TV n _) ->
     if n == id then Just t else Nothing
 
-  TCon _ _ ->
+  TCon _ _ _ ->
     Nothing
 
   TApp l r ->

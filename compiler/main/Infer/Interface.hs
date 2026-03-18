@@ -18,6 +18,7 @@ import           Infer.Placeholder
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Data.List
 import           Control.Monad
 import           Control.Monad.Except
@@ -154,7 +155,7 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
   let (_ :=> mt') = apply s1 qt
   let qt'         = constraintPreds :=> mt'
 
-  let sc          = quantify (ftv qt') qt'
+  let sc          = quantify (ftvList qt') qt'
 
   (s, ps, t, e) <- infer False options env m
   (qs :=> t')   <- instantiate sc
@@ -162,9 +163,10 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   let qs' = apply s' qs
       t'' = apply s' t'
-      fs  = ftv (apply s' env)
-      gs  = ftv t'' \\ fs
-      sc' = quantify (ftv t'') (qs' :=> t'')
+      fsSet = ftv (apply s' env)
+      fs  = S.toList fsSet
+      gs  = filter (not . (`S.member` fsSet)) (ftvList t'')
+      sc' = quantify (ftvList t'') (qs' :=> t'')
   ps' <- filterM ((not <$>) . entail env qs') (apply s' ps)
 
   (ds, rs, _) <- split True env fs gs ps'

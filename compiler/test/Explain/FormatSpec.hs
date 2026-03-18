@@ -484,7 +484,7 @@ spec = do
       actual `shouldBe` expected
 
     it "should pretty print a qualified type with one constraint" $ do
-      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (TCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
+      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (mkTCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
           actual   = schemeToStr scheme
           expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
       actual `shouldBe` expected

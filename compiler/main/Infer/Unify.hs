@@ -23,10 +23,10 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  | tv `elem` concat (ftv <$> fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
-varBind tv t | t == TVar tv      = return M.empty
-             | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | tv `S.member` foldMap ftv (M.elems fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | otherwise                                   = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
+varBind tv t | t == TVar tv         = return M.empty
+             | tv `S.member` ftv t  = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
              | otherwise         = return $ M.singleton tv t
 
@@ -116,17 +116,17 @@ instance Unify Type where
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
-  unify t1@(TCon a fpa) t2@(TCon b fpb)
+  unify t1@(TCon a fpa _) t2@(TCon b fpb _)
     | a == b && fpa == fpb = return M.empty
     | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
 
-  unify (TCon (TC tNameA _) _) (TApp (TCon (TC tNameB _) _) _)
+  unify (TCon (TC tNameA _) _ _) (TApp (TCon (TC tNameB _) _ _) _)
     | tNameA == "String" && tNameB == "Element" =
         return mempty
 
-  unify (TApp (TCon (TC tNameB _) _) _) (TCon (TC tNameA _) _)
+  unify (TApp (TCon (TC tNameB _) _ _) _) (TCon (TC tNameA _) _ _)
     | tNameB == "Element" && tNameA == "String" =
         return mempty
 
@@ -181,7 +181,7 @@ instance Match Type where
     merge sl sr
   match (TVar u) t | kind u == kind t =
     return $ M.singleton u t
-  match (TCon tc1 fp1) (TCon tc2 fp2)
+  match (TCon tc1 fp1 _) (TCon tc2 fp2 _)
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
     | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
@@ -196,7 +196,11 @@ instance Match Type where
 instance Match t => Match [t] where
   match ts ts' = do
     ss <- zipWithM match ts ts'
-    foldM merge nullSubst ss
+    let totalKeys = sum (map M.size ss)
+        merged    = M.unions ss
+    if M.size merged == totalKeys
+      then return merged
+      else foldM merge nullSubst ss
 
 
 data UnifyStrategy = Strict | Discard | AccessStyle
@@ -342,7 +346,7 @@ gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base
 
 gentleUnify (TVar tv) t         = M.singleton tv t
 gentleUnify t         (TVar tv) = M.singleton tv t
-gentleUnify (TCon a fpa) (TCon b fpb)
+gentleUnify (TCon a fpa _) (TCon b fpb _)
   | a == b && fpa == fpb = M.empty
   | a == b && (fpa == "JSX" || fpb == "JSX") = M.empty
   | a /= b               = M.empty
@@ -361,17 +365,17 @@ quickMatch (TRecord fields _ _) (TRecord fields' _ _) =
 
 quickMatch (TVar _) _ = True
 quickMatch _ (TVar _) = True
-quickMatch (TCon a fpa) (TCon b fpb)
+quickMatch (TCon a fpa _) (TCon b fpb _)
   | a == b && fpa == fpb = True
   | a == b && (fpa == "JSX" || fpb == "JSX") = True
   | a /= b = False
   | fpa /= fpb = False
 
-quickMatch (TCon (TC tNameA _) _) (TApp (TCon (TC tNameB _) _) _)
+quickMatch (TCon (TC tNameA _) _ _) (TApp (TCon (TC tNameB _) _ _) _)
   | tNameA == "String" && tNameB == "Element" =
       True
 
-quickMatch (TApp (TCon (TC tNameB _) _) _) (TCon (TC tNameA _) _)
+quickMatch (TApp (TCon (TC tNameB _) _ _) _) (TCon (TC tNameA _) _ _)
   | tNameB == "Element" && tNameA == "String" =
       True
 

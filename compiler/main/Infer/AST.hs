@@ -59,13 +59,13 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
         Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) _ sc -> do
           (ps :=> t) <- instantiate sc
           ps' <- dedupePreds <$> getAllParentPreds env (dedupePreds ps)
-          let sc' = quantify (ftv (ps :=> t)) (ps' :=> t)
+          let sc' = quantify (ftvList (ps :=> t)) (ps' :=> t)
           safeExtendVars env (name, sc')
 
         Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) _ sc -> do
           (ps :=> t) <- instantiate sc
           ps' <- dedupePreds <$> getAllParentPreds env (dedupePreds ps)
-          let sc' = quantify (ftv (ps :=> t)) (ps' :=> t)
+          let sc' = quantify (ftvList (ps :=> t)) (ps' :=> t)
           safeExtendVars env (name, sc')
 
         Can.Assignment name _ -> do
@@ -337,7 +337,7 @@ searchTypeInConstructor id t = case t of
   TVar (TV n _) ->
     if n == id then Just t else Nothing
 
-  TCon _ _ ->
+  TCon _ _ _ ->
     Nothing
 
   TApp l r ->

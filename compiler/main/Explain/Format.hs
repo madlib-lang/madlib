@@ -2507,7 +2507,7 @@ pushAnnotation ann doc = case doc of
 
 gatherAllFnArgsForDiff :: Type -> Type -> [(Type, Type)]
 gatherAllFnArgsForDiff t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _) tl1) tr1, TApp (TApp (TCon (TC "(->)" _) _) tl2) tr2) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) tl1) tr1, TApp (TApp (TCon (TC "(->)" _) _ _) tl2) tr2) ->
     (tl1, tl2) : gatherAllFnArgsForDiff tr1 tr2
 
   _ ->
@@ -2566,13 +2566,13 @@ constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1 vars2 ts = case ts 
 
 gatherAllConstructorArgsForDiff :: Type -> Type -> [(Type, Type)]
 gatherAllConstructorArgsForDiff t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _) _) _, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
     [(t1, t2)]
 
-  (TApp (TApp (TCon (TC "(->)" _) _) _) _, _) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, _) ->
     [(t1, t2)]
 
-  (_, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
+  (_, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
     [(t1, t2)]
 
   (TApp l1 r1, TApp l2 r2) ->
@@ -2713,7 +2713,7 @@ typesToDocWithDiff :: (M.Map Int Int, M.Map Int Int)
   -> Type
   -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
 typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _) _) _, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
     let allArgs = gatherAllFnArgsForDiff t1 t2
         (vars1', vars2', ts1, ts2) = constructorAndFunctionArgsToDocsWithDiff True vars1 vars2 allArgs
     in  ( vars1'
@@ -2722,17 +2722,17 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
         , Pretty.group $ Pretty.hcat $ List.intersperse (Pretty.line <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts2)
         )
 
-  (TApp (TApp (TCon (TC "(->)" _) _) _) _, _) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, _) ->
     let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
         (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
     in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
 
-  (_, TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
+  (_, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
     let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
         (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
     in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
 
-  (TApp (TApp (TCon (TC "(,)" _) _) tl1) tr1, TApp (TApp (TCon (TC "(,)" _) _) tl2) tr2) ->
+  (TApp (TApp (TCon (TC "(,)" _) _ _) tl1) tr1, TApp (TApp (TCon (TC "(,)" _) _ _) tl2) tr2) ->
     let (vars1', vars2', tl1', tl2')   = typesToDocWithDiff vars1 vars2 tl1 tl2
         (vars1'', vars2'', tr1', tr2') = typesToDocWithDiff vars1' vars2' tr1 tr2
         openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
@@ -2750,7 +2750,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TCon (TC "(,,)" _) _) t11) t12) t13, TApp (TApp (TApp (TCon (TC "(,,)" _) _) t21) t22) t23) ->
+  (TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t11) t12) t13, TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t21) t22) t23) ->
     let (vars1', vars2', t11', t21')     = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')   = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23') = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2779,7 +2779,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) t11) t12) t13) t14, TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) t21) t22) t23) t24) ->
+  (TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t11) t12) t13) t14, TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t21) t22) t23) t24) ->
     let (vars1', vars2', t11', t21')       = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')     = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')   = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2811,7 +2811,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) t11) t12) t13) t14) t15, TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) t21) t22) t23) t24) t25) ->
+  (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t11) t12) t13) t14) t15, TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t21) t22) t23) t24) t25) ->
     let (vars1', vars2', t11', t21')         = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')       = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')     = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2846,7 +2846,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) t11) t12) t13) t14) t15) t16, TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) t21) t22) t23) t24) t25) t26) ->
+  (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16, TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) ->
     let (vars1', vars2', t11', t21')           = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')         = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')       = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2884,7 +2884,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) ->
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) ->
     let (vars1', vars2', t11', t21')             = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')           = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')         = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2925,7 +2925,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) ->
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) ->
     let (vars1', vars2', t11', t21')               = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')             = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')           = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -2969,7 +2969,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18) t19, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) t29) ->
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18) t19, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) t29) ->
     let (vars1', vars2', t11', t21')                 = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')               = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')             = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -3016,7 +3016,7 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _) t11) t12) t13) t14) t15) t16) t17) t18) t19) t110, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) t21) t22) t23) t24) t25) t26) t27) t28) t29) t210) ->
+  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18) t19) t110, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) t29) t210) ->
     let (vars1', vars2', t11', t21')                     = typesToDocWithDiff vars1 vars2 t11 t21
         (vars1'', vars2'', t12', t22')                   = typesToDocWithDiff vars1' vars2' t12 t22
         (vars1''', vars2''', t13', t23')                 = typesToDocWithDiff vars1'' vars2'' t13 t23
@@ -3182,7 +3182,7 @@ prettyPrintType rewrite =
 
 prettyPrintType' :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, String)
 prettyPrintType' rewrite (vars, hkVars) t = case t of
-  TCon (TC n _) _ ->
+  TCon (TC n _) _ _ ->
     (vars, hkVars, n)
 
   TVar (TV n k)   ->
@@ -3206,18 +3206,18 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
             let newIndex = M.size hkVars
             in  (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
 
-  TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
+  TApp (TApp (TCon (TC "(,)" _) _ _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, "#[" <> left <> ", " <> right <> "]")
 
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _) tl) tr) trr ->
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) tl) tr) trr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
     in  (varsRightRight, hkVarsRightRight, "#[" <> left <> ", " <> right <> ", " <> rightRight <> "]")
 
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) tl) tr) trr) trrr ->
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) tl) tr) trr) trrr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
@@ -3228,13 +3228,13 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
         , "#[" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> "]"
         )
 
-  TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
+  TApp (TApp (TCon (TC "(->)" _) _ _) tl) tr ->
     let (varsLeft, hkVarsLeft, left) = case tl of
-          TApp (TApp (TCon (TC "(->)" _) _) tl') tr' ->
+          TApp (TApp (TCon (TC "(->)" _) _ _) tl') tr' ->
             let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' rewrite (vars, hkVars) tl'
                 (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', hkVarsLeft') tr'
                 leftParenthesis                    = case tl' of
-                  TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+                  TApp (TApp (TCon (TC "(->)" _) _ _) _) _ ->
                     True
 
                   _ ->
@@ -3293,7 +3293,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
 
 gatherAllFnArgs :: Type -> [Type]
 gatherAllFnArgs t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
+  TApp (TApp (TCon (TC "(->)" _) _ _) tl) tr ->
     tl : gatherAllFnArgs tr
 
   _ ->
@@ -3302,7 +3302,7 @@ gatherAllFnArgs t = case t of
 
 gatherAllConstructorArgs :: Type -> [Type]
 gatherAllConstructorArgs t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) _) _ ->
+  TApp (TApp (TCon (TC "(->)" _) _ _) _) _ ->
     [t]
 
   TApp l r ->
@@ -3379,7 +3379,7 @@ schemeToDoc (vars, hkVars) sc = case sc of
 
 typeToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
 typeToDoc (vars, hkVars) t = case t of
-  TCon (TC n _) _ ->
+  TCon (TC n _) _ _ ->
     (vars, hkVars, Pretty.pretty n)
 
   TVar (TV n k)   ->
@@ -3400,7 +3400,7 @@ typeToDoc (vars, hkVars) t = case t of
           let newIndex = M.size hkVars
           in  (vars, M.insert n newIndex hkVars, Pretty.pretty [hkLetters !! newIndex])
 
-  TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
+  TApp (TApp (TCon (TC "(,)" _) _ _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = typeToDoc (vars, hkVars) tl
         (varsRight, hkVarsRight, right) = typeToDoc (varsLeft, hkVarsLeft) tr
     in  ( varsRight
@@ -3413,7 +3413,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _) t1) t2) t3 ->
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t1) t2) t3 ->
     let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
@@ -3427,7 +3427,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) t1) t2) t3) t4 ->
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t1) t2) t3) t4 ->
     let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
@@ -3442,7 +3442,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) t1) t2) t3) t4) t5 ->
+  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t1) t2) t3) t4) t5 ->
     let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
@@ -3463,7 +3463,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) t1) t2) t3) t4) t5) t6 ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6 ->
     let (vars' , hkVars' , t1')         = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')         = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3')       = typeToDoc (vars'', hkVars'') t3
@@ -3486,7 +3486,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t1) t2) t3) t4) t5) t6) t7 ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7 ->
     let (vars' , hkVars' , t1')           = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')           = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3')         = typeToDoc (vars'', hkVars'') t3
@@ -3511,7 +3511,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t1) t2) t3) t4) t5) t6) t7) t8 ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8 ->
     let (vars' , hkVars' , t1')             = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')             = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3')           = typeToDoc (vars'', hkVars'') t3
@@ -3538,7 +3538,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t1) t2) t3) t4) t5) t6) t7) t8) t9 ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8) t9 ->
     let (vars' , hkVars' , t1')               = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')               = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3')             = typeToDoc (vars'', hkVars'') t3
@@ -3567,7 +3567,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) t1) t2) t3) t4) t5) t6) t7) t8) t9) t10 ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8) t9) t10 ->
     let (vars' , hkVars' , t1')                  = typeToDoc (vars, hkVars) t1
         (vars'', hkVars'', t2')                  = typeToDoc (vars', hkVars') t2
         (vars''', hkVars''', t3')                = typeToDoc (vars'', hkVars'') t3
@@ -3598,7 +3598,7 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  (TApp (TApp (TCon (TC "(->)" _) _) _) _) ->
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
     let allArgs = gatherAllFnArgs t
         (vars', hkVars', args) = constructorAndFunctionArgsToDocs True (vars, hkVars) allArgs
     in  ( vars'
@@ -3737,31 +3737,31 @@ isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
 
 isTuple :: Type -> Bool
 isTuple t = case t of
-  TApp (TApp (TCon (TC "(,)" _) _) _) _ ->
+  TApp (TApp (TCon (TC "(,)" _) _ _) _) _ ->
     True
 
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _) _) _) _ ->
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) _) _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _) _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) _) _) _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _) _) _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _) _) _) _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _) _ ->
     True
 
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _) _) _) _) _) _) _) _) _) _) _ ->
+  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _) _) _ ->
     True
 
   _ -> False

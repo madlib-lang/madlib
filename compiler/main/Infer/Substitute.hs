@@ -12,16 +12,16 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Data.Foldable                  ( Foldable(foldl') )
 import           Control.Monad.Except
-import           Data.List                      ( nub
+import           Data.List                      ( intersect
+                                                , nub
                                                 , union
-                                                , intersect
                                                 )
 import           Control.Applicative
 
 
 class Substitutable a where
   apply :: Substitution -> a -> a
-  ftv   :: a -> [TVar]
+  ftv   :: a -> S.Set TVar
 
 
 instance Substitutable Pred where
@@ -30,10 +30,10 @@ instance Substitutable Pred where
 
 instance Substitutable t => Substitutable (Qual t) where
   apply s (ps :=> t) = apply s ps :=> apply s t
-  ftv (ps :=> t) = ftv ps `union` ftv t
+  ftv (ps :=> t) = ftv ps `S.union` ftv t
 
 instance Substitutable Type where
-  apply _ tc@(TCon _ _) =
+  apply _ tc@(TCon _ _ _) =
     tc
 
   apply s t@(TVar a) =
@@ -93,25 +93,24 @@ instance Substitutable Type where
   apply _ t = t
 
   ftv TCon{} =
-    []
+    S.empty
 
   ftv (TVar a) =
-    [a]
+    S.singleton a
 
   ftv (t1 `TApp` t2) =
-    ftv t1 `union` ftv t2
+    ftv t1 `S.union` ftv t2
 
   ftv (TRecord fields Nothing optionalFields) =
-    foldr (\v s -> union s $ ftv v) [] (M.elems fields)
-    `union` foldr (\v s -> union s $ ftv v) [] (M.elems optionalFields)
+    foldMap ftv (M.elems fields) `S.union` foldMap ftv (M.elems optionalFields)
 
   ftv (TRecord fields (Just base) optionalFields) =
-    foldr (\v s -> union s $ ftv v) [] (M.elems fields)
-    `union` ftv base
-    `union` foldr (\v s -> union s $ ftv v) [] (M.elems optionalFields)
+    foldMap ftv (M.elems fields)
+    `S.union` ftv base
+    `S.union` foldMap ftv (M.elems optionalFields)
 
   ftv _ =
-    []
+    S.empty
 
 
 instance Substitutable Scheme where
@@ -120,7 +119,7 @@ instance Substitutable Scheme where
 
 instance Substitutable a => Substitutable [a] where
   apply = fmap . apply
-  ftv   = nub . concatMap ftv
+  ftv   = foldMap ftv
 
 instance Substitutable Env where
   apply s env = env { envVars = M.map (apply s) $ envVars env }
@@ -130,7 +129,34 @@ instance Substitutable Env where
 -- protect against infinite types
 occursCheck :: TVar -> Type -> Bool
 occursCheck tv t =
-  tv `elem` ftv t
+  tv `S.member` ftv t
+
+
+-- Free type variables in structural traversal order (for TGen index-sensitive quantification)
+class FtvOrdered a where
+  ftvList :: a -> [TVar]
+
+instance FtvOrdered Type where
+  ftvList TCon{}                         = []
+  ftvList (TVar a)                       = [a]
+  ftvList (t1 `TApp` t2)                = ftvList t1 `union` ftvList t2
+  ftvList (TRecord fields Nothing optionalFields) =
+    foldr (\v acc -> ftvList v `union` acc) [] (M.elems fields)
+    `union` foldr (\v acc -> ftvList v `union` acc) [] (M.elems optionalFields)
+  ftvList (TRecord fields (Just base) optionalFields) =
+    foldr (\v acc -> ftvList v `union` acc) [] (M.elems fields)
+    `union` ftvList base
+    `union` foldr (\v acc -> ftvList v `union` acc) [] (M.elems optionalFields)
+  ftvList _                              = []
+
+instance FtvOrdered Pred where
+  ftvList (IsIn _ ts _) = ftvList ts
+
+instance FtvOrdered a => FtvOrdered [a] where
+  ftvList = nub . concatMap ftvList
+
+instance FtvOrdered t => FtvOrdered (Qual t) where
+  ftvList (ps :=> t) = ftvList ps `union` ftvList t
 
 
 compose :: Substitution -> Substitution -> Substitution

@@ -101,7 +101,7 @@ bySuper env p@(IsIn i ts maybeArea) =
 findInst :: Env -> Pred -> Infer (Maybe Instance)
 findInst env p@(IsIn interface ts _) =
   catchError
-    (Just <$> tryInsts (insts env interface))
+    (Just <$> tryInsts candidates)
     (const $ case ts of
       [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
         let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
@@ -112,6 +112,7 @@ findInst env p@(IsIn interface ts _) =
         return Nothing
     )
  where
+  candidates = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
   tryInst i@(Instance (_ :=> h) _) = do
     isInstanceOf h p
     return i
@@ -148,9 +149,14 @@ specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
 specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
 
 
+quickMatchPred :: Pred -> Pred -> Bool
+quickMatchPred (IsIn i ts _) (IsIn i' ts' _) =
+  i == i' && length ts == length ts' && and (zipWith quickMatch ts ts')
+
+
 isConcrete :: Type -> Bool
 isConcrete t = case t of
-  TCon _ _ ->
+  TCon _ _ _ ->
     True
 
   TApp l _ ->
@@ -178,7 +184,7 @@ byInst :: Env -> Pred -> Infer [Pred]
 byInst _ (IsIn "__MUTATION__" _ _) = return []
 byInst env p@(IsIn interface ts maybeArea) =
   catchError
-    (tryInsts (insts env interface))
+    (tryInsts candidates)
     (\err -> case ts of
       [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
         pushExtensibleRecordToDerive (M.keys fields)
@@ -190,6 +196,7 @@ byInst env p@(IsIn interface ts maybeArea) =
         throwError err
     )
  where
+  candidates = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
   tryInst (Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
     return $ apply u <$> ps
@@ -229,8 +236,10 @@ simplify ent = loop []
 reduce :: Env -> [Pred] -> Infer [Pred]
 reduce env ps = do
   withoutTauts <- elimTauts env ps
-  let r = simplify (scEntail env) withoutTauts
-  return r
+  let superCache    = M.fromList [(p, bySuper env p) | p <- withoutTauts]
+      cachedBySuper p = M.findWithDefault (bySuper env p) p superCache
+      scEntailFast retained p = any ((p `elem`) . cachedBySuper) retained
+  return $ simplify scEntailFast withoutTauts
 
 elimTauts :: Env -> [Pred] -> Infer [Pred]
 elimTauts env = filterM ((not <$>) . entail env [])

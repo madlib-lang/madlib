@@ -15,6 +15,7 @@ import           Infer.Type
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Data.List
 import           Data.Char
@@ -100,7 +101,7 @@ addTypeToEnv astPath env (Src.Source area _ typeDecl) = case typeDecl of
       Nothing -> do
         verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
-        let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
+        let t     = mkTCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
             vars  = (\n -> TVar (TV (hash n) Star)) <$> Src.adtparams adt
             t'    = foldl1 TApp (t : vars)
             env'  = addADT env (Src.adtname adt) t'
@@ -119,7 +120,7 @@ canonicalizeTypeDecl env astPath typeNamesInScope td@(Src.Source area _ typeDecl
     else do
       verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
 
-      let t     = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
+      let t     = mkTCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
           vars  = (\n -> TVar (TV (hash n) Star)) <$> Src.adtparams adt
           t'    = foldl1 TApp (t : vars)
           env'  = addADT env (Src.adtname adt) t'
@@ -159,7 +160,7 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
 
   let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
   let rt = foldl' TApp
-                  (TCon (TC name (buildKind $ length params)) astPath)
+                  (mkTCon (TC name (buildKind $ length params)) astPath)
                   ((\x -> apply s $ TVar (TV (hash x) Star)) <$> params)
   ctors' <- mapM
     (\(_, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
@@ -208,7 +209,7 @@ resolveADTConstructorParams env astPath _ params c@(Src.Source area _ (Src.Const
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
   forM_ ts $ \t -> do
-    let varNames = map (\(TV n _) -> n) (ftv t)
+    let varNames = map (\(TV n _) -> n) (S.toList (ftv t))
     forM_ varNames $ \n ->
       if n `elem` params' then
         return ()

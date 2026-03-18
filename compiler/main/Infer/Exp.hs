@@ -243,7 +243,7 @@ postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -
 postProcessBody discardError options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
-      let fs = ftv (apply accSubst env'') `List.union` ftv (apply accSubst expType) `List.union` ftvForLetGen (apply accSubst t')
+      let fs = S.toList (ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType)) `List.union` ftvForLetGen (apply accSubst t')
       let ps'' = apply accSubst ps'
 
       (ps''', substFromDefaulting) <- do
@@ -500,7 +500,7 @@ inferListItem discardError options env _ (Can.Canonical area li) = case li of
 
 pickJSXChild :: Type -> Type -> Type
 pickJSXChild t1 t2 = case (t1, t2) of
-  (TApp (TCon (TC "Element" _) _) _, TCon (TC "String" _) _) ->
+  (TApp (TCon (TC "Element" _) _ _) _, TCon (TC "String" _) _ _) ->
     t2
 
   _ ->
@@ -821,7 +821,7 @@ inferExtern _ (Can.Canonical area (Can.Extern scheme name originalName)) = do
 type Ambiguity = (TVar, [Pred])
 
 ambiguities :: [TVar] -> [Pred] -> [Ambiguity]
-ambiguities vs ps = [ (v, filter (elem v . ftv) ps) | v <- ftv ps \\ vs ]
+ambiguities vs ps = [ (v, filter (elem v . S.toList . ftv) ps) | v <- S.toList (ftv ps) \\ vs ]
 
 
 
@@ -995,8 +995,8 @@ dedupePreds' acc ps = case ps of
 
 ftvForLetGen :: Type -> [TVar]
 ftvForLetGen t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) tl1) tr1 ->
-    ftv tl1 `List.union` ftv tr1
+  TApp (TApp (TCon (TC "(->)" _) _ _) tl1) tr1 ->
+    S.toList (ftv tl1 `S.union` ftv tr1)
 
   TApp t1 t2 ->
     ftvForLetGen t1 `List.union` ftvForLetGen t2
@@ -1010,10 +1010,10 @@ ftvForLetGen t = case t of
 -- Shared generalization logic: compute free/generic vars, split predicates, handle mutations
 generalize :: Bool -> Bool -> Env -> Area -> Substitution -> Env -> Type -> [Pred] -> Type -> Infer ([Pred], [Pred], Substitution, [Pred])
 generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
-  let fs = ftv (apply sFinal envWithVarsExcluded)
+  let fs = S.toList (ftv (apply sFinal envWithVarsExcluded))
 
   (ds, rs, sSplit) <- catchError
-    (split (not isLet) envWithVarsExcluded fs (ftv t') ps')
+    (split (not isLet) envWithVarsExcluded fs (ftvList t') ps')
     (\case
       _ | discardError ->
         return (ps', [], mempty)
@@ -1031,7 +1031,7 @@ generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
   let mutPS =
         List.filter
           (\(IsIn cls ts _) ->
-            let freeTVs = ftv (apply sFinal ts) `intersect` ftv (apply sFinal t)
+            let freeTVs = S.toList (ftv (apply sFinal ts) `S.intersection` ftv (apply sFinal t))
             in  cls == mutationInterface && not (null freeTVs)
           )
           ps'
@@ -1070,9 +1070,10 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
 
   (ds, rs', sFinal, mutPS) <- generalize isLet discardError env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
 
-  let vs = if isLet then ftvForLetGen t' else ftv t'
-      fs = ftv (apply sFinal envWithVarsExcluded)
-      gs = vs \\ fs
+  let vs = if isLet then ftvForLetGen t' else ftvList t'
+      fsSet = ftv (apply sFinal envWithVarsExcluded)
+      fs = S.toList fsSet
+      gs = filter (not . (`S.member` fsSet)) vs
       sc =
         if isLet && not (Slv.isNamedAbs e) then
           apply sFinal $ quantify [] ((rs' ++ mutPS) :=> t')
@@ -1099,7 +1100,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
 
   env' <- case Can.getExpName exp of
         Just n  -> do
-          let scWithParents = quantify (ftv qt) (qs :=> t')
+          let scWithParents = quantify (ftvList qt) (qs :=> t')
           return $ extendVars env (n, scWithParents)
 
         Nothing ->
@@ -1130,9 +1131,10 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   let qs'' = dedupePreds qs'
-      fs = ftv (apply s' envWithVarsExcluded)
-      gs = ftv (apply s' t') \\ fs
-      scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
+      fsSet = ftv (apply s' envWithVarsExcluded)
+      fs = S.toList fsSet
+      gs = filter (not . (`S.member` fsSet)) (ftvList (apply s' t'))
+      scCheck  = quantify (ftvList (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   sigCheckResult <- if sc /= scCheck then
     -- The inferred scheme differs from the declared scheme.
     -- Before reporting an error, check if the declared type subsumes the inferred type.
