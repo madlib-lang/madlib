@@ -46,7 +46,7 @@
                           (TApp
                              (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
                              (TVar (TV 21 Star)))))
-                  (Area (Loc 200 13 1) (Loc 368 21 6))
+                  (Area (Loc 156 12 1) (Loc 368 21 6))
                   (Export
                      (Typed
                         ([] :=>
@@ -67,7 +67,7 @@
                                 (TApp
                                    (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
                                    (TVar (TV 21 Star)))))
-                        (Area (Loc 207 13 8) (Loc 368 21 6))
+                        (Area (Loc 156 12 1) (Loc 368 21 6))
                         (Assignment
                            "find"
                            (Typed
@@ -220,7 +220,7 @@
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV 33 Star)))
                              (TVar (TV 34 Star)))))
-                  (Area (Loc 408 23 1) (Loc 456 25 2))
+                  (Area (Loc 369 22 1) (Loc 456 25 2))
                   (Export
                      (Typed
                         ([] :=>
@@ -245,7 +245,7 @@
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV 33 Star)))
                                    (TVar (TV 34 Star)))))
-                        (Area (Loc 415 23 8) (Loc 456 25 2))
+                        (Area (Loc 369 22 1) (Loc 456 25 2))
                         (Assignment
                            "flip"
                            (Typed
@@ -469,7 +469,7 @@
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV 47 Star)))
                                 (TVar (TV 48 Star))))))
-                  (Area (Loc 509 28 1) (Loc 638 34 7))
+                  (Area (Loc 458 27 1) (Loc 638 34 7))
                   (Export
                      (Typed
                         ([] :=>
@@ -490,7 +490,7 @@
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV 47 Star)))
                                       (TVar (TV 48 Star))))))
-                        (Area (Loc 516 28 8) (Loc 638 34 7))
+                        (Area (Loc 458 27 1) (Loc 638 34 7))
                         (Assignment
                            "propOrWrappedDefault"
                            (Typed
@@ -861,7 +861,7 @@
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV 68 Star)))
                              (TCon (TC "Boolean" Star) "prelude"))))
-                  (Area (Loc 769 39 1) (Loc 845 41 5))
+                  (Area (Loc 731 38 1) (Loc 845 41 5))
                   (Export
                      (Typed
                         ([] :=>
@@ -878,7 +878,7 @@
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV 68 Star)))
                                    (TCon (TC "Boolean" Star) "prelude"))))
-                        (Area (Loc 776 39 8) (Loc 845 41 5))
+                        (Area (Loc 731 38 1) (Loc 845 41 5))
                         (Assignment
                            "propEq"
                            (Typed
@@ -1000,7 +1000,7 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV 75 Star)))
                           (TVar (TV 76 Star))))
-                  (Area (Loc 873 44 1) (Loc 927 44 55))
+                  (Area (Loc 847 43 1) (Loc 927 44 55))
                   (Export
                      (Typed
                         ([] :=>
@@ -1013,7 +1013,7 @@
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV 75 Star)))
                                 (TVar (TV 76 Star))))
-                        (Area (Loc 880 44 8) (Loc 927 44 55))
+                        (Area (Loc 847 43 1) (Loc 927 44 55))
                         (Assignment
                            "objOf"
                            (Typed
@@ -1098,7 +1098,7 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV 84 Star)))
                           (TVar (TV 85 Star))))
-                  (Area (Loc 950 47 1) (Loc 1006 47 57))
+                  (Area (Loc 929 46 1) (Loc 1006 47 57))
                   (Export
                      (Typed
                         ([] :=>
@@ -1111,7 +1111,7 @@
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV 84 Star)))
                                 (TVar (TV 85 Star))))
-                        (Area (Loc 957 47 8) (Loc 1006 47 57))
+                        (Area (Loc 929 46 1) (Loc 1006 47 57))
                         (Assignment
                            "merge"
                            (Typed
@@ -1194,7 +1194,7 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV 96 Star)))
                           (TVar (TV 98 Star))))
-                  (Area (Loc 1034 50 1) (Loc 1057 50 24))
+                  (Area (Loc 1009 49 1) (Loc 1057 50 24))
                   (Assignment
                      "mergeLeft"
                      (Typed
@@ -1286,19 +1286,19 @@
                     (TRRecord
                        (fromList
                           [ ( "id"
-                            , ( Area (Loc 1084 53 3) (Loc 1089 53 8)
+                            , ( Area (Loc 1084 53 3) (Loc 1086 53 5)
                               , Untyped
                                   (Area (Loc 1090 53 9) (Loc 1096 53 15)) (TRSingle "String")
                               )
                             )
                           , ( "itemId"
-                            , ( Area (Loc 1100 54 3) (Loc 1109 54 12)
+                            , ( Area (Loc 1100 54 3) (Loc 1106 54 9)
                               , Untyped
                                   (Area (Loc 1110 54 13) (Loc 1117 54 20)) (TRSingle "Integer")
                               )
                             )
                           , ( "multiplier"
-                            , ( Area (Loc 1121 55 3) (Loc 1134 55 16)
+                            , ( Area (Loc 1121 55 3) (Loc 1131 55 13)
                               , Untyped
                                   (Area (Loc 1135 55 17) (Loc 1142 55 24)) (TRSingle "Integer")
                               )
@@ -1318,19 +1318,19 @@
                     (TRRecord
                        (fromList
                           [ ( "cost"
-                            , ( Area (Loc 1208 60 3) (Loc 1215 60 10)
+                            , ( Area (Loc 1208 60 3) (Loc 1212 60 7)
                               , Untyped
                                   (Area (Loc 1216 60 11) (Loc 1223 60 18)) (TRSingle "Integer")
                               )
                             )
                           , ( "description"
-                            , ( Area (Loc 1183 59 3) (Loc 1197 59 17)
+                            , ( Area (Loc 1183 59 3) (Loc 1194 59 14)
                               , Untyped
                                   (Area (Loc 1198 59 18) (Loc 1204 59 24)) (TRSingle "String")
                               )
                             )
                           , ( "discounts"
-                            , ( Area (Loc 1227 61 3) (Loc 1239 61 15)
+                            , ( Area (Loc 1227 61 3) (Loc 1236 61 12)
                               , Untyped
                                   (Area (Loc 1240 61 16) (Loc 1257 61 33))
                                   (TRComp
@@ -1342,7 +1342,7 @@
                               )
                             )
                           , ( "id"
-                            , ( Area (Loc 1166 58 3) (Loc 1171 58 8)
+                            , ( Area (Loc 1166 58 3) (Loc 1168 58 5)
                               , Untyped
                                   (Area (Loc 1172 58 9) (Loc 1179 58 16)) (TRSingle "Integer")
                               )
@@ -1362,7 +1362,7 @@
                     (TRRecord
                        (fromList
                           [ ( "cart"
-                            , ( Area (Loc 1301 65 3) (Loc 1308 65 10)
+                            , ( Area (Loc 1301 65 3) (Loc 1305 65 7)
                               , Untyped
                                   (Area (Loc 1309 65 11) (Loc 1322 65 24))
                                   (TRComp
@@ -1374,13 +1374,13 @@
                               )
                             )
                           , ( "id"
-                            , ( Area (Loc 1285 64 3) (Loc 1290 64 8)
+                            , ( Area (Loc 1285 64 3) (Loc 1287 64 5)
                               , Untyped
                                   (Area (Loc 1291 64 9) (Loc 1297 64 15)) (TRSingle "String")
                               )
                             )
                           , ( "money"
-                            , ( Area (Loc 1326 66 3) (Loc 1334 66 11)
+                            , ( Area (Loc 1326 66 3) (Loc 1331 66 8)
                               , Untyped
                                   (Area (Loc 1335 66 12) (Loc 1342 66 19)) (TRSingle "Integer")
                               )
@@ -1400,7 +1400,7 @@
                     (TRRecord
                        (fromList
                           [ ( "customers"
-                            , ( Area (Loc 1369 69 3) (Loc 1381 69 15)
+                            , ( Area (Loc 1369 69 3) (Loc 1378 69 12)
                               , Untyped
                                   (Area (Loc 1382 69 16) (Loc 1399 69 33))
                                   (TRComp
@@ -1412,7 +1412,7 @@
                               )
                             )
                           , ( "inventory"
-                            , ( Area (Loc 1403 70 3) (Loc 1415 70 15)
+                            , ( Area (Loc 1403 70 3) (Loc 1412 70 12)
                               , Untyped
                                   (Area (Loc 1416 70 16) (Loc 1429 70 29))
                                   (TRComp
@@ -1424,7 +1424,7 @@
                               )
                             )
                           , ( "sales"
-                            , ( Area (Loc 1433 71 3) (Loc 1441 71 11)
+                            , ( Area (Loc 1433 71 3) (Loc 1438 71 8)
                               , Untyped
                                   (Area (Loc 1442 71 12) (Loc 1459 71 29))
                                   (TRComp
@@ -10803,7 +10803,7 @@
       (UnusedTopLevelDeclaration "mergeLeft")
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 1034 50 1) (Loc 1043 50 10)
+        , ctxArea = Area (Loc 1009 49 1) (Loc 1018 49 10)
         }
   , CompilationWarning
       (UnusedType "ShopContext")

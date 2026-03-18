@@ -410,7 +410,7 @@
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TCon (TC "Something" Star) "./ModuleA.mad"))
                              (TCon (TC "Something" Star) "./ModuleA.mad"))
-                        (Area (Loc 59 3 1) (Loc 79 3 21))
+                        (Area (Loc 26 2 1) (Loc 79 3 21))
                         (Export
                            (Typed
                               ([] :=>
@@ -419,7 +419,7 @@
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TCon (TC "Something" Star) "./ModuleA.mad"))
                                    (TCon (TC "Something" Star) "./ModuleA.mad"))
-                              (Area (Loc 66 3 8) (Loc 79 3 21))
+                              (Area (Loc 26 2 1) (Loc 79 3 21))
                               (Assignment
                                  "fn"
                                  (Typed
@@ -442,12 +442,12 @@
                                            (Var "x" False)
                                        ]))))))
                      (Untyped
-                        (Area (Loc 32 2 7) (Loc 58 2 33))
+                        (Area (Loc 32 2 7) (Loc 48 2 23))
                         (TRArr
                            (Untyped
-                              (Area (Loc 32 2 7) (Loc 43 2 18)) (TRComp "S.Something" []))
+                              (Area (Loc 32 2 7) (Loc 33 2 8)) (TRComp "S.Something" []))
                            (Untyped
-                              (Area (Loc 47 2 22) (Loc 58 2 33)) (TRComp "S.Something" []))))
+                              (Area (Loc 47 2 22) (Loc 48 2 23)) (TRComp "S.Something" []))))
                      (Forall
                         []
                         ([] :=>

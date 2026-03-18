@@ -59,7 +59,7 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV 7 Star))))
                              (TVar (TV 6 Star)))))
-                  (Area (Loc 44 2 1) (Loc 56 2 13))
+                  (Area (Loc 0 1 1) (Loc 56 2 13))
                   (Assignment
                      "reduce"
                      (Typed
@@ -200,7 +200,7 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV 10 Star))))
                              (TCon (TC "Integer" Star) "prelude"))))
-                  (Area (Loc 180 7 1) (Loc 199 7 20))
+                  (Area (Loc 127 6 1) (Loc 199 7 20))
                   (Assignment
                      "judgeByWeight"
                      (Typed
@@ -1172,9 +1172,9 @@
                                                                                                         []))
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      402
+                                                                                                      400
                                                                                                       16
-                                                                                                      21)
+                                                                                                      19)
                                                                                                    (Loc
                                                                                                       414
                                                                                                       16
@@ -2229,7 +2229,7 @@
                                                           ])
                                                        Nothing
                                                        (fromList []))
-                                                  (Area (Loc 511 19 7) (Loc 519 19 15))
+                                                  (Area (Loc 509 19 5) (Loc 519 19 15))
                                                   (FieldSpread
                                                      (Typed
                                                         ([] :=>
@@ -2419,7 +2419,7 @@
                     (TRRecord
                        (fromList
                           [ ( "bets"
-                            , ( Area (Loc 78 4 21) (Loc 85 4 28)
+                            , ( Area (Loc 78 4 21) (Loc 82 4 25)
                               , Untyped
                                   (Area (Loc 86 4 29) (Loc 98 4 41))
                                   (TRComp
@@ -2430,7 +2430,7 @@
                               )
                             )
                           , ( "players"
-                            , ( Area (Loc 100 4 43) (Loc 110 4 53)
+                            , ( Area (Loc 100 4 43) (Loc 107 4 50)
                               , Untyped
                                   (Area (Loc 111 4 54) (Loc 123 4 66))
                                   (TRComp

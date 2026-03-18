@@ -24,7 +24,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV 3 Star)))
                        (TCon (TC "DateTime" Star) "Module.mad"))
-                  (Area (Loc 170 14 1) (Loc 180 14 11))
+                  (Area (Loc 149 13 1) (Loc 180 14 11))
                   (Assignment
                      "now"
                      (Typed
@@ -65,7 +65,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "DateTime" Star) "Module.mad"))
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 216 17 1) (Loc 234 17 19))
+                  (Area (Loc 182 16 1) (Loc 234 17 19))
                   (Assignment
                      "toISOString"
                      (Typed
@@ -108,7 +108,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "String" Star) "prelude"))
                        (TCon (TC "{}" Star) "prelude"))
-                  (Area (Loc 256 20 1) (Loc 266 20 11))
+                  (Area (Loc 236 19 1) (Loc 266 20 11))
                   (Assignment
                      "log"
                      (Typed
@@ -161,7 +161,7 @@
                           (fromList [ ( "time" , TCon (TC "DateTime" Star) "Module.mad" ) ])
                           (Just (TVar (TV 16 Star)))
                           (fromList [])))
-                  (Area (Loc 331 23 1) (Loc 390 23 60))
+                  (Area (Loc 268 22 1) (Loc 390 23 60))
                   (Assignment
                      "addFourthDimension"
                      (Typed
@@ -206,7 +206,7 @@
                                               ])
                                            (Just (TVar (TV 16 Star)))
                                            (fromList []))
-                                      (Area (Loc 366 23 36) (Loc 374 23 44))
+                                      (Area (Loc 364 23 34) (Loc 374 23 44))
                                       (FieldSpread
                                          (Typed
                                             ([] :=>
@@ -258,13 +258,13 @@
                         (TRRecord
                            (fromList [])
                            (Just
-                              (Untyped (Area (Loc 292 22 25) (Loc 296 22 29)) (TRSingle "a")))))
+                              (Untyped (Area (Loc 290 22 23) (Loc 299 22 32)) (TRSingle "a")))))
                      (Untyped
                         (Area (Loc 303 22 36) (Loc 330 22 63))
                         (TRRecord
                            (fromList
                               [ ( "time"
-                                , ( Area (Loc 311 22 44) (Loc 318 22 51)
+                                , ( Area (Loc 311 22 44) (Loc 315 22 48)
                                   , Untyped
                                       (Area (Loc 319 22 52) (Loc 327 22 60)) (TRSingle "DateTime")
                                   )
@@ -272,7 +272,7 @@
                               ])
                            (Just
                               (Untyped
-                                 (Area (Loc 305 22 38) (Loc 309 22 42)) (TRSingle "a")))))))
+                                 (Area (Loc 303 22 36) (Loc 330 22 63)) (TRSingle "a")))))))
                (Forall
                   [ Star ]
                   ([] :=>
@@ -501,7 +501,7 @@
                                                                                           33 Star)))
                                                                                  (fromList []))
                                                                             (Area
-                                                                               (Loc 475 30 19)
+                                                                               (Loc 473 30 17)
                                                                                (Loc 483 30 27))
                                                                             (FieldSpread
                                                                                (Typed

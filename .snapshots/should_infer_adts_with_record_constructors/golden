@@ -88,19 +88,19 @@
                                            (Record
                                               [ Typed
                                                   ([] :=> TCon (TC "String" Star) "prelude")
-                                                  (Area (Loc 234 13 23) (Loc 245 13 34))
+                                                  (Area (Loc 234 13 23) (Loc 242 13 31))
                                                   (Field
                                                      ( "value"
                                                      , Typed
                                                          ([] :=> TCon (TC "String" Star) "prelude")
-                                                         (Area (Loc 241 13 30) (Loc 245 13 34))
+                                                         (Area (Loc 241 13 30) (Loc 242 13 31))
                                                          (TemplateString
                                                             [ Typed
                                                                 ([] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 244 13 33) (Loc 245 13 34))
+                                                                   (Loc 242 13 31) (Loc 242 13 31))
                                                                 (LStr "42")
                                                             ])
                                                      ))
@@ -422,7 +422,7 @@
                              (TRRecord
                                 (fromList
                                    [ ( "value"
-                                     , ( Area (Loc 147 11 25) (Loc 155 11 33)
+                                     , ( Area (Loc 147 11 25) (Loc 152 11 30)
                                        , Untyped
                                            (Area (Loc 156 11 34) (Loc 162 11 40))
                                            (TRSingle "String")
@@ -448,7 +448,7 @@
                              (TRRecord
                                 (fromList
                                    [ ( "message"
-                                     , ( Area (Loc 176 11 54) (Loc 186 11 64)
+                                     , ( Area (Loc 176 11 54) (Loc 183 11 61)
                                        , Untyped
                                            (Area (Loc 187 11 65) (Loc 193 11 71))
                                            (TRSingle "String")

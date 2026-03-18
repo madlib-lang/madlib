@@ -1,0 +1,10 @@
+import IO from "IO"
+import Parse from "Parse"
+import JsonParse from "Json/Parse"
+
+jsonValue = JsonParse.jsonValue
+
+main = () => {
+  result = Parse.runParser(jsonValue, "\"hello\"")
+  IO.log(result)
+}

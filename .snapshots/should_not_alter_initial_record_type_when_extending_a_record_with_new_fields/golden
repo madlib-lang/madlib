@@ -76,7 +76,7 @@
                                    ])
                                 Nothing
                                 (fromList [])))))
-                  (Area (Loc 120 2 1) (Loc 143 2 24))
+                  (Area (Loc 0 1 1) (Loc 143 2 24))
                   (Assignment
                      "getBackpointsFrom"
                      (Typed
@@ -122,12 +122,12 @@
                         (TRRecord
                            (fromList
                               [ ( "x"
-                                , ( Area (Loc 23 1 24) (Loc 27 1 28)
+                                , ( Area (Loc 23 1 24) (Loc 24 1 25)
                                   , Untyped (Area (Loc 28 1 29) (Loc 33 1 34)) (TRSingle "Float")
                                   )
                                 )
                               , ( "y"
-                                , ( Area (Loc 35 1 36) (Loc 39 1 40)
+                                , ( Area (Loc 35 1 36) (Loc 36 1 37)
                                   , Untyped (Area (Loc 40 1 41) (Loc 45 1 46)) (TRSingle "Float")
                                   )
                                 )
@@ -145,14 +145,14 @@
                                      (TRRecord
                                         (fromList
                                            [ ( "x"
-                                             , ( Area (Loc 59 1 60) (Loc 63 1 64)
+                                             , ( Area (Loc 59 1 60) (Loc 60 1 61)
                                                , Untyped
                                                    (Area (Loc 64 1 65) (Loc 69 1 70))
                                                    (TRSingle "Float")
                                                )
                                              )
                                            , ( "y"
-                                             , ( Area (Loc 71 1 72) (Loc 75 1 76)
+                                             , ( Area (Loc 71 1 72) (Loc 72 1 73)
                                                , Untyped
                                                    (Area (Loc 76 1 77) (Loc 81 1 82))
                                                    (TRSingle "Float")
@@ -170,14 +170,14 @@
                                      (TRRecord
                                         (fromList
                                            [ ( "x"
-                                             , ( Area (Loc 95 1 96) (Loc 99 1 100)
+                                             , ( Area (Loc 95 1 96) (Loc 96 1 97)
                                                , Untyped
                                                    (Area (Loc 100 1 101) (Loc 105 1 106))
                                                    (TRSingle "Float")
                                                )
                                              )
                                            , ( "y"
-                                             , ( Area (Loc 107 1 108) (Loc 111 1 112)
+                                             , ( Area (Loc 107 1 108) (Loc 108 1 109)
                                                , Untyped
                                                    (Area (Loc 112 1 113) (Loc 117 1 118))
                                                    (TRSingle "Float")
@@ -240,7 +240,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 8 Star))))
                        (TApp
                           (TCon (TC "Array" (Kfun Star Star)) "prelude") (TVar (TV 8 Star))))
-                  (Area (Loc 175 5 1) (Loc 189 5 15))
+                  (Area (Loc 145 4 1) (Loc 189 5 15))
                   (Assignment
                      "fromList"
                      (Typed
@@ -298,7 +298,7 @@
                              (TVar (TV 11 Star))))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 11 Star))))
-                  (Area (Loc 219 8 1) (Loc 231 8 13))
+                  (Area (Loc 191 7 1) (Loc 231 8 13))
                   (Assignment
                      "toList"
                      (Typed
@@ -370,7 +370,7 @@
                           (TApp
                              (TCon (TC "Array" (Kfun Star Star)) "prelude")
                              (TVar (TV 14 Star)))))
-                  (Area (Loc 271 11 1) (Loc 281 11 11))
+                  (Area (Loc 233 10 1) (Loc 281 11 11))
                   (Assignment
                      "weld"
                      (Typed
@@ -468,7 +468,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV 19 Star)))))
-                  (Area (Loc 326 14 1) (Loc 337 14 12))
+                  (Area (Loc 283 13 1) (Loc 337 14 12))
                   (Assignment
                      "chain"
                      (Typed
@@ -1197,7 +1197,7 @@
                                                  ])
                                               Nothing
                                               (fromList [])))
-                                      (Area (Loc 563 25 3) (Loc 622 25 62))
+                                      (Area (Loc 514 24 3) (Loc 622 25 62))
                                       (Assignment
                                          "backPoints"
                                          (Typed
@@ -1389,14 +1389,14 @@
                                              (TRRecord
                                                 (fromList
                                                    [ ( "x"
-                                                     , ( Area (Loc 536 24 25) (Loc 540 24 29)
+                                                     , ( Area (Loc 536 24 25) (Loc 537 24 26)
                                                        , Untyped
                                                            (Area (Loc 541 24 30) (Loc 546 24 35))
                                                            (TRSingle "Float")
                                                        )
                                                      )
                                                    , ( "y"
-                                                     , ( Area (Loc 548 24 37) (Loc 552 24 41)
+                                                     , ( Area (Loc 548 24 37) (Loc 549 24 38)
                                                        , Untyped
                                                            (Area (Loc 553 24 42) (Loc 558 24 47))
                                                            (TRSingle "Float")
@@ -1520,7 +1520,7 @@
                                                                   ])
                                                                Nothing
                                                                (fromList []))
-                                                          (Area (Loc 641 27 7) (Loc 657 27 23))
+                                                          (Area (Loc 639 27 5) (Loc 657 27 23))
                                                           (FieldSpread
                                                              (Typed
                                                                 ([ IsIn
@@ -1689,7 +1689,7 @@
                                                                   ])
                                                                Nothing
                                                                (fromList []))
-                                                          (Area (Loc 673 28 7) (Loc 689 28 23))
+                                                          (Area (Loc 671 28 5) (Loc 689 28 23))
                                                           (FieldSpread
                                                              (Typed
                                                                 ([ IsIn

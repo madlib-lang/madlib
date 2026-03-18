@@ -24,7 +24,7 @@
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Integer" Star) "prelude"))
                        (TCon (TC "Integer" Star) "prelude"))
-                  (Area (Loc 26 2 1) (Loc 46 2 21))
+                  (Area (Loc 0 1 1) (Loc 46 2 21))
                   (Assignment
                      "inc"
                      (Typed
@@ -1197,7 +1197,7 @@
       (UnusedTopLevelDeclaration "inc")
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 26 2 1) (Loc 29 2 4)
+        , ctxArea = Area (Loc 0 1 1) (Loc 3 1 4)
         }
   ]
 , []
