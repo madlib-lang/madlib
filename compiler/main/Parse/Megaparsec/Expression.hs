@@ -280,7 +280,9 @@ pTermWithPostfix = do
         Just '[' -> do
           f <- try $ do
             pLeftSquareBracket
+            rets
             idx <- pExp
+            rets
             (endArea, _) <- withArea (void pRightSquareBracket)
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) endArea) (Src.getSourceTarget e) (Src.ArrayAccess e idx)
           applyPostfix (f expr)
@@ -505,9 +507,9 @@ pIf' = do
   thenExpr <- choice
     [ try $ do
         pLeftCurly
-        maybeRet
+        rets
         body <- pExp
-        maybeRet
+        rets
         void $ withArea (void pRightCurly)
         return body
     , pExp
@@ -520,9 +522,9 @@ pIf' = do
     choice
       [ try $ do
           pLeftCurly
-          maybeRet
+          rets
           body <- pExp
-          maybeRet
+          rets
           (endArea, _) <- withArea (void pRightCurly)
           return (body, endArea)
       , do

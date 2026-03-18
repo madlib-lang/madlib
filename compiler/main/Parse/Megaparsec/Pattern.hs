@@ -22,8 +22,9 @@ import           Parse.Megaparsec.Lexeme
 pPattern :: Parser Src.Pattern
 pPattern = do
   b <- lookAhead anySingle
-  -- Only try composite pattern if the first character could be an uppercase name or module
-  if isUpperB b
+  -- Try composite pattern if the first character could be an uppercase name or module
+  -- Also try when starting with '_' since __MODULE__.Constructor is a valid qualified pattern
+  if isUpperB b || b == 95  -- 95 = '_'
     then choice [try pCompositePattern, pNonCompositePattern]
     else pNonCompositePattern
 
