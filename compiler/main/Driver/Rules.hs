@@ -114,9 +114,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   File path -> input $ do
     liftIO $ (PathUtils.readFile $ optPathUtils options) path
 
+  FileBS path -> input $ do
+    liftIO $ (PathUtils.strictByteStringReadFile $ optPathUtils options) path
+
   ParsedAST path -> nonInput $ do
-    source <- Rock.fetch $ File path
-    ast    <- liftIO $ buildAST options path source
+    source <- Rock.fetch $ FileBS path
+    ast    <- liftIO $ buildASTFromBS options path source
     wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
 
     case ast of

@@ -41,6 +41,8 @@ import qualified Data.List                            as List
 import           Text.Show.Pretty (ppShow)
 import qualified Data.Map                             as Map
 import           Run.Target                           (Target(TNode, TLLVM))
+import qualified Data.ByteString                      as BS
+import qualified Data.Text.Encoding                   as TE
 import           Utils.PathUtils                      (defaultPathUtils)
 import qualified Utils.PathUtils                      as PathUtils
 import           Control.Concurrent                   (MVar)
@@ -123,7 +125,9 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
   let (keysToInvalidate, reverseDependencies') =
         List.foldl'
           ( \(keysToInvalidate_, reverseDependencies_) file ->
-              first (<> keysToInvalidate_) $ reachableReverseDependencies (Query.File file) reverseDependencies_
+              let (inv1, rd1) = reachableReverseDependencies (Query.File file) reverseDependencies_
+                  (inv2, rd2) = reachableReverseDependencies (Query.FileBS file) rd1
+              in  first (<> keysToInvalidate_ <> inv2) (inv1, rd2)
           )
           (mempty, reverseDependencies)
           changedFiles
@@ -140,6 +144,12 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
           return text
         | otherwise =
           readFile file `catch` \(_ :: IOException) -> pure mempty
+
+      readSourceFileBS_ file
+        | Just text <- Map.lookup file fileUpdates =
+          return $! TE.encodeUtf8 (Text.pack text)
+        | otherwise =
+          BS.readFile file `catch` \(_ :: IOException) -> pure mempty
 
       traceFetch_ ::
         GenRules (Writer TaskKind Query) Query ->
@@ -184,7 +194,10 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
               $ writer writeErrorsAndWarnings
               $ Rules.rules
                   options
-                    { optPathUtils = (optPathUtils options) { PathUtils.readFile = readSourceFile_ } }
+                    { optPathUtils = (optPathUtils options)
+                        { PathUtils.readFile = readSourceFile_
+                        , PathUtils.strictByteStringReadFile = readSourceFileBS_
+                        } }
 
   result    <- Rock.runTask rules task
   started   <- readIORef $ _startedVar state

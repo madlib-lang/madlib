@@ -5,8 +5,7 @@ module Parse.Megaparsec.Pattern
   ( pPattern
   ) where
 
-import           Data.Text                      ( Text )
-import qualified Data.Text                      as T
+import qualified Data.ByteString.Char8         as C8
 import           Data.Char                      ( isUpper )
 import           Control.Monad                  ( void )
 
@@ -22,9 +21,9 @@ import           Parse.Megaparsec.Lexeme
 -- | Parse a pattern (composite or non-composite)
 pPattern :: Parser Src.Pattern
 pPattern = do
-  c <- lookAhead anySingle
+  b <- lookAhead anySingle
   -- Only try composite pattern if the first character could be an uppercase name or module
-  if isUpper c
+  if isUpperB b
     then choice [try pCompositePattern, pNonCompositePattern]
     else pNonCompositePattern
 
@@ -174,7 +173,7 @@ pCharPattern = do
 -- | Parse a boolean pattern
 pBoolPattern :: Parser Src.Pattern
 pBoolPattern = do
-  (area, b) <- withArea (T.unpack <$> (pBoolTrue <|> pBoolFalse))
+  (area, b) <- withArea (C8.unpack <$> (pBoolTrue <|> pBoolFalse))
   target <- pSourceTarget
   return $ Src.Source area target (Src.PBool b)
 

@@ -5,10 +5,13 @@ module Parse.Megaparsec.Madlib
   , ParseError(..)
   , parseWithStructuredError
   , parseForFormatterWithStructuredError
+  , parseWithStructuredErrorBS
+  , parseForFormatterWithStructuredErrorBS
   ) where
 
-import           Data.Text                      ( Text )
+import qualified Data.ByteString               as BS
 import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as TE
 import           Data.List.NonEmpty             ( toList, NonEmpty(..) )
 import qualified Data.Set                       as Set
 
@@ -34,7 +37,7 @@ data ParseError
 -- | Parse a Madlib source string, returning either an error string or the AST
 -- This matches the API of Parse.Madlib.Grammar.parse
 parse :: String -> Either String Src.AST
-parse s = case runMadlibParser pAST "<input>" (T.pack s) of
+parse s = case runMadlibParser pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
   Right ast -> Right ast
   Left err  -> Left (formatError err)
 
@@ -42,27 +45,41 @@ parse s = case runMadlibParser pAST "<input>" (T.pack s) of
 -- | Parse a Madlib source string in formatter mode
 -- This matches the API of Parse.Madlib.Grammar.parseForFormatter
 parseForFormatter :: String -> Either String Src.AST
-parseForFormatter s = case runMadlibParserForFormatter pAST "<input>" (T.pack s) of
+parseForFormatter s = case runMadlibParserForFormatter pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
   Right ast -> Right ast
   Left err  -> Left (formatError err)
 
 
 -- | Parse with structured error, eliminating the string-parsing hack in AST.hs
 parseWithStructuredError :: String -> Either ParseError Src.AST
-parseWithStructuredError s = case runMadlibParser pAST "<input>" (T.pack s) of
+parseWithStructuredError s = case runMadlibParser pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
   Right ast -> Right ast
   Left err  -> Left (extractStructuredError err)
 
 
 -- | Parse for formatter with structured error
 parseForFormatterWithStructuredError :: String -> Either ParseError Src.AST
-parseForFormatterWithStructuredError s = case runMadlibParserForFormatter pAST "<input>" (T.pack s) of
+parseForFormatterWithStructuredError s = case runMadlibParserForFormatter pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
+  Right ast -> Right ast
+  Left err  -> Left (extractStructuredError err)
+
+
+-- | Parse directly from ByteString (avoids String->ByteString conversion)
+parseWithStructuredErrorBS :: BS.ByteString -> Either ParseError Src.AST
+parseWithStructuredErrorBS bs = case runMadlibParser pAST "<input>" bs of
+  Right ast -> Right ast
+  Left err  -> Left (extractStructuredError err)
+
+
+-- | Parse for formatter directly from ByteString
+parseForFormatterWithStructuredErrorBS :: BS.ByteString -> Either ParseError Src.AST
+parseForFormatterWithStructuredErrorBS bs = case runMadlibParserForFormatter pAST "<input>" bs of
   Right ast -> Right ast
   Left err  -> Left (extractStructuredError err)
 
 
 -- | Extract structured error from a parse error bundle
-extractStructuredError :: ParseErrorBundle Text CustomError -> ParseError
+extractStructuredError :: ParseErrorBundle BS.ByteString CustomError -> ParseError
 extractStructuredError bundle =
   let errs = toList (bundleErrors bundle)
   in  case errs of
@@ -88,5 +105,5 @@ extractStructuredError bundle =
 
 
 -- | Format a parse error bundle into a human-readable string
-formatError :: ParseErrorBundle Text CustomError -> String
+formatError :: ParseErrorBundle BS.ByteString CustomError -> String
 formatError = errorBundlePretty

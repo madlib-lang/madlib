@@ -7,15 +7,17 @@ module Parse.Megaparsec.Expression
   , pMultiExpBody
   ) where
 
-import           Data.Text                      ( Text )
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Char8         as C8
 import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as TE
 import qualified Data.Map                       as M
-import           Data.Char                      ( isUpper, isDigit, isAsciiLower, isAsciiUpper, isHexDigit )
+import           Data.Word                      ( Word8 )
 import           Data.Maybe                     ( fromMaybe )
 import           Control.Monad                  ( void, when )
 
 import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Char           as C
+import qualified Text.Megaparsec.Byte          as C
 import           Control.Monad.Combinators.Expr
 
 import qualified AST.Source                      as Src
@@ -114,7 +116,7 @@ pExp = do
   -- Try ternary: e ? trueExpr : falseExpr (? may be on next line)
   -- Peek first to avoid the overhead of `try` on non-ternary expressions
   mc <- optional (lookAhead anySingle)
-  case mc of
+  case fmap chr8' mc of
     Just '?' -> do
       pQuestionMark
       maybeRet
@@ -290,7 +292,7 @@ pTermWithPostfix = do
     applyPostfix :: Src.Exp -> Parser Src.Exp
     applyPostfix expr = do
       mc <- optional (lookAhead anySingle)
-      case mc of
+      case fmap chr8' mc of
         Nothing -> return expr
         Just '(' -> do
           -- Function application or nullary application
@@ -340,8 +342,8 @@ pTermWithPostfix = do
 -- Uses lookAhead dispatch to avoid unnecessary backtracking.
 pTerm :: Parser Src.Exp
 pTerm = do
-  c <- lookAhead anySingle
-  case c of
+  b <- lookAhead anySingle
+  case chr8' b of
     '?' -> pTypedHoleExpr
     '#' -> choice [pJSBlockExpr, pTupleConstructor, try pHashName]
     '[' -> pListConstructor
@@ -355,22 +357,22 @@ pTerm = do
     '{' -> choice [try pRecord, try pDict, pLiteral]
     '"' -> pLiteral
     '\'' -> pLiteral
-    _ | isDigit c -> pLiteral
-      | c == 'i' -> do
+    _ | isDigitB b -> pLiteral
+      | b == 105 -> do  -- 'i'
           isIf <- option False (True <$ lookAhead (C.string "if"))
           if isIf then choice [pIf', pNameExpr] else pNameExpr
-      | c == 'w' -> do
+      | b == 119 -> do  -- 'w'
           isWh <- option False (True <$ lookAhead (C.string "wh"))
           if isWh then choice [pWhile', pWhere', pNameExpr] else pNameExpr
-      | c == 'd' -> do
+      | b == 100 -> do  -- 'd'
           isDo <- option False (True <$ lookAhead (C.string "do"))
           if isDo then choice [pDo', pNameExpr] else pNameExpr
-      | c == 'p' -> do
+      | b == 112 -> do  -- 'p'
           isPi <- option False (True <$ lookAhead (C.string "pi"))
           if isPi then choice [pPipe', pNameExpr] else pNameExpr
-      | c == 't' || c == 'f' -> choice [pLiteral, pNameExpr]
-      | isAsciiLower c || c == '_' -> pNameExpr
-      | isAsciiUpper c -> pNameExpr
+      | b == 116 || b == 102 -> choice [pLiteral, pNameExpr]  -- 't' or 'f'
+      | isLowerB b || b == 95 -> pNameExpr  -- lower or '_'
+      | isUpperB b -> pNameExpr
       | otherwise -> pNameExpr
 
 
@@ -399,8 +401,8 @@ pPrefixExp = choice
 
 pLiteral :: Parser Src.Exp
 pLiteral = do
-  c <- lookAhead anySingle
-  case c of
+  b <- lookAhead anySingle
+  case chr8' b of
     '{' -> do
       -- Unit literal: {}
       (startArea, _) <- withArea (void pLeftCurly)
@@ -449,10 +451,10 @@ pNumericLiteral = do
 
     parseHex :: Parser Src.Exp_
     parseHex = do
-      digits <- T.unpack <$> takeWhile1P (Just "hex digit") isHexDigit
-      suffix <- optional $ C.string "_b" <|> C.string "_s" <|> C.string "_i"
+      digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
+      suffix <- optional $ (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i"
       let hexStr = "0x" ++ digits
-      case suffix of
+      case fmap C8.unpack suffix of
         Just "_b" -> return $ Src.LByte hexStr
         Just "_s" -> return $ Src.LShort hexStr
         Just "_i" -> return $ Src.LInt hexStr
@@ -460,18 +462,18 @@ pNumericLiteral = do
 
     parseDecimal :: Parser Src.Exp_
     parseDecimal = do
-      digits <- T.unpack <$> takeWhile1P (Just "digit") isDigit
+      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
       -- Check for float suffix first (before integer suffixes)
       mFloat <- optional $ do
-        void $ C.char '.'
-        frac <- T.unpack <$> takeWhile1P (Just "digit") isDigit
-        fsuf <- optional (C.string "_f")
-        return $ digits ++ "." ++ frac ++ maybe "" T.unpack fsuf
+        void (C.char 46 :: Parser Word8)  -- '.'
+        frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
+        fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
+        return $ digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
       case mFloat of
         Just floatStr -> return $ Src.LFloat floatStr
         Nothing -> do
-          suffix <- optional $ C.string "_b" <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
-          case suffix of
+          suffix <- optional $ (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
+          case fmap C8.unpack suffix of
             Just "_b" -> return $ Src.LByte digits
             Just "_s" -> return $ Src.LShort digits
             Just "_i" -> return $ Src.LInt digits
@@ -725,8 +727,8 @@ pAbsOrParenthesized = do
   (startArea, _) <- withArea (void pLeftParen)
   target <- pSourceTarget
   -- Peek at what follows to determine which form we have
-  c <- lookAhead anySingle
-  case c of
+  b <- lookAhead anySingle
+  case chr8' b of
     ')' -> do
       -- () => exp (nullary lambda)
       pRightParen
@@ -963,7 +965,7 @@ pTupleItems = do
 
 pTemplateString :: Parser Src.Exp
 pTemplateString = do
-  (startArea, _) <- withArea (void $ lexeme $ C.char '`')
+  (startArea, _) <- withArea (void $ lexeme $ C.char 96)  -- '`'
   target <- pSourceTarget
   -- Collect alternating: string-part, expression, string-part, expression, ..., final-string
   parts <- collectParts
@@ -985,36 +987,40 @@ pTemplateString = do
         target' <- pSourceTarget
         expr <- pExp
         scn
-        void $ C.char '}'
+        void $ satisfy (== 125)  -- '}'
         let strPart = Src.Source strArea target' (Src.LStr str)
         return [strPart, expr]
       return $ concat sections
 
     pTemplateEnd :: Parser String
     pTemplateEnd = do
-      raw <- manyTill pTemplateRawChunk (C.char '`')
+      raw <- manyTill pTemplateRawChunk (satisfy (== 96))  -- '`'
       processEscapesInTemplate (concat raw)
 
     pTemplateRawChunk :: Parser String
     pTemplateRawChunk = choice
       [ try $ C.string "\\`" >> return ['`']
       , try $ do
-          void $ C.char '\\'
-          c <- anySingle
-          case c of
+          void $ satisfy (== 92)  -- '\\'
+          b <- anySingle
+          case chr8' b of
             'u' -> do
               rest <- try (do
-                  void $ C.char '{'
-                  hex <- many C.hexDigitChar
-                  void $ C.char '}'
+                  void $ satisfy (== 123)  -- '{'
+                  hex <- map chr8' <$> many (satisfy isHexDigitB)
+                  void $ satisfy (== 125)  -- '}'
                   return $ '{' : hex ++ "}")
-                <|> count 4 C.hexDigitChar
+                <|> (map chr8' <$> count 4 (satisfy isHexDigitB))
               return $ '\\' : 'u' : rest
             'x' -> do
-              hex <- count 2 C.hexDigitChar
+              hex <- map chr8' <$> count 2 (satisfy isHexDigitB)
               return $ '\\' : 'x' : hex
-            _ -> return ['\\', c]
-      , (:[]) <$> satisfy (\c -> c /= '`' && c /= '\\')
+            ch -> return ['\\', ch]
+      , T.unpack . TE.decodeUtf8 <$> takeWhile1P Nothing (\b -> b /= 96 && b /= 92 && b /= 36)  -- not '`', '\\', or '$'
+      , try $ do
+          void $ satisfy (== 36)  -- '$' not followed by '{'
+          notFollowedBy (satisfy (== 123))
+          return "$"
       ]
 
     processEscapesInTemplate :: String -> Parser String
@@ -1052,26 +1058,26 @@ pJsxTag :: Parser Src.Exp
 pJsxTag = choice
   [ -- Self-closing: <Name props />
     try $ do
-      (startArea, _) <- withArea (void $ lexeme $ C.char '<')
+      (startArea, _) <- withArea (void $ lexeme $ C.char 60)  -- '<'
       target <- pSourceTarget
       name <- pNameStr
       props <- pJsxProps
       scn
-      void $ lexeme $ C.char '/'
-      (endArea, _) <- withArea (void $ lexeme $ C.char '>')
+      void $ lexeme $ C.char 47   -- '/'
+      (endArea, _) <- withArea (void $ lexeme $ C.char 62)    -- '>'
       return $ Src.Source (mergeAreas startArea endArea) target (Src.JsxAutoClosedTag name props)
   , -- Opening/closing: <Name props>children</Name>
     try $ do
-      (startArea, _) <- withArea (void $ lexeme $ C.char '<')
+      (startArea, _) <- withArea (void $ lexeme $ C.char 60)  -- '<'
       target <- pSourceTarget
       name <- pNameStr
       props <- pJsxProps
       scn
-      void $ lexeme $ C.char '>'
+      void $ lexeme $ C.char 62   -- '>'
       children <- pJsxChildren
       void $ lexeme $ C.string "</"
-      void $ lexeme $ C.string (T.pack name)
-      (endArea, _) <- withArea (void $ lexeme $ C.char '>')
+      void $ lexeme $ C.string (C8.pack name)
+      (endArea, _) <- withArea (void $ lexeme $ C.char 62)    -- '>'
       return $ Src.Source (mergeAreas startArea endArea) target (Src.JsxTag name props children)
   ]
 
@@ -1129,8 +1135,8 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
         try pJsxTag >>= \tag -> return (Src.JsxChild tag)
       , -- Text content (whitespace-only is skipped)
         try $ do
-          text <- T.unpack <$> takeWhile1P Nothing (\c -> c /= '<' && c /= '>' && c /= '{' && c /= '}')
-          let trimmed = T.unpack $ T.strip $ T.pack text
+          text <- C8.unpack <$> takeWhile1P Nothing (\b -> b /= 60 && b /= 62 && b /= 123 && b /= 125)
+          let trimmed = C8.unpack $ C8.strip $ C8.pack text
           if null trimmed then fail "empty text"
           else return $ Src.JsxChild (Src.Source emptyArea Src.TargetAll (Src.LStr $ "\"" ++ trimmed ++ "\""))
       ]
@@ -1170,5 +1176,3 @@ pArgs = do
     pExp
   _ <- optional pComma
   return $ first : rest
-
-

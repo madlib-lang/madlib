@@ -41,6 +41,7 @@ data Query a where
   -- Parsing
   DetectImportCycle :: [FilePath] -> FilePath -> Query Bool
   File :: FilePath -> Query String
+  FileBS :: FilePath -> Query ByteString.ByteString
   ParsedAST :: FilePath -> Query Src.AST
 
   -- Documentation
@@ -114,6 +115,9 @@ instance Hashable (Query a) where
 
     File path ->
       hashWithSalt salt (path, 4 :: Int)
+
+    FileBS path ->
+      hashWithSalt salt (path, 40 :: Int)
 
     ParsedAST path ->
       hashWithSalt salt (path, 5 :: Int)

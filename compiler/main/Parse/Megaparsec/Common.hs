@@ -18,18 +18,27 @@ module Parse.Megaparsec.Common
   , getFormatterMode
   , runMadlibParser
   , runMadlibParserForFormatter
+  , chr8
+  , chr8'
+  , isAlphaB
+  , isDigitB
+  , isAlphaNumB
+  , isUpperB
+  , isLowerB
+  , isHexDigitB
+  , isIdentB
   ) where
 
-import           Data.Text                      ( Text )
-import qualified Data.Text                      as T
+import           Data.Word                      ( Word8 )
+import qualified Data.ByteString               as BS
 import           Data.Void
 import           Control.Monad                  ( void )
 import           Control.Monad.State.Strict     ( State, evalState, get, gets, modify', lift )
 
 import           Text.Megaparsec                hiding ( State )
 import qualified Text.Megaparsec                as MP
-import qualified Text.Megaparsec.Char           as C
-import qualified Text.Megaparsec.Char.Lexer     as L
+import qualified Text.Megaparsec.Byte          as C
+import qualified Text.Megaparsec.Byte.Lexer    as L
 
 import           AST.Source                     ( SourceTarget(..) )
 import           Explain.Location               ( Loc(..), Area(..) )
@@ -45,19 +54,19 @@ data ParserState = ParserState
 
 
 -- | The main parser type
--- Uses ParsecT with custom errors over Text input, with strict State for mutable parser state
-type Parser = ParsecT CustomError Text (State ParserState)
+-- Uses ParsecT with custom errors over ByteString input, with strict State for mutable parser state
+type Parser = ParsecT CustomError BS.ByteString (State ParserState)
 
 
 -- | Run a parser
-runMadlibParser :: Parser a -> String -> Text -> Either (ParseErrorBundle Text CustomError) a
+runMadlibParser :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
 runMadlibParser p name input =
   let initialState = ParserState TargetAll False (Loc 0 0 0)
   in  evalState (runParserT p name input) initialState
 
 
 -- | Run a parser in formatter mode
-runMadlibParserForFormatter :: Parser a -> String -> Text -> Either (ParseErrorBundle Text CustomError) a
+runMadlibParserForFormatter :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
 runMadlibParserForFormatter p name input =
   let initialState = ParserState TargetAll True (Loc 0 0 0)
   in  evalState (runParserT p name input) initialState
@@ -80,7 +89,6 @@ getFormatterMode = lift $ gets psFormatterMode
 
 
 -- | Get current location as a Loc
--- NOTE: getSourcePos is O(n) from last checkpoint — call sparingly.
 {-# INLINE getLoc #-}
 getLoc :: Parser Loc
 getLoc = do
@@ -89,23 +97,14 @@ getLoc = do
   return $! Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos)
 
 
--- | Get only the byte offset as a Loc (line=0, col=0 placeholders)
--- O(1) alternative to getLoc for internal use where line/col not needed
-{-# INLINE getLocFast #-}
-getLocFast :: Parser Loc
-getLocFast = do
-  offset <- getOffset
-  return $! Loc offset 0 0
-
-
 -- | Run a parser and wrap its result with area information
 -- Captures end position BEFORE trailing whitespace using psLastTokenEnd
 {-# INLINE withArea #-}
 withArea :: Parser a -> Parser (Area, a)
 withArea p = do
-  start <- getLoc
+  start  <- getLoc
   result <- p
-  end <- lift $ gets psLastTokenEnd
+  end    <- lift $ gets psLastTokenEnd
   return (Area start end, result)
 
 
@@ -121,17 +120,14 @@ pSourceTarget = getSourceTarget
 -- Handles spaces, tabs, and comments
 sc :: Parser ()
 sc = L.space
-  (void $ takeWhile1P Nothing (\c -> c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r'))
+  (void $ takeWhile1P Nothing (\b -> b == 32 || b == 9 || b == 12 || b == 11 || b == 13))
   (L.skipLineComment "//")
   (L.skipBlockCommentNested "/*" "*/")
 
 
 -- | Space consumer that DOES consume newlines
 scn :: Parser ()
-scn = L.space
-  C.space1
-  (L.skipLineComment "//")
-  (L.skipBlockCommentNested "/*" "*/")
+scn = L.space C.space1 (L.skipLineComment "//") (L.skipBlockCommentNested "/*" "*/")
 
 
 -- | Wrap a parser to consume trailing whitespace (no newlines)
@@ -140,14 +136,15 @@ scn = L.space
 lexeme :: Parser a -> Parser a
 lexeme p = do
   result <- p
-  end <- getLoc
+  end    <- getLoc
   lift $ modify' (\s -> s { psLastTokenEnd = end })
   sc
   return result
 
 
 -- | Parse a symbol and consume trailing whitespace (no newlines)
-symbol :: Text -> Parser Text
+{-# INLINE symbol #-}
+symbol :: BS.ByteString -> Parser BS.ByteString
 symbol = L.symbol sc
 
 
@@ -163,3 +160,44 @@ rets = sc *> skipMany (C.newline *> sc)
 {-# INLINE maybeRet #-}
 maybeRet :: Parser ()
 maybeRet = sc *> void (optional (C.newline *> sc))
+
+
+-- ASCII range helpers --
+
+-- | Convert ASCII Char to Word8
+{-# INLINE chr8 #-}
+chr8 :: Char -> Word8
+chr8 = fromIntegral . fromEnum
+
+-- | Convert Word8 to ASCII Char
+{-# INLINE chr8' #-}
+chr8' :: Word8 -> Char
+chr8' = toEnum . fromIntegral
+
+{-# INLINE isAlphaB #-}
+isAlphaB :: Word8 -> Bool
+isAlphaB b = (b >= 65 && b <= 90) || (b >= 97 && b <= 122)
+
+{-# INLINE isDigitB #-}
+isDigitB :: Word8 -> Bool
+isDigitB b = b >= 48 && b <= 57
+
+{-# INLINE isAlphaNumB #-}
+isAlphaNumB :: Word8 -> Bool
+isAlphaNumB b = isAlphaB b || isDigitB b
+
+{-# INLINE isUpperB #-}
+isUpperB :: Word8 -> Bool
+isUpperB b = b >= 65 && b <= 90
+
+{-# INLINE isLowerB #-}
+isLowerB :: Word8 -> Bool
+isLowerB b = b >= 97 && b <= 122
+
+{-# INLINE isHexDigitB #-}
+isHexDigitB :: Word8 -> Bool
+isHexDigitB b = isDigitB b || (b >= 65 && b <= 70) || (b >= 97 && b <= 102)
+
+{-# INLINE isIdentB #-}
+isIdentB :: Word8 -> Bool
+isIdentB b = isAlphaNumB b || b == 95 || b == 39

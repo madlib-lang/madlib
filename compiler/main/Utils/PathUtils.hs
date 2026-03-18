@@ -1,9 +1,9 @@
 module Utils.PathUtils where
 
+import qualified Data.ByteString               as BS
 import qualified Data.ByteString.Lazy          as B
 import qualified System.Directory              as Dir
 import           Prelude                 hiding ( readFile )
-import qualified Data.ByteString.Lazy          as B
 import qualified System.Environment.Executable as E
 import           System.IO                      ( openFile
                                                 , IOMode(ReadMode)
@@ -20,6 +20,7 @@ data PathUtils
       , normalisePath :: FilePath -> FilePath
       , doesFileExist :: FilePath -> IO Bool
       , byteStringReadFile :: FilePath -> IO B.ByteString
+      , strictByteStringReadFile :: FilePath -> IO BS.ByteString
       , getExecutablePath :: IO FilePath
       }
 
@@ -30,10 +31,11 @@ rf fileName = do
   hGetContents inputHandle
 
 defaultPathUtils :: PathUtils
-defaultPathUtils = PathUtils { readFile           = rf
-                             , canonicalizePath   = Dir.canonicalizePath
-                             , normalisePath      = normalise
-                             , doesFileExist      = Dir.doesFileExist
-                             , byteStringReadFile = B.readFile
-                             , getExecutablePath  = E.getExecutablePath
+defaultPathUtils = PathUtils { readFile                 = rf
+                             , canonicalizePath         = Dir.canonicalizePath
+                             , normalisePath            = normalise
+                             , doesFileExist            = Dir.doesFileExist
+                             , byteStringReadFile       = B.readFile
+                             , strictByteStringReadFile = BS.readFile
+                             , getExecutablePath        = E.getExecutablePath
                              }

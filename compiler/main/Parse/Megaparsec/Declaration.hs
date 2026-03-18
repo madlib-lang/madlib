@@ -5,14 +5,11 @@ module Parse.Megaparsec.Declaration
   ( pAST
   ) where
 
-import           Data.Text                      ( Text )
-import qualified Data.Text                      as T
 import qualified Data.Map.Strict                as M
-import           Data.Char                      ( isUpper )
 import           Control.Monad                  ( void )
 
 import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Char           as C
+import qualified Text.Megaparsec.Byte          as C
 
 import qualified AST.Source                      as Src
 import           Explain.Location
@@ -475,5 +472,3 @@ pTargetName = choice
 
 pNames :: Parser [Src.Name]
 pNames = many pNameStr
-
-

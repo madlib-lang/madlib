@@ -10,7 +10,8 @@ import qualified Data.Map                         as M
 import           Control.Exception                ( IOException
                                                   , try, SomeException (SomeException)
                                                   )
-import           Parse.Megaparsec.Madlib          ( parseWithStructuredError, ParseError(..) )
+import qualified Data.ByteString                  as BS
+import           Parse.Megaparsec.Madlib          ( parseWithStructuredError, parseWithStructuredErrorBS, ParseError(..) )
 import           AST.Source 
 import           Utils.Path                       ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
@@ -103,6 +104,43 @@ validatePreludePrivateModules options ast@AST{ aimports, apath = Just path } = d
 
 buildAST :: Options -> FilePath -> String -> IO (Either CompilationError AST)
 buildAST options path code = case parseWithStructuredError code of
+  Right ast -> do
+    let astWithPath = setPath ast path
+    validatedImports <- validatePreludePrivateModules options astWithPath
+    case validatedImports of
+      Left err ->
+        return $ Left err
+
+      Right _ -> do
+        let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
+        let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
+        let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
+        let astWithBuiltinsImport =
+              if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros) then
+                astWithProcessedMacros
+              else
+                astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
+        astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
+        case astWithAbsoluteImportPaths of
+          Right astWithAbsoluteImportPaths' -> do
+            astWithJsonAssignments     <- processJsonImports options astWithAbsoluteImportPaths'
+            return $ Right astWithJsonAssignments
+
+          Left _ ->
+            return astWithAbsoluteImportPaths
+
+  Left parseErr -> return $ Left $ case parseErr of
+    ParseBadEscape area ->
+      CompilationError BadEscapeSequence (Context path area)
+    ParseEmptyChar area ->
+      CompilationError EmptyChar (Context path area)
+    ParseSyntaxError line col msg ->
+      CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
+
+
+-- | Build AST directly from a ByteString (avoids String intermediary)
+buildASTFromBS :: Options -> FilePath -> BS.ByteString -> IO (Either CompilationError AST)
+buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
   Right ast -> do
     let astWithPath = setPath ast path
     validatedImports <- validatePreludePrivateModules options astWithPath
