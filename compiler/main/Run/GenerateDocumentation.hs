@@ -22,7 +22,7 @@ import           System.Directory               ( canonicalizePath
                                                 , getCurrentDirectory
                                                 )
 import           Data.List                      ( isSuffixOf, isInfixOf, isPrefixOf )
-import qualified Parse.DocString.Grammar       as DocString
+import qualified Parse.Megaparsec.DocString    as DocString
 import qualified Parse.DocString.DocString     as DocString
 import qualified Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can

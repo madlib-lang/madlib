@@ -10,7 +10,7 @@ import           Control.Exception              ( IOException
 
 import           AST.Source
 import           Parse.Madlib.AST
-import           Parse.Comments.Lexer
+import           Parse.Megaparsec.Comments
 import           Run.Utils
 import           Utils.PathUtils
 import           Error.Context

@@ -51,7 +51,7 @@ import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
 import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
 import Utils.Path
-import qualified Parse.DocString.Grammar as DocString
+import qualified Parse.Megaparsec.DocString as DocString
 import qualified Data.Maybe as Maybe
 import qualified Data.ByteString as ByteString
 import System.Directory

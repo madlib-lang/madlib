@@ -12,7 +12,7 @@ import           Data.Text.Prettyprint.Doc.Render.String as Pretty
 
 import           AST.Source as Src
 import           Explain.Location
-import           Parse.Comments.Lexer
+import           Parse.Megaparsec.Comments
 import qualified Explain.Location as Location
 import Utils.Path (getPathType, ModulePath (FileSystemPath, PackagePath), isPreludePath)
 import Data.Functor (($>))

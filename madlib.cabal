@@ -84,9 +84,6 @@ library
       Optimize.SortExpressions
       Optimize.TCE
       Optimize.ToCore
-      Parse.Comments.Lexer
-      Parse.DocString.Grammar
-      Parse.DocString.Lexer
       Parse.Macro
       Parse.Madlib.AST
       Parse.Madlib.ImportCycle
@@ -143,7 +140,6 @@ library
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
-    , array >=0.5.4.0
     , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
@@ -235,7 +231,6 @@ library common
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
-    , array >=0.5.4.0
     , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
@@ -305,7 +300,6 @@ executable madlib
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
-    , array >=0.5.4.0
     , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
@@ -384,7 +378,6 @@ test-suite madlib-test
     , aeson-pretty
     , ansi-terminal ==0.5.0
     , ansi-wl-pprint >=0.6.9
-    , array >=0.5.4.0
     , async ==2.2.4
     , base >=4.7 && <5
     , bytestring
