@@ -21,7 +21,9 @@ import           Error.Error
 import           Error.Warning
 import           Error.Context
 import           Data.Maybe
-import           Data.List (isSuffixOf, union, (\\))
+import           Data.List (isSuffixOf, foldl', (\\))
+import qualified Data.IntMap.Strict                         as IM
+import           Data.Hashable (hash)
 import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                                   as M
@@ -250,7 +252,28 @@ mergeInterfaces = M.foldrWithKey mergeInterface
 
 
 mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
-mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ is `union` is')
+mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ fastUnion is is')
+  where
+    -- Cheap hash for Instance that only looks at the head predicate's class name,
+    -- avoiding the extremely expensive Generic-derived hash that traverses the entire
+    -- Vars (Map String Scheme) tree.
+    cheapHash (Instance (_ :=> IsIn classId _ _) _) = hash classId
+
+    -- Like Data.List.union but uses hash-bucketed lookup for O(n) average instead of O(n*m).
+    fastUnion xs ys =
+      let xsBuckets = foldl' (\m x -> IM.insertWith (++) (cheapHash x) [x] m) IM.empty xs
+          memberOfXs y = case IM.lookup (cheapHash y) xsBuckets of
+            Nothing -> False
+            Just bucket -> any (== y) bucket
+          go _ [] = []
+          go seen (y : rest)
+            | memberOfSeen seen y || memberOfXs y = go seen rest
+            | otherwise = y : go (addToSeen seen y) rest
+          memberOfSeen seen y = case IM.lookup (cheapHash y) seen of
+            Nothing -> False
+            Just bucket -> any (== y) bucket
+          addToSeen seen y = IM.insertWith (++) (cheapHash y) [y] seen
+      in  xs ++ go IM.empty ys
 
 
 updateInterface :: Can.Interface -> Slv.Interface

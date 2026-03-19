@@ -42,6 +42,9 @@ data Env
   , mutationsInScope :: [String]
   -- ^ all mutations that will happen in a function and its inner functions
   , moduleHash :: String
+  -- Cached sets for O(log n) lookups instead of O(n) list scans
+  , freeVarSet :: S.Set String
+  , exclusionSet :: S.Set String
   }
   deriving(Eq, Show)
 
@@ -80,15 +83,15 @@ getTopLevelExps = do
 
 addGlobalFreeVar :: String -> Env -> Env
 addGlobalFreeVar fv env =
-  env { freeVars = fv : freeVars env }
+  env { freeVars = fv : freeVars env, freeVarSet = S.insert fv (freeVarSet env) }
 
 addVarExclusion :: String -> Env -> Env
 addVarExclusion var env =
-  env { freeVarExclusion = var : freeVarExclusion env }
+  env { freeVarExclusion = var : freeVarExclusion env, exclusionSet = S.insert var (exclusionSet env) }
 
 addVarExclusions :: [String] -> Env -> Env
 addVarExclusions vars env =
-  env { freeVarExclusion = vars ++ freeVarExclusion env }
+  env { freeVarExclusion = vars ++ freeVarExclusion env, exclusionSet = exclusionSet env `S.union` S.fromList vars }
 
 addLiftedLambda :: String -> String -> [Exp] -> Env -> Env
 addLiftedLambda originalName liftedName args env =
@@ -251,10 +254,11 @@ findFreeVars env exp = do
     _ ->
       return []
 
-  let globalVars = freeVars env ++ M.keys (lifted env)
+  let globalVarSet = freeVarSet env `S.union` M.keysSet (lifted env)
+      exclSet = exclusionSet env
   let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` globalVars || varName `elem` freeVarExclusion env) fvs'
+  return $ filter (\(varName, _) -> S.notMember varName globalVarSet || S.member varName exclSet) fvs'
 
 
 findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
@@ -269,7 +273,7 @@ findFreeVarsInBody env exps = case exps of
           findFreeVars env exp
       nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
       -- nextFVs <- findFreeVarsInBody env es
-      if name `elem` freeVarExclusion env || name `elem` allocatedMutations env then
+      if S.member name (exclusionSet env) || name `elem` allocatedMutations env then
         return $ fvs ++ nextFVs ++ [(name, Typed qt area [] (Var name False))]
       else
         return $ fvs ++ nextFVs
@@ -856,7 +860,8 @@ instance Convertable AST AST where
         globalConstructors = getConstructorNames $ atypedecls ast
         globalsFromImports = getGlobalsFromImports $ aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
-        env' = env { freeVars = globalVars ++ globalConstructors ++ globalsFromImports ++ ["$"], moduleHash = Hash.generateHashFromPath path }
+        allFreeVars = globalVars ++ globalConstructors ++ globalsFromImports ++ ["$"]
+        env' = env { freeVars = allFreeVars, freeVarSet = S.fromList allFreeVars, moduleHash = Hash.generateHashFromPath path }
 
     imports    <- mapM (convert env') $ aimports ast
     exps       <- mapM (convert env') $ aexps ast
@@ -881,5 +886,7 @@ convertAST ast =
             , allocatedMutations = []
             , mutationsInScope = []
             , moduleHash = ""
+            , freeVarSet = S.empty
+            , exclusionSet = S.empty
             }
   in MonadState.evalState (convert env ast) initialOptimizationState
