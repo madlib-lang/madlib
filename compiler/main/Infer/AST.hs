@@ -21,7 +21,7 @@ import           Error.Error
 import           Error.Warning
 import           Error.Context
 import           Data.Maybe
-import           Data.List
+import           Data.List (isSuffixOf, union, (\\))
 import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                                   as M

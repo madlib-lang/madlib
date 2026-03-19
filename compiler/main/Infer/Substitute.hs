@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BangPatterns #-}
 module Infer.Substitute where
 
 import           Infer.Type
@@ -141,6 +142,7 @@ instance Substitutable Env where
 
 -- protect against infinite types
 -- Direct recursive check avoids allocating an intermediate Set
+{-# INLINE occursCheck #-}
 occursCheck :: TVar -> Type -> Bool
 occursCheck tv = go
   where
@@ -181,7 +183,7 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2
+compose !s1 s2
   | M.null s1 = s2
   | otherwise = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
  where
