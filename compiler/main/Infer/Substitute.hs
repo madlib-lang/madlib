@@ -31,8 +31,6 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `S.union` ftv t
 
 instance Substitutable Type where
-  apply s t | M.null s = t
-
   apply _ tc@(TCon _ _ _) =
     tc
 
@@ -185,7 +183,6 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 compose :: Substitution -> Substitution -> Substitution
 compose s1 s2
   | M.null s1 = s2
-  | M.null s2 = s1
   | otherwise = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
  where
   mergeTypes :: Type -> Type -> Type
