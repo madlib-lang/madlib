@@ -82,6 +82,7 @@ generateDocData rootFolder paths = do
           , optMustHaveMain = False
           , optParseOnly = False
           , optOptimizationLevel = O1
+          , optLspMode = False
           , optDebug = False
           }
   let llvmOptions =
@@ -99,6 +100,7 @@ generateDocData rootFolder paths = do
           , optMustHaveMain = False
           , optParseOnly = False
           , optOptimizationLevel = O1
+          , optLspMode = False
           , optDebug = False
           }
   jsMemoVar <- newIORef mempty

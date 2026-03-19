@@ -119,9 +119,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   ParsedAST path -> nonInput $ do
     source <- Rock.fetch $ FileBS path
-    ast    <- liftIO $ buildASTFromBS options path source
     wishModulePath <- Rock.fetch $ AbsolutePreludePath "Wish"
 
+    ast <- liftIO $ buildASTFromBS options path source
     case ast of
       Right ast ->
         return (addTestEmptyExports wishModulePath ast, (mempty, mempty))

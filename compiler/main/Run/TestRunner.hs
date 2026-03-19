@@ -88,6 +88,7 @@ runTests entrypoint target debug watchMode coverage optLevel = do
           , optParseOnly = False
           , optMustHaveMain = True
           , optOptimizationLevel = optLevel
+          , optLspMode = False
           }
 
   runTestTask watchMode state options canonicalEntrypoint []

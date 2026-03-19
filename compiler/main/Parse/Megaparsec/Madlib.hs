@@ -7,6 +7,7 @@ module Parse.Megaparsec.Madlib
   , parseForFormatterWithStructuredError
   , parseWithStructuredErrorBS
   , parseForFormatterWithStructuredErrorBS
+  , parseWithRecoveryBS
   ) where
 
 import qualified Data.ByteString               as BS
@@ -102,6 +103,16 @@ extractStructuredError bundle =
                 (parseErrorTextPretty err)
             [] ->
               ParseSyntaxError 1 1 (parseErrorTextPretty err)
+
+
+-- | Parse with error recovery, returning a partial AST and accumulated recovery errors.
+-- Used only in LSP mode to provide tooling even when the file has syntax errors.
+parseWithRecoveryBS :: BS.ByteString -> (Either ParseError Src.AST, [ParseRecoveryError])
+parseWithRecoveryBS bs =
+  let (result, finalState) = runMadlibParserWithState pASTWithRecovery "<input>" bs
+  in  case result of
+        Right ast -> (Right ast, psRecoveryErrors finalState)
+        Left err  -> (Left (extractStructuredError err), psRecoveryErrors finalState)
 
 
 -- | Format a parse error bundle into a human-readable string

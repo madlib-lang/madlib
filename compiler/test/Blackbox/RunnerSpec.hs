@@ -63,6 +63,7 @@ llvmCompileAndRun casePath = do
           , optParseOnly = False
           , optMustHaveMain = True
           , optOptimizationLevel = O3
+          , optLspMode = False
           }
 
   state <- Driver.initialState
@@ -105,6 +106,7 @@ jsCompileAndRun casePath = do
           , optParseOnly = False
           , optMustHaveMain = True
           , optOptimizationLevel = O3
+          , optLspMode = False
           }
 
   state <- Driver.initialState

@@ -69,6 +69,7 @@ buildOptions entrypoint pathUtils =
     , optParseOnly = False
     , optMustHaveMain = True
     , optOptimizationLevel = O3
+    , optLspMode = False
     }
 
 

@@ -21,4 +21,5 @@ data Options
     , optMustHaveMain :: Bool
     , optParseOnly :: Bool
     , optOptimizationLevel :: OptimizationLevel
+    , optLspMode :: Bool
     }

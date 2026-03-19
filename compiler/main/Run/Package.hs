@@ -81,6 +81,7 @@ typeCheckMain target main = do
           , optMustHaveMain = False
           , optParseOnly = False
           , optOptimizationLevel = O1
+          , optLspMode = False
           , optDebug = False
           }
   (table, warnings, errors) <- Driver.runIncrementalTask state options [] mempty Driver.Don'tPrune (typeCheckTask main)

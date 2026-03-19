@@ -4,6 +4,7 @@
 module Parse.Megaparsec.Common
   ( Parser
   , ParserState(..)
+  , ParseRecoveryError(..)
   , sc
   , scn
   , lexeme
@@ -16,8 +17,10 @@ module Parse.Megaparsec.Common
   , getSourceTarget
   , setSourceTarget
   , getFormatterMode
+  , addRecoveryError
   , runMadlibParser
   , runMadlibParserForFormatter
+  , runMadlibParserWithState
   , chr8
   , chr8'
   , isAlphaB
@@ -33,7 +36,7 @@ import           Data.Word                      ( Word8 )
 import qualified Data.ByteString               as BS
 import           Data.Void
 import           Control.Monad                  ( void )
-import           Control.Monad.State.Strict     ( State, evalState, get, gets, modify', lift )
+import           Control.Monad.State.Strict     ( State, evalState, runState, get, gets, modify', lift )
 
 import           Text.Megaparsec                hiding ( State )
 import qualified Text.Megaparsec                as MP
@@ -45,11 +48,21 @@ import           Explain.Location               ( Loc(..), Area(..) )
 import           Parse.Megaparsec.Error
 
 
+-- | Error recorded during recovery parsing
+data ParseRecoveryError = ParseRecoveryError
+  { preLineStart :: !Int
+  , preColStart :: !Int
+  , preLineEnd :: !Int
+  , preColEnd :: !Int
+  , preMessage :: !String
+  } deriving (Show)
+
 -- | Parser state tracking source target and formatter mode
 data ParserState = ParserState
   { psSourceTarget :: !SourceTarget
   , psFormatterMode :: !Bool
   , psLastTokenEnd :: !Loc
+  , psRecoveryErrors :: ![ParseRecoveryError]
   } deriving (Show)
 
 
@@ -61,14 +74,14 @@ type Parser = ParsecT CustomError BS.ByteString (State ParserState)
 -- | Run a parser
 runMadlibParser :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
 runMadlibParser p name input =
-  let initialState = ParserState TargetAll False (Loc 0 0 0)
+  let initialState = ParserState TargetAll False (Loc 0 0 0) []
   in  evalState (runParserT p name input) initialState
 
 
 -- | Run a parser in formatter mode
 runMadlibParserForFormatter :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
 runMadlibParserForFormatter p name input =
-  let initialState = ParserState TargetAll True (Loc 0 0 0)
+  let initialState = ParserState TargetAll True (Loc 0 0 0) []
   in  evalState (runParserT p name input) initialState
 
 
@@ -86,6 +99,18 @@ setSourceTarget target = lift $ modify' (\s -> s { psSourceTarget = target })
 -- | Get whether we're in formatter mode
 getFormatterMode :: Parser Bool
 getFormatterMode = lift $ gets psFormatterMode
+
+
+-- | Add a recovery error to the parser state
+addRecoveryError :: ParseRecoveryError -> Parser ()
+addRecoveryError err = lift $ modify' (\s -> s { psRecoveryErrors = err : psRecoveryErrors s })
+
+
+-- | Run a parser and return both result and final state
+runMadlibParserWithState :: Parser a -> String -> BS.ByteString -> (Either (ParseErrorBundle BS.ByteString CustomError) a, ParserState)
+runMadlibParserWithState p name input =
+  let initialState = ParserState TargetAll False (Loc 0 0 0) []
+  in  runState (runParserT p name input) initialState
 
 
 -- | Get current location as a Loc

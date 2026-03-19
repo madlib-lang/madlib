@@ -3,10 +3,12 @@
 {-# OPTIONS_GHC -O2 #-}
 module Parse.Megaparsec.Declaration
   ( pAST
+  , pASTWithRecovery
   ) where
 
 import qualified Data.Map.Strict                as M
-import           Control.Monad                  ( void )
+import           Control.Monad                  ( void, unless )
+import           Data.Maybe                     ( catMaybes )
 
 import           Text.Megaparsec                hiding ( State )
 import qualified Text.Megaparsec.Byte          as C
@@ -17,6 +19,7 @@ import qualified AST.Source                      as Src
 import           Explain.Location
 
 import           Parse.Megaparsec.Common
+import           Parse.Megaparsec.Error          ( CustomError )
 import           Parse.Megaparsec.Lexeme
 import           Parse.Megaparsec.Typing
 import           Parse.Megaparsec.Expression
@@ -50,6 +53,64 @@ pAST = do
       TopInstance inst    -> ast { Src.ainstances = Src.ainstances ast <> [inst] }
       TopExp e           -> ast { Src.aexps = Src.aexps ast <> [e] }
       TopDerived d        -> ast { Src.aderived = Src.aderived ast <> [d] }
+
+
+-- | Parse AST with error recovery at top-level declaration boundaries.
+-- When a top-level declaration fails to parse, the error is recorded and
+-- parsing skips to the next top-level boundary. Returns a partial AST
+-- with recovery errors accumulated in ParserState.
+pASTWithRecovery :: Parser Src.AST
+pASTWithRecovery = do
+  scn
+  items <- many $ withRecovery recoverTopLevel (Just <$> (pTopLevel <* rets))
+  eof
+  return $ foldl applyItem emptyAST (catMaybes items)
+  where
+    emptyAST = Src.AST
+      { Src.aimports = []
+      , Src.aderived = []
+      , Src.aexps = []
+      , Src.atypedecls = []
+      , Src.ainterfaces = []
+      , Src.ainstances = []
+      , Src.apath = Nothing
+      }
+
+    applyItem ast item = case item of
+      TopImports imps    -> ast { Src.aimports = Src.aimports ast <> imps }
+      TopTypeDecl td     -> ast { Src.atypedecls = Src.atypedecls ast <> [td] }
+      TopInterface iface -> ast { Src.ainterfaces = Src.ainterfaces ast <> [iface] }
+      TopInstance inst    -> ast { Src.ainstances = Src.ainstances ast <> [inst] }
+      TopExp e           -> ast { Src.aexps = Src.aexps ast <> [e] }
+      TopDerived d        -> ast { Src.aderived = Src.aderived ast <> [d] }
+
+    recoverTopLevel :: ParseError BS.ByteString CustomError -> Parser (Maybe TopLevel)
+    recoverTopLevel err = do
+      pos <- getLoc
+      let errMsg = case err of
+            TrivialError _ _ _ -> "Syntax error"
+            FancyError _ _     -> "Syntax error"
+      addRecoveryError $ ParseRecoveryError
+        (getLine' pos) (getCol' pos) (getLine' pos) (getCol' pos) errMsg
+      skipToNextTopLevel
+      return Nothing
+
+    skipToNextTopLevel :: Parser ()
+    skipToNextTopLevel = do
+      -- Skip to end of current line
+      _ <- takeWhileP Nothing (/= 10) -- skip until newline
+      _ <- optional (single 10)       -- consume the newline
+      scn                             -- consume blank lines
+      atEnd' <- atEnd
+      unless atEnd' $ do
+        w <- lookAhead $ takeWhileP Nothing isIdentB
+        unless (w `elem` topLevelKeywords || BS.null w) skipToNextTopLevel
+
+    topLevelKeywords :: [BS.ByteString]
+    topLevelKeywords = ["import", "interface", "instance", "derive", "type", "alias", "export"]
+
+    getLine' (Loc _ l _) = l
+    getCol' (Loc _ _ c) = c
 
 
 -- | Internal type to classify top-level items before folding into AST

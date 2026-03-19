@@ -11,7 +11,8 @@ import           Control.Exception                ( IOException
                                                   , try, SomeException (SomeException)
                                                   )
 import qualified Data.ByteString                  as BS
-import           Parse.Megaparsec.Madlib          ( parseWithStructuredError, parseWithStructuredErrorBS, ParseError(..) )
+import           Parse.Megaparsec.Madlib          ( parseWithStructuredError, parseWithStructuredErrorBS, parseWithRecoveryBS, ParseError(..) )
+import           Parse.Megaparsec.Common          ( ParseRecoveryError(..) )
 import           AST.Source 
 import           Utils.Path                       ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
@@ -173,6 +174,61 @@ buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
       CompilationError EmptyChar (Context path area)
     ParseSyntaxError line col msg ->
       CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
+
+
+-- | Build AST from ByteString with error recovery for LSP mode.
+-- Returns a partial AST (with valid declarations) plus recovery errors as CompilationErrors.
+buildASTFromBSWithRecovery :: Options -> FilePath -> BS.ByteString -> IO (Either CompilationError AST, [CompilationError])
+buildASTFromBSWithRecovery options path bs =
+  let (parseResult, recoveryErrors) = parseWithRecoveryBS bs
+      recoveryCompErrors = map (\(ParseRecoveryError l c l' c' msg) ->
+        CompilationError (GrammarError path msg)
+          (Context path (Area (Loc 0 l c) (Loc 0 l' c'))))
+        recoveryErrors
+  in  case parseResult of
+        Right ast -> do
+          result <- postProcessParsedAST options path ast
+          return (result, recoveryCompErrors)
+        Left parseErr ->
+          return (Left $ parseErrorToCompilationError path parseErr, recoveryCompErrors)
+
+
+-- | Shared post-parse AST processing (macros, builtins, import paths, JSON)
+postProcessParsedAST :: Options -> FilePath -> AST -> IO (Either CompilationError AST)
+postProcessParsedAST options path ast = do
+  let astWithPath = setPath ast path
+  validatedImports <- validatePreludePrivateModules options astWithPath
+  case validatedImports of
+    Left err ->
+      return $ Left err
+
+    Right _ -> do
+      let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
+      let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
+      let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
+      let astWithBuiltinsImport =
+            if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros) then
+              astWithProcessedMacros
+            else
+              astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
+      astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
+      case astWithAbsoluteImportPaths of
+        Right astWithAbsoluteImportPaths' -> do
+          astWithJsonAssignments <- processJsonImports options astWithAbsoluteImportPaths'
+          return $ Right astWithJsonAssignments
+
+        Left _ ->
+          return astWithAbsoluteImportPaths
+
+
+parseErrorToCompilationError :: FilePath -> ParseError -> CompilationError
+parseErrorToCompilationError path parseErr = case parseErr of
+  ParseBadEscape area ->
+    CompilationError BadEscapeSequence (Context path area)
+  ParseEmptyChar area ->
+    CompilationError EmptyChar (Context path area)
+  ParseSyntaxError line col msg ->
+    CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
 
 
 setPath :: AST -> FilePath -> AST

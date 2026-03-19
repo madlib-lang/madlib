@@ -5,10 +5,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use forM_" #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wincomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# HLINT ignore "Use list comprehension" #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Run.LanguageServer where
 
 import Language.LSP.Server
@@ -32,7 +33,7 @@ import Language.LSP.Diagnostics
 import qualified Explain.Format as Explain
 import           Data.List (group, foldl')
 import qualified Data.List as List
-import           Control.Monad (forM_, join, forM, unless)
+import           Control.Monad (forM_, join, forM, unless, void)
 import           Data.IORef
 import qualified AST.Solved as Slv
 import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping', renderSchemesWithDiff)
@@ -51,7 +52,7 @@ import           Control.Monad.Trans.Control
 import           Control.Concurrent
 import           Data.Foldable (toList)
 import           Control.Concurrent.Async
-import           Control.Exception (try)
+import           Control.Exception (SomeException, try)
 import           Rock (Cyclic)
 import qualified AST.Canonical         as Can
 import qualified Canonicalize.EnvUtils as CanEnv
@@ -61,20 +62,27 @@ import qualified Canonicalize.Typing as Can
 import qualified Infer.Typing as Slv
 import qualified Canonicalize.Env as CanEnv
 import qualified Canonicalize.Interface as Can
-import System.FilePath (takeFileName, dropExtension)
+import System.FilePath (takeFileName, dropExtension, takeExtension, (</>))
+import qualified Data.HashMap.Strict as HashMap
 import Run.OptimizationLevel
 import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
 import qualified Infer.Env as SlvEnv
 import Data.Char (isAlphaNum, isDigit, isUpper)
+import qualified System.Directory as Dir
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Aeson as Aeson
+import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 
 
 
 handlers :: State -> State -> Handlers (LspM ())
 handlers state autocompletionState = mconcat
-  [ notificationHandler SInitialized $ \_not ->
+  [ notificationHandler SInitialized $ \_not -> do
       sendNotification SWindowLogMessage (LogMessageParams MtInfo "Madlib server initialized")
+      env <- getLspEnv
+      liftIO $ void $ forkIO $ backgroundCompileProject state autocompletionState env
   , requestHandler STextDocumentHover $ \req responder ->
       recordAndPrintDuration "hover" $ do
         let RequestMessage _ _ _ (HoverParams (TextDocumentIdentifier uri) pos@(Position line col) _workDone) = req
@@ -87,48 +95,71 @@ handlers state autocompletionState = mconcat
             responder (Right $ Just rsp)
 
           Nothing ->
-            return ()
-  , requestHandler STextDocumentDefinition $ \(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder -> do
+            responder (Right Nothing)
+  , requestHandler STextDocumentDefinition $ \(RequestMessage _ _ _ (DefinitionParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder ->
       recordAndPrintDuration "definition" $ do
         links <- getDefinitionLinks state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
         case links of
           [] ->
-            return ()
+            responder $ Right (InR $ InL $ List [])
 
           [loc] ->
             responder $ Right (InL loc)
 
           locs ->
             responder $ Right (InR $ InL $ List locs)
-  , requestHandler STextDocumentCompletion $ \(RequestMessage _ _ _ (CompletionParams (TextDocumentIdentifier uri) (Position line col) _ _ _)) responder -> do
+  , requestHandler STextDocumentCompletion $ \(RequestMessage _ _ _ (CompletionParams (TextDocumentIdentifier uri) (Position line col) _ _ _)) responder ->
       recordAndPrintDuration "completion" $ do
         file <- getVirtualFile (toNormalizedUri uri)
         let fileContent = T.unpack . virtualFileText <$> file
         case fileContent of
           Just content -> do
-            let foundLine = take col $ lines content !! line
-            
             suggestions <- getAutocompletionSuggestions autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
-            -- https://github.com/haskell/lsp/blob/76b86d54040cfa6c8306433a29404fa6402a5f69/lsp-types/src/Language/LSP/Types/Completion.hs
             let completionItems = map (\(s, typing, kind) -> CompletionItem (T.pack s) (Just kind) Nothing (Just $ T.pack typing) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) suggestions
             responder $ Right $ InR (CompletionList True (List completionItems))
-            sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow (computeAutocompletionKind (reverse foundLine)))
 
           Nothing ->
-            return ()
+            responder $ Right $ InR (CompletionList True (List []))
 
-  -- , requestHandler STextDocumentDocumentLink $ \req responder -> do
-  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo (T.pack $ ppShow req)
-  -- , requestHandler STextDocumentImplementation $ \_ responder -> do
-  --     sendNotification SWindowLogMessage $ LogMessageParams MtInfo "tdi"
-  , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) -> do
+  , notificationHandler STextDocumentDidOpen $ \(NotificationMessage _ _ (DidOpenTextDocumentParams (TextDocumentItem uri _ _ _))) ->
       recordAndPrintDuration "file open" $ generateDiagnostics False state autocompletionState uri mempty
   , notificationHandler STextDocumentDidSave $ \(NotificationMessage _ _ (DidSaveTextDocumentParams (TextDocumentIdentifier uri) _)) ->
       recordAndPrintDuration "file save" $ generateDiagnostics False state autocompletionState uri mempty
   , notificationHandler STextDocumentDidChange $ \(NotificationMessage _ _ (DidChangeTextDocumentParams (VersionedTextDocumentIdentifier uri _) (List changes))) -> do
-      recordAndPrintDuration "file change" $ do
-        let (TextDocumentContentChangeEvent _ _ docContent) = last changes
-        generateDiagnostics True state autocompletionState uri (Map.singleton (uriToPath uri) (T.unpack docContent))
+      let (TextDocumentContentChangeEvent _ _ docContent) = last changes
+      let fileUpdates = Map.singleton (uriToPath uri) (T.unpack docContent)
+      currentTime <- liftIO getCurrentTime
+      liftIO $ writeIORef (_debounceRef state) (Just currentTime)
+      env <- getLspEnv
+      liftIO $ void $ forkIO $ do
+        threadDelay 100000  -- 100ms debounce
+        latest <- readIORef (_debounceRef state)
+        case latest of
+          Just t | t == currentTime ->
+            runLspT env $ recordAndPrintDuration "file change" $
+              generateDiagnostics True state autocompletionState uri fileUpdates
+          _ -> return ()
+  , requestHandler STextDocumentDocumentSymbol $ \(RequestMessage _ _ _ (DocumentSymbolParams _ _ (TextDocumentIdentifier uri))) responder ->
+      recordAndPrintDuration "documentSymbol" $ do
+        symbols <- getDocumentSymbols state (uriToPath uri)
+        responder $ Right $ InL (List symbols)
+  , requestHandler STextDocumentCodeAction $ \(RequestMessage _ _ _ (CodeActionParams _ _ (TextDocumentIdentifier uri) _ (CodeActionContext (List diags) _))) responder ->
+      recordAndPrintDuration "codeAction" $ do
+        let removeImportActions = Maybe.mapMaybe (diagnosticToCodeAction uri) diags
+        addImportActions <- getAddImportActions state (uriToPath uri) uri diags
+        responder $ Right $ List (map InR (removeImportActions ++ addImportActions))
+  , requestHandler STextDocumentSignatureHelp $ \(RequestMessage _ _ _ (SignatureHelpParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder ->
+      recordAndPrintDuration "signatureHelp" $ do
+        help <- getSignatureHelp state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
+        responder $ Right help
+  , requestHandler STextDocumentReferences $ \(RequestMessage _ _ _ (ReferenceParams (TextDocumentIdentifier uri) (Position line col) _ _ _)) responder ->
+      recordAndPrintDuration "references" $ do
+        refs <- findReferences state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
+        responder $ Right (List refs)
+  , requestHandler STextDocumentRename $ \(RequestMessage _ _ _ (RenameParams (TextDocumentIdentifier uri) (Position line col) _ newName)) responder ->
+      recordAndPrintDuration "rename" $ do
+        edits <- renameSymbol state (Loc 0 (line + 1) (col + 1)) (uriToPath uri) (T.unpack newName)
+        responder $ Right $ WorkspaceEdit (Just edits) Nothing Nothing
   ]
 
 
@@ -187,6 +218,7 @@ buildOptions target = do
       , Options.optMustHaveMain = False
       , Options.optParseOnly = False
       , Options.optOptimizationLevel = O1
+      , Options.optLspMode = True
       , Options.optDebug = False
       }
 
@@ -483,16 +515,16 @@ findNodeInImport :: Loc -> Src.Import -> Maybe Node
 findNodeInImport loc imp =
   if isInRange loc $ Src.getArea imp then
     case imp of
-      Src.Source _ _ (Src.DefaultImport _ _ filepath) ->
-        Just $ DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath
+      Src.Source impArea _ (Src.DefaultImport _ _ filepath) ->
+        Just $ DefaultImportNode impArea filepath
 
-      Src.Source _ _ (Src.NamedImport names _ filepath) ->
+      Src.Source impArea _ (Src.NamedImport names _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath NamedImportNode <$> names)
-        <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
+        <|> Just (DefaultImportNode impArea filepath)
 
-      Src.Source _ _ (Src.TypeImport typeNames _ filepath) ->
+      Src.Source impArea _ (Src.TypeImport typeNames _ filepath) ->
         foldl' (<|>) Nothing (findNamedImportNode loc filepath TypeImportNode <$> typeNames)
-        <|> Just (DefaultImportNode (Area (Loc 1 1 1) (Loc 1 100000 1)) filepath)
+        <|> Just (DefaultImportNode impArea filepath)
   else
     Nothing
 
@@ -540,6 +572,9 @@ findNodeInTypeDeclaration loc typeDeclaration = case typeDeclaration of
       <|> Just (ADTNode aliasname area (buildKind $ length aliasparams))
     else
       Nothing
+
+  _ ->
+    Nothing
 
 
 findNodeInExps :: Loc -> [Slv.Exp] -> Maybe Node
@@ -752,44 +787,466 @@ nodeToHoverInfo modulePath node = do
 
 getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
 getAutocompletionSuggestions autocompletionState loc path moduleContent = do
-  llvmOptions <- buildOptions TLLVM
-  (llvmResult, _, _) <- liftIO $ runTask autocompletionState llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
+  -- Use single target for completion — types are target-independent for the vast majority of code
   jsOptions <- buildOptions TNode
-  (jsResult, _, _) <- liftIO $ runTask autocompletionState jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
-  return $ Set.toList $ Set.fromList $ llvmResult ++ jsResult
+  jsResult <- liftIO $ safeRunTask autocompletionState jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
+  return $ case jsResult of
+    Just (suggestions, _, _) -> suggestions
+    Nothing                  -> []
 
 
 getDefinitionLinks :: State -> Loc -> FilePath -> LspM () [Location]
 getDefinitionLinks state loc path = do
-  jsOptions        <- buildOptions TNode
-  (jsResult, _, _) <- liftIO $ runTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
+  jsOptions <- buildOptions TNode
+  jsResult <- liftIO $ safeRunTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
   let jsLocations = case jsResult of
-        Nothing ->
+        Just (Just (p, area), _, _) ->
+          [Location (pathToUri p) (areaToRange area)]
+        _ ->
           []
-
-        Just (path, area) ->
-          [Location (pathToUri path) (areaToRange area)]
-
-  llvmOptions        <- buildOptions TLLVM
-  (llvmResult, _, _) <- liftIO $ runTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
-  case llvmResult of
-    Nothing ->
-      return jsLocations
-
-    Just (path, area) ->
-      return $ [Location (pathToUri path) (areaToRange area)] `List.union` jsLocations
+  if not (null jsLocations) then
+    return jsLocations
+  else do
+    llvmOptions <- buildOptions TLLVM
+    llvmResult <- liftIO $ safeRunTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (definitionLocationTask loc path)
+    case llvmResult of
+      Just (Just (p, area), _, _) ->
+        return [Location (pathToUri p) (areaToRange area)]
+      _ ->
+        return []
 
 
 getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
 getHoverInformation state loc path = do
   jsOptions <- buildOptions TNode
-  (jsResult, _, _) <- liftIO $ runTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
-  if Maybe.isNothing jsResult then do
-    llvmOptions <- buildOptions TLLVM
-    (llvmResult, _, _) <- liftIO $ runTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
-    return llvmResult
-  else
-    return jsResult
+  jsResult <- liftIO $ safeRunTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+  case jsResult of
+    Just (Just info, _, _) -> return (Just info)
+    _ -> do
+      llvmOptions <- buildOptions TLLVM
+      llvmResult <- liftIO $ safeRunTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
+      return $ case llvmResult of
+        Just (r, _, _) -> r
+        Nothing        -> Nothing
+
+
+getDocumentSymbols :: State -> FilePath -> LspM () [DocumentSymbol]
+getDocumentSymbols state path = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (documentSymbolsTask path)
+  case result of
+    Just (symbols, _, _) -> return symbols
+    Nothing              -> return []
+
+
+documentSymbolsTask :: FilePath -> Rock.Task Query.Query [DocumentSymbol]
+documentSymbolsTask path = do
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  let expSymbols = Maybe.mapMaybe expToDocSymbol (Slv.aexps typedAst)
+  let typeSymbols = map typeDeclToDocSymbol (Slv.atypedecls typedAst)
+  let ifaceSymbols = map ifaceToDocSymbol (Slv.ainterfaces typedAst)
+  return $ expSymbols ++ typeSymbols ++ ifaceSymbols
+
+
+expToDocSymbol :: Slv.Exp -> Maybe DocumentSymbol
+expToDocSymbol exp = case exp of
+  Slv.Typed qt area (Slv.Assignment name _) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _))) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  Slv.Typed qt area (Slv.Extern _ name _) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Extern _ name _))) ->
+    Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
+
+  _ -> Nothing
+
+
+typeDeclToDocSymbol :: Slv.TypeDecl -> DocumentSymbol
+typeDeclToDocSymbol td = case td of
+  Slv.Untyped area (Slv.ADT { Slv.adtname = name, Slv.adtconstructors = ctors }) ->
+    let children = map ctorToDocSymbol ctors
+    in  mkDocSymbolWithChildren (T.pack name) Nothing SkEnum area area (Just $ List children)
+
+  Slv.Typed _ area (Slv.ADT { Slv.adtname = name, Slv.adtconstructors = ctors }) ->
+    let children = map ctorToDocSymbol ctors
+    in  mkDocSymbolWithChildren (T.pack name) Nothing SkEnum area area (Just $ List children)
+
+  Slv.Untyped area (Slv.Alias { Slv.aliasname = name }) ->
+    mkDocSymbol (T.pack name) Nothing SkClass area area
+
+  Slv.Typed _ area (Slv.Alias { Slv.aliasname = name }) ->
+    mkDocSymbol (T.pack name) Nothing SkClass area area
+
+
+ctorToDocSymbol :: Slv.Constructor -> DocumentSymbol
+ctorToDocSymbol ctor =
+  let name = Slv.getConstructorName ctor
+      area = Slv.getArea ctor
+  in  mkDocSymbol (T.pack name) Nothing SkEnumMember area area
+
+
+ifaceToDocSymbol :: Slv.Interface -> DocumentSymbol
+ifaceToDocSymbol iface = case iface of
+  Slv.Untyped area (Slv.Interface name _ _ _ _) ->
+    mkDocSymbol (T.pack name) Nothing SkInterface area area
+
+  Slv.Typed _ area (Slv.Interface name _ _ _ _) ->
+    mkDocSymbol (T.pack name) Nothing SkInterface area area
+
+
+mkDocSymbol :: T.Text -> Maybe T.Text -> SymbolKind -> Area -> Area -> DocumentSymbol
+mkDocSymbol name detail symbolKind range selRange =
+  DocumentSymbol name detail symbolKind Nothing Nothing (areaToRange range) (areaToRange selRange) Nothing
+
+mkDocSymbolWithChildren :: T.Text -> Maybe T.Text -> SymbolKind -> Area -> Area -> Maybe (List DocumentSymbol) -> DocumentSymbol
+mkDocSymbolWithChildren name detail symbolKind range selRange children =
+  DocumentSymbol name detail symbolKind Nothing Nothing (areaToRange range) (areaToRange selRange) children
+
+
+-- Code Actions --
+
+diagnosticToCodeAction :: Uri -> Diagnostic -> Maybe CodeAction
+diagnosticToCodeAction uri diag@(Diagnostic range _ _ _ msg tags _) =
+  case tags of
+    Just (List [DtUnnecessary])
+      | "Unused import" `T.isPrefixOf` msg ->
+        let Range (Position startLine _) _ = range
+            editRange = Range (Position startLine 0) (Position (startLine + 1) 0)
+            edit = TextEdit editRange ""
+            wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
+        in  Just $ CodeAction "Remove unused import" (Just CodeActionQuickFix)
+              (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
+    _ -> Nothing
+
+
+-- | Extract the unbound variable name from a diagnostic message.
+-- Message format: "Unbound variable\n\nThe variable 'name' has not been declared\n\n..."
+extractUnboundName :: T.Text -> Maybe String
+extractUnboundName msg
+  | "Unbound variable" `T.isPrefixOf` msg =
+    let parts = T.splitOn "'" msg
+    in  if length parts >= 2 then Just (T.unpack (parts !! 1)) else Nothing
+  | otherwise = Nothing
+
+
+-- | Get "Add missing import" code actions for unbound variable diagnostics.
+getAddImportActions :: State -> FilePath -> Uri -> [Diagnostic] -> LspM () [CodeAction]
+getAddImportActions state path _uri diags = do
+  let unboundDiags = [(d, name) | d@(Diagnostic _ _ _ _ msg _ _) <- diags, Just name <- [extractUnboundName msg]]
+  if null unboundDiags then return []
+  else do
+    options <- buildOptions TNode
+    bgDone <- liftIO $ readIORef (_backgroundDone state)
+    extraPaths <- if bgDone
+      then liftIO $ Set.toList <$> readIORef (_allModulePaths state)
+      else return []
+    results <- liftIO $ safeRunTask state options { optEntrypoint = path }
+                 Driver.Don'tPrune mempty mempty (addImportActionsTask path unboundDiags extraPaths)
+    case results of
+      Just (actions, _, _) -> return actions
+      Nothing              -> return []
+
+
+-- | Rock task that searches all compiled modules for exports matching unbound names.
+addImportActionsTask :: FilePath -> [(Diagnostic, String)] -> [FilePath] -> Rock.Task Query.Query [CodeAction]
+addImportActionsTask path unboundDiags extraPaths = do
+  localModulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
+  let modulePaths = List.nub $ localModulePaths ++ extraPaths
+
+  -- Build a global mapping: absolute path -> relative import path
+  -- by collecting all imports from all modules
+  absToRelPath <- fmap (Map.fromList . concat) $ forM modulePaths $ \modPath -> do
+    (modAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+    return [(Slv.getImportAbsolutePath imp, Slv.getImportPath imp) | imp <- Slv.aimports modAst]
+
+  -- For each module, get its exports and constructor names
+  moduleExports <- fmap concat $ forM modulePaths $ \modPath ->
+    if modPath == path then return []
+    else do
+      (modAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+      let exports = Map.keys $ Slv.extractExportedExps modAst
+      let exportedADTs = Slv.extractExportedADTs modAst
+      let constructorNames = concatMap getConstructorNames exportedADTs
+      return [(name, modPath) | name <- exports ++ constructorNames]
+
+  -- For each unbound name, find modules that export it and generate code actions
+  return $ concatMap (\(diag, name) ->
+    let matching = [modPath | (n, modPath) <- moduleExports, n == name]
+    in  concatMap (\modPath ->
+          case Map.lookup modPath absToRelPath of
+            Just relPath ->
+              let insertRange = Range (Position 0 0) (Position 0 0)
+                  importText = "import { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\"\n"
+                  edit = TextEdit insertRange importText
+                  wsEdit = WorkspaceEdit (Just $ HashMap.singleton (pathToUri path) (List [edit])) Nothing Nothing
+                  title = "Add import from \"" <> T.pack relPath <> "\""
+              in  [CodeAction title (Just CodeActionQuickFix) (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing]
+            Nothing -> []
+        ) matching
+    ) unboundDiags
+  where
+    getConstructorNames :: Slv.TypeDecl -> [String]
+    getConstructorNames (Slv.Typed _ _ (Slv.ADT { Slv.adtconstructors = ctors, Slv.adtexported = True })) =
+      map (\(Slv.Typed _ _ (Slv.Constructor name _ _)) -> name) ctors
+    getConstructorNames _ = []
+
+
+-- Signature Help --
+
+getSignatureHelp :: State -> Loc -> FilePath -> LspM () SignatureHelp
+getSignatureHelp state loc path = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (signatureHelpTask loc path)
+  case result of
+    Just (Just help, _, _) -> return help
+    _                      -> return $ SignatureHelp (List []) Nothing Nothing
+
+
+signatureHelpTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe SignatureHelp)
+signatureHelpTask loc path = do
+  srcAst        <- Rock.fetch $ Query.ParsedAST path
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  -- Find the enclosing App node — the cursor is inside the argument of a function call
+  let result = findEnclosingApp loc (Slv.aexps typedAst ++ Slv.getAllMethods typedAst)
+  case result of
+    Just (name, qt) ->
+      let typeStr = prettyQt False qt
+          paramTypes = getParamTypes (getQualified qt)
+          params = map (\t -> ParameterInformation (ParameterLabelString $ T.pack $ prettyPrintType False t) Nothing) paramTypes
+          sigInfo = SignatureInformation (T.pack $ name <> " :: " <> typeStr) Nothing (Just $ List params) (Just 0)
+      in  return $ Just $ SignatureHelp (List [sigInfo]) (Just 0) (Just 0)
+    Nothing ->
+      -- Fall back: if cursor is directly on a function name, show its signature
+      let maybeNode = findNodeInAst loc srcAst typedAst
+      in  case maybeNode of
+            Just (ExpNode _ (Slv.Typed qt _ (Slv.Var name _))) | not (null (getParamTypes (getQualified qt))) ->
+              let typeStr = prettyQt False qt
+                  paramTypes = getParamTypes (getQualified qt)
+                  params = map (\t -> ParameterInformation (ParameterLabelString $ T.pack $ prettyPrintType False t) Nothing) paramTypes
+                  sigInfo = SignatureInformation (T.pack $ name <> " :: " <> typeStr) Nothing (Just $ List params) (Just 0)
+              in  return $ Just $ SignatureHelp (List [sigInfo]) (Just 0) (Just 0)
+            _ -> return Nothing
+
+
+-- | Find the outermost App node that contains the cursor in one of its arguments,
+-- and return the function name and type at the call site.
+findEnclosingApp :: Loc -> [Slv.Exp] -> Maybe (String, Qual Type)
+findEnclosingApp loc = go
+  where
+    go [] = Nothing
+    go (e:es) = findInExp e <|> go es
+
+    findInExp :: Slv.Exp -> Maybe (String, Qual Type)
+    findInExp e = case e of
+      Slv.Typed _ area (Slv.App fn arg _) | isInRange loc area ->
+        -- Recurse into arg first (deeper nesting wins)
+        findInExp arg
+        -- Then check if cursor is in the argument position
+        <|> (if isInRange loc (Slv.getArea arg) then extractFnInfo fn else Nothing)
+        -- Then recurse into fn (for curried applications)
+        <|> findInExp fn
+      Slv.Typed _ area (Slv.Assignment _ body) | isInRange loc area ->
+        findInExp body
+      Slv.Typed _ area (Slv.Export inner) | isInRange loc area ->
+        findInExp inner
+      Slv.Typed _ area (Slv.TypedExp inner _ _) | isInRange loc area ->
+        findInExp inner
+      Slv.Typed _ area (Slv.Abs _ body) | isInRange loc area ->
+        go body
+      Slv.Typed _ area (Slv.If cond thenE elseE) | isInRange loc area ->
+        findInExp cond <|> findInExp thenE <|> findInExp elseE
+      Slv.Typed _ area (Slv.Where inner iss) | isInRange loc area ->
+        findInExp inner <|> foldl' (\acc is -> acc <|> findInIs is) Nothing iss
+      Slv.Typed _ area (Slv.Do exps) | isInRange loc area ->
+        go exps
+      _ -> Nothing
+
+    findInIs :: Slv.Is -> Maybe (String, Qual Type)
+    findInIs (Slv.Typed _ _ (Slv.Is _ body)) = findInExp body
+    findInIs _ = Nothing
+
+    extractFnInfo :: Slv.Exp -> Maybe (String, Qual Type)
+    extractFnInfo fn = case fn of
+      Slv.Typed qt _ (Slv.Var name _)       -> Just (name, qt)
+      Slv.Typed _ _ (Slv.App inner _ _)     -> extractFnInfo inner
+      _                                       -> Nothing
+
+
+-- Find References --
+
+findReferences :: State -> Loc -> FilePath -> LspM () [Location]
+findReferences state loc path = do
+  options <- buildOptions TNode
+  bgDone <- liftIO $ readIORef (_backgroundDone state)
+  extraPaths <- if bgDone
+    then liftIO $ Set.toList <$> readIORef (_allModulePaths state)
+    else return []
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (findReferencesTask loc path extraPaths)
+  case result of
+    Just (refs, _, _) -> return refs
+    Nothing           -> return []
+
+
+findReferencesTask :: Loc -> FilePath -> [FilePath] -> Rock.Task Query.Query [Location]
+findReferencesTask loc path extraPaths = do
+  srcAst        <- Rock.fetch $ Query.ParsedAST path
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  let maybeNode = findNodeInAst loc srcAst typedAst
+  case maybeNode >>= nodeToName of
+    Just name -> do
+      -- Search current module
+      let localAreas = collectAllOccurrences name typedAst
+      let localRefs = map (\area -> Location (pathToUri path) (areaToRange area)) localAreas
+
+      -- Search all other compiled modules for cross-module references
+      -- In other modules, the name may be namespace-qualified (e.g., "MMOMath.degToRad")
+      let nameSuffix = "." ++ name
+      localModulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
+      let modulePaths = List.nub $ localModulePaths ++ extraPaths
+      crossRefs <- fmap concat $ forM modulePaths $ \modPath ->
+        if modPath == path then return []
+        else do
+          (modAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+          -- Search for both exact name and namespace-qualified name (suffix match)
+          let areas = collectAllOccurrencesWithSuffix name nameSuffix modAst
+          return $ map (\area -> Location (pathToUri modPath) (areaToRange area)) areas
+
+      return $ localRefs ++ crossRefs
+    Nothing -> return []
+
+
+-- Rename Symbol --
+
+renameSymbol :: State -> Loc -> FilePath -> String -> LspM () WorkspaceEditMap
+renameSymbol state loc path newName = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (renameSymbolTask loc path newName)
+  case result of
+    Just (edits, _, _) -> return edits
+    Nothing            -> return HashMap.empty
+
+
+renameSymbolTask :: Loc -> FilePath -> String -> Rock.Task Query.Query WorkspaceEditMap
+renameSymbolTask loc path newName = do
+  srcAst        <- Rock.fetch $ Query.ParsedAST path
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  let maybeNode = findNodeInAst loc srcAst typedAst
+  case maybeNode >>= nodeToName of
+    Just name ->
+      let areas = collectAllOccurrences name typedAst
+          edits = map (\area -> TextEdit (areaToRange area) (T.pack newName)) areas
+      in  return $ HashMap.singleton (pathToUri path) (List edits)
+    Nothing -> return HashMap.empty
+
+
+-- | Extract the name from a Node, if it has one
+nodeToName :: Node -> Maybe String
+nodeToName node = case node of
+  ExpNode _ (Slv.Typed _ _ (Slv.Assignment name _))     -> Just name
+  ExpNode _ (Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) -> Just name
+  ExpNode _ (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) -> Just name
+  ExpNode _ (Slv.Typed _ _ (Slv.Var name _))            -> Just name
+  ExpNode _ (Slv.Typed _ _ (Slv.Extern _ name _))       -> Just name
+  NameNode _ (Slv.Typed _ _ name)                        -> Just name
+  PatternNode (Slv.Typed _ _ (Slv.PVar name))           -> Just name
+  _                                                       -> Nothing
+
+
+-- | Collect all areas where a given name occurs in the solved AST
+collectAllOccurrences :: String -> Slv.AST -> [Area]
+collectAllOccurrences name = collectAllOccurrencesBy (== name)
+
+
+-- | Collect all areas where a name matches exactly or as a namespace-qualified suffix.
+-- For example, matching "degToRad" will also match "MMOMath.degToRad".
+collectAllOccurrencesWithSuffix :: String -> String -> Slv.AST -> [Area]
+collectAllOccurrencesWithSuffix name nameSuffix =
+  collectAllOccurrencesBy (\n -> n == name || nameSuffix `List.isSuffixOf` n)
+
+
+collectAllOccurrencesBy :: (String -> Bool) -> Slv.AST -> [Area]
+collectAllOccurrencesBy matches ast =
+  concatMap (collectInExp matches) (Slv.aexps ast ++ Slv.getAllMethods ast)
+
+
+collectInExp :: (String -> Bool) -> Slv.Exp -> [Area]
+collectInExp matches exp = case exp of
+  Slv.Typed _ area (Slv.Var n _) | matches n -> [area]
+  Slv.Typed _ area (Slv.Assignment n body) ->
+    (if matches n then [area] else []) ++ collectInExp matches body
+  Slv.Typed _ _ (Slv.App fn arg _) ->
+    collectInExp matches fn ++ collectInExp matches arg
+  Slv.Typed _ _ (Slv.Abs param body) ->
+    (if matches (Slv.getValue param) then [Slv.getArea param] else [])
+    ++ concatMap (collectInExp matches) body
+  Slv.Typed _ _ (Slv.If cond thenE elseE) ->
+    collectInExp matches cond ++ collectInExp matches thenE ++ collectInExp matches elseE
+  Slv.Typed _ _ (Slv.Where exp iss) ->
+    collectInExp matches exp ++ concatMap (collectInIs matches) iss
+  Slv.Typed _ _ (Slv.Export inner) ->
+    collectInExp matches inner
+  Slv.Typed _ _ (Slv.TypedExp inner _ _) ->
+    collectInExp matches inner
+  Slv.Typed _ _ (Slv.ListConstructor items) ->
+    concatMap (\item -> case item of
+      Slv.Typed _ _ (Slv.ListItem e)   -> collectInExp matches e
+      Slv.Typed _ _ (Slv.ListSpread e) -> collectInExp matches e
+      _ -> []) items
+  Slv.Typed _ _ (Slv.TupleConstructor items) ->
+    concatMap (collectInExp matches) items
+  Slv.Typed _ _ (Slv.Record fields) ->
+    concatMap (\f -> case f of
+      Slv.Typed _ _ (Slv.Field (_, e))   -> collectInExp matches e
+      Slv.Typed _ _ (Slv.FieldSpread e)  -> collectInExp matches e
+      _ -> []) fields
+  Slv.Typed _ _ (Slv.Access e _) ->
+    collectInExp matches e
+  Slv.Typed _ _ (Slv.ArrayAccess e idx) ->
+    collectInExp matches e ++ collectInExp matches idx
+  Slv.Typed _ _ (Slv.Do exps) ->
+    concatMap (collectInExp matches) exps
+  Slv.Typed _ _ (Slv.While cond body) ->
+    collectInExp matches cond ++ collectInExp matches body
+  Slv.Typed _ _ (Slv.Mutate target val) ->
+    collectInExp matches target ++ collectInExp matches val
+  Slv.Typed _ _ (Slv.TemplateString parts) ->
+    concatMap (collectInExp matches) parts
+  Slv.Typed _ area (Slv.NameExport n) | matches n -> [area]
+  Slv.Typed _ area (Slv.Extern _ n _) | matches n -> [area]
+  _ -> []
+
+
+collectInIs :: (String -> Bool) -> Slv.Is -> [Area]
+collectInIs matches is = case is of
+  Slv.Typed _ _ (Slv.Is pat exp) ->
+    collectInPattern matches pat ++ collectInExp matches exp
+  _ -> []
+
+
+collectInPattern :: (String -> Bool) -> Slv.Pattern -> [Area]
+collectInPattern matches pat = case pat of
+  Slv.Typed _ area (Slv.PVar n) | matches n -> [area]
+  Slv.Typed _ _ (Slv.PCon _ pats) ->
+    concatMap (collectInPattern matches) pats
+  Slv.Typed _ _ (Slv.PRecord m _) ->
+    concatMap (collectInPattern matches) (Map.elems m)
+  Slv.Typed _ _ (Slv.PList pats) ->
+    concatMap (collectInPattern matches) pats
+  Slv.Typed _ _ (Slv.PTuple pats) ->
+    concatMap (collectInPattern matches) pats
+  Slv.Typed _ _ (Slv.PSpread inner) ->
+    collectInPattern matches inner
+  _ -> []
 
 
 pathToUri :: FilePath -> Uri
@@ -813,39 +1270,43 @@ typeCheckFileTask path = do
   return $ isJust (Src.apath parsedAst)
 
 
-runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () (Bool, [CompilationWarning], [CompilationError])
-runTypeCheck invalidatePath state target path fileUpdates = do
+runTypeCheckIO :: Bool -> State -> FilePath -> Map.Map FilePath String -> Options.Options -> IO (Bool, [CompilationWarning], [CompilationError])
+runTypeCheckIO invalidatePath state path fileUpdates options = do
   let changedFiles =
         if invalidatePath then
           [path]
         else
           []
-  options <- buildOptions target
-  liftIO $ do
-    result <- try $
-      runTask
+  result <- try $
+    runTask
+      state
+      options { optEntrypoint = path }
+      Driver.Don'tPrune
+      changedFiles
+      fileUpdates
+      (typeCheckFileTask path)
+      :: IO (Either (Cyclic Query.Query) (Bool, [CompilationWarning], [CompilationError]))
+
+  case result of
+    Left _ -> do
+      (_, warnings, errors) <- runTask
         state
         options { optEntrypoint = path }
         Driver.Don'tPrune
         changedFiles
         fileUpdates
-        (typeCheckFileTask path)
-        :: IO (Either (Cyclic Query.Query) (Bool, [CompilationWarning], [CompilationError]))
+        (Driver.detectCyleTask path)
 
-    case result of
-      Left _ -> do
-        (_, warnings, errors) <- runTask
-          state
-          options { optEntrypoint = path }
-          Driver.Don'tPrune
-          changedFiles
-          fileUpdates
-          (Driver.detectCyleTask path)
+      return (False, warnings, errors)
 
-        return (False, warnings, errors)
+    Right (couldParse, warnings, errors) ->
+      return (couldParse, warnings, errors)
 
-      Right (couldParse, warnings, errors) ->
-        return (couldParse, warnings, errors)
+
+runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () (Bool, [CompilationWarning], [CompilationError])
+runTypeCheck invalidatePath state target path fileUpdates = do
+  options <- buildOptions target
+  liftIO $ runTypeCheckIO invalidatePath state path fileUpdates options
 
 
 sendDiagnosticsForWarningsAndErrors :: [CompilationWarning] -> [CompilationError] -> LspM () ()
@@ -884,8 +1345,8 @@ sendDiagnosticsForWarningsAndErrors warnings errors = do
 generateDiagnostics :: Bool -> State -> State -> Uri -> Map.Map FilePath String -> LspM () ()
 generateDiagnostics invalidatePath state autocompletionState uri fileUpdates = do
   let path = uriToPath uri
-  (couldParseJs, jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
-  (couldParseLlvm, llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
+  (_couldParseJs, jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
+  (_couldParseLlvm, llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
   let allWarnings = jsWarnings `List.union` llvmWarnings
   let allErrors   = jsErrors `List.union` llvmErrors
 
@@ -902,12 +1363,16 @@ uriOfError :: CompilationError -> Uri
 uriOfError err = case Error.getContext err of
   Context path _ ->
     Uri $ T.pack ("file://" <> path)
+  NoContext ->
+    Uri $ T.pack "file://"
 
 
 uriOfWarning :: CompilationWarning -> Uri
 uriOfWarning warning = case Warning.getContext warning of
   Context path _ ->
     Uri $ T.pack ("file://" <> path)
+  NoContext ->
+    Uri $ T.pack "file://"
 
 
 areErrorsFromSameModule :: CompilationError -> CompilationError -> Bool
@@ -959,13 +1424,13 @@ warningsForModule errs path =
 groupErrsByModule :: [CompilationError] -> Map.Map FilePath [CompilationError]
 groupErrsByModule errs =
   let errs' = filter ((/= NoContext) . Error.getContext) errs
-  in  Map.fromListWith (<>) $ (\errs -> (Error.getPath $ head errs, errs)) <$> List.groupBy areErrorsFromSameModule errs'
+  in  Map.fromListWith (<>) $ map (\e -> (Error.getPath e, [e])) errs'
 
 
 groupWarnsByModule :: [CompilationWarning] -> Map.Map FilePath [CompilationWarning]
 groupWarnsByModule warnings =
   let warnings' = filter ((/= NoContext) . Warning.getContext) warnings
-  in  Map.fromListWith (<>) $ (\warnings -> (Warning.getPath $ head warnings, warnings)) <$> List.groupBy areWarningsFromSameModule warnings'
+  in  Map.fromListWith (<>) $ map (\w -> (Warning.getPath w, [w])) warnings'
 
 
 
@@ -1034,6 +1499,10 @@ data State = State
   , _llvmDriverState :: Driver.State CompilationError
   , _openFiles :: IORef (Map.Map FilePath String)
   , _changedFiles :: Set.Set FilePath
+  , _debounceRef :: IORef (Maybe UTCTime)
+  , _stateLock :: MVar ()
+  , _allModulePaths :: IORef (Set.Set FilePath)
+  , _backgroundDone :: IORef Bool
   }
 
 
@@ -1066,17 +1535,120 @@ copyStateTo from to = do
   return ()
 
 
+-- | Recursively find all .mad files under a directory
+discoverProjectModules :: FilePath -> IO [FilePath]
+discoverProjectModules rootPath = do
+  let srcDir = rootPath </> "src"
+  exists <- Dir.doesDirectoryExist srcDir
+  if exists then findMadFiles srcDir else return []
+  where
+    findMadFiles dir = do
+      entries <- Dir.listDirectory dir
+      fmap concat $ forM entries $ \entry -> do
+        let path = dir </> entry
+        isDir <- Dir.doesDirectoryExist path
+        if isDir then findMadFiles path
+        else if takeExtension path == ".mad" then do
+          absPath <- Dir.canonicalizePath path
+          return [absPath]
+        else return []
+
+
+-- | Read madlib.json to find the project's main entrypoint
+getProjectEntrypoint :: FilePath -> IO (Maybe FilePath)
+getProjectEntrypoint rootPath = do
+  let madlibJsonPath = rootPath </> "madlib.json"
+  exists <- Dir.doesFileExist madlibJsonPath
+  if exists then do
+    content <- BSL.readFile madlibJsonPath
+    case Aeson.decode content of
+      Just (mdj :: MadlibDotJson.MadlibDotJson) -> do
+        let mainPath = rootPath </> MadlibDotJson.main mdj
+        mainExists <- Dir.doesFileExist mainPath
+        if mainExists then do
+          absPath <- Dir.canonicalizePath mainPath
+          return (Just absPath)
+        else return Nothing
+      Nothing -> return Nothing
+  else return Nothing
+
+
+-- | Compile all project modules in the background to warm the Rock cache
+backgroundCompileProject :: State -> State -> LanguageContextEnv () -> IO ()
+backgroundCompileProject state autocompletionState env = do
+  rootPath <- runLspT env $ Maybe.fromMaybe "./" <$> getRootPath
+
+  -- Discover all .mad files in src/
+  projectModules <- discoverProjectModules rootPath
+
+  -- Get main entrypoint - compile it first for maximum transitive coverage
+  maybeMain <- getProjectEntrypoint rootPath
+  let orderedModules = case maybeMain of
+        Just main -> main : filter (/= main) projectModules
+        Nothing   -> projectModules
+
+  -- Compile each module (both targets), yielding lock between batches
+  compiledPaths <- newIORef Set.empty
+
+  forM_ (chunksOf 5 orderedModules) $ \batch -> do
+    forM_ batch $ \modPath -> do
+      forM_ [TNode, TLLVM] $ \target -> do
+        options <- runLspT env $ buildOptions target
+        result <- try $ runTask state options { optEntrypoint = modPath }
+                    Driver.Don'tPrune mempty mempty (typeCheckFileTask modPath)
+                  :: IO (Either SomeException (Bool, [CompilationWarning], [CompilationError]))
+        case result of
+          Right _ -> atomicModifyIORef' compiledPaths (\s -> (Set.insert modPath s, ()))
+          Left _  -> return ()
+
+  -- Build the full set of known module paths (including transitive deps and prelude)
+  compiled <- readIORef compiledPaths
+  allPaths <- newIORef compiled
+  forM_ (Set.toList compiled) $ \modPath -> do
+    options <- runLspT env $ buildOptions TNode
+    result <- try $ runTask state options { optEntrypoint = modPath }
+                Driver.Don'tPrune mempty mempty (Rock.fetch $ Query.ModulePathsToBuild modPath)
+              :: IO (Either SomeException ([FilePath], [CompilationWarning], [CompilationError]))
+    case result of
+      Right (paths, _, _) -> atomicModifyIORef' allPaths (\s -> (Set.union s (Set.fromList paths), ()))
+      Left _ -> return ()
+
+  finalPaths <- readIORef allPaths
+  atomicWriteIORef (_allModulePaths state) finalPaths
+  atomicWriteIORef (_backgroundDone state) True
+
+  -- Copy to autocompletion state
+  copyStateTo (_jsDriverState state) (_jsDriverState autocompletionState)
+  copyStateTo (_llvmDriverState state) (_llvmDriverState autocompletionState)
+
+  runLspT env $ sendNotification SWindowLogMessage
+    (LogMessageParams MtInfo $ T.pack $ "Background compilation complete: " ++ show (Set.size finalPaths) ++ " modules")
+
+
+chunksOf :: Int -> [a] -> [[a]]
+chunksOf _ [] = []
+chunksOf n xs = let (h, t) = splitAt n xs in h : chunksOf n t
+
+
 runLanguageServer :: IO ()
 runLanguageServer = do
   jsDriverState <- Driver.initialState
   llvmDriverState <- Driver.initialState
   openFiles <- newIORef mempty
-  let state = State jsDriverState llvmDriverState openFiles mempty
+  debounceRef <- newIORef Nothing
+  stateLock <- newMVar ()
+  allModulePaths <- newIORef Set.empty
+  backgroundDone <- newIORef False
+  let state = State jsDriverState llvmDriverState openFiles mempty debounceRef stateLock allModulePaths backgroundDone
 
   autocompletionJsDriverState <- Driver.initialState
   autocompletionLlvmDriverState <- Driver.initialState
   autocompletionOpenFiles <- newIORef mempty
-  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty
+  autocompletionDebounceRef <- newIORef Nothing
+  autocompletionStateLock <- newMVar ()
+  autocompletionAllModulePaths <- newIORef Set.empty
+  autocompletionBackgroundDone <- newIORef False
+  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty autocompletionDebounceRef autocompletionStateLock autocompletionAllModulePaths autocompletionBackgroundDone
   runServer $ ServerDefinition
     { defaultConfig = ()
     , onConfigurationChange = const $ pure $ Right ()
@@ -1146,6 +1718,9 @@ findTopLevelExp loc exps = case exps of
     else
       findTopLevelExp loc next
 
+  _ : next ->
+    findTopLevelExp loc next
+
   [] ->
     Nothing
 
@@ -1162,7 +1737,10 @@ getLocalNames loc exp = case exp of
     body >>= getLocalNames loc
 
   Slv.Typed (_ :=> t) _ (Slv.Abs param body) ->
-    (Slv.getValue param, getParamTypes t !! 0) : (body >>= getLocalNames loc)
+    let paramType = case getParamTypes t of
+          (pt : _) -> pt
+          []       -> TVar (TV (-1) Star)
+    in  (Slv.getValue param, paramType) : (body >>= getLocalNames loc)
 
   Slv.Typed _ _ (Slv.Export e) ->
     getLocalNames loc e
@@ -1178,7 +1756,10 @@ completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query 
 completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
   (typedAst, env)  <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
 
-  let foundLine = take (col - 1) $ lines moduleContent !! (line - 1)
+  let contentLines = lines moduleContent
+  let foundLine = if line - 1 >= 0 && line - 1 < length contentLines
+                  then take (col - 1) (contentLines !! (line - 1))
+                  else ""
   let autocompletionKind = computeAutocompletionKind (reverse foundLine)
 
   let topLevelExp = findTopLevelExp loc (Slv.aexps typedAst)
@@ -1209,7 +1790,7 @@ completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
             $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
             $ Map.toList $ fields <> extraFields
 
-        f ->
+        _ ->
           case List.find (\(n, _) -> n == recordName) localNames of
             Just (_, Forall _ (_ :=> TRecord fields _ extraFields)) ->
               return
@@ -1218,7 +1799,7 @@ completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
                 $ fields <> extraFields
 
             _ ->
-              return $ (show f, "", CiConstant) : (map (\(n, qt) -> (n, prettyScheme qt, CiField)) $ localNames ++ namesInEnv ++ methodsInEnv)
+              return $ map (\(n, qt) -> (n, prettyScheme qt, CiField)) $ localNames ++ namesInEnv ++ methodsInEnv
 
 
 definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
@@ -1296,20 +1877,30 @@ definitionLocationTask loc path = do
             return Nothing
 
 
+safeRunTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (Maybe (a, [CompilationWarning], [CompilationError]))
+safeRunTask state options prune invalidatedPaths fileUpdates task = do
+  result <- try $ runTask state options prune invalidatedPaths fileUpdates task
+  case result of
+    Right r  -> return (Just r)
+    Left (_ :: SomeException) ->
+      return Nothing
+
+
 runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
 runTask state options prune invalidatedPaths fileUpdates task = do
-  let driverState =
-        if Options.optTarget options == TLLVM then
-          _llvmDriverState state
-        else
-          _jsDriverState state
-  Driver.runIncrementalTask
-    driverState
-    options
-    invalidatedPaths
-    fileUpdates
-    prune
-    task
+  withMVar (_stateLock state) $ \_ -> do
+    let driverState =
+          if Options.optTarget options == TLLVM then
+            _llvmDriverState state
+          else
+            _jsDriverState state
+    Driver.runIncrementalTask
+      driverState
+      options
+      invalidatedPaths
+      fileUpdates
+      prune
+      task
 
 
 pooledForConcurrently_ ::

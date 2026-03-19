@@ -96,6 +96,7 @@ runModule target input args watchMode exePath = do
           , optInsertInstancePlaholders = True
           , optMustHaveMain = True
           , optOptimizationLevel = O1
+          , optLspMode = False
           , optParseOnly = False
           }
 
