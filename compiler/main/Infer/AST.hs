@@ -259,19 +259,26 @@ mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Int
     -- Vars (Map String Scheme) tree.
     cheapHash (Instance (_ :=> IsIn classId _ _) _) = hash classId
 
+    -- Fast equality that only compares the Qual Pred part, NOT the Vars map.
+    -- Two instances with the same qualified predicate are the same instance.
+    sameInstance (Instance qp1 _) (Instance qp2 _) = qp1 == qp2
+
     -- Like Data.List.union but uses hash-bucketed lookup for O(n) average instead of O(n*m).
-    fastUnion xs ys =
+    fastUnion xs ys
+      | null ys   = xs
+      | null xs   = ys
+      | otherwise =
       let xsBuckets = foldl' (\m x -> IM.insertWith (++) (cheapHash x) [x] m) IM.empty xs
           memberOfXs y = case IM.lookup (cheapHash y) xsBuckets of
             Nothing -> False
-            Just bucket -> any (== y) bucket
+            Just bucket -> any (sameInstance y) bucket
           go _ [] = []
           go seen (y : rest)
             | memberOfSeen seen y || memberOfXs y = go seen rest
             | otherwise = y : go (addToSeen seen y) rest
           memberOfSeen seen y = case IM.lookup (cheapHash y) seen of
             Nothing -> False
-            Just bucket -> any (== y) bucket
+            Just bucket -> any (sameInstance y) bucket
           addToSeen seen y = IM.insertWith (++) (cheapHash y) [y] seen
       in  xs ++ go IM.empty ys
 

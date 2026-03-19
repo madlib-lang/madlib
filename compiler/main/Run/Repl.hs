@@ -4,7 +4,7 @@
 module Run.Repl where
 import Prelude hiding(read, print)
 import System.IO (hFlush, stdout, stderr)
-import Parse.Madlib.Grammar (parse)
+import Parse.Megaparsec.Madlib (parse)
 import Text.Show.Pretty
 import Data.IORef
 import qualified AST.Source as Src

@@ -91,12 +91,12 @@ checkExps env ast globals topLevelAssignments globalScope dependencies (e : es) 
         if isMethod env e then
           []
         else
-          List.filter
-            (\(name, exp) ->
-              let isTyped = maybe False isTypedExp (findAssignmentByName name (aexps ast))
-              in  name `notElem` globalScope' && not isTyped && not (isTypeOrNameExport exp)
-            )
-            collectedAccesses
+          let typedNames = S.fromList [ n | exp <- aexps ast, Just n <- [getExpName exp], isTypedExp exp ]
+          in  List.filter
+                (\(name, exp) ->
+                  name `S.notMember` globalScope' && not (S.member name typedNames) && not (isTypeOrNameExport exp)
+                )
+                collectedAccesses
 
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
@@ -242,7 +242,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       globalNamesAccessed <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
-      return $ foldr List.union [] globalNamesAccessed
+      return $ concat globalNamesAccessed
 
     (Typed _ area (Var "_" _)) ->
       throwError $ CompilationError IllegalSkipAccess (Context (envCurrentPath env) area)
@@ -419,14 +419,14 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       issAccesses <- mapM
         (collectFromIs env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         iss
-      let issAccesses' = foldr List.union [] issAccesses
+      let issAccesses' = concat issAccesses
       return $ expAccess <> issAccesses'
 
     (Typed _ _ (TupleConstructor exps)) -> do
       accesses <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
-      return $ foldr List.union [] accesses
+      return $ concat accesses
 
     (Typed _ _ (ListConstructor items)) -> do
       listItemAccesses <- mapM
@@ -439,14 +439,14 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                              localScope
         )
         items
-      return $ foldr List.union [] listItemAccesses
+      return $ concat listItemAccesses
 
     (Typed _ _ (Record fields)) -> do
       fieldAccesses <- mapM
         (collectFromField env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope
         )
         fields
-      return $ foldr List.union [] fieldAccesses
+      return $ concat fieldAccesses
 
     (Typed _ _ (NameExport name)) ->
       if name `S.member` globalScope then

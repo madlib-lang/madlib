@@ -18,7 +18,7 @@ import           Error.Error
 import           Format.Format
 
 import           Text.Show.Pretty
-import           Parse.Madlib.Grammar (parseForFormatter)
+import           Parse.Megaparsec.Madlib (parseForFormatter)
 import           Data.Either.Combinators (mapLeft)
 import           Run.Options
 import           Run.Target

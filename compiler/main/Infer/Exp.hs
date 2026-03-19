@@ -243,19 +243,17 @@ postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -
 postProcessBody discardError options env s expType es = do
   (es', s', _) <- foldM
     (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
-      let fs = S.toList (ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType)) `List.union` ftvForLetGen (apply accSubst t')
+      let fsSet = ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
+          fs = S.toList fsSet
       let ps'' = apply accSubst ps'
 
       (ps''', substFromDefaulting) <- do
         prep <- CM.forM ps'' $ \p -> do
           isResolved <- entail env [] p
-          if isResolved then
-            return $ Just p
-          else
-            return Nothing
+          return (p, isResolved)
 
-        let solvedPs = catMaybes prep
-        let unsolvedPs = ps'' \\ solvedPs
+        let solvedPs = [p | (p, True) <- prep]
+        let unsolvedPs = [p | (p, False) <- prep]
 
         -- if ambiguities fs unsolvedPs /= [] && not discardError then do
         if ambiguities fs unsolvedPs /= [] then do
@@ -821,7 +819,10 @@ inferExtern _ (Can.Canonical area (Can.Extern scheme name originalName)) = do
 type Ambiguity = (TVar, [Pred])
 
 ambiguities :: [TVar] -> [Pred] -> [Ambiguity]
-ambiguities vs ps = [ (v, filter (elem v . S.toList . ftv) ps) | v <- S.toList (ftv ps) \\ vs ]
+ambiguities vs ps =
+  let vsSet = S.fromList vs
+      ambigVars = ftv ps `S.difference` vsSet
+  in  [ (v, filter (S.member v . ftv) ps) | v <- S.toList ambigVars ]
 
 
 
@@ -866,7 +867,8 @@ updateRecordUpdatePreds' allPreds ps = case ps of
 split :: Bool -> Env -> [TVar] -> [TVar] -> [Pred] -> Infer ([Pred], [Pred], Substitution)
 split mustCheck env fs gs ps = do
   ps' <- reduce env (updateRecordUpdatePreds ps)
-  let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
+  let fsSet = S.fromList fs
+      (ds, rs) = partition ((`S.isSubsetOf` fsSet) . ftv) ps'
   let as = ambiguities (fs ++ gs) rs
 
   -- if not (null as) then do
@@ -874,7 +876,7 @@ split mustCheck env fs gs ps = do
     -- if we have ambiguities we try to resolve them with default instances
     (s, rs')      <- tryDefaults env rs
     (sDef', rs'') <- tryDefaults env (apply s rs')
-    let (ds', rs''') = partition (all (`elem` fs) . ftv) (apply sDef' ds ++ rs'')
+    let (ds', rs''') = partition ((`S.isSubsetOf` fsSet) . ftv) (apply sDef' ds ++ rs'')
 
     -- and then compute the potential leftover ambiguities
     let as' = ambiguities (fs ++ gs) rs'''
@@ -978,34 +980,33 @@ tryDefaults env ps = tryDefaults' env ps ps
 
 
 dedupePreds :: [Pred] -> [Pred]
-dedupePreds = reverse . dedupePreds' []
-
-dedupePreds' :: [Pred] -> [Pred] -> [Pred]
-dedupePreds' acc ps = case ps of
-  (p : next) -> case p of
-    IsIn cls ts _ ->
-      if any (\(IsIn cls' ts' _) -> cls == cls' && ts == ts') acc then
-        dedupePreds' acc next
-      else
-        dedupePreds' (p:acc) next
-
-  [] ->
-    acc
+dedupePreds = go S.empty []
+  where
+    -- Use a Set of (class, types) for O(n log n) dedup instead of O(n²) list scan
+    go _ acc [] = reverse acc
+    go seen acc (p@(IsIn cls ts _) : next) =
+      let key = (cls, ts)
+      in  if S.member key seen
+          then go seen acc next
+          else go (S.insert key seen) (p : acc) next
 
 
-ftvForLetGen :: Type -> [TVar]
-ftvForLetGen t = case t of
+ftvForLetGenSet :: Type -> S.Set TVar
+ftvForLetGenSet t = case t of
   TApp (TApp (TCon (TC "(->)" _) _ _) tl1) tr1 ->
-    S.toList (ftv tl1 `S.union` ftv tr1)
+    ftv tl1 `S.union` ftv tr1
 
   TApp t1 t2 ->
-    ftvForLetGen t1 `List.union` ftvForLetGen t2
+    ftvForLetGenSet t1 `S.union` ftvForLetGenSet t2
 
   TRecord fields _ _ ->
-    M.elems fields >>= ftvForLetGen
+    foldMap ftvForLetGenSet (M.elems fields)
 
   _ ->
-    []
+    S.empty
+
+ftvForLetGen :: Type -> [TVar]
+ftvForLetGen = S.toList . ftvForLetGenSet
 
 -- Shared generalization logic: compute free/generic vars, split predicates, handle mutations
 generalize :: Bool -> Bool -> Env -> Area -> Substitution -> Env -> Type -> [Pred] -> Type -> Infer ([Pred], [Pred], Substitution, [Pred])
@@ -1031,8 +1032,7 @@ generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
   let mutPS =
         List.filter
           (\(IsIn cls ts _) ->
-            let freeTVs = S.toList (ftv (apply sFinal ts) `S.intersection` ftv (apply sFinal t))
-            in  cls == mutationInterface && not (null freeTVs)
+            cls == mutationInterface && not (S.null (ftv (apply sFinal ts) `S.intersection` ftv (apply sFinal t)))
           )
           ps'
 
