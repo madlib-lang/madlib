@@ -69,7 +69,7 @@ import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
 import qualified Infer.Env as SlvEnv
-import Data.Char (isAlphaNum, isDigit, isUpper)
+import Data.Char (isAlphaNum, isDigit, isUpper, toLower)
 import qualified System.Directory as Dir
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Aeson as Aeson
@@ -146,7 +146,9 @@ handlers state autocompletionState = mconcat
   , requestHandler STextDocumentCodeAction $ \(RequestMessage _ _ _ (CodeActionParams _ _ (TextDocumentIdentifier uri) _ (CodeActionContext (List diags) _))) responder ->
       recordAndPrintDuration "codeAction" $ do
         let removeImportActions = Maybe.mapMaybe (diagnosticToCodeAction uri) diags
-        addImportActions <- getAddImportActions state (uriToPath uri) uri diags
+        file <- getVirtualFile (toNormalizedUri uri)
+        let fileContent = maybe "" (T.unpack . virtualFileText) file
+        addImportActions <- getAddImportActions state (uriToPath uri) uri diags fileContent
         responder $ Right $ List (map InR (removeImportActions ++ addImportActions))
   , requestHandler STextDocumentSignatureHelp $ \(RequestMessage _ _ _ (SignatureHelpParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder ->
       recordAndPrintDuration "signatureHelp" $ do
@@ -160,6 +162,14 @@ handlers state autocompletionState = mconcat
       recordAndPrintDuration "rename" $ do
         edits <- renameSymbol state (Loc 0 (line + 1) (col + 1)) (uriToPath uri) (T.unpack newName)
         responder $ Right $ WorkspaceEdit (Just edits) Nothing Nothing
+  , requestHandler SWorkspaceSymbol $ \(RequestMessage _ _ _ (WorkspaceSymbolParams _ _ query)) responder ->
+      recordAndPrintDuration "workspaceSymbol" $ do
+        symbols <- getWorkspaceSymbols state (T.unpack query)
+        responder $ Right (List symbols)
+  , requestHandler STextDocumentFoldingRange $ \(RequestMessage _ _ _ (FoldingRangeParams _ _ (TextDocumentIdentifier uri))) responder ->
+      recordAndPrintDuration "foldingRange" $ do
+        ranges <- getFoldingRanges state (uriToPath uri)
+        responder $ Right (List ranges)
   ]
 
 
@@ -913,6 +923,142 @@ mkDocSymbolWithChildren name detail symbolKind range selRange children =
   DocumentSymbol name detail symbolKind Nothing Nothing (areaToRange range) (areaToRange selRange) children
 
 
+-- Workspace Symbols --
+
+getWorkspaceSymbols :: State -> String -> LspM () [SymbolInformation]
+getWorkspaceSymbols state query = do
+  bgDone <- liftIO $ readIORef (_backgroundDone state)
+  if not bgDone || null query then return []
+  else do
+    allPaths <- liftIO $ Set.toList <$> readIORef (_allModulePaths state)
+    options <- buildOptions TNode
+    results <- forM allPaths $ \modPath -> do
+      result <- liftIO $ safeRunTask state options { optEntrypoint = modPath }
+                  Driver.Don'tPrune mempty mempty (workspaceSymbolsTask query modPath)
+      case result of
+        Just (syms, _, _) -> return syms
+        Nothing           -> return []
+    return $ concat results
+
+
+workspaceSymbolsTask :: String -> FilePath -> Rock.Task Query.Query [SymbolInformation]
+workspaceSymbolsTask query modPath = do
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+  let queryLower = map toLower query
+      matchesQuery name = queryLower `List.isInfixOf` map toLower name
+      fileUri = Uri (T.pack $ "file://" ++ modPath)
+  let expSyms = Maybe.mapMaybe (expToSymbolInfo fileUri matchesQuery) (Slv.aexps typedAst)
+  let typeSyms = Maybe.mapMaybe (typeDeclToSymbolInfo fileUri matchesQuery) (Slv.atypedecls typedAst)
+  return $ expSyms ++ typeSyms
+
+
+expToSymbolInfo :: Uri -> (String -> Bool) -> Slv.Exp -> Maybe SymbolInformation
+expToSymbolInfo fileUri matchesQuery exp = case exp of
+  Slv.Typed _ area (Slv.Assignment name _) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  Slv.Typed _ area (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  Slv.Typed _ area (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _))) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  Slv.Typed _ area (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  Slv.Typed _ area (Slv.Extern _ name _) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  Slv.Typed _ area (Slv.Export (Slv.Typed _ _ (Slv.Extern _ name _))) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
+  _ -> Nothing
+
+
+typeDeclToSymbolInfo :: Uri -> (String -> Bool) -> Slv.TypeDecl -> Maybe SymbolInformation
+typeDeclToSymbolInfo fileUri matchesQuery td = case td of
+  Slv.Untyped area (Slv.ADT { Slv.adtname = name }) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkEnum area fileUri
+  Slv.Typed _ area (Slv.ADT { Slv.adtname = name }) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkEnum area fileUri
+  Slv.Untyped area (Slv.Alias { Slv.aliasname = name }) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkClass area fileUri
+  Slv.Typed _ area (Slv.Alias { Slv.aliasname = name }) | matchesQuery name ->
+    Just $ mkSymInfo (T.pack name) SkClass area fileUri
+  _ -> Nothing
+
+
+mkSymInfo :: T.Text -> SymbolKind -> Area -> Uri -> SymbolInformation
+mkSymInfo name symbolKind area fileUri =
+  SymbolInformation name symbolKind Nothing Nothing (Location fileUri (areaToRange area)) Nothing
+
+
+-- Folding Ranges --
+
+getFoldingRanges :: State -> FilePath -> LspM () [FoldingRange]
+getFoldingRanges state path = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty mempty (foldingRangesTask path)
+  case result of
+    Just (ranges, _, _) -> return ranges
+    Nothing             -> return []
+
+
+foldingRangesTask :: FilePath -> Rock.Task Query.Query [FoldingRange]
+foldingRangesTask path = do
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  let expRanges = Maybe.mapMaybe expToFoldingRange (Slv.aexps typedAst)
+  let typeRanges = Maybe.mapMaybe typeDeclToFoldingRange (Slv.atypedecls typedAst)
+  let ifaceRanges = Maybe.mapMaybe ifaceToFoldingRange (Slv.ainterfaces typedAst)
+  let instanceRanges = Maybe.mapMaybe instanceToFoldingRange (Slv.ainstances typedAst)
+  -- Import block folding
+  let importRange = importsToFoldingRange (Slv.aimports typedAst)
+  return $ Maybe.maybeToList importRange ++ expRanges ++ typeRanges ++ ifaceRanges ++ instanceRanges
+
+
+areaToFoldingRange :: FoldingRangeKind -> Area -> Maybe FoldingRange
+areaToFoldingRange kind (Area (Loc _ startLine startCol) (Loc _ endLine endCol)) =
+  if endLine > startLine
+  then Just $ FoldingRange (startLine - 1) (Just (startCol - 1)) (endLine - 1) (Just (endCol - 1)) (Just kind)
+  else Nothing
+
+
+expToFoldingRange :: Slv.Exp -> Maybe FoldingRange
+expToFoldingRange exp = case exp of
+  Slv.Typed _ area (Slv.Assignment _ _)  -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area (Slv.TypedExp _ _ _)  -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area (Slv.Export _)        -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area (Slv.Extern _ _ _)    -> areaToFoldingRange FoldingRangeRegion area
+  _ -> Nothing
+
+
+typeDeclToFoldingRange :: Slv.TypeDecl -> Maybe FoldingRange
+typeDeclToFoldingRange td = case td of
+  Slv.Untyped area _ -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area _ -> areaToFoldingRange FoldingRangeRegion area
+
+
+ifaceToFoldingRange :: Slv.Interface -> Maybe FoldingRange
+ifaceToFoldingRange iface = case iface of
+  Slv.Untyped area _ -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area _ -> areaToFoldingRange FoldingRangeRegion area
+
+
+instanceToFoldingRange :: Slv.Instance -> Maybe FoldingRange
+instanceToFoldingRange inst = case inst of
+  Slv.Untyped area _ -> areaToFoldingRange FoldingRangeRegion area
+  Slv.Typed _ area _ -> areaToFoldingRange FoldingRangeRegion area
+
+
+importsToFoldingRange :: [Slv.Import] -> Maybe FoldingRange
+importsToFoldingRange [] = Nothing
+importsToFoldingRange imports =
+  let areas = map Slv.getArea imports
+      lines' = [l | Area (Loc _ l _) _ <- areas, l > 0] ++ [l | Area _ (Loc _ l _) <- areas, l > 0]
+  in  case lines' of
+        [] -> Nothing
+        _  ->
+          let startLine = max 0 (minimum lines' - 1)
+              endLine = max 0 (maximum [l | Area _ (Loc _ l _) <- areas, l > 0] - 1)
+          in  if endLine > startLine
+              then Just $ FoldingRange startLine Nothing endLine Nothing (Just FoldingRangeImports)
+              else Nothing
+
+
 -- Code Actions --
 
 diagnosticToCodeAction :: Uri -> Diagnostic -> Maybe CodeAction
@@ -926,7 +1072,39 @@ diagnosticToCodeAction uri diag@(Diagnostic range _ _ _ msg tags _) =
             wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
         in  Just $ CodeAction "Remove unused import" (Just CodeActionQuickFix)
               (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
-    _ -> Nothing
+    _ ->
+      -- Code actions not based on tags
+      if "Incomplete pattern" `T.isPrefixOf` msg
+      then
+        case extractMissingPatterns msg of
+          [] -> Nothing
+          patterns ->
+            let Range _ (Position endLine _) = range
+                insertPos = Position endLine 0
+                insertRange = Range insertPos insertPos
+                branches = T.concat ["\n  " <> T.pack p <> " =>\n    ???\n" | p <- patterns]
+                edit = TextEdit insertRange branches
+                wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
+            in  Just $ CodeAction "Add missing pattern branches" (Just CodeActionQuickFix)
+                  (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
+      else if "Redundant pattern" `T.isPrefixOf` msg
+      then
+        let Range (Position startLine _) (Position endLine _) = range
+            editRange = Range (Position startLine 0) (Position (endLine + 1) 0)
+            edit = TextEdit editRange ""
+            wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
+        in  Just $ CodeAction "Remove redundant pattern" (Just CodeActionQuickFix)
+              (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
+      else Nothing
+
+
+-- | Extract missing pattern names from an "Incomplete pattern" diagnostic message.
+-- Message format: "Incomplete pattern\n\nExamples of missing patterns:\n  - Constructor1\n  - Constructor2\n\nNote: ..."
+extractMissingPatterns :: T.Text -> [String]
+extractMissingPatterns msg =
+  let ls = T.lines msg
+      patternLines = filter (\l -> "  - " `T.isPrefixOf` l) ls
+  in  map (T.unpack . T.drop 4) patternLines
 
 
 -- | Extract the unbound variable name from a diagnostic message.
@@ -939,11 +1117,45 @@ extractUnboundName msg
   | otherwise = Nothing
 
 
--- | Get "Add missing import" code actions for unbound variable diagnostics.
-getAddImportActions :: State -> FilePath -> Uri -> [Diagnostic] -> LspM () [CodeAction]
-getAddImportActions state path _uri diags = do
+-- | Extract the unknown type name from a diagnostic message.
+-- Message format: "Unknown type\n\nThe type 'TypeName' was not found\n\n..."
+extractUnknownType :: T.Text -> Maybe String
+extractUnknownType msg
+  | "Unknown type" `T.isPrefixOf` msg =
+    let parts = T.splitOn "'" msg
+    in  if length parts >= 2 then Just (T.unpack (parts !! 1)) else Nothing
+  | otherwise = Nothing
+
+
+-- | Extract the member name from a namespace access at a diagnostic position.
+-- Given source text and a diagnostic for unbound variable "A", looks at the text
+-- right after "A" to find ".memberName" (e.g., "A.parse" -> Just "parse").
+extractMemberFromSource :: String -> Diagnostic -> String -> Maybe String
+extractMemberFromSource fileContent (Diagnostic (Range (Position line col) _) _ _ _ _ _ _) name =
+  let fileLines = lines fileContent
+  in  if line < 0 || fromIntegral line >= length fileLines then Nothing
+      else
+        let ln = fileLines !! fromIntegral line
+            afterName = drop (fromIntegral col + length name) ln
+        in  case afterName of
+              ('.':rest) ->
+                let member = takeWhile (\c -> isAlphaNum c || c == '_') rest
+                in  if null member then Nothing else Just member
+              _ -> Nothing
+
+
+-- | Get "Add missing import" code actions for unbound variable and unknown type diagnostics.
+getAddImportActions :: State -> FilePath -> Uri -> [Diagnostic] -> String -> LspM () [CodeAction]
+getAddImportActions state path _uri diags fileContent = do
   let unboundDiags = [(d, name) | d@(Diagnostic _ _ _ _ msg _ _) <- diags, Just name <- [extractUnboundName msg]]
-  if null unboundDiags then return []
+  let unknownTypeDiags = [(d, name) | d@(Diagnostic _ _ _ _ msg _ _) <- diags, Just name <- [extractUnknownType msg]]
+  -- For capitalized unbound vars, try to extract the member name from source (e.g., A.parse -> "parse")
+  let unboundWithMembers = map (\(d, name) ->
+        if not (null name) && isUpper (head name)
+        then (d, name, extractMemberFromSource fileContent d name)
+        else (d, name, Nothing)
+        ) unboundDiags
+  if null unboundDiags && null unknownTypeDiags then return []
   else do
     options <- buildOptions TNode
     bgDone <- liftIO $ readIORef (_backgroundDone state)
@@ -951,23 +1163,39 @@ getAddImportActions state path _uri diags = do
       then liftIO $ Set.toList <$> readIORef (_allModulePaths state)
       else return []
     results <- liftIO $ safeRunTask state options { optEntrypoint = path }
-                 Driver.Don'tPrune mempty mempty (addImportActionsTask path unboundDiags extraPaths)
+                 Driver.Don'tPrune mempty mempty (addImportActionsTask path unboundWithMembers unknownTypeDiags extraPaths)
     case results of
       Just (actions, _, _) -> return actions
       Nothing              -> return []
 
 
--- | Rock task that searches all compiled modules for exports matching unbound names.
-addImportActionsTask :: FilePath -> [(Diagnostic, String)] -> [FilePath] -> Rock.Task Query.Query [CodeAction]
-addImportActionsTask path unboundDiags extraPaths = do
+-- | Rock task that searches all compiled modules for exports matching unbound names and unknown types.
+-- unboundDiags contains (diagnostic, name, maybeMemberName) where maybeMemberName is extracted from source
+-- e.g., for "A.parse(...)", name="A" and maybeMemberName=Just "parse"
+addImportActionsTask :: FilePath -> [(Diagnostic, String, Maybe String)] -> [(Diagnostic, String)] -> [FilePath] -> Rock.Task Query.Query [CodeAction]
+addImportActionsTask path unboundDiags unknownTypeDiags extraPaths = do
   localModulePaths <- Rock.fetch $ Query.ModulePathsToBuild path
   let modulePaths = List.nub $ localModulePaths ++ extraPaths
 
   -- Build a global mapping: absolute path -> relative import path
   -- by collecting all imports from all modules
-  absToRelPath <- fmap (Map.fromList . concat) $ forM modulePaths $ \modPath -> do
+  -- Also build a mapping: default import alias -> [(absPath, relPath)]
+  -- so we can suggest imports for aliases like "import L from 'List'" when L.find is used
+  allImportInfo <- fmap concat $ forM modulePaths $ \modPath -> do
     (modAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
-    return [(Slv.getImportAbsolutePath imp, Slv.getImportPath imp) | imp <- Slv.aimports modAst]
+    return [(imp, Slv.getImportAbsolutePath imp, Slv.getImportPath imp) | imp <- Slv.aimports modAst]
+
+  let absToRelPath = Map.fromList [(absP, relP) | (_, absP, relP) <- allImportInfo]
+
+  -- Build alias -> [(absPath, relPath)] from DefaultImport entries
+  let defaultImportAliases = Map.fromListWith (++) $ Maybe.mapMaybe
+        (\(imp, absP, relP) -> case imp of
+          Slv.Untyped _ (Slv.DefaultImport (Slv.Untyped _ alias) _ _) -> Just (alias, [(absP, relP)])
+          Slv.Typed _ _ (Slv.DefaultImport (Slv.Untyped _ alias) _ _) -> Just (alias, [(absP, relP)])
+          Slv.Untyped _ (Slv.DefaultImport (Slv.Typed _ _ alias) _ _) -> Just (alias, [(absP, relP)])
+          Slv.Typed _ _ (Slv.DefaultImport (Slv.Typed _ _ alias) _ _) -> Just (alias, [(absP, relP)])
+          _ -> Nothing
+        ) allImportInfo
 
   -- For each module, get its exports and constructor names
   moduleExports <- fmap concat $ forM modulePaths $ \modPath ->
@@ -979,26 +1207,139 @@ addImportActionsTask path unboundDiags extraPaths = do
       let constructorNames = concatMap getConstructorNames exportedADTs
       return [(name, modPath) | name <- exports ++ constructorNames]
 
-  -- For each unbound name, find modules that export it and generate code actions
-  return $ concatMap (\(diag, name) ->
-    let matching = [modPath | (n, modPath) <- moduleExports, n == name]
-    in  concatMap (\modPath ->
-          case Map.lookup modPath absToRelPath of
-            Just relPath ->
-              let insertRange = Range (Position 0 0) (Position 0 0)
-                  importText = "import { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\"\n"
-                  edit = TextEdit insertRange importText
-                  wsEdit = WorkspaceEdit (Just $ HashMap.singleton (pathToUri path) (List [edit])) Nothing Nothing
-                  title = "Add import from \"" <> T.pack relPath <> "\""
-              in  [CodeAction title (Just CodeActionQuickFix) (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing]
-            Nothing -> []
-        ) matching
-    ) unboundDiags
+  -- For each module, get its exported type names
+  moduleTypeExports <- fmap concat $ forM modulePaths $ \modPath ->
+    if modPath == path then return []
+    else do
+      (modAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+      let exportedADTs = Slv.extractExportedADTs modAst
+      let getADTName (Slv.Untyped _ adt) = Slv.adtname adt
+          getADTName (Slv.Typed _ _ adt) = Slv.adtname adt
+      let typeNames = map (\td -> (getADTName td, modPath)) exportedADTs
+      let exportedAliases = Slv.extractExportedAliases modAst
+      let getAliasName (Slv.Untyped _ alias) = Slv.aliasname alias
+          getAliasName (Slv.Typed _ _ alias) = Slv.aliasname alias
+      let aliasNames = map (\td -> (getAliasName td, modPath)) exportedAliases
+      return $ typeNames ++ aliasNames
+
+  let insertRange = Range (Position 0 0) (Position 0 0)
+
+  -- Helper to make a named import code action
+  let makeNamedImportAction diag name modPath =
+        case Map.lookup modPath absToRelPath of
+          Just relPath ->
+            let importText = "import { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\"\n"
+                edit = TextEdit insertRange importText
+                wsEdit = WorkspaceEdit (Just $ HashMap.singleton (pathToUri path) (List [edit])) Nothing Nothing
+                title = "Add import { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\""
+            in  [CodeAction title (Just CodeActionQuickFix) (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing]
+          Nothing -> []
+
+  -- Helper to make a type import code action (import type { ... } from "...")
+  let makeTypeImportAction diag name modPath =
+        case Map.lookup modPath absToRelPath of
+          Just relPath ->
+            let importText = "import type { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\"\n"
+                edit = TextEdit insertRange importText
+                wsEdit = WorkspaceEdit (Just $ HashMap.singleton (pathToUri path) (List [edit])) Nothing Nothing
+                title = "Add import type { " <> T.pack name <> " } from \"" <> T.pack relPath <> "\""
+            in  [CodeAction title (Just CodeActionQuickFix) (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing]
+          Nothing -> []
+
+  -- Helper to find default import suggestions for a namespace alias.
+  -- Looks up the alias in defaultImportAliases (from existing imports across the project),
+  -- and also checks if any module basename matches the alias.
+  -- This handles both "import List from 'List'" and "import L from 'List'" patterns.
+  let findDefaultImportsForAlias alias =
+        let fromExistingAliases = case Map.lookup alias defaultImportAliases of
+              Just entries -> List.nub [(absP, relP) | (absP, relP) <- entries, absP /= path]
+              Nothing      -> []
+            fromBasename = [(modPath, relP) | modPath <- modulePaths
+                          , modPath /= path
+                          , dropExtension (takeFileName modPath) == alias
+                          , let relP = Map.findWithDefault (dropExtension (takeFileName modPath)) modPath absToRelPath]
+        in  List.nubBy (\(a, _) (b, _) -> a == b) (fromExistingAliases ++ fromBasename)
+
+  -- Helper to make a default import code action
+  let makeDefaultImportAction diag alias relPath =
+        let importText = "import " <> T.pack alias <> " from \"" <> T.pack relPath <> "\"\n"
+            edit = TextEdit insertRange importText
+            wsEdit = WorkspaceEdit (Just $ HashMap.singleton (pathToUri path) (List [edit])) Nothing Nothing
+            title = "Add import " <> T.pack alias <> " from \"" <> T.pack relPath <> "\""
+        in  CodeAction title (Just CodeActionQuickFix) (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
+
+  -- Generate code actions for unbound variables
+  let unboundActions = concatMap (\(diag, name, maybeMember) ->
+        if not (null name) && isUpper (head name)
+        then
+          -- Capitalized name: likely a namespace (e.g., "A" from "A.parse(...)").
+          -- First try alias mappings and basename matching
+          let aliasMatches = findDefaultImportsForAlias name
+              aliasActions = map (\(_, relPath) -> makeDefaultImportAction diag name relPath) aliasMatches
+              -- Also check if it's an exported constructor or value
+              exportMatches = [modPath | (n, modPath) <- moduleExports, n == name]
+              exportActions = concatMap (makeNamedImportAction diag name) exportMatches
+          in  if not (null aliasActions) || not (null exportActions)
+              then aliasActions ++ exportActions
+              else
+                -- No alias/basename match found. If we have a member name (e.g., "parse" from "A.parse"),
+                -- search all modules for that export and suggest default import under this alias.
+                case maybeMember of
+                  Just member ->
+                    let memberMatches = List.nub [modPath | (n, modPath) <- moduleExports, n == member]
+                    in  concatMap (\modPath ->
+                          case Map.lookup modPath absToRelPath of
+                            Just relPath -> [makeDefaultImportAction diag name relPath]
+                            Nothing ->
+                              let relPath = dropExtension (takeFileName modPath)
+                              in  [makeDefaultImportAction diag name relPath]
+                        ) memberMatches
+                  Nothing -> []
+        else
+          -- Lowercase name: regular named import
+          let matching = [modPath | (n, modPath) <- moduleExports, n == name]
+          in  concatMap (makeNamedImportAction diag name) matching
+        ) unboundDiags
+
+  -- Generate code actions for unknown types
+  let typeActions = concatMap (\(diag, typeName) ->
+        if '.' `elem` typeName
+        then
+          -- Qualified type (e.g., "A.SomeType"): suggest default import for namespace
+          let namespace = takeWhile (/= '.') typeName
+              memberType = drop 1 $ dropWhile (/= '.') typeName
+              -- First try alias mappings and basename matching
+              aliasMatches = findDefaultImportsForAlias namespace
+              aliasActions = map (\(_, relPath) -> makeDefaultImportAction diag namespace relPath) aliasMatches
+          in  if not (null aliasActions) then aliasActions
+              else
+                -- No alias match: search all modules for the member type name
+                let typeMatches = List.nub [modPath | (n, modPath) <- moduleTypeExports, n == memberType]
+                in  concatMap (\modPath ->
+                      case Map.lookup modPath absToRelPath of
+                        Just relPath -> [makeDefaultImportAction diag namespace relPath]
+                        Nothing ->
+                          let relPath = dropExtension (takeFileName modPath)
+                          in  [makeDefaultImportAction diag namespace relPath]
+                    ) typeMatches
+        else
+          -- Simple type name: search exported types and suggest type import
+          let matching = [modPath | (n, modPath) <- moduleTypeExports, n == typeName]
+          in  concatMap (makeTypeImportAction diag typeName) matching
+        ) unknownTypeDiags
+
+  return $ unboundActions ++ typeActions
   where
     getConstructorNames :: Slv.TypeDecl -> [String]
+    getConstructorNames (Slv.Untyped _ (Slv.ADT { Slv.adtconstructors = ctors, Slv.adtexported = True })) =
+      map getCtorName ctors
     getConstructorNames (Slv.Typed _ _ (Slv.ADT { Slv.adtconstructors = ctors, Slv.adtexported = True })) =
-      map (\(Slv.Typed _ _ (Slv.Constructor name _ _)) -> name) ctors
+      map getCtorName ctors
     getConstructorNames _ = []
+
+    getCtorName :: Slv.Constructor -> String
+    getCtorName (Slv.Typed _ _ (Slv.Constructor name _ _)) = name
+    getCtorName (Slv.Untyped _ (Slv.Constructor name _ _)) = name
 
 
 -- Signature Help --
@@ -1179,11 +1520,17 @@ collectAllOccurrencesBy matches ast =
   concatMap (collectInExp matches) (Slv.aexps ast ++ Slv.getAllMethods ast)
 
 
+-- | Compute an area covering only the name portion at the start of a larger area.
+nameOnlyArea :: Area -> String -> Area
+nameOnlyArea (Area (Loc a l c) _) name =
+    Area (Loc a l c) (Loc (a + length name) l (c + length name))
+
+
 collectInExp :: (String -> Bool) -> Slv.Exp -> [Area]
 collectInExp matches exp = case exp of
   Slv.Typed _ area (Slv.Var n _) | matches n -> [area]
   Slv.Typed _ area (Slv.Assignment n body) ->
-    (if matches n then [area] else []) ++ collectInExp matches body
+    (if matches n then [nameOnlyArea area n] else []) ++ collectInExp matches body
   Slv.Typed _ _ (Slv.App fn arg _) ->
     collectInExp matches fn ++ collectInExp matches arg
   Slv.Typed _ _ (Slv.Abs param body) ->
