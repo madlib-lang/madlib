@@ -23,7 +23,7 @@ import           Error.Context
 import           Data.Maybe
 import           Data.List (isSuffixOf, foldl', (\\))
 import qualified Data.IntMap.Strict                         as IM
-import           Data.Hashable (hash)
+import           Data.Hashable (hash, hashWithSalt)
 import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                                   as M
@@ -44,7 +44,6 @@ import Run.Options
 import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
 import Utils.List (removeDuplicates)
 import Canonicalize.Derive (deriveEqInstance, deriveShowInstance)
-import Data.Hashable (hash)
 
 
 {-|
@@ -254,10 +253,12 @@ mergeInterfaces = M.foldrWithKey mergeInterface
 mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
 mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ fastUnion is is')
   where
-    -- Cheap hash for Instance that only looks at the head predicate's class name,
-    -- avoiding the extremely expensive Generic-derived hash that traverses the entire
-    -- Vars (Map String Scheme) tree.
-    cheapHash (Instance (_ :=> IsIn classId _ _) _) = hash classId
+    -- Cheap hash that includes class name + head of first type arg for better bucketing.
+    -- Avoids the expensive Generic-derived hash that traverses entire Vars/Scheme trees.
+    cheapHash (Instance (_ :=> IsIn classId ts _) _) = case ts of
+      (TCon tc _ _ : _) -> hashWithSalt (hash classId) tc
+      (TApp (TCon tc _ _) _ : _) -> hashWithSalt (hash classId) tc
+      _ -> hash classId
 
     -- Fast equality that only compares the Qual Pred part, NOT the Vars map.
     -- Two instances with the same qualified predicate are the same instance.

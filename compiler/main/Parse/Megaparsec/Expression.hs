@@ -33,56 +33,92 @@ import           Parse.Megaparsec.Typing
 -- | Parse a body expression (assignment, mutation, typed expression, or plain expression)
 -- bodyExp = name '=' exp | name '::' constrainedTyping '\n' name '=' exp | exp ':=' exp | exp
 pBodyExp :: Parser Src.Exp
-pBodyExp = choice
-  [ -- name :: constrainedTyping \n ... (named typed expression OR extern declaration)
-    try $ do
+pBodyExp = do
+  -- Peek to see if this starts with an identifier (potential assignment or typed expression)
+  w <- lookAhead $ takeWhileP Nothing isIdentB
+  if BS.null w
+    then pBodyExpNoName  -- starts with non-identifier: expression or mutation
+    else do
+      -- Check what follows the identifier: `::` or `=` or something else
+      follows <- lookAhead $ do
+        _ <- takeWhileP Nothing isIdentB  -- skip identifier
+        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9) -- skip horizontal whitespace
+        optional (takeWhileP (Just "operator") (\b -> b == 58 || b == 61)) -- ':' or '='
+      case follows of
+        Just "::" -> pNamedTypedBodyExp
+        Just "=" -> pAssignmentBodyExp
+        _ -> pBodyExpNoName
+  where
+    -- name :: constrainedTyping \n ... (named typed expression OR extern declaration)
+    pNamedTypedBodyExp = do
       (startArea, name1) <- withArea pNameStr
       target <- pSourceTarget
       pDoubleColon
       typing <- pConstrainedTyping
       rets
-      -- Check for extern: [export] name = extern "path"
-      -- or typed assignment: name = exp
-      choice
-        [ -- extern: [export] name = extern "path"
-          try $ do
-            exported <- optional $ try pExport
-            name2 <- pNameStr
-            pEq
-            pExtern
-            (endArea, path) <- withArea pStringLiteral
-            let externExpr = Src.Source (mergeAreas startArea endArea) target (Src.Extern typing name2 path)
-            case exported of
-              Nothing -> return externExpr
-              Just _  -> return $ Src.Source (mergeAreas startArea endArea) target (Src.Export externExpr)
-        , -- named typed assignment: name = exp
-          do
-            name2 <- pNameStr
-            pEq
-            rets
-            body <- pExp
-            let assignArea = mergeAreas startArea (Src.getArea body)
-            return $ Src.Source assignArea target (Src.NamedTypedExp name1 (Src.Source assignArea target (Src.Assignment name2 body)) typing)
-        ]
-  , -- name = exp (assignment)
-    try $ do
+      -- Check for extern, export, or plain typed assignment
+      exported <- option False (True <$ try (lookAhead pExport))
+      if exported
+        then choice
+          [ -- extern: export name = extern "path"
+            try $ do
+              pExport
+              name2 <- pNameStr
+              pEq
+              pExtern
+              (endArea, path) <- withArea pStringLiteral
+              let externExpr = Src.Source (mergeAreas startArea endArea) target (Src.Extern typing name2 path)
+              return $ Src.Source (mergeAreas startArea endArea) target (Src.Export externExpr)
+          , -- named typed export assignment: export name = exp
+            do
+              pExport
+              name2 <- pNameStr
+              pEq
+              maybeRet
+              body <- pExp
+              let assignArea = mergeAreas startArea (Src.getArea body)
+              return $ Src.Source assignArea target
+                (Src.NamedTypedExp name1
+                  (Src.Source assignArea target
+                    (Src.Export (Src.Source assignArea target (Src.Assignment name2 body))))
+                  typing)
+          ]
+        else choice
+          [ -- extern: name = extern "path"
+            try $ do
+              name2 <- pNameStr
+              pEq
+              pExtern
+              (endArea, path) <- withArea pStringLiteral
+              return $ Src.Source (mergeAreas startArea endArea) target (Src.Extern typing name2 path)
+          , -- named typed assignment: name = exp
+            do
+              name2 <- pNameStr
+              pEq
+              rets
+              body <- pExp
+              let assignArea = mergeAreas startArea (Src.getArea body)
+              return $ Src.Source assignArea target (Src.NamedTypedExp name1 (Src.Source assignArea target (Src.Assignment name2 body)) typing)
+          ]
+    -- name = exp (assignment)
+    pAssignmentBodyExp = do
       (startArea, name) <- withArea pNameStr
       target <- pSourceTarget
       pEq
       maybeRet
       body <- pExp
       return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Assignment name body)
-  , -- exp := exp (mutation)
-    try $ do
-      lhs <- pExp
-      target <- pSourceTarget
-      pMutateEq
-      maybeRet
-      rhs <- pExp
-      return $ Src.Source (mergeAreas (Src.getArea lhs) (Src.getArea rhs)) target (Src.Mutate lhs rhs)
-  , -- plain expression
-    pExp
-  ]
+    -- exp := exp or plain expression
+    pBodyExpNoName = choice
+      [ try $ do
+          lhs <- pExp
+          target <- pSourceTarget
+          pMutateEq
+          maybeRet
+          rhs <- pExp
+          return $ Src.Source (mergeAreas (Src.getArea lhs) (Src.getArea rhs)) target (Src.Mutate lhs rhs)
+      , pExp
+      ]
 
 
 -- | Parse a multi-expression body (used in multiline lambdas and do blocks)

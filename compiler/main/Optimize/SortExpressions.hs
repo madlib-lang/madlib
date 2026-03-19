@@ -8,6 +8,7 @@ import Data.Graph
 import Debug.Trace
 import Text.Show.Pretty (ppShow)
 import qualified Data.List as List
+import qualified Data.Set as S
 
 
 -- In case of CyclicSSC we try to keep the order from the areas
@@ -37,7 +38,7 @@ keepLastMainExpAndDeps ast =
     let Typed qt area metadata (Assignment n (Typed qt' area' metadata' (Definition params body))) =
           last $ aexps ast
     in  if length body > 1 then
-          let allLocalNames = Maybe.mapMaybe getExpName body
+          let allLocalNames = S.fromList $ Maybe.mapMaybe getExpName body
               deps = buildDependenciesForMain 0 allLocalNames [] (init body)
               (graph, findNode, findVertex) = graphFromEdges deps
               (_, key, _) = last deps
@@ -57,11 +58,11 @@ keepLastMainExpAndDeps ast =
 
 buildDependenciesForAllExps :: [Exp] -> [([Exp], String, [String])]
 buildDependenciesForAllExps exps =
-  let allLocalNames = Maybe.mapMaybe getExpName exps
+  let allLocalNames = S.fromList $ Maybe.mapMaybe getExpName exps
   in  buildDependencies allLocalNames [] exps
 
 
-buildDependenciesForMain :: Int -> [String] -> [Exp] -> [Exp] -> [([Exp], String, [String])]
+buildDependenciesForMain :: Int -> S.Set String -> [Exp] -> [Exp] -> [([Exp], String, [String])]
 buildDependenciesForMain expIndex localNames cachedExps exps = case exps of
   e : es ->
     case getExpName e of
@@ -85,7 +86,7 @@ buildDependenciesForMain expIndex localNames cachedExps exps = case exps of
     []
 
 
-buildDependencies :: [String] -> [Exp] -> [Exp] -> [([Exp], String, [String])]
+buildDependencies :: S.Set String -> [Exp] -> [Exp] -> [([Exp], String, [String])]
 buildDependencies localNames cachedExps exps = case exps of
   e : es ->
     case getExpName e of
@@ -100,7 +101,7 @@ buildDependencies localNames cachedExps exps = case exps of
     []
 
 
-buildDependencies' :: [String] -> String -> Exp -> [String]
+buildDependencies' :: S.Set String -> String -> Exp -> [String]
 buildDependencies' localNames expName exp = case exp of
   Typed _ _ _ (Definition _ body) ->
     body >>= buildDependencies' localNames expName
@@ -115,7 +116,7 @@ buildDependencies' localNames expName exp = case exp of
     buildDependencies' localNames expName e
 
   Typed _ _ _ (Var n _) ->
-    if n `elem` localNames then
+    if n `S.member` localNames then
       [n]
     else
       []

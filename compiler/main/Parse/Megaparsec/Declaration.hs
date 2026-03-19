@@ -11,6 +11,8 @@ import           Control.Monad                  ( void )
 import           Text.Megaparsec                hiding ( State )
 import qualified Text.Megaparsec.Byte          as C
 
+import qualified Data.ByteString               as BS
+
 import qualified AST.Source                      as Src
 import           Explain.Location
 
@@ -60,23 +62,52 @@ data TopLevel
   | TopDerived Src.Derived
 
 
--- | Parse a single top-level item
+-- | Peek at the next identifier-like word without consuming input.
+-- Returns the word as a ByteString, or empty if not starting with alpha/underscore.
+{-# INLINE peekWord #-}
+peekWord :: Parser BS.ByteString
+peekWord = lookAhead $ takeWhileP Nothing isIdentB
+
+-- | Peek at a few bytes to check for macro keywords (#iftarget, #elseif, #endif)
+{-# INLINE peekMacroWord #-}
+peekMacroWord :: Parser BS.ByteString
+peekMacroWord = lookAhead $ BS.cons <$> C.char 35 {- '#' -} <*> takeWhileP Nothing isIdentB
+
+-- | Parse a single top-level item, using keyword-dispatch to avoid cascading try/backtrack.
 pTopLevel :: Parser TopLevel
-pTopLevel = choice
-  [ try $ TopImports <$> pImportDecls
-  , try $ TopInterface <$> pInterfaceDecl
-  , try $ TopInstance <$> pInstanceDecl
-  , try $ TopTypeDecl <$> pTypeDecl
-  , try $ TopDerived <$> pDeriveDecl
-  , try $ TopExp <$> pMacroIfTarget
-  , try $ TopExp <$> pMacroElseIf
-  , try $ TopExp <$> pMacroEndIf
-  , try $ TopExp <$> pExportTypeName
-  , try $ TopExp <$> pNamedTypedExportAssignment
-  , try $ TopExp <$> pExportAssignment
-  , try $ TopExp <$> pExportName
-  , TopExp <$> pBodyExp
-  ]
+pTopLevel = do
+  w <- peekWord
+  case w of
+    "import"    -> TopImports <$> pImportDecls
+    "interface" -> TopInterface <$> pInterfaceDecl
+    "instance"  -> TopInstance <$> pInstanceDecl
+    "derive"    -> TopDerived <$> pDeriveDecl
+    "type"      -> TopTypeDecl <$> pTypeDecl
+    "alias"     -> TopTypeDecl <$> pTypeDecl
+    "export"    -> pExportTopLevel
+    "" -> do
+      -- Empty word means non-identifier start character; check for macros
+      mw <- optional peekMacroWord
+      case mw of
+        Just "#iftarget" -> TopExp <$> pMacroIfTarget
+        Just "#elseif"   -> TopExp <$> pMacroElseIf
+        Just "#endif"    -> TopExp <$> pMacroEndIf
+        _                -> TopExp <$> pBodyExp
+    _ -> TopExp <$> pBodyExp
+
+-- | Dispatch for items starting with 'export' keyword.
+-- Peek at the word after 'export' to avoid cascading try.
+pExportTopLevel :: Parser TopLevel
+pExportTopLevel = do
+  -- Peek past 'export' + whitespace to see the next keyword
+  nextWord <- lookAhead $ do
+    _ <- takeWhileP Nothing isIdentB  -- skip 'export'
+    _ <- takeWhileP Nothing (\b -> b == 32 || b == 9) -- skip spaces/tabs
+    takeWhileP Nothing isIdentB
+  case nextWord of
+    "type" -> try (TopTypeDecl <$> pTypeDecl) <|> (TopExp <$> pExportTypeName)
+    "alias" -> TopTypeDecl <$> pTypeDecl
+    _ -> try (TopExp <$> pExportAssignment) <|> (TopExp <$> pExportName)
 
 
 -- Import declarations --
@@ -89,40 +120,41 @@ pImportDecl :: Parser Src.Import
 pImportDecl = do
   (startArea, _) <- withArea pImport
   target <- pSourceTarget
-  choice
-    [ -- import type { names } from "path"
-      try $ do
-        pType
-        pLeftCurly
-        rets
-        names <- pImportNames
-        _ <- optional pComma
-        rets
-        pRightCurly
-        pFrom
-        (endArea, path) <- withArea pStringLiteral
-        rets
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.TypeImport names (sanitizeImportPath path) (sanitizeImportPath path))
-    , -- import { names } from "path"
-      try $ do
-        pLeftCurly
-        rets
-        names <- pImportNames
-        _ <- optional pComma
-        rets
-        pRightCurly
-        pFrom
-        (endArea, path) <- withArea pStringLiteral
-        rets
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.NamedImport names (sanitizeImportPath path) (sanitizeImportPath path))
-    , -- import name from "path"
-      do
-        (nameArea, name) <- withArea pNameStr
-        pFrom
-        (endArea, path) <- withArea pStringLiteral
-        rets
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.DefaultImport (Src.Source nameArea target name) (sanitizeImportPath path) (sanitizeImportPath path))
-    ]
+  -- Dispatch based on first token after 'import'
+  w <- lookAhead $ takeWhileP Nothing isIdentB
+  case w of
+    "type" -> do
+      -- import type { names } from "path"
+      pType
+      pLeftCurly
+      rets
+      names <- pImportNames
+      _ <- optional pComma
+      rets
+      pRightCurly
+      pFrom
+      (endArea, path) <- withArea pStringLiteral
+      rets
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.TypeImport names (sanitizeImportPath path) (sanitizeImportPath path))
+    "" -> do
+      -- import { names } from "path" (starts with '{')
+      pLeftCurly
+      rets
+      names <- pImportNames
+      _ <- optional pComma
+      rets
+      pRightCurly
+      pFrom
+      (endArea, path) <- withArea pStringLiteral
+      rets
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.NamedImport names (sanitizeImportPath path) (sanitizeImportPath path))
+    _ -> do
+      -- import name from "path"
+      (nameArea, name) <- withArea pNameStr
+      pFrom
+      (endArea, path) <- withArea pStringLiteral
+      rets
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.DefaultImport (Src.Source nameArea target name) (sanitizeImportPath path) (sanitizeImportPath path))
 
 
 pImportNames :: Parser [Src.Source Src.Name]
@@ -411,27 +443,6 @@ pExportAssignment = do
   body <- pExp
   let assignArea = mergeAreas startArea (Src.getArea body)
   return $ Src.Source assignArea target (Src.Export (Src.Source assignArea target (Src.Assignment name body)))
-
-
--- | name :: constrainedTyping \n export name = exp
-pNamedTypedExportAssignment :: Parser Src.Exp
-pNamedTypedExportAssignment = do
-  (startArea, name1) <- withArea pNameStr
-  target <- pSourceTarget
-  pDoubleColon
-  typing <- pConstrainedTyping
-  rets
-  pExport
-  name2 <- pNameStr
-  pEq
-  maybeRet
-  body <- pExp
-  let innerArea = mergeAreas startArea (Src.getArea body)
-  return $ Src.Source innerArea target
-    (Src.NamedTypedExp name1
-      (Src.Source innerArea target
-        (Src.Export (Src.Source innerArea target (Src.Assignment name2 body))))
-      typing)
 
 
 -- Target macros --
