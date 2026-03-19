@@ -63,6 +63,51 @@ cleanRelativePath path = case normalise path of
 
 resolveAbsoluteSrcPath :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 resolveAbsoluteSrcPath pathUtils rootPath path = do
+  result <- resolveAbsoluteSrcPath' pathUtils rootPath path
+  -- Verify case-sensitivity: the import path components must match the resolved path exactly.
+  -- This is needed because macOS has a case-insensitive filesystem, so "maDraylib/math"
+  -- would resolve to the same file as "MadRaylib/Math" without this check.
+  -- We canonicalize the resolved path to get the true case from the filesystem,
+  -- then check that the import path components match.
+  case result of
+    Just absPath -> do
+      canonicalAbsPath <- canonicalizePath pathUtils absPath
+      if verifyCaseSensitivePath path canonicalAbsPath
+        then return $ Just (normalisePath pathUtils canonicalAbsPath)
+        else return Nothing
+    Nothing -> return Nothing
+
+
+-- | Verify that all components of the import path appear case-sensitively in the resolved absolute path.
+-- For "MadRaylib/Math", checks that "MadRaylib" and "Math" appear as path components in the resolved path.
+verifyCaseSensitivePath :: FilePath -> FilePath -> Bool
+verifyCaseSensitivePath importPath absPath =
+  let importParts = map dropTrailingPathSeparator $ splitPath $ cleanImportPath importPath
+      absParts    = map dropTrailingPathSeparator $ splitPath absPath
+  in  all (\importPart -> any (matchComponent importPart) absParts) importParts
+  where
+    -- Strip leading "./" and "@alias/" prefix from import path for comparison.
+    -- The "@" alias is resolved separately; we only check the path components after it.
+    cleanImportPath ('.' : '/' : rest) = rest
+    cleanImportPath ('@' : rest) =
+      -- "@/common/Foo" -> drop "@/" to get "common/Foo"
+      -- "@alias/common/Foo" -> drop "@alias/" to get "common/Foo"
+      case dropWhile (/= '/') rest of
+        '/' : after -> after
+        _           -> rest
+    cleanImportPath p = p
+
+    -- A resolved path component matches an import component if:
+    -- - they are exactly equal, OR
+    -- - the resolved component equals the import component + ".mad" extension (for the final component)
+    matchComponent importPart absPart =
+      importPart == absPart
+      || replaceExtension absPart "" == importPart
+      || addExtension importPart ".mad" == absPart
+
+
+resolveAbsoluteSrcPath' :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
+resolveAbsoluteSrcPath' pathUtils rootPath path = do
   case getPathType path of
     FileSystemPath -> do
       let ext = if takeExtension path == ".json" then ".json" else ".mad"
