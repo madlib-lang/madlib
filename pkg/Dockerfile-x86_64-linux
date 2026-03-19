@@ -44,10 +44,6 @@ RUN npm i -g rollup@2.62.0 @rollup/plugin-node-resolve@13.1.1
 # run the build
 COPY . .
 
-# note: this needs to happen here as we need the resolved field from the stack.yml or else stack
-# will download a new ghc version, which we want to avoid.
-RUN stack install alex happy
-
 # build runtime
 RUN TARGET="LINUX_X64" ./scripts/build-runtime-libs
 RUN AR="llvm-ar-9" TARGET="LINUX_X64" LLVM_AR="llvm-ar-9" CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/ ./scripts/build-runtime

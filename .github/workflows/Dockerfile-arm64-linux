@@ -39,10 +39,6 @@ COPY . .
 ENV LC_ALL="C.UTF-8"
 # ENV LANG="en_US.UTF-8"
 
-# note: this needs to happen here as we need the resolved field from the stack.yml or else stack
-# will download a new ghc version, which we want to avoid.
-RUN stack install alex happy
-
 RUN stack build --jobs 1
 
 # build runtime

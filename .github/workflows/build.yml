@@ -2,7 +2,7 @@ on: [push]
 name: build
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
 
@@ -28,8 +28,6 @@ jobs:
         with:
           path: ~/.stack
           key: ${{ runner.os }}-8.10.7-stack
-
-      - run: stack install alex happy
 
       - name: build runtime libs
         run: TARGET="LINUX_X64" ./scripts/build-runtime-libs

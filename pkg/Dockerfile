@@ -55,7 +55,6 @@ RUN stack config set system-ghc --global true
 # build app
 COPY . .
 
-RUN stack install alex happy
 RUN stack build --jobs 1 --flag madlib:static --ghc-options='-fPIC'
 # RUN stack build --jobs 1 --ghc-options='-fPIC'
 

@@ -38,9 +38,6 @@ RUN npm i -g esbuild@v0.20.0
 # run the build
 COPY . .
 
-# install Alex and Happy
-RUN ~/.ghcup/bin/stack --system-ghc install alex happy
-
 # build Madlib executable
 RUN ~/.ghcup/bin/stack --system-ghc build --jobs 1
 RUN cp "$(~/.ghcup/bin/stack --system-ghc path --dist-dir)/build/madlib/madlib" .
