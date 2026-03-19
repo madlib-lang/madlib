@@ -420,7 +420,7 @@ deriveInstances env localTypeDecls derived = case derived of
             Map.singleton
             "compare"
             (
-              ec (Assignment "==" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
+              ec (Assignment "compare" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
                 buildFieldComparisons 0 fieldNames
               ]]))
             )
