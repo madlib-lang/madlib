@@ -12,72 +12,55 @@
 module Generate.LLVM.LLVM where
 
 
-import           Data.ByteString.Short        as ShortByteString
 import qualified Data.Map                     as Map
-import qualified Data.Set                     as Set
 import qualified Data.List                    as List
 import qualified Data.Maybe                   as Maybe
-import qualified Text.ParserCombinators.ReadP as ReadP
-import qualified Data.Char                    as Char
 import qualified Data.Text                    as Text
 import qualified Data.Text.Encoding           as TextEncoding
-import qualified Data.Text.Lazy               as LazyText
+import           Data.ByteString              as ByteString (ByteString, unpack)
 import qualified Control.Monad                as Monad
 import qualified Control.Monad.Fix            as MonadFix
-import qualified Control.Monad.Identity       as Identity
 import qualified Control.Monad.Writer         as Writer
-import           Generate.LLVM.SymbolTable
-import           Generate.LLVM.Env
-import           Run.Options
+import qualified Control.Monad.State          as State
+import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           GHC.Stack                    (HasCallStack)
+import           System.Random                (randomIO)
+import           Text.Show.Pretty             (ppShow)
+
+import           LLVM.AST                     as AST hiding (function)
+import           LLVM.AST.Type                as Type
+import           LLVM.AST.AddrSpace           (AddrSpace(..))
+import qualified LLVM.AST.Constant            as Constant
+import qualified LLVM.AST.Operand             as Operand hiding (Module)
+import qualified LLVM.AST.IntegerPredicate    as IntegerPredicate
+import qualified LLVM.AST.Linkage             as Linkage
+import qualified LLVM.AST.Global              as Global
+import           LLVM.IRBuilder.Module
+import           LLVM.IRBuilder.Constant      as C
+import           LLVM.IRBuilder.Monad
+import           LLVM.IRBuilder.Instruction   as Instruction hiding (gep)
+
+import           AST.Core                     as Core
+import qualified Infer.Type                   as IT
+import           Explain.Location
 import qualified Driver.Query                 as Query
 import qualified Rock
-import           Data.ByteString as ByteString
-import           Data.ByteString.Char8        as Char8
-import           LLVM.AST                        as AST hiding (function)
-import qualified LLVM.AST                        as LLVMAST
-import           LLVM.AST.Type                   as Type
-import           LLVM.AST.AddrSpace              as AddrSpace
-import           LLVM.AST.ParameterAttribute     as ParameterAttribute
--- import LLVM.AST.Typed ( Typed(typeOf) )
-import Generate.LLVM.TypeOf ( Typed(typeOf) )
-import qualified LLVM.AST.Float                  as Float
-import qualified LLVM.AST.Constant               as Constant
-import qualified LLVM.AST.Operand                as Operand hiding (Module)
-import qualified LLVM.AST.IntegerPredicate       as IntegerPredicate
-import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
-import qualified LLVM.AST.Global                 as Global
--- import           LLVM.Pretty
+import           Run.Options
 
-import           LLVM.IRBuilder.Module
-import           LLVM.IRBuilder.Constant         as C
-import           LLVM.IRBuilder.Monad
-import           LLVM.IRBuilder.Instruction      as Instruction hiding (gep)
-import           AST.Core                        as Core
-import qualified Infer.Type                      as IT
-import           Infer.Type (isFunctionType)
-import qualified LLVM.Prelude as FloatingPointPredicate
-import           Text.Show.Pretty
-import qualified Data.Tuple                    as Tuple
-import           Explain.Location
-import qualified LLVM.AST.Linkage              as Linkage
-import qualified LLVM.AST.Global              as Global
-import           Debug.Trace
-import Control.Monad.IO.Class
-import qualified LLVM.AST.CallingConvention as CC
-import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
-import Generate.LLVM.Debug
-import qualified Control.Monad.State as State
-import Generate.LLVM.Helper
-import Generate.LLVM.Types (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, adtSymbol)
-import Generate.LLVM.Boxing (box, unbox)
-import Generate.LLVM.Builtins
-import qualified Generate.LLVM.Operators as Ops
-import qualified Generate.LLVM.PatternMatch as PM
-import qualified Generate.LLVM.Function as Fn
-import qualified Generate.LLVM.Module as Mod
-import GHC.Stack (HasCallStack)
-import System.Random (randomIO, Random)
-import Generate.LLVM.Emit (emitGEP)
+import           Generate.LLVM.TypeOf         (Typed(typeOf))
+import           Generate.LLVM.SymbolTable
+import           Generate.LLVM.Env
+import           Generate.LLVM.Emit           (emitGEP)
+import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
+import           Generate.LLVM.Debug
+import           Generate.LLVM.Helper
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, adtSymbol)
+import           Generate.LLVM.Boxing         (box, unbox)
+import           Generate.LLVM.Builtins
+import qualified Generate.LLVM.Operators      as Ops
+import qualified Generate.LLVM.PatternMatch   as PM
+import qualified Generate.LLVM.Function       as Fn
+import qualified Generate.LLVM.Module         as Mod
 
 -- | Inbounds GEP — shadows LLVM.IRBuilder.Instruction.gep
 gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
@@ -160,7 +143,7 @@ sanitizeStr s = case s of
     c:sanitizeStr more
 
 buildStr :: (MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> Area -> String -> m Operand
-buildStr env area s = do
+buildStr _env _area s = do
   let sanitized = sanitizeStr s
   let parsed = read $ "\"" ++ sanitized ++ "\"" :: String
   let asText     = Text.pack parsed
@@ -171,11 +154,8 @@ buildStr env area s = do
 
   let llvmVals  = fmap (Constant.Int 8) charCodes'
   let char      = IntegerType 8
-  let charStar  = ptr char
   let charArray = Constant.Array char llvmVals
   let ty        = typeOf charArray
-  let op = Operand.ConstantOperand charArray
-  op' <- addrspacecast op stringType
 
   r <- randomIO
   nm <- freshName (stringToShortByteString $ show (r :: Int))
@@ -512,7 +492,6 @@ generateExp env symbolTable exp = case exp of
             fieldsOperand'  <- load fieldsOperand 0 -- i8*
             fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr fieldType)
             field           <- gep fieldsOperand'' [i32ConstOp index]
-            -- field'          <- load field 0
             valuePtr        <- gep field [i32ConstOp 0, i32ConstOp 1]
             store valuePtr 0 exp''
             let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
@@ -846,12 +825,6 @@ generateExp env symbolTable exp = case exp of
 
           _ ->
             return pap
-          -- if symbolType == TopLevelAssignment then
-          --   load pap 0
-          -- -- else if symbolType == LocalVariableSymbol then
-          -- --   load pap 0
-          -- else
-          --   return pap
 
         pap'' <- safeBitcast pap' boxType
 
@@ -939,7 +912,6 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, ret, boxed)
 
   Core.Typed _ area _ (Core.TupleConstructor exps) -> do
-    -- exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
     exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
