@@ -1633,6 +1633,65 @@ spec = do
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail when exporting a name not defined yet" actual
 
+    it "should fail for forward ref without type annotation (function calling later function)" $ do
+      let code   = unlines ["f = (x) => g(x)", "g = (x) => x + 1", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail for forward ref without type annotation (function calling later function)" actual
+
+    it "should allow forward ref with type annotation" $ do
+      let code   = unlines ["f = (x) => g(x)", "g :: Integer -> Integer", "g = (x) => x + 1", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow forward ref with type annotation" actual
+
+    it "should allow record spread that references earlier binding" $ do
+      let code   = unlines
+            [ "alias P = { x :: Integer }"
+            , "o :: P"
+            , "o = { x: 0 }"
+            , "main = () => {"
+            , "  p = { ...o, x: 1 }"
+            , "  return p.x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow record spread that references earlier binding" actual
+
+    it "should bind names in where patterns correctly" $ do
+      let code   = unlines
+            [ "f = (xs) => where(xs) {"
+            , "  is [a, ...rest]: a"
+            , "  is []: 0"
+            , "}"
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should bind names in where patterns correctly" actual
+
+    it "should fail when shadowing a top-level name inside a do body" $ do
+      let code   = unlines ["a = 4", "g = () => {", "  a = 2", "  return a", "}", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when shadowing a top-level name inside a do body" actual
+
+    it "should fail when mutating a variable that holds a function" $ do
+      let code   = unlines ["f = (x) => x + 1", "main = () => {", "  f := (x) => x + 2", "}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutating a variable that holds a function" actual
+
+    it "should allow mutating a non-function variable" $ do
+      let code   = unlines ["main = () => {", "  x = 4", "  x := 5", "  return x", "}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow mutating a non-function variable" actual
+
+    it "should fail when accessing _ as a variable" $ do
+      let code   = unlines ["main = () => {", "  x = _", "  return x", "}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when accessing _ as a variable" actual
+
+    it "should allow a self-referential recursive lambda" $ do
+      let code   = unlines ["fib = (n) => n <= 1 ? n : fib(n - 1) + fib(n - 2)", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow a self-referential recursive lambda" actual
+
     it "should infer most general type for inner lambdas" $ do
       let code   = unlines
             [ "export repeatWith = (f, count) => {"

@@ -1,0 +1,160 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+               TVar (TV 2 Star))
+            (Area (Loc 0 1 1) (Loc 5 1 6))
+            (Assignment
+               "a"
+               (Typed
+                  ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+                     TVar (TV 2 Star))
+                  (Area (Loc 4 1 5) (Loc 5 1 6))
+                  (LNum "4")))
+        , Typed
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 6 Star) ]
+                 (Just (Area (Loc 35 4 10) (Loc 36 4 11)))
+             ] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV 3 Star)))
+                 (TVar (TV 6 Star)))
+            (Area (Loc 6 2 1) (Loc 38 5 2))
+            (Assignment
+               "g"
+               (Typed
+                  ([ IsIn
+                       "Number"
+                       [ TVar (TV 6 Star) ]
+                       (Just (Area (Loc 35 4 10) (Loc 36 4 11)))
+                   ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV 3 Star)))
+                       (TVar (TV 6 Star)))
+                  (Area (Loc 10 2 5) (Loc 38 5 2))
+                  (Abs
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV 6 Star) ]
+                             (Just (Area (Loc 35 4 10) (Loc 36 4 11)))
+                         ] :=>
+                           TVar (TV 3 Star))
+                        (Area (Loc 37 5 1) (Loc 37 5 1))
+                        "_")
+                     [ Typed
+                         ([ IsIn "Number" [ TVar (TV 6 Star) ] Nothing ] :=>
+                            TVar (TV 6 Star))
+                         (Area (Loc 20 3 3) (Loc 25 3 8))
+                         (Assignment
+                            "a"
+                            (Typed
+                               ([ IsIn "Number" [ TVar (TV 6 Star) ] Nothing ] :=>
+                                  TVar (TV 6 Star))
+                               (Area (Loc 24 3 7) (Loc 25 3 8))
+                               (LNum "2")))
+                     , Typed
+                         ([ IsIn "Number" [ TVar (TV 6 Star) ] Nothing ] :=>
+                            TVar (TV 6 Star))
+                         (Area (Loc 35 4 10) (Loc 36 4 11))
+                         (Var "a" False)
+                     ])))
+        , Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 39 6 1) (Loc 54 6 16))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 39 6 1) (Loc 54 6 16))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 46 6 8) (Loc 54 6 16))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 53 6 15) (Loc 53 6 15))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "g")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 6 2 1) (Loc 7 2 2)
+        }
+  ]
+, [ CompilationError
+      BadMutation
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 20 3 3) (Loc 25 3 8)
+        }
+  ]
+)
