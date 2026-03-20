@@ -236,8 +236,23 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , boxedParams = List.drop dictCount allocatedParams
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
-              start       <- callMallocWithMetadata [] gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
-              start'      <- ctxAddrSpaceCast ctx start listType
+              let nodeType = Type.StructureType False [boxType, boxType]
+              let initialChunkSize = 4096
+              let chunkBytes = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral initialChunkSize * 16)  -- each node is 2 pointers = 16 bytes
+
+              arena       <- callMallocWithMetadata [] gcMalloc [(chunkBytes, [])]
+              arena'      <- ctxSafeBitcast ctx arena (Type.ptr nodeType)
+              start'      <- ctxAddrSpaceCast ctx arena listType
+
+              arenaPtr'    <- alloca (Type.ptr nodeType) Nothing 0
+              store arenaPtr' 0 arena'
+
+              arenaIndex'  <- alloca Type.i64 Nothing 0
+              store arenaIndex' 0 (i64ConstOp 1)  -- index 0 is the start node
+
+              arenaCap'    <- alloca Type.i64 Nothing 0
+              store arenaCap' 0 (i64ConstOp (fromIntegral initialChunkSize))
+
               end         <- alloca listType Nothing 0
               store end 0 start'
 
@@ -248,6 +263,9 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , boxedParams = List.drop dictCount allocatedParams
                   , start = start'
                   , end = end
+                  , arenaPtr = arenaPtr'
+                  , arenaIndex = arenaIndex'
+                  , arenaCapacity = arenaCap'
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t

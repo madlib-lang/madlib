@@ -23,6 +23,9 @@ data RecursionData
       , boxedParams :: [Operand.Operand]
       , start :: Operand.Operand
       , end :: Operand.Operand
+      , arenaPtr :: Operand.Operand      -- ptr to current chunk base (alloca i8*)
+      , arenaIndex :: Operand.Operand    -- current index in chunk (alloca i64)
+      , arenaCapacity :: Operand.Operand -- chunk capacity (alloca i64)
       }
   | ConstructorRecursionData
       { entryBlockName :: AST.Name

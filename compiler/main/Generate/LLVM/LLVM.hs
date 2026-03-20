@@ -117,6 +117,73 @@ storeArrayItem basePtr _ (item, index) = do
   return ()
 
 
+-- | Allocate a new list node from the arena (chunked allocation for right-list TCO).
+-- If the arena chunk is full, allocates a new chunk with doubled capacity.
+-- Returns the new node as an i8* pointer (needs addrspacecast to listType afterwards).
+allocateArenaNode :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> m Operand
+allocateArenaNode env area = mdo
+  let nodeType = Type.StructureType False [boxType, boxType]
+  let Just arenaPtr'    = arenaPtr <$> recursionData env
+  let Just arenaIndex'  = arenaIndex <$> recursionData env
+  let Just arenaCap'    = arenaCapacity <$> recursionData env
+
+  idx <- load arenaIndex' 0
+  cap <- load arenaCap' 0
+
+  needsNewChunk <- icmp IntegerPredicate.UGE idx cap
+  condBr needsNewChunk newChunkBlock continueBlock
+
+  newChunkBlock <- block `named` "arena.newchunk"
+  -- Double the capacity
+  newCap <- mul cap (i64ConstOp 2)
+  -- Allocate new chunk: newCap * sizeof(Node)
+  nodeSize <- Instruction.ptrtoint (Operand.ConstantOperand $ sizeof' nodeType) Type.i64
+  chunkBytes <- mul newCap nodeSize
+  newArena <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(chunkBytes, [])]
+  newArena' <- safeBitcast newArena (Type.ptr nodeType)
+  store arenaPtr' 0 newArena'
+  store arenaCap' 0 newCap
+  store arenaIndex' 0 (i64ConstOp 0)
+  br continueBlock
+
+  continueBlock <- block `named` "arena.continue"
+  -- Load current arena and index (may have been updated by newChunkBlock)
+  currentIdx <- load arenaIndex' 0
+  currentArena <- load arenaPtr' 0
+
+  -- GEP into arena at current index
+  nodePtr <- gep currentArena [currentIdx]
+  -- Cast to i8* for compatibility with existing code
+  nodePtr' <- safeBitcast nodePtr (Type.ptr Type.i8)
+
+  -- Increment index
+  nextIdx <- add currentIdx (i64ConstOp 1)
+  store arenaIndex' 0 nextIdx
+
+  return nodePtr'
+
+
+
+-- | Check if a Madlib type is atomic (contains no GC-scannable pointers).
+-- Atomic types can use GC_malloc_atomic for allocation, reducing GC scan work.
+isAtomicType :: IT.Type -> Bool
+isAtomicType t = case t of
+  IT.TCon (IT.TC "Integer" _) _ _ -> True
+  IT.TCon (IT.TC "Float" _) _ _   -> True
+  IT.TCon (IT.TC "Boolean" _) _ _ -> True
+  IT.TCon (IT.TC "Byte" _) _ _    -> True
+  IT.TCon (IT.TC "Short" _) _ _   -> True
+  IT.TCon (IT.TC "Char" _) _ _    -> True
+  IT.TCon (IT.TC "Unit" _) _ _    -> True
+  _ -> False
+
+-- | Choose GC_malloc or GC_malloc_atomic based on whether all field types are atomic.
+chooseMalloc :: [IT.Type] -> Operand
+chooseMalloc fieldTypes
+  | all isAtomicType fieldTypes = gcMallocAtomic
+  | otherwise = gcMalloc
+
+
 typingStrWithoutHash :: String -> String
 typingStrWithoutHash = List.takeWhile (/= '_')
 
@@ -797,9 +864,12 @@ generateExp env symbolTable exp = case exp of
           args''  <- retrieveArgs (Core.getMetadata <$> args) args'
 
           let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+          -- Use atomic malloc when all fields are primitive and no padding slots exist
+          let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
+          let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
 
             -- allocate memory for the structure
-          structPtr     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+          structPtr     <- callMallocWithMetadata (makeDILocation env area) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
           structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
           -- store the constructor data in the struct
@@ -916,7 +986,9 @@ generateExp env symbolTable exp = case exp of
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
-    tuplePtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' tupleType, [])]
+        elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
+        mallocFn    = chooseMalloc elemTypes
+    tuplePtr  <- callMallocWithMetadata (makeDILocation env area) mallocFn [(Operand.ConstantOperand $ sizeof' tupleType, [])]
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
@@ -949,7 +1021,7 @@ generateExp env symbolTable exp = case exp of
         Nothing ->
           box item
 
-      newNode <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode <- allocateArenaNode env area
       newNode' <- addrspacecast newNode listType
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
@@ -997,14 +1069,14 @@ generateExp env symbolTable exp = case exp of
         Nothing ->
           box item2
 
-      newNode1 <- callMallocWithMetadata (makeDILocation env area1) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode1 <- allocateArenaNode env area1
       newNode1' <- addrspacecast newNode1 listType
       storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 1)
       storeItem endValue () (item1', 0)
       storeItem endValue () (newNode1, 1)
 
-      newNode2 <- callMallocWithMetadata (makeDILocation env area2) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode2 <- allocateArenaNode env area2
       newNode2' <- addrspacecast newNode2 listType
       storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 1)
