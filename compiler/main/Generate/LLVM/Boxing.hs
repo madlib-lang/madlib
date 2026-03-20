@@ -4,17 +4,13 @@ module Generate.LLVM.Boxing
   , unbox
   ) where
 
-import qualified Data.List                    as List
-
 import           LLVM.AST.Type                as Type
 import           LLVM.AST.AddrSpace           (AddrSpace(..))
-import qualified LLVM.AST.Constant            as Constant
 import qualified LLVM.AST.Operand             as Operand
 
-import           LLVM.AST                     (mkName)
 import           LLVM.IRBuilder.Monad         (MonadIRBuilder)
 import           LLVM.IRBuilder.Module        (MonadModuleBuilder)
-import           LLVM.IRBuilder.Instruction   (ptrtoint, inttoptr, call, alloca, store, load, bitcast)
+import           LLVM.IRBuilder.Instruction   (ptrtoint, inttoptr, bitcast)
 
 import           Generate.LLVM.TypeOf         (Typed(typeOf))
 import           Generate.LLVM.Emit          (emitSafeBitcast)
@@ -24,20 +20,12 @@ import           Generate.LLVM.Types         (boxType, listType, stringType, pap
 import qualified Infer.Type                   as IT
 
 
--- | Box a runtime operand: runtime function reference for boxDouble.
-boxDouble :: Operand.Operand
-boxDouble =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.double] False) (mkName "boxDouble"))
-
-
 -- | Unbox a boxed value (i8*) to its native LLVM type based on the Madlib type.
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand.Operand -> m Operand.Operand
 unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ _ -> do
-    ptr <- alloca boxType Nothing 0
-    store ptr 0 what
-    ptr' <- bitcast ptr (Type.ptr Type.double)
-    load ptr' 0
+    asInt <- ptrtoint what Type.i64
+    bitcast asInt Type.double
 
   IT.TCon (IT.TC "Byte" _) _ _ -> do
     ptrtoint what Type.i8
@@ -86,9 +74,10 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
 -- Uses typeOf to determine the type — this will be replaced with TypedOperand later.
 box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand -> m Operand.Operand
 box what = case typeOf what of
-  -- Float
+  -- Float: bitcast double -> i64, then inttoptr to box
   Type.FloatingPointType _ -> do
-    call boxDouble [(what, [])]
+    asInt <- bitcast what Type.i64
+    inttoptr asInt boxType
 
   -- Integer
   Type.IntegerType 64 -> do

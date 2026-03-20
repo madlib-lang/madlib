@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Generate.LLVM.Module
   ( generateLLVMModule
   , generateModule
@@ -80,7 +79,7 @@ import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, buildLLVMType, buildLLVMType', adtSymbol)
 import           Generate.LLVM.Builtins
-import           Generate.LLVM.WithMetadata   (callWithMetadata, declareWithAttributes)
+import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, declareWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
 import           Generate.LLVM.Function       (FunctionCtx, generateExps, generateConstructors, generateTopLevelFunctions,
@@ -96,7 +95,7 @@ getLLVMParameterTypes t = case t of
     paramTypes
 
   _ ->
-    undefined
+    error $ "getLLVMParameterTypes: expected function pointer type, got: " <> show t
 
 getLLVMReturnType :: Type.Type -> Type.Type
 getLLVMReturnType t = case t of
@@ -104,7 +103,7 @@ getLLVMReturnType t = case t of
     returnType
 
   _ ->
-    undefined
+    error $ "getLLVMReturnType: expected function pointer type, got: " <> show t
 
 
 generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> IT.Type -> Core.ImportType -> m ()
@@ -140,7 +139,7 @@ generateExternForImportName symbolTable optimizedName = case optimizedName of
     generateExternalForName symbolTable name t importType
 
   _ ->
-    undefined
+    error "Unreachable: generateExternForImportName called with non-ImportInfo expression"
 
 
 generateImport :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Import -> m ()
@@ -149,7 +148,7 @@ generateImport symbolTable imp = case imp of
     mapM_ (generateExternForImportName symbolTable) names
 
   _ ->
-    undefined
+    error "Unreachable: generateImport called with non-NamedImport"
 
 
 buildSymbolTableFromImportInfo :: (Rock.MonadFetch Query.Query m, MonadIO m) => Core ImportInfo -> m SymbolTable
@@ -207,7 +206,13 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
             let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
             in  Map.singleton (adtTypePath <> "_" <> adtTypeName) (adtSymbol maxArity)
 
+          _ ->
+            Map.empty
+
     return $ Map.singleton name (constructorSymbol fnRef constructorIndex arity) <> adtSym
+
+  _ ->
+    error "Unreachable: buildSymbolTableFromImportInfo called with untyped import info"
 
 
 buildSymbolTableFromImport :: (Rock.MonadFetch Query.Query m, MonadIO m) => Import -> m SymbolTable
@@ -215,6 +220,9 @@ buildSymbolTableFromImport imp = case imp of
   Untyped _ _ (NamedImport infos _ _) -> do
     results <- mapM buildSymbolTableFromImportInfo infos
     return $ mconcat results
+
+  _ ->
+    return Map.empty
 
 
 buildSymbolTableFromImports :: (Rock.MonadFetch Query.Query m, MonadIO m) => [Import] -> m SymbolTable
@@ -256,7 +264,7 @@ generateLLVMModule :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadS
                    => FunctionCtx (IRBuilderT m)
                    -> (Operand -> Type -> IRBuilderT m Operand)
                    -> Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
-generateLLVMModule _ _ _ _ _ _ Core.AST{ Core.apath = Nothing } = undefined
+generateLLVMModule _ _ _ _ _ _ Core.AST{ Core.apath = Nothing } = error "generateLLVMModule: AST has no path"
 generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
   env' <-
     if envIsDebugBuild env then do
@@ -315,7 +323,6 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
 
   declareWithAttributes [FunctionAttribute.NoUnwind, FunctionAttribute.ReadNone, FunctionAttribute.OptimizeNone, FunctionAttribute.NoInline] (AST.mkName "llvm.dbg.declare")                             [Type.MetadataType, Type.MetadataType, Type.MetadataType] Type.void
 
-  extern (AST.mkName "boxDouble")                                    [Type.double] boxType
   extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
@@ -343,9 +350,9 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   moduleFunction <-
     if isMain then do
       let getArgs     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [] False) "madlib__process__internal__getArgs")
-      let (Symbol _ mainFunction) = Maybe.fromMaybe undefined $ Map.lookup ("_" <> moduleHash <> "_main") symbolTable
+      let (Symbol _ mainFunction) = Maybe.fromMaybe (error $ "Main function not found: _" <> moduleHash <> "_main") $ Map.lookup ("_" <> moduleHash <> "_main") symbolTable
       -- this function starts the runtime with a fresh stack etc
-      function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
+      functionWithMetadata [] (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"
         call initExtra []
         call initEventLoop []
@@ -362,12 +369,12 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
 
       let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
           argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
-      function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+      functionWithMetadata [] (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
         block `named` "entry"
         call mainInit [(argc, []), (argv, [])]
         ret $ i32ConstOp 0
     else do
-      function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
+      functionWithMetadata [] (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
         block `named` "entry"
         generateExps ctx env' symbolTable (expsForMain $ aexps ast)
         retVoid
@@ -413,7 +420,7 @@ generateModule mkCtx safeBitcastFn options ast@Core.AST{ apath = Just modulePath
   return (mod, table, envForAST)
 
 generateModule _ _ _ _ =
-  undefined
+  error "generateModule: invalid arguments"
 
 
 compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m)

@@ -6,6 +6,7 @@ import           Data.ByteString.Short (ShortByteString)
 import           LLVM.AST (MDRef, MDNode, Instruction (Call, tailCallKind, callingConvention, returnAttributes, function, arguments, functionAttributes, metadata, Store), Type (FunctionType, VoidType, PointerType), Operand (ConstantOperand, LocalReference), Name, Definition (GlobalDefinition), Parameter (Parameter), mkName)
 import           LLVM.AST.Operand (Operand)
 import           LLVM.AST.Attribute (ParameterAttribute, FunctionAttribute (..))
+import qualified LLVM.AST.ParameterAttribute as PA
 import qualified LLVM.AST.Constant as Constant
 import           LLVM.AST.Type (void, ptr)
 import qualified LLVM.AST.CallingConvention as CC
@@ -31,6 +32,29 @@ callWithMetadata metadata fun args = do
   let instr = Call {
     tailCallKind = Nothing
   , callingConvention = CC.C
+  , returnAttributes = []
+  , function = Right fun
+  , arguments = args
+  , functionAttributes = []
+  , metadata = metadata
+  }
+  tf <- typeOf fun
+  case tf of
+    (Left s) -> error s
+    (Right (FunctionType r _ _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
+      _        -> emitInstr r instr
+    (Right (PointerType (FunctionType r _ _) _)) -> case r of
+      VoidType -> emitInstrVoid instr >> (pure (ConstantOperand (C.Undef void)))
+      _        -> emitInstr r instr
+    (Right _) -> error "Cannot call non-function (Malformed AST)."
+
+-- | Like callWithMetadata but uses the fast calling convention for internal Madlib functions.
+callFastWithMetadata :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [(ShortByteString, MDRef MDNode)] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
+callFastWithMetadata metadata fun args = do
+  let instr = Call {
+    tailCallKind = Nothing
+  , callingConvention = CC.Fast
   , returnAttributes = []
   , function = Right fun
   , arguments = args
@@ -93,6 +117,7 @@ functionWithMetadata metadata label argtys retty body = do
       , Global.returnType = retty
       , Global.basicBlocks = blocks
       , Global.metadata = metadata
+      , Global.functionAttributes = [Right NoUnwind]
       }
     funty = ptr $ FunctionType retty (fst <$> argtys) False
   emitDefn def
@@ -117,6 +142,29 @@ declareWithAttributes attributes nm argtys retty = do
   let funty = ptr $ FunctionType retty argtys False
   pure $ ConstantOperand $ C.GlobalReference funty nm
 
+
+-- | Like callWithMetadata but adds noalias return attribute. Used for GC_malloc calls.
+callMallocWithMetadata :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => [(ShortByteString, MDRef MDNode)] -> Operand -> [(Operand, [ParameterAttribute])] -> m Operand
+callMallocWithMetadata metadata fun args = do
+  let instr = Call {
+    tailCallKind = Nothing
+  , callingConvention = CC.C
+  , returnAttributes = [PA.NoAlias]
+  , function = Right fun
+  , arguments = args
+  , functionAttributes = []
+  , metadata = metadata
+  }
+  tf <- typeOf fun
+  case tf of
+    (Left s) -> error s
+    (Right (FunctionType r _ _)) -> case r of
+      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (C.Undef void))
+      _        -> emitInstr r instr
+    (Right (PointerType (FunctionType r _ _) _)) -> case r of
+      VoidType -> emitInstrVoid instr >> pure (ConstantOperand (C.Undef void))
+      _        -> emitInstr r instr
+    (Right _) -> error "Cannot call non-function (Malformed AST)."
 
 storeWithMetadata :: MonadIRBuilder m => [(ShortByteString, MDRef MDNode)] -> Operand -> Word32 -> Operand -> m ()
 storeWithMetadata metadata addr align val = emitInstrVoid $ Store False addr val Nothing align metadata

@@ -4,7 +4,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Generate.LLVM.Function
   ( FunctionCtx(..)
   , generateExternFunction
@@ -45,7 +44,8 @@ import           Generate.LLVM.TypeOf         (Typed(typeOf))
 
 import           LLVM.IRBuilder.Monad
 import           LLVM.IRBuilder.Module
-import           LLVM.IRBuilder.Instruction   as Instruction
+import           LLVM.IRBuilder.Instruction   as Instruction hiding (gep)
+import           Generate.LLVM.Emit          (emitGEP)
 import           LLVM.IRBuilder.Constant      as C
 
 import           AST.Core                     as Core
@@ -60,9 +60,14 @@ import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
 import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc)
 import           Generate.LLVM.Boxing         (box, unbox)
-import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, storeWithMetadata)
+import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
+import           GHC.Stack (HasCallStack)
+
+-- | Inbounds GEP — shadows LLVM.IRBuilder.Instruction.gep
+gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
+gep = emitGEP
 
 
 -- | Callback context to break the circular dependency with LLVM.hs (generateExp lives there).
@@ -144,8 +149,8 @@ generateDoExps ctx env symbolTable exps = case exps of
     (symbolTable', _, _) <- ctxGenerateExp ctx env { isLast = False } symbolTable exp
     generateBody ctx env symbolTable' es
 
-  _ ->
-    undefined
+  [] ->
+    error "Unreachable: generateDoExps called with empty expression list"
 
 
 generateBody :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
@@ -159,8 +164,8 @@ generateBody ctx env symbolTable exps = case exps of
     (symbolTable', _, _) <- ctxGenerateExp ctx env symbolTable exp
     generateBody ctx env symbolTable' es
 
-  _ ->
-    undefined
+  [] ->
+    error "Unreachable: generateBody called with empty expression list"
 
 
 generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
@@ -170,7 +175,7 @@ generateExternFunction env symbolTable (ps IT.:=> t) functionName arity foreignF
       params'       = List.replicate (arity + amountOfDicts) (boxType, NoParameterName)
       functionName' = AST.mkName functionName
 
-  function <- function functionName' params' boxType $ \params -> do
+  function <- functionWithMetadata [] functionName' params' boxType $ \params -> do
     block `named` "entry"
     let typesWithParams = List.zip paramTypes (List.drop amountOfDicts params)
     let dictParams      = List.take amountOfDicts params
@@ -231,7 +236,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , boxedParams = List.drop dictCount allocatedParams
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
-              start       <- call gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+              start       <- callMallocWithMetadata [] gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
               start'      <- ctxAddrSpaceCast ctx start listType
               end         <- alloca listType Nothing 0
               store end 0 start'
@@ -247,7 +252,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t
                   constructedType = retrieveConstructorStructType env' symbolTable returnType
-              start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [Type.i64, constructedType]), [])]
+              start  <- callMallocWithMetadata [] gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [Type.i64, constructedType]), [])]
               start' <- ctxSafeBitcast ctx start (Type.ptr (Type.StructureType False [Type.i64, constructedType]))
               end    <- alloca constructedType Nothing 0
               hole   <- gep start' [i32ConstOp 0, i32ConstOp 1]
@@ -290,7 +295,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                       else
                         doubleConstOp 0
                     else
-                      undefined
+                      error $ "Unsupported type for arithmetic recursion: " <> show returnType
               store holePtr 0 initialValue
 
               return $
@@ -301,7 +306,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , holePtr = holePtr
                   }
             else
-              undefined
+              error "Unreachable: unrecognized TCO recursion kind"
       br loop
 
       loop <- block `named` "loop"
@@ -440,9 +445,9 @@ generateConstructor maxArity env symbolTable (constructor, index) = case constru
     let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
 
-    constructor' <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+    constructor' <- functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
       block `named` "entry"
-      structPtr     <- callWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+      structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
       structPtr'    <- bitcast structPtr $ Type.ptr structType
 
       Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
@@ -454,7 +459,7 @@ generateConstructor maxArity env symbolTable (constructor, index) = case constru
     return $ Map.insert constructorName (constructorSymbol constructor' index arity) symbolTable
 
   _ ->
-    undefined
+    error "Unreachable: generateConstructor called with non-constructor expression"
 
 
 findMaximumConstructorArity :: [Constructor] -> Int

@@ -8,7 +8,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
 {-# HLINT ignore "Use let" #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# HLINT ignore "Eta reduce" #-}
 module Generate.LLVM.LLVM where
 
@@ -52,7 +51,7 @@ import qualified LLVM.AST.Global                 as Global
 import           LLVM.IRBuilder.Module
 import           LLVM.IRBuilder.Constant         as C
 import           LLVM.IRBuilder.Monad
-import           LLVM.IRBuilder.Instruction      as Instruction
+import           LLVM.IRBuilder.Instruction      as Instruction hiding (gep)
 import           AST.Core                        as Core
 import qualified Infer.Type                      as IT
 import           Infer.Type (isFunctionType)
@@ -65,7 +64,7 @@ import qualified LLVM.AST.Global              as Global
 import           Debug.Trace
 import Control.Monad.IO.Class
 import qualified LLVM.AST.CallingConvention as CC
-import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
+import Generate.LLVM.WithMetadata (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import Generate.LLVM.Debug
 import qualified Control.Monad.State as State
 import Generate.LLVM.Helper
@@ -78,6 +77,11 @@ import qualified Generate.LLVM.Function as Fn
 import qualified Generate.LLVM.Module as Mod
 import GHC.Stack (HasCallStack)
 import System.Random (randomIO, Random)
+import Generate.LLVM.Emit (emitGEP)
+
+-- | Inbounds GEP — shadows LLVM.IRBuilder.Instruction.gep
+gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
+gep = emitGEP
 
 
 addrspacecast :: MonadIRBuilder m => Operand -> Type -> m Operand
@@ -136,7 +140,7 @@ typingStrWithoutHash = List.takeWhile (/= '_')
 
 emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> m Operand
 emptyList env area = do
-  emptyList  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+  emptyList  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
   emptyList' <- addrspacecast emptyList listType
   storeWithMetadata (makeDILocation env area) emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
 
@@ -257,7 +261,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'     <- mapM (generateExp env { isLast = False } symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
 
-      envPtr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' envType, [])]
+      envPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 
       Monad.foldM_
@@ -265,7 +269,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
           case typeOf unboxed of
             Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
               unboxed' <- load unboxed 0
-              newPAP <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+              newPAP <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
               newPAP' <- bitcast newPAP papType
               store newPAP' 0 unboxed'
               storeItem envPtr' () (newPAP, index)
@@ -276,7 +280,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
         ()
         $ List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')
 
-      papPtr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+      papPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr' <- safeBitcast papPtr (Type.ptr papStructType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
 
@@ -290,7 +294,7 @@ buildReferencePAP symbolTable env area arity fn = do
 
   boxedFn  <- box fn
 
-  papPtr   <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papType, [])]
+  papPtr   <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papType, [])]
   papPtr'  <- safeBitcast papPtr (Type.ptr papType)
   Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
 
@@ -405,9 +409,9 @@ generateExp env symbolTable exp = case exp of
                       id
 
                     _ ->
-                      undefined
+                      error $ "Constructor not found in symbol table: " <> constructorName
 
-        constructed     <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        constructed     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
         constructed'    <- safeBitcast constructed constructedType
 
         -- store the constructor data in the struct
@@ -438,10 +442,10 @@ generateExp env symbolTable exp = case exp of
             return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
 
           _ ->
-            undefined
+            error "Unreachable: non-recursive call in constructor recursion position"
 
       Nothing ->
-        undefined
+        error "Unreachable: constructor recursion without recursion data"
 
   Core.Typed (_ IT.:=> t) area _ (Core.Var n _) ->
     case Map.lookup n symbolTable of
@@ -469,7 +473,7 @@ generateExp env symbolTable exp = case exp of
         let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
 
           -- allocate memory for the structure
-        structPtr     <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        structPtr     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
         structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
         -- store the constructor data in the struct
@@ -567,7 +571,7 @@ generateExp env symbolTable exp = case exp of
       if Core.isReferenceAllocation metadata then do
         let expType = buildLLVMType env symbolTable (Core.getQualType exp) --typeOf exp'
             ptrType = Type.ptr expType
-        ptr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' expType), [])]
+        ptr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' expType), [])]
         declareVariable env area False name ptr
         ptr' <- safeBitcast ptr ptrType
         v <- load ptr' 0
@@ -610,10 +614,10 @@ generateExp env symbolTable exp = case exp of
       items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
       items'''' <- mapM box items'''
-      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
+      itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr $ Type.ptr i8)
       let arrayType = Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
-      arr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
       arr' <- safeBitcast arr (Type.ptr arrayType)
 
       Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items'''' [0..])
@@ -627,10 +631,10 @@ generateExp env symbolTable exp = case exp of
       let items' = List.map getListItemExp items
       items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
-      itemsArray <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
+      itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr i8)
       let arrayType = Type.StructureType False [i64, i64, Type.ptr i8]
-      arr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
       arr' <- safeBitcast arr (Type.ptr arrayType)
 
       Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items''' [0..])
@@ -816,7 +820,7 @@ generateExp env symbolTable exp = case exp of
           let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
 
             -- allocate memory for the structure
-          structPtr     <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+          structPtr     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
           structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
           -- store the constructor data in the struct
@@ -886,6 +890,9 @@ generateExp env symbolTable exp = case exp of
       unboxed <- unbox env symbolTable qt ret
       return (symbolTable, unboxed, Just ret)
 
+    _ ->
+      error "Unreachable: Call with untyped function expression"
+
   Core.Typed _ area _ Core.TypedHole -> do
     callWithMetadata (makeDILocation env area) typedHoleReached []
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
@@ -937,7 +944,7 @@ generateExp env symbolTable exp = case exp of
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
-    tuplePtr  <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' tupleType, [])]
+    tuplePtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' tupleType, [])]
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
@@ -970,7 +977,7 @@ generateExp env symbolTable exp = case exp of
         Nothing ->
           box item
 
-      newNode <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
       newNode' <- addrspacecast newNode listType
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
@@ -1018,14 +1025,14 @@ generateExp env symbolTable exp = case exp of
         Nothing ->
           box item2
 
-      newNode1 <- callWithMetadata (makeDILocation env area1) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode1 <- callMallocWithMetadata (makeDILocation env area1) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
       newNode1' <- addrspacecast newNode1 listType
       storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 1)
       storeItem endValue () (item1', 0)
       storeItem endValue () (newNode1, 1)
 
-      newNode2 <- callWithMetadata (makeDILocation env area2) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+      newNode2 <- callMallocWithMetadata (makeDILocation env area2) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
       newNode2' <- addrspacecast newNode2 listType
       storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 0)
       storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 1)
@@ -1054,13 +1061,15 @@ generateExp env symbolTable exp = case exp of
         (_, e, _) <- generateExp env { isLast = False } symbolTable spread
         return e
 
+      _ -> error "Unreachable: list constructor with untyped item"
+
     list <- Monad.foldM
       (\list' i -> case i of
         Core.Typed _ area _ (Core.ListItem item) -> do
           item' <- generateExp env { isLast = False } symbolTable item
           items <- retrieveArgs [Core.getMetadata item] [item']
 
-          newHead <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+          newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
           newHead' <- safeBitcast newHead listType
           nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
           nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
@@ -1073,6 +1082,8 @@ generateExp env symbolTable exp = case exp of
         Core.Typed _ area _ (Core.ListSpread spread) -> do
           (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
           callWithMetadata (makeDILocation env area) madlistConcat [(spread, []), (list', [])]
+
+        _ -> error "Unreachable: list constructor with untyped item"
       )
       tail
       (List.reverse $ List.init listItems)
@@ -1107,14 +1118,14 @@ generateExp env symbolTable exp = case exp of
           fields <- retrieveArgs [Core.getMetadata value] [field]
 
           -- TODO: use alloca instead
-          fieldPtr    <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
+          fieldPtr    <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
           fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
 
           Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (List.head fields, 1)]
           return fieldPtr'
 
         _ ->
-          undefined
+          error "Unreachable: record field spread with unexpected field list"
 
   -- typedef struct madlib__array__Array {
   --   int64_t length;

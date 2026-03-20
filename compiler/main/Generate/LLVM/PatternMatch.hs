@@ -35,7 +35,8 @@ import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
 
 import           LLVM.IRBuilder.Monad
 import           LLVM.IRBuilder.Module        (MonadModuleBuilder)
-import           LLVM.IRBuilder.Instruction   as Instruction
+import           LLVM.IRBuilder.Instruction   as Instruction hiding (gep)
+import           Generate.LLVM.Emit          (emitGEP)
 import           LLVM.IRBuilder.Constant      as C
 
 import           AST.Core                     as Core
@@ -49,10 +50,15 @@ import           Generate.LLVM.Types          (boxType, listType, stringType, re
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
-import           Generate.LLVM.WithMetadata   (callWithMetadata)
+import           Generate.LLVM.WithMetadata   (callWithMetadata, callMallocWithMetadata)
 import           Generate.LLVM.TypeOf         (Typed(typeOf))
 
 import           Control.Monad.IO.Class       (MonadIO)
+import           GHC.Stack (HasCallStack)
+
+-- | Inbounds GEP — shadows LLVM.IRBuilder.Instruction.gep
+gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
+gep = emitGEP
 
 
 -- | Type alias for the generateExp callback from LLVM.hs
@@ -115,7 +121,7 @@ generateBranch ctx env symbolTable hasMore exitBlock whereExp is = case is of
     return $ (branchResult', retBlock) : finalPhi
 
   _ ->
-    undefined
+    error "Unreachable: generateBranch called with invalid branch expression"
 
 
 generateSymbolTableForIndexedData :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
@@ -202,7 +208,7 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
                 fieldValue <- callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (baseExp, [])]
 
                 let fieldType = Type.StructureType False [stringType, boxType]
-                fieldPtr <- callWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
+                fieldPtr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
                 fieldPtr' <- ctxSafeBitcast ctx fieldPtr (Type.ptr fieldType)
                 ctxStoreItem ctx fieldPtr' () (nameOperand, 0)
                 ctxStoreItem ctx fieldPtr' () (fieldValue, 1)
@@ -221,7 +227,7 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
         return symbolTable'
 
   _ ->
-    undefined
+    error "Unreachable: generateSymbolTableForPattern called with invalid pattern"
 
 
 generateSubPatternTest :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m)
@@ -411,7 +417,7 @@ generateBranchTest ctx env symbolTable pat value = case pat of
     phi [(idTest, idTestBlock), (subPatternsTest, subPatternsTestBlock')]
 
   _ ->
-    undefined
+    error "Unreachable: generateBranchTest called with invalid pattern"
 
 
 getFieldPattern :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m)

@@ -48,6 +48,7 @@ import           LLVM.AST.Linkage              (Linkage(..))
 import           LLVM.IRBuilder                (MonadIRBuilder, MonadModuleBuilder, emitInstrVoid, emitInstr, emitDefn,
                                                 ParameterName(..), IRBuilderT, named, fresh, runIRBuilderT, emptyIRBuilder)
 import qualified LLVM.IRBuilder.Instruction     as Instruction
+import           Generate.LLVM.TypeOf          (Typed(typeOf))
 
 import           Generate.LLVM.Operand         (TypedOperand(..), returnTypeOf, raw)
 
@@ -196,14 +197,27 @@ emitStore :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> Operand -> m
 emitStore addr val = Instruction.store addr 0 val
 
 
--- | GEP with inbounds.
-emitGEPInbounds :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
-emitGEPInbounds addr indices = Instruction.gep addr indices
+-- | GEP with inbounds flag set. This tells LLVM the pointer arithmetic
+-- stays within the allocated object, enabling better alias analysis.
+emitGEP :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
+emitGEP addr indices = do
+  let instr = GetElementPtr { inBounds = True, address = addr, indices = indices, metadata = [] }
+      resultTy = gepResultType (typeOf addr) indices
+  emitInstr resultTy instr
 
+-- | Alias for emitGEP.
+emitGEPInbounds :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
+emitGEPInbounds = emitGEP
 
--- | GEP (alias for backward compat).
-emitGEP :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
-emitGEP = emitGEPInbounds
+-- | Compute the result type of a GEP instruction from the address type and indices.
+gepResultType :: Type -> [Operand] -> Type
+gepResultType ty [] = ptr ty
+gepResultType (PointerType ty _) (_:is) = gepResultType ty is
+gepResultType (StructureType _ elTys) (ConstantOperand (Constant.Int 32 val):is) =
+  gepResultType (elTys !! fromIntegral val) is
+gepResultType (VectorType _ elTy) (_:is) = gepResultType elTy is
+gepResultType (ArrayType _ elTy) (_:is) = gepResultType elTy is
+gepResultType ty (_:is) = gepResultType ty is
 
 
 -- | Alloca instruction.
