@@ -1,0 +1,59 @@
+import IO from "IO"
+
+
+// If/else as expression
+abs = (n) => if (n < 0) { 0 - n } else { n }
+
+// Ternary
+sign = (n) => n > 0 ? "positive" : n < 0 ? "negative" : "zero"
+
+// If/else chain as expression
+classify = (n) =>
+  if (n < 0) {
+    "negative"
+  } else if (n == 0) {
+    "zero"
+  } else if (n < 10) {
+    "small"
+  } else if (n < 100) {
+    "medium"
+  } else {
+    "large"
+  }
+
+// Ternary in assignment
+clamp = (lo, hi, x) => x < lo ? lo : x > hi ? hi : x
+
+main = () => {
+  // If/else
+  IO.log(abs(0 - 5))
+  IO.log(abs(3))
+  IO.log(abs(0))
+
+  // Ternary
+  IO.putLine(sign(5))
+  IO.putLine(sign(0 - 3))
+  IO.putLine(sign(0))
+
+  // If/else chain
+  IO.putLine(classify(0 - 1))
+  IO.putLine(classify(0))
+  IO.putLine(classify(5))
+  IO.putLine(classify(50))
+  IO.putLine(classify(100))
+
+  // Nested ternary
+  IO.log(clamp(0, 10, 0 - 5))
+  IO.log(clamp(0, 10, 5))
+  IO.log(clamp(0, 10, 15))
+
+  // Boolean expressions in conditions
+  x = 5
+  if (x > 0 && x < 10) {
+    IO.putLine("in range")
+  }
+
+  if (x == 0 || x == 5) {
+    IO.putLine("zero or five")
+  }
+}

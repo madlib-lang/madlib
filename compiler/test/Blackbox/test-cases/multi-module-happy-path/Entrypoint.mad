@@ -1,0 +1,21 @@
+import IO from "IO"
+import { add, PI, directionName, North, South, East, West } from "./Helper"
+import type { Direction } from "./Helper"
+
+
+showDirection :: Direction -> String
+showDirection = directionName
+
+main = () => {
+  // Named import
+  IO.log(add(3, 4))
+
+  // Type import
+  IO.putLine(showDirection(North))
+  IO.putLine(showDirection(South))
+  IO.putLine(showDirection(East))
+  IO.putLine(showDirection(West))
+
+  // Constant import
+  IO.log(PI)
+}

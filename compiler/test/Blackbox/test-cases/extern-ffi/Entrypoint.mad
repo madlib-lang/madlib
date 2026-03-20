@@ -1,0 +1,23 @@
+import IO from "IO"
+
+
+#iftarget js
+
+parseNum :: String -> Float
+parseNum = (s) => #- parseFloat(s) -#
+
+#elseif llvm
+
+parseNum :: String -> Float
+parseNum = (_) => 0.0
+
+#endif
+
+
+main = () => {
+  x = parseNum("3.14")
+  IO.log(x)
+
+  y = parseNum("2.5") + 1.5
+  IO.log(y)
+}

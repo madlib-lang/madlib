@@ -1,0 +1,39 @@
+import IO from "IO"
+
+
+// ADT with multiple constructors
+type Color
+  = Red
+  | Green
+  | Blue
+derive Comparable Color
+
+// ADT with data
+type Box a
+  = Box(a)
+  | EmptyBox
+derive Comparable Box
+
+// Record derive
+derive Comparable { x, y, z }
+
+main = () => {
+  // Color comparison
+  IO.log(Red == Red)
+  IO.log(Red == Blue)
+  IO.log(Red > Blue)
+  IO.log(Green < Blue)
+  IO.log(Red < Green)
+
+  // Box comparison
+  IO.log(Box(1) == Box(1))
+  IO.log(Box(1) == Box(2))
+  IO.log(Box(1) > EmptyBox)
+  IO.log(EmptyBox < Box(1))
+
+  // Record comparison with 3 fields
+  IO.log({ x: 1, y: 2, z: 3 } == { x: 1, y: 2, z: 3 })
+  IO.log({ x: 1, y: 2, z: 3 } > { x: 1, y: 2, z: 2 })
+  IO.log({ x: 1, y: 2, z: 3 } < { x: 1, y: 2, z: 4 })
+  IO.log({ x: 0, y: 0, z: 0 } >= { x: 0, y: 0, z: 0 })
+}

@@ -1,0 +1,29 @@
+// Named export
+add :: Integer -> Integer -> Integer
+export add = (a, b) => a + b
+
+// Type export
+export type Direction
+  = North
+  | South
+  | East
+  | West
+
+// Function using the type
+directionName :: Direction -> String
+export directionName = (d) => where(d) {
+  North =>
+    "north"
+
+  South =>
+    "south"
+
+  East =>
+    "east"
+
+  West =>
+    "west"
+}
+
+PI :: Float
+export PI = 3.14159

@@ -1,0 +1,65 @@
+import IO from "IO"
+import type { Maybe } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
+
+
+// Safe lookup
+safeLookup :: Integer -> List Integer -> Maybe Integer
+safeLookup = (i, list) => where(list) {
+  [x, ...rest] =>
+    i == 0 ? Just(x) : safeLookup(i - 1, rest)
+
+  [] =>
+    Nothing
+}
+
+// Chain Maybe operations with do notation
+compute :: List Integer -> Maybe Integer
+compute = (list) => do {
+  x <- safeLookup(0, list)
+  y <- safeLookup(1, list)
+  return of(x + y)
+}
+
+// Nested do notation
+computeNested :: Maybe Integer
+computeNested = do {
+  a <- Just(100)
+  b <- Just(5)
+  c <- Just(a + b)
+  return of(c * 2)
+}
+
+main = () => {
+  // Successful chain
+  IO.log(compute([10, 20, 30]))
+
+  // Fails - index out of bounds
+  IO.log(compute([10]))
+
+  // Empty list
+  IO.log(compute([]))
+
+  // Nested
+  IO.log(computeNested)
+
+  // Inline do
+  result = do {
+    x <- Just(10)
+    y <- Just(20)
+    return of(x + y)
+  }
+  IO.log(result)
+
+  // Do with Nothing short-circuit
+  failed = do {
+    x <- Just(5)
+    _ <- (Nothing :: Maybe Integer)
+    return of(x)
+  }
+  IO.log(failed)
+
+  // Using fromMaybe to extract
+  IO.log(fromMaybe(0, compute([10, 20, 30])))
+  IO.log(fromMaybe(-1, compute([])))
+}

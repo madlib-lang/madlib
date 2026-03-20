@@ -1,0 +1,76 @@
+import IO from "IO"
+
+
+// Custom interface
+interface Describable a {
+  describe :: a -> String
+}
+
+// ADT
+type Animal
+  = Dog(String)
+  | Cat(String)
+
+// Instance for ADT
+instance Describable Animal {
+  describe = (animal) => where(animal) {
+    Dog(name) =>
+      `Dog named ${name}`
+
+    Cat(name) =>
+      `Cat named ${name}`
+  }
+}
+
+// Instance for a record type
+instance Describable { label :: String, value :: Integer } {
+  describe = (r) => `${r.label}: ${show(r.value)}`
+}
+
+// Constrained function
+printDescription :: Describable a => a -> String
+printDescription = (x) => `Description: ${describe(x)}`
+
+// Interface with multiple methods
+interface Container f {
+  empty :: f a
+  size :: f a -> Integer
+}
+
+// Stack type
+type Stack a = Stack(List a)
+
+instance Container Stack {
+  empty = Stack([])
+  size = (stack) => where(stack) {
+    Stack(items) =>
+      listLength(items)
+  }
+}
+
+listLength :: List a -> Integer
+listLength = (list) => where(list) {
+  [] =>
+    0
+
+  [_, ...rest] =>
+    1 + listLength(rest)
+}
+
+main = () => {
+  // Describable instances
+  IO.putLine(describe(Dog("Rex")))
+  IO.putLine(describe(Cat("Whiskers")))
+  IO.putLine(describe({ label: "count", value: 42 }))
+
+  // Constrained function
+  IO.putLine(printDescription(Dog("Buddy")))
+  IO.putLine(printDescription(Cat("Luna")))
+
+  // Container interface
+  s = (empty :: Stack Integer)
+  IO.log(size(s))
+
+  s2 = Stack([1, 2, 3])
+  IO.log(size(s2))
+}

@@ -1,0 +1,30 @@
+import IO from "IO"
+
+
+main = () => {
+  // Basic interpolation
+  name = "World"
+  IO.putLine(`Hello ${name}`)
+
+  // Multiple interpolations
+  first = "Jane"
+  last = "Doe"
+  IO.putLine(`${first} ${last}`)
+
+  // Expression interpolation
+  IO.putLine(`2 + 3 = ${show(2 + 3)}`)
+
+  // Nested function calls in interpolation
+  greet = (n) => `Hi ${n}`
+  IO.putLine(greet("Alice"))
+
+  // Template string with no interpolation
+  IO.putLine(`plain string`)
+
+  // Numbers in interpolation
+  x = 42
+  IO.putLine(`The answer is ${show(x)}`)
+
+  // Boolean in interpolation
+  IO.putLine(`Is true: ${show(true)}`)
+}

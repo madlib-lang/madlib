@@ -1,0 +1,44 @@
+import IO from "IO"
+
+
+// Alias for a record type
+alias User = { name :: String, age :: Integer }
+
+// Alias with type parameters
+alias Pair a b = { first :: a, second :: b }
+
+// Alias for function type
+alias Transform a = a -> a
+
+// Use aliases in type annotations
+greetUser :: User -> String
+greetUser = (user) => `${user.name} is ${show(user.age)}`
+
+makePair :: a -> b -> Pair a b
+makePair = (a, b) => ({ first: a, second: b })
+
+applyTransform :: Transform Integer -> Integer -> Integer
+applyTransform = (f, x) => f(x)
+
+main = () => {
+  // Record alias
+  user = ({ name: "Alice", age: 30 } :: User)
+  IO.log(greetUser(user))
+
+  // Parameterized alias
+  p1 = makePair("hello", 42)
+  IO.log(p1.first)
+  IO.log(p1.second)
+
+  p2 = makePair(true, [1, 2, 3])
+  IO.log(p2.first)
+  IO.log(p2.second)
+
+  // Function alias
+  IO.log(applyTransform((x) => x * 2, 21))
+
+  // Nested usage
+  userPair = makePair(user, { name: "Bob", age: 25 })
+  IO.log(greetUser(userPair.first))
+  IO.log(greetUser(userPair.second))
+}

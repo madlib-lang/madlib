@@ -1,0 +1,46 @@
+import IO from "IO"
+import Dictionary from "Dictionary"
+import List from "List"
+
+
+main = () => {
+  // Create from list
+  d = Dictionary.fromList([#["a", 1], #["b", 2], #["c", 3]])
+
+  // Get values
+  IO.log(Dictionary.get("a", d))
+  IO.log(Dictionary.get("b", d))
+  IO.log(Dictionary.get("z", d))
+
+  // Insert and get
+  d2 = Dictionary.insert("d", 4, d)
+  IO.log(Dictionary.get("d", d2))
+
+  // Length
+  IO.log(Dictionary.length(d))
+  IO.log(Dictionary.length(d2))
+
+  // Keys and values
+  ks = Dictionary.keys(d)
+  vs = Dictionary.values(d)
+  IO.log(List.sort(ks))
+  IO.log(List.sort(vs))
+
+  // Singleton
+  s = Dictionary.singleton("x", 42)
+  IO.log(Dictionary.get("x", s))
+
+  // Empty
+  e = Dictionary.empty
+  IO.log(Dictionary.length(e))
+
+  // Map over dictionary
+  doubled = map((v) => v * 2, d)
+  IO.log(Dictionary.get("a", doubled))
+  IO.log(Dictionary.get("c", doubled))
+
+  // toList roundtrip
+  pairs = Dictionary.toList(d)
+  d3 = Dictionary.fromList(pairs)
+  IO.log(Dictionary.get("b", d3))
+}

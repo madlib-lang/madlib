@@ -1,0 +1,109 @@
+import IO from "IO"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
+
+
+// ADT with multiple constructors
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+  | Point
+
+area :: Shape -> Float
+area = (shape) => where(shape) {
+  Circle(r) =>
+    3.14159 * r * r
+
+  Rectangle(w, h) =>
+    w * h
+
+  Point =>
+    0.0
+}
+
+// Nested constructor patterns
+unwrapNested :: Maybe (Maybe Integer) -> Integer
+unwrapNested = (m) => where(m) {
+  Just(Just(x)) =>
+    x
+
+  Just(Nothing) =>
+    -1
+
+  Nothing =>
+    -2
+}
+
+// List patterns
+describeList :: List Integer -> String
+describeList = (list) => where(list) {
+  [] =>
+    "empty"
+
+  [x] =>
+    `one: ${show(x)}`
+
+  [x, y] =>
+    `two: ${show(x)}, ${show(y)}`
+
+  [x, ...rest] =>
+    `many: first=${show(x)}, rest has more`
+}
+
+// Literal patterns
+classify :: Integer -> String
+classify = (n) => where(n) {
+  0 =>
+    "zero"
+
+  1 =>
+    "one"
+
+  _ =>
+    "other"
+}
+
+main = () => {
+  // Multi-constructor ADT
+  IO.log(area(Circle(5.0)))
+  IO.log(area(Rectangle(3.0, 4.0)))
+  IO.log(area(Point))
+
+  // Nested constructors
+  IO.log(unwrapNested(Just(Just(42))))
+  IO.log(unwrapNested(Just(Nothing)))
+  IO.log(unwrapNested(Nothing))
+
+  // List patterns
+  IO.log(describeList([]))
+  IO.log(describeList([1]))
+  IO.log(describeList([1, 2]))
+  IO.log(describeList([1, 2, 3, 4]))
+
+  // Literal patterns
+  IO.log(classify(0))
+  IO.log(classify(1))
+  IO.log(classify(99))
+
+  // Boolean pattern
+  boolToStr = (b) => where(b) {
+    true =>
+      "yes"
+
+    false =>
+      "no"
+  }
+  IO.log(boolToStr(true))
+  IO.log(boolToStr(false))
+
+  // Wildcard in different positions
+  getFirst = (list) => where(list) {
+    [x, ..._] =>
+      Just(x)
+
+    [] =>
+      Nothing
+  }
+  IO.log(getFirst([10, 20, 30]))
+  IO.log(getFirst(([] :: List Integer)))
+}

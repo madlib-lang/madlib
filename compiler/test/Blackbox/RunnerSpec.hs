@@ -161,6 +161,23 @@ spec = do
         , "compiler/test/Blackbox/test-cases/record-rest-pattern"
         , "compiler/test/Blackbox/test-cases/pattern-safe-mutation"
         , "compiler/test/Blackbox/test-cases/pattern-mutation-error"
+        , "compiler/test/Blackbox/test-cases/dictionary-operations"
+        , "compiler/test/Blackbox/test-cases/pipe-operator"
+        , "compiler/test/Blackbox/test-cases/closures-and-higher-order"
+        , "compiler/test/Blackbox/test-cases/type-aliases"
+        , "compiler/test/Blackbox/test-cases/do-notation"
+        , "compiler/test/Blackbox/test-cases/template-strings"
+        , "compiler/test/Blackbox/test-cases/tuples"
+        , "compiler/test/Blackbox/test-cases/pattern-matching-advanced"
+        , "compiler/test/Blackbox/test-cases/record-spread-update"
+        , "compiler/test/Blackbox/test-cases/list-operations"
+        , "compiler/test/Blackbox/test-cases/extern-ffi"
+        , "compiler/test/Blackbox/test-cases/derived-instances-extended"
+        , "compiler/test/Blackbox/test-cases/scope-and-shadowing"
+        , "compiler/test/Blackbox/test-cases/if-else-chains"
+        , "compiler/test/Blackbox/test-cases/custom-type-classes"
+        , "compiler/test/Blackbox/test-cases/multi-module-happy-path"
+        , "compiler/test/Blackbox/test-cases/mutation-patterns"
         ]
 
   forM_ cases $ \casePath -> do

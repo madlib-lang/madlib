@@ -1,0 +1,63 @@
+import IO from "IO"
+
+
+// Closures capture correct scope
+testClosure = () => {
+  val = 50
+  getCaptured = () => val
+  IO.log(getCaptured())
+}
+
+// Multiple levels of nesting
+testDeepNesting = () => {
+  a = 1
+  f = () => {
+    b = 2
+    g = () => {
+      c = 3
+      return a + b + c
+    }
+    return g()
+  }
+  IO.log(f())
+}
+
+// Pattern match introduces local bindings
+testPatternScope = () => {
+  result = where(#[10, 20]) {
+    #[a, b] =>
+      a + b
+  }
+  IO.log(result)
+}
+
+// Nested closures with different variables
+testNestedClosures = () => {
+  a = 1
+  f = () => {
+    b = 2
+    g = () => {
+      c = 3
+      h = () => a + b + c
+      return h()
+    }
+    return g()
+  }
+  IO.log(f())
+}
+
+// Function parameters in nested scope
+testParamCapture = () => {
+  makeAdder = (n) => (m) => n + m
+  add10 = makeAdder(10)
+  IO.log(add10(5))
+  IO.log(add10(20))
+}
+
+main = () => {
+  testClosure()
+  testDeepNesting()
+  testPatternScope()
+  testNestedClosures()
+  testParamCapture()
+}

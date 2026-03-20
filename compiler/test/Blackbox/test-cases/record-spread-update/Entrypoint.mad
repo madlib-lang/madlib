@@ -1,0 +1,44 @@
+import IO from "IO"
+
+
+main = () => {
+  // Basic record
+  person = { name: "Alice", age: 30, city: "Paris" }
+  IO.log(person.name)
+  IO.log(person.age)
+
+  // Record spread to create updated copy
+  updated = { ...person, age: 31 }
+  IO.log(updated.age)
+  IO.log(updated.name)
+
+  // Spread with new fields
+  extended = { ...person, email: "alice@example.com" }
+  IO.log(extended.email)
+  IO.log(extended.name)
+
+  // Nested record access
+  company = { name: "Acme", ceo: { name: "Bob", age: 50 } }
+  IO.log(company.ceo.name)
+  IO.log(company.ceo.age)
+
+  // Field shorthand
+  x = 10
+  y = 20
+  point = { x, y }
+  IO.log(point.x)
+  IO.log(point.y)
+
+  // Multiple spreads/overrides
+  defaults = { width: 100, height: 200, color: "red" }
+  custom = { ...defaults, color: "blue", width: 150 }
+  IO.log(custom.width)
+  IO.log(custom.height)
+  IO.log(custom.color)
+
+  // Record as function return
+  makeUser = (n, a) => ({ name: n, age: a })
+  u = makeUser("Charlie", 25)
+  IO.log(u.name)
+  IO.log(u.age)
+}

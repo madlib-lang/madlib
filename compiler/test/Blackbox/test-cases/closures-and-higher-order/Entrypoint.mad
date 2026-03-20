@@ -1,0 +1,66 @@
+import IO from "IO"
+import List from "List"
+
+
+// Function returning a function (currying)
+makeAdder :: Integer -> Integer -> Integer
+makeAdder = (x) => (y) => x + y
+
+// Higher order: function taking a function
+applyTwice :: (a -> a) -> a -> a
+applyTwice = (f, x) => f(f(x))
+
+// Closure capturing outer scope
+makeCounter = () => {
+  count = 0
+  increment = () => {
+    count := count + 1
+    return count
+  }
+  return increment
+}
+
+// Nested closures
+makeGreeter = (greeting) => {
+  return (name) => {
+    return (punctuation) => `${greeting}, ${name}${punctuation}`
+  }
+}
+
+main = () => {
+  // Currying
+  add5 = makeAdder(5)
+  IO.log(add5(3))
+  IO.log(add5(10))
+
+  // Apply twice
+  IO.log(applyTwice((x) => x * 2, 3))
+
+  // Closure with mutable state
+  counter = makeCounter()
+  IO.log(counter())
+  IO.log(counter())
+  IO.log(counter())
+
+  // Map/filter with lambdas
+  nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  evens = List.filter((x) => x % 2 == 0, nums)
+  IO.log(evens)
+
+  doubled = map((x) => x * 2, evens)
+  IO.log(doubled)
+
+  sum = List.reduceLeft((acc, x) => acc + x, 0, nums)
+  IO.log(sum)
+
+  // Nested closures
+  greet = makeGreeter("Hello")
+  greetAlice = greet("Alice")
+  IO.log(greetAlice("!"))
+  IO.log(greetAlice("?"))
+
+  // Passing functions as arguments
+  ops = [(x) => x + 1, (x) => x * 2, (x) => x - 3]
+  results = map((f) => f(10), ops)
+  IO.log(results)
+}

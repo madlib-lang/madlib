@@ -1,0 +1,53 @@
+import IO from "IO"
+
+
+main = () => {
+  // Basic mutation
+  x = 1
+  x := 2
+  IO.log(x)
+
+  // Mutation in block
+  y = 10
+  y := y + 5
+  y := y * 2
+  IO.log(y)
+
+  // While loop with mutation
+  counter = 0
+  sum = 0
+  while(counter < 5) do {
+    sum := sum + counter
+    counter := counter + 1
+  }
+  IO.log(sum)
+  IO.log(counter)
+
+  // Nested while
+  i = 0
+  total = 0
+  while(i < 3) do {
+    j = 0
+    while(j < 3) do {
+      total := total + 1
+      j := j + 1
+    }
+    i := i + 1
+  }
+  IO.log(total)
+
+  // Mutation in closure
+  count = 0
+  increment = () => {
+    count := count + 1
+  }
+  increment()
+  increment()
+  increment()
+  IO.log(count)
+
+  // String mutation
+  msg = "hello"
+  msg := msg ++ " world"
+  IO.log(msg)
+}

@@ -1,0 +1,39 @@
+import IO from "IO"
+import List from "List"
+
+
+double = (x) => x * 2
+addOne = (x) => x + 1
+toString = (x) => show(x)
+
+main = () => {
+  // pipe() function form
+  result1 = pipe(
+    double,
+    addOne,
+    toString,
+  )(5)
+  IO.log(result1)
+
+  // |> binary operator form
+  result2 = 5 |> double |> addOne |> toString
+  IO.log(result2)
+
+  // pipe with list operations
+  result3 = [1, 2, 3, 4, 5]
+    |> List.filter((x) => x > 2)
+    |> map((x) => x * 10)
+  IO.log(result3)
+
+  // pipe with partial application
+  add = (a, b) => a + b
+  result4 = 10 |> add(5)
+  IO.log(result4)
+
+  // nested pipe
+  result5 = pipe(
+    (x) => x + 1,
+    (x) => pipe(double, addOne)(x),
+  )(3)
+  IO.log(result5)
+}

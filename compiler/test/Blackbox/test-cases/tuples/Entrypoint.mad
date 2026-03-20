@@ -1,0 +1,45 @@
+import IO from "IO"
+import Tuple from "Tuple"
+
+
+main = () => {
+  // Create tuples
+  t1 = #[1, "hello"]
+  IO.log(t1)
+
+  // Access with fst/snd
+  IO.log(Tuple.fst(t1))
+  IO.log(Tuple.snd(t1))
+
+  // Pattern match on tuples
+  result = where(#[10, 20]) {
+    #[a, b] =>
+      a + b
+  }
+  IO.log(result)
+
+  // Triple tuple
+  t3 = #[1, true, "three"]
+  IO.log(t3)
+
+  // Tuple in function argument
+  swap = (t) => where(t) {
+    #[a, b] =>
+      #[b, a]
+  }
+  IO.log(swap(#["first", "second"]))
+
+  // Nested tuples
+  nested = #[#[1, 2], #[3, 4]]
+  IO.log(nested)
+
+  inner = where(nested) {
+    #[#[a, _], #[_, d]] =>
+      a + d
+  }
+  IO.log(inner)
+
+  // Tuple with different types
+  mixed = #[42, "answer", true]
+  IO.log(mixed)
+}
