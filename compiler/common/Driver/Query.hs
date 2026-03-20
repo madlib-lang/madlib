@@ -77,9 +77,11 @@ data Query a where
   MonomorphizedAST :: FilePath -> Query Slv.AST
 
   -- Core
+  FoldedCoreAST :: FilePath -> Query Core.AST
   CoreAST :: FilePath -> Query Core.AST
   PropagatedAST :: FilePath -> Query Core.AST
   ForeignCoreExp :: FilePath -> String -> Query (Maybe Core.Exp)
+  FunctionEscapeSummaries :: FilePath -> Query Core.FunctionSummaries
 
   -- LLVM
   BuiltObjectFile :: FilePath -> Query (SymbolTable, LLVM.Env, ByteString.ByteString)
@@ -182,6 +184,9 @@ instance Hashable (Query a) where
     MonomorphizedAST path ->
       hashWithSalt salt (path, 25 :: Int)
 
+    FoldedCoreAST path ->
+      hashWithSalt salt (path, 36 :: Int)
+
     CoreAST path ->
       hashWithSalt salt (path, 26 :: Int)
 
@@ -190,6 +195,9 @@ instance Hashable (Query a) where
 
     ForeignCoreExp modulePath expName ->
       hashWithSalt (hashWithSalt (hashWithSalt salt (28 :: Int)) modulePath) expName
+
+    FunctionEscapeSummaries path ->
+      hashWithSalt salt (path, 35 :: Int)
 
     BuiltObjectFile path ->
       hashWithSalt salt (path, 29 :: Int)

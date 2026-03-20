@@ -18,6 +18,8 @@ import           Generate.LLVM.Hashable
 
 data SymbolType
   = VariableSymbol
+  | BoxedVariableSymbol Operand.Operand
+  -- ^ Carries the boxed (i8*) version of the value to avoid re-boxing
   | LocalVariableSymbol Operand.Operand
   -- ^ operand is a ptr to the value for mutation
   | TCOParamSymbol Operand.Operand

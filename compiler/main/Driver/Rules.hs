@@ -400,62 +400,48 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     return (merged, (mempty, mempty))
 
-  CoreAST path -> nonInput $ do
+  FoldedCoreAST path -> nonInput $ do
     monomorphicAST <- Rock.fetch $ MonomorphizedAST path
     let optLevel = optOptimizationLevel options
 
     case optTarget options of
       TLLVM -> do
         coreAst <- astToCore False monomorphicAST
-
-        -- Only runs for the REPL
-        let coreAst' = SortExpressions.keepLastMainExpAndDeps coreAst
-
-        let sortedAST = SortExpressions.sortASTExpressions coreAst'
-        let renamedAst       = Rename.renameAST sortedAST
-            reducedAst       =
-              if optLevel > O1 then
-                SimplifyCalls.reduceAST renamedAst
-              else
-                renamedAst
-            tceResolved      =
-              if optLevel > O0 then
-                TCE.resolveAST reducedAst
-              else
-                reducedAst
+        let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
+            sortedAST        = SortExpressions.sortASTExpressions coreAst'
+            renamedAst       = Rename.renameAST sortedAST
+            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
+            tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
-            folded           =
-              if optLevel > O1 then
-                FoldCalls.foldAST closureConverted
-              else
-                closureConverted
-            escapeAnalyzed   = EscapeAnalysis.analyzeAST folded
-
-        return (escapeAnalyzed, (mempty, mempty))
+            folded           = if optLevel > O1 then FoldCalls.foldAST closureConverted else closureConverted
+        return (folded, (mempty, mempty))
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
-
-        -- Only runs for the REPL
-        let coreAst' = SortExpressions.keepLastMainExpAndDeps coreAst
-
-        let renamedAst       = Rename.renameAST coreAst'
-            reducedAst       =
-              if optLevel > O1 then
-                SimplifyCalls.reduceAST renamedAst
-              else
-                renamedAst
-            tceResolved      =
-              if optLevel > O0 then
-                TCE.resolveAST reducedAst
-              else
-                reducedAst
-
+        let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
+            renamedAst       = Rename.renameAST coreAst'
+            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
+            tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
         return (tceResolved, (mempty, mempty))
+
+  CoreAST path -> nonInput $ do
+    folded <- Rock.fetch $ FoldedCoreAST path
+
+    case optTarget options of
+      TLLVM -> do
+        -- Fetch escape analysis summaries from imported modules
+        let importPaths = Core.getImportAbsolutePath <$> Core.aimports folded
+        importSummaries <- mapM (Rock.fetch . FunctionEscapeSummaries) importPaths
+        let externalSummaries = Map.unions importSummaries
+        let escapeAnalyzed = EscapeAnalysis.analyzeAST externalSummaries folded
+        return (escapeAnalyzed, (mempty, mempty))
+
+      _ ->
+        return (folded, (mempty, mempty))
 
   PropagatedAST path -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST path
-    if optOptimizationLevel options > O2 then do
+    if optOptimizationLevel options > O1 then do
       (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
       return (propagatedAST, (mempty, mempty))
     else
@@ -467,6 +453,13 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (found, (mempty, mempty))
     where
       findExpByName name exps = List.find (\e -> Core.getExpName e == Just name) exps
+
+  FunctionEscapeSummaries modulePath -> nonInput $ do
+    -- Compute summaries from the folded AST (before escape analysis)
+    -- to avoid cyclic dependency with CoreAST
+    folded <- Rock.fetch $ FoldedCoreAST modulePath
+    let summaries = EscapeAnalysis.buildFunctionSummaries (Core.aexps folded)
+    return (summaries, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
     coreAst                           <- Rock.fetch $ PropagatedAST path

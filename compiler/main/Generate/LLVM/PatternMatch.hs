@@ -46,7 +46,7 @@ import           Data.ByteString.Short        (ShortByteString)
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
-import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof')
+import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex)
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
@@ -188,37 +188,36 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
     let patsWithIds = List.zip pats [1..]
     Monad.foldM (generateSymbolTableForIndexedData ctx env constructor') symbolTable patsWithIds
 
-  Core.Typed qt _ _ (Core.PRecord fieldPatterns restName) -> do
-    subPatterns <- mapM (getFieldPattern ctx env symbolTable baseExp) $ Map.toList fieldPatterns
+  Core.Typed (_ IT.:=> recType) _ _ (Core.PRecord fieldPatterns restName) -> do
+    subPatterns <- mapM (getFieldPattern ctx env symbolTable recType baseExp) $ Map.toList fieldPatterns
     symbolTable' <- Monad.foldM (\previousTable (field, pat') -> generateSymbolTableForPattern ctx env previousTable field pat') symbolTable subPatterns
 
     -- Handle rest pattern: create a record with all fields except the matched ones
     case restName of
       Just restVarName -> do
-        let recordType' = Core.getType pat
-        case recordType' of
-          IT.TRecord allFields _ _ -> do
+        case recType of
+          IT.TRecord allFields _ optionalFields -> do
+            let allFieldMap = Map.union allFields optionalFields
             let matchedFieldNames = Map.keys fieldPatterns
-            let restFieldNames = List.filter (`List.notElem` matchedFieldNames) (Map.keys allFields)
+            let restFieldNames = List.filter (`List.notElem` matchedFieldNames) (Map.keys allFieldMap)
+            let restCount = List.length restFieldNames
+            let srcStructType = Type.StructureType False (List.replicate (Map.size allFieldMap) boxType)
+            let restStructType = Type.StructureType False (List.replicate restCount boxType)
 
-            -- Build a new record with only the rest fields
-            restFields <- mapM (\fieldName -> do
-                let area = Core.getArea pat
-                nameOperand <- ctxBuildStr ctx env area fieldName
-                fieldValue <- callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (baseExp, [])]
+            -- Allocate a flat struct for the rest record
+            restPtr <- callMallocWithMetadata (makeDILocation env (Core.getArea pat)) gcMalloc [(Operand.ConstantOperand $ sizeof' restStructType, [])]
+            restPtr' <- ctxSafeBitcast ctx restPtr (Type.ptr restStructType)
 
-                let fieldType = Type.StructureType False [stringType, boxType]
-                fieldPtr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
-                fieldPtr' <- ctxSafeBitcast ctx fieldPtr (Type.ptr fieldType)
-                ctxStoreItem ctx fieldPtr' () (nameOperand, 0)
-                ctxStoreItem ctx fieldPtr' () (fieldValue, 1)
-                return fieldPtr'
-              ) restFieldNames
+            -- Copy rest fields from source record
+            srcPtr <- ctxSafeBitcast ctx baseExp (Type.ptr srcStructType)
+            Monad.forM_ (List.zip restFieldNames [0..]) $ \(fieldName, dstIdx) -> do
+              let srcIdx = recordFieldIndex fieldName recType
+              srcFieldPtr <- gep srcPtr [i32ConstOp 0, i32ConstOp srcIdx]
+              srcVal <- load srcFieldPtr 0
+              dstFieldPtr <- gep restPtr' [i32ConstOp 0, i32ConstOp dstIdx]
+              store dstFieldPtr 0 srcVal
 
-            let fieldCount = i32ConstOp (fromIntegral $ List.length restFields)
-            let base = Operand.ConstantOperand (Constant.Null boxType)
-            restRecord <- callWithMetadata (makeDILocation env (Core.getArea pat)) buildRecord $ [(fieldCount, []), (base, [])] ++ ((,[]) <$> restFields)
-            return $ Map.insert restVarName (Symbol VariableSymbol restRecord) symbolTable'
+            return $ Map.insert restVarName (Symbol VariableSymbol restPtr') symbolTable'
 
           _ ->
             return $ Map.insert restVarName (Symbol VariableSymbol baseExp) symbolTable'
@@ -381,8 +380,8 @@ generateBranchTest ctx env symbolTable pat value = case pat of
         _ ->
           False
 
-  Core.Typed _ _ _ (Core.PRecord fieldPatterns restName) -> do
-    subPatterns <- mapM (getFieldPattern ctx env symbolTable value) $ Map.toList fieldPatterns
+  Core.Typed (_ IT.:=> recType) _ _ (Core.PRecord fieldPatterns restName) -> do
+    subPatterns <- mapM (getFieldPattern ctx env symbolTable recType value) $ Map.toList fieldPatterns
     subTests    <- mapM (uncurry (generateBranchTest ctx env symbolTable) . Tuple.swap) subPatterns
     Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
 
@@ -421,12 +420,24 @@ generateBranchTest ctx env symbolTable pat value = case pat of
 
 
 getFieldPattern :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m)
-               => PatternCtx m -> Env -> SymbolTable -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
-getFieldPattern ctx env symbolTable record (fieldName, fieldPattern) = do
-  let area = Core.getArea fieldPattern
-  nameOperand <- ctxBuildStr ctx env area fieldName
-  field       <- callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (record, [])]
-  field'      <- unbox env symbolTable (getQualType fieldPattern) field
+               => PatternCtx m -> Env -> SymbolTable -> IT.Type -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
+getFieldPattern ctx env symbolTable recType record (fieldName, fieldPattern) = do
+  field <- case recType of
+    IT.TRecord fields _ optionalFields -> do
+      let allFields = Map.union fields optionalFields
+      let n = Map.size allFields
+      let structType = Type.StructureType False (List.replicate n boxType)
+      let index = recordFieldIndex fieldName recType
+      recordPtr <- ctxSafeBitcast ctx record (Type.ptr structType)
+      fieldPtr  <- gep recordPtr [i32ConstOp 0, i32ConstOp index]
+      load fieldPtr 0
+
+    _ -> do
+      let area = Core.getArea fieldPattern
+      nameOperand <- ctxBuildStr ctx env area fieldName
+      callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (record, [])]
+
+  field' <- unbox env symbolTable (getQualType fieldPattern) field
   return (field', fieldPattern)
 
 

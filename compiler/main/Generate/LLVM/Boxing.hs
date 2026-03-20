@@ -18,6 +18,8 @@ import           Generate.LLVM.Env
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Types         (boxType, listType, stringType, papType, recordType, buildLLVMType)
 import qualified Infer.Type                   as IT
+import qualified Data.Map                     as Map
+import qualified Data.List                    as List
 
 
 -- | Unbox a boxed value (i8*) to its native LLVM type based on the Madlib type.
@@ -54,8 +56,13 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TApp (IT.TCon (IT.TC "List" _) _ _) _ -> do
     emitSafeBitcast what listType
 
-  IT.TRecord{} -> do
-    emitSafeBitcast what recordType
+  IT.TRecord fields _ optionalFields -> do
+    let allFields = Map.union fields optionalFields
+    let n = Map.size allFields
+    if n > 0 then
+      emitSafeBitcast what (Type.ptr $ Type.StructureType False (List.replicate n boxType))
+    else
+      emitSafeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _ _) _) _ ->

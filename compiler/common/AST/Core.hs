@@ -60,6 +60,17 @@ data Core a
 --     Untyped _ _ a ->
 --       show a
 
+-- | Escape information for a single function parameter.
+data ParamEscape
+  = DoesNotEscape     -- ^ Parameter is only read, never stored or returned
+  | Escapes           -- ^ Parameter escapes (returned, stored, or passed to escaping position)
+  deriving (Eq, Show, Generic, Hashable)
+
+-- | Summary of escape behavior for all parameters of a function.
+-- Maps function name -> list of ParamEscape (one per parameter, in order).
+type FunctionSummaries = M.Map String [ParamEscape]
+
+
 data AST =
   AST
     { aimports    :: [Import]

@@ -54,7 +54,7 @@ import           Generate.LLVM.Emit           (emitGEP)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
-import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, adtSymbol)
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, adtSymbol, flatRecordType, recordFieldIndex)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.Builtins
 import qualified Generate.LLVM.Operators      as Ops
@@ -254,20 +254,27 @@ buildStr _env _area s = do
   safeBitcast op stringType
 
 
-retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [[Core.Metadata]] -> [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
-retrieveArgs metadata exps =
+retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [[Core.Metadata]] -> [Core.Exp] -> [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
+retrieveArgs metadata argExps exps =
   mapM
-    (\(metadata, (_, arg, maybeBoxedArg)) -> case maybeBoxedArg of
+    (\(metadata, argExp, (st, arg, maybeBoxedArg)) -> case maybeBoxedArg of
       Just boxed | Core.isReferenceArgument metadata ->
         return boxed
 
-      Just _ ->
-        box arg
+      _ ->
+        -- Check if the argument is a variable with a known boxed form
+        case argExp of
+          Core.Typed _ _ _ (Core.Var name _) ->
+            case Map.lookup name st of
+              Just (Symbol (BoxedVariableSymbol boxed) _) ->
+                return boxed
+              _ ->
+                box arg
 
-      Nothing ->
-        box arg
+          _ ->
+            box arg
     )
-    (List.zip metadata exps)
+    (List.zip3 metadata argExps exps)
 
 
 generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> SymbolTable -> Area -> IT.Qual IT.Type -> Int -> Operand -> [Core.Exp] -> m (SymbolTable, Operand, Maybe Operand)
@@ -275,7 +282,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
   | List.length args == arity = do
       -- We have a known call!
       args'   <- mapM (generateExp env { isLast = False } symbolTable) args
-      args''  <- retrieveArgs (Core.getMetadata <$> args) args'
+      args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
       let args''' = (, []) <$> args''
 
       ret <- callWithMetadata (makeDILocation env area) fnOperand args'''
@@ -286,14 +293,14 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       -- We have extra args so we do the known call and the applyPAP the resulting partial application
       let (args', remainingArgs) = List.splitAt arity args
       args''   <- mapM (generateExp env { isLast = False } symbolTable) args'
-      args'''  <- retrieveArgs (Core.getMetadata <$> args') args''
+      args'''  <- retrieveArgs (Core.getMetadata <$> args') args' args''
       let args'''' = (, []) <$> args'''
 
       pap <- callWithMetadata (makeDILocation env area) fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
       remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
-      remainingArgs'' <- retrieveArgs (Core.getMetadata <$> remainingArgs) remainingArgs'
+      remainingArgs'' <- retrieveArgs (Core.getMetadata <$> remainingArgs) remainingArgs remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
       ret <-
@@ -318,7 +325,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       boxedFn  <- box fnOperand
 
       args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
+      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
       envPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
@@ -546,6 +553,9 @@ generateExp env symbolTable exp = case exp of
         loaded <- load ptr 0
         return (symbolTable, loaded, Nothing)
 
+      Just (Symbol (BoxedVariableSymbol boxed) var) ->
+        return (symbolTable, var, Just boxed)
+
       Just (Symbol _ var) ->
         return (symbolTable, var, Nothing)
 
@@ -556,23 +566,21 @@ generateExp env symbolTable exp = case exp of
   -- Core.Typed _ _ _ (Core.Export e) -> do
   --   generateExp env { isLast = False } symbolTable e
 
-  Core.Typed _ _ metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.Access r@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _)))) e) -> do
+  Core.Typed _ _ metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.Access r@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _)))) e) -> do
     if Core.isReferenceStore metadata then do
         (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         (_, r', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable r
         exp'' <- box exp'
 
-        case recordType of
-          IT.TRecord fields _ _ -> do
-            recordOperand' <- safeBitcast r' (Type.ptr $ Type.StructureType False [Type.i32, boxType])
-            let fieldType = Type.StructureType False [stringType, boxType]
-            let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
-            fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
-            fieldsOperand'  <- load fieldsOperand 0 -- i8*
-            fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr fieldType)
-            field           <- gep fieldsOperand'' [i32ConstOp index]
-            valuePtr        <- gep field [i32ConstOp 0, i32ConstOp 1]
-            store valuePtr 0 exp''
+        case recType of
+          IT.TRecord fields _ optionalFields -> do
+            let allFields = Map.union fields optionalFields
+            let n = Map.size allFields
+            let structType = Type.StructureType False (List.replicate n boxType)
+            let index = recordFieldIndex fieldName recType
+            recordOperand' <- safeBitcast r' (Type.ptr structType)
+            fieldPtr       <- gep recordOperand' [i32ConstOp 0, i32ConstOp index]
+            store fieldPtr 0 exp''
             let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
             return (symbolTable, unit, Nothing)
 
@@ -659,12 +667,15 @@ generateExp env symbolTable exp = case exp of
           or ->
             error $ "found: " <> ppShow or
       else do
-        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+        (_, exp', maybeBoxed) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         Monad.when (envIsDebugBuild env) $ do
           ptr <- alloca (typeOf exp') Nothing 0
           declareVariable env area False name ptr
           storeWithMetadata (makeDILocation env area) ptr 0 exp'
-        return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
+        let sym = case maybeBoxed of
+              Just boxed -> Symbol (BoxedVariableSymbol boxed) exp'
+              Nothing    -> varSymbol exp'
+        return (Map.insert name sym symbolTable, exp', Nothing)
 
   Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])
     | "fromList" `List.isInfixOf` fnName && IT.getConstructorCon t == IT.tArrayCon && List.all (not . Core.isListSpread) items -> do
@@ -873,7 +884,7 @@ generateExp env symbolTable exp = case exp of
         if List.length args == arity then do
           -- optimize known calls to constructors to simple allocations without function call
           args'   <- mapM (generateExp env { isLast = False } symbolTable) args
-          args''  <- retrieveArgs (Core.getMetadata <$> args) args'
+          args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
 
           let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
           -- Use atomic malloc when all fields are primitive and no padding slots exist
@@ -911,7 +922,7 @@ generateExp env symbolTable exp = case exp of
         pap'' <- safeBitcast pap' boxType
 
         args'     <- mapM (generateExp env { isLast = False } symbolTable) args
-        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
+        boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
         ret       <-
           if argsApplied == 1 then
@@ -933,7 +944,7 @@ generateExp env symbolTable exp = case exp of
       let argc = i32ConstOp (fromIntegral $ List.length args)
 
       args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args'
+      boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
       ret <-
         if List.length args == 1 then
@@ -995,7 +1006,7 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ area metadata (Core.TupleConstructor exps) -> do
     exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
-    boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
+    boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
         elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
@@ -1110,7 +1121,7 @@ generateExp env symbolTable exp = case exp of
     tail <- case List.last listItems of
       Core.Typed _ area _ (Core.ListItem lastItem) -> do
         item <- generateExp env { isLast = False } symbolTable lastItem
-        items <- retrieveArgs [Core.getMetadata lastItem] [item]
+        items <- retrieveArgs [Core.getMetadata lastItem] [lastItem] [item]
         callWithMetadata (makeDILocation env area) madlistSingleton [(List.head items, [])]
 
       Core.Typed _ _ _ (Core.ListSpread spread) -> do
@@ -1123,7 +1134,7 @@ generateExp env symbolTable exp = case exp of
       (\list' i -> case i of
         Core.Typed _ area _ (Core.ListItem item) -> do
           item' <- generateExp env { isLast = False } symbolTable item
-          items <- retrieveArgs [Core.getMetadata item] [item']
+          items <- retrieveArgs [Core.getMetadata item] [item] [item']
 
           newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
           newHead' <- safeBitcast newHead listType
@@ -1146,42 +1157,58 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, list, Nothing)
 
-  Core.Typed _ area _ (Core.Record fields) -> do
+  Core.Typed qt@(_ IT.:=> recType) area metadata (Core.Record fields) -> do
     let (base, fields') = List.partition isSpreadField fields
-    let fieldCount = i32ConstOp (fromIntegral $ List.length fields')
     let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
+    -- Use the result record type to determine the struct size (not just explicit fields)
+    let allFieldNames = case recType of
+          IT.TRecord fs _ os -> Map.keys (Map.union fs os)
+          _                  -> []
+    let n = List.length allFieldNames
+    let structType = Type.StructureType False (List.replicate n boxType)
 
-    base' <- case base of
+    -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
+    let fieldTypes = (\f -> let (_ IT.:=> ft) = Core.getQualType (Core.getFieldExp f) in ft) <$> sortedFields
+    let mallocFn = chooseMalloc fieldTypes
+    recordPtr  <- allocateStruct env area metadata structType mallocFn
+    recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
+
+    -- If there's a spread base, copy its fields into the result struct
+    case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
-        field  <- generateExp env { isLast = False } symbolTable exp
-        fields <- retrieveArgs [Core.getMetadata exp] [field]
-        return (List.head fields)
+        (_, baseOperand, _) <- generateExp env { isLast = False } symbolTable exp
+        let baseRecType = let (_ IT.:=> bt) = Core.getQualType exp in bt
+        let baseFieldNames = case baseRecType of
+              IT.TRecord fs _ os -> Map.keys (Map.union fs os)
+              _                  -> []
+        let baseN = List.length baseFieldNames
+        let baseStructType = Type.StructureType False (List.replicate baseN boxType)
+        basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
+        -- Copy each base field to its position in the result struct
+        Monad.forM_ baseFieldNames $ \fieldName -> do
+          let srcIndex = recordFieldIndex fieldName baseRecType
+          let dstIndex = recordFieldIndex fieldName recType
+          srcPtr <- gep basePtr [i32ConstOp 0, i32ConstOp srcIndex]
+          srcVal <- load srcPtr 0
+          dstPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp dstIndex]
+          store dstPtr 0 srcVal
 
-      _ ->
-        return $ Operand.ConstantOperand (Constant.Null boxType)
+      _ -> return ()
 
-    fields'' <- mapM (generateField symbolTable) sortedFields
+    -- Store each field value at its index in the flat struct
+    Monad.forM_ sortedFields $ \field -> case field of
+      Core.Typed _ _ _ (Core.Field (name, value)) -> do
+        (_, val, maybeBoxed) <- generateExp env { isLast = False } symbolTable value
+        boxedVal <- case maybeBoxed of
+          Just boxed -> return boxed
+          Nothing    -> box val
+        let index = recordFieldIndex name recType
+        fieldPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp index]
+        store fieldPtr 0 boxedVal
 
-    record <- callWithMetadata (makeDILocation env area) buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
-    return (symbolTable, record, Nothing)
-    where
-      generateField :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => SymbolTable -> Core.Field -> m Operand
-      generateField symbolTable field = case field of
-        Core.Typed _ area _ (Core.Field (name, value)) -> do
-          let fieldType = Type.StructureType False [stringType, boxType]
-          nameOperand <- buildStr env area name
-          field  <- generateExp env { isLast = False } symbolTable value
-          fields <- retrieveArgs [Core.getMetadata value] [field]
+      _ -> return ()
 
-          -- TODO: use alloca instead
-          fieldPtr    <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' fieldType, [])]
-          fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
-
-          Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (List.head fields, 1)]
-          return fieldPtr'
-
-        _ ->
-          error "Unreachable: record field spread with unexpected field list"
+    return (symbolTable, recordPtr', Nothing)
 
   -- typedef struct madlib__array__Array {
   --   int64_t length;
@@ -1217,19 +1244,17 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, ret'', Just ret')
 
-  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recordType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
+  Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
-    value <- case recordType of
-      IT.TRecord fields _ _ -> do
-        recordOperand' <- safeBitcast recordOperand (Type.ptr $ Type.StructureType False [Type.i32, boxType])
-        let fieldType = Type.StructureType False [stringType, boxType]
-        let index = fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys fields))
-        fieldsOperand   <- gep recordOperand' [i32ConstOp 0, i32ConstOp 1] -- i8**
-        fieldsOperand'  <- load fieldsOperand 0 -- i8*
-        fieldsOperand'' <- safeBitcast fieldsOperand' (Type.ptr fieldType)
-        field           <- gep fieldsOperand'' [i32ConstOp index]
-        value           <- gep field [i32ConstOp 0, i32ConstOp 1]
-        load value 0
+    value <- case recType of
+      IT.TRecord fields _ optionalFields -> do
+        let allFields = Map.union fields optionalFields
+        let n = Map.size allFields
+        let structType = Type.StructureType False (List.replicate n boxType)
+        let index = recordFieldIndex fieldName recType
+        recordOperand' <- safeBitcast recordOperand (Type.ptr structType)
+        fieldPtr       <- gep recordOperand' [i32ConstOp 0, i32ConstOp index]
+        load fieldPtr 0
 
       _ -> do
         nameOperand <- buildStr env area fieldName

@@ -20,12 +20,16 @@ module Generate.LLVM.Types
   , retrieveConstructorMaxArity
     -- * Tuple arity detection
   , tupleArity
+    -- * Record helpers
+  , flatRecordType
+  , recordFieldIndex
     -- * Symbol helper
   , adtSymbol
   ) where
 
 import qualified Data.Map                     as Map
 import qualified Data.List                    as List
+import qualified Data.Maybe                   as Maybe
 
 import qualified LLVM.AST.Type                as Type
 import qualified LLVM.AST.Constant            as Constant
@@ -121,8 +125,13 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     listType
 
-  IT.TRecord{} -> do
-    recordType
+  IT.TRecord fields _ optionalFields -> do
+    let allFields = Map.union fields optionalFields
+    let n = Map.size allFields
+    if n > 0 then
+      Type.ptr $ Type.StructureType False (List.replicate n boxType)
+    else
+      recordType
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ ->
     let arity = List.length $ IT.getParamTypes t
@@ -174,8 +183,13 @@ buildLLVMType' (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     return (listType, Nothing)
 
-  IT.TRecord{} -> do
-    return (recordType, Nothing)
+  IT.TRecord fields _ optionalFields -> do
+    let allFields = Map.union fields optionalFields
+    let n = Map.size allFields
+    if n > 0 then
+      return (Type.ptr $ Type.StructureType False (List.replicate n boxType), Nothing)
+    else
+      return (recordType, Nothing)
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ -> do
     let arity = List.length $ IT.getParamTypes t
@@ -273,3 +287,23 @@ getTupleTConName :: IT.Type -> Maybe String
 getTupleTConName (IT.TApp l _) = getTupleTConName l
 getTupleTConName (IT.TCon (IT.TC name _) "prelude" _) = Just name
 getTupleTConName _ = Nothing
+
+
+-- Record helpers
+
+-- | Build a flat struct type for a record with known fields.
+-- Fields are ordered alphabetically by name (Map.keys ordering).
+flatRecordType :: IT.Type -> Type.Type
+flatRecordType (IT.TRecord fields _ optionalFields) =
+  let allFields = Map.union fields optionalFields
+      n = Map.size allFields
+  in  Type.ptr $ Type.StructureType False (List.replicate n boxType)
+flatRecordType _ = recordType
+
+-- | Get the index of a field in a flat record struct.
+-- Fields are ordered alphabetically by name (Map.keys ordering).
+recordFieldIndex :: String -> IT.Type -> Integer
+recordFieldIndex fieldName (IT.TRecord fields _ optionalFields) =
+  let allFields = Map.union fields optionalFields
+  in  fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys allFields))
+recordFieldIndex _ _ = 0

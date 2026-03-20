@@ -1,43 +1,119 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Optimize.EscapeAnalysis where
+module Optimize.EscapeAnalysis
+  ( analyzeAST
+  , buildFunctionSummaries
+  ) where
 
 import qualified Data.Set as S
+import qualified Data.Map as M
+import qualified Data.List as L
 import           AST.Core
 
 
+-- ParamEscape and FunctionSummaries are defined in AST.Core
+-- to allow cross-module use via Driver.Query
+
+
 -- | Run escape analysis on the entire AST.
--- Marks allocations (constructors, tuples, records) as StackAllocatable
--- when they provably do not escape their defining scope.
-analyzeAST :: AST -> AST
-analyzeAST ast =
-  ast { aexps = analyzeTopLevel <$> aexps ast }
+-- Takes external (cross-module) summaries and merges them with local summaries
+-- to more precisely determine which allocations can be stack-allocated.
+analyzeAST :: FunctionSummaries -> AST -> AST
+analyzeAST externalSummaries ast =
+  let localSummaries = buildFunctionSummaries (aexps ast)
+      -- Merge: local summaries take precedence over external ones
+      summaries = M.union localSummaries externalSummaries
+  in  ast { aexps = analyzeTopLevel summaries <$> aexps ast }
+
+
+-- | Build inter-procedural function summaries by analyzing each top-level
+-- function to determine which of its parameters escape.
+-- Iterates to a fixed point to handle mutual recursion.
+buildFunctionSummaries :: [Exp] -> FunctionSummaries
+buildFunctionSummaries topExps =
+  let -- Extract all top-level function definitions: (name, params, body)
+      funDefs = concatMap extractFunDef topExps
+      -- Initialize all parameters as DoesNotEscape
+      initial = M.fromList [(name, replicate (length params) DoesNotEscape) | (name, params, _) <- funDefs]
+      -- Iterate to fixed point
+      iterate' summaries =
+        let summaries' = foldl (analyzeFunDef funDefs) summaries funDefs
+        in  if summaries' == summaries then summaries else iterate' summaries'
+  in  iterate' initial
+
+
+-- | Extract function definitions from a top-level expression.
+-- Unwraps Export and Assignment wrappers to find Definition nodes.
+extractFunDef :: Exp -> [(String, [Core Name], [Exp])]
+extractFunDef exp = case exp of
+  Typed _ _ _ (Export e) ->
+    extractFunDef e
+
+  Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) (Typed _ _ _ (Definition params body))) ->
+    [(name, params, body)]
+
+  _ -> []
+
+
+-- | Analyze a single function definition and update the summaries.
+-- A parameter escapes if it (or a variable derived from it) appears in:
+--   - The return position (last expression of the body)
+--   - An argument to a call where the callee's summary says that position escapes
+--   - A reference store
+--   - A closure capture
+analyzeFunDef :: [(String, [Core Name], [Exp])] -> FunctionSummaries -> (String, [Core Name], [Exp]) -> FunctionSummaries
+analyzeFunDef _allDefs summaries (name, params, body) =
+  let paramNames = map getParamName params
+      -- Find all names that escape in this function body using current summaries
+      escapingNames = findEscapingNamesForSummary summaries body
+      -- Check which parameters escape
+      paramEscapes = [ if pName `S.member` escapingNames then Escapes else DoesNotEscape
+                     | pName <- paramNames
+                     ]
+  in  M.insert name paramEscapes summaries
+
+
+-- | Like findEscapingNames but for building summaries.
+-- The key difference: all names in the return position escape (they leave the function).
+-- We also need to transitively close through assignments.
+findEscapingNamesForSummary :: FunctionSummaries -> [Exp] -> S.Set String
+findEscapingNamesForSummary summaries body =
+  let -- The last expression is the return value — names there escape the function
+      returnEscaping = case body of
+        [] -> S.empty
+        _  -> collectVarNames (last body)
+      -- Names that escape through calls, stores, closures
+      callEscaping = S.unions (map (collectEscapingFromExp summaries) body)
+      directlyEscaping = S.union returnEscaping callEscaping
+      -- Transitively close
+      allEscaping = transitiveClose body directlyEscaping
+  in  allEscaping
 
 
 -- | Analyze a top-level expression.
-analyzeTopLevel :: Exp -> Exp
-analyzeTopLevel exp = case exp of
+analyzeTopLevel :: FunctionSummaries -> Exp -> Exp
+analyzeTopLevel summaries exp = case exp of
   Typed qt area metadata (Assignment lhs rhs) ->
-    Typed qt area metadata (Assignment lhs (analyzeExp rhs))
+    Typed qt area metadata (Assignment lhs (analyzeExp summaries rhs))
 
   Typed qt area metadata (Export e) ->
-    Typed qt area metadata (Export (analyzeTopLevel e))
+    Typed qt area metadata (Export (analyzeTopLevel summaries e))
 
   _ ->
-    analyzeExp exp
+    analyzeExp summaries exp
 
 
 -- | Analyze an expression, marking non-escaping allocations as StackAllocatable.
-analyzeExp :: Exp -> Exp
-analyzeExp exp = case exp of
+analyzeExp :: FunctionSummaries -> Exp -> Exp
+analyzeExp summaries exp = case exp of
   Typed qt area metadata (Definition params body) ->
-    let body' = analyzeBody body
+    let body' = analyzeBody summaries body
     in  Typed qt area metadata (Definition params body')
 
   Typed qt area metadata (Assignment lhs rhs) ->
-    Typed qt area metadata (Assignment lhs (analyzeExp rhs))
+    Typed qt area metadata (Assignment lhs (analyzeExp summaries rhs))
 
   Typed qt area metadata (Export e) ->
-    Typed qt area metadata (Export (analyzeExp e))
+    Typed qt area metadata (Export (analyzeExp summaries e))
 
   _ -> exp
 
@@ -45,45 +121,45 @@ analyzeExp exp = case exp of
 -- | Analyze a function body (list of expressions in a Do block).
 -- The last expression is the return value — allocations there always escape.
 -- For intermediate assignments, check if the bound name escapes.
-analyzeBody :: [Exp] -> [Exp]
-analyzeBody body =
+analyzeBody :: FunctionSummaries -> [Exp] -> [Exp]
+analyzeBody summaries body =
   let -- Collect the set of names that escape in this scope
-      escapingNames = findEscapingNames body
+      escapingNames = findEscapingNames summaries body
       -- Process each expression, marking non-escaping allocations
       body' = markAllocations escapingNames <$> body
       -- Recurse into sub-expressions
-  in  recurseIntoBody body'
+  in  recurseIntoBody summaries body'
 
 
 -- | Recurse into body expressions to analyze nested definitions.
-recurseIntoBody :: [Exp] -> [Exp]
-recurseIntoBody = map recurseExp
+recurseIntoBody :: FunctionSummaries -> [Exp] -> [Exp]
+recurseIntoBody summaries = map (recurseExp summaries)
 
 
 -- | Recurse into an expression to find and analyze nested definitions.
-recurseExp :: Exp -> Exp
-recurseExp exp = case exp of
+recurseExp :: FunctionSummaries -> Exp -> Exp
+recurseExp summaries exp = case exp of
   Typed qt area metadata (Assignment lhs rhs) ->
-    Typed qt area metadata (Assignment lhs (recurseExp rhs))
+    Typed qt area metadata (Assignment lhs (recurseExp summaries rhs))
 
   Typed qt area metadata (Definition params body) ->
-    let body' = analyzeBody body
+    let body' = analyzeBody summaries body
     in  Typed qt area metadata (Definition params body')
 
   Typed qt area metadata (If cond thenBranch elseBranch) ->
-    Typed qt area metadata (If (recurseExp cond) (recurseExp thenBranch) (recurseExp elseBranch))
+    Typed qt area metadata (If (recurseExp summaries cond) (recurseExp summaries thenBranch) (recurseExp summaries elseBranch))
 
   Typed qt area metadata (Where scrutinee branches) ->
     let branches' = map (\(Typed qt' area' md (Is pat body)) ->
-                          Typed qt' area' md (Is pat (recurseExp body))) branches
-    in  Typed qt area metadata (Where (recurseExp scrutinee) branches')
+                          Typed qt' area' md (Is pat (recurseExp summaries body))) branches
+    in  Typed qt area metadata (Where (recurseExp summaries scrutinee) branches')
 
   Typed qt area metadata (Do exps) ->
-    let exps' = analyzeBody exps
+    let exps' = analyzeBody summaries exps
     in  Typed qt area metadata (Do exps')
 
   Typed qt area metadata (Call fn args) ->
-    Typed qt area metadata (Call (recurseExp fn) (map recurseExp args))
+    Typed qt area metadata (Call (recurseExp summaries fn) (map (recurseExp summaries) args))
 
   _ -> exp
 
@@ -91,18 +167,18 @@ recurseExp exp = case exp of
 -- | Find all names that escape in a body (list of expressions).
 -- A name escapes if:
 --   1. It appears in the return position (last expression)
---   2. It is passed as an argument to a function call
+--   2. It is passed as an argument to a function call (unless the callee's summary says it doesn't escape)
 --   3. It is stored in a reference (ReferenceStore metadata)
 --   4. It is assigned to another variable that escapes
 --   5. It is used as a field in a constructor/tuple/record that escapes
-findEscapingNames :: [Exp] -> S.Set String
-findEscapingNames body =
+findEscapingNames :: FunctionSummaries -> [Exp] -> S.Set String
+findEscapingNames summaries body =
   let -- The last expression is always in return position — any names used there escape
       returnEscaping = case body of
         [] -> S.empty
         _  -> collectVarNames (last body)
       -- Collect names that escape through function calls and other uses
-      callEscaping = S.unions (map collectEscapingFromExp body)
+      callEscaping = S.unions (map (collectEscapingFromExp summaries) body)
       -- All directly escaping names
       directlyEscaping = S.union returnEscaping callEscaping
       -- Transitively close: if x = #[y, z] and x escapes, then y and z escape too
@@ -134,11 +210,24 @@ expandAssignment escaping exp = case exp of
 
 -- | Collect names that escape through function calls, stores, etc.
 -- Does NOT include the return position (handled separately).
-collectEscapingFromExp :: Exp -> S.Set String
-collectEscapingFromExp exp = case exp of
-  -- Function calls: all arguments escape (conservative — we don't do inter-procedural analysis)
-  Typed _ _ _ (Call _fn args) ->
-    S.unions (map collectVarNames args)
+-- Uses function summaries to avoid conservatively marking all call arguments as escaping.
+collectEscapingFromExp :: FunctionSummaries -> Exp -> S.Set String
+collectEscapingFromExp summaries exp = case exp of
+  -- Function calls: use summaries to determine which arguments escape
+  Typed _ _ _ (Call fn args) ->
+    let fnSummary = case fn of
+          Typed _ _ _ (Var name _) -> M.lookup name summaries
+          _                        -> Nothing
+    in  case fnSummary of
+          Just paramEscapes ->
+            -- Only mark arguments as escaping where the callee's summary says so
+            S.unions [ collectVarNames arg
+                     | (arg, escapeInfo) <- zip args paramEscapes
+                     , escapeInfo == Escapes
+                     ]
+          Nothing ->
+            -- Unknown function: conservative fallback — all arguments escape
+            S.unions (map collectVarNames args)
 
   -- Reference stores: the stored value escapes
   Typed _ _ metadata (Assignment _ rhs) | isReferenceStore metadata ->
@@ -147,15 +236,15 @@ collectEscapingFromExp exp = case exp of
   -- Where expressions: scrutinee is consumed, doesn't escape
   -- But the branch bodies might have escaping expressions
   Typed _ _ _ (Where _scrutinee branches) ->
-    S.unions (map (\(Typed _ _ _ (Is _ body)) -> collectEscapingFromExp body) branches)
+    S.unions (map (\(Typed _ _ _ (Is _ body)) -> collectEscapingFromExp summaries body) branches)
 
   -- If expressions: both branches might have escaping expressions
   Typed _ _ _ (If _ thenBranch elseBranch) ->
-    S.union (collectEscapingFromExp thenBranch) (collectEscapingFromExp elseBranch)
+    S.union (collectEscapingFromExp summaries thenBranch) (collectEscapingFromExp summaries elseBranch)
 
   -- Do blocks: recurse
   Typed _ _ _ (Do exps) ->
-    S.unions (map collectEscapingFromExp exps)
+    S.unions (map (collectEscapingFromExp summaries) exps)
 
   -- List constructors: items in list literals don't escape the list itself
   -- (the list allocation is what matters)
