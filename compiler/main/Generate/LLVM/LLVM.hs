@@ -184,6 +184,18 @@ chooseMalloc fieldTypes
   | otherwise = gcMalloc
 
 
+-- | Allocate memory for a struct, using stack allocation (alloca) when the
+-- expression is marked as StackAllocatable, otherwise using heap allocation.
+-- Returns an i8* pointer (same as callMallocWithMetadata).
+allocateStruct :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> [Core.Metadata] -> Type.Type -> Operand -> m Operand
+allocateStruct env area metadata structType mallocFn =
+  if Core.isStackAllocatable metadata then do
+    ptr <- alloca structType Nothing 0
+    safeBitcast ptr (Type.ptr Type.i8)
+  else
+    callMallocWithMetadata (makeDILocation env area) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
+
+
 typingStrWithoutHash :: String -> String
 typingStrWithoutHash = List.takeWhile (/= '_')
 
@@ -494,7 +506,7 @@ generateExp env symbolTable exp = case exp of
       Nothing ->
         error "Unreachable: constructor recursion without recursion data"
 
-  Core.Typed (_ IT.:=> t) area _ (Core.Var n _) ->
+  Core.Typed (_ IT.:=> t) area varMetadata (Core.Var n _) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         pap <- callWithMetadata (makeDILocation env area) fnPtr []
@@ -519,8 +531,8 @@ generateExp env symbolTable exp = case exp of
         let maxArity = retrieveConstructorMaxArity symbolTable t
         let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
 
-          -- allocate memory for the structure
-        structPtr     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+          -- allocate memory for the structure (stack or heap based on escape analysis)
+        structPtr     <- allocateStruct env area varMetadata structType gcMalloc
         structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
         -- store the constructor data in the struct
@@ -868,8 +880,8 @@ generateExp env symbolTable exp = case exp of
           let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
           let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
 
-            -- allocate memory for the structure
-          structPtr     <- callMallocWithMetadata (makeDILocation env area) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
+            -- allocate memory for the structure (stack or heap based on escape analysis)
+          structPtr     <- allocateStruct env area metadata structType mallocFn
           structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
           -- store the constructor data in the struct
@@ -981,14 +993,14 @@ generateExp env symbolTable exp = case exp of
     (ret, boxed) <- Fn.generateDoExps makeFunctionCtx env { isLast = False } symbolTable exps
     return (symbolTable, ret, boxed)
 
-  Core.Typed _ area _ (Core.TupleConstructor exps) -> do
+  Core.Typed _ area metadata (Core.TupleConstructor exps) -> do
     exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
         elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
         mallocFn    = chooseMalloc elemTypes
-    tuplePtr  <- callMallocWithMetadata (makeDILocation env area) mallocFn [(Operand.ConstantOperand $ sizeof' tupleType, [])]
+    tuplePtr  <- allocateStruct env area metadata tupleType mallocFn
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 

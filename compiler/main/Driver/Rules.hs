@@ -73,6 +73,7 @@ import           Infer.MonomorphizationState
 import qualified AST.Core as Core
 import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
+import qualified Optimize.EscapeAnalysis as EscapeAnalysis
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 import Run.OptimizationLevel
@@ -428,8 +429,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
                 FoldCalls.foldAST closureConverted
               else
                 closureConverted
+            escapeAnalyzed   = EscapeAnalysis.analyzeAST folded
 
-        return (folded, (mempty, mempty))
+        return (escapeAnalyzed, (mempty, mempty))
 
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST

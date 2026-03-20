@@ -43,6 +43,7 @@ data Metadata
   | ReferenceStore
   | ReferenceArgument
   | MutatingFunctionRef
+  | StackAllocatable
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 -- TODO: remove Area, we don't care anymore at this stage
@@ -539,6 +540,9 @@ isReferenceArgument = elem ReferenceArgument
 
 isReferenceToMutatingFunction :: [Metadata] -> Bool
 isReferenceToMutatingFunction = elem MutatingFunctionRef
+
+isStackAllocatable :: [Metadata] -> Bool
+isStackAllocatable = elem StackAllocatable
 
 
 getImportName :: Core ImportInfo -> String
