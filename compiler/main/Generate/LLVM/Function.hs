@@ -381,7 +381,8 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                 ptr <- alloca (typeOf unboxed) Nothing 0
                 declareVariable env paramArea False paramName ptr
                 storeWithMetadata (makeDILocation env paramArea) ptr 0 unboxed
-              return (paramName, varSymbol unboxed, unboxed)
+              -- Cache the original boxed param (i8*) to avoid re-boxing when forwarding
+              return (paramName, Symbol (BoxedVariableSymbol param) unboxed, unboxed)
         )
         (List.zip coreParams params)
 

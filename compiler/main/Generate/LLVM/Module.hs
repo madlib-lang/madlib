@@ -460,10 +460,12 @@ buildObjectFile options astModule = do
             Just 3
 
   let inlineThreshold =
-        if optDebug options then
+        if optDebug options || optOptimizationLevel options == O0 then
           Nothing
         else
           Just 200
+
+  let isO0 = optOptimizationLevel options == O0
 
   withHostTargetMachineDefault $ \target -> do
       withContext $ \ctx -> do
@@ -473,9 +475,9 @@ buildObjectFile options astModule = do
               defaultCuratedPassSetSpec
                 { optLevel = optLevel'
                 , useInlinerWithThreshold = inlineThreshold
-                , simplifyLibCalls = Just True
-                , loopVectorize = Just True
-                , superwordLevelParallelismVectorize = Just True
+                , simplifyLibCalls = if isO0 then Nothing else Just True
+                , loopVectorize = if isO0 then Just False else Just True
+                , superwordLevelParallelismVectorize = if isO0 then Just False else Just True
                 }
             $ \pm -> do
               runPassManager pm mod'

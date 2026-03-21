@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use guards" #-}
@@ -353,18 +354,49 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       return (symbolTable, papPtr', Just papPtr)
 
 
-buildReferencePAP :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Env -> Area -> Int -> Operand.Operand -> m (SymbolTable, Operand.Operand, Maybe Operand.Operand)
+buildReferencePAP :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Env -> Area -> Int -> Operand.Operand -> m (SymbolTable, Operand.Operand, Maybe Operand.Operand)
 buildReferencePAP symbolTable env area arity fn = do
-  let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-  let arity'  = i32ConstOp (fromIntegral arity)
+  -- Emit a global constant PAP instead of runtime GC_MALLOC allocation.
+  -- Reference PAPs have no environment (missingArgCount == arity), so they
+  -- are identical every time and can be hoisted to a global constant.
+  let papStructType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
 
-  boxedFn  <- box fn
+  -- Get the function's constant reference for the global initializer
+  let fnConstant = case fn of
+        Operand.ConstantOperand c -> Just c
+        _ -> Nothing
 
-  papPtr   <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papType, [])]
-  papPtr'  <- safeBitcast papPtr (Type.ptr papType)
-  Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
+  case fnConstant of
+    Just fnConst -> do
+      -- Build a global constant PAP: { bitcast(fn, i8*), arity, arity, null }
+      let fnBitcast = Constant.BitCast fnConst boxType
+      let arityConst = Constant.Int 32 (fromIntegral arity)
+      let nullEnv = Constant.Null boxType
+      let papInit = Constant.Struct Nothing False [fnBitcast, arityConst, arityConst, nullEnv]
 
-  return (symbolTable, papPtr', Just papPtr)
+      r <- liftIO randomIO
+      nm <- freshName (stringToShortByteString $ "pap_" ++ show (r :: Int))
+
+      emitDefn $ GlobalDefinition globalVariableDefaults
+        { Global.name        = nm
+        , Global.type'       = papStructType
+        , Global.linkage     = Linkage.Internal
+        , Global.isConstant  = False  -- PAP consumers may read fields via GEP
+        , Global.initializer = Just papInit
+        , Global.unnamedAddr = Just GlobalAddr
+        }
+
+      let papRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr papStructType) nm
+      return (symbolTable, papRef, Just papRef)
+
+    Nothing -> do
+      -- Fallback: dynamic PAP allocation for non-constant function operands
+      let arity'  = i32ConstOp (fromIntegral arity)
+      boxedFn  <- box fn
+      papPtr   <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+      papPtr'  <- safeBitcast papPtr (Type.ptr papStructType)
+      Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
+      return (symbolTable, papPtr', Just papPtr)
 
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
@@ -1118,44 +1150,86 @@ generateExp env symbolTable exp = case exp of
 
 
   Core.Typed _ _ _ (Core.ListConstructor listItems) -> do
-    tail <- case List.last listItems of
-      Core.Typed _ area _ (Core.ListItem lastItem) -> do
-        item <- generateExp env { isLast = False } symbolTable lastItem
-        items <- retrieveArgs [Core.getMetadata lastItem] [lastItem] [item]
-        callWithMetadata (makeDILocation env area) madlistSingleton [(List.head items, [])]
+    let allAreItems = all (\case { Core.Typed _ _ _ (Core.ListItem _) -> True; _ -> False }) listItems
+    if allAreItems && List.length listItems > 1 then do
+      -- Bulk allocation: all items are ListItem, no spreads.
+      -- Allocate (n+1) nodes in a single GC_MALLOC call (n items + 1 sentinel).
+      let nodeType = Type.StructureType False [boxType, boxType]
+      let n = List.length listItems
+      let totalSize = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral $ n * 16 + 16)  -- each node = 2 pointers = 16 bytes
+      let area = case List.head listItems of { Core.Typed _ a _ _ -> a; _ -> emptyArea }
 
-      Core.Typed _ _ _ (Core.ListSpread spread) -> do
-        (_, e, _) <- generateExp env { isLast = False } symbolTable spread
-        return e
-
-      _ -> error "Unreachable: list constructor with untyped item"
-
-    list <- Monad.foldM
-      (\list' i -> case i of
-        Core.Typed _ area _ (Core.ListItem item) -> do
+      -- Evaluate all items left-to-right first
+      evaluatedItems <- mapM (\case
+        Core.Typed _ _ _ (Core.ListItem item) -> do
           item' <- generateExp env { isLast = False } symbolTable item
           items <- retrieveArgs [Core.getMetadata item] [item] [item']
+          return (List.head items)
+        _ -> error "Unreachable: checked allAreItems above"
+        ) listItems
 
-          newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
-          newHead' <- safeBitcast newHead listType
-          nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
-          nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
-          storeWithMetadata (makeDILocation env area) nextPtr' 0 list'
-          valuePtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+      -- Single bulk allocation for all nodes
+      bulkPtr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(totalSize, [])]
+      bulkPtr' <- safeBitcast bulkPtr (Type.ptr nodeType)
 
-          storeWithMetadata (makeDILocation env area) valuePtr 0 (List.head items)
-          return newHead'
+      -- Fill each node: node[i].value = item[i], node[i].next = &node[i+1]
+      Monad.forM_ (List.zip [0..] evaluatedItems) $ \(i, itemVal) -> do
+        nodePtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral (i :: Int)))]
+        nodePtr' <- addrspacecast nodePtr listType
+        storeItem nodePtr' () (itemVal, 0)
+        -- next pointer
+        nextPtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral (i + 1)))]
+        storeItem nodePtr' () (nextPtr, 1)
 
-        Core.Typed _ area _ (Core.ListSpread spread) -> do
-          (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
-          callWithMetadata (makeDILocation env area) madlistConcat [(spread, []), (list', [])]
+      -- Initialize sentinel node (last): value = null, next = null
+      sentinelPtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral n))]
+      sentinelPtr' <- addrspacecast sentinelPtr listType
+      storeItem sentinelPtr' () (Operand.ConstantOperand (Constant.Null boxType), 0)
+      storeItem sentinelPtr' () (Operand.ConstantOperand (Constant.Null boxType), 1)
+
+      -- Return pointer to first node
+      head' <- addrspacecast bulkPtr' listType
+      return (symbolTable, head', Nothing)
+    else do
+      -- Original path: handles spreads and single-item lists
+      tail <- case List.last listItems of
+        Core.Typed _ area _ (Core.ListItem lastItem) -> do
+          item <- generateExp env { isLast = False } symbolTable lastItem
+          items <- retrieveArgs [Core.getMetadata lastItem] [lastItem] [item]
+          callWithMetadata (makeDILocation env area) madlistSingleton [(List.head items, [])]
+
+        Core.Typed _ _ _ (Core.ListSpread spread) -> do
+          (_, e, _) <- generateExp env { isLast = False } symbolTable spread
+          return e
 
         _ -> error "Unreachable: list constructor with untyped item"
-      )
-      tail
-      (List.reverse $ List.init listItems)
 
-    return (symbolTable, list, Nothing)
+      list <- Monad.foldM
+        (\list' i -> case i of
+          Core.Typed _ area _ (Core.ListItem item) -> do
+            item' <- generateExp env { isLast = False } symbolTable item
+            items <- retrieveArgs [Core.getMetadata item] [item] [item']
+
+            newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+            newHead' <- safeBitcast newHead listType
+            nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+            nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
+            storeWithMetadata (makeDILocation env area) nextPtr' 0 list'
+            valuePtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+
+            storeWithMetadata (makeDILocation env area) valuePtr 0 (List.head items)
+            return newHead'
+
+          Core.Typed _ area _ (Core.ListSpread spread) -> do
+            (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
+            callWithMetadata (makeDILocation env area) madlistConcat [(spread, []), (list', [])]
+
+          _ -> error "Unreachable: list constructor with untyped item"
+        )
+        tail
+        (List.reverse $ List.init listItems)
+
+      return (symbolTable, list, Nothing)
 
   Core.Typed qt@(_ IT.:=> recType) area metadata (Core.Record fields) -> do
     let (base, fields') = List.partition isSpreadField fields

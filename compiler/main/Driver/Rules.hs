@@ -30,6 +30,7 @@ import qualified Optimize.SortExpressions as SortExpressions
 import qualified Optimize.EtaReduction         as EtaReduction
 import qualified Optimize.EtaExpansion         as EtaExpansion
 import qualified Optimize.TCE                  as TCE
+import qualified Optimize.Inline               as Inline
 import qualified Generate.LLVM.Rename          as Rename
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.LLVM            as LLVM
@@ -410,7 +411,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
             sortedAST        = SortExpressions.sortASTExpressions coreAst'
             renamedAst       = Rename.renameAST sortedAST
-            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
+            inlinedAst       = if optLevel > O1 then Inline.inlineAST renamedAst else renamedAst
+            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST inlinedAst else inlinedAst
             tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
             folded           = if optLevel > O1 then FoldCalls.foldAST closureConverted else closureConverted
@@ -428,7 +430,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     folded <- Rock.fetch $ FoldedCoreAST path
 
     case optTarget options of
-      TLLVM -> do
+      TLLVM | optOptimizationLevel options > O1 -> do
         -- Fetch escape analysis summaries from imported modules
         let importPaths = Core.getImportAbsolutePath <$> Core.aimports folded
         importSummaries <- mapM (Rock.fetch . FunctionEscapeSummaries) importPaths
