@@ -57,15 +57,25 @@ findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
 
 
 -- | Find inline candidates safe for cross-module inlining.
--- Only includes leaf functions whose body references nothing beyond their own parameters.
+-- Includes functions whose body only references their own parameters
+-- and other inline candidates from the same module (transitive inlining).
 findCrossModuleInlineCandidates :: [Exp] -> InlineCandidates
 findCrossModuleInlineCandidates exps =
-  M.filter isLeaf (findInlineCandidates exps)
+  let allCandidates = findInlineCandidates exps
+      candidateNames = M.keysSet allCandidates
+  in  M.filter (isSafe candidateNames) allCandidates
   where
-    isLeaf candidate =
+    isSafe candidateNames candidate =
       let paramSet = S.fromList (icParams candidate)
           freeVars = collectVarNames (icBody candidate)
-      in  freeVars `S.isSubsetOf` paramSet
+          -- Only consider module-level references (prefixed with _) as problematic.
+          -- Operators and built-ins (like +, *, -, /, ==, etc.) are always available.
+          moduleFreeVars = S.filter isModuleName freeVars
+      in  moduleFreeVars `S.isSubsetOf` S.union paramSet candidateNames
+
+    isModuleName name = case name of
+      ('_':_) -> True
+      _       -> False
 
 
 -- | Compute the size of an expression (number of nodes)
@@ -159,9 +169,12 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
       let inlinedArgs = inlineInExp candidates <$> args
           substitution = M.fromList $ L.zip (icParams candidate) inlinedArgs
           inlinedBody = substituteInExps substitution (icBody candidate)
-      in  case inlinedBody of
+          -- Recursively inline in the result to handle transitive inlining
+          -- (e.g., compose3 -> addOne(double(square(x))) -> inline addOne, double, square)
+          result = case inlinedBody of
             [singleExp] -> singleExp
             multipleExps -> Typed qt area meta (Do multipleExps)
+      in  inlineInExp candidates result
 
   -- Recurse into subexpressions
   Call fn args ->
