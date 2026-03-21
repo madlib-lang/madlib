@@ -411,8 +411,17 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
             sortedAST        = SortExpressions.sortASTExpressions coreAst'
             renamedAst       = Rename.renameAST sortedAST
-            inlinedAst       = if optLevel > O1 then Inline.inlineAST renamedAst else renamedAst
-            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST inlinedAst else inlinedAst
+
+        inlinedAst <- if optLevel > O1 then do
+          -- Fetch inline candidates from imported modules
+          let importPaths = Core.getImportAbsolutePath <$> Core.aimports renamedAst
+          importCandidates <- mapM (Rock.fetch . InlineCandidates) importPaths
+          let externalCandidates = Map.unions importCandidates
+          return $ Inline.inlineAST externalCandidates renamedAst
+        else
+          return renamedAst
+
+        let reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST inlinedAst else inlinedAst
             tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
             closureConverted = ClosureConvert.convertAST tceResolved
             folded           = if optLevel > O1 then FoldCalls.foldAST closureConverted else closureConverted
@@ -462,6 +471,17 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     folded <- Rock.fetch $ FoldedCoreAST modulePath
     let summaries = EscapeAnalysis.buildFunctionSummaries (Core.aexps folded)
     return (summaries, (mempty, mempty))
+
+  InlineCandidates modulePath -> nonInput $ do
+    -- Compute inline candidates from the pre-closure-conversion AST.
+    -- We re-derive from MonomorphizedAST to avoid cyclic dependency with FoldedCoreAST.
+    monomorphicAST <- Rock.fetch $ MonomorphizedAST modulePath
+    coreAst <- astToCore False monomorphicAST
+    let coreAst'  = SortExpressions.keepLastMainExpAndDeps coreAst
+        sortedAST = SortExpressions.sortASTExpressions coreAst'
+        renamedAst = Rename.renameAST sortedAST
+        candidates = Inline.findCrossModuleInlineCandidates (Core.aexps renamedAst)
+    return (candidates, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
     coreAst                           <- Rock.fetch $ PropagatedAST path

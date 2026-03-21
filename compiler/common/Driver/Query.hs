@@ -82,6 +82,7 @@ data Query a where
   PropagatedAST :: FilePath -> Query Core.AST
   ForeignCoreExp :: FilePath -> String -> Query (Maybe Core.Exp)
   FunctionEscapeSummaries :: FilePath -> Query Core.FunctionSummaries
+  InlineCandidates :: FilePath -> Query Core.InlineCandidates
 
   -- LLVM
   BuiltObjectFile :: FilePath -> Query (SymbolTable, LLVM.Env, ByteString.ByteString)
@@ -198,6 +199,9 @@ instance Hashable (Query a) where
 
     FunctionEscapeSummaries path ->
       hashWithSalt salt (path, 35 :: Int)
+
+    InlineCandidates path ->
+      hashWithSalt salt (path, 37 :: Int)
 
     BuiltObjectFile path ->
       hashWithSalt salt (path, 29 :: Int)

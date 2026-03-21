@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Optimize.Inline
   ( inlineAST
+  , findInlineCandidates
+  , findCrossModuleInlineCandidates
   ) where
 
 import qualified Data.Map as M
@@ -14,20 +16,13 @@ inlineThreshold :: Int
 inlineThreshold = 10
 
 
--- | Run inlining on the entire AST.
--- Finds small, non-recursive functions and substitutes their bodies at call sites.
-inlineAST :: AST -> AST
-inlineAST ast =
-  let candidates = findInlineCandidates (aexps ast)
+-- | Run inlining on the entire AST with cross-module candidates.
+inlineAST :: InlineCandidates -> AST -> AST
+inlineAST externalCandidates ast =
+  let localCandidates = findInlineCandidates (aexps ast)
+      candidates = M.union localCandidates externalCandidates
   in  if M.null candidates then ast
       else ast { aexps = inlineInTopLevel candidates <$> aexps ast }
-
-
--- | A candidate for inlining: parameter names and body expressions
-data InlineCandidate = InlineCandidate
-  { icParams :: [Name]
-  , icBody   :: [Exp]
-  }
 
 
 -- | Find all top-level functions eligible for inlining.
@@ -35,7 +30,7 @@ data InlineCandidate = InlineCandidate
 --   1. It has a small body (size <= threshold)
 --   2. It is not recursive (does not reference itself)
 --   3. It has no mutation metadata (no ReferenceAllocation/ReferenceStore)
-findInlineCandidates :: [Exp] -> M.Map Name InlineCandidate
+findInlineCandidates :: [Exp] -> InlineCandidates
 findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
   where
     extractCandidate exp = case exp of
@@ -59,6 +54,18 @@ findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
       ReferenceStore      -> True
       MutatingFunctionRef -> True
       _                   -> False
+
+
+-- | Find inline candidates safe for cross-module inlining.
+-- Only includes leaf functions whose body references nothing beyond their own parameters.
+findCrossModuleInlineCandidates :: [Exp] -> InlineCandidates
+findCrossModuleInlineCandidates exps =
+  M.filter isLeaf (findInlineCandidates exps)
+  where
+    isLeaf candidate =
+      let paramSet = S.fromList (icParams candidate)
+          freeVars = collectVarNames (icBody candidate)
+      in  freeVars `S.isSubsetOf` paramSet
 
 
 -- | Compute the size of an expression (number of nodes)
@@ -128,7 +135,7 @@ collectVarsInExp_ e = case e of
 
 
 -- | Inline calls in top-level expressions, also removing definitions that are inlined
-inlineInTopLevel :: M.Map Name InlineCandidate -> Exp -> Exp
+inlineInTopLevel :: InlineCandidates -> Exp -> Exp
 inlineInTopLevel candidates exp = case exp of
   Typed qt area meta (Export e) ->
     Typed qt area meta (Export (inlineInTopLevel candidates e))
@@ -143,7 +150,7 @@ inlineInTopLevel candidates exp = case exp of
 
 
 -- | Inline eligible calls within an expression
-inlineInExp :: M.Map Name InlineCandidate -> Exp -> Exp
+inlineInExp :: InlineCandidates -> Exp -> Exp
 inlineInExp candidates exp@(Typed qt area meta e) = case e of
   -- Call to a known inline candidate with matching arity
   Call (Typed _ _ _ (Var fnName _)) args
@@ -201,16 +208,16 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
 inlineInExp candidates exp@(Untyped _ _ _) = exp
 
 
-inlineIs :: M.Map Name InlineCandidate -> Is -> Is
+inlineIs :: InlineCandidates -> Is -> Is
 inlineIs candidates (Typed qt area meta (Is pat e)) =
   Typed qt area meta (Is pat (inlineInExp candidates e))
 
-inlineListItem :: M.Map Name InlineCandidate -> ListItem -> ListItem
+inlineListItem :: InlineCandidates -> ListItem -> ListItem
 inlineListItem candidates (Typed qt area meta li) = case li of
   ListItem e   -> Typed qt area meta (ListItem (inlineInExp candidates e))
   ListSpread e -> Typed qt area meta (ListSpread (inlineInExp candidates e))
 
-inlineField :: M.Map Name InlineCandidate -> Field -> Field
+inlineField :: InlineCandidates -> Field -> Field
 inlineField candidates (Typed qt area meta f) = case f of
   Field (name, e)  -> Typed qt area meta (Field (name, inlineInExp candidates e))
   FieldSpread e    -> Typed qt area meta (FieldSpread (inlineInExp candidates e))

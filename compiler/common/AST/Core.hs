@@ -71,6 +71,16 @@ data ParamEscape
 type FunctionSummaries = M.Map String [ParamEscape]
 
 
+-- | A candidate for inlining: parameter names and body expression.
+data InlineCandidate = InlineCandidate
+  { icParams :: [Name]
+  , icBody   :: [Exp]
+  } deriving (Eq, Show, Generic, Hashable)
+
+-- | Map of inline candidates keyed by function name.
+type InlineCandidates = M.Map Name InlineCandidate
+
+
 data AST =
   AST
     { aimports    :: [Import]
