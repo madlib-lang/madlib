@@ -39,6 +39,8 @@ data Command
       , testWatch :: Bool
       , testCoverage :: Bool
       , testOptimizationLevel :: OptimizationLevel
+      , testSuiteFilter :: Maybe String
+      , testTestIndex :: Maybe Int
       }
   | Install
   | New { newFolder :: FilePath }
@@ -194,7 +196,7 @@ parseO2 :: Parser OptimizationLevel
 parseO2 =
   O2 <$ switch (
     long "O2"
-    <> help "Enables O2 optimizations"
+    <> help "Enables O2 optimizations (call simplification, call folding, map fusion)"
     <> showDefault
   )
 
@@ -202,7 +204,7 @@ parseO3 :: Parser OptimizationLevel
 parseO3 =
   O3 <$ switch (
     long "O3"
-    <> help "Enables O3 optimizations"
+    <> help "Enables O3 optimizations (O2 + inlining, escape analysis, copy propagation)"
     <> showDefault
   )
 
@@ -231,8 +233,16 @@ parseTestInput :: Parser FilePath
 parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
+parseSuiteFilter :: Parser (Maybe String)
+parseSuiteFilter =
+  optional $ strOption (long "suite" <> short 's' <> metavar "SUITE" <> help "Filter test suites by path (substring match)")
+
+parseTestIndex :: Parser (Maybe Int)
+parseTestIndex =
+  optional $ option auto (long "test-index" <> short 'n' <> metavar "INDEX" <> help "Run only the nth test (0-based) within matching suites")
+
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseSuiteFilter <*> parseTestIndex
 
 
 parseRunInput :: Parser FilePath

@@ -5,6 +5,9 @@
 rm ./pkg/node_modules/binary-install/node_modules/.bin/madlib
 cp "$(stack path --dist-dir)/build/madlib/madlib" ./pkg/node_modules/binary-install/node_modules/.bin/madlib
 
+# update runtime for tests
+cp -R runtime "$(stack path --dist-dir)/build/madlib-test/"
+
 # copy runtime
 cp -R ./runtime ./pkg/node_modules/binary-install/node_modules/.bin/
 

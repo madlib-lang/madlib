@@ -412,7 +412,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             sortedAST        = SortExpressions.sortASTExpressions coreAst'
             renamedAst       = Rename.renameAST sortedAST
 
-        inlinedAst <- if optLevel > O1 then do
+        inlinedAst <- if optLevel > O2 then do
           let importPaths = Core.getImportAbsolutePath <$> Core.aimports renamedAst
           importCandidates <- mapM (Rock.fetch . InlineCandidates) importPaths
           let externalCandidates = Map.unions importCandidates
@@ -438,7 +438,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     folded <- Rock.fetch $ FoldedCoreAST path
 
     case optTarget options of
-      TLLVM | optOptimizationLevel options > O1 -> do
+      TLLVM | optOptimizationLevel options > O2 -> do
         -- Fetch escape analysis summaries from imported modules
         let importPaths = Core.getImportAbsolutePath <$> Core.aimports folded
         importSummaries <- mapM (Rock.fetch . FunctionEscapeSummaries) importPaths
@@ -451,7 +451,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   PropagatedAST path -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST path
-    if optOptimizationLevel options > O1 then do
+    if optOptimizationLevel options > O2 then do
       (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
       return (propagatedAST, (mempty, mempty))
     else

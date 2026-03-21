@@ -54,8 +54,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> IO ()
-runTests entrypoint target debug watchMode coverage optLevel = do
+runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Maybe String -> Maybe Int -> IO ()
+runTests entrypoint target debug watchMode coverage optLevel suiteFilter testIndex = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -91,15 +91,15 @@ runTests entrypoint target debug watchMode coverage optLevel = do
           , optLspMode = False
           }
 
-  runTestTask watchMode state options canonicalEntrypoint []
+  runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []
 
   when watchMode $ do
-    Driver.watch rootPath (runTestTask watchMode state options canonicalEntrypoint)
+    Driver.watch rootPath (runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint)
     return ()
 
 
-runTestTask :: Bool -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
-runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
+runTestTask :: Bool -> Maybe String -> Maybe Int -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()
+runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint invalidatedPaths = do
   Driver.recordAndPrintDuration "Tests built and run in " $ do
     let rf p =
           if "__TestMain__.mad" `List.isSuffixOf` p then
@@ -115,8 +115,11 @@ runTestTask watchMode state options canonicalEntrypoint invalidatedPaths = do
     sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
     Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
     Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
-    let testSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
-        testMainAST    = generateTestMainAST (optEntrypoint options) (listModulePath, testModulePath) testSuitePaths
+    let allTestSuitePaths = filter (".spec.mad" `List.isSuffixOf`) sourcesToCompile
+        testSuitePaths = case suiteFilter of
+          Just f  -> filter (List.isInfixOf f) allTestSuitePaths
+          Nothing -> allTestSuitePaths
+        testMainAST    = generateTestMainAST (optEntrypoint options) (listModulePath, testModulePath) testSuitePaths testIndex
 
     when (null testSuitePaths) $ do
       putStrLn "No test found, exiting."
@@ -214,9 +217,19 @@ generateTestSuiteImport (index, path) =
   in  Source emptyArea TargetAll (DefaultImport (Source emptyArea TargetAll importName) path path)
 
 
-generateTestSuiteItemExp :: Int -> FilePath -> ListItem
-generateTestSuiteItemExp index testSuitePath =
-  let testsAccess = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".__tests__")))
+generateTestSuiteItemExp :: Maybe Int -> Int -> FilePath -> ListItem
+generateTestSuiteItemExp testIndex index testSuitePath =
+  let allTests = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".__tests__")))
+      testsAccess = case testIndex of
+        Just n ->
+          -- List.slice(n, n, tests) to pick a single test
+          Source emptyArea TargetAll (App (Source emptyArea TargetAll (Var "slice")) [
+            Source emptyArea TargetAll (LInt $ show n),
+            Source emptyArea TargetAll (LInt $ show n),
+            allTests
+          ])
+        Nothing ->
+          allTests
       beforeAll = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".beforeAll")))
       afterAll = Source emptyArea TargetAll (Access (Source emptyArea TargetAll (Var $ generateTestSuiteName index)) (Source emptyArea TargetAll (Var ".afterAll")))
   in  Source emptyArea TargetAll (ListItem (Source emptyArea TargetAll (TupleConstructor [
@@ -229,9 +242,12 @@ generateTestSuiteItemExp index testSuitePath =
 generateTestSuiteListExp :: [ListItem] -> Exp
 generateTestSuiteListExp items = Source emptyArea TargetAll (ListConstructor items)
 
-generateStaticTestMainImports :: (FilePath, FilePath) -> [Import]
-generateStaticTestMainImports (listModulePath, testModulePath) =
-  let listImports = Source emptyArea TargetAll (NamedImport [] "List" listModulePath)
+generateStaticTestMainImports :: Maybe Int -> (FilePath, FilePath) -> [Import]
+generateStaticTestMainImports testIndex (listModulePath, testModulePath) =
+  let listNames = case testIndex of
+        Just _  -> [Source emptyArea TargetAll "slice"]
+        Nothing -> []
+      listImports = Source emptyArea TargetAll (NamedImport listNames "List" listModulePath)
       testImports = Source emptyArea TargetAll (NamedImport [Source emptyArea TargetAll "runAllTestSuites"] "Test" testModulePath)
   in  [listImports, testImports]
 
@@ -249,12 +265,12 @@ generateRunTestSuitesExp testSuites =
       )
   )
 
-generateTestMainAST :: FilePath -> (FilePath, FilePath) -> [FilePath] -> AST
-generateTestMainAST testMainPath preludeModulePaths suitePaths =
+generateTestMainAST :: FilePath -> (FilePath, FilePath) -> [FilePath] -> Maybe Int -> AST
+generateTestMainAST testMainPath preludeModulePaths suitePaths testIndex =
   let indexedSuitePaths = zip [0..] suitePaths
       imports           = generateTestSuiteImport <$> indexedSuitePaths
-      preludeImports    = generateStaticTestMainImports preludeModulePaths
-      testSuiteItems    = uncurry generateTestSuiteItemExp <$> indexedSuitePaths
+      preludeImports    = generateStaticTestMainImports testIndex preludeModulePaths
+      testSuiteItems    = (\(i, p) -> generateTestSuiteItemExp testIndex i p) <$> indexedSuitePaths
       testSuiteList     = generateTestSuiteListExp testSuiteItems
       runAllTestSuites  = generateRunTestSuitesExp testSuiteList
   in  AST
