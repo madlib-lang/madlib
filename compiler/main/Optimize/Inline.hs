@@ -67,27 +67,75 @@ findCrossModuleInlineCandidates exps =
   in  iterateUntilStable allCandidates
   where
     iterateUntilStable candidates =
-      let candidateNames = M.keysSet candidates
-          filtered = M.filter (isSafe candidateNames) candidates
+      let filtered = M.filter (isSafe candidates) candidates
       in  if M.size filtered == M.size candidates
           then filtered
           else iterateUntilStable filtered
 
-    isSafe _ candidate =
+    isSafe allCandidates candidate =
       let paramSet = S.fromList (icParams candidate)
           freeVars = collectVarNames (icBody candidate)
           -- Only consider module-level references (prefixed with _) as problematic.
           -- Operators and built-ins (like +, *, -, /, ==, etc.) are always available.
           moduleFreeVars = S.filter isModuleName freeVars
-          -- For cross-module safety, only allow references to own parameters.
-          -- References to other candidates are NOT safe because transitive inlining
-          -- only resolves direct calls with matching arity — if a candidate is used
-          -- as a value (e.g., passed to a HOF), the reference remains dangling.
-      in  moduleFreeVars `S.isSubsetOf` paramSet
+          -- References to other candidates are safe ONLY if they appear exclusively
+          -- in direct-call position with matching arity (transitive inlining resolves them).
+          -- References used as values (e.g., passed to a HOF) would remain dangling.
+          directCallNames = collectDirectCallNames allCandidates (icBody candidate)
+          nonDirectRefs = moduleFreeVars `S.difference` paramSet `S.difference` directCallNames
+      in  S.null nonDirectRefs
 
     isModuleName name = case name of
       ('_':_) -> True
       _       -> False
+
+
+-- | Collect names that appear ONLY in direct-call position with matching arity
+-- to known candidates. If a name appears both as a direct call and as a value,
+-- it is excluded (the value reference would remain dangling after inlining).
+collectDirectCallNames :: InlineCandidates -> [Exp] -> S.Set Name
+collectDirectCallNames candidates body =
+  let (callNames, valueNames) = foldl (\acc e -> collectCallsAndValues candidates acc e) (S.empty, S.empty) body
+  in  callNames `S.difference` valueNames
+
+collectCallsAndValues :: InlineCandidates -> (S.Set Name, S.Set Name) -> Exp -> (S.Set Name, S.Set Name)
+collectCallsAndValues candidates acc (Typed _ _ _ e) = collectCallsAndValues_ candidates acc e
+collectCallsAndValues candidates acc (Untyped _ _ e) = collectCallsAndValues_ candidates acc e
+
+collectCallsAndValues_ :: InlineCandidates -> (S.Set Name, S.Set Name) -> Exp_ -> (S.Set Name, S.Set Name)
+collectCallsAndValues_ candidates (calls, values) e = case e of
+  -- Direct call to a candidate with matching arity → safe
+  Call (Typed _ _ _ (Var fnName _)) args
+    | Just candidate <- M.lookup fnName candidates
+    , L.length args == L.length (icParams candidate) ->
+      let (calls', values') = foldl (collectCallsAndValues candidates) (calls, values) args
+      in  (S.insert fnName calls', values')
+
+  -- Any other Var reference → unsafe (used as value)
+  Var name _           -> (calls, S.insert name values)
+
+  -- Recurse into subexpressions
+  Call fn args          -> foldl (collectCallsAndValues candidates) (collectCallsAndValues candidates (calls, values) fn) args
+  Definition _ body     -> foldl (collectCallsAndValues candidates) (calls, values) body
+  Assignment lhs rhs    -> collectCallsAndValues candidates (collectCallsAndValues candidates (calls, values) lhs) rhs
+  If c t f              -> foldl (collectCallsAndValues candidates) (calls, values) [c, t, f]
+  Where exp iss         -> let acc' = collectCallsAndValues candidates (calls, values) exp
+                           in  foldl (\a (Typed _ _ _ (Is _ ie)) -> collectCallsAndValues candidates a ie) acc' iss
+  Do exps               -> foldl (collectCallsAndValues candidates) (calls, values) exps
+  Access a b            -> collectCallsAndValues candidates (collectCallsAndValues candidates (calls, values) a) b
+  ArrayAccess a b       -> collectCallsAndValues candidates (collectCallsAndValues candidates (calls, values) a) b
+  ListConstructor items -> foldl (\a item -> case item of
+                              Typed _ _ _ (ListItem ie) -> collectCallsAndValues candidates a ie
+                              Typed _ _ _ (ListSpread ie) -> collectCallsAndValues candidates a ie
+                              _ -> a) (calls, values) items
+  TupleConstructor exps -> foldl (collectCallsAndValues candidates) (calls, values) exps
+  Record fields         -> foldl (\a f -> case f of
+                              Typed _ _ _ (Field (_, fe)) -> collectCallsAndValues candidates a fe
+                              Typed _ _ _ (FieldSpread fe) -> collectCallsAndValues candidates a fe
+                              _ -> a) (calls, values) fields
+  Export ie             -> collectCallsAndValues candidates (calls, values) ie
+  While c b             -> collectCallsAndValues candidates (collectCallsAndValues candidates (calls, values) c) b
+  _                     -> (calls, values)
 
 
 -- | Compute the size of an expression (number of nodes)

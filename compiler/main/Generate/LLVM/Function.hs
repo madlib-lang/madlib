@@ -237,7 +237,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
               let nodeType = Type.StructureType False [boxType, boxType]
-              let initialChunkSize = 4096
+              let initialChunkSize = 32
               let chunkBytes = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral initialChunkSize * 16)  -- each node is 2 pointers = 16 bytes
 
               arena       <- callMallocWithMetadata [] gcMalloc [(chunkBytes, [])]
