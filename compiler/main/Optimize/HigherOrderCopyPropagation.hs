@@ -582,7 +582,7 @@ makeImportForNameInForeignAST ast name = case List.find ((== Just name) . getExp
             in  Untyped emptyArea [] (NamedImport [Typed ([] :=> t) emptyArea [] (ImportInfo name ConstructorImport)] path path)
 
           _ ->
-            undefined
+            error $ "makeImportForNameInForeignAST: name '" <> name <> "' not found in module '" <> Maybe.fromMaybe "<unknown>" (apath ast) <> "'"
 
 
 mergeImports :: [Import] -> [Import]
@@ -603,7 +603,13 @@ mergeImports imports =
 moduleAccessesToImports :: (FilePath, Set.Set String) -> Propagate [Import]
 moduleAccessesToImports (modulePath, namesNeeded) = do
   originalAST <- Rock.fetch $ CoreAST modulePath
-  return $ map (makeImportForNameInForeignAST originalAST) (Set.toList namesNeeded)
+  -- Filter out built-in operators and non-module names (those not prefixed with _)
+  -- as they don't need imports and can't be found in any module's definitions.
+  let moduleNames = Set.filter isModuleLevelName namesNeeded
+  return $ map (makeImportForNameInForeignAST originalAST) (Set.toList moduleNames)
+  where
+    isModuleLevelName ('_':_) = True
+    isModuleLevelName _       = False
 
 
 accessesToImports :: [(FilePath, Set.Set String)] -> Propagate [Import]

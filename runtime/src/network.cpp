@@ -19,6 +19,16 @@ char *copyString(char *src) {
   return dest;
 }
 
+// NetworkInterface flat struct field indices (sorted alphabetically):
+// [0]=ipv4, [1]=ipv4Mask, [2]=ipv6, [3]=ipv6Mask, [4]=isInternal, [5]=name
+#define NETIF_IPV4         0
+#define NETIF_IPV4MASK     1
+#define NETIF_IPV6         2
+#define NETIF_IPV6MASK     3
+#define NETIF_IS_INTERNAL  4
+#define NETIF_NAME         5
+#define NETIF_FIELD_COUNT  6
+
 madlib__list__Node_t *madlib__network__readNetworkInterfaces() {
     madlib__list__Node_t *result = madlib__list__empty();
     char buf[512];
@@ -29,47 +39,28 @@ madlib__list__Node_t *madlib__network__readNetworkInterfaces() {
     i = count;
 
     while (i--) {
-        madlib__record__Record_t *networkInterface = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
-        networkInterface->fieldCount = 6;
-        networkInterface->fields = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t) * 6);
+        void **networkInterface = (void**) GC_MALLOC(sizeof(void*) * NETIF_FIELD_COUNT);
 
         uv_interface_address_t interface_a = info[i];
 
         madlib__maybe__Maybe_t *ipv4Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv4Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        networkInterface->fields[0] = {
-            .name = "ipv4",
-            .value = ipv4Maybe,
-        };
+        networkInterface[NETIF_IPV4] = ipv4Maybe;
 
         madlib__maybe__Maybe_t *ipv4MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv4MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        networkInterface->fields[1] = {
-            .name = "ipv4Mask",
-            .value = ipv4MaskMaybe,
-        };
+        networkInterface[NETIF_IPV4MASK] = ipv4MaskMaybe;
 
         madlib__maybe__Maybe_t *ipv6Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv6Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        networkInterface->fields[2] = {
-            .name = "ipv6",
-            .value = ipv6Maybe,
-        };
+        networkInterface[NETIF_IPV6] = ipv6Maybe;
 
         madlib__maybe__Maybe_t *ipv6MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
         ipv6MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
-        networkInterface->fields[3] = {
-            .name = "ipv6Mask",
-            .value = ipv6MaskMaybe,
-        };
-        networkInterface->fields[4] = {
-            .name = "isInternal",
-            .value = (void*) interface_a.is_internal,
-        };
-        networkInterface->fields[5] = {
-            .name = "name",
-            .value = copyString(interface_a.name),
-        };
+        networkInterface[NETIF_IPV6MASK] = ipv6MaskMaybe;
+
+        networkInterface[NETIF_IS_INTERNAL] = (void*) interface_a.is_internal;
+        networkInterface[NETIF_NAME] = copyString(interface_a.name);
 
         if (interface_a.address.address4.sin_family == AF_INET) {
             uv_ip4_name(&interface_a.address.address4, buf, sizeof(buf));

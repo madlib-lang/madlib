@@ -201,13 +201,25 @@ typingStrWithoutHash :: String -> String
 typingStrWithoutHash = List.takeWhile (/= '_')
 
 
-emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> m Operand
+emptyList :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Area -> m Operand
 emptyList env area = do
-  emptyList  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
-  emptyList' <- addrspacecast emptyList listType
-  storeWithMetadata (makeDILocation env area) emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
+  let listStructType = Type.StructureType False [boxType, boxType]
+      emptyInit = Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType]
 
-  return emptyList'
+  r <- liftIO randomIO
+  nm <- freshName (stringToShortByteString $ "empty_list_" ++ show (r :: Int))
+
+  emitDefn $ GlobalDefinition globalVariableDefaults
+    { Global.name        = nm
+    , Global.type'       = listStructType
+    , Global.linkage     = Linkage.Internal
+    , Global.isConstant  = True
+    , Global.initializer = Just emptyInit
+    , Global.unnamedAddr = Just GlobalAddr
+    }
+
+  let globalRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr listStructType) nm
+  addrspacecast globalRef listType
 
 sanitizeStr s = case s of
   [] ->
@@ -269,8 +281,13 @@ retrieveArgs metadata argExps exps =
             case Map.lookup name st of
               Just (Symbol (BoxedVariableSymbol boxed) _) ->
                 return boxed
+              _ | typeOf arg == boxType ->
+                return arg
               _ ->
                 box arg
+
+          _ | typeOf arg == boxType ->
+            return arg
 
           _ ->
             box arg
@@ -328,7 +345,10 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'     <- mapM (generateExp env { isLast = False } symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
-      envPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' envType, [])]
+      -- Use atomic malloc when all captured values are primitive (no GC scanning needed)
+      let envArgTypes = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
+      let envMallocFn = chooseMalloc envArgTypes
+      envPtr  <- callMallocWithMetadata (makeDILocation env area) envMallocFn [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 
       Monad.foldM_
@@ -570,13 +590,26 @@ generateExp env symbolTable exp = case exp of
         let maxArity = retrieveConstructorMaxArity symbolTable t
         let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
 
-          -- allocate memory for the structure (stack or heap based on escape analysis)
-        structPtr     <- allocateStruct env area varMetadata structType gcMalloc
-        structPtr'    <- safeBitcast structPtr $ Type.ptr structType
+        -- Emit a global constant for zero-arg constructors (Nothing, True, False, etc.)
+        -- since they are immutable and identical every time.
+        let tagConst = Constant.Int 64 (fromIntegral index)
+        let nullFields = List.replicate maxArity (Constant.Null boxType)
+        let adtInit = Constant.Struct Nothing False (tagConst : nullFields)
 
-        -- store the constructor data in the struct
-        Monad.foldM_ (storeItem structPtr') () [(i64ConstOp (fromIntegral index), 0)]
-        return (symbolTable, structPtr', Nothing)
+        r <- liftIO randomIO
+        nm <- freshName (stringToShortByteString $ "ctor_" ++ show index ++ "_" ++ show (r :: Int))
+
+        emitDefn $ GlobalDefinition globalVariableDefaults
+          { Global.name        = nm
+          , Global.type'       = structType
+          , Global.linkage     = Linkage.Internal
+          , Global.isConstant  = True
+          , Global.initializer = Just adtInit
+          , Global.unnamedAddr = Just GlobalAddr
+          }
+
+        let ctorRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr structType) nm
+        return (symbolTable, ctorRef, Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable env area arity fnPtr
@@ -699,14 +732,23 @@ generateExp env symbolTable exp = case exp of
           or ->
             error $ "found: " <> ppShow or
       else do
-        (_, exp', maybeBoxed) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
         Monad.when (envIsDebugBuild env) $ do
           ptr <- alloca (typeOf exp') Nothing 0
           declareVariable env area False name ptr
           storeWithMetadata (makeDILocation env area) ptr 0 exp'
-        let sym = case maybeBoxed of
-              Just boxed -> Symbol (BoxedVariableSymbol boxed) exp'
-              Nothing    -> varSymbol exp'
+        -- Look up the boxed form from the source variable's symbol, if available.
+        -- We can't use maybeBoxed from generateExp because for LocalVariableSymbol reads
+        -- it returns the reference cell pointer, which is NOT the boxed form of the value.
+        let sym = case e of
+              Core.Typed _ _ _ (Core.Var srcName _) ->
+                case Map.lookup srcName symbolTable of
+                  Just (Symbol (BoxedVariableSymbol boxed) _) ->
+                    Symbol (BoxedVariableSymbol boxed) exp'
+                  _ ->
+                    varSymbol exp'
+              _ ->
+                varSymbol exp'
         return (Map.insert name sym symbolTable, exp', Nothing)
 
   Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])

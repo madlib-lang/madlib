@@ -267,7 +267,7 @@ propagateCalls exp candidates = case exp of
 
   Typed qt area metadata (ArrayAccess arr index) ->
     let arr' = Maybe.fromMaybe arr $ propagateCalls arr candidates
-        index' = Maybe.fromMaybe arr $ propagateCalls index candidates
+        index' = Maybe.fromMaybe index $ propagateCalls index candidates
     in  Just $ Typed qt area metadata (ArrayAccess arr' index')
 
   or ->

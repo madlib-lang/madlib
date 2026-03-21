@@ -413,7 +413,6 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
             renamedAst       = Rename.renameAST sortedAST
 
         inlinedAst <- if optLevel > O1 then do
-          -- Fetch inline candidates from imported modules
           let importPaths = Core.getImportAbsolutePath <$> Core.aimports renamedAst
           importCandidates <- mapM (Rock.fetch . InlineCandidates) importPaths
           let externalCandidates = Map.unions importCandidates

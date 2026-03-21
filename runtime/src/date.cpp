@@ -42,77 +42,41 @@ char *madlib__date__toISOString(int64_t epochMilliseconds) {
   return result;
 }
 
-madlib__record__Record_t *madlib__date__toDateInfo(int64_t epochMilliseconds) {
+// DateInfo flat struct field indices (sorted alphabetically):
+// [0]=day, [1]=hours, [2]=milliseconds, [3]=minutes, [4]=month, [5]=seconds, [6]=year
+#define DATEINFO_DAY          0
+#define DATEINFO_HOURS        1
+#define DATEINFO_MILLISECONDS 2
+#define DATEINFO_MINUTES      3
+#define DATEINFO_MONTH        4
+#define DATEINFO_SECONDS      5
+#define DATEINFO_YEAR         6
+#define DATEINFO_FIELD_COUNT  7
+
+void **madlib__date__toDateInfo(int64_t epochMilliseconds) {
   time_t epochSeconds = trunc(epochMilliseconds / 1000);
   struct tm timeInfo = *gmtime(&epochSeconds);
 
-  int64_t milliseconds = epochMilliseconds - epochSeconds * 1000;
-  int64_t seconds = timeInfo.tm_sec;
-  int64_t minutes = timeInfo.tm_min;
-  int64_t hours = timeInfo.tm_hour;
-  int64_t day = timeInfo.tm_mday;
-  int64_t month = timeInfo.tm_mon + 1;
-  int64_t year = timeInfo.tm_year + 1900;
-
-  madlib__record__Field_t millisecondField = {
-      .name = (char *)"milliseconds",
-      .value = (int64_t *)milliseconds,
-  };
-
-  madlib__record__Field_t secondsField = {
-      .name = (char *)"seconds",
-      .value = (int64_t *)seconds,
-  };
-
-  madlib__record__Field_t minutesField = {
-      .name = (char *)"minutes",
-      .value = (int64_t *)minutes,
-  };
-
-  madlib__record__Field_t hoursField = {
-
-      .name = (char *)"hours",
-      .value = (int64_t *)hours,
-  };
-
-  madlib__record__Field_t dayField = {
-      .name = (char *)"day",
-      .value = (int64_t *)day,
-  };
-
-  madlib__record__Field_t monthField = {
-      .name = (char *)"month",
-      .value = (int64_t *)month,
-  };
-
-  madlib__record__Field_t yearField = {
-      .name = (char *)"year",
-      .value = (int64_t *)year,
-  };
-
-  madlib__record__Record_t *result = (madlib__record__Record_t *)GC_MALLOC(sizeof(madlib__record__Record_t));
-  result->fieldCount = 7;
-  result->fields = (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t) * 7);
-  result->fields[0] = dayField;
-  result->fields[1] = hoursField;
-  result->fields[2] = millisecondField;
-  result->fields[3] = minutesField;
-  result->fields[4] = monthField;
-  result->fields[5] = secondsField;
-  result->fields[6] = yearField;
+  void **result = (void **)GC_MALLOC(sizeof(void *) * DATEINFO_FIELD_COUNT);
+  result[DATEINFO_DAY]          = (void *)(int64_t)timeInfo.tm_mday;
+  result[DATEINFO_HOURS]        = (void *)(int64_t)timeInfo.tm_hour;
+  result[DATEINFO_MILLISECONDS] = (void *)(epochMilliseconds - epochSeconds * 1000);
+  result[DATEINFO_MINUTES]      = (void *)(int64_t)timeInfo.tm_min;
+  result[DATEINFO_MONTH]        = (void *)(int64_t)(timeInfo.tm_mon + 1);
+  result[DATEINFO_SECONDS]      = (void *)(int64_t)timeInfo.tm_sec;
+  result[DATEINFO_YEAR]         = (void *)(int64_t)(timeInfo.tm_year + 1900);
 
   return result;
 }
 
-int64_t madlib__date__fromDateInfo(madlib__record__Record_t *dateInfo) {
-  // TODO: rewrite this without selectField
-  int64_t year = (int64_t)madlib__record__internal__selectField((char *)"year", dateInfo);
-  int64_t month = (int64_t)madlib__record__internal__selectField((char *)"month", dateInfo);
-  int64_t day = (int64_t)madlib__record__internal__selectField((char *)"day", dateInfo);
-  int64_t hours = (int64_t)madlib__record__internal__selectField((char *)"hours", dateInfo);
-  int64_t minutes = (int64_t)madlib__record__internal__selectField((char *)"minutes", dateInfo);
-  int64_t seconds = (int64_t)madlib__record__internal__selectField((char *)"seconds", dateInfo);
-  int64_t milliseconds = (int64_t)madlib__record__internal__selectField((char *)"milliseconds", dateInfo);
+int64_t madlib__date__fromDateInfo(void **dateInfo) {
+  int64_t year         = (int64_t)dateInfo[DATEINFO_YEAR];
+  int64_t month        = (int64_t)dateInfo[DATEINFO_MONTH];
+  int64_t day          = (int64_t)dateInfo[DATEINFO_DAY];
+  int64_t hours        = (int64_t)dateInfo[DATEINFO_HOURS];
+  int64_t minutes      = (int64_t)dateInfo[DATEINFO_MINUTES];
+  int64_t seconds      = (int64_t)dateInfo[DATEINFO_SECONDS];
+  int64_t milliseconds = (int64_t)dateInfo[DATEINFO_MILLISECONDS];
 
   struct tm timeInfo = {(int)seconds, (int)minutes, (int)hours, (int)day, (int)month - 1, (int)year - 1900};
 

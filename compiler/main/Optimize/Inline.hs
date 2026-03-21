@@ -58,20 +58,32 @@ findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
 
 -- | Find inline candidates safe for cross-module inlining.
 -- Includes functions whose body only references their own parameters
--- and other inline candidates from the same module (transitive inlining).
+-- and other safe inline candidates from the same module (transitive inlining).
+-- Iterates to a fixed point: if candidate A references candidate B,
+-- and B is unsafe, then A must also be excluded.
 findCrossModuleInlineCandidates :: [Exp] -> InlineCandidates
 findCrossModuleInlineCandidates exps =
   let allCandidates = findInlineCandidates exps
-      candidateNames = M.keysSet allCandidates
-  in  M.filter (isSafe candidateNames) allCandidates
+  in  iterateUntilStable allCandidates
   where
-    isSafe candidateNames candidate =
+    iterateUntilStable candidates =
+      let candidateNames = M.keysSet candidates
+          filtered = M.filter (isSafe candidateNames) candidates
+      in  if M.size filtered == M.size candidates
+          then filtered
+          else iterateUntilStable filtered
+
+    isSafe _ candidate =
       let paramSet = S.fromList (icParams candidate)
           freeVars = collectVarNames (icBody candidate)
           -- Only consider module-level references (prefixed with _) as problematic.
           -- Operators and built-ins (like +, *, -, /, ==, etc.) are always available.
           moduleFreeVars = S.filter isModuleName freeVars
-      in  moduleFreeVars `S.isSubsetOf` S.union paramSet candidateNames
+          -- For cross-module safety, only allow references to own parameters.
+          -- References to other candidates are NOT safe because transitive inlining
+          -- only resolves direct calls with matching arity — if a candidate is used
+          -- as a value (e.g., passed to a HOF), the reference remains dangling.
+      in  moduleFreeVars `S.isSubsetOf` paramSet
 
     isModuleName name = case name of
       ('_':_) -> True
@@ -137,7 +149,7 @@ collectVarsInExp_ e = case e of
   Export e              -> collectVarsInExp e
   _                     -> S.empty
   where
-    isVars (Typed _ _ _ (Is _ e))             = collectVarsInExp e
+    isVars (Typed _ _ _ (Is pat e))           = S.union (collectPatternConstructorNames pat) (collectVarsInExp e)
     listItemVars (Typed _ _ _ (ListItem e))   = collectVarsInExp e
     listItemVars (Typed _ _ _ (ListSpread e)) = collectVarsInExp e
     fieldVars (Typed _ _ _ (Field (_, e)))    = collectVarsInExp e
@@ -322,3 +334,15 @@ collectPatternVars (Typed _ _ _ p) = case p of
   PSpread p        -> collectPatternVars p
   _                -> S.empty
 collectPatternVars (Untyped _ _ _) = S.empty
+
+
+-- | Collect constructor names referenced in a pattern (for cross-module safety checks)
+collectPatternConstructorNames :: Pattern -> S.Set Name
+collectPatternConstructorNames (Typed _ _ _ p) = case p of
+  PCon name pats -> S.insert name (S.unions (collectPatternConstructorNames <$> pats))
+  PRecord fields _ -> S.unions (collectPatternConstructorNames <$> M.elems fields)
+  PList pats       -> S.unions (collectPatternConstructorNames <$> pats)
+  PTuple pats      -> S.unions (collectPatternConstructorNames <$> pats)
+  PSpread p        -> collectPatternConstructorNames p
+  _                -> S.empty
+collectPatternConstructorNames (Untyped _ _ _) = S.empty
