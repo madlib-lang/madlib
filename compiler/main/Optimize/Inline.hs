@@ -297,9 +297,31 @@ inlineField candidates (Typed qt area meta f) = case f of
   FieldSpread e    -> Typed qt area meta (FieldSpread (inlineInExp candidates e))
 
 
--- | Substitute parameter names with argument expressions in a list of body expressions
+-- | Substitute parameter names with argument expressions in a list of body expressions.
+-- Processes sequentially so that assignments shadow substitutions for subsequent expressions.
 substituteInExps :: M.Map Name Exp -> [Exp] -> [Exp]
-substituteInExps subst = map (substituteInExp subst)
+substituteInExps subst exps = case exps of
+  [] -> []
+  (exp : rest) ->
+    let (exp', subst') = substituteInExpWithShadow subst exp
+    in  exp' : substituteInExps subst' rest
+
+
+-- | Substitute in an expression and return the updated substitution map
+-- (with any newly-bound names removed for subsequent expressions in the same scope).
+substituteInExpWithShadow :: M.Map Name Exp -> Exp -> (Exp, M.Map Name Exp)
+substituteInExpWithShadow subst exp@(Typed qt area meta e) = case e of
+  Assignment (Typed lhsQt lhsArea lhsMeta (Var name isCtor)) rhs ->
+    -- Substitute only in the RHS, not in the LHS variable name.
+    -- Then shadow this name so subsequent expressions don't substitute it.
+    let rhs' = substituteInExp subst rhs
+        subst' = M.delete name subst
+    in  (Typed qt area meta (Assignment (Typed lhsQt lhsArea lhsMeta (Var name isCtor)) rhs'), subst')
+
+  _ -> (substituteInExp subst exp, subst)
+
+substituteInExpWithShadow subst exp = (exp, subst)
+
 
 substituteInExp :: M.Map Name Exp -> Exp -> Exp
 substituteInExp subst exp@(Typed qt area meta e) = case e of
@@ -313,10 +335,10 @@ substituteInExp subst exp@(Typed qt area meta e) = case e of
     -- Shadow substitution for params
     let paramNames = S.fromList (getValue <$> params)
         subst' = M.filterWithKey (\k _ -> k `S.notMember` paramNames) subst
-    in  Typed qt area meta (Definition params (substituteInExp subst' <$> body))
+    in  Typed qt area meta (Definition params (substituteInExps subst' body))
 
   Assignment lhs rhs ->
-    Typed qt area meta (Assignment (substituteInExp subst lhs) (substituteInExp subst rhs))
+    Typed qt area meta (Assignment lhs (substituteInExp subst rhs))
 
   If c t f ->
     Typed qt area meta (If (substituteInExp subst c) (substituteInExp subst t) (substituteInExp subst f))
@@ -325,7 +347,7 @@ substituteInExp subst exp@(Typed qt area meta e) = case e of
     Typed qt area meta (Where (substituteInExp subst e) (substIs subst <$> iss))
 
   Do exps ->
-    Typed qt area meta (Do (substituteInExp subst <$> exps))
+    Typed qt area meta (Do (substituteInExps subst exps))
 
   Access a b ->
     Typed qt area meta (Access (substituteInExp subst a) (substituteInExp subst b))
