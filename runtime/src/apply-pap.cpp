@@ -85,7 +85,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0]);
         break;
-        break;
       }
       case 2: {
         void *(*fn)(void *, void *) = (void*(*)(void *, void *))unwrappedPAP->fn;
@@ -94,7 +93,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1]);
-        break;
         break;
       }
       case 3: {
@@ -105,7 +103,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2]);
         break;
-        break;
       }
       case 4: {
         void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))unwrappedPAP->fn;
@@ -114,7 +111,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3]);
-        break;
         break;
       }
       case 5: {
@@ -125,7 +121,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4]);
         break;
-        break;
       }
       case 6: {
         void *(*fn)(void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -134,7 +129,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5]);
-        break;
         break;
       }
       case 7: {
@@ -145,7 +139,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
         break;
-        break;
       }
       case 8: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -154,7 +147,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
-        break;
         break;
       }
       case 9: {
@@ -165,7 +157,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
         break;
-        break;
       }
       case 10: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -174,7 +165,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9]);
-        break;
         break;
       }
       case 11: {
@@ -185,7 +175,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
         break;
-        break;
       }
       case 12: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -194,7 +183,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11]);
-        break;
         break;
       }
       case 13: {
@@ -205,7 +193,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12]);
         break;
-        break;
       }
       case 14: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -214,7 +201,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13]);
-        break;
         break;
       }
       case 15: {
@@ -225,7 +211,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
         break;
-        break;
       }
       case 16: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -234,7 +219,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
-        break;
         break;
       }
       case 17: {
@@ -245,7 +229,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16]);
         break;
-        break;
       }
       case 18: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -254,7 +237,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17]);
-        break;
         break;
       }
       case 19: {
@@ -265,7 +247,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18]);
         break;
-        break;
       }
       case 20: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -274,7 +255,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19]);
-        break;
         break;
       }
       case 21: {
@@ -285,7 +265,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20]);
         break;
-        break;
       }
       case 22: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -294,7 +273,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21]);
-        break;
         break;
       }
       case 23: {
@@ -305,7 +283,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22]);
         break;
-        break;
       }
       case 24: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -314,7 +291,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23]);
-        break;
         break;
       }
       case 25: {
@@ -325,7 +301,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24]);
         break;
-        break;
       }
       case 26: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -334,7 +309,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25]);
-        break;
         break;
       }
       case 27: {
@@ -345,7 +319,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26]);
         break;
-        break;
       }
       case 28: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -354,7 +327,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27]);
-        break;
         break;
       }
       case 29: {
@@ -365,7 +337,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28]);
         break;
-        break;
       }
       case 30: {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
@@ -374,7 +345,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
-        break;
         break;
       }
     }
@@ -588,9 +558,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->env = newEnv;
     return newPAP;
   }
-  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc, ENV_SIZE, ARITY);
-
-  return NULL;
 }
 
 #ifdef __cplusplus

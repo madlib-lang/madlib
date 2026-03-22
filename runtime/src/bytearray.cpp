@@ -46,19 +46,10 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__unsafeSet(int64_t index, unsi
 
 
 bool madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madlib__bytearray__ByteArray_t *arr2) {
-  bool result = false;
-
   if (arr1->length != arr2->length) {
-    result = false;
-  } else {
-    result = true;
-
-    for (int i = 0; result && i < arr1->length; i++) {
-      result = arr1->bytes[i] == arr2->bytes[i];
-    }
+    return false;
   }
-
-  return result;
+  return memcmp(arr1->bytes, arr2->bytes, arr1->length) == 0;
 }
 
 
@@ -70,7 +61,7 @@ char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearra
   }
 
   int currentIndex = 0;
-  char *inspectedItems[length];
+  char **inspectedItems = (char **)GC_MALLOC(length * sizeof(char *));
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {

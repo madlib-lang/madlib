@@ -61,7 +61,7 @@ madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib_
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
   result->length = a->length + b->length;
   result->capacity = result->length * 2;
-  result->items = (void **)GC_MALLOC(result->capacity * 2 * sizeof(void *));
+  result->items = (void **)GC_MALLOC(result->capacity * sizeof(void *));
 
   memcpy(result->items, a->items, a->length * sizeof(void *));
   memcpy(result->items + a->length, b->items, b->length * sizeof(void *));

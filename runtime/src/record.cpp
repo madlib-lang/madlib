@@ -95,10 +95,17 @@ madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCou
  * low level function for record.field
  */
 void *madlib__record__internal__selectField(char *name, madlib__record__Record_t *record) {
-  for (int i = 0; i < record->fieldCount; i++) {
-    madlib__record__Field_t currentField = record->fields[i];
-    if (strcmp(name, currentField.name) == 0) {
-      return currentField.value;
+  int32_t lo = 0;
+  int32_t hi = record->fieldCount - 1;
+  while (lo <= hi) {
+    int32_t mid = lo + (hi - lo) / 2;
+    int cmp = strcmp(record->fields[mid].name, name);
+    if (cmp == 0) {
+      return record->fields[mid].value;
+    } else if (cmp < 0) {
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
     }
   }
 

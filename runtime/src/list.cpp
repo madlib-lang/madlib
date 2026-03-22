@@ -121,29 +121,18 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
   } else if (b->value == NULL && b->next == NULL) {
     return a;
   } else {
-    madlib__list__Node_t *newList =
-        (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-    madlib__list__Node_t *head = newList;
+    size_t aLen = madlib__list__length(a);
+    madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
+        sizeof(madlib__list__Node_t) * aLen);
     madlib__list__Node_t *current = a;
 
-    newList->value = current->value;
-    newList->next = NULL;
-    current = current->next;
-
-    while (current->next != NULL) {
-      madlib__list__Node_t *nextItem =
-          (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-      nextItem->value = current->value;
-      nextItem->next = NULL;
-
-      newList->next = nextItem;
-      newList = newList->next;
-
+    for (size_t i = 0; i < aLen; i++) {
+      nodes[i].value = current->value;
+      nodes[i].next = (i + 1 < aLen) ? &nodes[i + 1] : b;
       current = current->next;
     }
 
-    newList->next = b;
-    return head;
+    return nodes;
   }
 }
 
@@ -171,22 +160,21 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
     return madlib__list__empty();
   }
 
-  madlib__list__Node_t *newList =
-      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-  madlib__list__Node_t *head = newList;
+  size_t len = madlib__list__length(list);
+  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
+      sizeof(madlib__list__Node_t) * (len + 1));
   madlib__list__Node_t *current = list;
 
-  while (current->next != NULL) {
-    madlib__list__Node_t *nextItem = madlib__list__empty();
-
-    newList->value = current->value;
-    newList->next = nextItem;
-
-    newList = newList->next;
+  for (size_t i = 0; i < len; i++) {
+    nodes[i].value = current->value;
+    nodes[i].next = &nodes[i + 1];
     current = current->next;
   }
+  // sentinel empty node
+  nodes[len].value = NULL;
+  nodes[len].next = NULL;
 
-  return head;
+  return nodes;
 }
 
 
