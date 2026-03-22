@@ -158,6 +158,9 @@ recurseExp summaries exp = case exp of
     let exps' = analyzeBody summaries exps
     in  Typed qt area metadata (Do exps')
 
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While (recurseExp summaries cond) (recurseExp summaries body))
+
   Typed qt area metadata (Call fn args) ->
     Typed qt area metadata (Call (recurseExp summaries fn) (map (recurseExp summaries) args))
 
@@ -218,36 +221,62 @@ collectEscapingFromExp summaries exp = case exp of
     let fnSummary = case fn of
           Typed _ _ _ (Var name _) -> M.lookup name summaries
           _                        -> Nothing
-    in  case fnSummary of
+        -- Escape from the callee's perspective (does the callee make args escape?)
+        callerEscape = case fnSummary of
           Just paramEscapes ->
-            -- Only mark arguments as escaping where the callee's summary says so
             S.unions [ collectVarNames arg
                      | (arg, escapeInfo) <- zip args paramEscapes
                      , escapeInfo == Escapes
                      ]
           Nothing ->
-            -- Unknown function: conservative fallback — all arguments escape
             S.unions (map collectVarNames args)
+        -- Escape from WITHIN the arguments themselves (nested calls that cause escape)
+        argEscape = S.unions (map (collectEscapingFromExp summaries) args)
+        -- Also check the function expression itself (could contain calls)
+        fnEscape = collectEscapingFromExp summaries fn
+    in  S.unions [callerEscape, argEscape, fnEscape]
 
   -- Reference stores: the stored value escapes
   Typed _ _ metadata (Assignment _ rhs) | isReferenceStore metadata ->
     collectVarNames rhs
 
-  -- Where expressions: scrutinee is consumed, doesn't escape
-  -- But the branch bodies might have escaping expressions
-  Typed _ _ _ (Where _scrutinee branches) ->
-    S.unions (map (\(Typed _ _ _ (Is _ body)) -> collectEscapingFromExp summaries body) branches)
+  -- Regular assignments: recurse into RHS to find escaping calls
+  Typed _ _ _ (Assignment _ rhs) ->
+    collectEscapingFromExp summaries rhs
 
-  -- If expressions: both branches might have escaping expressions
-  Typed _ _ _ (If _ thenBranch elseBranch) ->
-    S.union (collectEscapingFromExp summaries thenBranch) (collectEscapingFromExp summaries elseBranch)
+  -- Where expressions: scrutinee and branch bodies might have escaping expressions
+  Typed _ _ _ (Where scrutinee branches) ->
+    S.union (collectEscapingFromExp summaries scrutinee)
+            (S.unions (map (\(Typed _ _ _ (Is _ body)) -> collectEscapingFromExp summaries body) branches))
+
+  -- If expressions: condition and both branches might have escaping expressions
+  Typed _ _ _ (If cond thenBranch elseBranch) ->
+    S.unions [collectEscapingFromExp summaries cond, collectEscapingFromExp summaries thenBranch, collectEscapingFromExp summaries elseBranch]
 
   -- Do blocks: recurse
   Typed _ _ _ (Do exps) ->
     S.unions (map (collectEscapingFromExp summaries) exps)
 
-  -- List constructors: items in list literals don't escape the list itself
-  -- (the list allocation is what matters)
+  -- While loops: both condition and body may contain escaping expressions
+  Typed _ _ _ (While cond body) ->
+    S.union (collectEscapingFromExp summaries cond) (collectEscapingFromExp summaries body)
+
+  -- Tuple/List/Record constructors: items may contain calls that cause escaping
+  Typed _ _ _ (TupleConstructor exps) ->
+    S.unions (map (collectEscapingFromExp summaries) exps)
+
+  Typed _ _ _ (ListConstructor items) ->
+    S.unions (map (collectEscapingFromExpListItem summaries) items)
+
+  Typed _ _ _ (Record fields) ->
+    S.unions (map (collectEscapingFromExpField summaries) fields)
+
+  -- Access/ArrayAccess: subexpressions may contain calls
+  Typed _ _ _ (Access e _) ->
+    collectEscapingFromExp summaries e
+
+  Typed _ _ _ (ArrayAccess arr idx) ->
+    S.union (collectEscapingFromExp summaries arr) (collectEscapingFromExp summaries idx)
 
   _ -> S.empty
 
@@ -285,6 +314,15 @@ collectVarNames exp = case exp of
 
   Typed _ _ _ (Access e _) ->
     collectVarNames e
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    S.union (collectVarNames arr) (collectVarNames index)
+
+  Typed _ _ _ (While cond body) ->
+    S.union (collectVarNames cond) (collectVarNames body)
+
+  Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) rhs) ->
+    S.insert name (collectVarNames rhs)
 
   Typed _ _ _ (Assignment _ rhs) ->
     collectVarNames rhs
@@ -332,6 +370,7 @@ collectAllVarRefs exp = case exp of
     in  S.difference (S.unions (map collectAllVarRefs body)) paramNames
   Typed _ _ _ (Access e _) -> collectAllVarRefs e
   Typed _ _ _ (ArrayAccess e1 e2) -> S.union (collectAllVarRefs e1) (collectAllVarRefs e2)
+  Typed _ _ _ (While cond body) -> S.union (collectAllVarRefs cond) (collectAllVarRefs body)
   Typed _ _ _ (Export e) -> collectAllVarRefs e
   _ -> S.empty
 
@@ -366,6 +405,22 @@ collectField :: Field -> S.Set String
 collectField field = case field of
   Typed _ _ _ (Field (_, e)) -> collectVarNames e
   Typed _ _ _ (FieldSpread e) -> collectVarNames e
+  _ -> S.empty
+
+
+-- | Collect escaping names from a list item (for calls inside list constructors).
+collectEscapingFromExpListItem :: FunctionSummaries -> ListItem -> S.Set String
+collectEscapingFromExpListItem summaries item = case item of
+  Typed _ _ _ (ListItem e)   -> collectEscapingFromExp summaries e
+  Typed _ _ _ (ListSpread e) -> collectEscapingFromExp summaries e
+  _ -> S.empty
+
+
+-- | Collect escaping names from a record field (for calls inside record literals).
+collectEscapingFromExpField :: FunctionSummaries -> Field -> S.Set String
+collectEscapingFromExpField summaries field = case field of
+  Typed _ _ _ (Field (_, e))  -> collectEscapingFromExp summaries e
+  Typed _ _ _ (FieldSpread e) -> collectEscapingFromExp summaries e
   _ -> S.empty
 
 

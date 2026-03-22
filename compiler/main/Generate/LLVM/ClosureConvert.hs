@@ -526,7 +526,8 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
           else
             []
 
-    body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env) body
+    let ownMutations = findAllMutationsInExps (getValue <$> params) [] body
+    body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env { mutationsInScope = mutationsInScope env ++ ownMutations }) body
 
     let liftedType   = foldr fn t (getType . snd <$> captured)
     let lifted'      = Typed (ps :=> liftedType) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName' False)) (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
@@ -597,7 +598,8 @@ instance Convertable Exp Exp where
 
     -- unnamed abs, we need to generate a name here
     Definition params body -> do
-      body''       <- convertBody [] env body
+      let allMutations = findAllMutationsInExps (getValue <$> params) [] body
+      body''       <- convertBody [] env { mutationsInScope = mutationsInScope env ++ allMutations } body
       fvs          <- findFreeVars env fullExp
       let withoutFreeVarDictsNotInScope = removeDictsNotInScope env fvs
       functionName <- generateLiftedName env "$lambda"

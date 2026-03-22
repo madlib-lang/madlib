@@ -1,0 +1,36 @@
+import IO from "IO"
+
+// Test 1: Record rest variable captured in a closure
+// Regression test for getPatternVars not including rest names
+captureRestInClosure = (record) => where(record) {
+  { x, ...rest } =>
+    (() => rest)()
+}
+
+// Test 2: Empty record pattern with spread (only ...rest, no fields)
+// Regression test for List.head crash on empty record patterns
+emptyFieldRest = (record) => where(record) {
+  { ...rest } =>
+    rest
+}
+
+// Test 3: Record rest with map over closure
+// Regression test for closure free var analysis with rest patterns
+useRestInMap = (record) => where(record) {
+  { x, ...rest } =>
+    map((k) => k, [rest])
+}
+
+main = () => {
+  // Test 1: rest variable in closure
+  r1 = { x: 10, y: 20, z: 30 }
+  IO.log(captureRestInClosure(r1))
+
+  // Test 2: empty field rest pattern
+  r2 = { x: 100, y: 200 }
+  IO.log(emptyFieldRest(r2))
+
+  // Test 3: rest variable captured by map lambda
+  r3 = { x: 1, a: 2, b: 3 }
+  IO.log(useRestInMap(r3))
+}

@@ -323,7 +323,7 @@ gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base
     in  s3 `compose` s2 `compose` s1
 
   (Just tBase, Nothing) ->
-    let s1 = gentleUnify tBase (TRecord fields' base mempty)
+    let s1 = gentleUnify tBase (TRecord fields' Nothing mempty)
     in  if not $ M.null (M.difference fields fields') then
           M.empty
         else
@@ -333,7 +333,7 @@ gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base
           in  s2 `compose` s1
 
   (Nothing, Just tBase') ->
-    let s1 = gentleUnify tBase' (TRecord fields base' mempty)
+    let s1 = gentleUnify tBase' (TRecord fields Nothing mempty)
     in  if not $ M.null (M.difference fields' fields) then
           M.empty
         else

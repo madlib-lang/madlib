@@ -438,7 +438,7 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
     return $ Typed (apply envSubstitution qt) area (Var ('.' : fieldName) False)
 
   Typed qt area (Var "==" False) | target == TNode || target == TBrowser ->
-    return $ Typed qt area (Var "==" False)
+    return $ Typed (apply envSubstitution qt) area (Var "==" False)
 
   -- Constructors
   Typed qt area (Var ctorName True) -> do
@@ -785,8 +785,9 @@ varsInPattern pat = case pat of
   Typed _ _ (PCon _ args) -> do
     foldr (<>) Set.empty (map varsInPattern args)
 
-  Typed _ _ (PRecord fields _) -> do
-    foldr (<>) Set.empty (map varsInPattern (Map.elems fields))
+  Typed _ _ (PRecord fields maybeRestName) -> do
+    let restVars = maybe Set.empty Set.singleton maybeRestName
+    foldr (<>) restVars (map varsInPattern (Map.elems fields))
 
   Typed _ _ (PList items) -> do
     foldr (<>) Set.empty (map varsInPattern items)

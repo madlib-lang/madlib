@@ -1,0 +1,152 @@
+import IO from "IO"
+import List from "List"
+
+
+// Test 1: TCO with accumulator pattern (plain recursion)
+sumList :: List Integer -> Integer -> Integer
+sumList = (xs, acc) => where(xs) {
+  [x, ...rest] =>
+    sumList(rest, acc + x)
+
+  [] =>
+    acc
+}
+
+// Test 2: TRMC right-list recursion (map-like)
+filterPositive :: List Integer -> List Integer
+filterPositive = (xs) => where(xs) {
+  [x, ...rest] =>
+    if (x > 0) {
+      [x, ...filterPositive(rest)]
+    } else {
+      filterPositive(rest)
+    }
+
+  [] =>
+    []
+}
+
+// Test 3: Constructor recursion (tree-like ADT)
+type Tree = Leaf(Integer) | Branch(Tree, Tree)
+
+sumTree :: Tree -> Integer
+sumTree = (tree) => where(tree) {
+  Leaf(n) =>
+    n
+
+  Branch(left, right) =>
+    sumTree(left) + sumTree(right)
+}
+
+// Test 4: Nested where inside TCO
+categorizeAndSum :: List Integer -> #[Integer, Integer] -> #[Integer, Integer]
+categorizeAndSum = (xs, acc) => where(xs) {
+  [x, ...rest] =>
+    where(x > 0) {
+      true =>
+        where(acc) {
+          #[pos, neg] =>
+            categorizeAndSum(rest, #[pos + x, neg])
+        }
+
+      false =>
+        where(acc) {
+          #[pos, neg] =>
+            categorizeAndSum(rest, #[pos, neg + x])
+        }
+    }
+
+  [] =>
+    acc
+}
+
+// Test 5: Mutual-like recursion via higher order (not TCO, just correctness)
+applyN :: (a -> a) -> Integer -> a -> a
+applyN = (f, n, x) => where(n <= 0) {
+  true =>
+    x
+
+  false =>
+    applyN(f, n - 1, f(x))
+}
+
+// Test 6: Right-list recursion with two items prepended
+pairUp :: List Integer -> List #[Integer, Integer]
+pairUp = (xs) => where(xs) {
+  [a, b, ...rest] =>
+    [#[a, b], ...pairUp(rest)]
+
+  _ =>
+    []
+}
+
+// Test 7: Pattern matching with deep nesting (mapMaybe + custom Maybe)
+type Maybe a = Just(a) | Nothing
+
+safeMul :: Integer -> Integer -> Maybe Integer
+safeMul = (a, b) => where(b == 0) {
+  true =>
+    Nothing
+
+  false =>
+    Just(a * b)
+}
+
+mapMaybe :: (a -> Maybe b) -> List a -> List b
+mapMaybe = (f, xs) => where(xs) {
+  [x, ...rest] =>
+    where(f(x)) {
+      Just(v) =>
+        [v, ...mapMaybe(f, rest)]
+
+      Nothing =>
+        mapMaybe(f, rest)
+    }
+
+  [] =>
+    []
+}
+
+// Test 8: While loop with complex accumulation
+fibonacci :: Integer -> Integer
+fibonacci = (n) => {
+  a = 0
+  b = 1
+  i = 0
+  while(i < n) do {
+    temp = b
+    b := a + b
+    a := temp
+    i := i + 1
+  }
+  return a
+}
+
+
+main = () => {
+  // Test 1: TCO accumulator
+  IO.log(sumList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0))
+
+  // Test 2: TRMC filter
+  IO.log(filterPositive([-1, 2, -3, 4, -5, 6]))
+
+  // Test 3: Tree sum
+  tree = Branch(Branch(Leaf(1), Leaf(2)), Branch(Leaf(3), Leaf(4)))
+  IO.log(sumTree(tree))
+
+  // Test 4: Nested where in TCO
+  IO.log(categorizeAndSum([1, -2, 3, -4, 5], #[0, 0]))
+
+  // Test 5: Apply N times
+  IO.log(applyN((x) => x * 2, 5, 1))
+
+  // Test 6: Pair up
+  IO.log(pairUp([1, 2, 3, 4, 5, 6]))
+
+  // Test 7: mapMaybe with safeMul
+  results = mapMaybe(safeMul(10), [0, 1, 2, 0, 5])
+  IO.log(results)
+
+  // Test 8: Fibonacci
+  IO.log(fibonacci(10))
+}

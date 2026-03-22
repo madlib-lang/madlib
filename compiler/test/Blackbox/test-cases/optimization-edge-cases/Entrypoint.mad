@@ -1,0 +1,138 @@
+import IO from "IO"
+import List from "List"
+import Array from "Array"
+
+
+// Test 1: Nested pattern matching with closures
+nestedMatch :: List Integer -> Integer
+nestedMatch = (xs) => where(xs) {
+  [a, b, ...rest] =>
+    where(rest) {
+      [c, ...more] =>
+        a + b + c
+
+      [] =>
+        a + b
+    }
+
+  [a] =>
+    a
+
+  [] =>
+    0
+}
+
+// Test 2: Tuple in closure capture
+makePairAdder :: #[Integer, Integer] -> Integer -> Integer
+makePairAdder = (pair, x) => where(pair) {
+  #[a, b] =>
+    a + b + x
+}
+
+// Test 3: Accumulation in while loop
+sumWhile = () => {
+  total = 0
+  i = 0
+  while(i < 5) do {
+    total := total + i
+    i := i + 1
+  }
+  return total
+}
+
+// Test 4: Closure capturing mutated variable in while
+closureMutWhile = () => {
+  result = 0
+  i = 1
+  while(i <= 5) do {
+    result := result + i * i
+    i := i + 1
+  }
+  return result
+}
+
+// Test 5: Higher-order function with pattern matching (TRMC list)
+applyToEach :: (a -> b) -> List a -> List b
+applyToEach = (f, xs) => where(xs) {
+  [x, ...rest] =>
+    [f(x), ...applyToEach(f, rest)]
+
+  [] =>
+    []
+}
+
+// Test 6: Nested if inside where
+classify :: Integer -> String
+classify = (n) => where(n > 0) {
+  true =>
+    if (n > 100) {
+      "big"
+    } else if (n > 10) {
+      "medium"
+    } else {
+      "small"
+    }
+
+  false =>
+    if (n == 0) {
+      "zero"
+    } else {
+      "negative"
+    }
+}
+
+// Test 7: Multiple accumulators in recursion
+zip3 :: List a -> List b -> List c -> List #[a, b, c]
+zip3 = (as, bs, cs) => where(#[as, bs, cs]) {
+  #[[a, ...restA], [b, ...restB], [c, ...restC]] =>
+    [#[a, b, c], ...zip3(restA, restB, restC)]
+
+  _ =>
+    []
+}
+
+// Test 8: Array access with computed index
+arrayAtIndex :: Array Integer -> Integer -> Integer
+arrayAtIndex = (arr, i) => where(i >= 0) {
+  true =>
+    arr[i]
+
+  _ =>
+    -1
+}
+
+main = () => {
+  // Test 1: Nested pattern matching
+  IO.log(nestedMatch([1, 2, 3, 4]))
+  IO.log(nestedMatch([10, 20]))
+  IO.log(nestedMatch([42]))
+  IO.log(nestedMatch([]))
+
+  // Test 2: Tuple in closure
+  IO.log(makePairAdder(#[3, 4], 5))
+
+  // Test 3: Accumulation in while loop
+  IO.log(sumWhile())
+
+  // Test 4: Closure with mutation in while
+  IO.log(closureMutWhile())
+
+  // Test 5: Higher-order with pattern match (TRMC)
+  doubled = applyToEach((x) => x * 2, [1, 2, 3, 4])
+  IO.log(doubled)
+
+  // Test 6: Nested if in where
+  IO.log(classify(150))
+  IO.log(classify(50))
+  IO.log(classify(5))
+  IO.log(classify(0))
+  IO.log(classify(-10))
+
+  // Test 7: zip3
+  zipped = zip3([1, 2, 3], ["a", "b", "c"], [true, false, true])
+  IO.log(zipped)
+
+  // Test 8: Array access
+  arr = Array.fromList([10, 20, 30, 40])
+  IO.log(arrayAtIndex(arr, 2))
+}

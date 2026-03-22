@@ -383,7 +383,9 @@ generateBranchTest ctx env symbolTable pat value = case pat of
   Core.Typed (_ IT.:=> recType) _ _ (Core.PRecord fieldPatterns restName) -> do
     subPatterns <- mapM (getFieldPattern ctx env symbolTable recType value) $ Map.toList fieldPatterns
     subTests    <- mapM (uncurry (generateBranchTest ctx env symbolTable) . Tuple.swap) subPatterns
-    Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
+    case subTests of
+      [] -> return true
+      (first : rest) -> Monad.foldM Instruction.and first rest
 
   Core.Typed _ _ _ (Core.PCon name pats) -> mdo
     currentBlock

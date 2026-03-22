@@ -178,6 +178,11 @@ spec = do
         , "compiler/test/Blackbox/test-cases/custom-type-classes"
         , "compiler/test/Blackbox/test-cases/multi-module-happy-path"
         , "compiler/test/Blackbox/test-cases/mutation-patterns"
+        , "compiler/test/Blackbox/test-cases/closure-rest-pattern"
+        , "compiler/test/Blackbox/test-cases/optimization-edge-cases"
+        , "compiler/test/Blackbox/test-cases/tco-advanced"
+        , "compiler/test/Blackbox/test-cases/higher-order-inlining"
+        , "compiler/test/Blackbox/test-cases/bool-precedence"
         ]
 
   forM_ cases $ \casePath -> do

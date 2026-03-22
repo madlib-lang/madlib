@@ -1,0 +1,42 @@
+import IO from "IO"
+
+main = () => {
+  // (true || false) && false should be false
+  // Without parens in JS: true || false && false => true (wrong)
+  result1 = (true || false) && false
+  IO.log(result1)
+
+  // (false && true) || true should be true
+  result2 = (false && true) || true
+  IO.log(result2)
+
+  // (true || false) && (false || true) should be true
+  result3 = (true || false) && (false || true)
+  IO.log(result3)
+
+  // false || (true && false) should be false
+  result4 = false || (true && false)
+  IO.log(result4)
+
+  // Nested: (false || true) && (true || false) && false should be false
+  result5 = (false || true) && (true || false) && false
+  IO.log(result5)
+
+  // Modulo precedence tests
+  // 3 * (7 % 4) should be 3 * 3 = 9
+  result6 = 3 * (7 % 4)
+  IO.log(result6)
+
+  // 100 / (7 % 3) should be 100 / 1 = 100
+  result7 = 100 / (7 % 3)
+  IO.log(result7)
+
+  // Unary minus: -(-5) should be 5
+  result8 = -(-5)
+  IO.log(result8)
+
+  // -negate(3) where negate produces -3, so result should be 3
+  negate = (x) => -x
+  result9 = -negate(3)
+  IO.log(result9)
+}

@@ -91,7 +91,7 @@ isEligible exp = case exp of
     isEligible e
 
   Typed _ _ _ (Call fn args) ->
-    isEligible fn || all isEligible args
+    isEligible fn && all isEligible args
 
   Typed _ _ _ (Definition _ body) ->
     all isEligible body
@@ -114,10 +114,10 @@ isEligible exp = case exp of
     all isEligible items
 
   Typed _ _ _ (Access rec field) ->
-    isEligible rec || isEligible field
+    isEligible rec && isEligible field
 
   Typed _ _ _ (ArrayAccess arr index) ->
-    isEligible arr || isEligible index
+    isEligible arr && isEligible index
 
   Typed _ _ _ (Record fields) ->
     all
@@ -134,16 +134,16 @@ isEligible exp = case exp of
       fields
 
   Typed _ _ _ (If cond truthy falsy) ->
-    isEligible cond || isEligible truthy || isEligible falsy
+    isEligible cond && isEligible truthy && isEligible falsy
 
   Typed _ _ _ (While cond body) ->
-    isEligible cond || isEligible body
+    isEligible cond && isEligible body
 
   Typed _ _ _ (Do exps) ->
     all isEligible exps
 
   Typed _ _ _ (Where exp iss) ->
-    isEligible exp ||
+    isEligible exp &&
     all
       (\(Typed _ _ _ (Is _ e)) ->
         isEligible e
@@ -305,6 +305,9 @@ reduce exp = case exp of
 
   Typed qt area metadata (If cond truthy falsy) ->
     Typed qt area metadata (If (reduce cond) (reduce truthy) (reduce falsy))
+
+  Typed qt area metadata (While cond body) ->
+    Typed qt area metadata (While (reduce cond) (reduce body))
 
   Typed qt area metadata (Do exps) ->
     Typed qt area metadata (Do (reduce <$> exps))

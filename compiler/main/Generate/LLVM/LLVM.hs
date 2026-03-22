@@ -789,7 +789,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result                <- srem leftOperand' rightOperand'
+    result                <- Ops.generateMod (getType leftOperand) leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "!" _)) [operand]) -> do
@@ -1284,8 +1284,11 @@ generateExp env symbolTable exp = case exp of
     let structType = Type.StructureType False (List.replicate n boxType)
 
     -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
-    let fieldTypes = (\f -> let (_ IT.:=> ft) = Core.getQualType (Core.getFieldExp f) in ft) <$> sortedFields
-    let mallocFn = chooseMalloc fieldTypes
+    -- Use ALL field types (including spread-inherited) to choose malloc, not just explicit fields
+    let allFieldTypes = case recType of
+          IT.TRecord fs _ os -> Map.elems (Map.union fs os)
+          _                  -> []
+    let mallocFn = chooseMalloc allFieldTypes
     recordPtr  <- allocateStruct env area metadata structType mallocFn
     recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
 

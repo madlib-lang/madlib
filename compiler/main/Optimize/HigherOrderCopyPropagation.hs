@@ -264,7 +264,7 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
 
   Typed _ area metadata (Do exps) ->
     let exps' = map (propagateBody fnName newFnName newQualType propagateMap) exps
-        newQt = getQualType $ last exps
+        newQt = getQualType $ last exps'
     in  Typed newQt area metadata (Do exps')
 
   Typed qt area metadata (If cond truthy falsy) ->
@@ -287,6 +287,10 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
     let arr' = propagateBody fnName newFnName newQualType propagateMap arr
         index' = propagateBody fnName newFnName newQualType propagateMap index
     in  Typed qt area metadata (ArrayAccess arr' index')
+
+  Typed qt area metadata (TupleConstructor items) ->
+    let items' = map (propagateBody fnName newFnName newQualType propagateMap) items
+    in  Typed qt area metadata (TupleConstructor items')
 
   Typed qt area metadata (ListConstructor items) ->
     let items' = map (mapListItem $ propagateBody fnName newFnName newQualType propagateMap) items

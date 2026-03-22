@@ -429,8 +429,8 @@ getPatternVars (Typed _ _ _ pat) = case pat of
   PCon _ pats ->
     concatMap getPatternVars pats
 
-  PRecord fields _ ->
-    concatMap getPatternVars $ M.elems fields
+  PRecord fields restName ->
+    maybe id (:) restName $ concatMap getPatternVars $ M.elems fields
 
   PList pats ->
     concatMap getPatternVars pats

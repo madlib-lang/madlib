@@ -185,6 +185,9 @@ findEligibleCalls exp found = case exp of
     let arr' = findEligibleCalls arr found
     in  findEligibleCalls index arr'
 
+  Typed _ _ _ (Record fields) ->
+    foldr findEligibleCalls found (getFieldExp <$> fields)
+
   Typed _ _ _ (Var n _) ->
     filter ((/= n) . fst) found
 
@@ -196,7 +199,7 @@ findEligibleCallsInBody :: [Exp] -> [(String, Exp)] -> [(String, Exp)]
 findEligibleCallsInBody exps found = case exps of
   e : es ->
     let found' = findEligibleCalls e found
-    in  findEligibleCallsInBody es (found' ++ found)
+    in  findEligibleCallsInBody es found'
 
   [] ->
     found
@@ -269,6 +272,10 @@ propagateCalls exp candidates = case exp of
     let arr' = Maybe.fromMaybe arr $ propagateCalls arr candidates
         index' = Maybe.fromMaybe index $ propagateCalls index candidates
     in  Just $ Typed qt area metadata (ArrayAccess arr' index')
+
+  Typed qt area metadata (Record fields) ->
+    let fields' = map (mapRecordField (\e -> Maybe.fromMaybe e $ propagateCalls e candidates)) fields
+    in  Just $ Typed qt area metadata (Record fields')
 
   or ->
     Just or

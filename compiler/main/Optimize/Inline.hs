@@ -195,6 +195,7 @@ collectVarsInExp_ e = case e of
   TupleConstructor exps -> collectVarNames exps
   Record fields         -> S.unions (fieldVars <$> fields)
   Export e              -> collectVarsInExp e
+  While c b             -> S.union (collectVarsInExp c) (collectVarsInExp b)
   _                     -> S.empty
   where
     isVars (Typed _ _ _ (Is pat e))           = S.union (collectPatternConstructorNames pat) (collectVarsInExp e)
@@ -234,7 +235,7 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
           result = case inlinedBody of
             [singleExp] -> singleExp
             multipleExps -> Typed qt area meta (Do multipleExps)
-      in  inlineInExp candidates result
+      in  inlineInExp (M.delete fnName candidates) result
 
   -- Recurse into subexpressions
   Call fn args ->
@@ -376,7 +377,7 @@ collectPatternVars (Typed _ _ _ p) = case p of
   PVar name        -> S.singleton name
   PAny             -> S.empty
   PCon _ pats      -> S.unions (collectPatternVars <$> pats)
-  PRecord fields _ -> S.unions (collectPatternVars <$> M.elems fields)
+  PRecord fields restName -> maybe id S.insert restName $ S.unions (collectPatternVars <$> M.elems fields)
   PList pats       -> S.unions (collectPatternVars <$> pats)
   PTuple pats      -> S.unions (collectPatternVars <$> pats)
   PSpread p        -> collectPatternVars p

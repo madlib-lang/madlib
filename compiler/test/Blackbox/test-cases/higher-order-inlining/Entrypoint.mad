@@ -1,0 +1,106 @@
+import IO from "IO"
+import List from "List"
+
+
+// Test 1: Returning functions from functions
+makeAdder :: Integer -> Integer -> Integer
+makeAdder = (n) => (x) => n + x
+
+// Test 2: Passing closures around
+applyTwice :: (a -> a) -> a -> a
+applyTwice = (f, x) => f(f(x))
+
+// Test 3: Composition pattern
+compose :: (b -> c) -> (a -> b) -> a -> c
+compose = (f, g, x) => f(g(x))
+
+// Test 4: Function stored in tuple
+type Wrapper a = Wrap(a)
+
+unwrap :: Wrapper a -> a
+unwrap = (w) => where(w) {
+  Wrap(x) =>
+    x
+}
+
+// Test 5: Recursive map with closure
+mapWithIndex :: (Integer -> a -> b) -> Integer -> List a -> List b
+mapWithIndex = (f, idx, xs) => where(xs) {
+  [x, ...rest] =>
+    [f(idx, x), ...mapWithIndex(f, idx + 1, rest)]
+
+  [] =>
+    []
+}
+
+// Test 6: Fold left with closure
+foldLeft :: (b -> a -> b) -> b -> List a -> b
+foldLeft = (f, acc, xs) => where(xs) {
+  [x, ...rest] =>
+    foldLeft(f, f(acc, x), rest)
+
+  [] =>
+    acc
+}
+
+// Test 7: Nested closures capturing variables
+buildCounter :: Integer -> Integer -> Integer
+buildCounter = (start, step) => {
+  result = start + step
+  return result
+}
+
+// Test 8: Pattern match on result of higher-order call
+classifyResult :: Integer -> String
+classifyResult = (n) => where(n > 10) {
+  true =>
+    "big"
+
+  false =>
+    where(n > 0) {
+      true =>
+        "small"
+
+      false =>
+        "non-positive"
+    }
+}
+
+
+main = () => {
+  // Test 1: makeAdder
+  add5 = makeAdder(5)
+  IO.log(add5(3))
+  IO.log(add5(10))
+
+  // Test 2: applyTwice
+  IO.log(applyTwice((x) => x * 2, 3))
+
+  // Test 3: compose
+  double = (x) => x * 2
+  inc = (x) => x + 1
+  doubleInc = compose(double, inc)
+  IO.log(doubleInc(5))
+
+  // Test 4: unwrap
+  IO.log(unwrap(Wrap(42)))
+
+  // Test 5: mapWithIndex
+  indexed = mapWithIndex((i, x) => #[i, x], 0, [10, 20, 30])
+  IO.log(indexed)
+
+  // Test 6: foldLeft
+  sum = foldLeft((acc, x) => acc + x, 0, [1, 2, 3, 4, 5])
+  IO.log(sum)
+
+  product = foldLeft((acc, x) => acc * x, 1, [1, 2, 3, 4, 5])
+  IO.log(product)
+
+  // Test 7: buildCounter
+  IO.log(buildCounter(10, 5))
+
+  // Test 8: classifyResult
+  IO.log(classifyResult(20))
+  IO.log(classifyResult(5))
+  IO.log(classifyResult(-3))
+}

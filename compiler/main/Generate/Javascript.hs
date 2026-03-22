@@ -98,6 +98,12 @@ escapeStringLiteral s = case s of
   '`' : next ->
     '\\' : '`' : escapeStringLiteral next
 
+  '\\' : next ->
+    '\\' : '\\' : escapeStringLiteral next
+
+  '$' : '{' : next ->
+    '\\' : '$' : '{' : escapeStringLiteral next
+
   c : next ->
     c : escapeStringLiteral next
 
@@ -184,10 +190,10 @@ instance Compilable Exp where
           "(() => { throw 'Typed hole reached, exiting.' })()"
 
         Call (Typed _ _ _ (Var "++" _)) [left, right] ->
-          compile env config left <> " + " <> compile env config right
+          "(" <> compile env config left <> " + " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "unary-minus" _)) [arg] ->
-          "-" <> compile env config arg
+          "(-" <> compile env config arg <> ")"
 
         Call (Typed _ _ _ (Var "+" _)) [left, right] ->
           "(" <> compile env config left <> " + " <> compile env config right <> ")"
@@ -202,7 +208,7 @@ instance Compilable Exp where
           "(" <> compile env config left <> " / " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "%" _)) [left, right] ->
-          compile env config left <> " % " <> compile env config right
+          "(" <> compile env config left <> " % " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "==" _)) [left, right] ->
           eqFnName optimized
@@ -222,10 +228,10 @@ instance Compilable Exp where
           <> ")"
 
         Call (Typed _ _ _ (Var "&&" _)) [left, right] ->
-          compile env config left <> " && " <> compile env config right
+          "(" <> compile env config left <> " && " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "||" _)) [left, right] ->
-          compile env config left <> " || " <> compile env config right
+          "(" <> compile env config left <> " || " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "|" _)) [left, right] ->
           "(" <> compile env config left <> " | " <> compile env config right <> ")"
@@ -249,16 +255,16 @@ instance Compilable Exp where
           "(" <> compile env config left <> " >>> " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var ">" _)) [left, right] ->
-          compile env config left <> " > " <> compile env config right
+          "(" <> compile env config left <> " > " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "<" _)) [left, right] ->
-          compile env config left <> " < " <> compile env config right
+          "(" <> compile env config left <> " < " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var ">=" _)) [left, right] ->
-          compile env config left <> " >= " <> compile env config right
+          "(" <> compile env config left <> " >= " <> compile env config right <> ")"
 
         Call (Typed _ _ _ (Var "<=" _)) [left, right] ->
-          compile env config left <> " <= " <> compile env config right
+          "(" <> compile env config left <> " <= " <> compile env config right <> ")"
 
         Call _ args | isPlainRecursiveCall metadata ->
           let params  = case recursionData env of
@@ -602,7 +608,7 @@ instance Compilable Exp where
               scope <> " === " <> n
 
             PStr  n ->
-              scope <> " === " <> "\"" <> n <> "\""
+              scope <> " === " <> "`" <> escapeStringLiteral n <> "`"
 
             PChar n ->
               scope <> " === " <> "String.fromCodePoint(" <> (show . fromEnum) n <> ")"
@@ -621,7 +627,7 @@ instance Compilable Exp where
 
             PRecord m restName ->
               let fieldChecks = intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
-              in fieldChecks
+              in if null fieldChecks then "true" else fieldChecks
 
             PSpread pat ->
               compilePattern scope pat
