@@ -82,6 +82,21 @@ import Infer.Test
 
 
 
+-- | Compute the transitive source-level dependencies of a module by
+-- traversing ParsedAST queries. This only triggers parsing, not
+-- canonicalization or solving, so it's safe from Rock query cycles.
+getTransitiveSrcDeps :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> m (Set.Set FilePath)
+getTransitiveSrcDeps root = go [root] Set.empty
+  where
+    go [] visited = return visited
+    go (p:ps) visited
+      | p `Set.member` visited = go ps visited
+      | otherwise = do
+          srcAst <- Rock.fetch $ ParsedAST p
+          let importPaths = Src.getImportAbsolutePath <$> Src.aimports srcAst
+          go (importPaths ++ ps) (Set.insert p visited)
+
+
 rules :: Options -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
 rules options (Rock.Writer (Rock.Writer query)) = case query of
   AbsolutePreludePath moduleName -> nonInput $ do
@@ -96,9 +111,15 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
     let importPaths = Src.getImportAbsolutePath <$> aimports
     importPaths' <-
-          if optCoverage options && not ("prelude/__internal__" `List.isInfixOf` entrypoint) && not ("prelude\\__internal__" `List.isInfixOf` entrypoint) then do
+          if optCoverage options then do
             coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
-            return $ coverageModulePath : importPaths
+            -- Compute __Coverage__'s transitive deps to avoid circular imports.
+            -- Only add __Coverage__ as a dependency for modules NOT in its dep chain.
+            coverageDeps <- getTransitiveSrcDeps coverageModulePath
+            if entrypoint `Set.member` coverageDeps then
+              return importPaths
+            else
+              return $ coverageModulePath : importPaths
           else
             return importPaths
     fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths'

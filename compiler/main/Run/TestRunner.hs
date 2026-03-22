@@ -179,6 +179,7 @@ runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint in
         putStrLn ""
 
       setEnv "COVERAGE_TEXT" "ON"
+      when (optCoverage options) $ createDirectoryIfMissing True ".coverage"
       let jsExePath = computeTargetPath (optOutputPath options) (optRootPath options) (optEntrypoint options)
       testOutput <- case DistributionSystem.buildOS of
         DistributionSystem.Windows ->

@@ -5,29 +5,51 @@ module Canonicalize.Coverage where
 
 import Canonicalize.CanonicalM
 import AST.Canonical
+import qualified AST.Source as Src
 import Canonicalize.Env (ImportType(NamespaceImport))
 import qualified Rock
 import Driver.Query
 import Explain.Location
 import Control.Monad.IO.Class (liftIO)
 import Data.List (isInfixOf, isSuffixOf)
+import qualified Data.Set as Set
 import Run.Options
 import Canonicalize.Coverable
 import Control.Monad.State
 
 
 
+-- | Compute the transitive source-level dependencies of a module.
+-- This only uses ParsedAST queries (no canonicalization or solving),
+-- so it cannot create Rock query cycles.
+getTransitiveDeps :: FilePath -> CanonicalM (Set.Set FilePath)
+getTransitiveDeps root = go [root] Set.empty
+  where
+    go [] visited = return visited
+    go (p:ps) visited
+      | p `Set.member` visited = go ps visited
+      | otherwise = do
+          srcAst <- Rock.fetch $ ParsedAST p
+          let importPaths = Src.getImportAbsolutePath <$> Src.aimports srcAst
+          go (importPaths ++ ps) (Set.insert p visited)
+
+
 addTrackers :: Options -> AST -> CanonicalM AST
 addTrackers _ ast@AST{ apath = Nothing } = return ast
 addTrackers options ast@AST{ apath = Just path } = do
-  let isPrelude = "prelude/__internal__" `isInfixOf` path || "prelude\\__internal__" `isInfixOf` path
-  let isPackage = "madlib_modules" `isInfixOf` path
-  let isTest    = ".spec.mad" `isSuffixOf` path
+  let isPackage    = "madlib_modules" `isInfixOf` path
+  let isTest       = ".spec.mad" `isSuffixOf` path
+  let isTestRunner = "/Test.mad" `isSuffixOf` path
   coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
   processModulePath  <- Rock.fetch $ AbsolutePreludePath "Process"
 
-  -- We skip it for prelude and the coverage module itself
-  if coverageModulePath /= path && not isPrelude && not isPackage && not isTest then do
+  -- Compute __Coverage__'s transitive dependencies to avoid circular imports.
+  -- We can instrument prelude modules that are NOT in this set.
+  coverageDeps <- getTransitiveDeps coverageModulePath
+
+  let willInstrument = coverageModulePath /= path && not (path `Set.member` coverageDeps) && not isPackage && not isTest && not isTestRunner
+
+  if willInstrument then do
     updatedImports   <- addImport coverageModuleName "__Coverage__" coverageModulePath $ aimports ast
     updatedImports'  <- addImport processModuleName "Process" processModulePath updatedImports
     updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
