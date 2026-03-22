@@ -305,5 +305,7 @@ flatRecordType _ = recordType
 recordFieldIndex :: String -> IT.Type -> Integer
 recordFieldIndex fieldName (IT.TRecord fields _ optionalFields) =
   let allFields = Map.union fields optionalFields
-  in  fromIntegral $ Maybe.fromMaybe 0 (List.elemIndex fieldName (Map.keys allFields))
-recordFieldIndex _ _ = 0
+  in  case List.elemIndex fieldName (Map.keys allFields) of
+        Just i  -> fromIntegral i
+        Nothing -> error $ "Record field '" <> fieldName <> "' not found in record type"
+recordFieldIndex fieldName _ = error $ "recordFieldIndex called on non-record type for field '" <> fieldName <> "'"
