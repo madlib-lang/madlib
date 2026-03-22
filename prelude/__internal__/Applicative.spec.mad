@@ -1,18 +1,53 @@
 import { assertEquals, test } from "Test"
-import { Just } from "Maybe"
+import { Just, Nothing } from "Maybe"
 import { apL, liftA2, liftA3 } from "./Applicative"
 
-test("apL should return the first of the two given Applicatives", (_) => pipe(
+// apL
+test("apL - Maybe Just", () => pipe(
   apL($, Just(2)),
-  assertEquals($, Just(1))
+  assertEquals($, Just(1)),
 )(Just(1)))
 
-test("liftA2", (_) => pipe(
+test("apL - Maybe Nothing first", () => assertEquals(apL(Nothing, Just(2)), Nothing))
+test("apL - Maybe Nothing second", () => assertEquals(apL(Just(1), Nothing), Nothing))
+
+test("apL - List", () => assertEquals(apL([1, 2], [3, 4]), [1, 1, 2, 2]))
+
+// liftA2
+test("liftA2 - Maybe", () => pipe(
   liftA2((a, b) => a + b, Just(2)),
-  assertEquals($, Just(5))
+  assertEquals($, Just(5)),
 )(Just(3)))
 
-test("liftA3", (_) => pipe(
+test("liftA2 - Maybe Nothing", () => assertEquals(
+  liftA2((a, b) => a + b, Nothing, Just(3)),
+  Nothing,
+))
+
+test("liftA2 - List", () => assertEquals(
+  liftA2((a, b) => a + b, [1, 2], [10, 20]),
+  [11, 21, 12, 22],
+))
+
+// liftA3
+test("liftA3 - Maybe", () => pipe(
   liftA3((a, b, c) => a + b + c, Just(1), Just(2)),
-  assertEquals($, Just(6))
+  assertEquals($, Just(6)),
 )(Just(3)))
+
+test("liftA3 - Maybe Nothing", () => assertEquals(
+  liftA3((a, b, c) => a + b + c, Just(1), Nothing, Just(3)),
+  Nothing,
+))
+
+// Applicative laws - identity
+test("ap identity - Maybe", () => assertEquals(
+  ap(Just((x) => x), Just(3)),
+  Just(3),
+))
+
+// Applicative laws - homomorphism
+test("ap homomorphism - Maybe", () => assertEquals(
+  ap(Just((x) => x + 1), Just(3)),
+  Just(4),
+))

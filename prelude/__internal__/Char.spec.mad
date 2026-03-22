@@ -1,11 +1,49 @@
 import { assertEquals, test } from "Test"
+import { EQ, LT, GT } from "Compare"
 import Char from "./Char"
 
+// toLower / toUpper
 test("toLower - ascii", () => assertEquals(Char.toLower('C'), 'c'))
 test("toLower - extended", () => assertEquals(Char.toLower('Ü'), 'ü'))
+test("toLower - already lower", () => assertEquals(Char.toLower('a'), 'a'))
+test("toLower - digit unchanged", () => assertEquals(Char.toLower('5'), '5'))
 
 test("toUpper - ascii", () => assertEquals(Char.toUpper('d'), 'D'))
 test("toUpper - extended", () => assertEquals(Char.toUpper('ä'), 'Ä'))
+test("toUpper - already upper", () => assertEquals(Char.toUpper('A'), 'A'))
+test("toUpper - digit unchanged", () => assertEquals(Char.toUpper('5'), '5'))
 
+// toShort / fromShort
 test("toShort", () => assertEquals(Char.toShort('A'), 65))
+test("toShort - zero char", () => assertEquals(Char.toShort('0'), 48))
 test("fromShort", () => assertEquals(Char.fromShort(65), 'A'))
+test("fromShort - zero char", () => assertEquals(Char.fromShort(48), '0'))
+test("toShort/fromShort round-trip", () => assertEquals(
+  Char.fromShort(Char.toShort('Z')),
+  'Z',
+))
+
+// isDigit
+test("isDigit - digit", () => assertEquals(Char.isDigit('3'), true))
+test("isDigit - zero", () => assertEquals(Char.isDigit('0'), true))
+test("isDigit - nine", () => assertEquals(Char.isDigit('9'), true))
+test("isDigit - letter", () => assertEquals(Char.isDigit('a'), false))
+test("isDigit - symbol", () => assertEquals(Char.isDigit('+'), false))
+
+// isLetter
+test("isLetter - lowercase", () => assertEquals(Char.isLetter('a'), true))
+test("isLetter - uppercase", () => assertEquals(Char.isLetter('Z'), true))
+test("isLetter - digit", () => assertEquals(Char.isLetter('0'), false))
+test("isLetter - symbol", () => assertEquals(Char.isLetter('='), false))
+
+// Comparison
+test("Compare Char - GT", () => assertEquals(compare('b', 'a'), GT))
+test("Compare Char - LT", () => assertEquals(compare('a', 'b'), LT))
+test("Compare Char - EQ", () => assertEquals(compare('x', 'x'), EQ))
+
+// Equality
+test("Eq Char - equal", () => assertEquals('a' == 'a', true))
+test("Eq Char - not equal", () => assertEquals('a' == 'b', false))
+
+// Show
+test("show Char", () => assertEquals(show('A'), "'A'"))

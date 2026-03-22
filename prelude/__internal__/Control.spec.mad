@@ -1,23 +1,55 @@
 import { assertEquals, test } from "Test"
 import { Just, Nothing } from "Maybe"
+import String from "String"
 
 import { loop, maybeLoop } from "./Control"
 
-test("loop", () => {
+// loop
+test("loop - doubling", () => {
   expected = 16
   actual = loop(1, (x) => x < 10, (x) => x * 2)
-
   return assertEquals(actual, expected)
 })
 
-test("maybeLoop", () => {
+test("loop - count to 100", () => assertEquals(
+  loop(0, (x) => x < 100, (x) => x + 1),
+  100,
+))
+
+test("loop - immediate false", () => assertEquals(
+  loop(42, (_) => false, (x) => x + 1),
+  42,
+))
+
+test("loop - string building", () => assertEquals(
+  loop("", (s) => String.length(s) < 5, (s) => s ++ "a"),
+  "aaaaa",
+))
+
+// maybeLoop
+test("maybeLoop - doubling", () => {
   expected = 16
-  actual = maybeLoop(
-    1,
-    (x) => x < 10
-      ? Just(x * 2)
-      : Nothing
-  )
-
+  actual = maybeLoop(1, (x) => x < 10 ? Just(x * 2) : Nothing)
   return assertEquals(actual, expected)
 })
+
+test("maybeLoop - immediate Nothing", () => assertEquals(
+  maybeLoop(42, (_) => Nothing),
+  42,
+))
+
+test("maybeLoop - count up", () => assertEquals(
+  maybeLoop(0, (x) => x < 5 ? Just(x + 1) : Nothing),
+  5,
+))
+
+test("maybeLoop - accumulate list", () => assertEquals(
+  maybeLoop(
+    #[0, []],
+    (pair) => where(pair) {
+      #[n, acc] =>
+        n < 4 ? Just(#[n + 1, [...acc, n]]) : Nothing
+    },
+  ),
+  #[4, [0, 1, 2, 3]],
+))

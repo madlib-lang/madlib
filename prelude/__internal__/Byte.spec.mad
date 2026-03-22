@@ -1,0 +1,49 @@
+import { assertEquals, test } from "Test"
+import { EQ, LT, GT } from "Compare"
+import Byte from "./Byte"
+import { Just } from "Maybe"
+
+
+// Conversion round-trips
+test("toInteger", () => assertEquals(Byte.toInteger(42), 42))
+test("toInteger - zero", () => assertEquals(Byte.toInteger(0), 0))
+test("toInteger - max", () => assertEquals(Byte.toInteger(255), 255))
+
+test("toShort", () => assertEquals(Byte.toShort(100), 100))
+test("toFloat", () => assertEquals(Byte.toFloat(50), 50.0))
+
+test("fromInteger", () => assertEquals(Byte.fromInteger(42), 42))
+test("fromInteger - overflow", () => assertEquals(Byte.fromInteger(256), 0))
+test("fromInteger - zero", () => assertEquals(Byte.fromInteger(0), 0))
+
+test("fromShort", () => assertEquals(Byte.fromShort(100), 100))
+test("fromShort - overflow", () => assertEquals(Byte.fromShort(300), 44))
+
+test("fromFloat", () => assertEquals(Byte.fromFloat(42.9), 42))
+test("fromFloat - overflow", () => assertEquals(Byte.fromFloat(300.0), 44))
+
+// Round-trip conversions
+test("Integer round-trip", () => assertEquals(Byte.fromInteger(Byte.toInteger(200)), 200))
+test("Short round-trip", () => assertEquals(Byte.fromShort(Byte.toShort(200)), 200))
+
+// Arithmetic
+test("addition", () => assertEquals((10_b + 20_b), 30))
+test("subtraction", () => assertEquals((50_b - 20_b), 30))
+test("multiplication", () => assertEquals((10_b * 5_b), 50))
+
+// Comparison
+test("Compare Byte - GT", () => assertEquals(compare(200_b, 100_b), GT))
+test("Compare Byte - LT", () => assertEquals(compare(50_b, 100_b), LT))
+test("Compare Byte - EQ", () => assertEquals(compare(42_b, 42_b), EQ))
+
+// Equality
+test("Eq Byte - equal", () => assertEquals(42_b == 42_b, true))
+test("Eq Byte - not equal", () => assertEquals(42_b == 43_b, false))
+
+// Show (bytes are displayed in hex)
+test("show Byte", () => assertEquals(show(42_b), "2A"))
+test("show Byte - zero", () => assertEquals(show(0_b), "00"))
+test("show Byte - max", () => assertEquals(show(255_b), "FF"))
+
+// Scan
+test("scan Byte - invalid", () => assertEquals(scan("ZZ") == Just(0_b), false))

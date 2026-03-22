@@ -1,15 +1,60 @@
 import { assertEquals, test } from "Test"
 import { EQ, LT, GT } from "Compare"
 import Float from "./Float"
+import { Just } from "Maybe"
 
+// toInteger
 test("toInteger - positive", () => assertEquals(Float.toInteger(3.4), 3))
 test("toInteger - negative", () => assertEquals(Float.toInteger(-3.4), -3))
+test("toInteger - zero", () => assertEquals(Float.toInteger(0.0), 0))
+test("toInteger - exact", () => assertEquals(Float.toInteger(7.0), 7))
 
+// toByte
 test("toByte - normal", () => assertEquals(Float.toByte(3.4), 3))
 test("toByte - overflow", () => assertEquals(Float.toByte(257.4), 1))
+test("toByte - zero", () => assertEquals(Float.toByte(0.0), 0))
 
-test("Compare Integer - GT", () => assertEquals(compare(3.3, 2.2), GT))
+// toShort
+test("toShort - positive", () => assertEquals(Float.toShort(42.9), 42))
+test("toShort - negative", () => assertEquals(Float.toShort(-42.9), -42))
 
-test("Compare Integer - LT", () => assertEquals(compare(1.1, 2.2), LT))
+// fromInteger
+test("fromInteger - positive", () => assertEquals(Float.fromInteger(42), 42.0))
+test("fromInteger - negative", () => assertEquals(Float.fromInteger(-7), -7.0))
+test("fromInteger - zero", () => assertEquals(Float.fromInteger(0), 0.0))
 
-test("Compare Integer - EQ", () => assertEquals(compare(2.2, 2.2), EQ))
+// fromShort
+test("fromShort", () => assertEquals(Float.fromShort(100), 100.0))
+
+// fromByte
+test("fromByte", () => assertEquals(Float.fromByte(200), 200.0))
+test("fromByte - zero", () => assertEquals(Float.fromByte(0), 0.0))
+
+// Round-trips
+test("Integer round-trip", () => assertEquals(Float.fromInteger(Float.toInteger(42.0)), 42.0))
+
+// Comparison
+test("Compare Float - GT", () => assertEquals(compare(3.3, 2.2), GT))
+test("Compare Float - LT", () => assertEquals(compare(1.1, 2.2), LT))
+test("Compare Float - EQ", () => assertEquals(compare(2.2, 2.2), EQ))
+test("Compare Float - negative", () => assertEquals(compare(-1.0, -2.0), GT))
+
+// Equality
+test("Eq Float - equal", () => assertEquals(3.14 == 3.14, true))
+test("Eq Float - not equal", () => assertEquals(3.14 == 2.71, false))
+
+// Arithmetic
+test("Float addition", () => assertEquals(1.5 + 2.5, 4.0))
+test("Float subtraction", () => assertEquals(5.0 - 2.5, 2.5))
+test("Float multiplication", () => assertEquals(2.0 * 3.5, 7.0))
+test("Float division", () => assertEquals(10.0 / 4.0, 2.5))
+
+// Show
+test("show Float - integer value", () => assertEquals(show(42.0), "42"))
+test("show Float - negative", () => assertEquals(show(-1.5), "-1.5"))
+test("show Float - half", () => assertEquals(show(0.5), "0.5"))
+
+// Scan
+test("scan Float - valid", () => assertEquals(scan("42.5"), Just(42.5)))
+test("scan Float - integer string", () => assertEquals(scan("42"), Just(42.0)))
+test("scan Float - invalid", () => assertEquals(scan("abc") == Just(0.0), false))

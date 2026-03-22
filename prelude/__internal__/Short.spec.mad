@@ -1,15 +1,59 @@
 import { assertEquals, test } from "Test"
 import { EQ, LT, GT } from "Compare"
 import Short from "./Short"
+import { Just } from "Maybe"
 
+// toInteger
 test("toInteger - positive", () => assertEquals(Short.toInteger(3), 3))
 test("toInteger - negative", () => assertEquals(Short.toInteger(-3), -3))
+test("toInteger - zero", () => assertEquals(Short.toInteger(0), 0))
 
+// toByte
 test("toByte - normal", () => assertEquals(Short.toByte(3), 3))
 test("toByte - overflow", () => assertEquals(Short.toByte(257), 1))
+test("toByte - zero", () => assertEquals(Short.toByte(0), 0))
 
-test("Compare Integer - GT", () => assertEquals(compare((3 :: Short), 2), GT))
+// toFloat
+test("toFloat", () => assertEquals(Short.toFloat(42), 42.0))
+test("toFloat - negative", () => assertEquals(Short.toFloat(-10), -10.0))
 
-test("Compare Integer - LT", () => assertEquals(compare((1 :: Short), 2), LT))
+// fromInteger
+test("fromInteger", () => assertEquals(Short.fromInteger(42), 42))
+test("fromInteger - negative", () => assertEquals(Short.fromInteger(-42), -42))
+test("fromInteger - zero", () => assertEquals(Short.fromInteger(0), 0))
 
-test("Compare Integer - EQ", () => assertEquals(compare((2 :: Short), 2), EQ))
+// fromByte
+test("fromByte", () => assertEquals(Short.fromByte(200), 200))
+test("fromByte - zero", () => assertEquals(Short.fromByte(0), 0))
+
+// fromFloat
+test("fromFloat", () => assertEquals(Short.fromFloat(42.9), 42))
+test("fromFloat - negative", () => assertEquals(Short.fromFloat(-42.9), -42))
+
+// Round-trips
+test("Integer round-trip", () => assertEquals(Short.fromInteger(Short.toInteger(100)), 100))
+test("Byte round-trip", () => assertEquals(Short.fromByte(Short.toByte(200)), 200))
+
+// Comparison
+test("Compare Short - GT", () => assertEquals(compare((3 :: Short), 2), GT))
+test("Compare Short - LT", () => assertEquals(compare((1 :: Short), 2), LT))
+test("Compare Short - EQ", () => assertEquals(compare((2 :: Short), 2), EQ))
+test("Compare Short - negative", () => assertEquals(compare((-1 :: Short), -2), GT))
+
+// Equality
+test("Eq Short - equal", () => assertEquals((42 :: Short) == 42, true))
+test("Eq Short - not equal", () => assertEquals((42 :: Short) == 43, false))
+
+// Arithmetic
+test("Short addition", () => assertEquals((10 :: Short) + 20, 30))
+test("Short subtraction", () => assertEquals((50 :: Short) - 20, 30))
+test("Short multiplication", () => assertEquals((10 :: Short) * 5, 50))
+
+// Show
+test("show Short", () => assertEquals(show((42 :: Short)), "42"))
+test("show Short - negative", () => assertEquals(show((-7 :: Short)), "-7"))
+test("show Short - zero", () => assertEquals(show((0 :: Short)), "0"))
+
+// Scan
+test("scan Short - valid", () => assertEquals(scan("42"), Just((42 :: Short))))
+test("scan Short - invalid", () => assertEquals(scan("abc") == Just((0 :: Short)), false))

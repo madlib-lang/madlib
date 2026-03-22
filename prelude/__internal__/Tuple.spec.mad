@@ -1,8 +1,30 @@
 import { assertEquals, test } from "Test"
+import { EQ, LT, GT } from "Compare"
 
 import { fst, snd } from "./Tuple"
 
 
-
 test("fst", () => assertEquals(fst(#["a", 200]), "a"))
 test("snd", () => assertEquals(snd(#["a", 200]), 200))
+
+// Equality
+test("Eq tuple - equal", () => assertEquals(#[1, 2] == #[1, 2], true))
+test("Eq tuple - not equal", () => assertEquals(#[1, 2] == #[1, 3], false))
+
+// Show
+test("show pair", () => assertEquals(show(#[1, 2]), "#[1, 2]"))
+test("show pair - strings", () => assertEquals(show(#["hello", "world"]), "#[\"hello\", \"world\"]"))
+
+// Triple
+test("Eq triple", () => assertEquals(#[1, 2, 3] == #[1, 2, 3], true))
+test("show triple", () => assertEquals(show(#[1, 2, 3]), "#[1, 2, 3]"))
+
+// Comparison
+test("Compare tuple - GT", () => assertEquals(compare(#[2, 1], #[1, 2]), GT))
+test("Compare tuple - LT", () => assertEquals(compare(#[1, 2], #[2, 1]), LT))
+test("Compare tuple - EQ", () => assertEquals(compare(#[1, 2], #[1, 2]), EQ))
+test("Compare tuple - second element", () => assertEquals(compare(#[1, 3], #[1, 2]), GT))
+
+// Nested tuples
+test("nested tuple", () => assertEquals(fst(#[#[1, 2], 3]), #[1, 2]))
+test("nested tuple snd", () => assertEquals(snd(#[1, #[2, 3]]), #[2, 3]))

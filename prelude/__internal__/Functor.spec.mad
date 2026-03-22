@@ -1,8 +1,38 @@
 import { assertEquals, test } from "Test"
-import { Just } from "Maybe"
+import { Just, Nothing } from "Maybe"
+import { Right, Left } from "Either"
 import { mapL } from "./Functor"
 
-test("mapL should map the functor with and assign it whatever value is given", (_) => pipe(
+test("mapL - Maybe", () => pipe(
   mapL(3),
-  assertEquals($, Just(3))
+  assertEquals($, Just(3)),
 )(Just(1)))
+
+test("mapL - Nothing", () => assertEquals(mapL(3, Nothing), Nothing))
+
+test("mapL - List", () => assertEquals(mapL(99, [1, 2, 3]), [99, 99, 99]))
+
+test("mapL - Either Right", () => assertEquals(mapL(5, Right("ok")), Right(5)))
+test("mapL - Either Left", () => assertEquals(mapL(5, Left("err")), Left("err")))
+
+// Functor laws: identity
+test("map identity - Maybe", () => assertEquals(map((x) => x, Just(3)), Just(3)))
+test("map identity - List", () => assertEquals(map((x) => x, [1, 2, 3]), [1, 2, 3]))
+
+// Functor laws: composition
+test("map composition - Maybe", () => {
+  f = (x) => x + 1
+  g = (x) => x * 2
+  return assertEquals(
+    map((x) => f(g(x)), Just(3)),
+    map(f, map(g, Just(3))),
+  )
+})
+test("map composition - List", () => {
+  f = (x) => x + 1
+  g = (x) => x * 2
+  return assertEquals(
+    map((x) => f(g(x)), [1, 2, 3]),
+    map(f, map(g, [1, 2, 3])),
+  )
+})

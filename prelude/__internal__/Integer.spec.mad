@@ -1,10 +1,37 @@
 import { EQ, LT, GT } from "Compare"
 import { assertEquals, test } from "Test"
+import { Just, Nothing } from "Maybe"
 
 
+// Comparison
+test("Compare Integer - GT", () => assertEquals(compare(3, 2), GT))
+test("Compare Integer - LT", () => assertEquals(compare(1, 2), LT))
+test("Compare Integer - EQ", () => assertEquals(compare(2, 2), EQ))
 
-test("Compare Integer - GT", (_) => assertEquals(compare(3, 2), GT))
+// Equality
+test("Eq Integer - equal", () => assertEquals(3 == 3, true))
+test("Eq Integer - not equal", () => assertEquals(3 == 4, false))
 
-test("Compare Integer - LT", (_) => assertEquals(compare(1, 2), LT))
+// Arithmetic
+test("addition", () => assertEquals(3 + 4, 7))
+test("subtraction", () => assertEquals(10 - 3, 7))
+test("multiplication", () => assertEquals(3 * 4, 12))
+test("unary minus", () => assertEquals(-5, 0 - 5))
+test("modulo", () => assertEquals(10 % 3, 1))
 
-test("Compare Integer - EQ", (_) => assertEquals(compare(2, 2), EQ))
+// Bitwise operations
+test("bitwise and", () => assertEquals(12 & 10, 8))
+test("bitwise or", () => assertEquals(12 | 10, 14))
+test("bitwise xor", () => assertEquals(12 ^ 10, 6))
+test("left shift", () => assertEquals(1 << 4, 16))
+test("right shift", () => assertEquals(16 >> 2, 4))
+
+// Show
+test("show Integer", () => assertEquals(show(42), "42"))
+test("show Integer - negative", () => assertEquals(show(-42), "-42"))
+test("show Integer - zero", () => assertEquals(show(0), "0"))
+
+// Scan
+test("scan Integer - valid", () => assertEquals(scan("42"), Just(42)))
+test("scan Integer - negative", () => assertEquals(scan("-7"), Just(-7)))
+test("scan Integer - invalid", () => assertEquals(scan("abc") == Just(0), false))

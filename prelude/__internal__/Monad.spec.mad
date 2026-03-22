@@ -1,0 +1,47 @@
+import { assertEquals, test } from "Test"
+import { Just, Nothing } from "Maybe"
+import { Right, Left } from "Either"
+import { chain2, andDo } from "./Monad"
+
+
+// chain2 - Maybe
+test("chain2 - Maybe Just", () => assertEquals(
+  chain2((a, b) => Just(a + b), Just(1), Just(3)),
+  Just(4),
+))
+test("chain2 - Maybe first Nothing", () => assertEquals(
+  chain2((a, b) => Just(a + b), Nothing, Just(3)),
+  Nothing,
+))
+test("chain2 - Maybe second Nothing", () => assertEquals(
+  chain2((a, b) => Just(a + b), Just(1), Nothing),
+  Nothing,
+))
+
+// chain2 - Either
+test("chain2 - Either Right", () => assertEquals(
+  chain2((a, b) => Right(a + b), Right(2), Right(3)),
+  Right(5),
+))
+test("chain2 - Either Left", () => assertEquals(
+  chain2((a, b) => Right(a + b), Left("err"), Right(3)),
+  Left("err"),
+))
+
+// chain2 - List
+test("chain2 - List", () => assertEquals(
+  chain2((a, b) => [a + b], [1, 2], [10, 20]),
+  [11, 21, 12, 22],
+))
+
+// andDo - Maybe
+test("andDo - Just Just", () => assertEquals(andDo(Just(3), Just(4)), Just(3)))
+test("andDo - Just Nothing", () => assertEquals(andDo(Just(3), Nothing), Nothing))
+test("andDo - Nothing Just", () => assertEquals(andDo(Nothing, Just(4)), Nothing))
+
+// andDo - Either
+test("andDo - Right Right", () => assertEquals(andDo(Right(3), Right(4)), Right(3)))
+test("andDo - Left Right", () => assertEquals(andDo(Left("e"), Right(4)), Left("e")))
+
+// andDo - List
+test("andDo - List", () => assertEquals(andDo([10, 20], [1, 2, 3]), [10, 20, 10, 20, 10, 20]))

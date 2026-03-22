@@ -3,29 +3,66 @@ import { test, assertEquals } from "Test"
 import { Just, Nothing, fromMaybe, isJust } from "./Maybe"
 import {} from "Number"
 
-test("map should map the value in the Maybe", (_) =>
-  assertEquals(map((x) => x + 1, Just(0)), Just(1))
-)
+// Functor
+test("map - Just", () => assertEquals(map((x) => x + 1, Just(0)), Just(1)))
+test("map - Nothing", () => assertEquals(map((x) => x + 1, Nothing), Nothing))
+test("map - composition", () => assertEquals(
+  map((x) => x * 2, map((x) => x + 1, Just(3))),
+  Just(8),
+))
 
-test("map should return Nothing if mapped over Nothing", (_) =>
-  assertEquals(map((x) => x + 1, Nothing), Nothing)
-)
+// Applicative
+test("pure wraps a value in a Maybe", () => assertEquals(pure(3), Just(3)))
+test("ap - Just Just", () => assertEquals(ap(Just((x) => x + 1), Just(3)), Just(4)))
+test("ap - Just Nothing", () => assertEquals(ap(Just((x) => x + 1), Nothing), Nothing))
+test("ap - Nothing Just", () => assertEquals(ap((Nothing :: Maybe (Integer -> Integer)), Just(3)), Nothing))
+test("ap - Nothing Nothing", () => assertEquals(
+  ap((Nothing :: Maybe (Integer -> Integer)), (Nothing :: Maybe Integer)),
+  Nothing,
+))
 
-test("pure wraps a value in a Maybe", (_) => assertEquals(pure(3), Just(3)))
-test("ap should apply a function in a Maybe to a value in a Maybe", (_) =>
-  assertEquals(ap(Just((x) => x + 1), Just(3)), Just(4))
-)
-test("ap - Nothing", (_) => assertEquals(ap(Just((x) => x + 1), Nothing), Nothing))
+// Monad
+test("of wraps a value in a Maybe", () => assertEquals(of(3), Just(3)))
+test("chain - Just", () => assertEquals(chain((x) => Just(x + 1), Just(1)), Just(2)))
+test("chain - Nothing", () => assertEquals(chain((x) => Just(x + 1), Nothing), Nothing))
+test("chain - returns Nothing", () => assertEquals(chain((_) => Nothing, Just(1)), (Nothing :: Maybe Integer)))
+test("chain - associativity", () => {
+  f = (x) => Just(x + 1)
+  g = (x) => Just(x * 2)
+  m = Just(3)
+  return assertEquals(
+    chain(g, chain(f, m)),
+    chain((x) => chain(g, f(x)), m),
+  )
+})
 
-test("of wraps a value in a Maybe", (_) => assertEquals(of(3), Just(3)))
-test("chain", (_) => assertEquals(chain((x) => Just(x + 1), Just(1)), Just(2)))
-test("chain - Nothing", (_) => assertEquals(chain((x) => Just(x + 1), Nothing), Nothing))
+// Show
+test("show - Just", () => assertEquals(show(Just(3)), "Just(3)"))
+test("show - Nothing", () => assertEquals(show((Nothing :: Maybe Integer)), "Nothing"))
+test("show - Just String", () => assertEquals(show(Just("hello")), "Just(\"hello\")"))
+test("show - nested", () => assertEquals(show(Just(Just(1))), "Just(Just(1))"))
 
-test("show - Just", (_) => assertEquals(show(Just(3)), "Just(3)"))
-test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Integer)), "Nothing"))
+// fromMaybe
+test("fromMaybe - Just", () => assertEquals(fromMaybe(3, Just(4)), 4))
+test("fromMaybe - Nothing", () => assertEquals(fromMaybe(3, Nothing), 3))
 
-test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
-test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))
+// isJust
+test("isJust - Just", () => assertEquals(isJust(Just(4)), true))
+test("isJust - Nothing", () => assertEquals(isJust(Nothing), false))
 
-test("isJust", (_) => assertEquals(isJust(Just(4)), true))
-test("isJust - Nothing", (_) => assertEquals(isJust(Nothing), false))
+// Eq
+test("Eq - Just Just equal", () => assertEquals(Just(1) == Just(1), true))
+test("Eq - Just Just not equal", () => assertEquals(Just(1) == Just(2), false))
+test("Eq - Nothing Nothing", () => assertEquals((Nothing :: Maybe Integer) == Nothing, true))
+test("Eq - Just Nothing", () => assertEquals(Just(1) == Nothing, false))
+
+// Semigroup
+test("assoc - Just Just", () => assertEquals(assoc(Just("hello"), Just(" world")), Just("hello world")))
+test("assoc - Nothing Just", () => assertEquals(assoc(Nothing, Just("world")), Just("world")))
+test("assoc - Just Nothing", () => assertEquals(assoc(Just("hello"), Nothing), Just("hello")))
+
+// Alternative
+test("alt - Just Just", () => assertEquals(alt(Just(1), Just(2)), Just(1)))
+test("alt - Nothing Just", () => assertEquals(alt(Nothing, Just(2)), Just(2)))
+test("alt - Just Nothing", () => assertEquals(alt(Just(1), Nothing), Just(1)))
+test("alt - Nothing Nothing", () => assertEquals(alt(Nothing, (Nothing :: Maybe Integer)), Nothing))

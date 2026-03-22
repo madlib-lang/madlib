@@ -1,0 +1,62 @@
+import { assertEquals, test } from "Test"
+import {
+  string,
+  integer,
+  float,
+  boolean,
+  list,
+  object,
+  printJson,
+} from "Json/Print"
+import {
+  JsonString,
+  JsonInteger,
+  JsonFloat,
+  JsonBoolean,
+  JsonNull,
+  JsonArray,
+} from "Json/Value"
+
+
+// Construction helpers
+test("string", () => assertEquals(string("hello"), JsonString("hello")))
+test("integer", () => assertEquals(integer(42), JsonInteger(42)))
+test("float", () => assertEquals(float(2.5), JsonFloat(2.5)))
+test("boolean - true", () => assertEquals(boolean(true), JsonBoolean(true)))
+test("boolean - false", () => assertEquals(boolean(false), JsonBoolean(false)))
+
+// list
+test("list", () => assertEquals(
+  list(integer, [1, 2, 3]),
+  JsonArray([JsonInteger(1), JsonInteger(2), JsonInteger(3)]),
+))
+
+// object
+test("object", () => assertEquals(
+  printJson(80, object([#["name", string("Alice")], #["age", integer(30)]])),
+  `{"age": 30, "name": "Alice"}`,
+))
+
+// printJson - simple values
+test("printJson - string", () => assertEquals(printJson(80, string("hello")), "\"hello\""))
+test("printJson - integer", () => assertEquals(printJson(80, integer(42)), "42"))
+test("printJson - float", () => assertEquals(printJson(80, float(2.5)), "2.5"))
+test("printJson - boolean true", () => assertEquals(printJson(80, boolean(true)), "true"))
+test("printJson - boolean false", () => assertEquals(printJson(80, boolean(false)), "false"))
+test("printJson - null", () => assertEquals(printJson(80, JsonNull), "null"))
+
+// printJson - array
+test("printJson - empty array", () => assertEquals(
+  printJson(80, JsonArray([])),
+  "[]",
+))
+test("printJson - simple array", () => assertEquals(
+  printJson(80, list(integer, [1, 2, 3])),
+  "[1, 2, 3]",
+))
+
+// Escaped strings
+test("printJson - string with quotes", () => assertEquals(
+  printJson(80, string("say \"hello\"")),
+  "\"say \\\"hello\\\"\"",
+))
