@@ -432,9 +432,11 @@ char *madlib__string__trimEnd(char *s) {
 }
 
 char *madlib__string__internal__concat(char *s1, char *s2) {
-  char *result = (char *)GC_MALLOC_ATOMIC((strlen(s1) + strlen(s2) + 1) * sizeof(char));
-  strcpy(result, s1);
-  strcat(result, s2);
+  size_t len1 = strlen(s1);
+  size_t len2 = strlen(s2);
+  char *result = (char *)GC_MALLOC_ATOMIC((len1 + len2 + 1) * sizeof(char));
+  memcpy(result, s1, len1);
+  memcpy(result + len1, s2, len2 + 1);
   return result;
 }
 
