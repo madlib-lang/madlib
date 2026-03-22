@@ -110,7 +110,7 @@ char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearra
 char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
   char *string = (char*) arr->bytes;
 
-  if (arr->bytes[arr->length - 1] > 0) {
+  if (arr->length == 0 || arr->bytes[arr->length - 1] > 0) {
     string = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
     memcpy(string, arr->bytes, arr->length);
     string[arr->length] = '\0';

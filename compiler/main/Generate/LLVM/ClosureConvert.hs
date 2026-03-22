@@ -530,7 +530,7 @@ convertDefinition env functionName captured (Typed (ps :=> t) area metadata (Def
     body'' <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> captured) env { mutationsInScope = mutationsInScope env ++ ownMutations }) body
 
     let liftedType   = foldr fn t (getType . snd <$> captured)
-    let lifted'      = Typed (ps :=> liftedType) area [] (Assignment (Typed (ps :=> t) area [] (Var functionName' False)) (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
+    let lifted'      = Typed (ps :=> liftedType) area [] (Assignment (Typed (ps :=> liftedType) area [] (Var functionName' False)) (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
     let functionNode = Typed (ps :=> liftedType) area metadataForFunctionNode (Var functionName' False)
 
     addTopLevelExp lifted'

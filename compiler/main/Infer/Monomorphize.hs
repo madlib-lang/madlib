@@ -638,7 +638,9 @@ monomorphize target env@Env{ envSubstitution } exp = case exp of
 
   Typed qt area (Do es) -> do
     pushNewScopeState env
-    es' <- mapM (monomorphizeBodyExp target env) es
+    let localBindingsToExclude = getScopeBindingsToExclude es
+    let env' = env { envLocalBindingsToExclude = envLocalBindingsToExclude env <> localBindingsToExclude }
+    es' <- mapM (monomorphizeBodyExp target env') es
     poppedScopeState <- popScopeState env
     let requestsFromScope = ssRequests poppedScopeState
 
@@ -766,6 +768,10 @@ monomorphizePattern target env pat = case pat of
   Typed qt area (PTuple items) -> do
     items' <- mapM (monomorphizePattern target env) items
     return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PTuple items')
+
+  Typed qt area (PSpread inner) -> do
+    inner' <- monomorphizePattern target env inner
+    return $ Typed (applyAndCleanQt (envSubstitution env) qt) area (PSpread inner')
 
   Typed qt area p ->
     return $ Typed (applyAndCleanQt (envSubstitution env) qt) area p

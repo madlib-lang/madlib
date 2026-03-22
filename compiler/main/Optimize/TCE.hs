@@ -125,17 +125,17 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
 
   Typed qt area metadata (Call (Typed _ _ _ (Var "&&" False)) [arg1, arg2]) | recursionKind == BooleanAndRecursion ->
     if containsRecursion True fnType fnName arg1 then
-      Typed qt area metadata (If arg2 arg1 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
+      Typed qt area metadata (If arg2 (markTRCCalls recursionKind fnType fnName arg1) (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
     else if containsRecursion True fnType fnName arg2 then
-      Typed qt area metadata (If arg1 arg2 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
+      Typed qt area metadata (If arg1 (markTRCCalls recursionKind fnType fnName arg2) (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "false"))))
     else
       exp
 
   Typed qt area metadata (Call (Typed _ _ _ (Var "||" False)) [arg1, arg2]) | recursionKind == BooleanOrRecursion ->
     if containsRecursion True fnType fnName arg1 then
-      Typed qt area metadata (If arg2 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) arg1)
+      Typed qt area metadata (If arg2 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) (markTRCCalls recursionKind fnType fnName arg1))
     else if containsRecursion True fnType fnName arg2 then
-      Typed qt area metadata (If arg1 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) arg2)
+      Typed qt area metadata (If arg1 (Typed ([] :=> tBool) emptyArea [] (Literal (LBool "true"))) (markTRCCalls recursionKind fnType fnName arg2))
     else
       exp
 

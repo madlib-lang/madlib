@@ -208,6 +208,19 @@ expandAssignment escaping exp = case exp of
     then S.union escaping (collectVarNames rhs)
     else escaping
 
+  Typed _ _ _ (If _ truthy falsy) ->
+    expandAssignment (expandAssignment escaping truthy) falsy
+
+  Typed _ _ _ (While _ body) ->
+    expandAssignment escaping body
+
+  Typed _ _ _ (Do exps) ->
+    foldl expandAssignment escaping exps
+
+  Typed _ _ _ (Where exp' iss) ->
+    let escaping' = expandAssignment escaping exp'
+    in  foldl (\acc (Typed _ _ _ (Is _ isExp)) -> expandAssignment acc isExp) escaping' iss
+
   _ -> escaping
 
 

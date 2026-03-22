@@ -259,7 +259,9 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
     in  Typed qt area metadata (Call f' args')
 
   Typed qt area metadata (Definition params body) ->
-    let body' = map (propagateBody fnName newFnName newQualType propagateMap) body
+    let paramNames = Set.fromList (map getValue params)
+        propagateMap' = Map.filterWithKey (\k _ -> not (k `Set.member` paramNames)) propagateMap
+        body' = map (propagateBody fnName newFnName newQualType propagateMap') body
     in  Typed qt area metadata (Definition params body')
 
   Typed _ area metadata (Do exps) ->

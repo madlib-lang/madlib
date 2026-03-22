@@ -34,6 +34,7 @@ char *madlib__string__replace(char *regex, char *replace, char *str) {
   }
 
   size_t bufferLengthToUse = inputLength * 1.25;
+  if (bufferLengthToUse < 16) bufferLengthToUse = 16;
   size_t bufferLength = bufferLengthToUse;
   char *buffer = (char*)GC_MALLOC_ATOMIC(sizeof(char)*bufferLength);
 
@@ -44,6 +45,8 @@ char *madlib__string__replace(char *regex, char *replace, char *str) {
     buffer = (char*)GC_MALLOC_ATOMIC(sizeof(char)*bufferLength);
     result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
   }
+
+  pcre2_code_free(re);
 
   return buffer;
 }
@@ -77,6 +80,9 @@ bool madlib__string__match(char *regex, char *str) {
     match_data,
     NULL
   );
+
+  pcre2_match_data_free(match_data);
+  pcre2_code_free(re);
 
   return rc >= 0;
 }
@@ -554,7 +560,19 @@ madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
       partLength = found - str;
     }
 
-    if (partLength == 0) {
+    if (partLength == 0 && found != NULL && strlen(separator) > 0) {
+      // Consecutive separators: produce empty string and skip past separator
+      char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 1);
+      part[0] = '\0';
+
+      madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+      node->value = part;
+      node->next = NULL;
+      current = current->next = node;
+
+      str = found + separatorLength;
+      continue;
+    } else if (partLength == 0) {
       partLength = 1;
     }
 

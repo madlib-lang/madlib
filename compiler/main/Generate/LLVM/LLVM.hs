@@ -421,8 +421,8 @@ buildReferencePAP symbolTable env area arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
-  Core.Typed _ _ metadata (Core.Call (Core.Typed _ _ _ (Var "+" _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
-    | Core.isLeftAdditionRecursiveCall metadata || Core.isLeftMultiplicationRecursiveCall metadata -> do
+  Core.Typed _ _ metadata (Core.Call (Core.Typed _ _ _ (Var op _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
+    | (op == "+" && Core.isLeftAdditionRecursiveCall metadata) || (op == "*" && Core.isLeftMultiplicationRecursiveCall metadata) -> do
       let Just params   = boxedParams <$> recursionData env
       let Just holePtr' = holePtr <$> recursionData env
       let Just continue = continueRef <$> recursionData env
@@ -666,7 +666,9 @@ generateExp env symbolTable exp = case exp of
       len <- gep arrOperand' [i32ConstOp 0, i32ConstOp 0]
       len' <- load len 0
 
-      outOfBound <- icmp IntegerPredicate.SGE indexOperand len'
+      negativeIndex <- icmp IntegerPredicate.SLT indexOperand (Operand.ConstantOperand (Constant.Int 64 0))
+      tooLarge <- icmp IntegerPredicate.SGE indexOperand len'
+      outOfBound <- Instruction.or negativeIndex tooLarge
       condBr outOfBound outOfBoundBlock allGoodBlock
 
       outOfBoundBlock <- block `named` "outOfBoundBlock"
@@ -1343,7 +1345,9 @@ generateExp env symbolTable exp = case exp of
     len <- gep arrOperand' [i32ConstOp 0, i32ConstOp 0]
     len' <- load len 0
 
-    outOfBound <- icmp IntegerPredicate.SGE indexOperand len'
+    negativeIndex <- icmp IntegerPredicate.SLT indexOperand (Operand.ConstantOperand (Constant.Int 64 0))
+    tooLarge <- icmp IntegerPredicate.SGE indexOperand len'
+    outOfBound <- Instruction.or negativeIndex tooLarge
     condBr outOfBound outOfBoundBlock allGoodBlock
 
     outOfBoundBlock <- block `named` "outOfBoundBlock"

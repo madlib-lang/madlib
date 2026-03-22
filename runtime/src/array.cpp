@@ -107,12 +107,11 @@ madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__
 
 
 madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib__array__Array_t *a) {
-  // TODO: verify that we don't need memmove here
   if (index > a->length - 1) {
     return a;
   }
 
-  memcpy(a->items + index, a->items + index + 1, (a->length - index - 1) * sizeof(void *));
+  memmove(a->items + index, a->items + index + 1, (a->length - index - 1) * sizeof(void *));
   a->length = a->length - 1;
   return a;
 }
