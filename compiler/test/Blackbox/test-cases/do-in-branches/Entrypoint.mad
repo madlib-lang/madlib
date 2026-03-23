@@ -1,0 +1,99 @@
+import IO from "IO"
+
+// Side-effect function (like a coverage tracker)
+track :: {} -> {}
+track = () => {
+  IO.putLine("tracked")
+}
+
+// Do block in If branches
+testDoInIf :: Boolean -> Integer
+testDoInIf = (b) =>
+  if (b) {
+    do {
+      track()
+      return 42
+    }
+  } else {
+    do {
+      track()
+      return 99
+    }
+  }
+
+// Do block in Where branches
+testDoInWhere :: Integer -> String
+testDoInWhere = (n) =>
+  where(n) {
+    0 =>
+      do {
+        track()
+        return "zero"
+      }
+
+    1 =>
+      do {
+        track()
+        return "one"
+      }
+
+    _ =>
+      do {
+        track()
+        return "other"
+      }
+  }
+
+// Do block in nested If inside Where
+testNested :: Integer -> String
+testNested = (n) =>
+  where(n) {
+    0 =>
+      do {
+        track()
+        return "zero"
+      }
+
+    _ =>
+      if (n > 10) {
+        do {
+          track()
+          return "big"
+        }
+      } else {
+        do {
+          track()
+          return "small"
+        }
+      }
+  }
+
+// Do block in function argument
+apply :: (Integer -> String) -> Integer -> String
+apply = (f, x) => f(x)
+
+testDoInArg :: {} -> String
+testDoInArg = () => {
+  return apply(
+    (x) => do {
+      track()
+      return show(x)
+    },
+    do {
+      track()
+      return 42
+    }
+  )
+}
+
+main = () => {
+  IO.putLine(show(testDoInIf(true)))
+  IO.putLine(show(testDoInIf(false)))
+  IO.putLine(testDoInWhere(0))
+  IO.putLine(testDoInWhere(1))
+  IO.putLine(testDoInWhere(42))
+  IO.putLine(testNested(0))
+  IO.putLine(testNested(20))
+  IO.putLine(testNested(5))
+  IO.putLine(testDoInArg())
+}

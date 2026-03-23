@@ -267,16 +267,29 @@ buildStr _env _area s = do
   safeBitcast op stringType
 
 
+-- | Unwrap Do blocks in an expression to get the innermost non-Do expression.
+-- This is needed because coverage instrumentation wraps expressions in Do blocks,
+-- but retrieveArgs needs to see the original Var/metadata for proper boxing.
+unwrapDoExp :: Core.Exp -> Core.Exp
+unwrapDoExp exp = case exp of
+  Core.Typed _ _ _ (Core.Do exps) | not (List.null exps) ->
+    unwrapDoExp (List.last exps)
+  _ -> exp
+
+
 retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [[Core.Metadata]] -> [Core.Exp] -> [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
 retrieveArgs metadata argExps exps =
   mapM
-    (\(metadata, argExp, (st, arg, maybeBoxedArg)) -> case maybeBoxedArg of
-      Just boxed | Core.isReferenceArgument metadata ->
+    (\(metadata, argExp, (st, arg, maybeBoxedArg)) ->
+      let innerExp = unwrapDoExp argExp
+          effectiveMetadata = Core.getMetadata innerExp
+      in case maybeBoxedArg of
+      Just boxed | Core.isReferenceArgument metadata || Core.isReferenceArgument effectiveMetadata ->
         return boxed
 
       _ ->
         -- Check if the argument is a variable with a known boxed form
-        case argExp of
+        case innerExp of
           Core.Typed _ _ _ (Core.Var name _) ->
             case Map.lookup name st of
               Just (Symbol (BoxedVariableSymbol boxed) _) ->
@@ -421,9 +434,79 @@ buildReferencePAP symbolTable env area arity fn = do
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
       return (symbolTable, papPtr', Just papPtr)
 
+-- | Unwrap Do blocks in function position of Call nodes.
+-- When coverage or other transformations wrap a function reference in a Do block
+-- (e.g., Do [sideEffect, Var "fn"]), the Call handler's pattern matching on the
+-- function expression fails, causing operators to fall through to the PAP dispatch
+-- path and crash. This function normalizes such calls by hoisting the side-effect
+-- expressions out of the function position and into the args (as preceding Do effects).
+--
+-- Example: Call (Do [tracker, Var "+"]) [x, y]
+--       -> the side effects from Do are generated first, then dispatched as Call (Var "+") [x, y]
+unwrapCallFnDo :: Core.Exp -> (Core.Exp, [Core.Exp])
+unwrapCallFnDo fn = case fn of
+  Core.Typed _ _ _ (Core.Do exps) | not (List.null exps) ->
+    let sideEffects = List.init exps
+        actualFn    = List.last exps
+        (innerFn, moreSideEffects) = unwrapCallFnDo actualFn
+    in  (innerFn, sideEffects ++ moreSideEffects)
+  _ -> (fn, [])
+
+
+-- | Normalize expressions by hoisting Do-block side effects from sub-expressions.
+-- When coverage or other transformations wrap sub-expressions in Do blocks
+-- (e.g., Do [sideEffect, actualExpr]), pattern matching and boxing logic in
+-- the LLVM codegen can break because it expects to see the actual expression
+-- directly, not wrapped in a Do.
+--
+-- This function normalizes all expression types that have sub-expressions by:
+-- 1. Unwrapping Do blocks from sub-expressions
+-- 2. Collecting all side-effect expressions
+-- 3. Wrapping the cleaned expression in a single Do with all side effects first
+--
+-- Examples:
+--   Call (Do [t1, Var "+"]) [Do [t2, x], y]  ->  Do [t1, t2, Call (Var "+") [x, y]]
+--   TupleConstructor [Do [t1, e1], e2]        ->  Do [t1, TupleConstructor [e1, e2]]
+normalizeDoWrappers :: Core.Exp -> Core.Exp
+normalizeDoWrappers exp = case exp of
+  Core.Typed qt area metadata (Core.Call fn args) ->
+    let (unwrappedFn, fnSideEffects) = unwrapCallFnDo fn
+        (unwrappedArgs, argSideEffects) = unzip $ map unwrapCallFnDo args
+        allSideEffects = fnSideEffects ++ concat argSideEffects
+    in  if List.null allSideEffects
+          then exp
+          else Core.Typed qt area metadata (Core.Do (allSideEffects ++ [Core.Typed qt area metadata (Core.Call unwrappedFn unwrappedArgs)]))
+
+  Core.Typed qt area metadata (Core.TupleConstructor exps) ->
+    let (unwrappedExps, allEffects) = unzip $ map unwrapCallFnDo exps
+        sideEffects = concat allEffects
+    in  if List.null sideEffects
+          then exp
+          else Core.Typed qt area metadata (Core.Do (sideEffects ++ [Core.Typed qt area metadata (Core.TupleConstructor unwrappedExps)]))
+
+  Core.Typed qt area metadata (Core.Record fields) ->
+    let (unwrappedFields, sideEffects) = unzip $ map unwrapFieldDo fields
+        allSideEffects = concat sideEffects
+    in  if List.null allSideEffects
+          then exp
+          else Core.Typed qt area metadata (Core.Do (allSideEffects ++ [Core.Typed qt area metadata (Core.Record unwrappedFields)]))
+
+  _ -> exp
+  where
+    unwrapFieldDo :: Core.Field -> (Core.Field, [Core.Exp])
+    unwrapFieldDo field = case field of
+      Core.Typed fqt fa fm (Core.Field (name, value)) ->
+        let (unwrappedValue, effects) = unwrapCallFnDo value
+        in  (Core.Typed fqt fa fm (Core.Field (name, unwrappedValue)), effects)
+      Core.Typed fqt fa fm (Core.FieldSpread value) ->
+        let (unwrappedValue, effects) = unwrapCallFnDo value
+        in  (Core.Typed fqt fa fm (Core.FieldSpread unwrappedValue), effects)
+      _ -> (field, [])
+
+
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
-generateExp env symbolTable exp = case exp of
+generateExp env symbolTable exp = case normalizeDoWrappers exp of
   Core.Typed _ _ metadata (Core.Call (Core.Typed _ _ _ (Var op _)) [(Core.Typed _ _ _ (Core.Call _ recArgs)), arg2])
     | (op == "+" && Core.isLeftAdditionRecursiveCall metadata) || (op == "*" && Core.isLeftMultiplicationRecursiveCall metadata) -> do
       let Just params   = boxedParams <$> recursionData env
@@ -745,7 +828,8 @@ generateExp env symbolTable exp = case exp of
         -- Look up the boxed form from the source variable's symbol, if available.
         -- We can't use maybeBoxed from generateExp because for LocalVariableSymbol reads
         -- it returns the reference cell pointer, which is NOT the boxed form of the value.
-        let sym = case e of
+        -- We unwrap Do blocks (from coverage instrumentation) to find the inner Var.
+        let sym = case unwrapDoExp e of
               Core.Typed _ _ _ (Core.Var srcName _) ->
                 case Map.lookup srcName symbolTable of
                   Just (Symbol (BoxedVariableSymbol boxed) _) ->
@@ -1224,9 +1308,10 @@ generateExp env symbolTable exp = case exp of
         nodePtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral (i :: Int)))]
         nodePtr' <- addrspacecast nodePtr listType
         storeItem nodePtr' () (itemVal, 0)
-        -- next pointer
+        -- next pointer: must bitcast from { i8*, i8* }* to i8* for the node's next field
         nextPtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral (i + 1)))]
-        storeItem nodePtr' () (nextPtr, 1)
+        nextPtr' <- safeBitcast nextPtr boxType
+        storeItem nodePtr' () (nextPtr', 1)
 
       -- Initialize sentinel node (last): value = null, next = null
       sentinelPtr <- gep bulkPtr' [Operand.ConstantOperand (Constant.Int 32 (fromIntegral n))]

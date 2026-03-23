@@ -83,6 +83,51 @@ llvmCompileAndRun casePath = do
     return (expected, errorsAndWarnings)
 
 
+llvmCompileAndRunWithCoverage :: FilePath -> IO (String, String)
+llvmCompileAndRunWithCoverage casePath = do
+  setEnv "NO_COLOR" "true"
+  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
+  let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
+  let outputPath   = joinPath [casePath, ".tests/run"]
+  let outputFolder = joinPath [casePath, ".tests"]
+
+  let options = Options
+          { optPathUtils = Path.defaultPathUtils
+          , optEntrypoint = entrypoint
+          , optRootPath = "./"
+          , optOutputPath = outputPath
+          , optTarget = TLLVM
+          , optOptimized = False
+          , optBundle = False
+          , optDebug = False
+          , optCoverage = True
+          , optGenerateDerivedInstances = True
+          , optInsertInstancePlaholders = True
+          , optParseOnly = False
+          , optMustHaveMain = True
+          , optOptimizationLevel = O3
+          , optLspMode = False
+          , optEmitLLVM = False
+          }
+
+  state <- Driver.initialState
+  errorsAndWarnings <- compile state options [entrypoint]
+
+  errorsOnly <- compileIgnoreWarnings state options [entrypoint]
+
+  if errorsOnly == "" then do
+    runResult <- try $ readProcessWithExitCode outputPath [] ""
+    callCommand $ "rm -r " <> outputFolder
+    case (runResult :: Either IOError (ExitCode, String, String)) of
+        Right (_, result, _) ->
+          return (expected, result)
+
+        Left e ->
+          return (ppShow e, "")
+  else
+    return (expected, errorsOnly)
+
+
 jsCompileAndRun :: FilePath -> IO (String, String)
 jsCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
@@ -185,6 +230,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/tco-advanced"
         , "compiler/test/Blackbox/test-cases/higher-order-inlining"
         , "compiler/test/Blackbox/test-cases/bool-precedence"
+        , "compiler/test/Blackbox/test-cases/do-in-branches"
         ]
 
   forM_ cases $ \casePath -> do
@@ -195,6 +241,15 @@ spec = do
   forM_ cases $ \casePath -> do
     before (jsCompileAndRun casePath) $ describe "" $ do
       it ("js case: " <> casePath) $ \(expected, result) -> do
+        result `shouldBe` expected
+
+  let coverageCases =
+        [ "compiler/test/Blackbox/test-cases/hocp-coverage-tce"
+        ]
+
+  forM_ coverageCases $ \casePath -> do
+    before (llvmCompileAndRunWithCoverage casePath) $ describe "" $ do
+      it ("llvm coverage case: " <> casePath) $ \(expected, result) -> do
         result `shouldBe` expected
 
 
@@ -252,3 +307,51 @@ compile state options invalidatedPaths = do
           List.intercalate "\n\n\n" formattedErrors' <> "\n"
 
   return $ ppWarnings ++ ppErrors
+
+
+compileIgnoreWarnings :: Driver.State CompilationError -> Options -> [FilePath] -> IO String
+compileIgnoreWarnings state options invalidatedPaths = do
+  result <-
+    try $ Driver.runIncrementalTask
+      state
+      options
+      invalidatedPaths
+      mempty
+      Don'tPrune
+      (Driver.typeCheckFileTask $ optEntrypoint options)
+      :: IO (Either (Cyclic Query) ((), [CompilationWarning], [CompilationError]))
+
+  errors <- case result of
+    Right (_, _, []) -> do
+      Driver.runIncrementalTask
+        state
+        options
+        invalidatedPaths
+        mempty
+        Don'tPrune
+        (Driver.compilationTask $ optEntrypoint options)
+      return []
+
+    Right (_, _, errors) ->
+      return errors
+
+    Left _ -> do
+      (_, _, errors) <- Driver.runIncrementalTask
+        state
+        options
+        invalidatedPaths
+        mempty
+        Don'tPrune
+        (Driver.detectCyleTask (optEntrypoint options))
+
+      return errors
+
+  formattedErrors   <- mapM (Explain.formatError readFile False) (sanitizeError <$> errors)
+  let formattedErrors' = unlines . drop 1 . lines <$> formattedErrors
+  let ppErrors =
+        if null errors then
+          ""
+        else
+          List.intercalate "\n\n\n" formattedErrors' <> "\n"
+
+  return ppErrors

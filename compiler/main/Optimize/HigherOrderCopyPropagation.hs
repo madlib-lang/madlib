@@ -218,6 +218,45 @@ isArgEligible path exp = case exp of
     return False
 
 
+-- | Extract the Var name from a potentially Do-wrapped expression.
+-- Coverage instrumentation wraps Vars in Do [trackerCall, Var], and we need
+-- to look through these wrappers to recognize recursive calls and args.
+getVarName :: Exp -> Maybe String
+getVarName exp = case exp of
+  Typed _ _ _ (Var n _) ->
+    Just n
+
+  Typed _ _ _ (Do exps) ->
+    getVarName (last exps)
+
+  _ ->
+    Nothing
+
+
+-- | Check if an argument should be filtered out (i.e., it's a propagated parameter).
+-- Looks through Do wrappers from coverage instrumentation.
+isFilteredArg :: [String] -> Exp -> Bool
+isFilteredArg mapKeys exp = case getVarName exp of
+  Just n  -> n `notElem` mapKeys
+  Nothing -> True
+
+
+-- | Replace the function Var inside a potentially Do-wrapped call function,
+-- preserving the Do wrapper structure (for coverage tracking).
+replaceFnVar :: Qual Type -> Exp -> String -> Exp
+replaceFnVar newQualType fnExp newName = case fnExp of
+  Typed _ area' metadata' (Var _ ctor) ->
+    Typed newQualType area' metadata' (Var newName ctor)
+
+  Typed qt area metadata (Do exps) ->
+    let exps' = init exps ++ [replaceFnVar newQualType (last exps) newName]
+        newQt = getQualType (last exps')
+    in  Typed newQt area metadata (Do exps')
+
+  other ->
+    other
+
+
 -- In case of recursion ( like map ), we also need to drop the arg in the recursive call:
 --   map(f, xs) -> map(xs)
 --   to do this we need to take the function name as a parameter so that we can transform:
@@ -238,20 +277,12 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
     let e' = propagateBody fnName newFnName newQualType propagateMap e
     in  Typed (getQualType e') area metadata (Assignment n e')
 
-  Typed qt area metadata (Call (Typed _ area' metadata' (Var calledFn ctor)) args) | calledFn == fnName ->
+  Typed qt area metadata (Call fn args) | getVarName fn == Just fnName ->
     let mapKeys = Map.keys propagateMap
-        filteredArgs =
-          filter
-            (\case
-              Typed _ _ _ (Var n _) ->
-                n `notElem` mapKeys
-
-              _ ->
-                True
-            )
-            args
+        filteredArgs = filter (isFilteredArg mapKeys) args
         args' = map (propagateBody fnName newFnName newQualType propagateMap) filteredArgs
-    in  Typed qt area metadata (Call (Typed newQualType area' metadata' (Var newFnName ctor)) args')
+        fn' = replaceFnVar newQualType fn newFnName
+    in  Typed qt area metadata (Call fn' args')
 
   Typed qt area metadata (Call f args) ->
     let f' = propagateBody fnName newFnName newQualType propagateMap f

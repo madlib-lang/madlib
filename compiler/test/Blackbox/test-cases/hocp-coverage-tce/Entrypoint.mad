@@ -1,0 +1,22 @@
+import IO from "IO"
+import String from "String"
+
+// Recursive higher-order function eligible for both TCE and HOCP.
+// With coverage, Do wrappers around Vars must be handled correctly
+// by HOCP when specializing TCE-converted recursive calls.
+loop :: a -> (a -> Boolean) -> (a -> a) -> a
+loop = (start, pred, step) => pred(start)
+  ? loop(step(start), pred, step)
+  : start
+
+main = () => {
+  // HOCP specializes loop with concrete pred and step functions
+  result1 = loop(1, (x) => x < 10, (x) => x * 2)
+  IO.putLine(show(result1))
+
+  result2 = loop("", (s) => String.length(s) < 5, (s) => s ++ "a")
+  IO.putLine(result2)
+
+  result3 = loop(0, (x) => x < 100, (x) => x + 1)
+  IO.putLine(show(result3))
+}

@@ -173,6 +173,21 @@ makeLineTrackerCall astPath line = do
     return $ Just $ Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True)
 
 
+-- | Wrap an expression in a Do block with a line tracker call.
+-- This wraps leaf expressions as Do [trackerCall, exp] for fine-grained coverage.
+addLineTracker :: FilePath -> Exp -> CanonicalM Exp
+addLineTracker astPath exp = do
+  let line = getLineFromStart (getArea exp)
+  isAlreadyTracked <- isLineTracked line
+  if isAlreadyTracked || line == 0 then
+    return exp
+  else do
+    pushCoverable (Line { cline = line, castpath = astPath })
+    let trackerCall = Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True)
+    let area = getArea exp
+    return $ Canonical area (Do [trackerCall, exp])
+
+
 -- | Add line tracker calls as standalone statements before each statement in a body.
 -- This avoids wrapping expressions in Do blocks (which breaks codegen).
 addLineTrackersToBody :: FilePath -> [Exp] -> CanonicalM [Exp]
@@ -240,15 +255,14 @@ addTrackersToExp options astPath exp = case exp of
 
     return $ Canonical area (Assignment fnName (Canonical absArea (Abs p body'')))
 
-  -- Leaf expressions: no tracking here. Line coverage is handled by
-  -- addLineTrackersToBody which inserts tracker calls as statements in function bodies.
-  Canonical _ (LNum _) -> return exp
-  Canonical _ (LFloat _) -> return exp
-  Canonical _ (LStr _) -> return exp
-  Canonical _ (LBool _) -> return exp
-  Canonical _ (LChar _) -> return exp
-  Canonical _ LUnit -> return exp
-  Canonical _ (Var _) -> return exp
+  -- Leaf expressions: wrap in Do block with line tracker for fine-grained coverage.
+  Canonical _ (LNum _) -> addLineTracker astPath exp
+  Canonical _ (LFloat _) -> addLineTracker astPath exp
+  Canonical _ (LStr _) -> addLineTracker astPath exp
+  Canonical _ (LBool _) -> addLineTracker astPath exp
+  Canonical _ (LChar _) -> addLineTracker astPath exp
+  Canonical _ LUnit -> addLineTracker astPath exp
+  Canonical _ (Var _) -> addLineTracker astPath exp
 
   Canonical area (Record fields) -> do
     fields' <- mapM (addTrackersToField options astPath) fields

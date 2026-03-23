@@ -142,8 +142,8 @@ generateDoExps :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState
                => FunctionCtx m -> Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateDoExps ctx env symbolTable exps = case exps of
   [exp] -> do
-    (_, result, _) <- ctxGenerateExp ctx env symbolTable exp
-    return (result, Nothing)
+    (_, result, boxed) <- ctxGenerateExp ctx env symbolTable exp
+    return (result, boxed)
 
   (exp : es) -> do
     (symbolTable', _, _) <- ctxGenerateExp ctx env symbolTable exp
@@ -157,8 +157,8 @@ generateBody :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState I
              => FunctionCtx m -> Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateBody ctx env symbolTable exps = case exps of
   [exp] -> do
-    (_, result, _) <- ctxGenerateExp ctx env symbolTable exp
-    return (result, Nothing)
+    (_, result, boxed) <- ctxGenerateExp ctx env symbolTable exp
+    return (result, boxed)
 
   (exp : es) -> do
     (symbolTable', _, _) <- ctxGenerateExp ctx env symbolTable exp
