@@ -29,6 +29,9 @@ module Generate.LLVM.Builtins
   , areStringsEqual
   , areStringsNotEqual
   , strConcat
+    -- * Allocation helpers
+  , isAtomicType
+  , chooseMalloc
   ) where
 
 import           LLVM.AST                     (mkName, Operand)
@@ -39,6 +42,7 @@ import qualified LLVM.AST.Operand             as Operand
 import           LLVM.IRBuilder.Constant      as C
 
 import           Generate.LLVM.Types          (boxType, listType, stringType, recordType)
+import qualified Infer.Type                   as IT
 
 
 -- Constant operand helpers
@@ -147,3 +151,25 @@ areStringsNotEqual =
 strConcat :: Operand
 strConcat =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (mkName "madlib__string__internal__concat"))
+
+
+-- Allocation helpers
+
+-- | Check if a Madlib type is atomic (contains no GC-scannable pointers).
+-- Atomic types can use GC_malloc_atomic for allocation, reducing GC scan work.
+isAtomicType :: IT.Type -> Bool
+isAtomicType t = case t of
+  IT.TCon (IT.TC "Integer" _) _ _ -> True
+  IT.TCon (IT.TC "Float" _) _ _   -> True
+  IT.TCon (IT.TC "Boolean" _) _ _ -> True
+  IT.TCon (IT.TC "Byte" _) _ _    -> True
+  IT.TCon (IT.TC "Short" _) _ _   -> True
+  IT.TCon (IT.TC "Char" _) _ _    -> True
+  IT.TCon (IT.TC "Unit" _) _ _    -> True
+  _ -> False
+
+-- | Choose GC_malloc or GC_malloc_atomic based on whether all field types are atomic.
+chooseMalloc :: [IT.Type] -> Operand
+chooseMalloc fieldTypes
+  | all isAtomicType fieldTypes = gcMallocAtomic
+  | otherwise = gcMalloc

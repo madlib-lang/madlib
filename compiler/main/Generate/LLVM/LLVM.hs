@@ -55,7 +55,7 @@ import           Generate.LLVM.Emit           (emitGEP)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callFastWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
-import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldIndex)
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, tupleFieldLLVMType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldIndex)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.Builtins
 import qualified Generate.LLVM.Operators      as Ops
@@ -164,25 +164,6 @@ allocateArenaNode env area = mdo
   return nodePtr'
 
 
-
--- | Check if a Madlib type is atomic (contains no GC-scannable pointers).
--- Atomic types can use GC_malloc_atomic for allocation, reducing GC scan work.
-isAtomicType :: IT.Type -> Bool
-isAtomicType t = case t of
-  IT.TCon (IT.TC "Integer" _) _ _ -> True
-  IT.TCon (IT.TC "Float" _) _ _   -> True
-  IT.TCon (IT.TC "Boolean" _) _ _ -> True
-  IT.TCon (IT.TC "Byte" _) _ _    -> True
-  IT.TCon (IT.TC "Short" _) _ _   -> True
-  IT.TCon (IT.TC "Char" _) _ _    -> True
-  IT.TCon (IT.TC "Unit" _) _ _    -> True
-  _ -> False
-
--- | Choose GC_malloc or GC_malloc_atomic based on whether all field types are atomic.
-chooseMalloc :: [IT.Type] -> Operand
-chooseMalloc fieldTypes
-  | all isAtomicType fieldTypes = gcMallocAtomic
-  | otherwise = gcMalloc
 
 
 -- | Allocate memory for a struct, using stack allocation (alloca) when the
@@ -1189,10 +1170,26 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     return (symbolTable, ret, boxed)
 
   Core.Typed _ area metadata (Core.TupleConstructor exps) -> do
-    exps'     <- mapM (generateExp env symbolTable) exps
-    boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps exps'
-    let expsWithIds = List.zip boxedExps [0..]
-        tupleType   = Type.StructureType False (typeOf <$> boxedExps)
+    exps' <- mapM (generateExp env symbolTable) exps
+    -- Use native field types for primitive elements (avoids inttoptr/ptrtoint round-trips).
+    -- Non-primitive elements fall back to boxType (i8*) as before.
+    let elemQualTypes  = Core.getQualType <$> exps
+        fieldLLVMTypes = tupleFieldLLVMType env symbolTable <$> elemQualTypes
+        tupleType      = Type.StructureType False fieldLLVMTypes
+        -- For primitive fields, use the unboxed value; for boxed fields, use the boxed form.
+        -- exps' triples: (symbolTable, unboxed, maybeBoxed)
+        -- Note: 'unboxed' may actually be boxed (i8*) if the value came as a function parameter.
+        -- In that case we must explicitly unbox it to the native primitive type before storing.
+        getFieldValue (_, unboxed, _) fieldType qt =
+          if fieldType == boxType
+            then if typeOf unboxed == boxType
+                   then return unboxed
+                   else box unboxed
+            else if typeOf unboxed == fieldType
+                   then return unboxed
+                   else unbox env symbolTable qt unboxed
+    fieldVals <- mapM (\((triple, ft), qt) -> getFieldValue triple ft qt) (List.zip (List.zip exps' fieldLLVMTypes) elemQualTypes)
+    let expsWithIds = List.zip fieldVals [0..]
         elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
         mallocFn    = chooseMalloc elemTypes
     tuplePtr  <- allocateStruct env area metadata tupleType mallocFn

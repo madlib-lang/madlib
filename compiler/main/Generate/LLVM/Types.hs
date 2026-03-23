@@ -15,6 +15,9 @@ module Generate.LLVM.Types
   , buildLLVMType
   , buildLLVMType'
   , buildLLVMParamType
+    -- * Tuple field type (native storage type for primitive elements)
+  , tupleFieldLLVMType
+  , primitiveTupleFieldType
     -- * Constructor helpers
   , retrieveConstructorStructType
   , retrieveConstructorMaxArity
@@ -141,8 +144,9 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
     in  Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
 
   _ | isTupleType t ->
-    let n = tupleArityFromType t
-    in  Type.ptr $ Type.StructureType False (List.replicate n boxType)
+    let elemTypes = getTupleElemTypes t
+        fieldTypes = tupleFieldLLVMType env symbolTable <$> elemTypes
+    in  Type.ptr $ Type.StructureType False fieldTypes
 
   _ | IT.isTCon t ->
     if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then
@@ -199,8 +203,9 @@ buildLLVMType' (ps IT.:=> t) = case t of
     return (Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False, Nothing)
 
   _ | isTupleType t ->
-    let n = tupleArityFromType t
-    in  return (Type.ptr $ Type.StructureType False (List.replicate n boxType), Nothing)
+    let elemTypes  = getTupleElemTypes t
+        fieldTypes = primitiveTupleFieldType <$> elemTypes
+    in  return (Type.ptr $ Type.StructureType False fieldTypes, Nothing)
 
   _ | IT.isTCon t ->
     if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then do
@@ -251,6 +256,30 @@ buildLLVMParamType env symbolTable t = case t of
 
   _ ->
     buildLLVMType env symbolTable ([] IT.:=> t)
+
+
+-- | The direct storage type for a tuple element.
+-- Primitive types are stored unboxed (i64, double, i1, etc.) to avoid
+-- inttoptr/ptrtoint round-trips at construction and pattern-match sites.
+-- Non-primitive types (strings, lists, ADTs, functions) remain as boxType (i8*).
+-- Does not need Env or SymbolTable — primitive detection is type-driven only.
+tupleFieldLLVMType :: Env -> SymbolTable -> IT.Qual IT.Type -> Type.Type
+tupleFieldLLVMType _ _ = primitiveTupleFieldType
+
+-- | Pure version of tupleFieldLLVMType, used where Env/SymbolTable are unavailable.
+-- Primitive types are stored with their native LLVM type to avoid inttoptr/ptrtoint
+-- round-trips at tuple construction and pattern-match sites.
+-- Non-primitive types (strings, lists, ADTs, functions) remain as boxType (i8*).
+primitiveTupleFieldType :: IT.Qual IT.Type -> Type.Type
+primitiveTupleFieldType (ps IT.:=> t) = case t of
+  IT.TCon (IT.TC "Float"   IT.Star) _ _ -> Type.double
+  IT.TCon (IT.TC "Byte"    IT.Star) _ _ -> Type.i8
+  IT.TCon (IT.TC "Short"   IT.Star) _ _ -> Type.i32
+  IT.TCon (IT.TC "Char"    IT.Star) _ _ -> Type.i32
+  IT.TCon (IT.TC "Integer" IT.Star) _ _ -> Type.i64
+  IT.TCon (IT.TC "Boolean" IT.Star) _ _ -> Type.i1
+  IT.TVar _ | IT.hasNumberPred ps       -> Type.i64
+  _                                     -> boxType
 
 
 -- Symbol helper (used by buildLLVMType')
@@ -352,6 +381,14 @@ getTupleTConName :: IT.Type -> Maybe String
 getTupleTConName (IT.TApp l _) = getTupleTConName l
 getTupleTConName (IT.TCon (IT.TC name _) "prelude" _) = Just name
 getTupleTConName _ = Nothing
+
+-- | Extract the element types from a tuple type.
+-- For #[a, b, c], returns [a, b, c] in left-to-right order.
+getTupleElemTypes :: IT.Type -> [IT.Qual IT.Type]
+getTupleElemTypes t = reverse (go t)
+  where
+    go (IT.TApp l r) = ([] IT.:=> r) : go l
+    go _             = []
 
 
 -- Record helpers

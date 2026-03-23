@@ -46,7 +46,7 @@ import           Data.ByteString.Short        (ShortByteString)
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
-import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity)
+import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType)
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
@@ -86,13 +86,104 @@ data PatternCtx m = PatternCtx
 generateBranches :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                  => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
 generateBranches ctx env symbolTable exitBlock whereExp iss = case iss of
-  (is : next) -> do
-    branch <- generateBranch ctx env symbolTable (not (List.null next)) exitBlock whereExp is
-    next'  <- generateBranches ctx env symbolTable exitBlock whereExp next
-    return $ branch ++ next'
+      (is : next) -> do
+        branch <- generateBranch ctx env symbolTable (not (List.null next)) exitBlock whereExp is
+        next'  <- generateBranches ctx env symbolTable exitBlock whereExp next
+        return $ branch ++ next'
+      [] ->
+        return []
 
-  [] ->
-    return []
+
+-- | True when the operand is a tagged struct pointer (multi-constructor ADT with i64 tag).
+isTaggedStructADT :: Operand -> Bool
+isTaggedStructADT op = case typeOf op of
+  Type.PointerType (Type.StructureType False (Type.IntegerType 64 : _)) _ -> True
+  _ -> False
+
+-- | True when an Is branch can be compiled with a switch (PCon with simple sub-patterns, or catch-all).
+isSwitchableIs :: Core.Is -> Bool
+isSwitchableIs (Core.Typed _ _ _ (Core.Is pat _)) = isSwitchablePat pat
+isSwitchableIs _ = False
+
+isSwitchablePat :: Core.Pattern -> Bool
+isSwitchablePat pat = case pat of
+  Core.Typed _ _ _ (Core.PCon _ subPats) -> all isSimplePat subPats
+  Core.Typed _ _ _ Core.PAny             -> True
+  Core.Typed _ _ _ (Core.PVar _)         -> True
+  _                                      -> False
+
+isSimplePat :: Core.Pattern -> Bool
+isSimplePat pat = case pat of
+  Core.Typed _ _ _ Core.PAny    -> True
+  Core.Typed _ _ _ (Core.PVar _) -> True
+  _                              -> False
+
+isConIs :: Core.Is -> Bool
+isConIs (Core.Typed _ _ _ (Core.Is pat _)) = case pat of
+  Core.Typed _ _ _ (Core.PCon _ _) -> True
+  _                                 -> False
+isConIs _ = False
+
+-- | Look up the constructor index (tag value) for a PCon pattern.
+getConIsId :: SymbolTable -> Core.Is -> Int
+getConIsId symbolTable (Core.Typed _ _ _ (Core.Is pat _)) = case pat of
+  Core.Typed _ _ _ (Core.PCon name _) ->
+    case Map.lookup name symbolTable of
+      Just (Symbol (ConstructorSymbol id _) _) -> id
+      _ -> error $ "Switch: constructor not found in symbol table: " <> name
+  _ -> error "Switch: getConIsId called on non-PCon branch"
+getConIsId _ _ = error "Switch: getConIsId called on invalid Is node"
+
+
+-- | Generate a single switch case block: bind pattern variables, eval body, branch to exit.
+generateSwitchCase :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
+                   => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> Core.Is -> m (AST.Name, [(Operand, AST.Name)])
+generateSwitchCase ctx env symbolTable exitBlock whereExp (Core.Typed _ _ _ (Core.Is pat body)) = do
+  caseBlock <- block `named` "switchCase"
+  symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
+  (_, result, _) <- ctxGenerateExp ctx env symbolTable' body
+  retBlock <- currentBlock
+  br exitBlock
+  return (caseBlock, [(result, retBlock)])
+generateSwitchCase _ _ _ _ _ _ = error "Unreachable: generateSwitchCase called with invalid Is"
+
+
+-- | Generate pattern matching via a switch instruction on the ADT tag.
+-- Only called when isTaggedStructADT && all isSwitchableIs.
+generateSwitchBranches :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
+                       => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
+generateSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
+  -- Extract the i64 tag from the tagged struct
+  tagPtr' <- ctxSafeBitcast ctx whereExp (Type.ptr $ Type.StructureType False [Type.i64])
+  tagField <- gep tagPtr' [i32ConstOp 0, i32ConstOp 0]
+  tag <- load tagField 0
+
+  -- Emit switch with forward references (resolved by mdo)
+  switch tag defaultBlock switchCases
+
+  -- Generate one block per PCon branch
+  let conBranches = List.filter isConIs iss
+  let catchAlls   = List.filter (not . isConIs) iss
+
+  caseData <- mapM (generateSwitchCase ctx env symbolTable exitBlock whereExp) conBranches
+  let conIds      = getConIsId symbolTable <$> conBranches
+  let switchCases = List.zipWith (\cid (blk, _) -> (Constant.Int 64 (fromIntegral cid), blk)) conIds caseData
+  let casePhis    = concatMap snd caseData
+
+  -- Default block: first catch-all branch, or unreachable
+  defaultBlock <- block `named` "switchDefault"
+  defaultPhis <- case catchAlls of
+    (Core.Typed _ _ _ (Core.Is pat body) : _) -> do
+      symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
+      (_, result, _) <- ctxGenerateExp ctx env symbolTable' body
+      retBlock <- currentBlock
+      br exitBlock
+      return [(result, retBlock)]
+    _ -> do
+      unreachable
+      return []
+
+  return $ casePhis ++ defaultPhis
 
 
 generateBranch :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
@@ -127,10 +218,16 @@ generateBranch ctx env symbolTable hasMore exitBlock whereExp is = case is of
 generateSymbolTableForIndexedData :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                                   => PatternCtx m -> Env -> Operand -> SymbolTable -> (Core.Pattern, Integer) -> m SymbolTable
 generateSymbolTableForIndexedData ctx env basePtr symbolTable (pat, index) = do
-  ptr   <- gep basePtr [i32ConstOp 0, i32ConstOp index]
-  ptr'  <- load ptr 0
-  ptr'' <- unbox env symbolTable (getQualType pat) ptr'
-  generateSymbolTableForPattern ctx env symbolTable ptr'' pat
+  ptr    <- gep basePtr [i32ConstOp 0, i32ConstOp index]
+  loaded <- load ptr 0
+  -- If the struct field already has the native LLVM type (e.g. i64 for Integer),
+  -- skip unboxing — the value is stored unboxed (typed tuple optimization).
+  let qt       = getQualType pat
+      nativeTy = buildLLVMType env symbolTable qt
+  val <- if typeOf loaded == nativeTy
+           then return loaded
+           else unbox env symbolTable qt loaded
+  generateSymbolTableForPattern ctx env symbolTable val pat
 
 
 generateSymbolTableForList :: (MonadIO m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
@@ -256,8 +353,13 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
 generateSubPatternTest :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m)
                        => PatternCtx m -> Env -> SymbolTable -> Operand -> (Core.Pattern, Operand) -> m Operand
 generateSubPatternTest ctx env symbolTable prev (pat', ptr) = do
-  v <- load ptr 0
-  v' <- unbox env symbolTable (getQualType pat') v
+  loaded <- load ptr 0
+  -- Skip unboxing when the field is already in its native type (typed tuple opt).
+  let qt       = getQualType pat'
+      nativeTy = buildLLVMType env symbolTable qt
+  v' <- if typeOf loaded == nativeTy
+          then return loaded
+          else unbox env symbolTable qt loaded
   curr <- generateBranchTest ctx env symbolTable pat' v'
   prev `Instruction.and` curr
 

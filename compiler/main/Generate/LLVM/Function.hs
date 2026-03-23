@@ -58,7 +58,7 @@ import           Control.Monad.IO.Class       (MonadIO)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
-import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc)
+import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, chooseMalloc)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
@@ -471,9 +471,10 @@ generateConstructor maxArity ctorCount env symbolTable (constructor, index) = ca
     else if ctorCount == 1 then do
       -- Single-constructor: no tag field needed
       let structType = Type.StructureType False $ List.replicate maxArity boxType
+      let mallocFn   = chooseMalloc paramTypes
       functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
         block `named` "entry"
-        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
         structPtr'    <- bitcast structPtr $ Type.ptr structType
         Monad.foldM_ (storeItem structPtr') () $ List.zip params [0..]
         boxed <- box structPtr'
@@ -481,9 +482,10 @@ generateConstructor maxArity ctorCount env symbolTable (constructor, index) = ca
     else do
       -- Multi-constructor: struct with tag
       let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+      let mallocFn   = chooseMalloc paramTypes
       functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
         block `named` "entry"
-        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
         structPtr'    <- bitcast structPtr $ Type.ptr structType
         Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
         boxed <- box structPtr'

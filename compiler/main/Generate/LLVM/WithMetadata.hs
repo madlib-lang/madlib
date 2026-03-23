@@ -118,7 +118,7 @@ functionWithMetadata metadata label argtys retty body = do
       , Global.basicBlocks = blocks
       , Global.callingConvention = CC.Fast
       , Global.metadata = metadata
-      , Global.functionAttributes = [Right NoUnwind]
+      , Global.functionAttributes = [Right NoUnwind, Right NoFree, Right NoSync]
       }
     funty = ptr $ FunctionType retty (fst <$> argtys) False
   emitDefn def
@@ -150,7 +150,7 @@ functionWithMetadataC metadata label argtys retty body = do
       , Global.returnType = retty
       , Global.basicBlocks = blocks
       , Global.metadata = metadata
-      , Global.functionAttributes = [Right NoUnwind]
+      , Global.functionAttributes = [Right NoUnwind, Right NoFree, Right NoSync]
       }
     funty = ptr $ FunctionType retty (fst <$> argtys) False
   emitDefn def
