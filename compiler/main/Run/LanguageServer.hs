@@ -335,17 +335,15 @@ collectInlayHints startLine endLine = concatMap (collectFromExp True)
       -- Top-level or let-binding assignment (inferred type)
       Slv.Typed qt area (Slv.Assignment name body)
         | inRange area && not (isSyntheticName name) ->
-          let nameEnd = Loc.getCol (getStartLoc area) - 1 + length name
-              line0   = Loc.getLine (getStartLoc area) - 1
-          in  inlayHintToJSON line0 nameEnd (" :: " <> prettyQt topLevel qt)
+          let line0 = Loc.getLine (getStartLoc area) - 1
+          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt)
               : collectFromBody body
 
       -- Exported assignment (inferred type)
       Slv.Typed _ _ (Slv.Export (Slv.Typed qt' innerArea (Slv.Assignment name body)))
         | inRange innerArea && not (isSyntheticName name) ->
-          let nameEnd = Loc.getCol (getStartLoc innerArea) - 1 + length name
-              line0   = Loc.getLine (getStartLoc innerArea) - 1
-          in  inlayHintToJSON line0 nameEnd (" :: " <> prettyQt topLevel qt')
+          let line0 = Loc.getLine (getStartLoc innerArea) - 1
+          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt')
               : collectFromBody body
 
       -- Exported with annotation — skip
