@@ -417,7 +417,12 @@ renderModulePath :: String -> String
 renderModulePath = (modulePath) => pipe(
   FilePath.splitPath,
   (parts) => {
-    path = pipe(List.init, FilePath.joinPath, mappend($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(parts)
+    dirParts = List.init(parts)
+    path = if (List.isEmpty(dirParts)) {
+      ""
+    } else {
+      pipe(FilePath.joinPath, mappend($, "/"), when(always(IS_COLOR_ENABLED), IO.grey))(dirParts)
+    }
     fileName = pipe(
       List.last,
       fromMaybe("")
@@ -448,7 +453,14 @@ processSuitePath = (suitePath) => {
       partIndex := partIndex + 1
       return drop
     }),
-    FilePath.joinPath
+    FilePath.joinPath,
+    (p) => where(String.firstChar(p)) {
+      Just('/') =>
+        String.drop(1, p)
+
+      _ =>
+        p
+    }
   )(suitePath)
 }
 

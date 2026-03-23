@@ -146,7 +146,7 @@ generateDoExps ctx env symbolTable exps = case exps of
     return (result, Nothing)
 
   (exp : es) -> do
-    (symbolTable', _, _) <- ctxGenerateExp ctx env { isLast = False } symbolTable exp
+    (symbolTable', _, _) <- ctxGenerateExp ctx env symbolTable exp
     generateBody ctx env symbolTable' es
 
   [] ->
@@ -157,7 +157,7 @@ generateBody :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState I
              => FunctionCtx m -> Env -> SymbolTable -> [Core.Exp] -> m (Operand, Maybe Operand)
 generateBody ctx env symbolTable exps = case exps of
   [exp] -> do
-    (_, result, _) <- ctxGenerateExp ctx env { isLast = True } symbolTable exp
+    (_, result, _) <- ctxGenerateExp ctx env symbolTable exp
     return (result, Nothing)
 
   (exp : es) -> do

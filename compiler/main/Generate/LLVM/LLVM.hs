@@ -299,7 +299,7 @@ generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, State.
 generateApplicationForKnownFunction env symbolTable area returnQualType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
-      args'   <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'   <- mapM (generateExp env symbolTable) args
       args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
       let args''' = (, []) <$> args''
 
@@ -310,14 +310,14 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
   | List.length args > arity = do
       -- We have extra args so we do the known call and the applyPAP the resulting partial application
       let (args', remainingArgs) = List.splitAt arity args
-      args''   <- mapM (generateExp env { isLast = False } symbolTable) args'
+      args''   <- mapM (generateExp env symbolTable) args'
       args'''  <- retrieveArgs (Core.getMetadata <$> args') args' args''
       let args'''' = (, []) <$> args'''
 
       pap <- callWithMetadata (makeDILocation env area) fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
-      remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
+      remainingArgs'  <- mapM (generateExp env symbolTable) remainingArgs
       remainingArgs'' <- retrieveArgs (Core.getMetadata <$> remainingArgs) remainingArgs remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
@@ -342,7 +342,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
 
       boxedFn  <- box fnOperand
 
-      args'     <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'     <- mapM (generateExp env symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
       -- Use atomic malloc when all captured values are primitive (no GC scanning needed).
@@ -432,7 +432,7 @@ generateExp env symbolTable exp = case exp of
 
       (_, arg2', _) <- generateExp env symbolTable arg2
 
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) recArgs
+      args'  <- mapM (generateExp env symbolTable) recArgs
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
       -- We need to reverse because we may have some closured variables in the params and these need not be updated
@@ -553,7 +553,7 @@ generateExp env symbolTable exp = case exp of
 
             storeWithMetadata (makeDILocation env area) continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-            recArgs' <- mapM (generateExp env { isLast = False } symbolTable) recArgs
+            recArgs' <- mapM (generateExp env symbolTable) recArgs
             let unboxedArgs = (\(_, x, _) -> x) <$> recArgs'
 
             -- We need to reverse because we may have some closured variables in the params and these need not be updated
@@ -632,12 +632,12 @@ generateExp env symbolTable exp = case exp of
 
   -- TODO: Export nodes are stripped from closure convertion currently, we'll need this back soon.
   -- Core.Typed _ _ _ (Core.Export e) -> do
-  --   generateExp env { isLast = False } symbolTable e
+  --   generateExp env symbolTable e
 
   Core.Typed _ _ metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.Access r@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _)))) e) -> do
     if Core.isReferenceStore metadata then do
-        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
-        (_, r', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable r
+        (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
+        (_, r', _) <- generateExp env { isTopLevel = False } symbolTable r
         exp'' <- box exp'
 
         case recType of
@@ -659,9 +659,9 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ area metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.ArrayAccess arr index)) e) -> do
     if Core.isReferenceStore metadata then mdo
-      (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
-      (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
-      (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+      (_, arrOperand, _) <- generateExp env symbolTable arr
+      (_, indexOperand, _) <- generateExp env symbolTable index
+      (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
       exp'' <- box exp'
       let arrayType = Type.ptr $ Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
       arrOperand' <- safeBitcast arrOperand arrayType
@@ -697,7 +697,7 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ area metadata (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) e) -> do
     if isTopLevel env then do
-      (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+      (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
       store g 0 exp'
@@ -714,14 +714,14 @@ generateExp env symbolTable exp = case exp of
 
         (_, exp', _) <-
           generateExp
-            env { isLast = False, isTopLevel = False }
+            env { isTopLevel = False }
             (Map.insert name (localVarSymbol ptr v) symbolTable)
             e
 
         store ptr' 0 exp'
         return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr')
       else if Core.isReferenceStore metadata then do
-        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+        (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
         case Map.lookup name symbolTable of
           Just (Symbol (LocalVariableSymbol ptr) _) -> do
             ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
@@ -737,7 +737,7 @@ generateExp env symbolTable exp = case exp of
           or ->
             error $ "found: " <> ppShow or
       else do
-        (_, exp', _) <- generateExp env { isLast = False, isTopLevel = False } symbolTable e
+        (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
         Monad.when (envIsDebugBuild env) $ do
           ptr <- alloca (typeOf exp') Nothing 0
           declareVariable env area False name ptr
@@ -759,7 +759,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])
     | "fromList" `List.isInfixOf` fnName && IT.getConstructorCon t == IT.tArrayCon && List.all (not . Core.isListSpread) items -> do
       let items' = List.map getListItemExp items
-      items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
+      items'' <- mapM (generateExp env symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
       items'''' <- mapM box items'''
       itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
@@ -777,7 +777,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed (_ IT.:=> t) area _ (Core.Call (Core.Typed _ _ _ (Core.Var fnName _)) [Core.Typed _ _ _ (Core.ListConstructor items)])
     | "fromList" `List.isInfixOf` fnName && t == IT.tByteArray && List.all (not . Core.isListSpread) items -> do
       let items' = List.map getListItemExp items
-      items'' <- mapM (generateExp env { isLast = False } symbolTable) items'
+      items'' <- mapM (generateExp env symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
       itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr i8)
@@ -792,29 +792,29 @@ generateExp env symbolTable exp = case exp of
       return (symbolTable, arr'', Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "%" _)) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
     result                <- Ops.generateMod (getType leftOperand) leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "!" _)) [operand]) -> do
-    (_, operand', _) <- generateExp env { isLast = False } symbolTable operand
+    (_, operand', _) <- generateExp env symbolTable operand
     result           <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
     return (symbolTable, result, Nothing)
 
   Core.Typed _ area _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
     result <- callWithMetadata (makeDILocation env area) strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
     andLhs <- currentBlock
     condBr leftOperand' andRhs andOutput
 
     andRhs <- block `named` "and.rhs"
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
     result                <- Instruction.and leftOperand' rightOperand'
     andRhs'               <- currentBlock
     br andOutput
@@ -824,12 +824,12 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, output, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "||" _)) [leftOperand, rightOperand]) -> mdo
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
     orLhs <- currentBlock
     condBr leftOperand' orOutput orRhs
 
     orRhs <- block `named` "or.rhs"
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
     result                <- Instruction.or leftOperand' rightOperand'
     orRhs'                <- currentBlock
     br orOutput
@@ -841,102 +841,102 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed qt _ metadata (Core.Call fn args) -> case fn of
     Core.Typed _ _ _ (Var "+" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateAdd (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "-" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateSub (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "unary-minus" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
       result                <- Ops.generateUnaryMinus (getType (List.head args)) leftOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "*" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateMul (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "/" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateDiv (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "<<" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- shl leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var ">>" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- ashr leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var ">>>" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- lshr leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "|" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Instruction.or leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "&" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Instruction.and leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "^" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Instruction.xor leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "~" False) -> do
-      (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
+      (_, operand', _) <- generateExp env symbolTable (List.head args)
       result <- Ops.generateBitwiseNot (getType (List.head args)) operand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ area _ (Var "==" False) | getType (List.head args) `List.elem` [IT.tInteger, IT.tShort, IT.tByte, IT.tFloat, IT.tStr, IT.tBool, IT.tUnit, IT.tChar] -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateEq (callWithMetadata (makeDILocation env area)) (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var ">" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateGt (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "<" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateLt (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var ">=" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateGte (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
     Core.Typed _ _ _ (Var "<=" False) -> do
-      (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-      (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+      (_, leftOperand', _)  <- generateExp env symbolTable (List.head args)
+      (_, rightOperand', _) <- generateExp env symbolTable (args !! 1)
       result                <- Ops.generateLte (getType (List.head args)) leftOperand' rightOperand'
       return (symbolTable, result, Nothing)
 
@@ -946,7 +946,7 @@ generateExp env symbolTable exp = case exp of
         let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+        args'  <- mapM (generateExp env symbolTable) args
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
         -- We need to reverse because we may have some closured variables in the params and these need not be updated
@@ -962,7 +962,7 @@ generateExp env symbolTable exp = case exp of
 
         if List.length args == arity then do
           -- optimize known calls to constructors to simple allocations without function call
-          args'   <- mapM (generateExp env { isLast = False } symbolTable) args
+          args'   <- mapM (generateExp env symbolTable) args
           args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
 
           let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
@@ -1000,7 +1000,7 @@ generateExp env symbolTable exp = case exp of
 
         pap'' <- safeBitcast pap' boxType
 
-        args'     <- mapM (generateExp env { isLast = False } symbolTable) args
+        args'     <- mapM (generateExp env symbolTable) args
         boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
         ret       <-
@@ -1017,12 +1017,12 @@ generateExp env symbolTable exp = case exp of
         error $ "Function not found " <> functionName <> "\narea: " <> ppShow area <> "\nST: " <> ppShow symbolTable
 
     Core.Typed _ area _ _ -> do
-      (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
+      (_, pap, _) <- generateExp env symbolTable fn
       pap' <- safeBitcast pap boxType
 
       let argc = i32ConstOp (fromIntegral $ List.length args)
 
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'  <- mapM (generateExp env symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
       ret <-
@@ -1080,11 +1080,11 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Int 32 (fromIntegral $ fromEnum c), Nothing)
 
   Core.Typed _ _ _ (Core.Do exps) -> do
-    (ret, boxed) <- Fn.generateDoExps makeFunctionCtx env { isLast = False } symbolTable exps
+    (ret, boxed) <- Fn.generateDoExps makeFunctionCtx env symbolTable exps
     return (symbolTable, ret, boxed)
 
   Core.Typed _ area metadata (Core.TupleConstructor exps) -> do
-    exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
+    exps'     <- mapM (generateExp env symbolTable) exps
     boxedExps <- retrieveArgs (Core.getMetadata <$> exps) exps exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
@@ -1112,7 +1112,7 @@ generateExp env symbolTable exp = case exp of
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'  <- mapM (generateExp env symbolTable) args
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
       (_, item, maybeBoxedItem) <- generateExp env symbolTable li
@@ -1152,7 +1152,7 @@ generateExp env symbolTable exp = case exp of
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'  <- mapM (generateExp env symbolTable) args
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
       (_, item1, maybeBoxedItem1) <- generateExp env symbolTable li1
@@ -1209,7 +1209,7 @@ generateExp env symbolTable exp = case exp of
       -- Evaluate all items left-to-right first
       evaluatedItems <- mapM (\case
         Core.Typed _ _ _ (Core.ListItem item) -> do
-          item' <- generateExp env { isLast = False } symbolTable item
+          item' <- generateExp env symbolTable item
           items <- retrieveArgs [Core.getMetadata item] [item] [item']
           return (List.head items)
         _ -> error "Unreachable: checked allAreItems above"
@@ -1241,12 +1241,12 @@ generateExp env symbolTable exp = case exp of
       -- Original path: handles spreads and single-item lists
       tail <- case List.last listItems of
         Core.Typed _ area _ (Core.ListItem lastItem) -> do
-          item <- generateExp env { isLast = False } symbolTable lastItem
+          item <- generateExp env symbolTable lastItem
           items <- retrieveArgs [Core.getMetadata lastItem] [lastItem] [item]
           callWithMetadata (makeDILocation env area) madlistSingleton [(List.head items, [])]
 
         Core.Typed _ _ _ (Core.ListSpread spread) -> do
-          (_, e, _) <- generateExp env { isLast = False } symbolTable spread
+          (_, e, _) <- generateExp env symbolTable spread
           return e
 
         _ -> error "Unreachable: list constructor with untyped item"
@@ -1254,7 +1254,7 @@ generateExp env symbolTable exp = case exp of
       list <- Monad.foldM
         (\list' i -> case i of
           Core.Typed _ area _ (Core.ListItem item) -> do
-            item' <- generateExp env { isLast = False } symbolTable item
+            item' <- generateExp env symbolTable item
             items <- retrieveArgs [Core.getMetadata item] [item] [item']
 
             newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
@@ -1268,7 +1268,7 @@ generateExp env symbolTable exp = case exp of
             return newHead'
 
           Core.Typed _ area _ (Core.ListSpread spread) -> do
-            (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
+            (_, spread, _)  <- generateExp env symbolTable spread
             callWithMetadata (makeDILocation env area) madlistConcat [(spread, []), (list', [])]
 
           _ -> error "Unreachable: list constructor with untyped item"
@@ -1300,7 +1300,7 @@ generateExp env symbolTable exp = case exp of
     -- If there's a spread base, copy its fields into the result struct
     case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
-        (_, baseOperand, _) <- generateExp env { isLast = False } symbolTable exp
+        (_, baseOperand, _) <- generateExp env symbolTable exp
         let baseRecType = let (_ IT.:=> bt) = Core.getQualType exp in bt
         let baseFieldNames = case baseRecType of
               IT.TRecord fs _ os -> Map.keys (Map.union fs os)
@@ -1322,7 +1322,7 @@ generateExp env symbolTable exp = case exp of
     -- Store each field value at its index in the flat struct
     Monad.forM_ sortedFields $ \field -> case field of
       Core.Typed _ _ _ (Core.Field (name, value)) -> do
-        (_, val, maybeBoxed) <- generateExp env { isLast = False } symbolTable value
+        (_, val, maybeBoxed) <- generateExp env symbolTable value
         boxedVal <- case maybeBoxed of
           Just boxed -> return boxed
           Nothing    -> box val
@@ -1340,8 +1340,8 @@ generateExp env symbolTable exp = case exp of
   --   void **items;
   -- } madlib__array__Array_t;
   Core.Typed qt area _ (Core.ArrayAccess arr index) -> mdo
-    (_, arrOperand, _) <- generateExp env { isLast = False } symbolTable arr
-    (_, indexOperand, _) <- generateExp env { isLast = False } symbolTable index
+    (_, arrOperand, _) <- generateExp env symbolTable arr
+    (_, indexOperand, _) <- generateExp env symbolTable index
     let arrayType = Type.ptr $ Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
     arrOperand' <- safeBitcast arrOperand arrayType
 
@@ -1371,7 +1371,7 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, ret'', Just ret')
 
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
-    (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
+    (_, recordOperand, _) <- generateExp env symbolTable record
     value <- case recType of
       IT.TRecord fields _ optionalFields -> do
         let allFields = Map.union fields optionalFields
@@ -1391,16 +1391,16 @@ generateExp env symbolTable exp = case exp of
 
 
   Core.Typed _ _ _ (Core.If cond truthy falsy) -> mdo
-    (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
+    (symbolTable', cond', _) <- generateExp env symbolTable cond
     condBr cond' ifThen ifElse
 
     ifThen <- block `named` "if.then"
-    (_, truthy', _) <- generateExp env { isLast = False } symbolTable' truthy
+    (_, truthy', _) <- generateExp env symbolTable' truthy
     ifThen' <- currentBlock
     br ifExit
 
     ifElse <- block `named` "if.else"
-    (_, falsy', _) <- generateExp env { isLast = False } symbolTable' falsy
+    (_, falsy', _) <- generateExp env symbolTable' falsy
     ifElse' <- currentBlock
     br ifExit
 
@@ -1414,11 +1414,11 @@ generateExp env symbolTable exp = case exp of
     br loop
 
     loop <- block `named` "loop"
-    (_, cond', _) <- generateExp env { isLast = False } symbolTable cond
+    (_, cond', _) <- generateExp env symbolTable cond
     condBr cond' bodyBlock afterLoop
 
     bodyBlock <- block `named` "body"
-    generateExp env { isLast = False } symbolTable body
+    generateExp env symbolTable body
     br loop
 
     afterLoop <- block `named` "loopExit"
@@ -1426,7 +1426,7 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, unit, Nothing)
 
   Core.Typed _ _ _ (Core.Where exp iss) -> mdo
-    (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
+    (_, exp', _) <- generateExp env symbolTable exp
     let ctx = PM.PatternCtx
                 { PM.ctxGenerateExp = generateExp
                 , PM.ctxBuildStr    = buildStr

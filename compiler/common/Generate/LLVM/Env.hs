@@ -45,8 +45,7 @@ data RecursionData
 
 data Env
   = Env
-  { isLast :: Bool
-  , isTopLevel :: Bool
+  { isTopLevel :: Bool
   , recursionData :: Maybe RecursionData
   , envASTPath :: String
   , envIsDebugBuild :: Bool
@@ -58,8 +57,7 @@ data Env
 
 initialEnv :: Env
 initialEnv =
-  Env { isLast = True
-      , isTopLevel = True
+  Env { isTopLevel = True
       , recursionData = Nothing
       , envASTPath = ""
       , envIsDebugBuild = False

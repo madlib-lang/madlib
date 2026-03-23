@@ -396,8 +396,7 @@ generateModule mkCtx safeBitcastFn options ast@Core.AST{ apath = Just modulePath
   let isMain = optEntrypoint options == modulePath
   let envForAST =
         Env
-          { isLast = False
-          , isTopLevel = False
+          { isTopLevel = False
           , recursionData = Nothing
           , envASTPath = modulePath
           , envIsDebugBuild = optDebug options

@@ -34,13 +34,15 @@ addTrackers options ast@AST{ apath = Just path } = do
   let isTestRunner = "/Test.mad" `isSuffixOf` path
   let isBuiltins   = "/__BUILTINS__.mad" `isSuffixOf` path
   let isTestMain   = "/__TestMain__.mad" `isSuffixOf` path
+  let rootPath     = optRootPath options
+  let isPreludeModule = "prelude/__internal__/" `isInfixOf` path && not ("prelude/__internal__" `isInfixOf` rootPath)
   trackingModulePath <- Rock.fetch $ AbsolutePreludePath "__CoverageTracking__"
   coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
   processModulePath  <- Rock.fetch $ AbsolutePreludePath "Process"
 
   -- __CoverageTracking__ has zero imports, so any module can import it without cycles.
   let isCoverageModule = path == trackingModulePath || path == coverageModulePath
-  let willInstrument = not isCoverageModule && not isPackage && not isTest && not isTestRunner && not isBuiltins && not isTestMain
+  let willInstrument = not isCoverageModule && not isPackage && not isTest && not isTestRunner && not isBuiltins && not isTestMain && not isPreludeModule
 
   let isEntrypoint = optEntrypoint options == path
 
