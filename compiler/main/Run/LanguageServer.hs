@@ -73,6 +73,8 @@ import Data.Char (isAlphaNum, isDigit, isUpper, toLower)
 import qualified System.Directory as Dir
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson
+import           Data.Aeson ((.=), (.:))
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 
 
@@ -170,6 +172,15 @@ handlers state autocompletionState = mconcat
       recordAndPrintDuration "foldingRange" $ do
         ranges <- getFoldingRanges state (uriToPath uri)
         responder $ Right (List ranges)
+  , requestHandler (SCustomMethod "textDocument/inlayHint") $ \req responder ->
+      recordAndPrintDuration "inlayHint" $ do
+        let RequestMessage _ _ _ reqParams = req
+        case Aeson.parseMaybe parseInlayHintParams reqParams of
+          Just (uri, startLine, endLine) -> do
+            hints <- getInlayHints state (uriToPath uri) startLine endLine
+            responder $ Right $ Aeson.toJSON hints
+          Nothing ->
+            responder $ Right $ Aeson.toJSON ([] :: [Aeson.Value])
   ]
 
 
@@ -283,6 +294,74 @@ data Node
   | NamedImportNode Area String FilePath
   | TypeImportNode Area String FilePath
   deriving(Eq, Show)
+
+
+-- Inlay Hints
+
+inlayHintToJSON :: Int -> Int -> String -> Aeson.Value
+inlayHintToJSON line char label =
+  Aeson.object
+    [ "position" .= Aeson.object ["line" .= line, "character" .= char]
+    , "label"    .= label
+    , "kind"     .= (1 :: Int)  -- InlayHintKind.Type = 1
+    , "paddingLeft" .= True
+    ]
+
+
+parseInlayHintParams :: Aeson.Value -> Aeson.Parser (Uri, Int, Int)
+parseInlayHintParams = Aeson.withObject "InlayHintParams" $ \o -> do
+  td    <- o .: "textDocument"
+  uri   <- td .: "uri"
+  range <- o .: "range"
+  start <- range .: "start"
+  end'  <- range .: "end"
+  startLine <- start .: "line"
+  endLine   <- end' .: "line"
+  return (Uri uri, startLine, endLine)
+
+
+collectInlayHints :: Int -> Int -> [Slv.Exp] -> [Aeson.Value]
+collectInlayHints startLine endLine = concatMap (collectFromExp True)
+  where
+    inRange area =
+      let line = Loc.getLine (getStartLoc area) - 1
+      in  line >= startLine && line <= endLine
+
+    collectFromExp topLevel exp = case exp of
+      -- Skip explicitly typed bindings
+      Slv.Typed _ _ (Slv.TypedExp _ _ _) ->
+        []
+
+      -- Top-level or let-binding assignment (inferred type)
+      Slv.Typed qt area (Slv.Assignment name body)
+        | inRange area && not (isSyntheticName name) ->
+          let nameEnd = Loc.getCol (getStartLoc area) - 1 + length name
+              line0   = Loc.getLine (getStartLoc area) - 1
+          in  inlayHintToJSON line0 nameEnd (" :: " <> prettyQt topLevel qt)
+              : collectFromBody body
+
+      -- Exported assignment (inferred type)
+      Slv.Typed _ _ (Slv.Export (Slv.Typed qt' innerArea (Slv.Assignment name body)))
+        | inRange innerArea && not (isSyntheticName name) ->
+          let nameEnd = Loc.getCol (getStartLoc innerArea) - 1 + length name
+              line0   = Loc.getLine (getStartLoc innerArea) - 1
+          in  inlayHintToJSON line0 nameEnd (" :: " <> prettyQt topLevel qt')
+              : collectFromBody body
+
+      -- Exported with annotation — skip
+      Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.TypedExp _ _ _))) ->
+        []
+
+      _ ->
+        []
+
+    collectFromBody exp = case exp of
+      Slv.Typed _ _ (Slv.Abs _ body) ->
+        concatMap (collectFromExp False) body
+      Slv.Typed _ _ (Slv.Do body) ->
+        concatMap (collectFromExp False) body
+      _ ->
+        []
 
 
 getNodeLine :: Node -> Int
@@ -642,6 +721,10 @@ internalNames =
   [ "_P_" ]
 
 
+isSyntheticName :: String -> Bool
+isSyntheticName name = "__" `List.isPrefixOf` name
+
+
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
   (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -861,22 +944,22 @@ documentSymbolsTask path = do
 
 expToDocSymbol :: Slv.Exp -> Maybe DocumentSymbol
 expToDocSymbol exp = case exp of
-  Slv.Typed qt area (Slv.Assignment name _) ->
+  Slv.Typed qt area (Slv.Assignment name _) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
-  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) ->
+  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
-  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _))) ->
+  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _))) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
-  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _) ->
+  Slv.Typed qt area (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
-  Slv.Typed qt area (Slv.Extern _ name _) ->
+  Slv.Typed qt area (Slv.Extern _ name _) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
-  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Extern _ name _))) ->
+  Slv.Typed qt area (Slv.Export (Slv.Typed _ _ (Slv.Extern _ name _))) | not (isSyntheticName name) ->
     Just $ mkDocSymbol (T.pack name) (Just $ T.pack $ prettyQt True qt) SkFunction area area
 
   _ -> Nothing
@@ -989,6 +1072,26 @@ mkSymInfo name symbolKind area fileUri =
 
 
 -- Folding Ranges --
+
+-- Inlay Hints
+
+getInlayHints :: State -> FilePath -> Int -> Int -> LspM () [Aeson.Value]
+getInlayHints state path startLine endLine = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path }
+              Driver.Don'tPrune mempty mempty (inlayHintTask startLine endLine path)
+  case result of
+    Just (hints, _, _) -> return hints
+    Nothing            -> return []
+
+
+inlayHintTask :: Int -> Int -> FilePath -> Rock.Task Query.Query [Aeson.Value]
+inlayHintTask startLine endLine path = do
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  return $ collectInlayHints startLine endLine (Slv.aexps typedAst)
+
+
+-- Folding Ranges
 
 getFoldingRanges :: State -> FilePath -> LspM () [FoldingRange]
 getFoldingRanges state path = do
@@ -1838,8 +1941,8 @@ noRange =
 areaToRange :: Area -> Range
 areaToRange area =
   Range
-    (Position (Loc.getLine (Loc.getStartLoc area) - 1) (Loc.getCol (Loc.getStartLoc area) - 1))
-    (Position (Loc.getLine (Loc.getEndLoc area) - 1) (Loc.getCol (Loc.getEndLoc area) - 1))
+    (Position (max 0 (Loc.getLine (Loc.getStartLoc area) - 1)) (max 0 (Loc.getCol (Loc.getStartLoc area) - 1)))
+    (Position (max 0 (Loc.getLine (Loc.getEndLoc area) - 1)) (max 0 (Loc.getCol (Loc.getEndLoc area) - 1)))
 
 
 data State = State
