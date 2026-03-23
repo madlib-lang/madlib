@@ -97,6 +97,7 @@ runModule target input args watchMode exePath = do
           , optMustHaveMain = True
           , optOptimizationLevel = O1
           , optLspMode = False
+          , optEmitLLVM = False
           , optParseOnly = False
           }
 

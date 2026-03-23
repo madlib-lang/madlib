@@ -8,10 +8,10 @@ import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
 import Integer from "Integer"
 import { always, when } from "Function"
-// needed as an import is generated in Canonicalize.Coverage
 import Process from "Process"
 import IO from "IO"
 import Terminal from "Terminal"
+import __CoverageTracking__ from "__CoverageTracking__"
 
 
 COVERAGE_TEXT :: String
@@ -491,120 +491,73 @@ generateLcov = (coverageData) => pipe(
 
 // ---------- Coverage Reporter ------------
 
-makeCoverageReporter = () => {
-  coverageData :: Dictionary String CoverageData
-  coverageData = {{}}
+emptyModuleData :: CoverageData
+emptyModuleData = { coverableLines: {{}}, coverableFunctions: {{}}, coverableBranches: {{}} }
 
-  lineTracker :: String -> Integer -> HitCounter
-  lineTracker = (astPath, line) => {
-    hitCounter = makeHitCounter(0)
-    coverageData := where(Dictionary.get(astPath, coverageData)) {
-      Just(data) =>
-        Dictionary.insert(
-          astPath,
-          {
-            ...data,
-            coverableLines: Dictionary.insert(
-              CoverableLine(line),
-              hitCounter,
-              data.coverableLines
-            ),
-          },
-          coverageData
-        )
-        
-      Nothing =>
-        Dictionary.insert(
-          astPath,
-          {
-            coverableLines: {{ CoverableLine(line): hitCounter }},
-            coverableFunctions: {{}},
-            coverableBranches: {{}},
-          },
-          coverageData
-        )
-    }
 
-    return hitCounter
-  }
+ensureModule :: String -> Dictionary String CoverageData -> CoverageData
+ensureModule = (path, acc) => fromMaybe(emptyModuleData, Dictionary.get(path, acc))
 
-  functionTracker :: String -> Integer -> String -> HitCounter
-  functionTracker = (astPath, line, functionName) => {
-    hitCounter = makeHitCounter(0)
-    coverageData := where(Dictionary.get(astPath, coverageData)) {
-      Just(data) =>
-        Dictionary.insert(
-          astPath,
-          {
-            ...data,
-            coverableFunctions: Dictionary.insert(
-              CoverableFunction(line, functionName),
-              hitCounter,
-              data.coverableFunctions
-            ),
-          },
-          coverageData
-        )
 
-      Nothing =>
-        Dictionary.insert(
-          astPath,
-          {
-            coverableFunctions: {{ CoverableFunction(line, functionName): hitCounter }},
-            coverableLines: {{}},
-            coverableBranches: {{}},
-          },
-          coverageData
-        )
-    }
+collectCoverageData :: {} -> Dictionary String CoverageData
+collectCoverageData = () => do {
+  withLines = List.reduce(
+    (acc, tracker) => where(tracker) {
+      #[path, line, hc] =>
+        do {
+          existing = ensureModule(path, acc)
+          return Dictionary.insert(
+            path,
+            { ...existing, coverableLines: Dictionary.insert(CoverableLine(line), hc, existing.coverableLines) },
+            acc
+          )
+        }
+    },
+    {{}},
+    __CoverageTracking__.Tracking.getLineTrackers()
+  )
 
-    return hitCounter
-  }
+  withFunctions = List.reduce(
+    (acc, tracker) => where(tracker) {
+      #[path, line, name, hc] =>
+        do {
+          existing = ensureModule(path, acc)
+          return Dictionary.insert(
+            path,
+            { ...existing, coverableFunctions: Dictionary.insert(CoverableFunction(line, name), hc, existing.coverableFunctions) },
+            acc
+          )
+        }
+    },
+    withLines,
+    __CoverageTracking__.Tracking.getFunctionTrackers()
+  )
 
-  branchTracker :: String -> Integer -> Integer -> Integer -> HitCounter
-  branchTracker = (astPath, line, blockNumber, branchNumber) => {
-    hitCounter = makeHitCounter(0)
-    coverageData := where(Dictionary.get(astPath, coverageData)) {
-      Just(data) =>
-        Dictionary.insert(
-          astPath,
-          {
-            ...data,
-            coverableBranches: Dictionary.insert(
-              CoverableBranch(line, blockNumber, branchNumber),
-              hitCounter,
-              data.coverableBranches
-            ),
-          },
-          coverageData
-        )
-
-      Nothing =>
-        Dictionary.insert(
-          astPath,
-          {
-            coverableBranches: {{ CoverableBranch(line, blockNumber, branchNumber): hitCounter }},
-            coverableLines: {{}},
-            coverableFunctions: {{}},
-          },
-          coverageData
-        )
-    }
-
-    return hitCounter
-  }
-
-  generateReport :: {} -> {}
-  generateReport = () => {
-    lcovStr = generateLcov(coverageData)
-    fulfill(() => {}, () => {})(File.write(".coverage/lcov.info", lcovStr))
-
-    if (Process.getEnv(COVERAGE_TEXT) == Just("ON")) {
-      displayCoverageResults(coverageData)
-    }
-  }
-
-  return { branchTracker, functionTracker, lineTracker, generateReport }
+  return List.reduce(
+    (acc, tracker) => where(tracker) {
+      #[path, line, blockIndex, branchIndex, hc] =>
+        do {
+          existing = ensureModule(path, acc)
+          return Dictionary.insert(
+            path,
+            { ...existing, coverableBranches: Dictionary.insert(CoverableBranch(line, blockIndex, branchIndex), hc, existing.coverableBranches) },
+            acc
+          )
+        }
+    },
+    withFunctions,
+    __CoverageTracking__.Tracking.getBranchTrackers()
+  )
 }
 
-export Reporter = makeCoverageReporter()
+
+generateReport :: {} -> {}
+export generateReport = () => {
+  coverageData = collectCoverageData()
+  lcovStr = generateLcov(coverageData)
+  fulfill(() => {}, () => {})(File.write(".coverage/lcov.info", lcovStr))
+
+  if (Process.getEnv(COVERAGE_TEXT) == Just("ON")) {
+    displayCoverageResults(coverageData)
+  }
+}

@@ -54,8 +54,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Maybe String -> Maybe Int -> IO ()
-runTests entrypoint target debug watchMode coverage optLevel suiteFilter testIndex = do
+runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Maybe String -> Maybe Int -> Bool -> IO ()
+runTests entrypoint target debug watchMode coverage optLevel suiteFilter testIndex emitLLVM = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -89,6 +89,7 @@ runTests entrypoint target debug watchMode coverage optLevel suiteFilter testInd
           , optMustHaveMain = True
           , optOptimizationLevel = optLevel
           , optLspMode = False
+          , optEmitLLVM = emitLLVM
           }
 
   runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []

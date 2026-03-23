@@ -70,6 +70,7 @@ buildOptions entrypoint pathUtils =
     , optMustHaveMain = True
     , optOptimizationLevel = O3
     , optLspMode = False
+    , optEmitLLVM = False
     }
 
 

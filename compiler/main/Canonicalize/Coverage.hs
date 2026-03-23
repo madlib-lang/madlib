@@ -5,33 +5,25 @@ module Canonicalize.Coverage where
 
 import Canonicalize.CanonicalM
 import AST.Canonical
-import qualified AST.Source as Src
-import Canonicalize.Env (ImportType(NamespaceImport))
 import qualified Rock
 import Driver.Query
 import Explain.Location
-import Control.Monad.IO.Class (liftIO)
 import Data.List (isInfixOf, isSuffixOf)
-import qualified Data.Set as Set
 import Run.Options
 import Canonicalize.Coverable
 import Control.Monad.State
 
 
+trackingModuleName :: String
+trackingModuleName = "__CoverageTracking__"
 
--- | Compute the transitive source-level dependencies of a module.
--- This only uses ParsedAST queries (no canonicalization or solving),
--- so it cannot create Rock query cycles.
-getTransitiveDeps :: FilePath -> CanonicalM (Set.Set FilePath)
-getTransitiveDeps root = go [root] Set.empty
-  where
-    go [] visited = return visited
-    go (p:ps) visited
-      | p `Set.member` visited = go ps visited
-      | otherwise = do
-          srcAst <- Rock.fetch $ ParsedAST p
-          let importPaths = Src.getImportAbsolutePath <$> Src.aimports srcAst
-          go (importPaths ++ ps) (Set.insert p visited)
+
+coverageModuleName :: String
+coverageModuleName = "__Coverage__"
+
+
+processModuleName :: String
+processModuleName = "__Process__"
 
 
 addTrackers :: Options -> AST -> CanonicalM AST
@@ -40,18 +32,30 @@ addTrackers options ast@AST{ apath = Just path } = do
   let isPackage    = "madlib_modules" `isInfixOf` path
   let isTest       = ".spec.mad" `isSuffixOf` path
   let isTestRunner = "/Test.mad" `isSuffixOf` path
+  let isBuiltins   = "/__BUILTINS__.mad" `isSuffixOf` path
+  let isTestMain   = "/__TestMain__.mad" `isSuffixOf` path
+  trackingModulePath <- Rock.fetch $ AbsolutePreludePath "__CoverageTracking__"
   coverageModulePath <- Rock.fetch $ AbsolutePreludePath "__Coverage__"
   processModulePath  <- Rock.fetch $ AbsolutePreludePath "Process"
 
-  -- Compute __Coverage__'s transitive dependencies to avoid circular imports.
-  -- We can instrument prelude modules that are NOT in this set.
-  coverageDeps <- getTransitiveDeps coverageModulePath
+  -- __CoverageTracking__ has zero imports, so any module can import it without cycles.
+  let isCoverageModule = path == trackingModulePath || path == coverageModulePath
+  let willInstrument = not isCoverageModule && not isPackage && not isTest && not isTestRunner && not isBuiltins && not isTestMain
 
-  let willInstrument = coverageModulePath /= path && not (path `Set.member` coverageDeps) && not isPackage && not isTest && not isTestRunner
+  let isEntrypoint = optEntrypoint options == path
 
   if willInstrument then do
-    updatedImports   <- addImport coverageModuleName "__Coverage__" coverageModulePath $ aimports ast
-    updatedImports'  <- addImport processModuleName "Process" processModulePath updatedImports
+    -- All instrumented modules import __CoverageTracking__ for tracking
+    updatedImports <- addImport trackingModuleName "__CoverageTracking__" trackingModulePath $ aimports ast
+
+    -- The entry point also imports __Coverage__ (for report generation) and Process (for onExit)
+    updatedImports' <-
+      if isEntrypoint then do
+        i1 <- addImport coverageModuleName "__Coverage__" coverageModulePath updatedImports
+        addImport processModuleName "Process" processModulePath i1
+      else
+        return updatedImports
+
     updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
     updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods)) -> do
       if n == "Eq" || n == "Show" then
@@ -61,6 +65,14 @@ addTrackers options ast@AST{ apath = Just path } = do
         return $ Canonical area (Instance n ps p methods')
     trackers         <- generateTrackerFunctions
     return ast { aexps = trackers ++ updatedExps, ainstances = updatedInstances, aimports = updatedImports' }
+
+  -- Entry point that's not instrumented (e.g. __TestMain__) still needs report setup
+  else if isEntrypoint then do
+    updatedImports <- addImport coverageModuleName "__Coverage__" coverageModulePath $ aimports ast
+    updatedImports' <- addImport processModuleName "Process" processModulePath updatedImports
+    let updatedExps = addReportSetupToMain options path $ aexps ast
+    return ast { aexps = updatedExps, aimports = updatedImports' }
+
   else
     return ast
 
@@ -79,46 +91,52 @@ generateTrackerFunctions = do
       return $ Canonical emptyArea (Assignment (makeBranchTrackerName line blockIndex branchIndex) (Canonical emptyArea (Access (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App (Canonical emptyArea (App branchTrackerRef (Canonical emptyArea (LStr astPath)) False)) (Canonical emptyArea (LNum (show line))) False)) (Canonical emptyArea (LNum (show blockIndex))) False)) (Canonical emptyArea (LNum (show branchIndex))) True)) (Canonical emptyArea (Var ".increment")))))
 
 
-coverageModuleName :: String
-coverageModuleName = "__Coverage__"
-
-
-processModuleName :: String
-processModuleName = "__Process__"
-
-
 addImport :: String -> String -> String -> [Import] -> CanonicalM [Import]
 addImport name relPath absPath imports = do
   return (Canonical emptyArea (DefaultImport (Canonical emptyArea name) relPath absPath) : imports)
-
-
-reporterRef :: Exp
-reporterRef = Canonical emptyArea (Access (Canonical emptyArea (Var coverageModuleName)) (Canonical emptyArea (Var ".Reporter")))
 
 
 onExitRef :: Exp
 onExitRef = Canonical emptyArea (Access (Canonical emptyArea (Var processModuleName)) (Canonical emptyArea (Var ".onExit")))
 
 
+-- Tracking refs point to __CoverageTracking__.Tracking (zero-import module)
+trackingRef :: Exp
+trackingRef = Canonical emptyArea (Access (Canonical emptyArea (Var trackingModuleName)) (Canonical emptyArea (Var ".Tracking")))
+
+
 lineTrackerRef :: Exp
-lineTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".lineTracker")))
+lineTrackerRef = Canonical emptyArea (Access trackingRef (Canonical emptyArea (Var ".trackLine")))
 
 
 functionTrackerRef :: Exp
-functionTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".functionTracker")))
+functionTrackerRef = Canonical emptyArea (Access trackingRef (Canonical emptyArea (Var ".trackFunction")))
 
 
 branchTrackerRef :: Exp
-branchTrackerRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".branchTracker")))
+branchTrackerRef = Canonical emptyArea (Access trackingRef (Canonical emptyArea (Var ".trackBranch")))
 
 
+-- Report generation ref points to __Coverage__ (only imported in entry point)
 generateReportRef :: Exp
-generateReportRef = Canonical emptyArea (Access reporterRef (Canonical emptyArea (Var ".generateReport")))
+generateReportRef = Canonical emptyArea (Access (Canonical emptyArea (Var coverageModuleName)) (Canonical emptyArea (Var ".generateReport")))
 
 
 reportSetupRef :: Exp
 reportSetupRef =
   Canonical emptyArea (App onExitRef (Canonical emptyArea (Abs (Canonical emptyArea "_") [Canonical emptyArea (App generateReportRef (Canonical emptyArea LUnit) True)])) True)
+
+
+-- | Add report setup to the main function without full instrumentation.
+-- Used for entry points like __TestMain__ that shouldn't be instrumented.
+addReportSetupToMain :: Options -> FilePath -> [Exp] -> [Exp]
+addReportSetupToMain options path = map go
+  where
+    go (Canonical area (TypedExp (Canonical assignArea (Assignment "main" (Canonical absArea (Abs p body)))) ty sc)) | optEntrypoint options == path =
+      Canonical area (TypedExp (Canonical assignArea (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : body))))) ty sc)
+    go (Canonical area (Assignment "main" (Canonical absArea (Abs p body)))) | optEntrypoint options == path =
+      Canonical area (Assignment "main" (Canonical absArea (Abs p (reportSetupRef : body))))
+    go e = e
 
 
 makeLineTrackerName :: Int -> String
@@ -142,27 +160,28 @@ makeFunctionTracker astPath functionLine functionName = do
   return $ Canonical emptyArea (App (Canonical emptyArea (Var $ makeFunctionTrackerName functionLine functionName)) (Canonical emptyArea LUnit) True)
 
 
-addLineTracker :: FilePath -> Exp -> CanonicalM Exp
-addLineTracker astPath exp = do
-  let area = getArea exp
-  let line = getLineFromStart area
+-- | Create a line tracker call expression for insertion as a standalone statement.
+makeLineTrackerCall :: FilePath -> Int -> CanonicalM (Maybe Exp)
+makeLineTrackerCall astPath line = do
   isAlreadyTracked <- isLineTracked line
   if isAlreadyTracked || line == 0 then
-    return exp
+    return Nothing
   else do
     pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True), exp])
+    return $ Just $ Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True)
 
 
-addLineTrackerForLine :: FilePath -> Int -> Exp -> CanonicalM Exp
-addLineTrackerForLine astPath line exp = do
-  let area = getArea exp
-  isAlreadyTracked <- isLineTracked line
-  if isAlreadyTracked || line == 0 then
-    return exp
-  else do
-    pushCoverable (Line { cline = line, castpath = astPath })
-    return $ Canonical area (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeLineTrackerName line)) (Canonical emptyArea LUnit) True), exp])
+-- | Add line tracker calls as standalone statements before each statement in a body.
+-- This avoids wrapping expressions in Do blocks (which breaks codegen).
+addLineTrackersToBody :: FilePath -> [Exp] -> CanonicalM [Exp]
+addLineTrackersToBody _ [] = return []
+addLineTrackersToBody astPath (stmt : rest) = do
+  let line = getLineFromStart (getArea stmt)
+  maybeTracker <- makeLineTrackerCall astPath line
+  rest' <- addLineTrackersToBody astPath rest
+  case maybeTracker of
+    Just tracker -> return $ tracker : stmt : rest'
+    Nothing      -> return $ stmt : rest'
 
 
 addFunctionTrackerToBody :: FilePath -> Int -> String -> [Exp] -> CanonicalM [Exp]
@@ -182,7 +201,9 @@ addFunctionTrackerToBody astPath line name body = case body of
 addBranchTracker :: FilePath -> Int -> Int -> Int -> Exp -> CanonicalM Exp
 addBranchTracker astPath line blockIndex branchIndex exp = do
   pushCoverable Branch { cline = line, cblocknumber = blockIndex, cbranchnumber = branchIndex, castpath = astPath }
-  return $ Canonical (getArea exp) (Do [Canonical emptyArea (App (Canonical emptyArea (Var $ makeBranchTrackerName line blockIndex branchIndex)) (Canonical emptyArea LUnit) True), exp])
+  let trackerCall = Canonical emptyArea (App (Canonical emptyArea (Var $ makeBranchTrackerName line blockIndex branchIndex)) (Canonical emptyArea LUnit) True)
+  let area = getArea exp
+  return $ Canonical area (Do [trackerCall, exp])
 
 
 updateBody :: [Exp] -> ([Exp] -> CanonicalM [Exp]) -> CanonicalM [Exp]
@@ -202,39 +223,30 @@ addTrackersToExp options astPath exp = case exp of
     let line = getLineFromStart (getArea exp)
     tracker <- makeFunctionTracker astPath line "main"
     body'   <- mapM (addTrackersToExp options astPath) body
-    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (tracker : reportSetupRef : body'))))
+    body''  <- addLineTrackersToBody astPath body'
+    return $ Canonical area (Assignment "main" (Canonical absArea (Abs p (tracker : reportSetupRef : body''))))
 
   Canonical area (Assignment fnName (Canonical absArea (Abs p body))) -> do
     body'' <- updateBody body $ \body' -> do
       let line = getLineFromStart (getArea exp)
       body''  <- mapM (addTrackersToExp options astPath) body'
+      body''' <- addLineTrackersToBody astPath body''
       if line == 0 then
-        return body''
+        return body'''
       else do
-        addFunctionTrackerToBody astPath line fnName body''
+        addFunctionTrackerToBody astPath line fnName body'''
 
     return $ Canonical area (Assignment fnName (Canonical absArea (Abs p body'')))
 
-  Canonical _ (LNum _) ->
-    addLineTracker astPath exp
-
-  Canonical _ (LFloat _) ->
-    addLineTracker astPath exp
-
-  Canonical _ (LStr _) ->
-    addLineTracker astPath exp
-
-  Canonical _ (LBool _) ->
-    addLineTracker astPath exp
-
-  Canonical _ (LChar _) ->
-    addLineTracker astPath exp
-
-  Canonical _ LUnit ->
-    addLineTracker astPath exp
-
-  Canonical _ (Var _) ->
-    addLineTracker astPath exp
+  -- Leaf expressions: no tracking here. Line coverage is handled by
+  -- addLineTrackersToBody which inserts tracker calls as statements in function bodies.
+  Canonical _ (LNum _) -> return exp
+  Canonical _ (LFloat _) -> return exp
+  Canonical _ (LStr _) -> return exp
+  Canonical _ (LBool _) -> return exp
+  Canonical _ (LChar _) -> return exp
+  Canonical _ LUnit -> return exp
+  Canonical _ (Var _) -> return exp
 
   Canonical area (Record fields) -> do
     fields' <- mapM (addTrackersToField options astPath) fields
@@ -242,18 +254,20 @@ addTrackersToExp options astPath exp = case exp of
 
   Canonical area (Abs p body) -> do
     body'' <- updateBody body $ \body' -> do
-      let line = getLineFromStart (getArea exp)
+      let line = getLineFromStart area
       body''  <- mapM (addTrackersToExp options astPath) body'
+      body''' <- addLineTrackersToBody astPath body''
       if line == 0 then
-        return body''
+        return body'''
       else do
-        anonymousFunctionName <- generateAnonymousFunctionName
-        addFunctionTrackerToBody astPath line anonymousFunctionName body''
+        anonName <- generateAnonymousFunctionName
+        addFunctionTrackerToBody astPath line anonName body'''
     return $ Canonical area (Abs p body'')
 
   Canonical area (Do exps) -> do
     exps' <- mapM (addTrackersToExp options astPath) exps
-    return $ Canonical area (Do exps')
+    exps'' <- addLineTrackersToBody astPath exps'
+    return $ Canonical area (Do exps'')
 
   Canonical area (App (Canonical _ (App (Canonical _ (Var fnName)) _ _)) _ _)
     | fnName == "&&" || fnName == "||" -> do
@@ -265,7 +279,7 @@ addTrackersToExp options astPath exp = case exp of
   Canonical area (App f arg final) -> do
     arg' <- addTrackersToExp options astPath arg
     f'   <- addTrackersToExp options astPath f
-    addLineTracker astPath $ Canonical area (App f' arg' final)
+    return $ Canonical area (App f' arg' final)
 
   Canonical area (TypedExp e ty sc) -> do
     e' <- addTrackersToExp options astPath e
@@ -303,15 +317,14 @@ addTrackersToExp options astPath exp = case exp of
   Canonical area (While cond body) -> do
     cond' <- addTrackersToExp options astPath cond
     body' <- addTrackersToExp options astPath body
-    addLineTracker astPath $ Canonical area (While cond' body')
+    return $ Canonical area (While cond' body')
 
   Canonical area (Access record field) -> do
-    let fieldLine = getLineFromStart (getArea field)
-    addLineTrackerForLine astPath fieldLine $ Canonical area (Access record field)
+    return $ Canonical area (Access record field)
 
   Canonical area (TemplateString exps) -> do
     exps' <- mapM (addTrackersToExp options astPath) exps
-    addLineTracker astPath $ Canonical area (TemplateString exps')
+    return $ Canonical area (TemplateString exps')
 
   Canonical area (TupleConstructor exps) -> do
     exps' <- mapM (addTrackersToExp options astPath) exps
@@ -333,9 +346,7 @@ addTrackersToBooleanExpression options astPath line blockIndex branchIndex exp =
   Canonical area (App (Canonical innerArea (App (Canonical varArea (Var fnName)) leftArg leftFinal)) rightArg rightFinal) | fnName == "&&" || fnName == "||" -> do
     (lastBranchIndex, leftArg')   <- addTrackersToBooleanExpression options astPath line blockIndex branchIndex leftArg
     (lastBranchIndex', rightArg') <- addTrackersToBooleanExpression options astPath line blockIndex (lastBranchIndex + 1) rightArg
-    leftArg'''                    <- addLineTracker astPath leftArg'
-    rightArg'''                   <- addLineTracker astPath rightArg'
-    return (lastBranchIndex', Canonical area (App (Canonical innerArea (App (Canonical varArea (Var fnName)) leftArg''' leftFinal)) rightArg''' rightFinal))
+    return (lastBranchIndex', Canonical area (App (Canonical innerArea (App (Canonical varArea (Var fnName)) leftArg' leftFinal)) rightArg' rightFinal))
 
   _ -> do
     exp' <- addTrackersToExp options astPath exp
@@ -368,8 +379,6 @@ addTrackersToListItem options astPath li = case li of
 addTrackersToIs :: Options -> FilePath -> Int -> Int -> Int -> Is -> CanonicalM Is
 addTrackersToIs options astPath line blockIndex branchIndex is = case is of
   Canonical area (Is pat exp) -> do
-    let patLine = getLineFromStart (getArea pat)
     exp'   <- addTrackersToExp options astPath exp
-    exp''  <- addLineTrackerForLine astPath patLine exp'
-    exp''' <- addBranchTracker astPath line blockIndex branchIndex exp''
-    return $ Canonical area (Is pat exp''')
+    exp''  <- addBranchTracker astPath line blockIndex branchIndex exp'
+    return $ Canonical area (Is pat exp'')

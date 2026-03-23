@@ -9,6 +9,7 @@ module Generate.LLVM.Module
   , buildObjectFile
   , makeExecutablePath
   , buildTarget
+  , emitLLVMIR
   , generateImport
   , buildSymbolTableFromImports
   , hashModulePath
@@ -34,14 +35,15 @@ import           Data.ByteString.Short        as ShortByteString
 import           Data.ByteString.Char8        as Char8
 import           System.Process               (callCommand)
 import           System.Environment.Executable (getExecutablePath)
-import           System.FilePath              (takeDirectory, joinPath)
+import           System.FilePath              (takeDirectory, joinPath, replaceExtension)
+import           System.Directory            (createDirectoryIfMissing)
 import           Control.Monad.IO.Class       (MonadIO, liftIO)
 import qualified System.IO                    as SystemIO
 import           System.Environment           (getEnv)
 import           Control.Exception            (try)
 
 import           LLVM.Target                  (withHostTargetMachineDefault)
-import           LLVM.Module                  (withModuleFromAST, moduleObject)
+import           LLVM.Module                  (withModuleFromAST, moduleObject, moduleLLVMAssembly)
 import           LLVM.AST                     as AST hiding (function)
 import qualified LLVM.AST                     as LLVMAST
 import           LLVM.AST.Type                as Type
@@ -433,6 +435,14 @@ compileModule mkCtx safeBitcastFn options ast@Core.AST { Core.apath = Just modul
 
   objectContent <- liftIO $ buildObjectFile options astModule
 
+  Monad.when (optEmitLLVM options) $ liftIO $ do
+    irContent <- emitLLVMIR options astModule
+    let outputFolder = takeDirectory (optOutputPath options)
+    let objPath = Path.computeLLVMTargetPath outputFolder (optRootPath options) modulePath
+    let irPath = replaceExtension objPath ".ll"
+    createDirectoryIfMissing True $ takeDirectory irPath
+    ByteString.writeFile irPath irContent
+
   pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
   let rest = List.dropWhile (/= modulePath) pathsToBuild
   let total = List.length pathsToBuild
@@ -483,6 +493,13 @@ buildObjectFile options astModule = do
               runPassManager pm mod'
               return mod'
           moduleObject target mod''
+
+
+emitLLVMIR :: Options -> LLVMAST.Module -> IO ByteString.ByteString
+emitLLVMIR _ astModule = do
+  withContext $ \ctx -> do
+    withModuleFromAST ctx astModule $ \mod' -> do
+      moduleLLVMAssembly mod'
 
 
 makeExecutablePath :: FilePath -> FilePath

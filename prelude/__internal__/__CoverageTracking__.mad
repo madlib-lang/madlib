@@ -1,0 +1,71 @@
+// Coverage tracking - zero imports module.
+// This module can be imported by ANY module without creating circular dependencies.
+// It stores tracking data in flat lists. The __Coverage__ module reads these
+// lists at report time to generate LCOV output and text display.
+
+alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
+
+
+makeTracking = () => {
+  lineTrackers :: List #[String, Integer, HitCounter]
+  lineTrackers = []
+
+  functionTrackers :: List #[String, Integer, String, HitCounter]
+  functionTrackers = []
+
+  branchTrackers :: List #[String, Integer, Integer, Integer, HitCounter]
+  branchTrackers = []
+
+  trackLine :: String -> Integer -> HitCounter
+  trackLine = (path, line) => {
+    count = 0
+    hc = {
+      increment: () => { count := count + 1 },
+      read: () => count,
+    }
+    lineTrackers := [#[path, line, hc], ...lineTrackers]
+    return hc
+  }
+
+  trackFunction :: String -> Integer -> String -> HitCounter
+  trackFunction = (path, line, name) => {
+    count = 0
+    hc = {
+      increment: () => { count := count + 1 },
+      read: () => count,
+    }
+    functionTrackers := [#[path, line, name, hc], ...functionTrackers]
+    return hc
+  }
+
+  trackBranch :: String -> Integer -> Integer -> Integer -> HitCounter
+  trackBranch = (path, line, blockIndex, branchIndex) => {
+    count = 0
+    hc = {
+      increment: () => { count := count + 1 },
+      read: () => count,
+    }
+    branchTrackers := [#[path, line, blockIndex, branchIndex, hc], ...branchTrackers]
+    return hc
+  }
+
+  getLineTrackers :: {} -> List #[String, Integer, HitCounter]
+  getLineTrackers = () => lineTrackers
+
+  getFunctionTrackers :: {} -> List #[String, Integer, String, HitCounter]
+  getFunctionTrackers = () => functionTrackers
+
+  getBranchTrackers :: {} -> List #[String, Integer, Integer, Integer, HitCounter]
+  getBranchTrackers = () => branchTrackers
+
+  return {
+    trackLine,
+    trackFunction,
+    trackBranch,
+    getLineTrackers,
+    getFunctionTrackers,
+    getBranchTrackers,
+  }
+}
+
+export Tracking = makeTracking()

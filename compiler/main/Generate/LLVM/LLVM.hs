@@ -345,9 +345,12 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'     <- mapM (generateExp env { isLast = False } symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
-      -- Use atomic malloc when all captured values are primitive (no GC scanning needed)
+      -- Use atomic malloc when all captured values are primitive (no GC scanning needed).
+      -- If any captured variable is a mutation reference (ReferenceArgument), the
+      -- environment contains heap pointers that the GC must scan, so we must use GC_malloc.
+      let hasMutationRef = any (Core.isReferenceArgument . Core.getMetadata) args
       let envArgTypes = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
-      let envMallocFn = chooseMalloc envArgTypes
+      let envMallocFn = if hasMutationRef then gcMalloc else chooseMalloc envArgTypes
       envPtr  <- callMallocWithMetadata (makeDILocation env area) envMallocFn [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 

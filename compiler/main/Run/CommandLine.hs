@@ -31,6 +31,7 @@ data Command
       , compileWatch :: Bool
       , compileCoverage :: Bool
       , compileOptimizationLevel :: OptimizationLevel
+      , compileEmitLLVM :: Bool
       }
   | Test
       { testInput :: FilePath
@@ -41,6 +42,7 @@ data Command
       , testOptimizationLevel :: OptimizationLevel
       , testSuiteFilter :: Maybe String
       , testTestIndex :: Maybe Int
+      , testEmitLLVM :: Bool
       }
   | Install
   | New { newFolder :: FilePath }
@@ -110,6 +112,10 @@ parseWatch =
 parseCoverage :: Parser Bool
 parseCoverage =
   switch (long "coverage" <> help "compile with coverage enabled" <> showDefault)
+
+parseEmitLLVM :: Parser Bool
+parseEmitLLVM =
+  switch (long "emit-llvm" <> help "emit LLVM IR (.ll files) alongside compilation" <> showDefault)
 
 
 parseLimitedTargetOption :: ReadM Target
@@ -228,6 +234,7 @@ parseCompile =
     <*> parseWatch
     <*> parseCoverage
     <*> parseOptimizationLevel
+    <*> parseEmitLLVM
 
 parseTestInput :: Parser FilePath
 parseTestInput =
@@ -242,7 +249,7 @@ parseTestIndex =
   optional $ option auto (long "test-index" <> short 'n' <> metavar "INDEX" <> help "Run only the nth test (0-based) within matching suites")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseSuiteFilter <*> parseTestIndex
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseSuiteFilter <*> parseTestIndex <*> parseEmitLLVM
 
 
 parseRunInput :: Parser FilePath

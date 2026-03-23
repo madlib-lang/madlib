@@ -487,6 +487,7 @@ start target = do
           , Options.optParseOnly = False
           , Options.optOptimizationLevel = O1
           , Options.optLspMode = False
+          , Options.optEmitLLVM = False
           , Options.optDebug = False
           }
 

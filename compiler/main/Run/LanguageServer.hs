@@ -229,6 +229,7 @@ buildOptions target = do
       , Options.optParseOnly = False
       , Options.optOptimizationLevel = O1
       , Options.optLspMode = True
+      , Options.optEmitLLVM = False
       , Options.optDebug = False
       }
 

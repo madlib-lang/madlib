@@ -37,8 +37,8 @@ run cmd = do
             Left  e ->
               putStrLn e
 
-    Test entrypoint target debug watch coverage optLevel suiteFilter testIndex ->
-      runTests entrypoint target debug watch coverage optLevel suiteFilter testIndex
+    Test entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM ->
+      runTests entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM
 
     Install ->
       runPackageInstaller

@@ -59,6 +59,7 @@ parseASTsToFormat  (fp : fps)   = do
                               , optDebug = False
                               , optOptimizationLevel = O1
                               , optLspMode = False
+                              , optEmitLLVM = False
                               }
         ast <- case parseForFormatter code of
           Right a ->
@@ -98,6 +99,7 @@ parseCodeToFormat code = do
                         , optDebug = False
                         , optOptimizationLevel = O1
                         , optLspMode = False
+                        , optEmitLLVM = False
                         }
   ast <- case parseForFormatter code of
         Right a ->

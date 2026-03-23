@@ -22,4 +22,5 @@ data Options
     , optParseOnly :: Bool
     , optOptimizationLevel :: OptimizationLevel
     , optLspMode :: Bool
+    , optEmitLLVM :: Bool
     }
