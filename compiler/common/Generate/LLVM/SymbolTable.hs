@@ -28,10 +28,11 @@ data SymbolType
   -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
-  | ADTSymbol Int
+  | ADTSymbol Int Int
   -- ^ maximum amount of params that a constructor of that type needs
   -- this will be used to allocate or dereference structs for any
   -- constructor of that type
+  -- The second Int is the number of constructors for that type
   | TopLevelAssignment
   -- ^ amount of items in the env
   deriving(Eq, Show, Generic, Hashable)

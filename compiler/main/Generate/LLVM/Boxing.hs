@@ -71,10 +71,13 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TVar _ | IT.hasNumberPred ps -> do
     ptrtoint what Type.i64
 
-  -- That handles tuple types
+  -- That handles tuple types and enum ADTs
   _ -> do
     let llvmType = buildLLVMType env symbolTable qt
-    emitSafeBitcast what llvmType
+    case llvmType of
+      -- Enum ADTs are represented as i64, need ptrtoint instead of bitcast
+      Type.IntegerType 64 -> ptrtoint what Type.i64
+      _                   -> emitSafeBitcast what llvmType
 
 
 -- | Box a native value into a boxed representation (i8*).

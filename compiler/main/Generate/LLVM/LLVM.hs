@@ -52,10 +52,10 @@ import           Generate.LLVM.TypeOf         (Typed(typeOf))
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Emit           (emitGEP)
-import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
+import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callFastWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
-import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, adtSymbol, flatRecordType, recordFieldIndex)
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldIndex)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.Builtins
 import qualified Generate.LLVM.Operators      as Ops
@@ -316,7 +316,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
       let args''' = (, []) <$> args''
 
-      ret <- callWithMetadata (makeDILocation env area) fnOperand args'''
+      ret <- callFastWithMetadata (makeDILocation env area) fnOperand args'''
       unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
@@ -327,7 +327,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'''  <- retrieveArgs (Core.getMetadata <$> args') args' args''
       let args'''' = (, []) <$> args'''
 
-      pap <- callWithMetadata (makeDILocation env area) fnOperand args''''
+      pap <- callFastWithMetadata (makeDILocation env area) fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
       remainingArgs'  <- mapM (generateExp env symbolTable) remainingArgs
@@ -619,12 +619,19 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
         constructed'    <- safeBitcast constructed constructedType
 
         -- store the constructor data in the struct
-        Monad.foldM_ (storeItem constructed') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
+        let isSingleCtor = isSingleConstructorADT symbolTable t
+        if isSingleCtor then
+          -- Single-constructor: no tag field, fields start at 0
+          Monad.foldM_ (storeItem constructed') () $ List.zip args'' [0..]
+        else
+          -- Multi-constructor: tag at 0, fields at 1+
+          Monad.foldM_ (storeItem constructed') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
 
         store holePtr'' 0 constructed'
 
         -- newHole :: i8**
-        newHole   <- gep constructed' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
+        let fieldOffset = if isSingleCtor then position else position + 1
+        newHole   <- gep constructed' [i32ConstOp 0, i32ConstOp (fromIntegral fieldOffset)]
         newHole'' <- bitcast newHole (Type.ptr constructedType)
         store holePtr' 0 newHole''
 
@@ -654,7 +661,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
   Core.Typed (_ IT.:=> t) area varMetadata (Core.Var n _) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
-        pap <- callWithMetadata (makeDILocation env area) fnPtr []
+        pap <- callFastWithMetadata (makeDILocation env area) fnPtr []
         return (symbolTable, pap, Nothing)
 
       Just (Symbol (FunctionSymbol arity) fnPtr) -> do
@@ -674,28 +681,33 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 
       Just (Symbol (ConstructorSymbol index 0) _) -> do
         let maxArity = retrieveConstructorMaxArity symbolTable t
-        let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+        if maxArity == 0 then do
+          -- Enum ADT: represent as plain i64 tag value
+          let tagVal = i64ConstOp (fromIntegral index)
+          return (symbolTable, tagVal, Nothing)
+        else do
+          let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
 
-        -- Emit a global constant for zero-arg constructors (Nothing, True, False, etc.)
-        -- since they are immutable and identical every time.
-        let tagConst = Constant.Int 64 (fromIntegral index)
-        let nullFields = List.replicate maxArity (Constant.Null boxType)
-        let adtInit = Constant.Struct Nothing False (tagConst : nullFields)
+          -- Emit a global constant for zero-arg constructors (Nothing, True, False, etc.)
+          -- since they are immutable and identical every time.
+          let tagConst = Constant.Int 64 (fromIntegral index)
+          let nullFields = List.replicate maxArity (Constant.Null boxType)
+          let adtInit = Constant.Struct Nothing False (tagConst : nullFields)
 
-        r <- liftIO randomIO
-        nm <- freshName (stringToShortByteString $ "ctor_" ++ show index ++ "_" ++ show (r :: Int))
+          r <- liftIO randomIO
+          nm <- freshName (stringToShortByteString $ "ctor_" ++ show index ++ "_" ++ show (r :: Int))
 
-        emitDefn $ GlobalDefinition globalVariableDefaults
-          { Global.name        = nm
-          , Global.type'       = structType
-          , Global.linkage     = Linkage.Internal
-          , Global.isConstant  = True
-          , Global.initializer = Just adtInit
-          , Global.unnamedAddr = Just GlobalAddr
-          }
+          emitDefn $ GlobalDefinition globalVariableDefaults
+            { Global.name        = nm
+            , Global.type'       = structType
+            , Global.linkage     = Linkage.Internal
+            , Global.isConstant  = True
+            , Global.initializer = Just adtInit
+            , Global.unnamedAddr = Just GlobalAddr
+            }
 
-        let ctorRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr structType) nm
-        return (symbolTable, ctorRef, Nothing)
+          let ctorRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr structType) nm
+          return (symbolTable, ctorRef, Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable env area arity fnPtr
@@ -1049,18 +1061,27 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
           args'   <- mapM (generateExp env symbolTable) args
           args''  <- retrieveArgs (Core.getMetadata <$> args) args args'
 
-          let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
-          -- Use atomic malloc when all fields are primitive and no padding slots exist
-          let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
-          let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
-
-            -- allocate memory for the structure (stack or heap based on escape analysis)
-          structPtr     <- allocateStruct env area metadata structType mallocFn
-          structPtr'    <- safeBitcast structPtr $ Type.ptr structType
-
-          -- store the constructor data in the struct
-          Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
-          return (symbolTable, structPtr', Nothing)
+          if isNewtypeADT symbolTable constructorType then do
+            -- Newtype: single constructor, single field — just return the value
+            return (symbolTable, List.head args'', Nothing)
+          else if isSingleConstructorADT symbolTable constructorType then do
+            -- Single-constructor: no tag field
+            let structType = Type.StructureType False $ List.replicate maxArity boxType
+            let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
+            let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
+            structPtr     <- allocateStruct env area metadata structType mallocFn
+            structPtr'    <- safeBitcast structPtr $ Type.ptr structType
+            Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [0..]
+            return (symbolTable, structPtr', Nothing)
+          else do
+            -- Multi-constructor: struct with tag
+            let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+            let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
+            let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
+            structPtr     <- allocateStruct env area metadata structType mallocFn
+            structPtr'    <- safeBitcast structPtr $ Type.ptr structType
+            Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
+            return (symbolTable, structPtr', Nothing)
         else
           generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
 

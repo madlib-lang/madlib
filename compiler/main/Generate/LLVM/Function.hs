@@ -456,23 +456,38 @@ generateTopLevelFunctions ctx env symbolTable0 topLevelFunctions' =
 
 
 generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m)
-                    => Int -> Env -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
-generateConstructor maxArity env symbolTable (constructor, index) = case constructor of
+                    => Int -> Int -> Env -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
+generateConstructor maxArity ctorCount env symbolTable (constructor, index) = case constructor of
   Core.Untyped _ _ (Core.Constructor constructorName _ t) -> do
     let paramTypes     = IT.getParamTypes t
     let arity          = List.length paramTypes
-    let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
 
-    constructor' <- functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
-      block `named` "entry"
-      structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
-      structPtr'    <- bitcast structPtr $ Type.ptr structType
-
-      Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
-
-      boxed <- box structPtr'
-      ret boxed
+    constructor' <- if ctorCount == 1 && arity == 1 then
+      -- Newtype: single constructor, single field — identity function
+      functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+        block `named` "entry"
+        ret (List.head params)
+    else if ctorCount == 1 then do
+      -- Single-constructor: no tag field needed
+      let structType = Type.StructureType False $ List.replicate maxArity boxType
+      functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+        block `named` "entry"
+        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        structPtr'    <- bitcast structPtr $ Type.ptr structType
+        Monad.foldM_ (storeItem structPtr') () $ List.zip params [0..]
+        boxed <- box structPtr'
+        ret boxed
+    else do
+      -- Multi-constructor: struct with tag
+      let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
+      functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+        block `named` "entry"
+        structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        structPtr'    <- bitcast structPtr $ Type.ptr structType
+        Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
+        boxed <- box structPtr'
+        ret boxed
 
     Writer.tell $ Map.singleton constructorName (constructorSymbol constructor' index arity)
     return $ Map.insert constructorName (constructorSymbol constructor' index arity) symbolTable
@@ -493,9 +508,10 @@ generateConstructorsForADT env symbolTable adt = case adt of
     let sortedConstructors  = List.sortBy (\a b -> compare (getConstructorName a) (getConstructorName b)) adtconstructors
         indexedConstructors = List.zip sortedConstructors [0..]
         maxArity            = findMaximumConstructorArity adtconstructors
-        symbolTable'        = Map.insert (envASTPath env <> "_" <> adtname) (adtSymbol maxArity) symbolTable
-    Writer.tell $ Map.singleton (envASTPath env <> "_" <> adtname) (adtSymbol maxArity)
-    Monad.foldM (generateConstructor maxArity env) symbolTable' indexedConstructors
+        ctorCount           = List.length adtconstructors
+        symbolTable'        = Map.insert (envASTPath env <> "_" <> adtname) (adtSymbol maxArity ctorCount) symbolTable
+    Writer.tell $ Map.singleton (envASTPath env <> "_" <> adtname) (adtSymbol maxArity ctorCount)
+    Monad.foldM (generateConstructor maxArity ctorCount env) symbolTable' indexedConstructors
 
   _ ->
     return symbolTable

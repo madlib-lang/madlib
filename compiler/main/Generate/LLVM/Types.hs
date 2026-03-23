@@ -18,6 +18,9 @@ module Generate.LLVM.Types
     -- * Constructor helpers
   , retrieveConstructorStructType
   , retrieveConstructorMaxArity
+  , isEnumADT
+  , isNewtypeADT
+  , isSingleConstructorADT
     -- * Tuple arity detection
   , tupleArity
     -- * Record helpers
@@ -210,10 +213,30 @@ buildLLVMType' (ps IT.:=> t) = case t of
 
         Just (Slv.Untyped _ adt) -> do
           let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
-          return
-            ( Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
-            , Just (adtTypePath <> "_" <> adtTypeName, adtSymbol maxArity)
-            )
+          let ctorCount = List.length (Slv.adtconstructors adt)
+          let sym = adtSymbol maxArity ctorCount
+          if maxArity == 0 then
+            return
+              ( Type.i64
+              , Just (adtTypePath <> "_" <> adtTypeName, sym)
+              )
+          else if ctorCount == 1 && maxArity == 1 then
+            -- Newtype: single constructor, single field — erased to boxType
+            return
+              ( boxType
+              , Just (adtTypePath <> "_" <> adtTypeName, sym)
+              )
+          else if ctorCount == 1 then
+            -- Single-constructor: no tag field needed
+            return
+              ( Type.ptr $ Type.StructureType False (List.replicate maxArity boxType)
+              , Just (adtTypePath <> "_" <> adtTypeName, sym)
+              )
+          else
+            return
+              ( Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+              , Just (adtTypePath <> "_" <> adtTypeName, sym)
+              )
     else
       return (Type.ptr Type.i8, Nothing)
 
@@ -232,9 +255,9 @@ buildLLVMParamType env symbolTable t = case t of
 
 -- Symbol helper (used by buildLLVMType')
 
-adtSymbol :: Int -> Symbol
-adtSymbol maxArity =
-  Symbol (ADTSymbol maxArity) (Operand.ConstantOperand (Constant.Null boxType))
+adtSymbol :: Int -> Int -> Symbol
+adtSymbol maxArity constructorCount =
+  Symbol (ADTSymbol maxArity constructorCount) (Operand.ConstantOperand (Constant.Null boxType))
 
 
 -- Constructor helpers
@@ -245,8 +268,18 @@ retrieveConstructorStructType _ symbolTable t =
       tName   = IT.getTConName t
       key     = astPath <> "_" <> tName
   in  case Map.lookup key symbolTable of
-        Just (Symbol (ADTSymbol maxArity) _) ->
-          Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+        Just (Symbol (ADTSymbol 0 _) _) ->
+          Type.i64
+
+        Just (Symbol (ADTSymbol maxArity ctorCount) _)
+          | ctorCount == 1 && maxArity == 1 ->
+            -- Newtype: single constructor, single field — erased to boxType
+            boxType
+          | ctorCount == 1 ->
+            -- Single-constructor: no tag field needed
+            Type.ptr $ Type.StructureType False (List.replicate maxArity boxType)
+          | otherwise ->
+            Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
 
         _ ->
           boxType
@@ -257,11 +290,43 @@ retrieveConstructorMaxArity symbolTable t =
       tName   = IT.getTConName t
       key     = astPath <> "_" <> tName
   in  case Map.lookup key symbolTable of
-        Just (Symbol (ADTSymbol maxArity) _) ->
+        Just (Symbol (ADTSymbol maxArity _) _) ->
           maxArity
 
         _ ->
           1
+
+
+-- | Check if an ADT type is an enum (all constructors have zero fields).
+isEnumADT :: SymbolTable -> IT.Type -> Bool
+isEnumADT symbolTable t =
+  let astPath = IT.getTConPath t
+      tName   = IT.getTConName t
+      key     = astPath <> "_" <> tName
+  in  case Map.lookup key symbolTable of
+        Just (Symbol (ADTSymbol 0 _) _) -> True
+        _                               -> False
+
+
+-- | Check if an ADT is a newtype (single constructor, single field).
+isNewtypeADT :: SymbolTable -> IT.Type -> Bool
+isNewtypeADT symbolTable t =
+  let astPath = IT.getTConPath t
+      tName   = IT.getTConName t
+      key     = astPath <> "_" <> tName
+  in  case Map.lookup key symbolTable of
+        Just (Symbol (ADTSymbol 1 1) _) -> True
+        _                               -> False
+
+-- | Check if an ADT has a single constructor (with 2+ fields).
+isSingleConstructorADT :: SymbolTable -> IT.Type -> Bool
+isSingleConstructorADT symbolTable t =
+  let astPath = IT.getTConPath t
+      tName   = IT.getTConName t
+      key     = astPath <> "_" <> tName
+  in  case Map.lookup key symbolTable of
+        Just (Symbol (ADTSymbol maxArity 1) _) -> maxArity >= 2
+        _                                      -> False
 
 
 -- Internal helpers

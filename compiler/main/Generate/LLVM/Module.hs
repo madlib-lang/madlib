@@ -81,7 +81,7 @@ import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, buildLLVMType, buildLLVMType', adtSymbol)
 import           Generate.LLVM.Builtins
-import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, declareWithAttributes)
+import           Generate.LLVM.WithMetadata   (functionWithMetadata, functionWithMetadataC, callWithMetadata, callFastWithMetadata, externFast, declareWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
 import           Generate.LLVM.Function       (FunctionCtx, generateExps, generateConstructors, generateTopLevelFunctions,
@@ -113,14 +113,14 @@ generateExternalForName symbolTable name t importType = case importType of
   Core.DefinitionImport arity -> do
     let paramTypes = List.replicate arity boxType
         returnType = boxType
-    extern (AST.mkName name) paramTypes returnType
+    externFast (AST.mkName name) paramTypes returnType
     return ()
 
   Core.ConstructorImport -> do
     let arity  = List.length $ IT.getParamTypes t
         paramTypes = List.replicate arity boxType
         returnType = boxType
-    extern (AST.mkName name) paramTypes returnType
+    externFast (AST.mkName name) paramTypes returnType
     return ()
 
   Core.ExpressionImport -> do
@@ -206,7 +206,8 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
 
           Just (Slv.Untyped _ adt) ->
             let maxArity = Slv.findMaximumConstructorArity (Slv.adtconstructors adt)
-            in  Map.singleton (adtTypePath <> "_" <> adtTypeName) (adtSymbol maxArity)
+                ctorCount = List.length (Slv.adtconstructors adt)
+            in  Map.singleton (adtTypePath <> "_" <> adtTypeName) (adtSymbol maxArity ctorCount)
 
           _ ->
             Map.empty
@@ -354,7 +355,7 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
       let getArgs     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [] False) "madlib__process__internal__getArgs")
       let (Symbol _ mainFunction) = Maybe.fromMaybe (error $ "Main function not found: _" <> moduleHash <> "_main") $ Map.lookup ("_" <> moduleHash <> "_main") symbolTable
       -- this function starts the runtime with a fresh stack etc
-      functionWithMetadata [] (AST.mkName "__main__start__") [] Type.void $ \_ -> do
+      functionWithMetadataC [] (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         block `named` "entry"
         call initExtra []
         call initEventLoop []
@@ -365,18 +366,18 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
         -- call user main that should be named like main_moduleHash
         mainArgs <- call getArgs []
         mainArgs' <- safeBitcastFn mainArgs boxType
-        call mainFunction [(mainArgs', [])]
+        callFastWithMetadata [] mainFunction [(mainArgs', [])]
         call startEventLoop []
         retVoid
 
       let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
           argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
-      functionWithMetadata [] (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+      functionWithMetadataC [] (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
         block `named` "entry"
         call mainInit [(argc, []), (argv, [])]
         ret $ i32ConstOp 0
     else do
-      functionWithMetadata [] (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
+      functionWithMetadataC [] (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
         block `named` "entry"
         generateExps ctx env' symbolTable (expsForMain $ aexps ast)
         retVoid

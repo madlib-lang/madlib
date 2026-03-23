@@ -46,7 +46,7 @@ import           Data.ByteString.Short        (ShortByteString)
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
-import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex)
+import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity)
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
@@ -182,11 +182,35 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
   Core.Typed _ _ _ (Core.PList pats) ->
     generateSymbolTableForList ctx env symbolTable baseExp pats
 
-  Core.Typed _ _ _ (Core.PCon _ pats) -> do
-    let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
-    constructor' <- ctxSafeBitcast ctx baseExp constructorType
-    let patsWithIds = List.zip pats [1..]
-    Monad.foldM (generateSymbolTableForIndexedData ctx env constructor') symbolTable patsWithIds
+  Core.Typed (_ IT.:=> patType) _ _ (Core.PCon _ pats) -> do
+    case typeOf baseExp of
+      -- Enum ADT: no fields to extract
+      Type.IntegerType 64 ->
+        return symbolTable
+
+      _ | isNewtypeADT symbolTable patType -> do
+        -- Newtype ADT: value IS the single field
+        case pats of
+          [singlePat] -> do
+            unboxed <- unbox env symbolTable (getQualType singlePat) baseExp
+            generateSymbolTableForPattern ctx env symbolTable unboxed singlePat
+          _ -> return symbolTable
+
+      _ | isSingleConstructorADT symbolTable patType -> do
+        -- Single-constructor: no tag field, fields start at 0
+        let nPats = List.length pats
+        let constructorType = Type.ptr $ Type.StructureType False (boxType <$ List.take nPats [0..])
+        constructor' <- ctxSafeBitcast ctx baseExp constructorType
+        let patsWithIds = List.zip pats [0..]
+        Monad.foldM (generateSymbolTableForIndexedData ctx env constructor') symbolTable patsWithIds
+
+      _ -> do
+        -- Multi-constructor: tag at 0, fields start at 1
+        let nPats = List.length pats
+        let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take nPats [0..]))
+        constructor' <- ctxSafeBitcast ctx baseExp constructorType
+        let patsWithIds = List.zip pats [1..]
+        Monad.foldM (generateSymbolTableForIndexedData ctx env constructor') symbolTable patsWithIds
 
   Core.Typed (_ IT.:=> recType) _ _ (Core.PRecord fieldPatterns restName) -> do
     subPatterns <- mapM (getFieldPattern ctx env symbolTable recType baseExp) $ Map.toList fieldPatterns
@@ -386,6 +410,32 @@ generateBranchTest ctx env symbolTable pat value = case pat of
     case subTests of
       [] -> return true
       (first : rest) -> Monad.foldM Instruction.and first rest
+
+  Core.Typed _ _ _ (Core.PCon name pats) | Type.IntegerType 64 <- typeOf value -> do
+    -- Enum ADT: value is already the i64 tag, compare directly
+    let constructorId = case Map.lookup name symbolTable of
+          Just (Symbol (ConstructorSymbol id _) _) ->
+            i64ConstOp $ fromIntegral id
+          _ ->
+            error $ "Core.Constructor '" <> name <> "' not found!"
+    icmp IntegerPredicate.EQ constructorId value
+
+  Core.Typed (_ IT.:=> patType) _ _ (Core.PCon name pats) | isNewtypeADT symbolTable patType -> do
+    -- Newtype ADT: always matches (single constructor), check sub-pattern
+    case pats of
+      [singlePat] -> do
+        unboxed <- unbox env symbolTable (getQualType singlePat) value
+        generateBranchTest ctx env symbolTable singlePat unboxed
+      _ -> return true
+
+  Core.Typed (_ IT.:=> patType) _ _ (Core.PCon name pats) | isSingleConstructorADT symbolTable patType -> do
+    -- Single-constructor ADT: always matches, but check sub-patterns (fields start at 0)
+    let constructorType = Type.ptr $ Type.StructureType False (boxType <$ List.take (List.length pats) [0..])
+    constructor' <- ctxSafeBitcast ctx value constructorType
+    let argIds = fromIntegral <$> List.take (List.length pats) [0..]
+    constructorArgPtrs <- getStructPointers argIds constructor'
+    let patsWithPtrs = List.zip pats constructorArgPtrs
+    Monad.foldM (generateSubPatternTest ctx env symbolTable) true patsWithPtrs
 
   Core.Typed _ _ _ (Core.PCon name pats) -> mdo
     currentBlock

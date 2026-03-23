@@ -116,12 +116,58 @@ functionWithMetadata metadata label argtys retty body = do
       , Global.parameters = (zipWith (\ty nm -> Parameter ty nm []) tys paramNames, False)
       , Global.returnType = retty
       , Global.basicBlocks = blocks
+      , Global.callingConvention = CC.Fast
       , Global.metadata = metadata
       , Global.functionAttributes = [Right NoUnwind]
       }
     funty = ptr $ FunctionType retty (fst <$> argtys) False
   emitDefn def
   pure $ ConstantOperand $ C.GlobalReference funty label
+
+
+-- | Like functionWithMetadata but uses the C calling convention.
+-- Used for entry points called from the C runtime (main, module init, etc.)
+functionWithMetadataC
+  :: MonadModuleBuilder m
+  => [(ShortByteString, MDRef MDNode)]
+  -> Name  -- ^ Function name
+  -> [(Type, ParameterName)]  -- ^ Parameter types and name suggestions
+  -> Type  -- ^ Return type
+  -> ([Operand] -> IRBuilderT m ())  -- ^ Function body builder
+  -> m Operand
+functionWithMetadataC metadata label argtys retty body = do
+  let tys = fst <$> argtys
+  (paramNames, blocks) <- runIRBuilderT emptyIRBuilder $ do
+    paramNames <- forM argtys $ \(_, paramName) -> case paramName of
+      NoParameterName -> fresh
+      ParameterName p -> fresh `named` p
+    body $ zipWith LocalReference tys paramNames
+    return paramNames
+  let
+    def = GlobalDefinition Global.functionDefaults
+      { Global.name = label
+      , Global.parameters = (zipWith (\ty nm -> Parameter ty nm []) tys paramNames, False)
+      , Global.returnType = retty
+      , Global.basicBlocks = blocks
+      , Global.metadata = metadata
+      , Global.functionAttributes = [Right NoUnwind]
+      }
+    funty = ptr $ FunctionType retty (fst <$> argtys) False
+  emitDefn def
+  pure $ ConstantOperand $ C.GlobalReference funty label
+
+
+-- | Declare an external Madlib function with fastcc calling convention.
+externFast :: MonadModuleBuilder m => Name -> [Type] -> Type -> m Operand
+externFast nm argtys retty = do
+  emitDefn $ GlobalDefinition Global.functionDefaults
+    { Global.name               = nm
+    , Global.parameters         = ([Parameter ty (mkName "") [] | ty <- argtys], False)
+    , Global.returnType         = retty
+    , Global.callingConvention  = CC.Fast
+    }
+  let funty = ptr $ FunctionType retty argtys False
+  pure $ ConstantOperand $ C.GlobalReference funty nm
 
 
 declareWithAttributes
