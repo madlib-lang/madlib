@@ -992,6 +992,23 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
 
 
+-- | Helper to build an Err diagnostic with a primary location.
+-- When context is present, adds a source span; otherwise builds a span-free error.
+mkError :: String -> Context -> String -> [Diagnose.Note String] -> Diagnose.Report String
+mkError title context message notes = case context of
+  Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
+    Diagnose.Err
+      Nothing
+      title
+      [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+        , Diagnose.This message
+        )
+      ]
+      notes
+  NoContext ->
+    Diagnose.Err Nothing title [] notes
+
+
 createErrorDiagnostic :: Bool -> Context -> TypeError -> Diagnose.Report String
 createErrorDiagnostic color context typeError = case typeError of
   UnificationError t1 t2 ->
@@ -1049,27 +1066,13 @@ createErrorDiagnostic color context typeError = case typeError of
   TypingHasWrongKind t expectedKind actualKind ->
     let expectedStr = if color then "\x1b[0mexpected:\n  " else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n  " else "\nbut found:\n  "
-    in case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Typing has wrong kind"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
-                <> expectedStr
-                <> colorWhen color Green (kindToStr expectedKind)
-                <> foundStr
-                <> colorWhen color Red (kindToStr actualKind)
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Typing has wrong kind"
-          []
+    in  mkError "Typing has wrong kind" context
+          (    "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
+            <> expectedStr
+            <> colorWhen color Green (kindToStr expectedKind)
+            <> foundStr
+            <> colorWhen color Red (kindToStr actualKind)
+          )
           []
 
   NoMain ->
@@ -1080,134 +1083,58 @@ createErrorDiagnostic color context typeError = case typeError of
       [Diagnose.Hint "Add a main method"]
 
   MainInvalidTyping ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Main invalid typing"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The main function has a wrong type signature"
-            )
-          ]
-          [ Diagnose.Hint "The typing of the main function should be 'List String -> {}'"
-          , Diagnose.Note "You can omit the typing for the main function"
-          ]
+    mkError "Main invalid typing" context "The main function has a wrong type signature"
+      [ Diagnose.Hint "The typing of the main function should be 'List String -> {}'"
+      , Diagnose.Note "You can omit the typing for the main function"
+      ]
 
   MutationRestriction ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Mutation restriction"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "This value depends on a closure doing mutation and can't be generic"
-            )
-          ]
-          [Diagnose.Hint "Add a type definition with concrete types"]
+    mkError "Mutation restriction" context
+      "This value depends on a closure doing mutation and can't be generic"
+      [Diagnose.Hint "Add a type definition with concrete types"]
 
   MutatingFunction n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Mutation function"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "You are trying to mutate the function '" <> n <> "'. It is currently not allowed."
-            )
-          ]
-          [ Diagnose.Hint "Wrap it in a record"
-          , Diagnose.Hint "Use a closure that returns a setter and getter to mutate it"
-          ]
+    mkError "Mutation function" context
+      ("You are trying to mutate the function '" <> n <> "'. It is currently not allowed.")
+      [ Diagnose.Hint "Wrap it in a record"
+      , Diagnose.Hint "Use a closure that returns a setter and getter to mutate it"
+      ]
 
   NotAConstructor n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Not a constructor"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "You are trying to match '" <> n <> "', but it is not a constructor"
-            )
-          ]
-          [ Diagnose.Hint "Only constructors can be used in patterns"
-          ]
+    mkError "Not a constructor" context
+      ("You are trying to match '" <> n <> "', but it is not a constructor")
+      [ Diagnose.Hint "Only constructors can be used in patterns"
+      ]
 
   MethodNameAlreadyDefined ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Method name already defined"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "You are trying to redefine a method name"
-            )
-          ]
-          [ Diagnose.Hint "Use a different name for the method"
-          ]
+    mkError "Method name already defined" context "You are trying to redefine a method name"
+      [ Diagnose.Hint "Use a different name for the method"
+      ]
 
   NotADefinition ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Not a definition"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "It is not a definition and is not allowed"
-            )
-          ]
-          [ Diagnose.Note "Top level expressions are not allowed in Madlib."
-          , Diagnose.Hint "You may want to assign it to a top level variable."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Not a definition"
-          []
-          [ Diagnose.Note "Top level expressions are not allowed in Madlib."
-          , Diagnose.Hint "You may want to assign it to a top level variable."
-          ]
+    mkError "Not a definition" context "It is not a definition and is not allowed"
+      [ Diagnose.Note "Top level expressions are not allowed in Madlib."
+      , Diagnose.Hint "You may want to assign it to a top level variable."
+      ]
 
   ConstructorAccessBadIndex typeName constructorName arity index ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Constructor access - bad index"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
-                <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
-            )
-          ]
-          [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
+    mkError "Constructor access - bad index" context
+      (    "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
+        <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+      )
+      [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
 
   ConstructorAccessNoConstructorFound typeName ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Constructor not found"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "No constructor found for the type '" <> typeName <> "'."
-            )
-          ]
-          []
+    mkError "Constructor not found" context
+      ("No constructor found for the type '" <> typeName <> "'.")
+      []
 
   ConstructorAccessTooManyConstructors typeName _ ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Constructor access - too many constructors"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You can't access a value from the constructor of the type '"
-                <> typeName <> "'\nbecause it has more than one constructor."
-            )
-          ]
-          []
+    mkError "Constructor access - too many constructors" context
+      (    "You can't access a value from the constructor of the type '"
+        <> typeName <> "'\nbecause it has more than one constructor."
+      )
+      []
 
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
@@ -1231,241 +1158,65 @@ createErrorDiagnostic color context typeError = case typeError of
           []
 
   IllegalSkipAccess ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Illegal skip access"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                 "You accessed the skip symbol '_'. This is not permitted as\n"
-              <> "it does not hold any value and only serves to indicate that\n"
-              <> "you are not interested in whatever it may contain."
-            )
-          ]
-          [Diagnose.Hint "Give it a name if you intend to use it"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Illegal skip access"
-          []
-          [Diagnose.Hint "Give it a name if you intend to use it"]
+    mkError "Illegal skip access" context
+      (    "You accessed the skip symbol '_'. This is not permitted as\n"
+        <> "it does not hold any value and only serves to indicate that\n"
+        <> "you are not interested in whatever it may contain."
+      )
+      [Diagnose.Hint "Give it a name if you intend to use it"]
 
   UnboundVariable n suggestions ->
     let hint = case suggestions of
                  []  -> Diagnose.Hint "Verify that you don't have a typo"
                  [s] -> Diagnose.Hint $ "Did you mean '" <> s <> "'?"
                  _   -> Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
-    in case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Unbound variable"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The variable '" <> n <> "' has not been declared"
-            )
-          ]
-          [hint]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Unbound variable"
-          []
-          [hint]
+    in  mkError "Unbound variable" context ("The variable '" <> n <> "' has not been declared") [hint]
 
   UnboundUnknownTypeVariable ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Unbound type variable"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "A type variable has not been declared"
-            )
-          ]
-          [Diagnose.Hint "Verify that you don't have a typo"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Unbound type variable"
-          []
-          [Diagnose.Hint "Verify that you don't have a typo"]
+    mkError "Unbound type variable" context "A type variable has not been declared"
+      [Diagnose.Hint "Verify that you don't have a typo"]
 
   UnboundVariableFromNamespace namespace name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Name not exported"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "Function '" <> name <> "' not found in\ndefault import '" <> namespace <> "'"
-            )
-          ]
-          [Diagnose.Hint "Verify that it is exported or that you spelled it correctly."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Name not exported"
-          []
-          [Diagnose.Hint "Verify that it is exported or that you spelled it correctly."]
+    mkError "Name not exported" context
+      ("Function '" <> name <> "' not found in\ndefault import '" <> namespace <> "'")
+      [Diagnose.Hint "Verify that it is exported or that you spelled it correctly."]
 
   CapitalizedADTTVar adtname param ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Capitalized ADT variable"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                 "The type parameter '" <> param <> "' in the type declaration\n"
-              <> "'" <> adtname <> "' is capitalized. Type parameters can't be capitalized."
-            )
-          ]
-          [Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Capitalized ADT variable"
-          []
-          [Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."]
+    mkError "Capitalized ADT variable" context
+      (    "The type parameter '" <> param <> "' in the type declaration\n"
+        <> "'" <> adtname <> "' is capitalized. Type parameters can't be capitalized."
+      )
+      [Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."]
 
   UnboundType n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Unbound Type"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The type '" <> n <> "' has not been declared"
-            )
-          ]
-          [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Unbound Type"
-          []
-          [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
+    mkError "Unbound Type" context ("The type '" <> n <> "' has not been declared")
+      [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
 
   ByteOutOfBounds n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Byte out of bounds"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The literal '" <> n <> "_b' is too big, the maximum value for bytes is 255"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Byte out of bounds"
-          []
-          []
+    mkError "Byte out of bounds" context
+      ("The literal '" <> n <> "_b' is too big, the maximum value for bytes is 255")
+      []
 
   ShortOutOfBounds n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Short out of bounds"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The literal '" <> n <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1) <>"."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Short out of bounds"
-          []
-          []
+    mkError "Short out of bounds" context
+      ("The literal '" <> n <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1) <>".")
+      []
 
   IntOutOfBounds n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Integer out of bounds"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The literal '" <> n <> "_s' is too big, the maximum value for integers is "<> show (2^63 - 1) <>"."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Integer out of bounds"
-          []
-          []
+    mkError "Integer out of bounds" context
+      ("The literal '" <> n <> "_s' is too big, the maximum value for integers is "<> show (2^63 - 1) <>".")
+      []
 
   NegatedByte ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Negated byte"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "Bytes can't be negated"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Negated byte"
-          []
-          []
+    mkError "Negated byte" context "Bytes can't be negated" []
 
   DerivingAliasNotAllowed n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Deriving Alias Not Allowed"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The type '" <> n <> "' is an alias."
-            )
-          ]
-          [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Deriving Alias Not Allowed"
-          []
-          [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
+    mkError "Deriving Alias Not Allowed" context ("The type '" <> n <> "' is an alias.")
+      [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
 
   InvalidInterfaceDerived n ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Invalid Interface Derived"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The interface '" <> n <> "' can't be derived."
-            )
-          ]
-          [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Invalid Interface Derived"
-          []
-          [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
+    mkError "Invalid Interface Derived" context ("The interface '" <> n <> "' can't be derived.")
+      [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
 
   SignatureTooGeneral scGiven scInferred ->
     let (scInferred', scGiven') = renderSchemesWithDiff color scInferred scGiven
@@ -1473,48 +1224,16 @@ createErrorDiagnostic color context typeError = case typeError of
         scInferred'' = unlines $ ("  "<>) <$> lines scInferred'
         givenStr     = if color then "\x1b[0mType signature given:\n" else "Type signature given:\n  "
         inferredStr  = if color then "\n\x1b[0mType inferred:\n" else "\nType inferred:\n  "
-    in  case context of
-          Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-            Diagnose.Err
-              Nothing
-              "Signature too general"
-              [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-                , Diagnose.This $ givenStr <> scGiven'' <> inferredStr <> scInferred''
-                )
-              ]
-              []
-
-          NoContext ->
-            Diagnose.Err
-              Nothing
-              "Signature too general"
-              []
-              []
+    in  mkError "Signature too general" context
+          (givenStr <> scGiven'' <> inferredStr <> scInferred'')
+          []
 
   NoInstanceFound cls ts ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Instance not found"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-              "No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n"
-              <> ""
-            )
-          ]
-          [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
-          , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Instance not found"
-          []
-          [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
-          , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
-          ]
+    mkError "Instance not found" context
+      ("No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n")
+      [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
+      , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
+      ]
 
   AmbiguousType (TV _ _, IsIn cls _ maybeArea : _) ->
     case context of
@@ -1545,97 +1264,40 @@ createErrorDiagnostic color context typeError = case typeError of
           [Diagnose.Hint "You can add a type annotation to make it resolvable."]
 
   AmbiguousType (TV n _, []) ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Ambiguous type"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "An ambiguity for the type variable '" <> renderTVar n <> "' could not be resolved"
-            )
-          ]
-          [Diagnose.Hint "You can add a type annotation to make it resolvable."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Ambiguous type"
-          []
-          [Diagnose.Hint "You can add a type annotation to make it resolvable."]
+    mkError "Ambiguous type" context
+      ("An ambiguity for the type variable '" <> renderTVar n <> "' could not be resolved")
+      [Diagnose.Hint "You can add a type annotation to make it resolvable."]
 
   InterfaceNotExisting cls ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Interface not found"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The interface '" <> cls <> "' is not defined.\n"
-            )
-          ]
-          [Diagnose.Hint "Make sure you imported the module defining it,\nor a module that imports it."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Interface not found"
-          []
-          [Diagnose.Hint "Make sure you imported the module defining it,\nor a module that imports it."]
+    mkError "Interface not found" context ("The interface '" <> cls <> "' is not defined.\n")
+      [Diagnose.Hint "Make sure you imported the module defining it,\nor a module that imports it."]
 
   KindError (t, k) (t', k') ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Kind error"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The kind of types don't match, '"
-                <> prettyPrintType True t
-                <> "' has kind "
-                <> kindToStr k
-                <> " and "
-                <> prettyPrintType True t'
-                <> " has kind "
-                <> kindToStr k'
-                <> "."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Kind error"
-          []
-          []
+    mkError "Kind error" context
+      (    "The kind of types don't match, '"
+        <> prettyPrintType True t
+        <> "' has kind "
+        <> kindToStr k
+        <> " and "
+        <> prettyPrintType True t'
+        <> " has kind "
+        <> kindToStr k'
+        <> "."
+      )
+      []
 
   InstancePredicateError pInstance pWrong pCorrect ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Instance predicate error"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "A constraint in the instance declaration '"
-                <> lst (predToStr True (mempty, mempty) pInstance)
-                <> " is not correct.\n"
-                <> "You gave the constraint '"
-                <> lst (predToStr True (mempty, mempty) pWrong)
-                <> "' but a constraint of the form '"
-                <> lst (predToStr True (mempty, mempty) pCorrect)
-                <> "'\nwas expected."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Instance predicate error"
-          []
-          []
+    mkError "Instance predicate error" context
+      (    "A constraint in the instance declaration '"
+        <> lst (predToStr True (mempty, mempty) pInstance)
+        <> " is not correct.\n"
+        <> "You gave the constraint '"
+        <> lst (predToStr True (mempty, mempty) pWrong)
+        <> "' but a constraint of the form '"
+        <> lst (predToStr True (mempty, mempty) pCorrect)
+        <> "'\nwas expected."
+      )
+      []
 
   ImportCycle paths ->
     case context of
@@ -1683,132 +1345,35 @@ createErrorDiagnostic color context typeError = case typeError of
       in  prefix <> paths !! current <> "\n" <> next
 
   TypeAnnotationNameMismatch typingName expName ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Type annotation error"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Type annotation error"
-          []
-          []
+    mkError "Type annotation error" context
+      ("The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )")
+      []
 
   GrammarError _ _ ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Grammar error"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "Unexpected character"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Grammar error"
-          []
-          []
+    mkError "Grammar error" context "Unexpected character" []
 
   BadEscapeSequence ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Bad escape sequence"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "This escape sequence is not valid"
-            )
-          ]
-          [
-            Diagnose.Hint "Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD or \\u{ABCDEF} up to 10FFFF"
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Bad escape sequence"
-          []
-          []
+    mkError "Bad escape sequence" context "This escape sequence is not valid"
+      [ Diagnose.Hint "Valid escape sequences are either a byte: \\xAB or a unicode: \\uABCD or \\u{ABCDEF} up to 10FFFF"
+      ]
 
   EmptyChar ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Empty Char"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "This character is empty"
-            )
-          ]
-          [
-            Diagnose.Note "Characters can't be empty"
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Empty Char"
-          []
-          []
+    mkError "Empty Char" context "This character is empty"
+      [ Diagnose.Note "Characters can't be empty"
+      ]
 
   UnknownType t ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Unknown type"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The type '" <> t <> "' was not found"
-            )
-          ]
-          [Diagnose.Hint "Verify that you imported it"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Grammar error"
-          []
-          [Diagnose.Hint "Verify that you imported it"]
+    mkError "Unknown type" context ("The type '" <> t <> "' was not found")
+      [Diagnose.Hint "Verify that you imported it"]
 
   NameAlreadyDefined name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Illegal shadowing"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The variable '" <> name <> "' is already defined"
-            )
-          ]
-          [ Diagnose.Hint "Change the name of the variable"
-          , Diagnose.Note $
-              "The variable might be defined further down. All top level\n"
-              <> "assignments share the scope and using a local name that is\n"
-              <> "defined in the global scope of a module is not allowed."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Illegal shadowing"
-          []
-          [ Diagnose.Hint "Change the name of the variable"
-          , Diagnose.Note $
-              "The variable might be defined further down. All top level\n"
-              <> "assignments share the scope and using a local name that is\n"
-              <> "defined in the global scope of a module is not allowed."
-          ]
+    mkError "Illegal shadowing" context ("The variable '" <> name <> "' is already defined")
+      [ Diagnose.Hint "Change the name of the variable"
+      , Diagnose.Note $
+          "The variable might be defined further down. All top level\n"
+          <> "assignments share the scope and using a local name that is\n"
+          <> "defined in the global scope of a module is not allowed."
+      ]
 
   ImportCollision name ->
     case context of
@@ -1830,279 +1395,101 @@ createErrorDiagnostic color context typeError = case typeError of
           []
 
   TypeAlreadyDefined name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Type already defined"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The type '" <> name <> "' is already defined"
-            )
-          ]
-          [Diagnose.Hint "Change the name of the type"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Type already defined"
-          []
-          [Diagnose.Hint "Change the name of the type"]
+    mkError "Type already defined" context ("The type '" <> name <> "' is already defined")
+      [Diagnose.Hint "Change the name of the type"]
 
   NameAlreadyExported name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Already exported"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "Export already defined. You are trying to export the\n"
-                <> "name '" <> name <> "' but it\n"
-                <> "appears that you have already exported it."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Already exported"
-          []
-          []
+    mkError "Already exported" context
+      (    "Export already defined. You are trying to export the\n"
+        <> "name '" <> name <> "' but it\n"
+        <> "appears that you have already exported it."
+      )
+      []
 
   NotExported name path ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Not exported"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You are trying to import '" <> name <> "' from\n"
-                <> "the module located here:\n"
-                <> "'" <> path <> "'\n"
-                <> "Unfortunately, that module does not export '" <> name <> "'"
-            )
-          ]
-          [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Not exported"
-          []
-          [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
+    mkError "Not exported" context
+      (    "You are trying to import '" <> name <> "' from\n"
+        <> "the module located here:\n"
+        <> "'" <> path <> "'\n"
+        <> "Unfortunately, that module does not export '" <> name <> "'"
+      )
+      [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
 
   RecursiveVarAccess _ ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Recursive variable access"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You are using a variable that is recursively accessing itself\n"
-                <> "and is thus not yet initialized."
-            )
-          ]
-          [ Diagnose.Note $
-              "This is not allowed and can only work if there exists a\n"
-              <> "function in between, let me show you some examples that should\n"
-              <> "make this clearer:\n"
-              <> "// this is not allowed because parser is directly refering to itself\n"
-              <> "parser = J.map(Title, J.field(\"title\", parser))\n"
-              <> "// this works because now the recursive accessed is wrapped in a function\n"
-              <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Recursive variable access"
-          []
-          [ Diagnose.Note $
-              "This is not allowed and can only work if there exists a\n"
-              <> "function in between, let me show you some examples that should\n"
-              <> "make this clearer:\n"
-              <> "// this is not allowed because parser is directly refering to itself\n"
-              <> "parser = J.map(Title, J.field(\"title\", parser))\n"
-              <> "// this works because now the recursive accessed is wrapped in a function\n"
-              <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
-          ]
+    mkError "Recursive variable access" context
+      (    "You are using a variable that is recursively accessing itself\n"
+        <> "and is thus not yet initialized."
+      )
+      [ Diagnose.Note $
+          "This is not allowed and can only work if there exists a\n"
+          <> "function in between, let me show you some examples that should\n"
+          <> "make this clearer:\n"
+          <> "// this is not allowed because parser is directly refering to itself\n"
+          <> "parser = J.map(Title, J.field(\"title\", parser))\n"
+          <> "// this works because now the recursive accessed is wrapped in a function\n"
+          <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
+      ]
 
   NotInScope name (Loc _ line _) ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Not in scope"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "This expression relies on an expression that accesses the\n"
-                <> "variable '" <> name <> "' at line " <> ppShow line
-            )
-          ]
-          [ Diagnose.Note $
-              "All variables need to have been defined by the time they are\n"
-              <> "accessed and this access is thus not allowed."
-          , Diagnose.Hint $
-              "Move that call further down in the module so that the name\n"
-              <> "is defined when you access it."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Not in scope"
-          []
-          [ Diagnose.Note $
-              "All variables need to have been defined by the time they are\n"
-              <> "accessed and this access is thus not allowed."
-          , Diagnose.Hint $
-              "Move that call further down in the module so that the name\n"
-              <> "is defined when you access it."
-          ]
+    mkError "Not in scope" context
+      (    "This expression relies on an expression that accesses the\n"
+        <> "variable '" <> name <> "' at line " <> ppShow line
+      )
+      [ Diagnose.Note $
+          "All variables need to have been defined by the time they are\n"
+          <> "accessed and this access is thus not allowed."
+      , Diagnose.Hint $
+          "Move that call further down in the module so that the name\n"
+          <> "is defined when you access it."
+      ]
 
   TypesHaveDifferentOrigin adtName origin1 origin2 ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Types have different origins"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "Types do not match. You try to use a type that seems similar\n"
-                <> "but comes from two different locations. The type '" <> adtName <> "'\n"
-                <> "is used from:\n"
-                <> "  - '" <> origin1 <> "'\n"
-                <> "  - '" <> origin2 <> "'"
-            )
-          ]
-          [ Diagnose.Hint $
-              "Import it only from one place, or if you meant to use both,\n"
-              <> "make sure to convert from one to the other correctly."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Types have different origins"
-          []
-          [ Diagnose.Hint $
-              "Import it only from one place, or if you meant to use both,\n"
-              <> "make sure to convert from one to the other correctly."
-          ]
+    mkError "Types have different origins" context
+      (    "Types do not match. You try to use a type that seems similar\n"
+        <> "but comes from two different locations. The type '" <> adtName <> "'\n"
+        <> "is used from:\n"
+        <> "  - '" <> origin1 <> "'\n"
+        <> "  - '" <> origin2 <> "'"
+      )
+      [ Diagnose.Hint $
+          "Import it only from one place, or if you meant to use both,\n"
+          <> "make sure to convert from one to the other correctly."
+      ]
 
   ShouldBeTypedOrAbove name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Must be typed or above"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You access the name '" <> name <> "' before it\n"
-                <> "is defined"
-            )
-          ]
-          [ Diagnose.Note $
-              "This is fine, but in that case you must give it a type\n"
-              <> "annotation."
-          , Diagnose.Hint $
-              "Place that declaration above the place you use it, or give\n"
-              <> "it a type annotation."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Must be typed or above"
-          []
-          [ Diagnose.Note $
-              "This is fine, but in that case you must give it a type\n"
-              <> "annotation."
-          , Diagnose.Hint $
-              "Place that declaration above the place you use it, or give\n"
-              <> "it a type annotation."
-          ]
+    mkError "Must be typed or above" context
+      ("You access the name '" <> name <> "' before it\nis defined")
+      [ Diagnose.Note $
+          "This is fine, but in that case you must give it a type\n"
+          <> "annotation."
+      , Diagnose.Hint $
+          "Place that declaration above the place you use it, or give\n"
+          <> "it a type annotation."
+      ]
 
   NotCapitalizedADTName name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "ADT name not capitalized"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The name '" <> name <> "' of this type is not capitalized"
-            )
-          ]
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "ADT name not capitalized"
-          []
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
+    mkError "ADT name not capitalized" context
+      ("The name '" <> name <> "' of this type is not capitalized")
+      [ Diagnose.Note $
+          "This is incorrect and all types in madlib should start with\n"
+          <> "an uppercased letter."
+      ]
 
   NotCapitalizedAliasName name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Alias name not capitalized"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The name '" <> name <> "' of this type alias is not capitalized"
-            )
-          ]
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Alias name not capitalized"
-          []
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
+    mkError "Alias name not capitalized" context
+      ("The name '" <> name <> "' of this type alias is not capitalized")
+      [ Diagnose.Note $
+          "This is incorrect and all types in madlib should start with\n"
+          <> "an uppercased letter."
+      ]
 
   NotCapitalizedConstructorName name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Constructor name not capitalized"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The name '" <> name <> "' of this type constructor is not capitalized"
-            )
-          ]
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Constructor name not capitalized"
-          []
-          [ Diagnose.Note $
-              "This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
-          ]
+    mkError "Constructor name not capitalized" context
+      ("The name '" <> name <> "' of this type constructor is not capitalized")
+      [ Diagnose.Note $
+          "This is incorrect and all types in madlib should start with\n"
+          <> "an uppercased letter."
+      ]
 
   ContextTooWeak preds ->
     case context of
@@ -2144,218 +1531,63 @@ createErrorDiagnostic color context typeError = case typeError of
           [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
 
   OverloadedMutation n _ ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Mutation in overloaded context"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You are mutating the variable '" <> n <> "' in a function that has constraints"
-            )
-          ]
-          [ Diagnose.Note $ "This will not work as it'll always generate a new reference for the closure\n"
-              <> "leading to the value not being changed."
-          , Diagnose.Hint "Add or change type annotations to suppress the constraints."
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Context too weak"
-          []
-          [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+    mkError "Mutation in overloaded context" context
+      ("You are mutating the variable '" <> n <> "' in a function that has constraints")
+      [ Diagnose.Note $ "This will not work as it'll always generate a new reference for the closure\n"
+          <> "leading to the value not being changed."
+      , Diagnose.Hint "Add or change type annotations to suppress the constraints."
+      ]
 
   WrongAliasArgCount aliasName expected actual ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Wrong alias argument count"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
-                <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given"
-            )
-          ]
-          [Diagnose.Hint $
-            if actual > expected then
-              "Remove " <> show (actual - expected) <> " argument(s)"
-            else
-              "Add the missing '" <> show (expected - actual) <> "' argument(s)"
-          ]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Wrong alias argument count"
-          []
-          [Diagnose.Hint $
-            if actual > expected then
-              "Remove " <> show (actual - expected) <> " argument(s)"
-            else
-              "Add the missing '" <> show (expected - actual) <> "' argument(s)"
-          ]
+    mkError "Wrong alias argument count" context
+      (    "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
+        <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given"
+      )
+      [ Diagnose.Hint $
+          if actual > expected then
+            "Remove " <> show (actual - expected) <> " argument(s)"
+          else
+            "Add the missing '" <> show (expected - actual) <> "' argument(s)"
+      ]
 
   ImportNotFound importName ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Import not found"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You tried to import the module '" <> importName <> "',\n"
-                <> "but it could not be found"
-            )
-          ]
-          [Diagnose.Hint "Verify that you don't have a typo."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Import not found"
-          []
-          [Diagnose.Hint "Verify that you don't have a typo."]
+    mkError "Import not found" context
+      ("You tried to import the module '" <> importName <> "',\nbut it could not be found")
+      [Diagnose.Hint "Verify that you don't have a typo."]
 
   InterfaceAlreadyDefined interfaceName ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Interface already defined"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You defined the interface '" <> interfaceName <> "',\n"
-                <> "but it already exists"
-            )
-          ]
-          [Diagnose.Hint "Verify that you don't have a typo."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Interface already defined"
-          []
-          [Diagnose.Hint "Verify that you don't have a typo."]
+    mkError "Interface already defined" context
+      ("You defined the interface '" <> interfaceName <> "',\nbut it already exists")
+      [Diagnose.Hint "Verify that you don't have a typo."]
 
   InvalidLhs ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Invalid left hand side"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "It is not a valid left hand side expression."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Invalid left hand side"
-          []
-          []
+    mkError "Invalid left hand side" context "It is not a valid left hand side expression." []
 
   BadMutation ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Bad mutation"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This "You are trying to change a value with the assignment operator."
-            )
-          ]
-          [Diagnose.Hint "Use the mutation operator ':='"]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Bad mutation"
-          []
-          [Diagnose.Hint "Use the mutation operator ':='"]
+    mkError "Bad mutation" context
+      "You are trying to change a value with the assignment operator."
+      [Diagnose.Hint "Use the mutation operator ':='"]
 
   MutatingNotInScope name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Not in scope"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "You are trying to mutate the value of '" <> name <> "' but it is not in scope."
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Not in scope"
-          []
-          []
+    mkError "Not in scope" context
+      ("You are trying to mutate the value of '" <> name <> "' but it is not in scope.")
+      []
 
   MutatingPatternBoundVariable name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Cannot mutate pattern-bound variable"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "'" <> name <> "' is bound by pattern matching and cannot be mutated."
-            )
-          ]
-          [Diagnose.Hint $ "Introduce a local let binding first: " <> name <> " = <patternVar>, then use ':=' on that."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Cannot mutate pattern-bound variable"
-          []
-          []
+    mkError "Cannot mutate pattern-bound variable" context
+      ("'" <> name <> "' is bound by pattern matching and cannot be mutated.")
+      [Diagnose.Hint $ "Introduce a local let binding first: " <> name <> " = <patternVar>, then use ':=' on that."]
 
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType
-    in  case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Type already defined"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "You defined the type '" <> adtName <> "',\n"
-                <> "but it already exists"
-            )
-          ]
-          [Diagnose.Hint "Verify that you don't have a typo."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Type already defined"
-          []
+    in  mkError "Type already defined" context
+          ("You defined the type '" <> adtName <> "',\nbut it already exists")
           [Diagnose.Hint "Verify that you don't have a typo."]
 
   RecordDuplicateFields fs ->
     let fs' = concatMap ("\n - " ++) fs
-    in  case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Record duplicate fields"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $
-                "The following fields appear more than once in the record constructor:" <> fs'
-            )
-          ]
-          [Diagnose.Hint "Define each field only once."]
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Record duplicate fields"
-          []
+    in  mkError "Record duplicate fields" context
+          ("The following fields appear more than once in the record constructor:" <> fs')
           [Diagnose.Hint "Define each field only once."]
 
   WrongSpreadType t ->
