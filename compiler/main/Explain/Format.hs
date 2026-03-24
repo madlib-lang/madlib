@@ -1004,6 +1004,22 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
 -- | Helper to build an Err diagnostic with a primary location.
 -- When context is present, adds a source span; otherwise builds a span-free error.
+-- | Generate context-aware hints for NoInstanceFound errors.
+noInstanceSmartHints :: String -> [Type] -> [Diagnose.Note String]
+noInstanceSmartHints cls ts = case (cls, ts) of
+  ("Number", [TCon (TC "String" _) _ _]) ->
+    [Diagnose.Hint "Strings are not numbers. Use '<>' for string concatenation instead of '+'."]
+  ("Number", [TCon (TC "Boolean" _) _ _]) ->
+    [Diagnose.Hint "Booleans are not numbers. Did you mean to use '&&' or '||'?"]
+  ("Eq", _) ->
+    [Diagnose.Hint "You can derive an Eq instance with 'derive Eq' on the type definition."]
+  ("Show", _) ->
+    [Diagnose.Hint "You can derive a Show instance with 'derive Show' on the type definition."]
+  ("Comparable", _) ->
+    [Diagnose.Hint "You can derive a Comparable instance with 'derive Comparable' on the type definition."]
+  _ -> []
+
+
 mkError :: String -> Context -> String -> [Diagnose.Note String] -> Diagnose.Report String
 mkError title context message notes = case context of
   Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
@@ -1253,11 +1269,15 @@ createErrorDiagnostic color context typeError = case typeError of
           []
 
   NoInstanceFound cls ts ->
-    mkError "Instance not found" context
-      ("No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n")
-      [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
-      , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
-      ]
+    let typeStr    = unwords (prettyPrintType True <$> ts)
+        smartHints = noInstanceSmartHints cls ts
+        stdHints   =
+          [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> typeStr <> "' is defined"
+          , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
+          ]
+    in  mkError "Instance not found" context
+          ("No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n")
+          (smartHints ++ stdHints)
 
   AmbiguousType (TV _ _, IsIn cls _ maybeArea : _) ->
     case context of
