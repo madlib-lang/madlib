@@ -769,7 +769,7 @@ inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = d
 inferBranch :: Bool -> Options -> Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
-  s <- contextualUnify' env discardError exp t t'
+  s <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromPatternMatch env exp t t'
 
   -- Fix rest variable types: after unification, row variables get substituted with
   -- records that include ALL fields (because optional fields merge into main fields
