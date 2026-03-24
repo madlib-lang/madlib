@@ -461,7 +461,7 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
             return (mempty, t'')
 
           Just t''' -> do
-            s'''' <- contextualUnify' env discardError elem (apply s' t''') t''
+            s'''' <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromListElement env elem (apply s' t''') t''
             return (s'''', pickJSXChild t''' t'')
 
         let s''' = s'' `compose` s' `compose` s
@@ -1110,7 +1110,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
   (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   let sNorm = s `compose` s -- resolve internal substitution chains
-  s'' <- catchError (contextualUnify' env discardError canExp t' (apply sNorm t)) (throwError . limitContextArea 2)
+  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' (apply sNorm t)) (throwError . limitContextArea 2)
   let s' = s'' `compose` sNorm
 
   let envWithVarsExcluded =
