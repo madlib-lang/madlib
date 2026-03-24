@@ -15,9 +15,10 @@ module Generate.LLVM.Types
   , buildLLVMType
   , buildLLVMType'
   , buildLLVMParamType
-    -- * Tuple field type (native storage type for primitive elements)
+    -- * Tuple/record field type (native storage type for primitive elements)
   , tupleFieldLLVMType
   , primitiveTupleFieldType
+  , recordFieldLLVMTypes
     -- * Constructor helpers
   , retrieveConstructorStructType
   , retrieveConstructorMaxArity
@@ -131,13 +132,13 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     listType
 
-  IT.TRecord fields _ optionalFields -> do
-    let allFields = Map.union fields optionalFields
-    let n = Map.size allFields
-    if n > 0 then
-      Type.ptr $ Type.StructureType False (List.replicate n boxType)
-    else
-      recordType
+  IT.TRecord fields _ optionalFields ->
+    let allFields  = Map.union fields optionalFields
+        fieldTypes = Map.elems allFields
+    in  if null fieldTypes then
+          recordType
+        else
+          Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes)
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ ->
     let arity = List.length $ IT.getParamTypes t
@@ -191,12 +192,12 @@ buildLLVMType' (ps IT.:=> t) = case t of
     return (listType, Nothing)
 
   IT.TRecord fields _ optionalFields -> do
-    let allFields = Map.union fields optionalFields
-    let n = Map.size allFields
-    if n > 0 then
-      return (Type.ptr $ Type.StructureType False (List.replicate n boxType), Nothing)
-    else
+    let allFields  = Map.union fields optionalFields
+        fieldTypes = Map.elems allFields
+    if null fieldTypes then
       return (recordType, Nothing)
+    else
+      return (Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes), Nothing)
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude" _) _) _ -> do
     let arity = List.length $ IT.getParamTypes t
@@ -395,12 +396,21 @@ getTupleElemTypes t = reverse (go t)
 
 -- | Build a flat struct type for a record with known fields.
 -- Fields are ordered alphabetically by name (Map.keys ordering).
+-- Primitive fields use their native LLVM type (i64, double, etc.); others use boxType.
 flatRecordType :: IT.Type -> Type.Type
 flatRecordType (IT.TRecord fields _ optionalFields) =
-  let allFields = Map.union fields optionalFields
-      n = Map.size allFields
-  in  Type.ptr $ Type.StructureType False (List.replicate n boxType)
+  let allFields  = Map.union fields optionalFields
+      fieldTypes = Map.elems allFields
+  in  if null fieldTypes then recordType
+      else Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes)
 flatRecordType _ = recordType
+
+-- | Ordered list of LLVM field types for a record type (same ordering as Map.keys).
+-- Used when constructing or accessing record fields with native primitive types.
+recordFieldLLVMTypes :: IT.Type -> [Type.Type]
+recordFieldLLVMTypes (IT.TRecord fields _ optionalFields) =
+  (primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems (Map.union fields optionalFields)
+recordFieldLLVMTypes _ = []
 
 -- | Get the index of a field in a flat record struct.
 -- Fields are ordered alphabetically by name (Map.keys ordering).

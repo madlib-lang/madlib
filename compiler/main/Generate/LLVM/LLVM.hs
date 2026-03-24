@@ -55,7 +55,7 @@ import           Generate.LLVM.Emit           (emitGEP)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callFastWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
-import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, tupleFieldLLVMType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldIndex)
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, tupleFieldLLVMType, primitiveTupleFieldType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldLLVMTypes, recordFieldIndex)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.Builtins
 import qualified Generate.LLVM.Operators      as Ops
@@ -713,18 +713,25 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
   Core.Typed _ _ metadata (Core.Assignment lhs@(Core.Typed _ _ _ (Core.Access r@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ _ _ (Core.Var ('.' : fieldName) _)))) e) -> do
     if Core.isReferenceStore metadata then do
         (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
-        (_, r', _) <- generateExp env { isTopLevel = False } symbolTable r
-        exp'' <- box exp'
+        (_, r', _)   <- generateExp env { isTopLevel = False } symbolTable r
+        let expQt     = Core.getQualType e
+            fieldType = primitiveTupleFieldType expQt
 
         case recType of
           IT.TRecord fields _ optionalFields -> do
-            let allFields = Map.union fields optionalFields
-            let n = Map.size allFields
-            let structType = Type.StructureType False (List.replicate n boxType)
-            let index = recordFieldIndex fieldName recType
+            let allFields   = Map.union fields optionalFields
+                bareTypes   = Map.elems allFields
+                structType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
+                index       = recordFieldIndex fieldName recType
+            storeVal <-
+              if fieldType == boxType
+                then box exp'
+                else if typeOf exp' == fieldType
+                       then return exp'
+                       else unbox env symbolTable expQt exp'
             recordOperand' <- safeBitcast r' (Type.ptr structType)
             fieldPtr       <- gep recordOperand' [i32ConstOp 0, i32ConstOp index]
-            store fieldPtr 0 exp''
+            store fieldPtr 0 storeVal
             let unit = Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1)
             return (symbolTable, unit, Nothing)
 
@@ -1388,14 +1395,13 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     let allFieldNames = case recType of
           IT.TRecord fs _ os -> Map.keys (Map.union fs os)
           _                  -> []
-    let n = List.length allFieldNames
-    let structType = Type.StructureType False (List.replicate n boxType)
-
-    -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
-    -- Use ALL field types (including spread-inherited) to choose malloc, not just explicit fields
     let allFieldTypes = case recType of
           IT.TRecord fs _ os -> Map.elems (Map.union fs os)
           _                  -> []
+    let fieldLLVMTypes = (primitiveTupleFieldType . ([] IT.:=>)) <$> allFieldTypes
+    let structType = Type.StructureType False fieldLLVMTypes
+
+    -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
     let mallocFn = chooseMalloc allFieldTypes
     recordPtr  <- allocateStruct env area metadata structType mallocFn
     recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
@@ -1404,14 +1410,16 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
         (_, baseOperand, _) <- generateExp env symbolTable exp
-        let baseRecType = let (_ IT.:=> bt) = Core.getQualType exp in bt
-        let baseFieldNames = case baseRecType of
+        let baseRecType     = let (_ IT.:=> bt) = Core.getQualType exp in bt
+        let baseFieldNames  = case baseRecType of
               IT.TRecord fs _ os -> Map.keys (Map.union fs os)
               _                  -> []
-        let baseN = List.length baseFieldNames
-        let baseStructType = Type.StructureType False (List.replicate baseN boxType)
+        let baseFieldTypes' = case baseRecType of
+              IT.TRecord fs _ os -> Map.elems (Map.union fs os)
+              _                  -> []
+        let baseStructType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> baseFieldTypes')
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
-        -- Copy each base field to its position in the result struct
+        -- Copy each base field to its position in the result struct (field types are preserved)
         Monad.forM_ baseFieldNames $ \fieldName -> do
           let srcIndex = recordFieldIndex fieldName baseRecType
           let dstIndex = recordFieldIndex fieldName recType
@@ -1422,16 +1430,25 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 
       _ -> return ()
 
-    -- Store each field value at its index in the flat struct
+    -- Store each field value at its index in the flat struct.
+    -- For primitive fields, store the native value directly (avoids inttoptr/ptrtoint round-trips).
+    -- For boxed fields, box the value first as before.
     Monad.forM_ sortedFields $ \field -> case field of
       Core.Typed _ _ _ (Core.Field (name, value)) -> do
         (_, val, maybeBoxed) <- generateExp env symbolTable value
-        boxedVal <- case maybeBoxed of
-          Just boxed -> return boxed
-          Nothing    -> box val
-        let index = recordFieldIndex name recType
+        let qt        = Core.getQualType value
+            fieldType = primitiveTupleFieldType qt
+            index     = recordFieldIndex name recType
+        fieldVal <-
+          if fieldType == boxType
+            then case maybeBoxed of
+                   Just boxed -> return boxed
+                   Nothing    -> box val
+            else if typeOf val == fieldType
+                   then return val
+                   else unbox env symbolTable qt val
         fieldPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp index]
-        store fieldPtr 0 boxedVal
+        store fieldPtr 0 fieldVal
 
       _ -> return ()
 
@@ -1477,10 +1494,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     (_, recordOperand, _) <- generateExp env symbolTable record
     value <- case recType of
       IT.TRecord fields _ optionalFields -> do
-        let allFields = Map.union fields optionalFields
-        let n = Map.size allFields
-        let structType = Type.StructureType False (List.replicate n boxType)
-        let index = recordFieldIndex fieldName recType
+        let allFields  = Map.union fields optionalFields
+            bareTypes  = Map.elems allFields
+            structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
+            index      = recordFieldIndex fieldName recType
         recordOperand' <- safeBitcast recordOperand (Type.ptr structType)
         fieldPtr       <- gep recordOperand' [i32ConstOp 0, i32ConstOp index]
         load fieldPtr 0
@@ -1489,7 +1506,12 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
         nameOperand <- buildStr env area fieldName
         callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (recordOperand, [])]
 
-    value' <- unbox env symbolTable qt value
+    -- If the field is already in its native LLVM type, skip unboxing to avoid
+    -- a redundant ptrtoint/bitcast round-trip.
+    let nativeTy = buildLLVMType env symbolTable qt
+    value' <- if typeOf value == nativeTy
+                then return value
+                else unbox env symbolTable qt value
     return (symbolTable, value', Just value)
 
 

@@ -16,7 +16,7 @@ import           Generate.LLVM.TypeOf         (Typed(typeOf))
 import           Generate.LLVM.Emit          (emitSafeBitcast)
 import           Generate.LLVM.Env
 import           Generate.LLVM.SymbolTable
-import           Generate.LLVM.Types         (boxType, listType, stringType, papType, recordType, buildLLVMType)
+import           Generate.LLVM.Types         (boxType, listType, stringType, papType, recordType, buildLLVMType, primitiveTupleFieldType)
 import qualified Infer.Type                   as IT
 import qualified Data.Map                     as Map
 import qualified Data.List                    as List
@@ -57,12 +57,12 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     emitSafeBitcast what listType
 
   IT.TRecord fields _ optionalFields -> do
-    let allFields = Map.union fields optionalFields
-    let n = Map.size allFields
-    if n > 0 then
-      emitSafeBitcast what (Type.ptr $ Type.StructureType False (List.replicate n boxType))
-    else
+    let allFields  = Map.union fields optionalFields
+        fieldTypes = Map.elems allFields
+    if null fieldTypes then
       emitSafeBitcast what recordType
+    else
+      emitSafeBitcast what (Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes))
 
   -- This should be called for parameters that are closures or returned closures
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _ _) _) _ ->

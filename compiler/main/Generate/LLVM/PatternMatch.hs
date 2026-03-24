@@ -46,7 +46,7 @@ import           Data.ByteString.Short        (ShortByteString)
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
-import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType)
+import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType, primitiveTupleFieldType)
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
@@ -578,10 +578,10 @@ getFieldPattern :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModul
 getFieldPattern ctx env symbolTable recType record (fieldName, fieldPattern) = do
   field <- case recType of
     IT.TRecord fields _ optionalFields -> do
-      let allFields = Map.union fields optionalFields
-      let n = Map.size allFields
-      let structType = Type.StructureType False (List.replicate n boxType)
-      let index = recordFieldIndex fieldName recType
+      let allFields  = Map.union fields optionalFields
+          bareTypes  = Map.elems allFields
+          structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
+          index      = recordFieldIndex fieldName recType
       recordPtr <- ctxSafeBitcast ctx record (Type.ptr structType)
       fieldPtr  <- gep recordPtr [i32ConstOp 0, i32ConstOp index]
       load fieldPtr 0
@@ -591,7 +591,13 @@ getFieldPattern ctx env symbolTable recType record (fieldName, fieldPattern) = d
       nameOperand <- ctxBuildStr ctx env area fieldName
       callWithMetadata (makeDILocation env area) selectField [(nameOperand, []), (record, [])]
 
-  field' <- unbox env symbolTable (getQualType fieldPattern) field
+  -- If the loaded value already has the native LLVM type for this pattern,
+  -- skip unboxing (same as generateSymbolTableForIndexedData for tuples).
+  let qt       = getQualType fieldPattern
+      nativeTy = buildLLVMType env symbolTable qt
+  field' <- if typeOf field == nativeTy
+              then return field
+              else unbox env symbolTable qt field
   return (field', fieldPattern)
 
 
