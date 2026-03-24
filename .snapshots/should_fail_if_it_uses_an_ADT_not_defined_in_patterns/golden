@@ -76,7 +76,7 @@
     }
 , []
 , [ CompilationError
-      (UnboundVariable "NotExisting")
+      (UnboundVariable "NotExisting" [])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 32 3 5) (Loc 43 3 16)

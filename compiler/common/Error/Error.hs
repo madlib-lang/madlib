@@ -11,7 +11,7 @@ data CompilationError = CompilationError TypeError Context deriving(Eq, Ord, Sho
 
 data TypeError
   = InfiniteType TVar Type
-  | UnboundVariable String
+  | UnboundVariable String [String]
   | UnboundUnknownTypeVariable
   | UnboundVariableFromNamespace String String
   | UnboundType String

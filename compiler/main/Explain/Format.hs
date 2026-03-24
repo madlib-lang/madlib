@@ -666,10 +666,13 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "you are not interested in whatever it may contain.\n\n"
     <> "Hint: Give it a name if you intend to use it"
 
-  UnboundVariable n ->
+  UnboundVariable n suggestions ->
     "Unbound variable\n\n"
     <> "The variable '" <> n <> "' has not been declared\n\n"
-    <> "Hint: Verify that you don't have a typo."
+    <> case suggestions of
+         []  -> "Hint: Verify that you don't have a typo."
+         [s] -> "Hint: Did you mean '" <> s <> "'?"
+         _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   UnboundUnknownTypeVariable ->
     "Unbound type variable\n\n"
@@ -1249,8 +1252,12 @@ createErrorDiagnostic color context typeError = case typeError of
           []
           [Diagnose.Hint "Give it a name if you intend to use it"]
 
-  UnboundVariable n ->
-    case context of
+  UnboundVariable n suggestions ->
+    let hint = case suggestions of
+                 []  -> Diagnose.Hint "Verify that you don't have a typo"
+                 [s] -> Diagnose.Hint $ "Did you mean '" <> s <> "'?"
+                 _   -> Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
+    in case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         Diagnose.Err
           Nothing
@@ -1259,14 +1266,14 @@ createErrorDiagnostic color context typeError = case typeError of
             , Diagnose.This $ "The variable '" <> n <> "' has not been declared"
             )
           ]
-          [Diagnose.Hint "Verify that you don't have a typo"]
+          [hint]
 
       NoContext ->
         Diagnose.Err
           Nothing
           "Unbound variable"
           []
-          [Diagnose.Hint "Verify that you don't have a typo"]
+          [hint]
 
   UnboundUnknownTypeVariable ->
     case context of

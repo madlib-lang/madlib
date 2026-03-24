@@ -21,6 +21,7 @@ import qualified Data.Maybe                    as Maybe
 import           Control.Applicative
 import qualified AST.Solved                    as Slv
 import           Data.Foldable                  ( foldl' )
+import           Utils.EditDistance             ( findSimilar )
 
 
 
@@ -71,7 +72,9 @@ lookupVar env name = do
       return sc
 
     Nothing ->
-      throwError $ CompilationError (UnboundVariable name) NoContext
+      let candidates = M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
+          suggestions = findSimilar name candidates
+      in  throwError $ CompilationError (UnboundVariable name suggestions) NoContext
 
 
 extendVars :: Env -> (String, Scheme) -> Env

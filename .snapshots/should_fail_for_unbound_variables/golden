@@ -61,7 +61,7 @@
     }
 , []
 , [ CompilationError
-      (UnboundVariable "x")
+      (UnboundVariable "x" [ "!" , "$" , "%" ])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 15 1 16) (Loc 16 1 17)

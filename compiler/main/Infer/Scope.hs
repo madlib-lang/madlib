@@ -217,7 +217,7 @@ ifNotAlreadyReported env name action = do
   currentErrors <- getErrors
   let isReported = any
         (\case
-          CompilationError (UnboundVariable n) (Context fp _) -> n == name && envCurrentPath env == fp
+          CompilationError (UnboundVariable n _) (Context fp _) -> n == name && envCurrentPath env == fp
           _ -> False
         )
         currentErrors
