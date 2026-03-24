@@ -123,7 +123,7 @@ instance Unify Type where
   unify t1@(TCon a fpa _) t2@(TCon b fpb _)
     | a == b && fpa == fpb = return M.empty
     | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
-    | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
+    | a /= b               = throwError $ CompilationError (UnificationError t2 t1 NoOrigin) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
 
   unify (TCon (TC tNameA _) _ _) (TApp (TCon (TC tNameB _) _ _) _)
@@ -135,7 +135,7 @@ instance Unify Type where
         return mempty
 
   unify t1 t2 =
-    throwError $ CompilationError (UnificationError t2 t1) NoContext
+    throwError $ CompilationError (UnificationError t2 t1 NoOrigin) NoContext
 
 
 
@@ -193,9 +193,9 @@ instance Match Type where
     let allFields1 = fields1 <> optionalFields1
     let allFields2 = fields2 <> optionalFields2
     Monad.when (M.size allFields1 /= M.size allFields2) $
-      throwError $ CompilationError (UnificationError t2 t1) NoContext
+      throwError $ CompilationError (UnificationError t2 t1 NoOrigin) NoContext
     unify (TRecord allFields1 Nothing mempty) (TRecord allFields2 Nothing mempty)
-  match t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
+  match t1 t2 = throwError $ CompilationError (UnificationError t2 t1 NoOrigin) NoContext
 
 instance Match t => Match [t] where
   -- Fast path for the common single-element case
@@ -220,7 +220,7 @@ contextualUnify strategy env exp t1 t2 = catchError
     _ | strategy == Discard ->
       return $ gentleUnify t1 t2
 
-    (CompilationError (UnificationError _ _) ctx) -> do
+    (CompilationError (UnificationError _ _ origin) ctx) -> do
       let t2' = getParamTypeOrSame t2
           t1' = getParamTypeOrSame t1
           hasNotChanged = t2' == t2 || t1' == t1
@@ -228,7 +228,7 @@ contextualUnify strategy env exp t1 t2 = catchError
           t1'' = if hasNotChanged then t1 else t1'
       (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
       (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
-      addContext env exp (CompilationError (UnificationError t2'''' t1'''') ctx)
+      addContext env exp (CompilationError (UnificationError t2'''' t1'''' origin) ctx)
 
     e ->
       addContext env exp e
@@ -240,6 +240,18 @@ contextualUnifyAccess = contextualUnify AccessStyle
 
 contextualUnify' :: Env -> Bool -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify' env discardError = contextualUnify (if discardError then Discard else Strict) env
+
+-- | Like contextualUnify but embeds an ErrorOrigin into any UnificationError thrown.
+-- Use this at call sites that have semantic context about what is being unified.
+contextualUnifyWithOrigin :: UnifyStrategy -> ErrorOrigin -> Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
+contextualUnifyWithOrigin strategy origin env exp t1 t2 = catchError
+  (contextualUnify strategy env exp t1 t2)
+  (\case
+    CompilationError (UnificationError l r _) ctx ->
+      throwError $ CompilationError (UnificationError l r origin) ctx
+    e ->
+      throwError e
+  )
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution
@@ -255,8 +267,8 @@ contextualUnifyElems' env (e, t) ((e', t') : xs) = do
 
 flipUnificationError :: CompilationError -> Infer b
 flipUnificationError e@(CompilationError err x) = case err of
-  UnificationError l r -> throwError $ CompilationError (UnificationError r l) x
-  _                    -> throwError e
+  UnificationError l r origin -> throwError $ CompilationError (UnificationError r l origin) x
+  _                           -> throwError e
 
 
 addContext :: Env -> Can.Canonical a -> CompilationError -> Infer b

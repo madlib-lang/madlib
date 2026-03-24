@@ -588,7 +588,7 @@ renderScheme sc =
 
 createSimpleErrorDiagnostic :: Bool -> Context -> TypeError -> String
 createSimpleErrorDiagnostic color _ typeError = case typeError of
-  UnificationError t1 t2 ->
+  UnificationError t1 t2 _ ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
@@ -1021,12 +1021,26 @@ mkError title context message notes = case context of
 
 createErrorDiagnostic :: Bool -> Context -> TypeError -> Diagnose.Report String
 createErrorDiagnostic color context typeError = case typeError of
-  UnificationError t1 t2 ->
+  UnificationError t1 t2 origin ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n  "
+        originHint = case origin of
+          FromFunctionArgument fn 1 -> [Diagnose.Hint $ "The 1st argument to '" <> fn <> "' has the wrong type"]
+          FromFunctionArgument fn 2 -> [Diagnose.Hint $ "The 2nd argument to '" <> fn <> "' has the wrong type"]
+          FromFunctionArgument fn 3 -> [Diagnose.Hint $ "The 3rd argument to '" <> fn <> "' has the wrong type"]
+          FromFunctionArgument fn n -> [Diagnose.Hint $ "The " <> show n <> "th argument to '" <> fn <> "' has the wrong type"]
+          FromFunctionReturn fn     -> [Diagnose.Hint $ "The return type of '" <> fn <> "' doesn't match the annotation"]
+          FromOperator op           -> [Diagnose.Hint $ "Both sides of '" <> op <> "' must have the same type"]
+          FromIfCondition           -> [Diagnose.Hint "The condition of an 'if' expression must be Boolean"]
+          FromIfBranches            -> [Diagnose.Hint "The 'then' and 'else' branches must have the same type"]
+          FromListElement           -> [Diagnose.Hint "All elements of a list must have the same type"]
+          FromTypeAnnotation        -> [Diagnose.Hint "The expression doesn't match its type annotation"]
+          FromPatternMatch          -> [Diagnose.Hint "All branches of a pattern match must have the same type"]
+          FromAssignment name       -> [Diagnose.Hint $ "The value assigned to '" <> name <> "' doesn't match its declared type"]
+          NoOrigin                  -> []
     in  case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         Diagnose.Err
@@ -1036,14 +1050,14 @@ createErrorDiagnostic color context typeError = case typeError of
             , Diagnose.This $ expectedStr <> pretty2'' <> foundStr <> pretty1''
             )
           ]
-          []
+          originHint
 
       NoContext ->
         Diagnose.Err
           Nothing
           ("Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
           []
-          []
+          originHint
 
   TestNotValid t ->
     let prettyType = renderType t

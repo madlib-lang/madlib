@@ -9,13 +9,29 @@ import           Explain.Location
 
 data CompilationError = CompilationError TypeError Context deriving(Eq, Ord, Show)
 
+
+-- | Describes where an expected type originated from, for richer error messages.
+data ErrorOrigin
+  = FromFunctionArgument String Int    -- ^ function name, argument index (1-based)
+  | FromFunctionReturn String          -- ^ return type of named function
+  | FromOperator String                -- ^ operator like +, &&, <>
+  | FromIfCondition                    -- ^ if condition must be Boolean
+  | FromIfBranches                     -- ^ if branches must have the same type
+  | FromListElement                    -- ^ list elements must have the same type
+  | FromTypeAnnotation                 -- ^ user-provided type annotation
+  | FromPatternMatch                   -- ^ pattern match branches
+  | FromAssignment String              -- ^ assigning to a typed variable
+  | NoOrigin
+  deriving (Show, Eq, Ord)
+
+
 data TypeError
   = InfiniteType TVar Type
   | UnboundVariable String [String]
   | UnboundUnknownTypeVariable
   | UnboundVariableFromNamespace String String
   | UnboundType String
-  | UnificationError Type Type
+  | UnificationError Type Type ErrorOrigin
   | BadEscapeSequence
   | EmptyChar
   | TypeAlreadyDefined String

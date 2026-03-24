@@ -700,8 +700,9 @@ inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy))
 
   let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
   let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
-  s4 <- catchError (contextualUnify' env discardError falsy tfalsy' ttruthy') flipUnificationError
-  s5 <- contextualUnify' env discardError cond tBool (apply s4 tcond)
+  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) FromIfBranches env falsy tfalsy' ttruthy'
+  s4 <- catchError unifyBranches flipUnificationError
+  s5 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromIfCondition env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
