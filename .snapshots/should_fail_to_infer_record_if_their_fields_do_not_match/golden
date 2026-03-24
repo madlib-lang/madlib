@@ -2236,16 +2236,7 @@
     }
 , []
 , [ CompilationError
-      (UnificationError
-         (TRecord
-            (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-            Nothing
-            (fromList []))
-         (TRecord
-            (fromList
-               [ ( "x" , TVar (TV 5 Star) ) , ( "y" , TVar (TV 6 Star) ) ])
-            Nothing
-            (fromList [])))
+      (RecordExtraFields [ "name" ])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 156 11 34) (Loc 172 11 50)

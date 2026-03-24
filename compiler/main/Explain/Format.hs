@@ -951,6 +951,16 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The following fields appear more than once in the record constructor: " <> (concatMap ("\n - " ++) fs) <> "\n\n"
     <> "Hint: Define each field only once."
 
+  RecordMissingFields fs ->
+    "Record missing fields\n\n"
+    <> "The record is missing the following fields: " <> intercalate ", " (map (\f -> "'" <> f <> "'") fs) <> "\n\n"
+    <> "Hint: Add the missing fields to the record."
+
+  RecordExtraFields fs ->
+    "Record extra fields\n\n"
+    <> "The record has unexpected fields: " <> intercalate ", " (map (\f -> "'" <> f <> "'") fs) <> "\n\n"
+    <> "Hint: Remove the extra fields or check for a typo."
+
   InvalidLhs ->
     "Invalid left hand side\n\n"
     <> "It is not a valid left hand side expression."
@@ -1589,6 +1599,18 @@ createErrorDiagnostic color context typeError = case typeError of
     in  mkError "Record duplicate fields" context
           ("The following fields appear more than once in the record constructor:" <> fs')
           [Diagnose.Hint "Define each field only once."]
+
+  RecordMissingFields fs ->
+    let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
+    in  mkError "Record missing fields" context
+          ("The record is missing the following fields: " <> fieldList)
+          [Diagnose.Hint "Add the missing fields to the record."]
+
+  RecordExtraFields fs ->
+    let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
+    in  mkError "Record extra fields" context
+          ("The record has unexpected fields: " <> fieldList)
+          [Diagnose.Hint "Remove the extra fields or check for a typo in a field name."]
 
   WrongSpreadType t ->
     Diagnose.Err

@@ -74,6 +74,8 @@ data TypeError
   | NotAConstructor String
   | RecordDuplicateFields [String]
   | RecordDuplicateRestPattern
+  | RecordMissingFields [String]
+  | RecordExtraFields [String]
   | TestNotValid Type
   | ByteOutOfBounds String
   | ShortOutOfBounds String

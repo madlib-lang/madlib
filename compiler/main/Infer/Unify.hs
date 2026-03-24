@@ -76,7 +76,8 @@ instance Unify Type where
                        else M.difference allConcreteFields fields  -- Exclude only explicitly matched fields
       s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
 
-      unless (M.null (M.difference (fields <> optionalFields) (fields' <> optionalFields'))) $ throwError (CompilationError (UnificationError r l) NoContext)
+      let missingInConcrete = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
+      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -96,7 +97,8 @@ instance Unify Type where
                        else M.difference allPatternFields allConcreteFields  -- Exclude fields that are in concrete record
       s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
 
-      unless (M.null (M.difference (fields' <> optionalFields') (fields <> optionalFields))) $ throwError (CompilationError (UnificationError r l) NoContext)
+      let missingInPattern = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
+      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -107,11 +109,13 @@ instance Unify Type where
       return $ s2 `compose` s1
 
     _ -> do
-      let extraFields  = M.difference (fields <> optionalFields) (fields' <> optionalFields')
-          extraFields' = M.difference (fields' <> optionalFields') (fields <> optionalFields)
-      if extraFields' /= mempty || extraFields /= mempty then
-        throwError $ CompilationError (UnificationError r l) NoContext
-      else do
+      let extraFields  = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
+          extraFields' = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
+      if not (null extraFields') then
+        throwError $ CompilationError (RecordExtraFields extraFields') NoContext
+      else if not (null extraFields) then
+        throwError $ CompilationError (RecordMissingFields extraFields) NoContext
+      else
         unifyVars' M.empty (M.elems fields) (M.elems fields')
 
   unify (TVar tv) t         = varBind tv t
