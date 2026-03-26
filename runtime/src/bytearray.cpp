@@ -17,7 +17,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__initWithCapacity(int64_t capa
   }
 
   madlib__bytearray__ByteArray_t *result = (madlib__bytearray__ByteArray_t *) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_MALLOC(capacity * sizeof(unsigned char));
+  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(capacity * sizeof(unsigned char));
   result->capacity = capacity;
   result->length = 0;
   return result;
@@ -174,7 +174,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concatWithMutation(madlib__by
   int64_t nextLength = a->length + b->length;
 
   if (a->capacity < nextLength) {
-    resultBytes = (unsigned char *) GC_MALLOC(nextLength * 2 * sizeof(unsigned char));
+    resultBytes = (unsigned char *)GC_MALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
     memcpy(resultBytes, a->bytes, a->length * sizeof(unsigned char));
     a->bytes = resultBytes;
     a->capacity = nextLength * 2;
@@ -192,7 +192,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__pushBackWithMutation(unsigned
   int64_t nextLength = a->length + 1;
 
   if (a->capacity < nextLength) {
-    resultBytes = (unsigned char*) GC_MALLOC(nextLength * 2 * sizeof(unsigned char));
+    resultBytes = (unsigned char *)GC_MALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
     memcpy(resultBytes, a->bytes, a->length * sizeof(unsigned char));
     a->bytes = resultBytes;
     a->capacity = nextLength * 2;

@@ -69,6 +69,15 @@ import           GHC.Stack (HasCallStack)
 gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
 gep = emitGEP
 
+maxSupportedPAPArity :: Int
+maxSupportedPAPArity = 30
+
+mkPAPArityError :: String -> Int -> String
+mkPAPArityError name arity =
+  "LLVM codegen arity limit reached for '" <> name <> "' (arity " <> show arity
+  <> ", supported max " <> show maxSupportedPAPArity <> "). "
+  <> "Raise runtime/src/apply-pap.* max arity before compiling this function."
+
 
 -- | Callback context to break the circular dependency with LLVM.hs (generateExp lives there).
 data FunctionCtx m = FunctionCtx
@@ -172,8 +181,12 @@ generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m
 generateExternFunction env symbolTable (ps IT.:=> t) functionName arity foreignFn = do
   let paramTypes    = ([] IT.:=>) <$> IT.getParamTypes t
       amountOfDicts = List.length ps
-      params'       = List.replicate (arity + amountOfDicts) (boxType, NoParameterName)
+      totalArity    = arity + amountOfDicts
+      params'       = List.replicate totalArity (boxType, NoParameterName)
       functionName' = AST.mkName functionName
+
+  Monad.when (totalArity > maxSupportedPAPArity) $
+    error (mkPAPArityError functionName totalArity)
 
   function <- functionWithMetadata [] functionName' params' boxType $ \params -> do
     block `named` "entry"
@@ -188,13 +201,17 @@ generateExternFunction env symbolTable (ps IT.:=> t) functionName arity foreignF
     boxed <- box result
     ret boxed
 
-  Writer.tell $ Map.singleton functionName (fnSymbol (arity + amountOfDicts) function)
-  return $ Map.insert functionName (fnSymbol (arity + amountOfDicts) function) symbolTable
+  Writer.tell $ Map.singleton functionName (fnSymbol totalArity function)
+  return $ Map.insert functionName (fnSymbol totalArity function) symbolTable
 
 
 generateFunction :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m)
                  => FunctionCtx (IRBuilderT m) -> Env -> SymbolTable -> [Core.Metadata] -> IT.Qual IT.Type -> Area -> String -> [Core String] -> [Core.Exp] -> m SymbolTable
 generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName coreParams body = do
+  let totalArity = List.length coreParams
+  Monad.when (totalArity > maxSupportedPAPArity) $
+    error (mkPAPArityError functionName totalArity)
+
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
       params'       = (boxType,) . makeParamName <$> (Core.getValue <$> coreParams)
       functionName' = AST.mkName functionName
@@ -393,8 +410,8 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
       boxed <- box generatedBody
       ret boxed
 
-  Writer.tell $ Map.singleton functionName (fnSymbol (List.length coreParams) function)
-  return $ Map.insert functionName (fnSymbol (List.length coreParams) function) symbolTable
+  Writer.tell $ Map.singleton functionName (fnSymbol totalArity function)
+  return $ Map.insert functionName (fnSymbol totalArity function) symbolTable
 
 
 generateTopLevelFunction :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m)
@@ -421,12 +438,14 @@ addTopLevelFnToSymbolTable :: Env -> SymbolTable -> Core.Exp -> SymbolTable
 addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed _ _ _ (Core.Definition params _))) ->
     let arity  = List.length params
+        _ = if arity > maxSupportedPAPArity then error (mkPAPArityError functionName arity) else ()
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _) ->
     let arity  = List.length $ IT.getParamTypes t
+        _ = if arity > maxSupportedPAPArity then error (mkPAPArityError functionName arity) else ()
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
@@ -462,6 +481,9 @@ generateConstructor maxArity ctorCount env symbolTable (constructor, index) = ca
     let paramTypes     = IT.getParamTypes t
     let arity          = List.length paramTypes
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
+
+    Monad.when (arity > maxSupportedPAPArity) $
+      error (mkPAPArityError constructorName arity)
 
     constructor' <- if ctorCount == 1 && arity == 1 then
       -- Newtype: single constructor, single field — identity function

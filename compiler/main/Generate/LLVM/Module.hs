@@ -88,6 +88,15 @@ import           Generate.LLVM.Function       (FunctionCtx, generateExps, genera
                                                 addTopLevelFnToSymbolTable, expsForMain, topLevelFunctions,
                                                 fnSymbol, topLevelSymbol, constructorSymbol)
 
+maxSupportedPAPArity :: Int
+maxSupportedPAPArity = 30
+
+mkPAPArityError :: String -> Int -> String
+mkPAPArityError name arity =
+  "LLVM import arity limit reached for '" <> name <> "' (arity " <> show arity
+  <> ", supported max " <> show maxSupportedPAPArity <> "). "
+  <> "Raise runtime/src/apply-pap.* max arity before compiling this module."
+
 
 -- Symbol constructors (re-used for building symbol tables from imports)
 
@@ -172,6 +181,9 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
       return $ Map.singleton name (topLevelSymbol globalRef) <> adtSym
 
   Typed _ _ _ (ImportInfo name (DefinitionImport arity)) -> do
+    Monad.when (arity > maxSupportedPAPArity) $
+      error (mkPAPArityError name arity)
+
     let fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
     return $ Map.singleton name (fnSymbol arity fnRef)
@@ -184,6 +196,9 @@ buildSymbolTableFromImportInfo importInfo = case importInfo of
         arity  = List.length paramTypes
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName name))
+
+    Monad.when (arity > maxSupportedPAPArity) $
+      error (mkPAPArityError name arity)
 
     constructorInfos <- Rock.fetch (Query.ForeignConstructorInfos adtTypePath adtTypeName)
     let constructorIndex = case constructorInfos of
@@ -531,6 +546,12 @@ buildTarget options staticLibs entrypoint = do
   let objectFilePathsForCli = ListUtils.join " " objectFilePaths
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
+      linkerOptFlag         =
+        case optOptimizationLevel options of
+          O0 -> "-O0"
+          O1 -> "-O1"
+          O2 -> "-O2"
+          O3 -> "-O3"
 
   liftIO $ IOUtils.putStrLnAndFlush "Linking.."
 
@@ -545,7 +566,7 @@ buildTarget options staticLibs entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
-        "clang++ -flto -dead_strip -foptimize-sibling-calls -O2 "
+        "clang++ -flto -dead_strip -foptimize-sibling-calls " <> linkerOptFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
@@ -557,7 +578,7 @@ buildTarget options staticLibs entrypoint = do
 
     DistributionSystem.Windows ->
       liftIO $ callCommand $
-        "g++ -static "
+        "g++ -static " <> linkerOptFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
@@ -568,7 +589,7 @@ buildTarget options staticLibs entrypoint = do
 
     _ ->
       liftIO $ callCommand $
-        "g++ -static "
+        "g++ -static " <> linkerOptFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

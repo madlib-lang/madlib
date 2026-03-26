@@ -13,6 +13,29 @@ extern "C" {
 
 const size_t BUFFER_SIZE = 256 * 1024; // 256KB
 
+static void appendReadChunk(ReadData_t *data, const char *chunk, int64_t chunkSize) {
+  int64_t required = data->currentSize + chunkSize + 1;
+
+  if (data->currentCapacity < required) {
+    int64_t newCapacity = data->currentCapacity > 0 ? data->currentCapacity : (int64_t)BUFFER_SIZE;
+    while (newCapacity < required) {
+      newCapacity *= 2;
+    }
+
+    char *nextContent = (char *)GC_MALLOC_ATOMIC((size_t)newCapacity);
+    if (data->currentSize > 0) {
+      memcpy(nextContent, data->fileContent, (size_t)data->currentSize);
+    }
+
+    data->fileContent = nextContent;
+    data->currentCapacity = newCapacity;
+  }
+
+  memcpy(data->fileContent + data->currentSize, chunk, (size_t)chunkSize);
+  data->currentSize += chunkSize;
+  data->fileContent[data->currentSize] = '\0';
+}
+
 
 
 void onReadError(uv_fs_t *req) {
@@ -34,8 +57,10 @@ void onReadError(uv_fs_t *req) {
   uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
   void *data = (ReadData_t *)req->data;
 
-  uv_fs_t closeReq;
-  uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
+  if (openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
+  }
 
   GC_FREE(dataBuffer);
   GC_FREE(data);
@@ -48,7 +73,7 @@ void onReadError(uv_fs_t *req) {
 void onRead(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
 
-  if ((ReadData_t *)((ReadData_t *)req->data)->canceled) {
+  if (((ReadData_t *)req->data)->canceled) {
     return;
   }
 
@@ -57,8 +82,10 @@ void onRead(uv_fs_t *req) {
   } else if (req->result == 0) {
     ((ReadData_t *)req->data)->closed = true;
     // close file
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
+    if (((ReadData_t *)req->data)->openRequest->result >= 0) {
+      uv_fs_t closeReq;
+      uv_fs_close(getLoop(), &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
+    }
 
     int64_t *boxedError = (int64_t *)0;
 
@@ -87,27 +114,7 @@ void onRead(uv_fs_t *req) {
     GC_FREE(openRequest);
     GC_FREE(readRequest);
   } else {
-    // get the byte count already read
-    int64_t currentSize = ((ReadData_t *)req->data)->currentSize;
-
-    // increase the byte count for the next iteration
-    ((ReadData_t *)req->data)->currentSize = currentSize + req->result;
-
-    // allocate the next content to the old size + size of current buffer
-    char *nextContent = (char *)GC_MALLOC_ATOMIC(currentSize + req->result + 1);
-
-    // if the fileContent is not empty we copy what was in it in the newly
-    // allocated one
-    if (currentSize > 0) {
-      memcpy(nextContent, ((ReadData_t *)req->data)->fileContent, currentSize);
-    }
-
-    // then we copy after the already existing content, all data from the buffer
-    memcpy(nextContent + currentSize, ((ReadData_t *)req->data)->dataBuffer, req->result);
-
-    // we assign the fileContent to the newly created structure
-    ((ReadData_t *)req->data)->fileContent = nextContent;
-    ((ReadData_t *)req->data)->fileContent[currentSize + req->result] = '\0';
+    appendReadChunk((ReadData_t *)req->data, ((ReadData_t *)req->data)->dataBuffer, req->result);
 
     // we ask to be notified when the buffer has been filled again
     uv_fs_read(getLoop(), req, ((ReadData_t *)req->data)->openRequest->result, &((ReadData_t *)req->data)->uvBuffer, 1,
@@ -117,13 +124,12 @@ void onRead(uv_fs_t *req) {
 
 void onReadFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
-  if ((ReadData_t *)((ReadData_t *)req->data)->canceled) {
+  if (((ReadData_t *)req->data)->canceled) {
     return;
   }
 
-  ((ReadData_t *)req->data)->opened = true;
-
   if (req->result >= 0) {
+    ((ReadData_t *)req->data)->opened = true;
     uv_buf_t uvBuffer = uv_buf_init(((ReadData_t *)req->data)->dataBuffer, BUFFER_SIZE);
     ((ReadData_t *)((ReadData_t *)req->data)->readRequest->data)->uvBuffer = uvBuffer;
     int r = uv_fs_read(getLoop(), ((ReadData_t *)req->data)->readRequest, req->result, &uvBuffer, 1, -1, onRead);
@@ -145,7 +151,9 @@ ReadData_t *madlib__file__read(char *filepath, PAP_t *callback) {
   ((ReadData_t *)readReq->data)->readRequest = readReq;
   ((ReadData_t *)readReq->data)->openRequest = openReq;
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
-  ((ReadData_t *)readReq->data)->fileContent = (char*)"";
+  ((ReadData_t *)readReq->data)->fileContent = (char *)GC_MALLOC_ATOMIC(BUFFER_SIZE);
+  ((ReadData_t *)readReq->data)->fileContent[0] = '\0';
+  ((ReadData_t *)readReq->data)->currentCapacity = BUFFER_SIZE;
   ((ReadData_t *)readReq->data)->currentSize = 0;
   ((ReadData_t *)readReq->data)->readBytes = false;
   ((ReadData_t *)readReq->data)->canceled = false;
@@ -166,14 +174,15 @@ void madlib__file__cancelRead(ReadData_t *req) {
   req->canceled = true;
 
   if (req->reading) {
+    uv_cancel((uv_req_t *)req->readRequest);
+  } else if (!req->opened) {
+    uv_cancel((uv_req_t *)req->openRequest);
+  }
+
+  if (req->opened && !req->closed && req->openRequest->result >= 0) {
     uv_fs_t closeReq;
-    if (!uv_is_closing((uv_handle_t *) req->readRequest)) {
-      uv_close((uv_handle_t*) req->readRequest, NULL);
-    }
     uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
-  } else if (req->opened) {
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+    req->closed = true;
   }
 }
 
@@ -197,8 +206,10 @@ void onBufferedReadError(uv_fs_t *req) {
   uv_fs_t *readRequest = ((BufferedReadData_t *)req->data)->readRequest;
   void *data = (BufferedReadData_t *)req->data;
 
-  uv_fs_t closeReq;
-  uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
+  if (openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
+  }
 
   GC_FREE(dataBuffer);
   GC_FREE(data);
@@ -211,8 +222,10 @@ void onBufferedReadError(uv_fs_t *req) {
 
 void onBufferedRead(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
+  BufferedReadData_t *data = (BufferedReadData_t *)req->data;
+  data->reading = false;
 
-  if ((BufferedReadData_t *)((BufferedReadData_t *)req->data)->canceled) {
+  if (data->canceled) {
     return;
   }
 
@@ -221,8 +234,10 @@ void onBufferedRead(uv_fs_t *req) {
   } else if (req->result == 0) {
     ((BufferedReadData_t *)req->data)->closed = true;
     // close file
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, ((BufferedReadData_t *)req->data)->openRequest->result, NULL);
+    if (((BufferedReadData_t *)req->data)->openRequest->result >= 0) {
+      uv_fs_t closeReq;
+      uv_fs_close(getLoop(), &closeReq, ((BufferedReadData_t *)req->data)->openRequest->result, NULL);
+    }
 
     __applyPAP__(((BufferedReadData_t *)req->data)->doneCallback, 1, NULL);
 
@@ -239,7 +254,7 @@ void onBufferedRead(uv_fs_t *req) {
   } else {
       madlib__bytearray__ByteArray_t *arr =
           (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-      arr->bytes = (unsigned char *) GC_MALLOC(req->result);
+      arr->bytes = (unsigned char *)GC_MALLOC_ATOMIC(req->result);
       arr->length = req->result;
       arr->capacity = req->result;
 
@@ -253,6 +268,7 @@ void madlib__file__readChunkFromFile(BufferedReadData_t *handle, PAP_t *dataCall
   handle->dataCallback = dataCallback;
   handle->errorCallback = errorCallback;
   handle->doneCallback = doneCallback;
+  handle->reading = true;
   int r = uv_fs_read(getLoop(), handle->readRequest, handle->openRequest->result, &handle->uvBuffer, 1, -1, onBufferedRead);
 }
 
@@ -311,14 +327,15 @@ void madlib__file__cancelBufferedRead(BufferedReadData_t *req) {
   req->canceled = true;
 
   if (req->reading) {
+    uv_cancel((uv_req_t *)req->readRequest);
+  } else if (!req->opened) {
+    uv_cancel((uv_req_t *)req->openRequest);
+  }
+
+  if (req->opened && !req->closed && req->openRequest->result >= 0) {
     uv_fs_t closeReq;
-    if (!uv_is_closing((uv_handle_t*) req->readRequest)) {
-      uv_close((uv_handle_t*) req->readRequest, NULL);
-    }
     uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
-  } else if (req->opened) {
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+    req->closed = true;
   }
 }
 
@@ -335,6 +352,9 @@ ReadData_t *madlib__file__readBytes(char *filepath, PAP_t *callback) {
   ((ReadData_t *)readReq->data)->readRequest = readReq;
   ((ReadData_t *)readReq->data)->openRequest = openReq;
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
+  ((ReadData_t *)readReq->data)->fileContent = (char *)GC_MALLOC_ATOMIC(BUFFER_SIZE);
+  ((ReadData_t *)readReq->data)->fileContent[0] = '\0';
+  ((ReadData_t *)readReq->data)->currentCapacity = BUFFER_SIZE;
   ((ReadData_t *)readReq->data)->currentSize = 0;
   ((ReadData_t *)readReq->data)->readBytes = true;
   ((ReadData_t *)readReq->data)->canceled = false;
@@ -366,8 +386,10 @@ void onWriteError(uv_fs_t *req) {
 
   void *callback = ((WriteData_t *)req->data)->callback;
 
-  uv_fs_t closeReq;
-  uv_fs_close(getLoop(), &closeReq, ((WriteData_t *)req->data)->openRequest->result, NULL);
+  if (((WriteData_t *)req->data)->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, ((WriteData_t *)req->data)->openRequest->result, NULL);
+  }
 
   // free resources
   GC_FREE(((WriteData_t *)req->data)->openRequest);
@@ -381,7 +403,7 @@ void onWriteError(uv_fs_t *req) {
 void onWrite(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
 
-  if ((WriteData_t *)((WriteData_t *)req->data)->canceled) {
+  if (((WriteData_t *)req->data)->canceled) {
     return;
   }
 
@@ -399,8 +421,10 @@ void onWrite(uv_fs_t *req) {
     GC_FREE(req);
 
     // close file
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, openResult, NULL);
+    if (openResult >= 0) {
+      uv_fs_t closeReq;
+      uv_fs_close(getLoop(), &closeReq, openResult, NULL);
+    }
 
     int64_t *boxedError = (int64_t *)0;
 
@@ -411,12 +435,11 @@ void onWrite(uv_fs_t *req) {
 
 void onWriteFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
-  if ((WriteData_t *)((WriteData_t *)req->data)->canceled) {
+  if (((WriteData_t *)req->data)->canceled) {
     return;
   }
-  ((WriteData_t *)req->data)->opened = true;
-
   if (req->result >= 0) {
+    ((WriteData_t *)req->data)->opened = true;
     uv_fs_write(getLoop(), ((WriteData_t *)req->data)->writeRequest, req->result,
                 &((WriteData_t *)req->data)->contentBuffer, 1, -1, onWrite);
     ((WriteData_t *)req->data)->writing = true;
@@ -481,12 +504,15 @@ void madlib__file__cancelWrite(WriteData_t *req) {
   req->canceled = true;
 
   if (req->writing) {
+    uv_cancel((uv_req_t *)req->writeRequest);
+  } else if (!req->opened) {
+    uv_cancel((uv_req_t *)req->openRequest);
+  }
+
+  if (req->opened && !req->closed && req->openRequest->result >= 0) {
     uv_fs_t closeReq;
-    uv_close((uv_handle_t*) req->writeRequest, NULL);
     uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
-  } else if (req->opened) {
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+    req->closed = true;
   }
 }
 
@@ -500,8 +526,10 @@ void onBufferedWriteError(uv_fs_t *req) {
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 
-  uv_fs_t closeReq;
-  uv_fs_close(getLoop(), &closeReq, handle->openRequest->result, NULL);
+  if (handle->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, handle->openRequest->result, NULL);
+  }
 
   // free resources
   GC_FREE(handle->openRequest);
@@ -515,6 +543,7 @@ void onBufferedWriteError(uv_fs_t *req) {
 void onBufferedWrite(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
   BufferedWriteData_t *handle = (BufferedWriteData_t *)req->data;
+  handle->writing = false;
 
   if (handle->canceled) {
     return;
@@ -587,14 +616,15 @@ void madlib__file__cancelBufferedWrite(BufferedWriteData_t *req) {
   req->canceled = true;
 
   if (req->writing) {
+    uv_cancel((uv_req_t *)req->writeRequest);
+  } else if (!req->opened) {
+    uv_cancel((uv_req_t *)req->openRequest);
+  }
+
+  if (req->opened && !req->closed && req->openRequest->result >= 0) {
     uv_fs_t closeReq;
-    if (!uv_is_closing((uv_handle_t *) req->writeRequest)) {
-      uv_close((uv_handle_t*) req->writeRequest, NULL);
-    }
     uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
-  } else if (req->opened) {
-    uv_fs_t closeReq;
-    uv_fs_close(getLoop(), &closeReq, req->openRequest->result, NULL);
+    req->closed = true;
   }
 }
 
@@ -611,7 +641,7 @@ void onFileExists(uv_fs_t *req) {
     result = false;
   }
 
-  __applyPAP__(((FileExistData_t *)req->data)->callback, 1, (bool*)result);
+  __applyPAP__(((FileExistData_t *)req->data)->callback, 1, (void *)(int64_t)result);
 
   // free memory
   GC_FREE(req->data);

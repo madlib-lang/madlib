@@ -4,6 +4,7 @@
 #include "string.hpp"
 
 #include <inttypes.h>
+#include <stdlib.h>
 
 
 #ifdef __cplusplus
@@ -22,12 +23,12 @@ char *madlib__number__internal__showByte(unsigned char i) {
 
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
-  unsigned char parsed;
-  int success = sscanf(s, "%c", &parsed);
+  char *end = NULL;
+  unsigned long parsed = strtoul(s, &end, 10);
 
-  if (success == 1) {
+  if (s != end && *end == '\0' && parsed <= 255UL) {
     result->index = 0;
-    result->data = (unsigned char*)parsed;
+    result->data = (void *)(uintptr_t)((unsigned char)parsed);
   } else {
     result->index = 1;
     result->data = NULL;

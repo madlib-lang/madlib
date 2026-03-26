@@ -130,6 +130,25 @@ typedef struct madlib__http__Method {
   int64_t methodIndex;
 } madlib__http__Method_t;
 
+// Flattened LLVM record for Http.Request a
+// Field order follows record-field alphabetical ordering in LLVM lowering:
+//   { body, headers, method, url }
+typedef struct madlib__http__Request {
+  void *body;
+  void *headers;
+  void *method;
+  void *url;
+} madlib__http__Request_t;
+
+// Flattened LLVM record for Http.Response a
+// Field order follows record-field alphabetical ordering in LLVM lowering:
+//   { body, headers, status }
+typedef struct madlib__http__Response {
+  void *body;
+  void *headers;
+  void *status;
+} madlib__http__Response_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -149,6 +168,7 @@ typedef struct RequestData {
 
   // Response
   size_t responseSize;
+  size_t bodyCapacity;
   char *body;
   long status;
   // List Header
@@ -158,12 +178,12 @@ typedef struct RequestData {
 /**
  * madlib__http__request :: Request -> (Response String -> ()) -> ()
  */
-RequestData_t *madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+RequestData_t *madlib__http__request(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback);
 
 /**
  * madlib__http__requestBytes :: Request -> (Response ByteArray -> ()) -> ()
  */
-RequestData_t *madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+RequestData_t *madlib__http__requestBytes(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback);
 
 void madlib__http__cancel(RequestData_t *requestData);
 

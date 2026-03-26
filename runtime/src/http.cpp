@@ -23,6 +23,27 @@ void toUpper(char *dest, char *src, size_t length) {
   }
 }
 
+static void appendBodyChunk(RequestData_t *requestData, const char *data, size_t dataLength) {
+  size_t required = requestData->responseSize + dataLength + 1;
+  if (requestData->bodyCapacity < required) {
+    size_t newCapacity = requestData->bodyCapacity == 0 ? 256 : requestData->bodyCapacity;
+    while (newCapacity < required) {
+      newCapacity *= 2;
+    }
+
+    char *newBody = (char *)GC_MALLOC_ATOMIC(newCapacity);
+    if (requestData->responseSize > 0) {
+      memcpy(newBody, requestData->body, requestData->responseSize);
+    }
+    requestData->body = newBody;
+    requestData->bodyCapacity = newCapacity;
+  }
+
+  memcpy(requestData->body + requestData->responseSize, data, dataLength);
+  requestData->responseSize += dataLength;
+  requestData->body[requestData->responseSize] = '\0';
+}
+
 int64_t mapCurlErrorToClientErrorIndex(CURLcode errorCode) {
   int64_t index = madlib__http__ClientError_INTERNAL_ERROR_INDEX;
   switch (errorCode) {
@@ -117,26 +138,12 @@ const char *methodToString(madlib__http__Method_t *method) {
 }
 
 
-madlib__record__Record_t *buildResponse(void *boxedBody, madlib__list__Node_t *boxedHeaders, int64_t *boxedStatus) {
-  madlib__record__Record_t *response = (madlib__record__Record_t *) GC_MALLOC(sizeof(madlib__record__Record_t));
-  response->fieldCount = 3;
-  response->fields = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t) * 3);
-
-  response->fields[0] = {
-    .name = "body",
-    .value = boxedBody,
-  };
-
-  response->fields[1] = {
-    .name = "headers",
-    .value = boxedHeaders,
-  };
-
-  response->fields[2] = {
-    .name = "status",
-    .value = boxedStatus,
-  };
-
+madlib__http__Response_t *buildResponse(void *boxedBody, madlib__list__Node_t *boxedHeaders, int64_t *boxedStatus) {
+  madlib__http__Response_t *response =
+      (madlib__http__Response_t *)GC_MALLOC(sizeof(madlib__http__Response_t));
+  response->body = boxedBody;
+  response->headers = boxedHeaders;
+  response->status = boxedStatus;
   return response;
 }
 
@@ -177,7 +184,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
     // box status
     int64_t *boxedStatus = (int64_t*)requestData->status;
 
-    madlib__record__Record_t *response = buildResponse(boxedBody, responseHeaders, boxedStatus);
+    madlib__http__Response_t *response = buildResponse(boxedBody, responseHeaders, boxedStatus);
 
     void *goodCallback = requestData->goodCallback;
     void *badCallback = requestData->badCallback;
@@ -326,13 +333,7 @@ static size_t onDataWrite(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realSize = size * nmemb;
   RequestData_t *requestData = (RequestData_t *)userp;
 
-  char *ptr = (char *)GC_MALLOC_ATOMIC(requestData->responseSize + realSize + 1);
-  memcpy(ptr, requestData->body, requestData->responseSize);
-
-  requestData->body = ptr;
-  memcpy(requestData->body + requestData->responseSize, data, realSize);
-  requestData->responseSize += realSize;
-  requestData->body[requestData->responseSize] = '\0';
+  appendBodyChunk(requestData, (const char *)data, realSize);
 
   return realSize;
 }
@@ -409,20 +410,19 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 
 
 
-RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
-  char *url = (char *)madlib__record__internal__selectField((char *)"url", request);
+RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
+  char *url = (char *)request->url;
 
-  // TODO: rewrite these without selectField
   madlib__http__Method_t *boxedMethod =
-      (madlib__http__Method_t *)madlib__record__internal__selectField((char *)"method", request);
+      (madlib__http__Method_t *)request->method;
   const char *methodString = methodToString(boxedMethod);
 
   madlib__list__Node_t *requestHeaders =
-      (madlib__list__Node_t *)madlib__record__internal__selectField((char *)"headers", request);
+      (madlib__list__Node_t *)request->headers;
   curl_slist *lcurlHeaders = buildLibCurlHeaders(requestHeaders);
 
   madlib__maybe__Maybe_t *boxedBody =
-      (madlib__maybe__Maybe_t *)madlib__record__internal__selectField((char *)"body", request);
+      (madlib__maybe__Maybe_t *)request->body;
 
   CURLM *multiHandle = curl_multi_init();
 
@@ -433,12 +433,13 @@ RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback
   timerHandle->data = requestData;
   requestData->asBytes = asBytes;
   requestData->responseSize = 0;
+  requestData->bodyCapacity = 256;
   requestData->status = 0;
   requestData->headers = madlib__list__empty();
   requestData->badCallback = badCallback;
   requestData->goodCallback = goodCallback;
   requestData->requestHeaders = lcurlHeaders;
-  requestData->body = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 1);
+  requestData->body = (char *)GC_MALLOC_ATOMIC(requestData->bodyCapacity);
   requestData->body[0] = '\0';
 
   curl_multi_setopt(multiHandle, CURLMOPT_SOCKETDATA, requestData);
@@ -500,12 +501,12 @@ RequestData_t *makeRequest(madlib__record__Record_t *request, PAP_t *badCallback
 }
 
 // madlib__http__request :: Request String -> (Error String) -> (Response String -> ()) -> ()
-RequestData_t *madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+RequestData_t *madlib__http__request(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
   return makeRequest(request, badCallback, goodCallback, false);
 }
 
 // madlib__http__requestBytes :: Request ByteArray -> (Error ByteArray) -> (Response ByteArray -> ()) -> ()
-RequestData_t *madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+RequestData_t *madlib__http__requestBytes(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
   return makeRequest(request, badCallback, goodCallback, true);
 }
 

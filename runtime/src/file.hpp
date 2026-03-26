@@ -20,6 +20,7 @@ typedef struct ReadData {
   char *dataBuffer;
   char *fileContent;
   int64_t currentSize;
+  int64_t currentCapacity;
 
   // if true returns an a ByteArray instead of String
   bool readBytes;

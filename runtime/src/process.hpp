@@ -25,6 +25,8 @@ typedef struct ExecData {
   char *stderrOutput;
   size_t stdoutSize;
   size_t stderrSize;
+  size_t stdoutCapacity;
+  size_t stderrCapacity;
 
   bool canceled;
   bool started;
@@ -43,11 +45,21 @@ typedef struct BufferedExecData {
   char *stderrOutput;
   size_t stdoutSize;
   size_t stderrSize;
+  size_t stdoutCapacity;
+  size_t stderrCapacity;
 
   bool canceled;
   bool started;
   bool stopped;
 } BufferedExecData_t;
+
+// Flattened LLVM record for Process.FFICommandOptions
+// Field order follows record-field alphabetical ordering in LLVM lowering:
+//   { cwd, env }
+typedef struct madlib__process__CommandOptions {
+  void *cwd;
+  void *env;
+} madlib__process__CommandOptions_t;
 
 void __main__init__(int argc, char **argv);
 
@@ -59,10 +71,10 @@ madlib__list__Node_t *madlib__process__internal__getEnv();
 
 char *madlib__process__internal__getCurrentPath();
 
-ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *options, PAP_t *callback);
+ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *options, PAP_t *callback);
 void madlib__process__cancelExec(ExecData_t *data);
 
-BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__Node_t *argList, madlib__record__Record_t *commandOptions, PAP_t *callback, PAP_t *doneCallback);
+BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *commandOptions, PAP_t *callback, PAP_t *doneCallback);
 void madlib__process__cancelBufferedExec(BufferedExecData_t *data);
 
 #ifdef __cplusplus

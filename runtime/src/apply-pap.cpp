@@ -3,6 +3,8 @@
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
 
 
 // Partial application
@@ -11,8 +13,24 @@
 extern "C" {
 #endif
 
+static const int32_t MADLIB_MAX_SUPPORTED_PAP_ARITY = 30;
+
+static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
+  fprintf(
+      stderr,
+      "Unsupported PAP arity: %d (argc=%d). "
+      "runtime/src/apply-pap.* currently supports up to %d arguments.\n",
+      arity,
+      argc,
+      MADLIB_MAX_SUPPORTED_PAP_ARITY);
+  abort();
+}
+
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
   int32_t arity = pap->arity;
+  if (arity > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
+    failUnsupportedPAPArity(arity, 1);
+  }
   if (arity == 1) {
     void *(*fn)(void *) = (void*(*)(void *))pap->fn;
     return fn(arg1);
@@ -36,6 +54,9 @@ void *__applyPAP1__(PAP_t *pap, void *arg1) {
 
 void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2) {
   int32_t arity = pap->arity;
+  if (arity > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
+    failUnsupportedPAPArity(arity, 2);
+  }
   int32_t missingArgs = pap->missingArgCount;
   if (missingArgs <= 2) {
     if (arity == 1) {
@@ -72,6 +93,9 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   PAP_t *unwrappedPAP = (PAP_t *)pap;
   int32_t ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
   int32_t ARITY = unwrappedPAP->arity;
+  if (ARITY > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
+    failUnsupportedPAPArity(ARITY, argc);
+  }
 
   if (argc >= unwrappedPAP->missingArgCount) {
     void *result = (void *)NULL;
@@ -347,9 +371,16 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
         break;
       }
+      default: {
+        failUnsupportedPAPArity(ARITY, argc);
+        break;
+      }
     }
     if (argc > unwrappedPAP->missingArgCount) {
       int argsLeft = argc - unwrappedPAP->missingArgCount;
+      if (argsLeft > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
+        failUnsupportedPAPArity(argsLeft, argc);
+      }
       switch (argsLeft) {
         case 1: {
           void *args[1];
@@ -529,6 +560,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
           void *args[30];
           for (int i = 0; i < 30; i++) { args[i] = va_arg(argv, void*); }
           result = __applyPAP__(result, argsLeft, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
+          break;
+        }
+        default: {
+          failUnsupportedPAPArity(argsLeft, argc);
           break;
         }
       }

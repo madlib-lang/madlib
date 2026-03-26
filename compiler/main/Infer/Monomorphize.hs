@@ -584,7 +584,8 @@ replaceLocalFunctions requests exp = case getExpName exp of
           [exp]
 
       reqs ->
-        map (Maybe.fromMaybe undefined . mrResult) reqs
+        let resolved = Maybe.mapMaybe mrResult reqs
+        in  if null resolved then [exp] else resolved
 
   Nothing ->
     [exp]
@@ -865,11 +866,14 @@ findMonomorphicMethods state interface = case interface of
 
 
 replaceTypedNameWithMonomorphicOnes ::  Map.Map FunctionId MonomorphizationRequest -> Solved String -> [Solved String]
-replaceTypedNameWithMonomorphicOnes _ Typed{} = undefined
+replaceTypedNameWithMonomorphicOnes state (Typed qt area n) =
+  let monomorphizedNamesAndTypes = getMonomorphicFunctionNamesAndTypes n state
+      mapped = map (\(monoName, t) -> Typed ([] :=> t) area monoName) monomorphizedNamesAndTypes
+  in  if null mapped then [Typed qt area n] else mapped
 replaceTypedNameWithMonomorphicOnes state (Untyped area n) =
   let monomorphizedNamesAndTypes = getMonomorphicFunctionNamesAndTypes n state
       mapped = map (\(monoName, _) -> Untyped area monoName) monomorphizedNamesAndTypes
-  in  mapped
+  in  if null mapped then [Untyped area n] else mapped
 
 
 filterMonomorphicFunctionsForModule :: Map.Map FunctionId MonomorphizationRequest -> FilePath -> Map.Map FunctionId MonomorphizationRequest

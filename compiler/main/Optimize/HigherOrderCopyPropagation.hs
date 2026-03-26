@@ -609,8 +609,12 @@ makeImportForNameInForeignAST ast name = case List.find ((== Just name) . getExp
   Nothing ->
     case List.find (\(Untyped _ _ (NamedImport names _ _)) -> any ((== name) . getImportName) names) (aimports ast) of
       Just (Untyped area metadata (NamedImport names relPath absPath)) ->
-        let neededName = Maybe.fromMaybe undefined $ List.find ((== name) . getImportName) names
-        in  Untyped area metadata (NamedImport [neededName] relPath absPath)
+        case List.find ((== name) . getImportName) names of
+          Just neededName ->
+            Untyped area metadata (NamedImport [neededName] relPath absPath)
+
+          Nothing ->
+            error $ "makeImportForNameInForeignAST: import '" <> name <> "' not found in named import list for module '" <> Maybe.fromMaybe "<unknown>" (apath ast) <> "'"
 
       _ ->
         case List.find ((== name) . getConstructorName) (atypedecls ast >>= (adtconstructors . getValue)) of

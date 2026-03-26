@@ -127,7 +127,7 @@ renameExp env what = case what of
       in  (Typed t area metadata (Var renamed False), env')
 
     _ ->
-      undefined
+      (Typed t area metadata (Var name isConstructor), env)
 
   Typed t area metadata (NameExport name) ->
     let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
@@ -188,7 +188,7 @@ renameBranch env is = case is of
     in  (Typed t area metadata (Is renamedPattern renamedExp), env'')
 
   _ ->
-    undefined
+    (is, env)
 
 
 renamePatterns :: Env -> [Pattern] -> ([Pattern], Env)
@@ -271,7 +271,7 @@ renameField env field = case field of
     in  (Typed t area metadata $ FieldSpread renamedExp, env')
 
   _ ->
-    undefined
+    (field, env)
 
 
 renameListItems :: Env -> [ListItem] -> ([ListItem], Env)
@@ -295,7 +295,7 @@ renameListItem env item = case item of
     in  (Typed t area metadata $ ListSpread renamedExp, env')
 
   _ ->
-    undefined
+    (item, env)
 
 
 renameTopLevelAssignment :: Env -> Exp -> (Exp, Env)
@@ -307,7 +307,7 @@ renameTopLevelAssignment env assignment = case assignment of
     in  (Typed t area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var hashedName isCtor)) renamedExp), env'')
 
   _ ->
-    undefined
+    (assignment, env)
 
 
 renameTopLevelExps :: Env -> [Exp] -> ([Exp], Env)
@@ -353,7 +353,7 @@ renameConstructor env constructor = case constructor of
     in  (Untyped area metadata (Constructor hashedName typings t), env')
 
   _ ->
-    undefined
+    (constructor, env)
 
 
 renameConstructors :: Env -> [Constructor] -> ([Constructor], Env)
@@ -391,7 +391,7 @@ renamePostProcessedName env hash solvedName = case solvedName of
     in  (Typed qt area metadata (ImportInfo hashedName t), env')
 
   _ ->
-    undefined
+    (solvedName, env)
 
 
 renamePostProcessedNames :: Env -> String -> [Core ImportInfo] -> ([Core ImportInfo], Env)
@@ -413,7 +413,7 @@ renameImport env imp = case imp of
     in  (Untyped area metadata (NamedImport renamedNames relPath absPath), env')
 
   _ ->
-    undefined
+    (imp, env)
 
 
 renameImports :: Env -> [Import] -> ([Import], Env)
