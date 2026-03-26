@@ -1,9 +1,10 @@
 #include "http.hpp"
 
-#include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <uv.h>
 #include <string.h>
+#include <strings.h>
 
 #include "event-loop.hpp"
 #include "bytearray.hpp"
@@ -17,12 +18,6 @@ extern "C" {
 
 
 // utility
-void toUpper(char *dest, char *src, size_t length) {
-  for (int i = 0; i < length; i++) {
-    dest[i] = toupper(src[i]);
-  }
-}
-
 static void appendBodyChunk(RequestData_t *requestData, const char *data, size_t dataLength) {
   size_t required = requestData->responseSize + dataLength + 1;
   if (requestData->bodyCapacity < required) {
@@ -381,24 +376,21 @@ static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) 
 
 curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
   curl_slist *lcurlHeaders = NULL;
-  const char *headerTpl = "%s: %s";
 
   while (headers->next != NULL) {
     madlib__http__Header_t *boxedHeader = (madlib__http__Header_t *)headers->value;
+    size_t nameLength = strlen(boxedHeader->name);
+    size_t valueLength = strlen(boxedHeader->value);
 
-    char uppercasedHeaderName[strlen(boxedHeader->name) + 1];
-    toUpper(uppercasedHeaderName, boxedHeader->name, strlen(boxedHeader->name));
-
-    if (strcmp(uppercasedHeaderName, "HOST") == 0) {
+    if (strcasecmp(boxedHeader->name, "Host") == 0) {
       // Host header is set automatically so we just skip it if the user
       // provided one
       headers = headers->next;
       continue;
     }
 
-    char *headerStr =
-        (char *)GC_MALLOC_ATOMIC_UNCOLLECTABLE(sizeof(char) * (3 + strlen(boxedHeader->name) + strlen(boxedHeader->value)));
-    sprintf(headerStr, headerTpl, boxedHeader->name, boxedHeader->value);
+    char *headerStr = (char *)GC_MALLOC_ATOMIC_UNCOLLECTABLE(nameLength + valueLength + 3);
+    snprintf(headerStr, nameLength + valueLength + 3, "%s: %s", boxedHeader->name, boxedHeader->value);
 
     lcurlHeaders = curl_slist_append(lcurlHeaders, headerStr);
     GC_FREE(headerStr);

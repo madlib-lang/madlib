@@ -143,7 +143,7 @@ ReadData_t *madlib__file__read(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC(sizeof(char) * BUFFER_SIZE);
+  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
   readReq->data = GC_MALLOC(sizeof(ReadData_t));
@@ -296,7 +296,7 @@ BufferedReadData_t *madlib__file__openFileForBufferedRead(char *filepath, PAP_t 
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC(sizeof(char) * BUFFER_SIZE);
+  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
   readReq->data = GC_MALLOC(sizeof(BufferedReadData_t));
@@ -344,7 +344,7 @@ ReadData_t *madlib__file__readBytes(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC(sizeof(char) * BUFFER_SIZE);
+  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
   readReq->data = GC_MALLOC(sizeof(ReadData_t));

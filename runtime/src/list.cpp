@@ -11,11 +11,8 @@ extern "C" {
 #endif
 
 madlib__list__Node_t *madlib__list__empty() {
-  madlib__list__Node_t *head =
-      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-  head->next = NULL;
-  head->value = NULL;
-  return head;
+  static madlib__list__Node_t emptyNode = {NULL, NULL};
+  return &emptyNode;
 }
 
 int64_t madlib__list__length(madlib__list__Node_t *list) {
@@ -62,6 +59,10 @@ madlib__list__Node_t *madlib__list__internal__push(void *item,
 
 madlib__list__Node_t *madlib__list__map(PAP_t *pap,
                                         madlib__list__Node_t *list) {
+  if (list->value == NULL) {
+    return madlib__list__empty();
+  }
+
   size_t itemCount = madlib__list__length(list);
   int nodesIndex = 1;
   madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
