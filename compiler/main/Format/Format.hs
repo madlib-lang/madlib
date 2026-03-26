@@ -256,6 +256,19 @@ jsxPropsToDoc comments fields = case fields of
         , comments'''
         )
 
+  (Source area _ (JsxSpreadProp expr) : more) ->
+    let (commentsDoc, comments') = insertComments False area comments
+        (expr', _)               = expToDoc comments' expr
+        line  =
+          if null more then
+            Pretty.emptyDoc
+          else
+            Pretty.line
+        (more', comments''') = jsxPropsToDoc comments' more
+    in  ( commentsDoc <> Pretty.lbrace <> Pretty.pretty ("..." :: String) <> expr' <> Pretty.rbrace <> line <> more'
+        , comments'''
+        )
+
   [] ->
     (Pretty.emptyDoc, comments)
 

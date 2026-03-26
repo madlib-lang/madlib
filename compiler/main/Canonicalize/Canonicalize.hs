@@ -553,29 +553,25 @@ canonicalizeJsxTag :: Env.Env -> Target -> Src.Exp -> CanonicalM Can.Exp
 canonicalizeJsxTag env target exp = case exp of
   Src.Source area _ (Src.JsxTag name props children) -> do
     pushNameAccess name
-    pushNameAccess "text" -- fix for now
     let Area (Loc _ l c) (Loc _ _ _) = area
     let tagFnArea = Area (Loc 0 l c) (Loc 0 l (c + length name + 2))
     let tagFnVar = Can.Canonical tagFnArea (Can.Var name)
 
     children' <- mapM canonicalizeJsxChild children
-    propFns <- mapM
-      (\(Src.Source a _ (Src.JsxProp name' exp)) -> do
-        pushNameAccess name'
-        let Area (Loc _ l c) (Loc _ _ _) = a
-        arg <- canonicalize env target exp
-        return $ Can.Canonical
-          a
-          (Can.ListItem $ Can.Canonical
-            a
-            (Can.App (Can.Canonical (Area (Loc 0 l c) (Loc 0 l (c + length name'))) (Can.Var name')) arg True)
-          )
+    propFields <- mapM
+      (\(Src.Source a _ prop) -> case prop of
+        Src.JsxProp name' propExp -> do
+          arg <- canonicalize env target propExp
+          return $ Can.Canonical a (Can.Field (name', arg))
+        Src.JsxSpreadProp propExp -> do
+          arg <- canonicalize env target propExp
+          return $ Can.Canonical a (Can.FieldSpread arg)
       )
       props
-    let propArea     = composeArea (length name) area propFns
+    let propArea     = composeArea (length name) area propFields
     let childrenArea = composeArea 0 area children'
 
-    let props'       = Can.Canonical propArea (Can.ListConstructor propFns)
+    let props'       = Can.Canonical propArea (Can.Record propFields)
     let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
 
     return $ Can.Canonical

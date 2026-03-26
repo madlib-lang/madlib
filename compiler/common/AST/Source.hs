@@ -208,6 +208,7 @@ data JsxChild
 type JsxProp = Source JsxProp_
 data JsxProp_
   = JsxProp Name Exp
+  | JsxSpreadProp Exp
   deriving(Eq, Show, Generic, Hashable)
 
 

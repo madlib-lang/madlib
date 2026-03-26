@@ -1090,19 +1090,29 @@ pJsxProps :: Parser [Src.JsxProp]
 pJsxProps = many (try (scn *> pJsxProp))
   where
     pJsxProp = choice
-      [ -- name="string"
+      [ -- {...expr} (spread prop)
+        try $ do
+          (startArea, _) <- withArea (void $ lexeme $ C.char 123)  -- '{' without rejecting '{{'
+          scn
+          pSpread
+          expr <- pExp
+          scn
+          (endArea, _) <- withArea (void pRightCurly)
+          target <- pSourceTarget
+          return $ Src.Source (mergeAreas startArea endArea) target (Src.JsxSpreadProp expr)
+      , -- name="string"
         try $ do
           (nameArea, name) <- withArea pNameStr
           target <- pSourceTarget
           pEq
           (strArea, str) <- withArea pStringLiteral
           return $ Src.Source (mergeAreas nameArea strArea) target (Src.JsxProp name (Src.Source strArea target (Src.LStr str)))
-      , -- name={expr}
+      , -- name={expr} (uses raw '{' to allow record values like name={{ x: 3 }})
         try $ do
           (nameArea, name) <- withArea pNameStr
           target <- pSourceTarget
           pEq
-          pLeftCurly
+          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
           expr <- pExp
           (endArea, _) <- withArea (void pRightCurly)
           return $ Src.Source (mergeAreas nameArea endArea) target (Src.JsxProp name expr)
@@ -1120,7 +1130,7 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
     pJsxChild = choice
       [ -- {...expr} (must try before {expr} since both start with {)
         try $ do
-          pLeftCurly
+          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
           scn
           pSpread
           expr <- pExp
@@ -1129,7 +1139,7 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
           return $ Src.JsxSpreadChild expr
       , -- {expr}
         try $ do
-          pLeftCurly
+          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
           scn
           expr <- pExp
           scn
@@ -1142,7 +1152,7 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
           text <- C8.unpack <$> takeWhile1P Nothing (\b -> b /= 60 && b /= 62 && b /= 123 && b /= 125)
           let trimmed = C8.unpack $ C8.strip $ C8.pack text
           if null trimmed then fail "empty text"
-          else return $ Src.JsxChild (Src.Source emptyArea Src.TargetAll (Src.LStr $ "\"" ++ trimmed ++ "\""))
+          else return $ Src.JsxChild (Src.Source emptyArea Src.TargetAll (Src.LStr trimmed))
       ]
 
 
