@@ -607,6 +607,10 @@ typedef struct PAP {
 extern "C" {
 #endif
 
+void *__applyPAP1__(PAP_t *pap, void *arg1);
+
+void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2);
+
 void *__applyPAP__(void *pap, int32_t argc, ...);
 
 #ifdef __cplusplus

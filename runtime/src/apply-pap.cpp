@@ -28,9 +28,6 @@ static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
 
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
   int32_t arity = pap->arity;
-  if (arity > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
-    failUnsupportedPAPArity(arity, 1);
-  }
   if (arity == 1) {
     void *(*fn)(void *) = (void*(*)(void *))pap->fn;
     return fn(arg1);
@@ -54,9 +51,6 @@ void *__applyPAP1__(PAP_t *pap, void *arg1) {
 
 void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2) {
   int32_t arity = pap->arity;
-  if (arity > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
-    failUnsupportedPAPArity(arity, 2);
-  }
   int32_t missingArgs = pap->missingArgCount;
   if (missingArgs <= 2) {
     if (arity == 1) {

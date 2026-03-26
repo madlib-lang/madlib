@@ -26,8 +26,6 @@ int64_t madlib__list__length(madlib__list__Node_t *list) {
   return total;
 }
 
-
-
 madlib__list__Node_t *madlib__list__singleton(void *item) {
   madlib__list__Node_t *head =
       (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
@@ -75,7 +73,7 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap,
     nextItem->value = NULL;
     nextItem->next = NULL;
 
-    newList->value = __applyPAP__(pap, 1, list->value);
+    newList->value = __applyPAP1__(pap, list->value);
     newList->next = nextItem;
 
     newList = newList->next;
@@ -89,7 +87,7 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap,
 void *madlib__list__reduce(PAP_t *pap, void *initialValue,
                            madlib__list__Node_t *list) {
   while (list->value != NULL) {
-    initialValue = __applyPAP__(pap, 2, initialValue, list->value);
+    initialValue = __applyPAP2__(pap, initialValue, list->value);
     list = list->next;
   }
 

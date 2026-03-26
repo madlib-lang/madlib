@@ -103,8 +103,24 @@ export forEach = (f, list) => where(list) {
  * @example
  * repeat('a', 3) // ['a', 'b', 'c']
  */
+#iftarget llvm
+
+reserveRepeatHeapFFI :: Integer -> {}
+reserveRepeatHeapFFI = extern "madlib__gc__reserveList"
+
+repeat :: a -> Integer -> List a
+export repeat = (a, count) => {
+  go = (n) => n <= 0 ? [] : [a, ...go(n - 1)]
+  reserveRepeatHeapFFI(count)
+  return go(count)
+}
+
+#elseif js
+
 repeat :: a -> Integer -> List a
 export repeat = (a, count) => count <= 0 ? [] : [a, ...repeat(a, count - 1)]
+
+#endif
 
 
 /**
